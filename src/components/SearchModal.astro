@@ -69,11 +69,11 @@
   const resultsList = document.getElementById('search-list');
   const emptyState = document.getElementById('search-empty');
 
-  function openSearch() {
+  let openSearch = () => {
     modal?.classList.remove('hidden');
     input?.focus();
     document.body.style.overflow = 'hidden';
-  }
+  };
 
   function closeSearch() {
     modal?.classList.add('hidden');
@@ -122,7 +122,7 @@
 
   // 首次打开搜索时加载
   const origOpen = openSearch;
-  openSearch = function() {
+  openSearch = () => {
     origOpen();
     loadPagefind();
   };
