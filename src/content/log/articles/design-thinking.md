@@ -4,6 +4,7 @@ date: 2026-04-15
 tags: [设计]
 type: article
 published: true
+concepts: [design, subtraction]
 ---
 
 ## 一个实验

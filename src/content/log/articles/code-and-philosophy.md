@@ -4,6 +4,7 @@ date: 2026-04-27
 tags: [技术, 哲学]
 type: article
 published: true
+concepts: [subtraction, human-sovereignty]
 ---
 
 ## 从柏拉图到面向对象

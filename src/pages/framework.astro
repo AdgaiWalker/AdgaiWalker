@@ -1,0 +1,63 @@
+---
+import Base from '../layouts/Base.astro';
+import FrameworkLayer from '../components/FrameworkLayer.astro';
+import { getCollection } from 'astro:content';
+
+const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
+const layers = allConcepts
+  .filter(c => c.data.layer)
+  .sort((a, b) => (a.data.layer ?? 5) - (b.data.layer ?? 5));
+
+const allLog = await getCollection('log', ({ data }) => data.published);
+const conceptCounts = new Map<string, number>();
+allLog.forEach(entry => {
+  entry.data.concepts?.forEach(id => {
+    conceptCounts.set(id, (conceptCounts.get(id) ?? 0) + 1);
+  });
+});
+---
+
+<Base title="五层逻辑 — Walker">
+  <div class="relative">
+    <div class="fixed inset-0 pointer-events-none z-0"
+      style="background: linear-gradient(180deg, #132040 0%, #0a1628 30%, #060e1a 100%);">
+    </div>
+
+    <div class="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-20">
+      <div class="mb-16">
+        <h1 class="font-heading text-4xl md:text-5xl text-parchment tracking-wide">五层逻辑</h1>
+        <p class="mt-3 text-parchment/30 text-sm font-body">
+          一个有方向的循环系统，不是五个独立原则
+        </p>
+        <div class="mt-4 w-16 h-px bg-gold/30"></div>
+      </div>
+
+      <div class="space-y-0">
+        {layers.map((concept, i) => (
+          <FrameworkLayer
+            id={concept.id}
+            symbol={concept.data.symbol}
+            layer={concept.data.layer}
+            title={concept.data.title}
+            body={concept.body || ''}
+            contentCount={conceptCounts.get(concept.id) ?? 0}
+            isFirst={i === 0}
+            isLast={i === layers.length - 1}
+          />
+        ))}
+      </div>
+
+      <div class="mt-12 px-6 py-6 rounded-xl bg-sea-mid/20 border border-mist/10">
+        <p class="text-parchment/50 text-sm leading-relaxed">
+          第五层验证不通过时，回溯到对应层重新循环。这不是线性流程，是螺旋上升——每次循环都在更高层次上理解。
+        </p>
+      </div>
+
+      <footer class="mt-16 pt-8 border-t border-mist/20">
+        <a href="/concept" class="text-gold font-heading text-sm tracking-wider hover:text-gold-glow transition-colors no-underline">
+          ← 查看全部概念
+        </a>
+      </footer>
+    </div>
+  </div>
+</Base>

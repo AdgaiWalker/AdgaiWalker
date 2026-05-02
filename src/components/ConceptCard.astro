@@ -1,0 +1,55 @@
+---
+interface Props {
+  id: string;
+  title: string;
+  symbol?: string;
+  layer?: number;
+  domain?: string;
+  contentCount: number;
+  body?: string;
+}
+
+const { id, title, symbol, layer, contentCount, body } = Astro.props;
+
+const summary = body
+  ?.replace(/^---[\s\S]*?---/, '')
+  .replace(/[#*_`\[\]()>|]/g, '')
+  .trim()
+  .split('\n')
+  .filter(l => l.trim())
+  .find(l => l.trim().length > 10) || '';
+---
+
+<a
+  href={`/concept/${id}`}
+  class:list={[
+    'block reveal group rounded-xl p-5 transition-all duration-300 no-underline',
+    layer
+      ? 'bg-gradient-to-br from-gold/5 to-transparent border border-gold/15 hover:border-gold/30'
+      : 'bg-sea-mid/30 border border-mist/10 hover:border-mist/25',
+  ]}
+>
+  <div class="flex items-start gap-3">
+    {symbol && (
+      <div class="w-8 h-8 rounded-full border border-gold/30 flex items-center justify-center text-gold/60 text-sm font-heading shrink-0">
+        {symbol}
+      </div>
+    )}
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-1">
+        <h3 class:list={[
+          'font-heading text-base leading-snug group-hover:text-gold transition-colors',
+          layer ? 'text-parchment' : 'text-parchment/80',
+        ]}>
+          {title}
+        </h3>
+        {contentCount > 0 && (
+          <span class="text-xs text-mist/50">{contentCount} 篇</span>
+        )}
+      </div>
+      {summary && (
+        <p class="text-parchment/40 text-sm line-clamp-2">{summary}</p>
+      )}
+    </div>
+  </div>
+</a>

@@ -2,8 +2,9 @@
 title: 一人食：蒜香橄榄油意面
 date: 2026-04-18
 tags: [厨艺]
-type: article
+type: recipe
 published: true
+concepts: [subtraction, cooking]
 ---
 
 ## 为什么是这道菜
