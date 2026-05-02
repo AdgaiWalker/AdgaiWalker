@@ -1,0 +1,45 @@
+---
+import RelatedConcepts from '../RelatedConcepts.astro';
+
+interface Props {
+  entry: any;
+  Content: any;
+  components: Record<string, any>;
+}
+
+const { entry, Content, components } = Astro.props;
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<article class="max-w-3xl mx-auto px-6 pt-28 pb-20" data-pagefind-body>
+  <header class="mb-12">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="text-xs px-2 py-0.5 rounded bg-gold/15 text-gold/80 font-heading">食谱</span>
+      <time class="text-mist-light text-sm font-mono">{formatDate(entry.data.date)}</time>
+    </div>
+    <h1 class="font-heading text-3xl md:text-4xl text-parchment leading-tight" data-pagefind-meta="title">
+      {entry.data.title}
+    </h1>
+  </header>
+
+  <div class="prose prose-invert max-w-none
+              prose-headings:font-heading prose-headings:text-parchment
+              prose-p:text-parchment prose-p:leading-relaxed
+              prose-a:text-gold prose-a:no-underline hover:prose-a:text-gold-glow
+              prose-code:text-gold prose-code:bg-sea-deep prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+              prose-blockquote:border-gold/40 prose-blockquote:text-parchment/70
+              prose-img:rounded-lg prose-hr:border-mist/20 prose-strong:text-parchment
+              prose-li:text-parchment/85">
+    <Content components={components} />
+  </div>
+
+  <RelatedConcepts concepts={entry.data.concepts || []} />
+
+  <footer class="mt-16 pt-8 border-t border-mist/20">
+    <a href="/log" class="text-gold font-heading text-sm tracking-wider hover:text-gold-glow transition-colors no-underline">
+      ← 返回航海日志
+    </a>
+  </footer>
+</article>

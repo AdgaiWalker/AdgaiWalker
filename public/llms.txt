@@ -1,0 +1,30 @@
+# Walker — 个人知识空间
+
+> AI 时代的个人知识空间。行船意象，五层逻辑，人机协作。
+
+## 核心框架（五层逻辑）
+1. 人类主权（/concept/human-sovereignty）— 人决策，AI 执行。人可以授权，AI 在授权范围内自由行动
+2. 熵减命令（/concept/entropy-reduction）— 目标：高熵（混乱）→ 低熵（清晰）
+3. 多元世界观（/concept/worldview-pluralism）— 蓝图 vs 现实，偏差驱动迭代
+4. 量变质变（/concept/quantity-quality）— 积累→突破的节奏
+5. 做减法（/concept/subtraction）— 验证：你的工作更少了吗？
+
+## 内容领域
+- 厨艺 /concept/cooking
+- 设计 /concept/design
+- 技术 /concept/tech
+
+## 内容类型
+- article: 长文
+- dialogue: 人机对话
+- recipe: 食谱
+- thought: 随想
+- photo: 摄影
+- project: 项目
+- prompt: 提示词
+
+## 导航
+- 首页: /
+- 航海日志: /log
+- 概念图谱: /concept
+- 五层逻辑: /framework

@@ -1,0 +1,39 @@
+---
+import { getCollection } from 'astro:content';
+
+interface Props {
+  concepts: string[];
+}
+
+const { concepts } = Astro.props;
+
+if (!concepts || concepts.length === 0) return;
+
+const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
+const matched = allConcepts.filter(c => concepts.includes(c.id));
+---
+
+{matched.length > 0 && (
+  <div class="mt-12 pt-8 border-t border-mist/15">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="text-mist/50 text-xs font-heading tracking-wider uppercase">关联概念</span>
+      <div class="flex-1 h-px bg-mist/10"></div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {matched.map(c => (
+        <a
+          href={`/concept/${c.id}`}
+          class:list={[
+            'no-underline text-sm px-3 py-1.5 rounded-lg transition-colors',
+            c.data.layer
+              ? 'bg-gold/10 text-gold/70 border border-gold/20 hover:bg-gold/20'
+              : 'bg-sea-light/20 text-parchment/60 border border-mist/10 hover:bg-sea-light/30',
+          ]}
+        >
+          {c.data.symbol && <span class="mr-1">{c.data.symbol}</span>}
+          {c.data.title}
+        </a>
+      ))}
+    </div>
+  </div>
+)}

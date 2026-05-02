@@ -1,0 +1,32 @@
+---
+interface Props {
+  type: 'concept' | 'content';
+  data: Record<string, any>;
+}
+
+const { type, data } = Astro.props;
+
+let schema: Record<string, any>;
+
+if (type === 'concept') {
+  schema = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: data.title,
+    description: data.description,
+    url: data.url,
+    about: data.about,
+    relatedLink: data.relatedLinks,
+  };
+} else {
+  schema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: data.title,
+    datePublished: data.date,
+    about: data.concepts?.map((c: string) => `/concept/${c}`),
+  };
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />
