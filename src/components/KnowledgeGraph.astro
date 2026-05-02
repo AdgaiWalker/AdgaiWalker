@@ -1,33 +1,9 @@
 ---
-import { getCollection } from 'astro:content';
+import { buildConceptGraph, getActiveConcepts, getPublishedLogEntries } from '../utils/knowledge';
 
-const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
-const allLogs = await getCollection('log', ({ data }) => data.published);
-
-const conceptCounts = new Map<string, number>();
-allLogs.forEach(entry => {
-  entry.data.concepts?.forEach(id => {
-    conceptCounts.set(id, (conceptCounts.get(id) ?? 0) + 1);
-  });
-});
-
-const nodes = allConcepts.map(c => ({
-  id: c.id,
-  title: c.data.title,
-  symbol: c.data.symbol || '',
-  domain: c.data.domain.join(', '),
-  layer: c.data.layer ?? null,
-  contentCount: conceptCounts.get(c.id) ?? 0,
-}));
-
-const links: Array<{ source: string; target: string }> = [];
-allConcepts.forEach(c => {
-  c.data.related.forEach(r => {
-    if (allConcepts.some(ac => ac.id === r)) {
-      links.push({ source: c.id, target: r });
-    }
-  });
-});
+const allConcepts = await getActiveConcepts();
+const allLogs = await getPublishedLogEntries();
+const { nodes, links } = buildConceptGraph(allConcepts, allLogs);
 ---
 
 <section class="max-w-5xl mx-auto px-6 py-16">
@@ -90,7 +66,7 @@ allConcepts.forEach(c => {
     .data(nodesData)
     .join('g')
     .attr('cursor', 'pointer')
-    .on('click', (event: any, d: any) => {
+    .on('click', (_event: any, d: any) => {
       window.location.href = `/concept/${d.id}`;
     });
 
@@ -154,7 +130,7 @@ allConcepts.forEach(c => {
   });
 
   // Drag
-  node.call(d3.drag()
+  (node as any).call(d3.drag()
     .on('start', (event: any, d: any) => {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;

@@ -1,15 +1,18 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.1 }
-  );
+const revealElements = document.querySelectorAll('.reveal');
 
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-});
+revealElements.forEach(el => el.classList.add('reveal-init'));
+
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        entry.target.classList.remove('reveal-init');
+        observer.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.1 }
+);
+
+revealElements.forEach(el => observer.observe(el));

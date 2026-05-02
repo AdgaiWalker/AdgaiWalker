@@ -1,20 +1,17 @@
 ---
 import Base from '../layouts/Base.astro';
 import FrameworkLayer from '../components/FrameworkLayer.astro';
-import { getCollection } from 'astro:content';
+import {
+  buildConceptCounts,
+  getActiveConcepts,
+  getLayerConcepts,
+  getPublishedLogEntries,
+} from '../utils/knowledge';
 
-const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
-const layers = allConcepts
-  .filter(c => c.data.layer)
-  .sort((a, b) => (a.data.layer ?? 5) - (b.data.layer ?? 5));
-
-const allLog = await getCollection('log', ({ data }) => data.published);
-const conceptCounts = new Map<string, number>();
-allLog.forEach(entry => {
-  entry.data.concepts?.forEach(id => {
-    conceptCounts.set(id, (conceptCounts.get(id) ?? 0) + 1);
-  });
-});
+const allConcepts = await getActiveConcepts();
+const layers = getLayerConcepts(allConcepts);
+const allLog = await getPublishedLogEntries();
+const conceptCounts = buildConceptCounts(allLog);
 ---
 
 <Base title="五层逻辑 — Walker">

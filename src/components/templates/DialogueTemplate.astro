@@ -56,3 +56,50 @@ const formatDate = (d: Date) =>
     </a>
   </footer>
 </article>
+
+<style is:global>
+  .dialogue-callout {
+    position: relative;
+    margin: 1rem 0;
+    width: min(84%, 42rem);
+    border-radius: 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid color-mix(in srgb, var(--color-mist) 16%, transparent);
+    background: color-mix(in srgb, var(--color-sea-mid) 58%, transparent);
+    color: color-mix(in srgb, var(--color-parchment) 86%, transparent);
+  }
+
+  .dialogue-callout::before {
+    display: block;
+    margin-bottom: 0.4rem;
+    content: attr(data-speaker);
+    font-family: var(--font-heading);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: color-mix(in srgb, var(--color-mist-light) 58%, transparent);
+  }
+
+  .dialogue-callout-human {
+    margin-right: auto;
+    border-top-left-radius: 0.25rem;
+    border-color: color-mix(in srgb, var(--color-gold) 16%, transparent);
+    background: color-mix(in srgb, var(--color-gold) 10%, transparent);
+  }
+
+  .dialogue-callout-human::before {
+    color: color-mix(in srgb, var(--color-gold) 62%, transparent);
+  }
+
+  .dialogue-callout-ai {
+    margin-left: auto;
+    border-top-right-radius: 0.25rem;
+  }
+
+  .dialogue-callout p:last-child {
+    margin-bottom: 0;
+  }
+
+  .dialogue-callout p:first-child {
+    margin-top: 0;
+  }
+</style>

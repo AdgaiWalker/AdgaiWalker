@@ -28,3 +28,4 @@
 - 航海日志: /log
 - 概念图谱: /concept
 - 五层逻辑: /framework
+- 提示词库: /prompts

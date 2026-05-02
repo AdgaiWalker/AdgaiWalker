@@ -1,6 +1,7 @@
 ---
 import TraceCard from './TraceCard.astro';
-import { getCollection } from 'astro:content';
+import { extractExcerpt } from '../utils/excerpt';
+import { getPublishedLogEntries } from '../utils/knowledge';
 
 interface Props {
   limit?: number;
@@ -8,10 +9,7 @@ interface Props {
 
 const { limit = 6 } = Astro.props;
 
-const allLogs = await getCollection('log', ({ data }) => data.published);
-const recentLogs = allLogs
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, limit);
+const recentLogs = (await getPublishedLogEntries()).slice(0, limit);
 ---
 <section class="max-w-5xl mx-auto px-6 py-20">
   <div class="flex items-center gap-4 mb-10">
@@ -27,7 +25,7 @@ const recentLogs = allLogs
         type={entry.data.type}
         slug={entry.id}
         cover={entry.data.cover}
-        excerpt={entry.body ? entry.body.replace(/^import\s+.*$/gm, '').replace(/<[^>]+>/g, '').replace(/[#*_`\[\]()>|]/g, '').trim().slice(0, 150) + '...' : undefined}
+        excerpt={extractExcerpt(entry.body)}
       />
     ))}
   </div>

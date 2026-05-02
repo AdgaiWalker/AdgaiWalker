@@ -24,3 +24,12 @@ pnpm-debug.log*
 .vscode/
 *.swp
 *.swo
+
+# Obsidian
+.obsidian/
+
+# Playwright MCP
+.playwright-mcp/
+
+# local screenshots and scratch files
+tmp/

@@ -1,31 +1,20 @@
 ---
 import Base from '../../layouts/Base.astro';
 import ConceptCard from '../../components/ConceptCard.astro';
-import { getCollection, getEntries } from 'astro:content';
+import {
+  buildConceptCounts,
+  getActiveConcepts,
+  getLayerConcepts,
+  getPublishedLogEntries,
+  groupDomainConcepts,
+} from '../../utils/knowledge';
 
-const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
+const allConcepts = await getActiveConcepts();
+const allLog = await getPublishedLogEntries();
+const conceptCounts = buildConceptCounts(allLog);
 
-const frameworkConcepts = allConcepts
-  .filter(c => c.data.layer)
-  .sort((a, b) => (a.data.layer ?? 5) - (b.data.layer ?? 5));
-
-const domainConcepts = allConcepts.filter(c => !c.data.layer);
-
-const domainGroups = new Map<string, typeof domainConcepts>();
-domainConcepts.forEach(c => {
-  c.data.domain.forEach(d => {
-    if (!domainGroups.has(d)) domainGroups.set(d, []);
-    domainGroups.get(d)!.push(c);
-  });
-});
-
-const allLog = await getCollection('log');
-const conceptCounts = new Map<string, number>();
-allLog.forEach(entry => {
-  entry.data.concepts?.forEach(id => {
-    conceptCounts.set(id, (conceptCounts.get(id) ?? 0) + 1);
-  });
-});
+const frameworkConcepts = getLayerConcepts(allConcepts);
+const domainGroups = groupDomainConcepts(allConcepts);
 ---
 
 <Base title="概念图谱 — Walker">
@@ -77,7 +66,7 @@ allLog.forEach(entry => {
       </section>
 
       <!-- 领域概念 -->
-      {domainGroups.size > 0 && (
+      {domainGroups.length > 0 && (
         <section>
           <div class="flex items-center gap-4 mb-10">
             <h2 class="font-heading text-xl text-parchment tracking-wide">领域概念</h2>
@@ -85,7 +74,7 @@ allLog.forEach(entry => {
           </div>
 
           <div class="grid gap-8 md:grid-cols-2">
-            {[...domainGroups.entries()].map(([domain, concepts]) => (
+            {domainGroups.map(([domain, concepts]) => (
               <div>
                 <h3 class="font-heading text-sm text-mist tracking-wider uppercase mb-4">{domain}</h3>
                 <div class="grid gap-4">

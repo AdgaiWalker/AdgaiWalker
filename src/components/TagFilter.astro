@@ -2,20 +2,25 @@
 interface Props {
   tags: string[];
   activeTag?: string;
+  concepts?: {
+    id: string;
+    title: string;
+    symbol?: string;
+    contentCount: number;
+  }[];
+  activeConcept?: string;
 }
 
-const { tags, activeTag } = Astro.props;
+const { tags, activeTag, concepts = [], activeConcept } = Astro.props;
 ---
 <div class="mb-16 relative">
   <div class="flex flex-wrap gap-3 items-center justify-center">
     <a
       href="/log"
-      class:list={[
-        'no-underline font-heading text-sm tracking-wider px-4 py-1.5 rounded-full transition-all duration-300',
-        !activeTag
-          ? 'bg-gold/20 text-gold shadow-sm shadow-gold/20'
-          : 'text-mist-light/50 hover:text-parchment/70',
-      ]}
+      data-filter-link
+      data-filter-kind="clear"
+      data-active={String(!activeTag && !activeConcept)}
+      class="log-filter-clear no-underline font-heading text-sm tracking-wider px-4 py-1.5 rounded-full text-mist-light/50 hover:text-parchment/70 transition-all duration-300"
     >
       全部海域
     </a>
@@ -24,15 +29,15 @@ const { tags, activeTag } = Astro.props;
       <>
         <a
           href={`/log?tag=${encodeURIComponent(tag)}`}
+          data-filter-link
+          data-filter-kind="tag"
+          data-filter-value={tag}
+          data-active={String(activeTag === tag)}
           class:list={[
-            'no-underline font-heading text-sm tracking-wider px-3 py-1.5 rounded-full transition-all duration-300',
-            activeTag === tag
-              ? tag === '哲学'
-                ? 'bg-gold text-sea-deep shadow-sm shadow-gold/30'
-                : 'bg-parchment/10 text-parchment shadow-sm shadow-parchment/10'
-              : tag === '哲学'
-                ? 'text-gold/50 hover:text-gold hover:bg-gold/10'
-                : 'text-mist-light/40 hover:text-parchment/60 hover:bg-sea-light/20',
+            'log-filter-pill no-underline font-heading text-sm tracking-wider px-3 py-1.5 rounded-full transition-all duration-300',
+            tag === '哲学'
+              ? 'text-gold/50 hover:text-gold hover:bg-gold/10'
+              : 'text-mist-light/40 hover:text-parchment/60 hover:bg-sea-light/20',
           ]}
         >
           {tag}
@@ -41,4 +46,56 @@ const { tags, activeTag } = Astro.props;
       </>
     ))}
   </div>
+
+  {concepts.length > 0 && (
+    <div class="mt-8">
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="h-px w-10 bg-gold/10"></div>
+        <span class="text-xs text-mist/45 font-heading tracking-[0.2em] uppercase">按概念进入</span>
+        <div class="h-px w-10 bg-gold/10"></div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 items-center justify-center">
+        {concepts.map(concept => (
+          <a
+            href={`/log?concept=${encodeURIComponent(concept.id)}`}
+            data-filter-link
+            data-filter-kind="concept"
+            data-filter-value={concept.id}
+            data-filter-label={concept.title}
+            data-active={String(activeConcept === concept.id)}
+            class:list={[
+              'log-filter-pill log-filter-pill-concept no-underline text-xs px-3 py-1.5 rounded-full border transition-all duration-300',
+              'border-mist/10 text-parchment/40 hover:text-parchment/70 hover:border-gold/20 hover:bg-sea-light/15',
+            ]}
+          >
+            {concept.symbol && <span class="mr-1 text-gold/70">{concept.symbol}</span>}
+            {concept.title}
+            <span class="ml-1 text-mist/50">{concept.contentCount}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )}
 </div>
+
+<style>
+  .log-filter-clear[data-active='true'] {
+    background: color-mix(in srgb, var(--color-gold) 20%, transparent);
+    color: var(--color-gold);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--color-gold) 18%, transparent);
+  }
+
+  .log-filter-pill[data-active='true'] {
+    background: color-mix(in srgb, var(--color-parchment) 10%, transparent);
+    color: var(--color-parchment);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--color-parchment) 8%, transparent);
+  }
+
+  .log-filter-pill-concept[data-active='true'] {
+    border-color: color-mix(in srgb, var(--color-gold) 35%, transparent);
+    background: color-mix(in srgb, var(--color-gold) 15%, transparent);
+    color: var(--color-gold);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--color-gold) 10%, transparent);
+  }
+</style>

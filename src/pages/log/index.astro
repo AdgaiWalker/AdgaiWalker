@@ -2,20 +2,35 @@
 import Base from '../../layouts/Base.astro';
 import TagFilter from '../../components/TagFilter.astro';
 import TraceCard from '../../components/TraceCard.astro';
-import { getCollection } from 'astro:content';
+import { extractExcerpt } from '../../utils/excerpt';
+import {
+  buildConceptCounts,
+  getActiveConcepts,
+  getPublishedLogEntries,
+} from '../../utils/knowledge';
 
 const activeTag = Astro.url.searchParams.get('tag') ?? undefined;
+const activeConcept = Astro.url.searchParams.get('concept') ?? undefined;
 
-let allLogs = await getCollection('log', ({ data }) => data.published);
+const baseLogs = await getPublishedLogEntries();
+let allLogs = [...baseLogs];
 
-if (activeTag) {
-  allLogs = allLogs.filter(entry => entry.data.tags.includes(activeTag));
-}
+const allConcepts = await getActiveConcepts();
+const conceptCounts = buildConceptCounts(baseLogs);
+const conceptFilters = allConcepts
+  .map(concept => ({
+    id: concept.id,
+    title: concept.data.title,
+    symbol: concept.data.symbol,
+    contentCount: conceptCounts.get(concept.id) ?? 0,
+  }))
+  .filter(concept => concept.contentCount > 0)
+  .sort((a, b) => b.contentCount - a.contentCount);
 
-allLogs.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const activeConceptTitle = conceptFilters.find(concept => concept.id === activeConcept)?.title;
 
 const tagCount = new Map<string, number>();
-allLogs.forEach(entry => {
+baseLogs.forEach(entry => {
   entry.data.tags.forEach(tag => {
     tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
   });
@@ -49,7 +64,7 @@ for (const entry of allLogs) {
   periods[periods.length - 1].entries.push(entry);
 }
 ---
-<Base title={activeTag ? `${activeTag} — Walker 航海日志` : '航海日志 — Walker'}>
+<Base title={activeTag ? `${activeTag} — Walker 航海日志` : activeConceptTitle ? `${activeConceptTitle} — Walker 航海日志` : '航海日志 — Walker'}>
   <div class="relative">
     <!-- 深度渐变背景 -->
     <div class="fixed inset-0 pointer-events-none z-0"
@@ -60,21 +75,38 @@ for (const entry of allLogs) {
       <!-- 页面标题 -->
       <div class="mb-12">
         <h1 class="font-heading text-4xl md:text-5xl text-parchment tracking-wide">航海日志</h1>
-        <p class="mt-3 text-parchment/30 text-sm font-body">
-          {allLogs.length} 条记录，随时间漂流
+        <p
+          id="log-summary"
+          class="mt-3 text-parchment/30 text-sm font-body"
+          data-total={baseLogs.length}
+        >
+          {activeConceptTitle
+            ? `${allLogs.length} 条记录，连接到「${activeConceptTitle}」`
+            : activeTag
+              ? `${allLogs.length} 条记录，带有「${activeTag}」标签`
+              : `${allLogs.length} 条记录，随时间漂流`}
         </p>
         <div class="mt-4 w-16 h-px bg-gold/30"></div>
       </div>
 
       <!-- 星座式标签导航 -->
-      <TagFilter tags={allTags} activeTag={activeTag} />
+      <TagFilter
+        tags={allTags}
+        activeTag={activeTag}
+        concepts={conceptFilters}
+        activeConcept={activeConcept}
+      />
+
+      <p id="log-empty" class="hidden text-mist-light text-center py-20">
+        这片海域暂时没有符合条件的记录。
+      </p>
 
       <!-- 时间海域 -->
       {periods.length === 0 ? (
         <p class="text-mist-light text-center py-20">这片海域暂时没有记录。</p>
       ) : (
         periods.map(period => (
-          <section class="mb-16">
+          <section class="mb-16" data-log-period>
             <!-- 时间段标记 -->
             <div class="flex items-center gap-4 mb-8">
               <div class="w-1.5 h-1.5 rounded-full bg-gold/40"></div>
@@ -87,15 +119,22 @@ for (const entry of allLogs) {
             <!-- 瀑布流 -->
             <div class="columns-1 md:columns-2 lg:columns-3 gap-6">
               {period.entries.map(entry => (
-                <TraceCard
-                  title={entry.data.title}
-                  date={entry.data.date}
-                  tags={entry.data.tags}
-                  type={entry.data.type}
-                  slug={entry.id}
-                  cover={entry.data.cover}
-                  excerpt={entry.body ? entry.body.replace(/^import\s+.*$/gm, '').replace(/<[^>]+>/g, '').replace(/[#*_`\[\]()>|]/g, '').trim().slice(0, 150) + '...' : undefined}
-                />
+                <div
+                  class="break-inside-avoid"
+                  data-log-entry
+                  data-tags={JSON.stringify(entry.data.tags)}
+                  data-concepts={JSON.stringify(entry.data.concepts ?? [])}
+                >
+                  <TraceCard
+                    title={entry.data.title}
+                    date={entry.data.date}
+                    tags={entry.data.tags}
+                    type={entry.data.type}
+                    slug={entry.id}
+                    cover={entry.data.cover}
+                    excerpt={extractExcerpt(entry.body)}
+                  />
+                </div>
               ))}
             </div>
           </section>
@@ -114,5 +153,91 @@ for (const entry of allLogs) {
       )}
     </div>
   </div>
-  <script src="../../scripts/scroll-fade.ts"></script>
+
+  <script>
+    const summary = document.getElementById('log-summary');
+    const emptyState = document.getElementById('log-empty');
+    const entries = [...document.querySelectorAll<HTMLElement>('[data-log-entry]')];
+    const periods = [...document.querySelectorAll<HTMLElement>('[data-log-period]')];
+    const filterLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-filter-link]')];
+
+    function parseList(value: string | undefined) {
+      if (!value) return [];
+      try {
+        return JSON.parse(value) as string[];
+      } catch {
+        return [];
+      }
+    }
+
+    function getFilterFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        tag: params.get('tag'),
+        concept: params.get('concept'),
+      };
+    }
+
+    function setActiveLinks(tag: string | null, concept: string | null) {
+      for (const link of filterLinks) {
+        const kind = link.dataset.filterKind;
+        const value = link.dataset.filterValue ?? '';
+        const active =
+          (kind === 'clear' && !tag && !concept) ||
+          (kind === 'tag' && tag === value) ||
+          (kind === 'concept' && concept === value);
+        link.dataset.active = String(active);
+      }
+    }
+
+    function getConceptLabel(concept: string | null) {
+      if (!concept) return '';
+      return filterLinks.find(
+        link => link.dataset.filterKind === 'concept' && link.dataset.filterValue === concept
+      )?.dataset.filterLabel ?? concept;
+    }
+
+    function applyLogFilter() {
+      const { tag, concept } = getFilterFromUrl();
+      let visibleCount = 0;
+
+      for (const entry of entries) {
+        const tags = parseList(entry.dataset.tags);
+        const concepts = parseList(entry.dataset.concepts);
+        const visible = (!tag || tags.includes(tag)) && (!concept || concepts.includes(concept));
+        entry.hidden = !visible;
+        if (visible) visibleCount += 1;
+      }
+
+      for (const period of periods) {
+        period.hidden = !period.querySelector('[data-log-entry]:not([hidden])');
+      }
+
+      if (summary) {
+        const conceptLabel = getConceptLabel(concept);
+        summary.textContent = concept
+          ? `${visibleCount} 条记录，连接到「${conceptLabel}」`
+          : tag
+            ? `${visibleCount} 条记录，带有「${tag}」标签`
+            : `${summary.dataset.total ?? visibleCount} 条记录，随时间漂流`;
+      }
+
+      if (emptyState) {
+        emptyState.classList.toggle('hidden', visibleCount > 0);
+      }
+
+      setActiveLinks(tag, concept);
+    }
+
+    for (const link of filterLinks) {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        window.history.pushState({}, '', link.href);
+        applyLogFilter();
+      });
+    }
+
+    window.addEventListener('popstate', applyLogFilter);
+    applyLogFilter();
+  </script>
 </Base>

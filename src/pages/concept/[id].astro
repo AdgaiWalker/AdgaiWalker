@@ -2,10 +2,20 @@
 import Base from '../../layouts/Base.astro';
 import ConceptCard from '../../components/ConceptCard.astro';
 import TraceCard from '../../components/TraceCard.astro';
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
+import { extractExcerpt } from '../../utils/excerpt';
+import {
+  buildConceptCounts,
+  getActiveConcepts,
+  getConceptSummary,
+  getEntriesForConcept,
+  getPublishedLogEntries,
+  getRelatedConcepts,
+  groupEntriesByType,
+} from '../../utils/knowledge';
 
 export async function getStaticPaths() {
-  const concepts = await getCollection('concepts', ({ data }) => data.status === 'active');
+  const concepts = await getActiveConcepts();
   return concepts.map(concept => ({
     params: { id: concept.id },
     props: { concept },
@@ -15,31 +25,34 @@ export async function getStaticPaths() {
 const { concept } = Astro.props;
 const { Content } = await render(concept);
 
-const allLog = await getCollection('log', ({ data }) => data.published);
-const relatedEntries = allLog
-  .filter(e => e.data.concepts?.includes(concept.id))
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const allLog = await getPublishedLogEntries();
+const relatedEntries = getEntriesForConcept(concept.id, allLog);
+const relatedEntryGroups = groupEntriesByType(relatedEntries);
 
-const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
-const relatedConcepts = allConcepts.filter(c =>
-  concept.data.related.includes(c.id) && c.id !== concept.id
-);
+const allConcepts = await getActiveConcepts();
+const relatedConcepts = getRelatedConcepts(concept, allConcepts);
+const conceptCounts = buildConceptCounts(allLog);
+const conceptDescription = getConceptSummary(concept.body);
 
-const conceptCounts = new Map<string, number>();
-allLog.forEach(entry => {
-  entry.data.concepts?.forEach(id => {
-    conceptCounts.set(id, (conceptCounts.get(id) ?? 0) + 1);
-  });
-});
+const jsonLdData = {
+  type: 'concept' as const,
+  data: {
+    title: concept.data.title,
+    description: conceptDescription,
+    url: `/concept/${concept.id}`,
+    about: concept.data.domain,
+    relatedLinks: relatedConcepts.map(c => `/concept/${c.id}`),
+  },
+};
 ---
 
-<Base title={`${concept.data.title} — Walker`}>
+<Base title={`${concept.data.title} — Walker`} description={conceptDescription} jsonLd={jsonLdData}>
   <div class="relative">
     <div class="fixed inset-0 pointer-events-none z-0"
       style="background: linear-gradient(180deg, #132040 0%, #0a1628 30%, #060e1a 100%);">
     </div>
 
-    <div class="relative z-10 max-w-3xl mx-auto px-6 pt-28 pb-20">
+    <div class="relative z-10 max-w-3xl mx-auto px-6 pt-28 pb-20" data-pagefind-body>
       <header class="mb-12">
         <div class="flex items-center gap-4 mb-4">
           {concept.data.symbol && (
@@ -48,7 +61,7 @@ allLog.forEach(entry => {
             </div>
           )}
           <div>
-            <h1 class="font-heading text-3xl md:text-4xl text-parchment leading-tight">
+            <h1 class="font-heading text-3xl md:text-4xl text-parchment leading-tight" data-pagefind-meta="title">
               {concept.data.title}
             </h1>
             {concept.data.layer && (
@@ -99,23 +112,37 @@ allLog.forEach(entry => {
         </section>
       )}
 
-      {relatedEntries.length > 0 && (
+      {relatedEntryGroups.length > 0 && (
         <section class="mt-16">
           <div class="flex items-center gap-3 mb-6">
             <h2 class="font-heading text-lg text-parchment">关联内容</h2>
             <div class="flex-1 h-px bg-mist/10"></div>
           </div>
-          <div class="columns-1 md:columns-2 gap-6">
-            {relatedEntries.map(entry => (
-              <TraceCard
-                title={entry.data.title}
-                date={entry.data.date}
-                tags={entry.data.tags}
-                type={entry.data.type}
-                slug={entry.id}
-                cover={entry.data.cover}
-                excerpt={entry.body ? entry.body.replace(/^import\s+.*$/gm, '').replace(/<[^>]+>/g, '').replace(/[#*_`\[\]()>|]/g, '').trim().slice(0, 150) + '...' : undefined}
-              />
+
+          <div class="space-y-10">
+            {relatedEntryGroups.map(group => (
+              <div>
+                <div class="mb-4">
+                  <div class="flex items-baseline gap-3">
+                    <h3 class="font-heading text-base text-gold/80">{group.meta.label}</h3>
+                    <span class="text-xs text-mist/50">{group.entries.length} 条</span>
+                  </div>
+                  <p class="mt-1 text-xs text-parchment/35">{group.meta.description}</p>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                  {group.entries.map(entry => (
+                    <TraceCard
+                      title={entry.data.title}
+                      date={entry.data.date}
+                      tags={entry.data.tags}
+                      type={entry.data.type}
+                      slug={entry.id}
+                      cover={entry.data.cover}
+                      excerpt={extractExcerpt(entry.body)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>

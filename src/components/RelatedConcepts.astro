@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { getActiveConcepts } from '../utils/knowledge';
 
 interface Props {
   concepts: string[];
@@ -9,7 +9,7 @@ const { concepts } = Astro.props;
 
 if (!concepts || concepts.length === 0) return;
 
-const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
+const allConcepts = await getActiveConcepts();
 const matched = allConcepts.filter(c => concepts.includes(c.id));
 ---
 

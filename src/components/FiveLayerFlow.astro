@@ -1,32 +1,8 @@
 ---
-import { getCollection } from 'astro:content';
+import { getActiveConcepts, getConceptSummary, getLayerConcepts } from '../utils/knowledge';
 
-const allConcepts = await getCollection('concepts', ({ data }) => data.status === 'active');
-const allLogs = await getCollection('log', ({ data }) => data.published);
-
-const layerConcepts = allConcepts
-  .filter(c => c.data.layer !== undefined)
-  .sort((a, b) => (a.data.layer ?? 0) - (b.data.layer ?? 0));
-
-// Count related content for each concept
-const contentCounts = new Map<string, number>();
-for (const concept of layerConcepts) {
-  const count = allLogs.filter(log =>
-    log.data.concepts?.includes(concept.id)
-  ).length;
-  contentCounts.set(concept.id, count);
-}
-
-// Extract a one-line summary from body
-function getSummary(body: string | undefined): string {
-  if (!body) return '';
-  return body
-    .replace(/^---[\s\S]*?---/, '')
-    .replace(/[#*_`\[\]()>|]/g, '')
-    .trim()
-    .split('\n')
-    .find(l => l.trim().length > 10) || '';
-}
+const allConcepts = await getActiveConcepts();
+const layerConcepts = getLayerConcepts(allConcepts);
 ---
 
 <section class="max-w-5xl mx-auto px-6 py-20">
@@ -38,9 +14,8 @@ function getSummary(body: string | undefined): string {
   <!-- Horizontal flow (desktop) -->
   <div class="hidden md:flex items-stretch gap-0">
     {layerConcepts.map((concept, i) => {
-      const isFirst = i === 0;
       const isLast = i === layerConcepts.length - 1;
-      const summary = getSummary(concept.body);
+      const summary = getConceptSummary(concept.body);
       return (
         <div class="flex items-center flex-1">
           <a
@@ -89,7 +64,7 @@ function getSummary(body: string | undefined): string {
     {layerConcepts.map((concept, i) => {
       const isFirst = i === 0;
       const isLast = i === layerConcepts.length - 1;
-      const summary = getSummary(concept.body);
+      const summary = getConceptSummary(concept.body);
       return (
         <div>
           {!isFirst && (

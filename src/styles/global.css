@@ -57,18 +57,6 @@
   }
 }
 
-/* 卡片进入视口动画 */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* View Transitions */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
@@ -90,12 +78,6 @@
 
 /* 无障碍：减弱动效 */
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

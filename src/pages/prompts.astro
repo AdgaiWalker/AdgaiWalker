@@ -1,0 +1,150 @@
+---
+import Base from '../layouts/Base.astro';
+import PromptCard from '../components/PromptCard.astro';
+import { getActiveConcepts, getConceptSummary, getPublishedLogEntries } from '../utils/knowledge';
+import { buildPromptLibrary, groupPromptsByConcept } from '../utils/prompts';
+
+const allLogs = await getPublishedLogEntries();
+const allConcepts = await getActiveConcepts();
+const prompts = buildPromptLibrary(allLogs);
+const groups = groupPromptsByConcept(prompts, allConcepts);
+const conceptMap = new Map(allConcepts.map(concept => [concept.id, concept]));
+
+function getConceptLinks(conceptIds: string[]) {
+  return conceptIds
+    .map(id => conceptMap.get(id))
+    .filter(Boolean)
+    .map(concept => ({
+      id: concept!.id,
+      title: concept!.data.title,
+      symbol: concept!.data.symbol,
+    }));
+}
+---
+
+<Base
+  title="提示词库 — Walker"
+  description="Walker 知识空间中可复用的提示词、工作流和意图表达。"
+>
+  <div class="relative">
+    <div class="fixed inset-0 pointer-events-none z-0"
+      style="background:
+        radial-gradient(circle at 18% 16%, rgba(212,175,55,0.14), transparent 28%),
+        radial-gradient(circle at 78% 10%, rgba(156,163,175,0.08), transparent 24%),
+        linear-gradient(180deg, #132040 0%, #0a1628 32%, #060e1a 100%);">
+    </div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-24" data-pagefind-body>
+      <header class="mb-14 grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+        <div>
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-gold/15 bg-gold/5 px-3 py-1 text-xs text-gold/60">
+            <span class="h-1.5 w-1.5 rounded-full bg-gold/60"></span>
+            可复制的意图模块
+          </div>
+
+          <h1 class="font-heading text-4xl md:text-6xl text-parchment tracking-wide" data-pagefind-meta="title">
+            提示词库
+          </h1>
+
+          <p class="mt-5 max-w-2xl text-parchment/48 leading-relaxed">
+            这里收集的不是“咒语”，而是可复用的判断结构：场景、边界、输出要求和验证标准。提示词归属到概念，因为真正可迁移的是背后的思维框架。
+          </p>
+        </div>
+
+        <aside class="rounded-2xl border border-mist/10 bg-sea-mid/25 p-5">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div class="font-heading text-3xl text-gold">{prompts.length}</div>
+              <div class="mt-1 text-xs text-mist-light/45">提示词</div>
+            </div>
+            <div>
+              <div class="font-heading text-3xl text-parchment/80">{groups.length}</div>
+              <div class="mt-1 text-xs text-mist-light/45">概念组</div>
+            </div>
+            <div>
+              <div class="font-heading text-3xl text-parchment/80">
+                {new Set(prompts.flatMap(prompt => prompt.tags)).size}
+              </div>
+              <div class="mt-1 text-xs text-mist-light/45">场景标签</div>
+            </div>
+          </div>
+        </aside>
+      </header>
+
+      {prompts.length === 0 ? (
+        <div class="rounded-2xl border border-mist/10 bg-sea-mid/20 px-6 py-16 text-center">
+          <p class="text-parchment/50">还没有公开提示词。给内容添加 <code class="text-gold">&lt;PromptBlock&gt;</code> 后会自动出现在这里。</p>
+        </div>
+      ) : (
+        <div class="space-y-16">
+          {groups.map(group => (
+            <section>
+              <div class="mb-6 flex items-start gap-4">
+                <div class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/25 bg-gold/5 font-heading text-gold/70">
+                  {group.concept?.data.symbol || '·'}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-baseline gap-3">
+                    <h2 class="font-heading text-2xl text-parchment">
+                      {group.concept?.data.title ?? '未关联概念'}
+                    </h2>
+                    <span class="text-xs text-mist/55">{group.prompts.length} 条</span>
+                    {group.concept?.data.layer && (
+                      <a href={`/concept/${group.concept.id}`} class="text-xs text-gold/55 no-underline hover:text-gold">
+                        五层逻辑 · 第 {group.concept.data.layer} 层
+                      </a>
+                    )}
+                  </div>
+                  {group.concept && (
+                    <p class="mt-2 max-w-2xl text-sm leading-relaxed text-parchment/38">
+                      {getConceptSummary(group.concept.body)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div class="grid gap-5 lg:grid-cols-2">
+                {group.prompts.map(prompt => (
+                  <PromptCard
+                    prompt={prompt}
+                    concepts={getConceptLinks([...new Set([
+                      group.id !== 'uncategorized' ? group.id : '',
+                      ...prompt.concepts,
+                    ].filter(Boolean))])}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('[data-prompt-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const card = button.closest('.prompt-card');
+        const content = card?.querySelector('.prompt-card-content')?.textContent?.trim();
+        if (!content) return;
+
+        const originalText = button.textContent ?? '复制';
+
+        try {
+          await navigator.clipboard.writeText(content);
+          button.textContent = '已复制';
+          button.dataset.copied = 'true';
+          setTimeout(() => {
+            button.textContent = originalText;
+            delete button.dataset.copied;
+          }, 1800);
+        } catch {
+          button.textContent = '复制失败';
+          setTimeout(() => {
+            button.textContent = originalText;
+          }, 1800);
+        }
+      });
+    });
+  </script>
+</Base>

@@ -4,7 +4,6 @@ date: 2026-04-20
 tags: [旅行, 摄影]
 type: photo
 published: true
-cover: /images/huangshan-cover.jpg
 ---
 
 四月的黄山，云海翻涌如同一片白色的海。

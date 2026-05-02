@@ -14,7 +14,7 @@
 
   <noscript>
     <img
-      src="/video/hero-fallback.jpg"
+      src="/images/hero-bg.png"
       alt="孤帆在夜海中航行"
       class="absolute inset-0 w-full h-full object-cover"
     />
@@ -39,7 +39,7 @@
   if (video) {
     video.addEventListener('error', () => {
       const fallback = document.createElement('img');
-      fallback.src = '/video/hero-fallback.jpg';
+      fallback.src = '/images/hero-bg.png';
       fallback.alt = '孤帆在夜海中航行';
       fallback.className = 'absolute inset-0 w-full h-full object-cover';
       video.parentElement?.appendChild(fallback);
