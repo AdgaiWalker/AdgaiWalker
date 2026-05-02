@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
+import react from '@astrojs/react';
 import remarkDialogueCallouts from './src/plugins/remark-dialogue-callouts.mjs';
 
 export default defineConfig({
@@ -10,6 +11,7 @@ export default defineConfig({
     mdx({
       remarkPlugins: [remarkDialogueCallouts],
     }),
+    react(),
   ],
   vite: {
     plugins: [tailwindcss()],

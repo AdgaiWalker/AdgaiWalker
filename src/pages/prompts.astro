@@ -121,30 +121,4 @@ function getConceptLinks(conceptIds: string[]) {
     </div>
   </div>
 
-  <script>
-    document.querySelectorAll<HTMLButtonElement>('[data-prompt-copy]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const card = button.closest('.prompt-card');
-        const content = card?.querySelector('.prompt-card-content')?.textContent?.trim();
-        if (!content) return;
-
-        const originalText = button.textContent ?? '复制';
-
-        try {
-          await navigator.clipboard.writeText(content);
-          button.textContent = '已复制';
-          button.dataset.copied = 'true';
-          setTimeout(() => {
-            button.textContent = originalText;
-            delete button.dataset.copied;
-          }, 1800);
-        } catch {
-          button.textContent = '复制失败';
-          setTimeout(() => {
-            button.textContent = originalText;
-          }, 1800);
-        }
-      });
-    });
-  </script>
 </Base>
