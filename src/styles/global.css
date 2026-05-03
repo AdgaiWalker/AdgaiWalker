@@ -1,23 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  /* 海洋深蓝配色 */
-  --color-sea-deep: #0a1628;
-  --color-sea-mid: #132040;
-  --color-sea-light: #1a2d52;
+  /* 明亮基础色 */
+  --color-bg: oklch(98% 0.005 80);
+  --color-bg-subtle: oklch(96% 0.005 80);
+  --color-text: oklch(15% 0.02 60);
+  --color-text-muted: oklch(55% 0.01 60);
+  --color-border: oklch(92% 0.005 80);
 
-  /* 金色 */
-  --color-gold: #d4af37;
-  --color-gold-dim: #a88a2a;
-  --color-gold-glow: #e8c84a;
+  /* Walker 金 */
+  --color-gold: oklch(78% 0.12 85);
+  --color-gold-dim: oklch(65% 0.10 85);
+  --color-gold-glow: oklch(85% 0.14 85);
 
-  /* 迷雾灰 */
-  --color-mist: #4a5568;
-  --color-mist-light: #9ca3af;
-
-  /* 羊皮纸色 */
-  --color-parchment: #f0ead6;
-  --color-parchment-dim: #c9c3b1;
+  /* 向后兼容别名 */
+  --color-sea-deep: oklch(98% 0.005 80);
+  --color-sea-mid: oklch(96% 0.005 80);
+  --color-sea-light: oklch(94% 0.005 80);
+  --color-parchment: oklch(15% 0.02 60);
+  --color-parchment-dim: oklch(40% 0.01 60);
+  --color-mist: oklch(55% 0.01 60);
+  --color-mist-light: oklch(70% 0.01 60);
 
   /* 字体 */
   --font-heading: Sora, system-ui, sans-serif;
@@ -43,17 +46,7 @@
   }
 
   ::selection {
-    @apply bg-gold/30 text-parchment;
-  }
-}
-
-/* 水波过渡动画 */
-@keyframes ripple-in {
-  from {
-    clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%));
-  }
-  to {
-    clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+    @apply bg-gold/30 text-sea-deep;
   }
 }
 
@@ -76,7 +69,6 @@
   animation: fade-in 0.3s ease-out;
 }
 
-/* 无障碍：减弱动效 */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
