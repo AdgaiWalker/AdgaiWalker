@@ -7,6 +7,7 @@ import DialogueTemplate from '../../components/templates/DialogueTemplate.astro'
 import RecipeTemplate from '../../components/templates/RecipeTemplate.astro';
 import ThoughtTemplate from '../../components/templates/ThoughtTemplate.astro';
 import ProjectTemplate from '../../components/templates/ProjectTemplate.astro';
+import { ArrowLeft } from 'lucide-astro';
 import { getCollection, render } from 'astro:content';
 import { extractExcerpt } from '../../utils/excerpt';
 
@@ -28,16 +29,7 @@ const { Content } = await render(entry);
 const components = { PromptBlock, DialogueBubble };
 
 const rawBody = entry.body || '';
-const description = (extractExcerpt(rawBody, 160) || '').replace(/\.\.\.$/, '');
-
-const jsonLdData = {
-  type: 'content' as const,
-  data: {
-    title: entry.data.title,
-    date: entry.data.date.toISOString().split('T')[0],
-    concepts: entry.data.concepts || [],
-  },
-};
+const description = (extractExcerpt(rawBody, 160) || '').replace(/\.$/, '');
 
 const templates: Record<string, any> = {
   article: ArticleTemplate,
@@ -55,6 +47,32 @@ const templates: Record<string, any> = {
 const Template = templates[entry.data.type] || ArticleTemplate;
 ---
 
-<Base title={`${entry.data.title} — Walker`} description={description} jsonLd={jsonLdData}>
-  <Template entry={entry} Content={Content} components={components} />
+<Base title={`${entry.data.title} — Walker`} description={description}>
+  <div class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+    <!-- 返回按钮 -->
+    <a
+      href="/"
+      class="inline-flex items-center gap-1.5 text-text-muted text-sm hover:text-gold transition-colors no-underline mb-8"
+    >
+      <ArrowLeft class="w-4 h-4" strokeWidth={1.8} />
+      返回
+    </a>
+
+    <!-- 内容模板 -->
+    <Template entry={entry} Content={Content} components={components} />
+
+    <!-- 关联主题 -->
+    {entry.data.tags && entry.data.tags.length > 0 && (
+      <div class="mt-12 pt-8 border-t border-border">
+        <p class="text-text-muted text-xs font-heading mb-3">关联主题</p>
+        <div class="flex flex-wrap gap-2">
+          {entry.data.tags.map((tag: string) => (
+            <span class="text-sm px-3 py-1 rounded-full border border-border text-text-muted">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
 </Base>

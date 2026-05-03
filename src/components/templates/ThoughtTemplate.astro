@@ -16,25 +16,19 @@ const formatDate = (d: Date) =>
 <article class="max-w-2xl mx-auto px-6 pt-28 pb-20" data-pagefind-body>
   <header class="mb-10">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-1.5 h-1.5 rounded-full bg-mist/60"></div>
-      <time class="text-mist text-xs font-mono">{formatDate(entry.data.date)}</time>
+      <div class="w-1.5 h-1.5 rounded-full bg-text-muted"></div>
+      <time class="text-text-muted text-xs font-mono">{formatDate(entry.data.date)}</time>
     </div>
     {entry.data.title !== '无题' && (
-      <h1 class="font-heading text-2xl md:text-3xl text-parchment leading-tight" data-pagefind-meta="title">
+      <h1 class="font-heading text-2xl md:text-3xl text-text leading-tight" data-pagefind-meta="title">
         {entry.data.title}
       </h1>
     )}
   </header>
 
-  <div class="text-parchment/80 text-lg italic leading-relaxed">
+  <div class="text-text/80 text-lg italic leading-relaxed">
     <Content components={components} />
   </div>
 
   <RelatedConcepts concepts={entry.data.concepts || []} />
-
-  <footer class="mt-16 pt-8 border-t border-mist/20">
-    <a href="/log" class="text-gold font-heading text-sm tracking-wider hover:text-gold-glow transition-colors no-underline">
-      ← 返回航海日志
-    </a>
-  </footer>
 </article>

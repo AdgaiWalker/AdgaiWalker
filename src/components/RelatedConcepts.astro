@@ -14,25 +14,24 @@ const matched = allConcepts.filter(c => concepts.includes(c.id));
 ---
 
 {matched.length > 0 && (
-  <div class="mt-12 pt-8 border-t border-mist/15">
+  <div class="mt-12 pt-8 border-t border-border">
     <div class="flex items-center gap-3 mb-4">
-      <span class="text-mist/50 text-xs font-heading tracking-wider uppercase">关联概念</span>
-      <div class="flex-1 h-px bg-mist/10"></div>
+      <span class="text-text-muted text-xs font-heading tracking-wider uppercase">关联概念</span>
+      <div class="flex-1 h-px bg-border"></div>
     </div>
     <div class="flex flex-wrap gap-2">
       {matched.map(c => (
-        <a
-          href={`/concept/${c.id}`}
+        <span
           class:list={[
-            'no-underline text-sm px-3 py-1.5 rounded-lg transition-colors',
+            'text-sm px-3 py-1.5 rounded-lg border',
             c.data.layer
-              ? 'bg-gold/10 text-gold/70 border border-gold/20 hover:bg-gold/20'
-              : 'bg-sea-light/20 text-parchment/60 border border-mist/10 hover:bg-sea-light/30',
+              ? 'bg-gold/10 text-gold/70 border-gold/20'
+              : 'bg-bg-subtle text-text-muted border-border',
           ]}
         >
           {c.data.symbol && <span class="mr-1">{c.data.symbol}</span>}
           {c.data.title}
-        </a>
+        </span>
       ))}
     </div>
   </div>

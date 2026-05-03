@@ -18,30 +18,30 @@ const formatDate = (d: Date) =>
     <div class="flex items-center gap-3 mb-4 flex-wrap">
       <div class="flex gap-1">
         <div class="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-[8px] text-gold font-heading">W</div>
-        <div class="w-5 h-5 rounded-full bg-sea-light/40 flex items-center justify-center text-[8px] text-parchment/50 font-heading">AI</div>
+        <div class="w-5 h-5 rounded-full bg-bg-subtle flex items-center justify-center text-[8px] text-text-muted font-heading">AI</div>
       </div>
-      <span class="text-mist-light/40 text-xs font-heading tracking-wider">对话</span>
-      <time class="text-mist-light text-sm font-mono">{formatDate(entry.data.date)}</time>
+      <span class="text-text-muted/40 text-xs font-heading tracking-wider">对话</span>
+      <time class="text-text-muted text-sm font-mono">{formatDate(entry.data.date)}</time>
     </div>
-    <h1 class="font-heading text-3xl md:text-4xl text-parchment leading-tight" data-pagefind-meta="title">
+    <h1 class="font-heading text-3xl md:text-4xl text-text leading-tight" data-pagefind-meta="title">
       {entry.data.title}
     </h1>
   </header>
 
-  <div class="prose prose-invert max-w-none
-              prose-headings:font-heading prose-headings:text-parchment
-              prose-p:text-parchment prose-p:leading-relaxed
+  <div class="prose max-w-none
+              prose-headings:font-heading prose-headings:text-text
+              prose-p:text-text prose-p:leading-relaxed
               prose-a:text-gold prose-a:no-underline hover:prose-a:text-gold-glow
-              prose-code:text-gold prose-code:bg-sea-deep prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
-              prose-blockquote:border-gold/40 prose-blockquote:text-parchment/70
-              prose-img:rounded-lg prose-hr:border-mist/20 prose-strong:text-parchment
-              prose-li:text-parchment/85">
+              prose-code:text-text prose-code:bg-bg-subtle prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+              prose-blockquote:border-gold/40 prose-blockquote:text-text/70
+              prose-img:rounded-lg prose-hr:border-border prose-strong:text-text
+              prose-li:text-text/85">
     <Content components={components} />
   </div>
 
   {entry.data.source && (
-    <div class="mt-8 px-4 py-3 rounded-lg bg-sea-mid/30 border border-mist/10">
-      <span class="text-mist/50 text-xs">原始对话：</span>
+    <div class="mt-8 px-4 py-3 rounded-lg bg-bg-subtle border border-border">
+      <span class="text-text-muted/50 text-xs">原始对话：</span>
       <a href={entry.data.source} class="text-gold/70 text-xs hover:text-gold transition-colors no-underline" target="_blank" rel="noopener">
         {entry.data.source}
       </a>
@@ -49,12 +49,6 @@ const formatDate = (d: Date) =>
   )}
 
   <RelatedConcepts concepts={entry.data.concepts || []} />
-
-  <footer class="mt-16 pt-8 border-t border-mist/20">
-    <a href="/log" class="text-gold font-heading text-sm tracking-wider hover:text-gold-glow transition-colors no-underline">
-      ← 返回航海日志
-    </a>
-  </footer>
 </article>
 
 <style is:global>
@@ -64,9 +58,9 @@ const formatDate = (d: Date) =>
     width: min(84%, 42rem);
     border-radius: 1rem;
     padding: 1rem 1.15rem;
-    border: 1px solid color-mix(in srgb, var(--color-mist) 16%, transparent);
-    background: color-mix(in srgb, var(--color-sea-mid) 58%, transparent);
-    color: color-mix(in srgb, var(--color-parchment) 86%, transparent);
+    border: 1px solid oklch(92% 0.005 80);
+    background: oklch(96% 0.005 80);
+    color: oklch(15% 0.02 60);
   }
 
   .dialogue-callout::before {
@@ -76,18 +70,18 @@ const formatDate = (d: Date) =>
     font-family: var(--font-heading);
     font-size: 0.68rem;
     letter-spacing: 0.08em;
-    color: color-mix(in srgb, var(--color-mist-light) 58%, transparent);
+    color: oklch(55% 0.01 60);
   }
 
   .dialogue-callout-human {
     margin-right: auto;
     border-top-left-radius: 0.25rem;
-    border-color: color-mix(in srgb, var(--color-gold) 16%, transparent);
-    background: color-mix(in srgb, var(--color-gold) 10%, transparent);
+    border-color: oklch(78% 0.12 85 / 0.3);
+    background: oklch(78% 0.12 85 / 0.1);
   }
 
   .dialogue-callout-human::before {
-    color: color-mix(in srgb, var(--color-gold) 62%, transparent);
+    color: oklch(78% 0.12 85 / 0.8);
   }
 
   .dialogue-callout-ai {
