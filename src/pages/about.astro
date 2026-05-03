@@ -1,0 +1,111 @@
+---
+import Base from '../layouts/Base.astro';
+import { Github, Mail } from 'lucide-astro';
+import {
+  getActiveConcepts,
+  getLayerConcepts,
+  buildConceptCounts,
+  getPublishedLogEntries,
+} from '../utils/knowledge';
+
+const allConcepts = await getActiveConcepts();
+const allLog = await getPublishedLogEntries();
+const conceptCounts = buildConceptCounts(allLog);
+const layerConcepts = getLayerConcepts(allConcepts);
+const domainConcepts = allConcepts.filter(c => c.data.layer === undefined);
+---
+
+<Base title="关于 — Walker">
+  <div class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+    <!-- 视频 -->
+    <div class="relative rounded-xl overflow-hidden mb-12 aspect-video bg-bg-subtle">
+      <video
+        autoplay
+        muted
+        loop
+        playsinline
+        class="w-full h-full object-cover"
+      >
+        <source src="/video/hero.mp4" type="video/mp4" />
+      </video>
+      <noscript>
+        <img src="/images/hero-bg.png" alt="Walker" class="w-full h-full object-cover" />
+      </noscript>
+    </div>
+
+    <!-- 自我介绍 -->
+    <div class="mb-12">
+      <h1 class="font-heading text-2xl font-semibold text-text mb-3">嗯，我是 Walker</h1>
+      <p class="text-text-muted text-base leading-relaxed mb-6">
+        在 AI 时代做更少但更好的事。写代码、做饭、拍照、思考哲学、在路上。
+      </p>
+
+      <div class="flex items-center gap-4">
+        <a
+          href="https://github.com/AdgaiWalker"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-text-muted hover:text-gold transition-colors no-underline"
+        >
+          <Github class="w-5 h-5" strokeWidth={1.8} />
+        </a>
+        <a
+          href="mailto:walker@example.com"
+          class="text-text-muted hover:text-gold transition-colors no-underline"
+        >
+          <Mail class="w-5 h-5" strokeWidth={1.8} />
+        </a>
+      </div>
+    </div>
+
+    <!-- 五层逻辑 -->
+    <div class="mb-12">
+      <h2 class="font-heading text-lg text-text mb-6">我怎么思考</h2>
+      <div class="space-y-0">
+        {layerConcepts.map((concept, i) => (
+          <div class="flex items-stretch gap-4">
+            <div class="flex flex-col items-center">
+              <div class="w-8 h-8 rounded-full border border-gold/40 flex items-center justify-center text-gold/70 text-xs font-heading">
+                {concept.data.symbol}
+              </div>
+              {i < layerConcepts.length - 1 && (
+                <div class="flex-1 w-px bg-border my-1"></div>
+              )}
+            </div>
+            <div class="flex-1 py-2">
+              <h3 class="font-heading text-sm text-text">{concept.data.title}</h3>
+              <p class="text-text-muted text-xs mt-0.5">
+                {conceptCounts.get(concept.id) ?? 0} 篇相关内容
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- 概念 -->
+    <div>
+      <h2 class="font-heading text-lg text-text mb-4">概念</h2>
+      <div class="flex flex-wrap gap-2">
+        {domainConcepts.map(concept => (
+          <span class="text-sm px-3 py-1 rounded-full border border-border text-text-muted">
+            {concept.data.title}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.querySelector('video');
+    if (video) {
+      video.addEventListener('error', () => {
+        const img = document.createElement('img');
+        img.src = '/images/hero-bg.png';
+        img.alt = 'Walker';
+        img.className = 'w-full h-full object-cover';
+        video.parentElement?.replaceChild(img, video);
+      });
+    }
+  </script>
+</Base>
