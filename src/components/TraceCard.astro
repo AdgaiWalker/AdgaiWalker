@@ -12,7 +12,7 @@ interface Props {
   link?: string;
 }
 
-const { title, date, tags, type, slug, link } = Astro.props;
+const { title, date, type, slug, link } = Astro.props;
 
 const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
