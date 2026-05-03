@@ -14,10 +14,11 @@ interface Props {
 
 const {
   title = 'Walker',
-  description = '行过万里水路，记录每一次停靠',
+  description = '用 AI 做更少但更好的事',
   jsonLd,
 } = Astro.props;
 ---
+
 <!doctype html>
 <html lang="zh-CN">
   <head>
@@ -38,7 +39,7 @@ const {
   </head>
   <body class="min-h-screen flex flex-col">
     <Navigation />
-    <main class="flex-1">
+    <main class="flex-1 pt-14">
       <slot />
     </main>
     <Footer />
