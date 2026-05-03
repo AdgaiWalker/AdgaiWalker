@@ -1,15 +1,150 @@
 ---
 import Base from '../layouts/Base.astro';
-import HeroVideo from '../components/HeroVideo.astro';
-import KnowledgeGraph from '../components/KnowledgeGraph.astro';
-import FiveLayerFlow from '../components/FiveLayerFlow.astro';
-import RecentTraces from '../components/RecentTraces.astro';
-import HarborAbout from '../components/HarborAbout.astro';
+import TraceCard from '../components/TraceCard.astro';
+import { Lightbulb, Shuffle } from 'lucide-astro';
+import { extractExcerpt } from '../utils/excerpt';
+import { getPublishedLogEntries } from '../utils/knowledge';
+
+const allLogs = await getPublishedLogEntries();
+const recentLogs = allLogs.slice(0, 8);
+
+const tagCount = new Map<string, number>();
+allLogs.forEach(entry => {
+  entry.data.tags.forEach(tag => {
+    tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+  });
+});
+const allTags = [...tagCount.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .map(([tag]) => tag);
 ---
-<Base title="Walker — 行过万里水路">
-  <HeroVideo />
-  <KnowledgeGraph />
-  <FiveLayerFlow />
-  <RecentTraces limit={3} />
-  <HarborAbout />
+
+<Base title="Walker — 用 AI 做更少但更好的事">
+  <div class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+    <!-- 标题区 -->
+    <div class="mb-12">
+      <h1 class="font-heading text-2xl font-semibold text-text mb-2">Walker</h1>
+      <p class="text-text-muted text-base">用 AI 做更少但更好的事</p>
+    </div>
+
+    <!-- 主题标签 -->
+    <div class="flex flex-wrap gap-2 mb-8" id="topic-filter">
+      <button
+        data-topic="all"
+        class="topic-pill active font-heading text-sm px-3 py-1 rounded-full border border-border text-text-muted hover:text-text hover:border-gold/30 transition-all no-underline"
+      >
+        全部
+      </button>
+      {allTags.map(tag => (
+        <button
+          data-topic={tag}
+          class="topic-pill font-heading text-sm px-3 py-1 rounded-full border border-border text-text-muted hover:text-text hover:border-gold/30 transition-all no-underline"
+        >
+          {tag}
+        </button>
+      ))}
+    </div>
+
+    <!-- 内容列表 -->
+    <div id="content-list" class="divide-y divide-border">
+      {recentLogs.map(entry => (
+        <div data-log-entry data-tags={JSON.stringify(entry.data.tags)}>
+          <TraceCard
+            title={entry.data.title}
+            date={entry.data.date}
+            tags={entry.data.tags}
+            type={entry.data.type}
+            slug={entry.id}
+            cover={entry.data.cover}
+            excerpt={extractExcerpt(entry.body)}
+            link={entry.data.link}
+          />
+        </div>
+      ))}
+    </div>
+
+    {recentLogs.length === 0 && (
+      <p class="text-text-muted text-center py-12">还没有内容，敬请期待。</p>
+    )}
+
+    <!-- 底部操作 -->
+    <div class="mt-12 flex items-center justify-between">
+      <a
+        href="#suggestion"
+        class="inline-flex items-center gap-2 text-text-muted text-sm hover:text-gold transition-colors no-underline"
+      >
+        <Lightbulb class="w-4 h-4" strokeWidth={1.8} />
+        建议箱
+      </a>
+      <a
+        href="#"
+        id="random-btn"
+        class="inline-flex items-center gap-2 text-text-muted text-sm hover:text-gold transition-colors no-underline"
+      >
+        <Shuffle class="w-4 h-4" strokeWidth={1.8} />
+        随便看看
+      </a>
+    </div>
+
+    <!-- 建议箱 -->
+    <div id="suggestion" class="mt-16 pt-8 border-t border-border">
+      <h2 class="font-heading text-lg text-text mb-4">想看什么话题？</h2>
+      <form class="flex gap-3" action="https://formspree.io/f/xxx" method="POST">
+        <input
+          type="text"
+          name="suggestion"
+          placeholder="比如：怎么用 AI 做 PPT"
+          class="flex-1 px-4 py-2 rounded-lg border border-border bg-bg text-text text-sm placeholder:text-text-muted/50 focus:outline-none focus:border-gold/50"
+        />
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-lg bg-gold text-sea-deep text-sm font-heading hover:bg-gold-glow transition-colors"
+        >
+          提交
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .topic-pill.active {
+      background: oklch(78% 0.12 85);
+      color: oklch(15% 0.02 60);
+      border-color: oklch(78% 0.12 85);
+    }
+  </style>
+
+  <script>
+    const filter = document.getElementById('topic-filter');
+    const entries = document.querySelectorAll('[data-log-entry]');
+
+    filter?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('[data-topic]');
+      if (!btn) return;
+
+      const topic = btn.getAttribute('data-topic');
+
+      document.querySelectorAll('.topic-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+
+      entries.forEach(entry => {
+        const el = entry as HTMLElement;
+        if (topic === 'all') {
+          el.hidden = false;
+          return;
+        }
+        const tags = JSON.parse(el.dataset.tags || '[]');
+        el.hidden = !tags.includes(topic);
+      });
+    });
+
+    document.getElementById('random-btn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      const visible = [...entries].filter(el => !(el as HTMLElement).hidden);
+      if (visible.length === 0) return;
+      const pick = visible[Math.floor(Math.random() * visible.length)];
+      const link = pick.querySelector('a');
+      if (link) link.click();
+    });
+  </script>
 </Base>
