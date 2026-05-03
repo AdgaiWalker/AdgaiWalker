@@ -67,12 +67,25 @@ export interface ConceptGraphNode {
   domain: string[];
   layer: number | null;
   contentCount: number;
+  isJudgmentCore: boolean;
 }
 
 export interface ConceptGraphLink {
   source: string;
   target: string;
 }
+
+const judgmentCoreConceptIds = new Set([
+  'happiness',
+  'safety',
+  'quality',
+  'efficiency',
+  'life-return',
+  'ai-boundary',
+  'problem-definition',
+  'information-flow',
+  'creative-leverage',
+]);
 
 export async function getActiveConcepts() {
   return getCollection('concepts', ({ data }) => data.status === 'active');
@@ -167,6 +180,7 @@ export function buildConceptGraph(concepts: ConceptEntry[], entries: LogEntry[])
     domain: concept.data.domain,
     layer: concept.data.layer ?? null,
     contentCount: counts.get(concept.id) ?? 0,
+    isJudgmentCore: judgmentCoreConceptIds.has(concept.id),
   }));
 
   const links: ConceptGraphLink[] = [...linkKeys].map((key) => {

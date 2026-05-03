@@ -4,7 +4,17 @@ date: 2026-04-15
 tags: [设计]
 type: article
 published: true
-concepts: [design, subtraction]
+concepts: [design, subtraction, quality]
+problem: 如何用留白和克制提高页面阅读质量？
+audience: [个人网站作者, 设计学习者]
+tools: [设计原则检查]
+sources: []
+score:
+  safety: 高
+  quality: 高
+  efficiency: 中
+  lifeReturn: 一般
+verdict: 适合作为个人网站视觉减法的基础原则，能减少装饰冲动，让内容获得更稳定的阅读节奏。
 ---
 
 ## 一个实验

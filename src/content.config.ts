@@ -30,6 +30,18 @@ const log = defineCollection({
     link: z.string().optional(),
     source: z.string().optional(),
     concepts: z.array(z.string()).default([]),
+    problem: z.string().optional(),
+    audience: z.array(z.string()).default([]),
+    assets: z.array(z.string()).default([]),
+    tools: z.array(z.string()).default([]),
+    sources: z.array(z.string()).default([]),
+    score: z.object({
+      safety: z.enum(['高', '中', '低']).optional(),
+      quality: z.enum(['高', '中', '低']).optional(),
+      efficiency: z.enum(['高', '中', '低']).optional(),
+      lifeReturn: z.enum(['明显', '一般', '不明显']).optional(),
+    }).optional(),
+    verdict: z.string().optional(),
   }),
 });
 

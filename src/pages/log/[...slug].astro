@@ -1,7 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import PromptBlock from '../../components/PromptBlock.astro';
-import DialogueBubble from '../../components/DialogueBubble.astro';
 import ArticleTemplate from '../../components/templates/ArticleTemplate.astro';
 import DialogueTemplate from '../../components/templates/DialogueTemplate.astro';
 import RecipeTemplate from '../../components/templates/RecipeTemplate.astro';
@@ -26,6 +24,9 @@ if (!entry) {
 }
 
 const { Content } = await render(entry);
+import PromptBlock from '../../components/PromptBlock.astro';
+import DialogueBubble from '../../components/DialogueBubble.astro';
+
 const components = { PromptBlock, DialogueBubble };
 
 const rawBody = entry.body || '';
