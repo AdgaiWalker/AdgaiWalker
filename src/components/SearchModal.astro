@@ -138,11 +138,12 @@ const { iconOnly = false } = Astro.props;
     document.head.appendChild(script);
   }
 
-  const origOpen = openSearch;
-  openSearch = function() {
-    origOpen();
+  const openSearchWithIndex = () => {
+    openSearch();
     loadPagefind();
   };
+  openBtn?.removeEventListener('click', openSearch);
+  openBtn?.addEventListener('click', openSearchWithIndex);
 
   let debounceTimer: ReturnType<typeof setTimeout>;
   input?.addEventListener('input', () => {

@@ -3,6 +3,8 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import DockItemCard from '../components/DockItemCard.astro';
 
+export const prerender = true;
+
 const allItems = await getCollection('dockItem', ({ data }) => data.published);
 
 const categoryLabels: Record<string, string> = {

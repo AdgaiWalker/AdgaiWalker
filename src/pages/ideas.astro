@@ -3,6 +3,8 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import IdeaCard from '../components/IdeaCard.astro';
 
+export const prerender = true;
+
 const allIdeas = (await getCollection('idea', ({ data }) => data.published))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 

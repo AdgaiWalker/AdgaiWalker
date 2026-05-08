@@ -7,6 +7,10 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  canonicalUrl?: string;
   pureMode?: boolean;
   theme?: 'nature' | 'blue' | 'emerald' | 'charcoal';
 }
@@ -14,6 +18,10 @@ interface Props {
 const {
   title = 'Walker — 行过万里水路',
   description = 'Walker 的个人航海日志，记录 AI 探索、独立开发与生活点滴。',
+  ogImage = '/images/hero-bg.png',
+  ogTitle,
+  ogDescription,
+  canonicalUrl,
   pureMode = false,
   theme = 'nature',
 } = Astro.props;
@@ -41,6 +49,10 @@ const themeGradients = {
 
 const gradient = themeGradients[theme];
 const isHome = Astro.url.pathname === '/';
+const pageTitle = ogTitle ?? title;
+const pageDescription = ogDescription ?? description;
+const canonical = canonicalUrl ?? Astro.url.href;
+const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 ---
 
 <!DOCTYPE html>
@@ -52,11 +64,22 @@ const isHome = Astro.url.pathname === '/';
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
     
     <!-- 引入外部字体 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.cn">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.cn/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:image" content={absoluteOgImage} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={absoluteOgImage} />
     
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <ClientRouter />
@@ -112,25 +135,29 @@ const isHome = Astro.url.pathname === '/';
         window.addEventListener('mousemove', (e) => {
           mouseX = e.clientX;
           mouseY = e.clientY;
-        });
+        }, { passive: true });
 
-        // 平滑跟随
+        // 提高跟随速度 (0.15 -> 0.4)，让它更跟手
         const tick = () => {
-          cursorX += (mouseX - cursorX) * 0.2;
-          cursorY += (mouseY - cursorY) * 0.2;
+          cursorX += (mouseX - cursorX) * 0.4;
+          cursorY += (mouseY - cursorY) * 0.4;
           if (cursor) {
-            cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0) translate(-50%, -50%)`;
+            cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
           }
           requestAnimationFrame(tick);
         };
         tick();
 
-        // 吸附交互
-        const interactables = 'a, button, .panel-glass, .group';
-        document.querySelectorAll(interactables).forEach(el => {
-          el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-          el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
-        });
+        // 交互吸附效果
+        const setupCursorInteraction = () => {
+          const interactables = 'a, button, .panel-glass, .group, input, textarea, select';
+          document.querySelectorAll(interactables).forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+          });
+        };
+        setupCursorInteraction();
+        document.addEventListener('astro:after-swap', setupCursorInteraction);
       }
 
       // --- 3D 磁性卡片逻辑 ---
@@ -165,4 +192,3 @@ const isHome = Astro.url.pathname === '/';
     </script>
   </body>
 </html>
-

@@ -5,6 +5,8 @@ import DialogueBubble from '../../components/DialogueBubble.astro';
 import { getCollection, render } from 'astro:content';
 import { DOMAIN_LABELS } from '../../utils/domains';
 
+export const prerender = true;
+
 export async function getStaticPaths() {
   const entries = await getCollection('log', ({ data }) => data.published);
   return entries.map(entry => ({
@@ -38,7 +40,15 @@ const cleanBody = rawBody
   .trim();
 const description = cleanBody.slice(0, 160);
 ---
-<Base title={`${entry.data.title} — Walker`} description={description} pureMode={true}>
+<Base
+  title={`${entry.data.title} — Walker`}
+  description={description}
+  ogTitle={entry.data.title}
+  ogDescription={entry.data.summary ?? entry.data.description ?? description}
+  ogImage={entry.data.cover ?? '/images/hero-bg.png'}
+  canonicalUrl={Astro.url.href}
+  pureMode={true}
+>
   <div class="reading-mode min-h-screen">
     <article class="max-w-3xl mx-auto px-6 pt-32 pb-24" data-pagefind-body>
       <header class="mb-14">
@@ -105,5 +115,3 @@ const description = cleanBody.slice(0, 160);
     display: none !important;
   }
 </style>
-
-

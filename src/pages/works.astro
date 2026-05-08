@@ -4,6 +4,8 @@ import { getCollection } from 'astro:content';
 import WorkCard from '../components/WorkCard.astro';
 import { PLATFORM_LABELS } from '../utils/platforms';
 
+export const prerender = true;
+
 const allWorks = (await getCollection('work', ({ data }) => data.published))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 

@@ -10,6 +10,8 @@ const log = defineCollection({
     type: z.enum(['article', 'photo', 'thought', 'project', 'dialogue']),
     domain: z.enum(['ai-exploration', 'ai-life']).default('ai-exploration'),
     published: z.boolean().default(true),
+    summary: z.string().optional(),
+    description: z.string().optional(),
     cover: z.string().optional(),
     link: z.string().url().optional(),
   }),

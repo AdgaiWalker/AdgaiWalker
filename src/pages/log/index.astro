@@ -5,6 +5,8 @@ import { getCollection } from 'astro:content';
 import { DOMAIN_LABELS } from '../../utils/domains';
 import { FORMAT_LABELS } from '../../utils/formats';
 
+export const prerender = true;
+
 const allLogs = (await getCollection('log', ({ data }) => data.published))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 

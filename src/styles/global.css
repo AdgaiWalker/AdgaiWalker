@@ -2,20 +2,29 @@
 
 @theme {
   /* --- 基础变量 (清新浅色玻璃态) --- */
-  --color-abyss: #f0fdf4; /* 极浅的薄荷绿/白底色 */
-  --color-sea-deep: #e0f2fe; /* 浅蓝晕影 */
-  --color-sea-mid: #ccfbf1;  /* 浅青晕影 */
-  --color-sea-light: #ffffff; /* 亮白 */
-  
+  --color-abyss: #f0fdf4;
+  /* 极浅的薄荷绿/白底色 */
+  --color-sea-deep: #e0f2fe;
+  /* 浅蓝晕影 */
+  --color-sea-mid: #ccfbf1;
+  /* 浅青晕影 */
+  --color-sea-light: #ffffff;
+  /* 亮白 */
+
   /* 文本颜色 (大幅加深，提高对比度和清晰度) */
-  --color-parchment: #0f172a; /* 主标题/高亮字：极深的暗蓝灰，接近黑色但更柔和 */
-  --color-parchment-dim: #475569; /* 次要文本：深石板灰，保证可读性 */
+  --color-parchment: #0f172a;
+  /* 主标题/高亮字：极深的暗蓝灰，接近黑色但更柔和 */
+  --color-parchment-dim: #475569;
+  /* 次要文本：深石板灰，保证可读性 */
 
   /* 点缀色 */
   --color-stardust: #d1fae5;
-  --color-gold: #14b8a6; /* 现在的 gold 变成强调色：明亮孔雀绿 */
+  --color-gold: #14b8a6;
+  /* 现在的 gold 变成强调色：明亮孔雀绿 */
   --color-gold-glow: #2dd4bf;
-  --color-bio-cyan: #0ea5e9; /* 天蓝色点缀 */
+  --color-coral: #e76f51;
+  --color-bio-cyan: #0ea5e9;
+  /* 天蓝色点缀 */
 
   /* 字体 */
   --font-heading: Sora, system-ui, sans-serif;
@@ -26,16 +35,24 @@
 
 /* 护眼自然主题 (极致舒适的光感：莫兰迪绿与暖沙色) */
 .theme-nature {
-  --color-abyss: #fdfbf7;      /* 极其柔和的护眼暖白/米色 */
-  --color-sea-deep: #f0f4f2;   /* 极淡的鼠尾草绿 */
+  --color-abyss: #fdfbf7;
+  /* 极其柔和的护眼暖白/米色 */
+  --color-sea-deep: #f0f4f2;
+  /* 极淡的鼠尾草绿 */
   --color-sea-mid: #e1e7e4;
   --color-sea-light: #ffffff;
-  
-  --color-parchment: #1a2321;  /* 文字：大幅加深！极深的森绿色，极其清晰又护眼 */
-  --color-parchment-dim: #445651; /* 次要文字：深灰绿，清晰可见 */
-  --color-bio-cyan: #4a8c7b;   /* 主强调色：略微加深的薄荷绿，提高辨识度 */
-  --color-gold: #c39e5c;       /* 辅助强调色：加深的秋沙黄 */
-  --color-stardust: #86bdae;   /* 点缀色 */
+
+  --color-parchment: #1a2321;
+  /* 文字：大幅加深！极深的森绿色，极其清晰又护眼 */
+  --color-parchment-dim: #445651;
+  /* 次要文字：深灰绿，清晰可见 */
+  --color-bio-cyan: #4a8c7b;
+  /* 主强调色：略微加深的薄荷绿，提高辨识度 */
+  --color-gold: #c39e5c;
+  /* 辅助强调色：加深的秋沙黄 */
+  --color-coral: #d97757;
+  --color-stardust: #86bdae;
+  /* 点缀色 */
 }
 
 
@@ -49,6 +66,7 @@
   --color-parchment: #047857;
   --color-bio-cyan: #10b981;
   --color-gold: #34d399;
+  --color-coral: #f97316;
 }
 
 /* 浅灰/纯净主题 (类似极简白纸) */
@@ -60,6 +78,7 @@
   --color-parchment: #334155;
   --color-bio-cyan: #64748b;
   --color-gold: #94a3b8;
+  --color-coral: #ea580c;
 }
 
 
@@ -68,23 +87,35 @@
 
   html {
     scroll-behavior: smooth;
+    cursor: none;
   }
 
   body {
     @apply bg-abyss text-parchment font-body antialiased;
+    cursor: none;
     /* 星空背景纹理：极细微的噪点 */
-    background-image: 
+    background-image:
       radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 100px 100px, 150px 150px;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading;
   }
 
   a {
     @apply text-gold hover:text-gold-glow transition-colors duration-200;
+    cursor: none;
+  }
+
+  button, [role="button"] {
+    cursor: none;
   }
 
   ::selection {
@@ -95,8 +126,15 @@
 /* ========== 关键帧动画 ========== */
 
 @keyframes bio-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes float-in {
@@ -104,6 +142,7 @@
     opacity: 0;
     transform: translateY(16px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -111,8 +150,15 @@
 }
 
 @keyframes glow-breathe {
-  0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.1); }
-  50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.25); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+  }
 }
 
 @keyframes modal-enter {
@@ -120,6 +166,7 @@
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -127,8 +174,13 @@
 }
 
 @keyframes scan-line {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100vh);
+  }
 }
 
 /* ========== 滚动揭示动画 ========== */
@@ -146,10 +198,21 @@
   transform: translateY(0) scale(1);
 }
 
-.reveal-delay-1 { transition-delay: 80ms; }
-.reveal-delay-2 { transition-delay: 160ms; }
-.reveal-delay-3 { transition-delay: 240ms; }
-.reveal-delay-4 { transition-delay: 320ms; }
+.reveal-delay-1 {
+  transition-delay: 80ms;
+}
+
+.reveal-delay-2 {
+  transition-delay: 160ms;
+}
+
+.reveal-delay-3 {
+  transition-delay: 240ms;
+}
+
+.reveal-delay-4 {
+  transition-delay: 320ms;
+}
 
 /* ========== 玻璃面板 (浅色高透光) ========== */
 
@@ -158,15 +221,15 @@
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 1);
-  border-radius: 32px; 
+  border-radius: 32px;
   box-shadow:
     inset 0 2px 4px rgba(255, 255, 255, 0.8),
     0 10px 30px rgba(0, 0, 0, 0.03);
-  transition: 
+  transition:
     background 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
     border-color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
     box-shadow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 0.1s linear; 
+    transform 0.1s linear;
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -174,15 +237,17 @@
 @media (hover: hover) {
   .panel-glass:hover {
     background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(20, 184, 166, 0.2); /* 浅孔雀绿边框 */
+    border-color: rgba(20, 184, 166, 0.2);
+    /* 浅孔雀绿边框 */
     box-shadow:
       inset 0 2px 4px rgba(255, 255, 255, 1),
-      0 15px 40px rgba(20, 184, 166, 0.08); /* 极淡的彩色阴影 */
+      0 15px 40px rgba(20, 184, 166, 0.08);
+    /* 极淡的彩色阴影 */
   }
 }
 
 
-/* 灵动光标样式 */
+/* 灵动光标样式：圆形版本 */
 #custom-cursor {
   width: 20px;
   height: 20px;
@@ -192,18 +257,20 @@
   position: fixed;
   pointer-events: none;
   z-index: 9999;
-  transition: 
+  transition:
     transform 0.1s linear,
     width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
     height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
     background 0.3s ease,
     border-color 0.3s ease;
   transform: translate(-50%, -50%);
-  display: none; 
+  display: none;
 }
 
 @media (hover: none) {
-  #custom-cursor { display: none !important; }
+  #custom-cursor {
+    display: none !important;
+  }
 }
 
 .cursor-hover #custom-cursor {
@@ -211,31 +278,6 @@
   height: 60px;
   background: rgba(20, 184, 166, 0.05);
   border-color: rgba(20, 184, 166, 0.8);
-}
-
-
-.reading-mode nav, 
-.reading-mode .panel-glass {
-  background: rgba(0, 0, 0, 0.02) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  color: #1f2937 !important;
-  backdrop-filter: none !important;
-}
-
-.reading-mode nav a,
-.reading-mode nav span,
-.reading-mode nav div {
-  color: #4b5563 !important;
-}
-
-.reading-mode nav a:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: #1a1a1a !important;
-}
-
-.reading-mode #custom-cursor {
-  border-color: rgba(0, 0, 0, 0.3);
-  background: rgba(0, 0, 0, 0.05);
 }
 
 
@@ -280,10 +322,22 @@
   border-radius: 3px;
 }
 
-.accent-article::before { background: #00e5ff; }
-.accent-thought::before { background: #d4af37; }
-.accent-photo::before { background: #00e5ff; }
-.accent-project::before { background: #d4af37; }
+.accent-article::before {
+  background: #00e5ff;
+}
+
+.accent-thought::before {
+  background: #d4af37;
+}
+
+.accent-photo::before {
+  background: #00e5ff;
+}
+
+.accent-project::before {
+  background: #d4af37;
+}
+
 .accent-dialogue::before {
   background: linear-gradient(to bottom, #d4af37, #00e5ff);
 }
@@ -479,11 +533,14 @@
 
 /* ========== 护眼阅读模式 (羊皮纸质感) ========== */
 .reading-mode {
-  --reading-bg: #f4f1ea; /* 经典护眼米黄色 */
-  --reading-text: #2c2c2c; /* 柔和的墨色 */
+  --reading-bg: #f4f1ea;
+  /* 经典护眼米黄色 */
+  --reading-text: #2c2c2c;
+  /* 柔和的墨色 */
   --reading-secondary: #5a5a5a;
-  --reading-accent: #8b5e3c; /* 暖棕色点缀 */
-  
+  --reading-accent: #8b5e3c;
+  /* 暖棕色点缀 */
+
   background-color: var(--reading-bg) !important;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E") !important;
   color: var(--reading-text) !important;
@@ -497,8 +554,8 @@
   font-size: 1.15rem;
 }
 
-.reading-mode .prose h1, 
-.reading-mode .prose h2, 
+.reading-mode .prose h1,
+.reading-mode .prose h2,
 .reading-mode .prose h3 {
   color: #1a1a1a !important;
   font-weight: 700;
@@ -511,7 +568,7 @@
   color: #3a3a3a !important;
 }
 
-.reading-mode nav, 
+.reading-mode nav,
 .reading-mode .panel-glass {
   background: rgba(0, 0, 0, 0.04) !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
@@ -520,12 +577,17 @@
 }
 
 .reading-mode nav a,
-.reading-mode nav span {
+.reading-mode nav span,
+.reading-mode nav div {
   color: #4b5563 !important;
+}
+
+.reading-mode nav a:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #1a1a1a !important;
 }
 
 .reading-mode #custom-cursor {
   border-color: rgba(0, 0, 0, 0.3);
   background: rgba(0, 0, 0, 0.05);
 }
-

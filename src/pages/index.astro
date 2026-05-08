@@ -8,23 +8,16 @@ import MusicPlayer from '../components/MusicPlayer.astro';
 import RandomRecommend from '../components/RandomRecommend.astro';
 import RecentTraces from '../components/RecentTraces.astro';
 import SearchModal from '../components/SearchModal.astro';
+import LikeCounter from '../components/LikeCounter.astro';
 import { getCollection } from 'astro:content';
-import fs from 'node:fs';
-import path from 'node:path';
+
+export const prerender = true;
 
 const logs = (await getCollection('log', ({ data }) => data.published))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
 const latestPhoto = logs.find(l => l.data.type === 'photo');
-let coverUrl = "https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=800&auto=format&fit=crop";
-
-if (latestPhoto?.data.cover) {
-  // 防止本地 404 报错：先检查 public 目录下是否有这张图
-  const imgPath = path.join(process.cwd(), 'public', latestPhoto.data.cover);
-  if (fs.existsSync(imgPath)) {
-    coverUrl = latestPhoto.data.cover;
-  }
-}
+const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=800&auto=format&fit=crop";
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">
@@ -65,19 +58,12 @@ if (latestPhoto?.data.cover) {
 
         <!-- 社交按钮 (胶囊型) -->
         <div class="flex flex-wrap items-center justify-center gap-3 reveal reveal-delay-2">
-          <a href="https://space.bilibili.com/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#fb7299]/10 text-[#fb7299] border border-[#fb7299]/20 hover:bg-[#fb7299]/20 hover:border-[#fb7299]/40 transition-colors no-underline text-[13px] font-heading">
-            <iconify-icon icon="mingcute:bilibili-line" width="16" height="16"></iconify-icon>
-            哔哩哔哩
-          </a>
-          <a href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#ff2442]/10 text-[#ff2442] border border-[#ff2442]/20 hover:bg-[#ff2442]/20 hover:border-[#ff2442]/40 transition-colors no-underline text-[13px] font-heading">
-            <iconify-icon icon="lucide:book-heart" width="16" height="16"></iconify-icon>
-            小红书
+          <a href="https://v.douyin.com/8wQaZ_xO0JA/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-coral/10 text-coral border border-coral/20 hover:bg-coral/20 hover:border-coral/40 transition-colors no-underline text-[13px] font-heading">
+            <iconify-icon icon="lucide:music-2" width="16" height="16"></iconify-icon>
+            抖音
           </a>
           <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="w-[38px] h-[38px] rounded-full bg-white/5 text-parchment border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-colors no-underline">
             <iconify-icon icon="lucide:github" width="16" height="16"></iconify-icon>
-          </a>
-          <a href="mailto:contact@example.com" class="w-[38px] h-[38px] rounded-full bg-bio-cyan/10 text-bio-cyan border border-bio-cyan/20 flex items-center justify-center hover:bg-bio-cyan/20 hover:border-bio-cyan/30 transition-colors no-underline">
-            <iconify-icon icon="lucide:mail" width="16" height="16"></iconify-icon>
           </a>
         </div>
 
@@ -114,14 +100,7 @@ if (latestPhoto?.data.cover) {
           <MusicPlayer />
         </div>
         
-        <!-- 喜欢计数 (移动端隐藏) -->
-        <div class="panel-glass self-start px-5 py-2.5 items-center gap-2 reveal reveal-delay-4 shadow-md bg-abyss/40 border-coral/20 hidden md:flex">
-          <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-coral opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-coral"></span>
-          </span>
-          <span class="text-[13px] font-mono text-coral/90 tracking-widest pl-1">16888</span>
-        </div>
+        <LikeCounter pagePath="/" />
       </div>
 
     </div>

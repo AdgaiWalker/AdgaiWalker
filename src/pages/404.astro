@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base
+  title="页面不存在 — Walker"
+  description="这片海域暂时没有对应的航线。"
+  ogTitle="页面不存在 — Walker"
+  ogDescription="这片海域暂时没有对应的航线。"
+>
+  <section class="min-h-[72vh] px-6 pt-28 pb-20 flex items-center justify-center">
+    <div class="panel-glass max-w-xl w-full p-8 md:p-10 text-center">
+      <div class="mx-auto mb-6 w-14 h-14 rounded-2xl bg-coral/10 border border-coral/20 flex items-center justify-center text-coral">
+        <iconify-icon icon="lucide:map-off" width="28" height="28"></iconify-icon>
+      </div>
+      <p class="text-xs font-mono uppercase tracking-[0.28em] text-coral/70 mb-3">404 Not Found</p>
+      <h1 class="font-heading text-3xl md:text-4xl text-parchment mb-4">页面不存在</h1>
+      <p class="text-parchment-dim leading-relaxed mb-8">
+        这条航线暂时没有记录。可能是链接已经移动，也可能是你发现了一片还没命名的水域。
+      </p>
+      <a
+        href="/"
+        class="inline-flex items-center justify-center gap-2 rounded-xl bg-bio-cyan/12 border border-bio-cyan/20 px-5 py-3 text-sm font-heading text-bio-cyan no-underline hover:bg-bio-cyan/18 hover:border-bio-cyan/35 transition-colors"
+      >
+        <iconify-icon icon="lucide:home" width="16" height="16"></iconify-icon>
+        返回首页
+      </a>
+    </div>
+  </section>
+</Base>

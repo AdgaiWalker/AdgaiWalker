@@ -3,6 +3,8 @@ import Base from '../layouts/Base.astro';
 import TagMap from '../components/TagMap.astro';
 import { getCollection } from 'astro:content';
 
+export const prerender = true;
+
 const allLogs = await getCollection('log', ({ data }) => data.published);
 
 const tagMap = new Map<string, Array<{

@@ -5,14 +5,18 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build && pagefind --site dist --output-path dist/pagefind",
+    "build": "astro build && pagefind --site dist/client --output-path .vercel/output/static/pagefind",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/mdx": "^5.0.4",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/vercel": "^10.0.6",
     "@iconify-json/lucide": "^1.2.105",
+    "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.1.10",
     "astro-icon": "^1.1.5",
