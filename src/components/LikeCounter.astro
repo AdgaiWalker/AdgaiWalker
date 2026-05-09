@@ -22,7 +22,15 @@ const { pagePath } = Astro.props;
 </button>
 
 <script>
-  const setupLikes = () => {
+  const SUPABASE_URL = 'https://ttjfsnhmhsuohugrexwq.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0amZzbmhtaHN1b2h1Z3JleHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyODAwNTUsImV4cCI6MjA5Mzg1NjA1NX0.tgfvETm3ldMR4yvV7V2K8Ax00-FnY1yV1mK-4UtJpCg';
+
+  const setupLikes = async () => {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
     document.querySelectorAll<HTMLButtonElement>('[data-like-counter]').forEach((button) => {
       if (button.dataset.ready === 'true') return;
       button.dataset.ready = 'true';
@@ -45,9 +53,12 @@ const { pagePath } = Astro.props;
         markLiked();
       }
 
-      fetch(`/api/likes?pagePath=${encodeURIComponent(pagePath)}`)
-        .then((res) => res.json())
-        .then((data) => setCount(Number(data.count ?? 0)))
+      supabase
+        .from('likes')
+        .select('count')
+        .eq('page_path', pagePath)
+        .maybeSingle<{ count: number }>()
+        .then(({ data }) => setCount(data?.count ?? 0))
         .catch(() => setCount(0));
 
       button.addEventListener('click', async () => {
@@ -58,13 +69,21 @@ const { pagePath } = Astro.props;
 
         button.disabled = true;
         try {
-          const response = await fetch('/api/likes', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ pagePath }),
-          });
-          const data = await response.json();
-          setCount(Number(data.count ?? 0));
+          const { data: current } = await supabase
+            .from('likes')
+            .select('count')
+            .eq('page_path', pagePath)
+            .maybeSingle<{ count: number }>();
+
+          const nextCount = (current?.count ?? 0) + 1;
+
+          const { data } = await supabase
+            .from('likes')
+            .upsert({ page_path: pagePath, count: nextCount }, { onConflict: 'page_path' })
+            .select('count')
+            .single<{ count: number }>();
+
+          setCount(data?.count ?? nextCount);
           localStorage.setItem(storageKey, 'true');
           markLiked();
           button.animate(
