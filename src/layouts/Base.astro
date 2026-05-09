@@ -117,48 +117,9 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
       <Footer />
     </div>
 
-    <!-- 灵动光标 -->
-    <div id="custom-cursor"></div>
-
     <script>
       import '../scripts/ambient';
       import '../scripts/scroll-fade';
-
-      // --- 灵动光标逻辑 ---
-      const cursor = document.getElementById('custom-cursor');
-      let mouseX = 0, mouseY = 0;
-      let cursorX = 0, cursorY = 0;
-
-      if (window.matchMedia("(hover: hover)").matches) {
-        if (cursor) cursor.style.display = 'block';
-        
-        window.addEventListener('mousemove', (e) => {
-          mouseX = e.clientX;
-          mouseY = e.clientY;
-        }, { passive: true });
-
-        // 提高跟随速度 (0.15 -> 0.4)，让它更跟手
-        const tick = () => {
-          cursorX += (mouseX - cursorX) * 0.4;
-          cursorY += (mouseY - cursorY) * 0.4;
-          if (cursor) {
-            cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
-          }
-          requestAnimationFrame(tick);
-        };
-        tick();
-
-        // 交互吸附效果
-        const setupCursorInteraction = () => {
-          const interactables = 'a, button, .panel-glass, .group, input, textarea, select';
-          document.querySelectorAll(interactables).forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
-          });
-        };
-        setupCursorInteraction();
-        document.addEventListener('astro:after-swap', setupCursorInteraction);
-      }
 
       // --- 3D 磁性卡片逻辑 ---
       const setupTilt = () => {

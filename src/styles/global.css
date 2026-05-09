@@ -87,12 +87,11 @@
 
   html {
     scroll-behavior: smooth;
-    cursor: none;
+    cursor: url('/cursor.svg') 5 2, auto;
   }
 
   body {
     @apply bg-abyss text-parchment font-body antialiased;
-    cursor: none;
     /* 星空背景纹理：极细微的噪点 */
     background-image:
       radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
@@ -111,11 +110,11 @@
 
   a {
     @apply text-gold hover:text-gold-glow transition-colors duration-200;
-    cursor: none;
+    cursor: url('/cursor.svg') 5 2, pointer;
   }
 
   button, [role="button"] {
-    cursor: none;
+    cursor: url('/cursor.svg') 5 2, pointer;
   }
 
   ::selection {
@@ -244,40 +243,6 @@
       0 15px 40px rgba(20, 184, 166, 0.08);
     /* 极淡的彩色阴影 */
   }
-}
-
-
-/* 灵动光标样式：圆形版本 */
-#custom-cursor {
-  width: 20px;
-  height: 20px;
-  background: rgba(20, 184, 166, 0.1);
-  border: 1.5px solid rgba(20, 184, 166, 0.4);
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  transition:
-    transform 0.1s linear,
-    width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-    background 0.3s ease,
-    border-color 0.3s ease;
-  transform: translate(-50%, -50%);
-  display: none;
-}
-
-@media (hover: none) {
-  #custom-cursor {
-    display: none !important;
-  }
-}
-
-.cursor-hover #custom-cursor {
-  width: 60px;
-  height: 60px;
-  background: rgba(20, 184, 166, 0.05);
-  border-color: rgba(20, 184, 166, 0.8);
 }
 
 
@@ -587,7 +552,3 @@
   color: #1a1a1a !important;
 }
 
-.reading-mode #custom-cursor {
-  border-color: rgba(0, 0, 0, 0.3);
-  background: rgba(0, 0, 0, 0.05);
-}
