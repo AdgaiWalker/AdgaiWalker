@@ -8,7 +8,6 @@ const allContent = [
   ...allLogs.map(l => {
     const rawText = l.body ? l.body.replace(/<[^>]+>/g, '').replace(/[#*_\`\[\]()>|]/g, '').trim() : '';
     const wordCount = rawText.length;
-    const readTime = Math.max(1, Math.ceil(wordCount / 400));
     return {
       title: l.data.title,
       type: l.data.type,
@@ -16,13 +15,11 @@ const allContent = [
       tags: l.data.tags,
       excerpt: rawText.slice(0, 80),
       wordCount,
-      readTime
     };
   }),
   ...allIdeas.map(i => {
     const rawText = i.data.scenario || '';
     const wordCount = rawText.length;
-    const readTime = Math.max(1, Math.ceil(wordCount / 400));
     return {
       title: i.data.title,
       type: 'idea' as const,
@@ -30,57 +27,33 @@ const allContent = [
       tags: i.data.tags,
       excerpt: rawText.slice(0, 80),
       wordCount,
-      readTime
     };
   }),
 ];
 
 const random = allContent[Math.floor(Math.random() * allContent.length)];
-
-const typeLabels: Record<string, string> = {
-  article: '文',
-  thought: '想',
-  photo: '影',
-  project: '项',
-  dialogue: '话',
-  idea: '灯',
-};
-
-const typeColors: Record<string, string> = {
-  article: 'bg-bio-cyan/15 text-bio-cyan',
-  thought: 'bg-gold/15 text-gold',
-  photo: 'bg-emerald/15 text-emerald',
-  project: 'bg-gold/15 text-gold',
-  dialogue: 'bg-bio-cyan/15 text-bio-cyan',
-  idea: 'bg-coral/15 text-coral',
-};
 ---
 
-<div class="panel-glass p-5 flex flex-col h-full group">
-  <div class="text-[11px] font-mono text-parchment-dim uppercase tracking-widest mb-3">
+<div class="panel-glass p-6 flex flex-col h-full group rounded-[40px]" style="background: rgba(255,255,255,0.6);">
+  <div class="text-[13px] font-body text-parchment/60 mb-4 px-1">
     随机推荐
   </div>
 
   {random ? (
-    <a href={random.slug} class="flex items-start gap-3 no-underline">
-      <!-- 左侧图标/图片框 -->
-      <div class="w-12 h-12 rounded-xl shrink-0 overflow-hidden bg-parchment/5 border border-parchment/10 flex flex-col items-center justify-center relative shadow-sm">
-        <iconify-icon icon="lucide:film" width="18" height="18" class="text-parchment-dim"></iconify-icon>
-        <span class="text-[8px] font-mono mt-1 text-parchment-dim">Media</span>
+    <a href={random.slug} class="flex items-center gap-4 no-underline px-1">
+      <!-- 左侧图标框 -->
+      <div class="w-14 h-14 rounded-2xl shrink-0 overflow-hidden bg-white/70 border border-white flex flex-col items-center justify-center relative shadow-sm">
+        <iconify-icon icon="lucide:linux" width="22" height="22" class="text-brand"></iconify-icon>
       </div>
       
       <!-- 右侧信息 -->
       <div class="flex flex-col flex-1 min-w-0">
-        <div class="text-parchment text-[13px] font-heading font-medium leading-snug truncate group-hover:text-bio-cyan transition-colors">
+        <div class="text-parchment text-[14px] font-body font-medium leading-snug truncate group-hover:text-brand transition-colors">
           {random.title}
         </div>
-        <div class="text-parchment-dim text-[10px] font-body mt-1 line-clamp-2">
-          {random.excerpt || "暂无描述"}
-        </div>
-        <div class="text-parchment-dim text-[10px] font-mono mt-2 flex items-center gap-2">
-          <span>{random.wordCount} 字</span>
-          <span class="w-1 h-1 rounded-full bg-parchment-dim/50"></span>
-          <span>{random.readTime} 分钟阅读</span>
+        <div class="text-parchment-dim/60 text-[11px] font-body mt-2 flex items-center gap-2">
+          <span>Views: {Math.floor(Math.random() * 200000).toLocaleString()}</span>
+          <span>Marks: {Math.floor(Math.random() * 5000).toLocaleString()}</span>
         </div>
       </div>
     </a>

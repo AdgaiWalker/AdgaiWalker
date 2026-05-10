@@ -16,8 +16,8 @@ interface Props {
 }
 
 const {
-  title = 'Walker — 行过万里水路',
-  description = 'Walker 的个人航海日志，记录 AI 探索、独立开发与生活点滴。',
+  title = '秋知 — 行过万里水路',
+  description = '秋知的个人航海日志，记录 AI 探索、独立开发与生活点滴。',
   ogImage = '/images/hero-bg.png',
   ogTitle,
   ogDescription,
@@ -26,28 +26,6 @@ const {
   theme = 'nature',
 } = Astro.props;
 
-// 不同主题对应的背景渐变色 (浅色毛玻璃风格)
-const themeGradients = {
-  nature: { 
-    from: '#fdfbf7', // 暖白底色
-    via: '#f0f4f2',  // 微透的鼠尾草浅绿
-    to: '#e8ecea',   // 自然灰绿
-    glow1: 'bg-[#b6d0c2]/20', // 极柔和的莫兰迪绿晕
-    glow2: 'bg-[#eaddc5]/25'  // 极柔和的暖沙色晕
-  },
-  blue: { 
-    from: '#f0f9ff',
-    via: '#e0f2fe',
-    to: '#f8fafc',
-    glow1: 'bg-emerald-300/30',
-    glow2: 'bg-yellow-300/25'
-  },
-  emerald: { from: '#f0fdf4', via: '#d1fae5', to: '#a7f3d0', glow1: 'bg-emerald-200/40', glow2: 'bg-teal-200/40' },
-  charcoal: { from: '#f8fafc', via: '#f1f5f9', to: '#e2e8f0', glow1: 'bg-slate-200/40', glow2: 'bg-gray-200/40' }
-};
-
-
-const gradient = themeGradients[theme];
 const isHome = Astro.url.pathname === '/';
 const pageTitle = ogTitle ?? title;
 const pageDescription = ogDescription ?? description;
@@ -56,21 +34,21 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 ---
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" style="--color-brand:#35bfab;--color-primary:#2a3b3e;--color-secondary:#6b7c82;--color-brand-secondary:#1fc9e7;--color-bg:#eef0ec;--color-border:#ffffffcc;--color-card:#ffffff80;--color-article:#ffffffcc">
 
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
+    <link rel="alternate" type="application/rss+xml" title="秋知 RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
     
-    <!-- 引入外部字体 -->
+    <!-- 引入外部字体 (增加 Inter + Sora) -->
     <link rel="preconnect" href="https://fonts.googleapis.cn">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.cn/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />
     <meta property="og:image" content={absoluteOgImage} />
@@ -88,38 +66,61 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
     <title>{title}</title>
   </head>
-  <body class:list={["min-h-screen flex flex-col", pureMode ? "bg-[#fdfdfd] reading-mode" : `theme-${theme}`]}>
+  <body class:list={["min-h-screen flex flex-col", pureMode ? "bg-[#fdfdfd] reading-mode" : ""]}>
     {!pureMode && (
       <>
-        <!-- 环境背景层 (清新浅色毛玻璃版) -->
-        <div class="fixed inset-0 -z-20 overflow-hidden bg-abyss" aria-hidden="true">
-          <!-- 基础渐变：动态切换 (主蓝色调) -->
-          <div class="absolute inset-0 opacity-[0.4]" style={`background-image: linear-gradient(135deg, ${gradient.from}, ${gradient.via}, ${gradient.to})`}></div>
-          
-          <!-- 温暖的晕影团：蓝底之上，点缀绿色与黄色 -->
-          <div class={`absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full ${gradient.glow1} blur-[120px] animate-pulse`} style="animation-duration: 14s;"></div>
-          <div class={`absolute bottom-[5%] right-[-10%] w-[65%] h-[65%] rounded-full ${gradient.glow2} blur-[130px] animate-pulse`} style="animation-duration: 19s;"></div>
+        <!-- 环境背景层 (精致渐变 + 大色块) -->
+        <div class="fixed inset-0 -z-20 overflow-hidden" style="background: linear-gradient(145deg, #eef2e8 0%, #e4e8dd 30%, #e8ebe5 60%, #edf0ea 100%);" aria-hidden="true">
+          <!-- 柔和渐变晕影 - 更大、更柔和 -->
+          <div class="absolute top-[-20%] left-[-5%] w-[70%] h-[60%] rounded-full blur-[160px]" style="background: rgba(216, 230, 190, 0.35); animation: subtle-float 20s ease-in-out infinite;"></div>
+          <div class="absolute bottom-[-10%] right-[-5%] w-[60%] h-[60%] rounded-full blur-[160px]" style="background: rgba(220, 235, 200, 0.3); animation: subtle-float 25s ease-in-out infinite reverse;"></div>
+          <div class="absolute top-[20%] right-[20%] w-[45%] h-[45%] rounded-full blur-[140px]" style="background: rgba(53, 191, 171, 0.06); animation: subtle-float 18s ease-in-out infinite 2s;"></div>
+          <div class="absolute bottom-[30%] left-[30%] w-[35%] h-[35%] rounded-full blur-[120px]" style="background: rgba(200, 225, 195, 0.25); animation: subtle-float 22s ease-in-out infinite 4s;"></div>
         </div>
 
-        <!-- 浅色模式下的微弱气泡/星尘 (可选) -->
-        <canvas id="ambient-particles" class="fixed inset-0 -z-10 pointer-events-none opacity-20" aria-hidden="true"></canvas>
+        <!-- 背景 canvas (用于动态模糊光影) -->
+        <canvas id="ambient-particles" class="fixed inset-0 -z-10 pointer-events-none opacity-15" aria-hidden="true"></canvas>
+        
+        <!-- 鼠标跟随光晕 -->
+        <div class="mouse-glow" id="mouse-glow" aria-hidden="true"></div>
+        
+        <!-- 噪点纹理叠加 -->
+        <div class="grain-overlay" aria-hidden="true"></div>
       </>
     )}
 
-
-
-
-    <Navigation />
+    {!isHome && <Navigation />}
     <div class:list={["flex flex-col flex-1 w-full", isHome ? "" : "lg:pl-64"]}>
       <main class="flex-1 relative z-10 w-full">
         <slot />
       </main>
-      <Footer />
+      {!isHome && <Footer />}
     </div>
 
     <script>
       import '../scripts/ambient';
       import '../scripts/scroll-fade';
+
+      // --- 鼠标跟随光晕 ---
+      const setupMouseGlow = () => {
+        const glow = document.getElementById('mouse-glow');
+        if (!glow) return;
+        
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        
+        document.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+          glow.style.left = mouseX + 'px';
+          glow.style.top = mouseY + 'px';
+          glow.style.opacity = '1';
+        });
+
+        document.addEventListener('mouseleave', () => {
+          glow.style.opacity = '0';
+        });
+      };
 
       // --- 3D 磁性卡片逻辑 ---
       const setupTilt = () => {
@@ -134,22 +135,25 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
             
-            // 计算旋转角度 (最大 5 度)
-            const rotateX = ((y - centerY) / centerY) * -5;
-            const rotateY = ((x - centerX) / centerX) * 5;
+            // 计算旋转角度 (最大 2 度，更细腻)
+            const rotateX = ((y - centerY) / centerY) * -2;
+            const rotateY = ((x - centerX) / centerX) * 2;
             
-            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            card.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.008, 1.008, 1.008)`;
           });
           
           card.addEventListener('mouseleave', () => {
-            card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+            card.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
           });
         });
       };
 
-      // 初始化并适配 Astro View Transitions
+      setupMouseGlow();
       setupTilt();
-      document.addEventListener('astro:after-swap', setupTilt);
+      document.addEventListener('astro:after-swap', () => {
+        setupMouseGlow();
+        setupTilt();
+      });
     </script>
   </body>
 </html>

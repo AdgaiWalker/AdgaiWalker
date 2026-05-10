@@ -14,7 +14,6 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: '首页', href: '/', icon: 'lucide:home' },
   {
     label: '日志',
     href: '/log',
@@ -27,9 +26,9 @@ const navItems: NavItem[] = [
       { label: '对话', href: '/log?type=dialogue' },
     ],
   },
-  { label: 'Ideas', href: '/ideas', icon: 'lucide:lightbulb' },
+  { label: 'Idea', href: '/ideas', icon: 'lucide:lightbulb' },
   {
-    label: '补给舱',
+    label: '资源',
     href: '/dock',
     icon: 'lucide:wrench',
     children: [
@@ -38,8 +37,8 @@ const navItems: NavItem[] = [
       { label: '信息源', href: '/dock?category=info-source' },
     ],
   },
-  { label: '作品', href: '/works', icon: 'lucide:radio' },
-  { label: '指南针', href: '/compass', icon: 'lucide:compass' },
+  { label: '实战', href: '/works', icon: 'lucide:radio' },
+  { label: '信息源', href: '/compass', icon: 'lucide:compass' },
   { label: '关于', href: '/about', icon: 'lucide:user' },
 ];
 

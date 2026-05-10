@@ -6,20 +6,19 @@ interface Props {
 const { pagePath } = Astro.props;
 ---
 
-<button
-  class="panel-glass self-start px-5 py-2.5 items-center gap-2 reveal reveal-delay-4 shadow-md bg-abyss/40 border-coral/20 hidden md:flex text-coral/90 hover:text-coral transition-colors disabled:opacity-60"
-  type="button"
-  data-like-counter
-  data-page-path={pagePath}
-  aria-label="喜欢这个页面"
->
-  <span class="relative flex h-2 w-2">
-    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-coral opacity-75"></span>
-    <span class="relative inline-flex rounded-full h-2 w-2 bg-coral"></span>
-  </span>
-  <iconify-icon icon="lucide:heart" width="14" height="14"></iconify-icon>
-  <span class="text-[13px] font-mono tracking-widest pl-0.5" data-like-count>0</span>
-</button>
+<div class="relative flex items-center justify-center group mt-2">
+  <!-- 胶囊形点赞按钮 (爱心 + 数字并排) -->
+  <button
+    class="px-5 h-12 rounded-full bg-white/70 border border-white flex items-center justify-center gap-2.5 hover:bg-white transition-all shadow-sm disabled:opacity-60 cursor-pointer"
+    type="button"
+    data-like-counter
+    data-page-path={pagePath}
+    aria-label="喜欢这个页面"
+  >
+    <iconify-icon icon="mingcute:heart-fill" width="20" height="20" class="text-[#fb7299]"></iconify-icon>
+    <span class="text-[13px] font-mono font-medium text-[#7b888e]" data-like-count>0</span>
+  </button>
+</div>
 
 <script>
   const SUPABASE_URL = 'https://ttjfsnhmhsuohugrexwq.supabase.co';
@@ -36,7 +35,7 @@ const { pagePath } = Astro.props;
       button.dataset.ready = 'true';
 
       const pagePath = button.dataset.pagePath ?? '/';
-      const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+      const countEl = button.closest('.flex')?.querySelector<HTMLElement>('[data-like-count]');
       const storageKey = `walker-liked:${pagePath}`;
 
       const setCount = (count: number) => {
@@ -46,7 +45,7 @@ const { pagePath } = Astro.props;
       const markLiked = () => {
         button.disabled = true;
         button.setAttribute('aria-label', '已经喜欢过这个页面');
-        button.classList.add('bg-coral/10');
+        button.classList.add('text-pink-500');
       };
 
       if (localStorage.getItem(storageKey) === 'true') {
@@ -89,7 +88,7 @@ const { pagePath } = Astro.props;
           button.animate(
             [
               { transform: 'scale(1)' },
-              { transform: 'scale(1.08)' },
+              { transform: 'scale(1.15)' },
               { transform: 'scale(1)' },
             ],
             { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }

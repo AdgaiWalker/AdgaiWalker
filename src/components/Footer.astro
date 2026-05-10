@@ -1,37 +1,10 @@
 ---
-const links = [
-  { label: '日志', href: '/log' },
-  { label: 'Ideas', href: '/ideas' },
-  { label: '补给舱', href: '/dock' },
-  { label: '指南针', href: '/compass' },
-  { label: '作品', href: '/works' },
-  { label: '关于', href: '/about' },
-];
+/**
+ * Simplified Footer — lvyovo style
+ */
 ---
-<footer class="relative border-t border-white/[0.06] bg-abyss/50 backdrop-blur-md py-8 px-6">
-  <!-- 顶部发光线 -->
-  <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-bio-cyan/20 to-transparent"></div>
-
-  <div class="max-w-6xl mx-auto flex flex-col items-center gap-5">
-    <div class="flex flex-wrap justify-center gap-5">
-      {links.map(link => (
-        <a href={link.href} class="text-parchment/40 text-xs font-heading tracking-wider hover:text-bio-cyan transition-colors no-underline">
-          {link.label}
-        </a>
-      ))}
-    </div>
-    <p class="text-parchment/30 text-sm font-heading tracking-wider">
-      行过万里水路，记录每一次停靠
-    </p>
-    <p class="text-parchment/20 text-xs">
-      &copy; {new Date().getFullYear()} Walker
-    </p>
-    <button
-      onclick="window.scrollTo({top:0,behavior:'smooth'})"
-      class="inline-flex items-center gap-2 text-sm text-parchment/30 hover:text-bio-cyan transition-colors cursor-pointer bg-transparent border-none"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-      回到顶部
-    </button>
+<footer class="py-12 flex flex-col items-center justify-center opacity-30 hover:opacity-60 transition-opacity duration-500">
+  <div class="text-[11px] font-body tracking-widest text-parchment uppercase">
+    &copy; {new Date().getFullYear()} 秋知 • 行过万里水路
   </div>
 </footer>

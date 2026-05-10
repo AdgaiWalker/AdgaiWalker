@@ -1,53 +1,38 @@
 ---
 /**
- * WalkerProfile — 首页左栏个人资料卡 (Lvyovo 风格)
+ * WalkerProfile — 首页左栏个人资料卡 (lvyovo 风格)
+ * 只有名字+状态标签+纯文字导航链接
  */
 ---
 
-<div class="panel-glass p-5 flex flex-col h-full group">
-  <!-- 头像与昵称区 (横向布局) -->
-  <div class="flex items-center gap-4 mb-6">
-    <div class="w-14 h-14 rounded-full bg-abyss flex items-center justify-center shrink-0 shadow-inner border border-parchment/10 overflow-hidden relative">
-      <div class="absolute inset-0 bg-gradient-to-br from-bio-cyan/20 to-gold/20"></div>
-      <iconify-icon icon="lucide:anchor" width="24" height="24" class="text-parchment relative z-10"></iconify-icon>
-    </div>
-    <div class="flex flex-col">
-      <div class="flex items-center gap-2">
-        <h2 class="font-heading text-parchment text-[17px] font-semibold tracking-wide">Walker</h2>
-        <span class="text-[10px] text-bio-cyan bg-bio-cyan/10 px-1.5 py-0.5 rounded font-mono">开发中</span>
-      </div>
-      <div class="text-parchment-dim text-[11px] font-mono mt-0.5 truncate">
-        AI 探索者 / 独立开发
-      </div>
-    </div>
+<div class="panel-glass p-5 pt-7 flex flex-col h-full group">
+  <!-- 名字与状态 -->
+  <div class="flex items-baseline gap-2 mb-8 px-1">
+    <h2 class="font-heading text-parchment text-[24px] font-semibold tracking-wide">秋知</h2>
+    <span class="text-[12px] text-brand font-body font-medium">(开发中)</span>
   </div>
 
-  <!-- 常规导航标题 -->
-  <div class="text-[11px] font-mono text-parchment-dim uppercase tracking-widest mb-3 px-1">
-    常规导航
+  <!-- 导航标题 -->
+  <div class="text-[10px] font-mono text-parchment-dim/40 uppercase tracking-widest mb-4 px-1">
+    NAL
   </div>
 
-  <!-- 频道导航 -->
-  <nav class="flex flex-col gap-1.5" aria-label="频道导航">
-    <a href="/log" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-parchment/80 hover:text-parchment bg-parchment/[0.02] hover:bg-parchment/[0.06] transition-all text-sm font-heading tracking-wide no-underline">
-      <iconify-icon icon="lucide:book-open" width="16" height="16" class="text-parchment-dim"></iconify-icon>
-      航海日志
+  <!-- 频道导航（纯文字，无图标） -->
+  <nav class="flex flex-col gap-1" aria-label="频道导航">
+    <a href="/log" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
+      近期文章
     </a>
-    <a href="/works" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-parchment/80 hover:text-parchment hover:bg-parchment/[0.06] transition-all text-sm font-heading tracking-wide no-underline">
-      <iconify-icon icon="lucide:layout-grid" width="16" height="16" class="text-parchment-dim"></iconify-icon>
+    <a href="/works" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
       我的项目
     </a>
-    <a href="/about" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-parchment/80 hover:text-parchment hover:bg-parchment/[0.06] transition-all text-sm font-heading tracking-wide no-underline">
-      <iconify-icon icon="lucide:smile" width="16" height="16" class="text-parchment-dim"></iconify-icon>
+    <a href="/about" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
       关于网站
     </a>
-    <a href="/dock" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-parchment/80 hover:text-parchment hover:bg-parchment/[0.06] transition-all text-sm font-heading tracking-wide no-underline">
-      <iconify-icon icon="lucide:star" width="16" height="16" class="text-parchment-dim"></iconify-icon>
-      补给舱
+    <a href="/dock" class="block px-4 py-2.5 rounded-2xl bg-white/90 shadow-sm text-parchment transition-all text-[15px] font-body tracking-wider no-underline font-medium">
+      推荐分享
     </a>
-    <a href="/compass" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-bio-cyan bg-bio-cyan/[0.08] transition-all text-sm font-heading tracking-wide no-underline shadow-sm border border-bio-cyan/10">
-      <iconify-icon icon="lucide:globe" width="16" height="16"></iconify-icon>
-      指南针
+    <a href="/compass" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
+      优秀博客
     </a>
   </nav>
 </div>

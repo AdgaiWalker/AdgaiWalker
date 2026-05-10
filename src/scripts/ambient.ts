@@ -1,39 +1,28 @@
-// 星空海粒子系统 (航行者版)
-interface Particle {
+// 背景动效系统 (lvyovo 风格：模糊色块)
+interface Blob {
   x: number;
   y: number;
   vx: number;
   vy: number;
   size: number;
-  alpha: number;
   color: string;
-  phase: number;
-  twinkleSpeed: number;
 }
 
-const PARTICLE_COUNT = 120; // 增加星点密度
-const GOLD = '#fbbf24'; // 暖金
-const STARDUST = '#fff7ed'; // 奶白星尘
-const FPS_INTERVAL = 1000 / 30;
+const BLOB_COUNT = 3;
+const COLORS = [
+  'rgba(53, 191, 171, 0.05)', // brand teal
+  'rgba(200, 220, 180, 0.1)',  // yellow-green
+  'rgba(31, 201, 231, 0.05)', // brand secondary
+];
 
-function alphaHex(a: number): string {
-  const v = Math.max(0, Math.min(255, Math.round(a * 255)));
-  return v.toString(16).padStart(2, '0');
-}
-
-function createParticle(w: number, h: number): Particle {
-  const isGold = Math.random() < 0.4;
+function createBlob(w: number, h: number): Blob {
   return {
     x: Math.random() * w,
     y: Math.random() * h,
-    // 增加一个统一的向左微弱漂移 (vx)，模拟船只向右前行
-    vx: -0.05 - Math.random() * 0.15,
-    vy: (Math.random() - 0.5) * 0.05,
-    size: 0.5 + Math.random() * 1.5, // 更细碎的星尘
-    alpha: 0.1 + Math.random() * 0.5,
-    color: isGold ? GOLD : STARDUST,
-    phase: Math.random() * Math.PI * 2,
-    twinkleSpeed: 0.01 + Math.random() * 0.03,
+    vx: (Math.random() - 0.5) * 0.2,
+    vy: (Math.random() - 0.5) * 0.2,
+    size: 200 + Math.random() * 400,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
   };
 }
 
@@ -46,9 +35,8 @@ export function initParticles() {
 
   let w = 0;
   let h = 0;
-  let particles: Particle[] = [];
+  let blobs: Blob[] = [];
   let animId = 0;
-  let lastFrame = 0;
   let running = true;
 
   function resize() {
@@ -59,51 +47,36 @@ export function initParticles() {
   }
 
   function spawn() {
-    particles = Array.from({ length: PARTICLE_COUNT }, () => createParticle(w, h));
+    blobs = Array.from({ length: BLOB_COUNT }, () => createBlob(w, h));
   }
 
-  function draw(p: Particle) {
-    // 增加闪烁效果
-    const twinkle = p.alpha * (0.6 + Math.sin(p.phase) * 0.4);
-    
+  function draw(b: Blob) {
+    const gradient = ctx!.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size);
+    gradient.addColorStop(0, b.color);
+    gradient.addColorStop(1, 'transparent');
+
     ctx!.beginPath();
-    ctx!.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx!.fillStyle = p.color + alphaHex(twinkle);
-    
-    // 只给明亮的星星加一点点发光
-    if (p.size > 1.2) {
-      ctx!.shadowBlur = p.size * 5;
-      ctx!.shadowColor = p.color;
-    }
-    
+    ctx!.fillStyle = gradient;
+    ctx!.arc(b.x, b.y, b.size, 0, Math.PI * 2);
     ctx!.fill();
-    ctx!.shadowBlur = 0;
   }
 
-  function loop(now: number) {
+  function loop() {
     if (!running) return;
     animId = requestAnimationFrame(loop);
 
-    const delta = now - lastFrame;
-    if (delta < FPS_INTERVAL) return;
-    lastFrame = now - (delta % FPS_INTERVAL);
-
     ctx!.clearRect(0, 0, w, h);
 
-    for (const p of particles) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.phase += p.twinkleSpeed;
+    for (const b of blobs) {
+      b.x += b.vx;
+      b.y += b.vy;
 
-      // 循环边界：从左侧消失后从右侧出现，保持航行感
-      if (p.x < 0) {
-        p.x = w;
-        p.y = Math.random() * h;
-      }
-      if (p.y < 0) p.y = h;
-      if (p.y > h) p.y = 0;
+      if (b.x < -b.size) b.x = w + b.size;
+      if (b.x > w + b.size) b.x = -b.size;
+      if (b.y < -b.size) b.y = h + b.size;
+      if (b.y > h + b.size) b.y = -b.size;
 
-      draw(p);
+      draw(b);
     }
   }
 
@@ -115,7 +88,6 @@ export function initParticles() {
   function stop() {
     running = false;
     cancelAnimationFrame(animId);
-    ctx!.clearRect(0, 0, w, h);
   }
 
   resize();
@@ -127,22 +99,14 @@ export function initParticles() {
     spawn();
   });
 
-  // 监听 Astro 的 View Transitions，确保切页后重新初始化
   document.addEventListener('astro:after-swap', () => {
     stop();
     resize();
     spawn();
     start();
   });
-
-  const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (mq.matches) {
-    stop();
-  }
 }
 
-// 统一执行
 if (typeof document !== 'undefined') {
   initParticles();
 }
-

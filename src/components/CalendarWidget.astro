@@ -3,39 +3,57 @@ const now = new Date();
 const year = now.getFullYear();
 const month = now.getMonth();
 const today = now.getDate();
+const dayOfWeek = now.getDay();
 const firstDay = new Date(year, month, 1).getDay();
+// 调整为周一开始：0=周一, ..., 6=周日
+const firstDayMon = firstDay === 0 ? 6 : firstDay - 1;
 const daysInMonth = new Date(year, month + 1, 0).getDate();
-const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 ---
 
-<div class="panel-glass p-5">
-  <div class="text-[11px] font-mono text-parchment-dim tracking-wider mb-4 px-1">
-    {year}/{month + 1}/{today} 星期{weekdays[now.getDay()]}
+<div class="panel-glass p-6" style="background: rgba(255,255,255,0.7);">
+  <!-- 日期标题 -->
+  <div class="text-[13px] font-body text-parchment/60 tracking-wider mb-4 px-1">
+    {year}/{month + 1}/{today} {dayNames[dayOfWeek]}
   </div>
 
-  <div class="grid grid-cols-7 gap-1 text-center">
-    {weekdays.map(d => (
-      <div class="text-parchment-dim text-xs font-mono py-1">{d}</div>
+  <div class="grid grid-cols-7 gap-0.5 text-center">
+    <!-- 星期头 -->
+    {weekdays.map((d, i) => (
+      <div class:list={[
+        "text-[12px] font-body py-1.5",
+        (i === 5 || i === 6) ? "text-brand font-medium" : "text-parchment/45"
+      ]}>{d}</div>
     ))}
 
-    {Array.from({ length: firstDay }, () => (
+    <!-- 空白填充 -->
+    {Array.from({ length: firstDayMon }, () => (
       <div />
     ))}
 
+    <!-- 日期数字 -->
     {Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const isToday = day === today;
+      const dayPos = (firstDayMon + i) % 7;
+      const isWeekend = dayPos === 5 || dayPos === 6;
       return (
         <div
           class:list={[
-            'text-xs font-mono py-1.5 rounded-md transition-colors',
+            'text-[13px] font-body py-1.5 transition-colors leading-none',
             isToday
-              ? 'bg-bio-cyan/20 text-bio-cyan font-bold'
-              : 'text-parchment/70 hover:text-parchment',
+              ? 'flex items-center justify-center'
+              : isWeekend
+                ? 'text-parchment/40'
+                : 'text-parchment/60 hover:text-parchment',
           ]}
         >
-          {day}
+          {isToday ? (
+            <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-bold text-[13px]">{day}</span>
+          ) : (
+            day
+          )}
         </div>
       );
     })}

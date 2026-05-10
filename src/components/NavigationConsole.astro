@@ -1,82 +1,31 @@
-<div class="panel-glass p-5 text-center group relative overflow-hidden">
-  <!-- 动态光照背景 -->
-  <div class="absolute inset-0 bg-gradient-to-br from-bio-cyan/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+---
+/**
+ * NavigationConsole — lvyovo 风格数字时钟小组件
+ */
+---
 
-  <div class="panel-header justify-center mb-4 relative z-10">
-    <iconify-icon icon="lucide:compass" width="14" height="14" class="text-gold animate-spin-slow"></iconify-icon>
-    <span class="text-[11px] tracking-[0.2em] uppercase text-gold font-heading font-medium">航行控制台</span>
+<div class="panel-glass p-6 flex items-center justify-center group relative overflow-hidden h-[130px] rounded-[40px] shadow-inner" style="background: rgba(220, 226, 226, 0.5); border: none; box-shadow: inset 0 4px 10px rgba(0,0,0,0.05);">
+  <!-- 背景模拟 LCD 网格感 -->
+  <div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 4px 4px;"></div>
+  
+  <!-- 数字时钟显示 -->
+  <div class="digital-clock text-[5rem] text-[#4a5f61] font-normal tracking-wider leading-none relative z-10" id="nav-clock" style="font-family: 'Share Tech Mono', monospace; font-variant-numeric: tabular-nums; opacity: 0.9;">
+    00:00
   </div>
-
-  <!-- 时间展示 -->
-  <div class="font-mono text-5xl text-parchment font-bold tracking-tighter py-2 relative z-10" id="nav-clock">
-    --:--
-  </div>
-
-  <!-- 航行状态信息 -->
-  <div class="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2 relative z-10">
-    <div class="flex justify-between items-center text-[10px] font-mono tracking-wider">
-      <span class="text-parchment-dim">当前海域</span>
-      <span class="text-gold font-bold" id="current-sector">星尘湾</span>
-    </div>
-    <div class="flex justify-between items-center text-[10px] font-mono tracking-wider">
-      <span class="text-parchment-dim">航行坐标</span>
-      <span class="text-bio-cyan font-bold" id="nav-coords">23.5° N, 121.2° E</span>
-    </div>
-  </div>
-
-  <!-- 动态进度条 (模拟航程) -->
-  <div class="w-full h-[2px] bg-parchment-dim/20 mt-5 rounded-full overflow-hidden relative z-10">
-    <div class="h-full bg-gradient-to-r from-gold/40 via-gold to-gold/40 w-[65%] animate-shimmer"></div>
-  </div>
-
 </div>
 
 <script>
-  const sectors = ['星尘湾', '静谧洋', '星云礁', '翡翠屿', '蔚蓝海岸'];
-  
   function updateNav() {
     const now = new Date();
     const clockEl = document.getElementById('nav-clock');
-    const coordsEl = document.getElementById('nav-coords');
-    const sectorEl = document.getElementById('current-sector');
     
     if (clockEl) {
       const h = String(now.getHours()).padStart(2, '0');
       const m = String(now.getMinutes()).padStart(2, '0');
       clockEl.textContent = `${h}:${m}`;
     }
-
-    // 模拟坐标微动
-    if (coordsEl) {
-      const lat = (23 + Math.sin(now.getTime() / 10000) * 0.5).toFixed(4);
-      const lng = (121 + Math.cos(now.getTime() / 15000) * 0.8).toFixed(4);
-      coordsEl.textContent = `${lat}° N, ${lng}° E`;
-    }
-
-    // 每小时变换一次海域
-    if (sectorEl) {
-      sectorEl.textContent = sectors[now.getHours() % sectors.length];
-    }
   }
 
   updateNav();
   setInterval(updateNav, 1000);
 </script>
-
-<style>
-  .animate-spin-slow {
-    animation: spin 8s linear infinite;
-  }
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .animate-shimmer {
-    animation: shimmer 3s infinite linear;
-    background-size: 200% 100%;
-  }
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-</style>

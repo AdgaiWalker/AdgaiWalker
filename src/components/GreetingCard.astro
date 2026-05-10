@@ -1,16 +1,16 @@
 ---
-// GreetingCard.astro
+// GreetingCard.astro — lvyovo 风格问候卡
 ---
-<div class="panel-glass p-8 flex flex-col items-center justify-center text-center reveal h-full" id="greeting-card">
-  <div class="w-24 h-24 rounded-full bg-abyss border-4 border-parchment/10 flex items-center justify-center mb-6 overflow-hidden shadow-lg relative">
-    <div class="absolute inset-0 bg-gradient-to-br from-bio-cyan/20 to-gold/20"></div>
-    <iconify-icon icon="lucide:anchor" width="36" height="36" class="text-parchment relative z-10"></iconify-icon>
+<div class="panel-glass p-8 flex flex-col items-center justify-center text-center reveal h-full" id="greeting-card" style="background: rgba(255,255,240,0.5);">
+  <!-- 头像圆形区 (暖黄光晕) -->
+  <div class="w-[120px] h-[120px] rounded-full flex items-center justify-center mb-6 relative bg-gradient-to-br from-[#fef3c7] to-[#fef9c3] shadow-sm overflow-hidden">
+    <img src="/images/avatar.jpg" alt="秋知" class="w-full h-full object-cover relative z-10" />
   </div>
-  <div class="font-heading text-parchment-dim text-[17px] tracking-wide mb-1.5" id="greeting-text">
+  <div class="font-heading text-parchment text-[24px] font-medium tracking-wide mb-3" id="greeting-text">
     Good Afternoon
   </div>
-  <h2 class="font-heading text-parchment text-[20px] font-medium tracking-wide leading-relaxed">
-    I'm <span class="text-bio-cyan text-[24px]">Walker</span> , Nice to<br/>meet you!
+  <h2 class="font-heading text-parchment text-[22px] font-medium tracking-wide leading-snug">
+    I'm <span class="text-brand font-semibold text-[26px]">秋知</span> , Nice to<br/>meet you!
   </h2>
 </div>
 

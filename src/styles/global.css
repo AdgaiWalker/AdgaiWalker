@@ -1,87 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  /* --- 基础变量 (清新浅色玻璃态) --- */
-  --color-abyss: #f0fdf4;
-  /* 极浅的薄荷绿/白底色 */
-  --color-sea-deep: #e0f2fe;
-  /* 浅蓝晕影 */
-  --color-sea-mid: #ccfbf1;
-  /* 浅青晕影 */
+  /* --- 精致色彩系统 (融合 lvyovo + hylarucoder 风格) --- */
+  --color-abyss: #eef0ec;
+  /* 主背景色：偏暖的浅灰绿 */
+  --color-sea-deep: #e5e8e0;
+  --color-sea-mid: #f0f2ed;
   --color-sea-light: #ffffff;
-  /* 亮白 */
 
-  /* 文本颜色 (大幅加深，提高对比度和清晰度) */
-  --color-parchment: #0f172a;
-  /* 主标题/高亮字：极深的暗蓝灰，接近黑色但更柔和 */
-  --color-parchment-dim: #475569;
-  /* 次要文本：深石板灰，保证可读性 */
+  /* 文本颜色 */
+  --color-parchment: #2a3b3e;
+  /* 主文本：更深的青灰（提升对比度） */
+  --color-parchment-dim: #6b7c82;
+  /* 次要文本：中灰 */
 
-  /* 点缀色 */
-  --color-stardust: #d1fae5;
-  --color-gold: #14b8a6;
-  /* 现在的 gold 变成强调色：明亮孔雀绿 */
-  --color-gold-glow: #2dd4bf;
+  /* 品牌色 / 强调色 */
+  --color-brand: #35bfab;
+  /* 主品牌色：薄荷青 */
+  --color-brand-secondary: #1fc9e7;
+  /* 辅助品牌色 */
+  --color-gold: #35bfab;
+  --color-gold-glow: #1fc9e7;
   --color-coral: #e76f51;
-  --color-bio-cyan: #0ea5e9;
-  /* 天蓝色点缀 */
+  --color-bio-cyan: #35bfab;
+  /* 与品牌色统一 */
+  --color-stardust: #d1fae5;
+
+  /* 卡片颜色 */
+  --color-card: #ffffff80;
+  --color-card-solid: #ffffff;
+  --color-border: #ffffffcc;
 
   /* 字体 */
-  --font-heading: Sora, system-ui, sans-serif;
-  --font-body: "Noto Sans SC", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-
+  --font-heading: 'Sora', 'PingFang SC', system-ui, sans-serif;
+  --font-body: 'Inter', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* 护眼自然主题 (极致舒适的光感：莫兰迪绿与暖沙色) */
-.theme-nature {
-  --color-abyss: #fdfbf7;
-  /* 极其柔和的护眼暖白/米色 */
-  --color-sea-deep: #f0f4f2;
-  /* 极淡的鼠尾草绿 */
-  --color-sea-mid: #e1e7e4;
-  --color-sea-light: #ffffff;
-
-  --color-parchment: #1a2321;
-  /* 文字：大幅加深！极深的森绿色，极其清晰又护眼 */
-  --color-parchment-dim: #445651;
-  /* 次要文字：深灰绿，清晰可见 */
-  --color-bio-cyan: #4a8c7b;
-  /* 主强调色：略微加深的薄荷绿，提高辨识度 */
-  --color-gold: #c39e5c;
-  /* 辅助强调色：加深的秋沙黄 */
-  --color-coral: #d97757;
-  --color-stardust: #86bdae;
-  /* 点缀色 */
-}
-
-
-
-/* 翡翠浅绿主题 (类似清澈溪流) */
-.theme-emerald {
-  --color-abyss: #f0fdf4;
-  --color-sea-deep: #d1fae5;
-  --color-sea-mid: #a7f3d0;
-  --color-sea-light: #ffffff;
-  --color-parchment: #047857;
-  --color-bio-cyan: #10b981;
-  --color-gold: #34d399;
-  --color-coral: #f97316;
-}
-
-/* 浅灰/纯净主题 (类似极简白纸) */
-.theme-charcoal {
-  --color-abyss: #f8fafc;
-  --color-sea-deep: #f1f5f9;
-  --color-sea-mid: #e2e8f0;
-  --color-sea-light: #ffffff;
-  --color-parchment: #334155;
-  --color-bio-cyan: #64748b;
-  --color-gold: #94a3b8;
-  --color-coral: #ea580c;
-}
-
-
+/* ========== 全局基础样式 ========== */
 
 @layer base {
 
@@ -92,11 +48,9 @@
 
   body {
     @apply bg-abyss text-parchment font-body antialiased;
-    /* 星空背景纹理：极细微的噪点 */
-    background-image:
-      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 100px 100px, 150px 150px;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
@@ -106,10 +60,11 @@
   h5,
   h6 {
     @apply font-heading;
+    letter-spacing: -0.01em;
   }
 
   a {
-    @apply text-gold hover:text-gold-glow transition-colors duration-200;
+    @apply text-brand hover:text-brand-secondary transition-colors duration-200;
     cursor: url('/cursor.svg') 5 2, pointer;
   }
 
@@ -118,7 +73,7 @@
   }
 
   ::selection {
-    @apply bg-bio-cyan/30 text-parchment;
+    @apply bg-brand/30 text-parchment;
   }
 }
 
@@ -152,11 +107,11 @@
 
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(0, 229, 255, 0.1);
+    box-shadow: 0 0 8px rgba(53, 191, 171, 0.1);
   }
 
   50% {
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+    box-shadow: 0 0 20px rgba(53, 191, 171, 0.25);
   }
 }
 
@@ -180,6 +135,29 @@
   100% {
     transform: translateY(100vh);
   }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -10%); }
+  20% { transform: translate(-15%, 5%); }
+  30% { transform: translate(7%, -25%); }
+  40% { transform: translate(-5%, 25%); }
+  50% { transform: translate(-15%, 10%); }
+  60% { transform: translate(15%, 0%); }
+  70% { transform: translate(0%, 15%); }
+  80% { transform: translate(3%, 35%); }
+  90% { transform: translate(-10%, 10%); }
 }
 
 /* ========== 滚动揭示动画 ========== */
@@ -213,35 +191,35 @@
   transition-delay: 320ms;
 }
 
-/* ========== 玻璃面板 (浅色高透光) ========== */
+/* ========== 玻璃面板 (融合 lvyovo 64px 圆角 + hylarucoder 精致边框) ========== */
 
 .panel-glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 1);
-  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 40px;
   box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.8),
-    0 10px 30px rgba(0, 0, 0, 0.03);
+    0 2px 16px rgba(0, 0, 0, 0.02),
+    0 40px 50px -32px rgba(0, 0, 0, 0.04),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
   transition:
-    background 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 0.1s linear;
+    background 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transform-style: preserve-3d;
   will-change: transform;
 }
 
 @media (hover: hover) {
   .panel-glass:hover {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(20, 184, 166, 0.2);
-    /* 浅孔雀绿边框 */
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(255, 255, 255, 0.95);
     box-shadow:
-      inset 0 2px 4px rgba(255, 255, 255, 1),
-      0 15px 40px rgba(20, 184, 166, 0.08);
-    /* 极淡的彩色阴影 */
+      0 8px 32px rgba(0, 0, 0, 0.06),
+      0 40px 60px -32px rgba(0, 0, 0, 0.08),
+      inset 0 0 20px rgba(255, 255, 255, 0.35);
   }
 }
 
@@ -252,23 +230,22 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
+  font-family: 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+  font-size: 0.75rem;
   font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(240, 234, 214, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  letter-spacing: 0.05em;
+  color: rgba(42, 59, 62, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* ========== 内发光 ========== */
 
 .glow-cyan {
-  box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.08);
+  box-shadow: inset 0 0 20px rgba(53, 191, 171, 0.08);
 }
 
 .glow-gold {
-  box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.08);
+  box-shadow: inset 0 0 20px rgba(53, 191, 171, 0.08);
 }
 
 /* ========== 左侧彩色指示条 ========== */
@@ -288,23 +265,23 @@
 }
 
 .accent-article::before {
-  background: #00e5ff;
+  background: var(--color-bio-cyan);
 }
 
 .accent-thought::before {
-  background: #d4af37;
+  background: var(--color-gold);
 }
 
 .accent-photo::before {
-  background: #00e5ff;
+  background: var(--color-bio-cyan);
 }
 
 .accent-project::before {
-  background: #d4af37;
+  background: var(--color-gold);
 }
 
 .accent-dialogue::before {
-  background: linear-gradient(to bottom, #d4af37, #00e5ff);
+  background: linear-gradient(to bottom, var(--color-gold), var(--color-bio-cyan));
 }
 
 /* ========== 标签药丸 ========== */
@@ -314,7 +291,7 @@
 }
 
 .tag-pill:hover {
-  @apply border-bio-cyan/30 text-bio-cyan bg-bio-cyan/5 shadow-sm;
+  @apply border-brand/30 text-brand bg-brand/5 shadow-sm;
 }
 
 /* ========== 筛选器按钮 ========== */
@@ -328,7 +305,7 @@
 }
 
 .filter-btn.active {
-  @apply bg-bio-cyan/15 text-bio-cyan font-medium border-bio-cyan/30 shadow-sm;
+  @apply bg-brand/15 text-brand font-medium border-brand/30 shadow-sm;
 }
 
 /* ========== 富媒体嵌入 ========== */
@@ -337,10 +314,10 @@
   margin: 1.5rem 0;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
 }
 
 .rich-embed-video .rich-embed-ratio {
@@ -363,7 +340,7 @@
   gap: 4px;
   padding: 8px 12px;
   font-size: 0.75rem;
-  color: rgba(0, 229, 255, 0.6);
+  color: var(--color-brand);
   text-decoration: none;
 }
 
@@ -379,12 +356,12 @@
 }
 
 .rich-embed-audio-icon {
-  color: rgba(0, 229, 255, 0.6);
+  color: var(--color-brand);
 }
 
 .rich-embed-audio-title {
   font-size: 0.875rem;
-  color: rgba(240, 234, 214, 0.7);
+  color: rgba(42, 59, 62, 0.6);
 }
 
 .rich-embed-audio-player {
@@ -394,7 +371,7 @@
 }
 
 .rich-embed-github {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .rich-embed-github-link {
@@ -407,11 +384,11 @@
 }
 
 .rich-embed-github-link:hover {
-  background: rgba(0, 229, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .rich-embed-github-icon {
-  color: rgba(156, 163, 175, 0.8);
+  color: rgba(107, 124, 130, 0.8);
   flex-shrink: 0;
 }
 
@@ -423,23 +400,23 @@
 .rich-embed-github-repo {
   display: block;
   font-size: 0.875rem;
-  color: rgba(240, 234, 214, 0.9);
+  color: rgba(42, 59, 62, 0.8);
   font-family: "JetBrains Mono", monospace;
 }
 
 .rich-embed-github-domain {
   display: block;
   font-size: 0.75rem;
-  color: rgba(156, 163, 175, 0.5);
+  color: rgba(42, 59, 62, 0.4);
 }
 
 .rich-embed-github-arrow {
-  color: rgba(156, 163, 175, 0.3);
+  color: rgba(107, 124, 130, 0.3);
   flex-shrink: 0;
 }
 
 .rich-embed-linkcard {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .rich-embed-linkcard-link {
@@ -452,7 +429,7 @@
 }
 
 .rich-embed-linkcard-link:hover {
-  background: rgba(0, 229, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .rich-embed-linkcard-info {
@@ -463,7 +440,7 @@
 .rich-embed-linkcard-title {
   display: block;
   font-size: 0.875rem;
-  color: rgba(240, 234, 214, 0.9);
+  color: rgba(42, 59, 62, 0.8);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -472,11 +449,11 @@
 .rich-embed-linkcard-domain {
   display: block;
   font-size: 0.75rem;
-  color: rgba(156, 163, 175, 0.5);
+  color: rgba(42, 59, 62, 0.4);
 }
 
 .rich-embed-linkcard-icon {
-  color: rgba(156, 163, 175, 0.3);
+  color: rgba(107, 124, 130, 0.3);
   flex-shrink: 0;
 }
 
@@ -552,3 +529,73 @@
   color: #1a1a1a !important;
 }
 
+/* ========== lvyovo 首页数字时钟样式 ========== */
+.digital-clock {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+/* ========== lvyovo 日历今天高亮 ========== */
+.cal-today {
+  background: #35bfab;
+  color: #ffffff !important;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.cal-sat {
+  color: #35bfab;
+}
+
+/* ========== 鼠标跟随光晕 (hylarucoder 灵感) ========== */
+.mouse-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -5;
+  background: radial-gradient(circle, rgba(53, 191, 171, 0.07) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: left 0.3s ease-out, top 0.3s ease-out, opacity 0.4s ease;
+  will-change: left, top;
+}
+
+/* ========== 噪点/纹理叠加层 (hylarucoder 灵感) ========== */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  animation: grain 8s steps(10) infinite;
+}
+
+/* ========== 状态指示点 ========== */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #35bfab;
+  animation: bio-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(53, 191, 171, 0.4);
+}
+
+/* ========== 快捷键提示样式 ========== */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  line-height: 1;
+  color: rgba(42, 59, 62, 0.45);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}

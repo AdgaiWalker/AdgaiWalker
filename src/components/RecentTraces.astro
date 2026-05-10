@@ -1,6 +1,6 @@
 ---
 /**
- * RecentTraces — 首页最近日志 (Lvyovo 风格的单篇"最新文章"卡片)
+ * RecentTraces — lvyovo 风格最新文章卡片
  */
 import { FORMAT_LABELS } from '../utils/formats';
 
@@ -22,10 +22,10 @@ interface Props {
 }
 
 const { logs } = Astro.props;
-const latest = logs[0]; // 只取最新的一篇
+const latest = logs[0];
 
 const formatDate = (d: Date) =>
-  d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 
 let excerpt = '';
 if (latest && latest.body) {
@@ -33,37 +33,24 @@ if (latest && latest.body) {
     .replace(/<[^>]+>/g, '')
     .replace(/[#*_\`\[\]()>|]/g, '')
     .trim()
-    .slice(0, 30);
+    .slice(0, 60);
 }
 ---
 
-<div class="panel-glass p-5 flex flex-col h-full group">
-  <div class="text-[11px] font-mono text-parchment-dim uppercase tracking-widest mb-3">
-    最新文章
-  </div>
-
+<div class="panel-glass p-5 flex flex-col h-full group" style="background: rgba(255,255,255,0.35);">
   {latest ? (
-    <a href={`/log/${latest.id}`} class="flex items-start gap-3 no-underline">
-      <!-- 左侧略缩图 / 图标占位 -->
-      <div class="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-parchment/5 border border-parchment/10 flex items-center justify-center relative shadow-sm">
-        {latest.data.cover ? (
-          <img src={latest.data.cover} alt={latest.data.title} class="w-full h-full object-cover" />
-        ) : (
-          <iconify-icon icon="lucide:file-text" width="20" height="20" class="text-parchment-dim"></iconify-icon>
-        )}
+    <a href={`/log/${latest.id}`} class="flex flex-col gap-2 no-underline">
+      <!-- 标题 -->
+      <div class="text-parchment text-[14px] font-body font-medium leading-snug line-clamp-2 group-hover:text-brand transition-colors">
+        {latest.data.title}
       </div>
-      
-      <!-- 右侧信息 -->
-      <div class="flex flex-col flex-1 min-w-0">
-        <div class="text-parchment text-[13px] font-heading font-medium leading-snug line-clamp-2 group-hover:text-bio-cyan transition-colors">
-          {latest.data.title}
-        </div>
-        <div class="text-parchment-dim text-[10px] font-body mt-1 line-clamp-1">
-          {excerpt}
-        </div>
-        <div class="text-parchment-dim text-[10px] font-mono mt-2">
-          {formatDate(latest.data.date)}
-        </div>
+      <!-- 摘要 -->
+      <div class="text-parchment-dim text-[12px] font-body line-clamp-2 leading-relaxed">
+        {excerpt || "暂无描述"}
+      </div>
+      <!-- 日期 -->
+      <div class="text-parchment-dim/60 text-[11px] font-body mt-1">
+        {formatDate(latest.data.date)}
       </div>
     </a>
   ) : (
