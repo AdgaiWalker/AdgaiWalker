@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initScrollFade() {
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
@@ -28,4 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-});
+}
+
+document.addEventListener('astro:page-load', initScrollFade);

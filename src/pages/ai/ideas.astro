@@ -1,0 +1,205 @@
+---
+/**
+ * /ai/ideas — Idea 页
+ * AI 工程研究探索板：方法论、省钱攻略、项目 idea
+ */
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import IdeaCard from '../../components/cards/IdeaCard.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+const allIdeas = await getCollection('log', ({ data }) =>
+  data.published && data.category === 'ai' && data.type === 'idea'
+);
+
+// 按状态排序：open 在前，completed 在后；同状态按时间倒序
+const ideas = allIdeas.sort((a, b) => {
+  const statusOrder = { open: 0, completed: 1 };
+  const sa = statusOrder[a.data.status || 'open'] ?? 0;
+  const sb = statusOrder[b.data.status || 'open'] ?? 0;
+  if (sa !== sb) return sa - sb;
+  return b.data.date.getTime() - a.data.date.getTime();
+});
+
+const openCount = ideas.filter(i => (i.data.status || 'open') === 'open').length;
+const doneCount = ideas.filter(i => i.data.status === 'completed').length;
+
+// 提取所有标签
+const allTags = [...new Set(ideas.flatMap(i => i.data.tags))].sort();
+---
+
+<SidebarLayout
+  title="Idea — Walker AI 探索"
+  description="AI 工程研究的探索板 — 方法论、省钱攻略、项目 idea，欢迎认领。"
+  pageTitle="Idea"
+  pageSubtitle="Ideas & Projects"
+  pageIcon="lightbulb"
+  itemCount={ideas.length}
+  itemUnit="个想法"
+>
+  {/* 状态筛选器 */}
+  <div class="filter-bar" id="idea-filter-bar">
+    <button class="filter-btn active" data-filter="all">
+      全部 <span class="filter-count">{ideas.length}</span>
+    </button>
+    <button class="filter-btn" data-filter="open">
+      <iconify-icon icon="lucide:sparkles" width="12" height="12"></iconify-icon>
+      开放认领 <span class="filter-count">{openCount}</span>
+    </button>
+    <button class="filter-btn" data-filter="completed">
+      <iconify-icon icon="lucide:check-circle-2" width="12" height="12"></iconify-icon>
+      已完成 <span class="filter-count">{doneCount}</span>
+    </button>
+  </div>
+
+  {/* 标签筛选 */}
+  {allTags.length > 0 && (
+    <div class="tag-filter-bar" id="idea-tag-bar">
+      {allTags.map(tag => (
+        <button class="tag-pill" data-tag={tag}>{tag}</button>
+      ))}
+    </div>
+  )}
+
+  {/* 卡片网格 */}
+  <div class="idea-grid" id="idea-grid">
+    {ideas.map(idea => (
+      <div
+        class="idea-grid-item"
+        data-status={idea.data.status || 'open'}
+        data-tags={JSON.stringify(idea.data.tags)}
+      >
+        <IdeaCard
+          title={idea.data.title}
+          summary={idea.data.summary || idea.data.description}
+          tags={idea.data.tags}
+          status={idea.data.status || 'open'}
+          slug={idea.id}
+          date={idea.data.date}
+          claimInfo={idea.data.claimInfo}
+        />
+      </div>
+    ))}
+  </div>
+
+  {/* 空状态 */}
+  {ideas.length === 0 && (
+    <div class="empty-state">
+      <iconify-icon icon="lucide:lightbulb" width="40" height="40"></iconify-icon>
+      <p>暂无 Idea，敬请期待</p>
+    </div>
+  )}
+</SidebarLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const filterBar = document.getElementById('idea-filter-bar');
+    const grid = document.getElementById('idea-grid');
+    if (!filterBar || !grid) return;
+
+    let activeStatus = 'all';
+    let activeTag = '';
+
+    function filterItems() {
+      grid!.querySelectorAll<HTMLElement>('.idea-grid-item').forEach(item => {
+        const status = item.dataset.status || 'open';
+        const tags: string[] = JSON.parse(item.dataset.tags || '[]');
+
+        const statusMatch = activeStatus === 'all' || status === activeStatus;
+        const tagMatch = !activeTag || tags.includes(activeTag);
+
+        item.style.display = statusMatch && tagMatch ? '' : 'none';
+      });
+    }
+
+    // 状态筛选
+    filterBar.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeStatus = (btn as HTMLElement).dataset.filter || 'all';
+        filterItems();
+      });
+    });
+
+    // 标签筛选
+    const tagBar = document.getElementById('idea-tag-bar');
+    tagBar?.querySelectorAll('.tag-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tag = (btn as HTMLElement).dataset.tag || '';
+        if (activeTag === tag) {
+          activeTag = '';
+          btn.classList.remove('active');
+        } else {
+          tagBar.querySelectorAll('.tag-pill').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeTag = tag;
+        }
+        filterItems();
+      });
+    });
+  });
+</script>
+
+<style>
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: rgba(42, 59, 62, 0.06);
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-left: 4px;
+  }
+
+  .filter-btn.active .filter-count {
+    background: rgba(53, 191, 171, 0.15);
+    color: #35bfab;
+  }
+
+  .tag-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .idea-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem 2rem;
+    color: rgba(42, 59, 62, 0.3);
+    text-align: center;
+  }
+
+  .empty-state p {
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 768px) {
+    .idea-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

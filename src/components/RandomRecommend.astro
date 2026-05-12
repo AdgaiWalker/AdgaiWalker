@@ -2,58 +2,55 @@
 import { getCollection } from 'astro:content';
 
 const allLogs = await getCollection('log', ({ data }) => data.published);
-const allIdeas = await getCollection('idea', ({ data }) => data.published);
-
-const allContent = [
-  ...allLogs.map(l => {
-    const rawText = l.body ? l.body.replace(/<[^>]+>/g, '').replace(/[#*_\`\[\]()>|]/g, '').trim() : '';
-    const wordCount = rawText.length;
-    return {
-      title: l.data.title,
-      type: l.data.type,
-      slug: `/log/${l.id}`,
-      tags: l.data.tags,
-      excerpt: rawText.slice(0, 80),
-      wordCount,
-    };
-  }),
-  ...allIdeas.map(i => {
-    const rawText = i.data.scenario || '';
-    const wordCount = rawText.length;
-    return {
-      title: i.data.title,
-      type: 'idea' as const,
-      slug: `/ideas`,
-      tags: i.data.tags,
-      excerpt: rawText.slice(0, 80),
-      wordCount,
-    };
-  }),
-];
+const allContent = allLogs.map(l => {
+  const rawText = l.body ? l.body.replace(/<[^>]+>/g, '').replace(/[#*_\\`\\[\\]()>|]/g, '').trim() : '';
+  const wordCount = rawText.length;
+  return {
+    title: l.data.title,
+    type: l.data.type,
+    slug: `/${l.data.category}/${l.id}`,
+    tags: l.data.tags,
+    excerpt: rawText.slice(0, 80),
+    wordCount,
+  };
+});
 
 const random = allContent[Math.floor(Math.random() * allContent.length)];
+
+// 根据类型选择图标
+const typeIcons: Record<string, string> = {
+  article: 'lucide:file-text',
+  photo: 'lucide:camera',
+  thought: 'lucide:lightbulb',
+  project: 'lucide:code-2',
+  dialogue: 'lucide:message-circle',
+  idea: 'lucide:sparkles',
+};
+const iconName = random ? typeIcons[random.type] || 'lucide:bookmark' : 'lucide:bookmark';
 ---
 
-<div class="panel-glass p-6 flex flex-col h-full group rounded-[40px]" style="background: rgba(255,255,255,0.6);">
-  <div class="text-[13px] font-body text-parchment/60 mb-4 px-1">
-    随机推荐
+<div class="panel-glass p-5 flex flex-col h-full group rounded-[40px]" style="background: rgba(255,255,255,0.5);">
+  <div class="flex items-center gap-2 mb-3.5 px-0.5">
+    <iconify-icon icon="lucide:shuffle" width="13" height="13" class="text-parchment/30"></iconify-icon>
+    <span class="text-[11px] font-mono text-parchment/30 uppercase tracking-[0.15em]">Random Pick</span>
   </div>
 
   {random ? (
-    <a href={random.slug} class="flex items-center gap-4 no-underline px-1">
+    <a href={random.slug} class="flex items-center gap-3.5 no-underline px-0.5">
       <!-- 左侧图标框 -->
-      <div class="w-14 h-14 rounded-2xl shrink-0 overflow-hidden bg-white/70 border border-white flex flex-col items-center justify-center relative shadow-sm">
-        <iconify-icon icon="lucide:linux" width="22" height="22" class="text-brand"></iconify-icon>
+      <div class="w-12 h-12 rounded-2xl shrink-0 overflow-hidden bg-white/60 border border-white/80 flex flex-col items-center justify-center relative shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
+        <iconify-icon icon={iconName} width="20" height="20" class="text-brand"></iconify-icon>
       </div>
       
       <!-- 右侧信息 -->
       <div class="flex flex-col flex-1 min-w-0">
-        <div class="text-parchment text-[14px] font-body font-medium leading-snug truncate group-hover:text-brand transition-colors">
+        <div class="text-parchment text-[13px] font-body font-medium leading-snug truncate group-hover:text-brand transition-colors">
           {random.title}
         </div>
-        <div class="text-parchment-dim/60 text-[11px] font-body mt-2 flex items-center gap-2">
-          <span>Views: {Math.floor(Math.random() * 200000).toLocaleString()}</span>
-          <span>Marks: {Math.floor(Math.random() * 5000).toLocaleString()}</span>
+        <div class="flex items-center gap-1.5 mt-1.5">
+          {random.tags?.slice(0, 2).map((tag: string) => (
+            <span class="text-[10px] font-mono text-parchment/30 bg-parchment/[0.04] px-2 py-0.5 rounded-full">{tag}</span>
+          ))}
         </div>
       </div>
     </a>

@@ -3,7 +3,7 @@ title: 留白不是空：设计的呼吸感
 date: 2026-04-15
 tags: [设计]
 type: article
-domain: ai-exploration
+category: ai
 published: true
 ---
 

@@ -8,7 +8,7 @@ const { iconOnly = false } = Astro.props;
 {iconOnly ? (
   <button
     id="search-open"
-    class="w-[50px] h-[50px] panel-glass flex items-center justify-center text-parchment/60 hover:text-parchment hover:bg-white/5 transition-colors border-none cursor-pointer shadow-md rounded-[20px]"
+    class="w-[50px] h-[50px] bg-white flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors border border-gray-200 cursor-pointer shadow-sm rounded-xl"
     aria-label="搜索"
   >
     <iconify-icon icon="lucide:search" width="20" height="20"></iconify-icon>
@@ -16,7 +16,7 @@ const { iconOnly = false } = Astro.props;
 ) : (
   <button
     id="search-open"
-    class="flex items-center gap-2 text-parchment/40 hover:text-bio-cyan transition-colors text-xs font-heading tracking-wider cursor-pointer bg-transparent border-none"
+    class="flex items-center gap-2 text-gray-400 hover:text-brand transition-colors text-xs font-heading tracking-wider cursor-pointer bg-transparent border-none"
     aria-label="搜索"
   >
     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -24,24 +24,21 @@ const { iconOnly = false } = Astro.props;
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
     <span class="hidden md:inline">搜索</span>
-    <kbd class="hidden md:inline text-[10px] px-1.5 py-0.5 rounded border border-white/[0.08] text-parchment/25 ml-1 font-mono">⌘K</kbd>
+    <kbd class="hidden md:inline text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-400 bg-gray-50 ml-1 font-mono">⌘K</kbd>
   </button>
 )}
 
 <!-- 搜索浮层 -->
 <div id="search-modal" class="fixed inset-0 z-[100] hidden" style="animation: modal-enter 0.2s ease-out;">
   <!-- 遮罩 -->
-  <div id="search-backdrop" class="absolute inset-0 bg-abyss/80 backdrop-blur-sm">
-    <!-- 径向青色微光 -->
-    <div class="absolute inset-0" style="background: radial-gradient(ellipse at center, rgba(0,229,255,0.05) 0%, transparent 70%)"></div>
-  </div>
+  <div id="search-backdrop" class="absolute inset-0 bg-gray-900/20 backdrop-blur-sm"></div>
 
   <!-- 搜索面板 -->
   <div class="relative z-10 max-w-2xl mx-auto mt-[15vh] px-4">
-    <div class="panel-glass overflow-hidden" id="search-panel">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden" id="search-panel">
       <!-- 输入框 -->
-      <div class="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] transition-all" id="search-input-wrap">
-        <svg class="w-5 h-5 text-bio-cyan/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 transition-all bg-white" id="search-input-wrap">
+        <svg class="w-5 h-5 text-brand/70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
@@ -49,20 +46,20 @@ const { iconOnly = false } = Astro.props;
           id="search-input"
           type="text"
           placeholder="在这片海域中搜索..."
-          class="flex-1 bg-transparent border-none outline-none text-parchment text-base font-body placeholder:text-parchment/25"
+          class="flex-1 bg-transparent border-none outline-none text-gray-900 text-base font-body placeholder:text-gray-400"
           autocomplete="off"
         />
         <button
           id="search-close"
-          class="text-parchment/30 hover:text-parchment/60 text-xs px-2 py-1 rounded border border-white/[0.06] hover:border-white/[0.12] cursor-pointer bg-transparent font-mono transition-colors"
+          class="text-gray-400 hover:text-gray-700 text-xs px-2 py-1 rounded border border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer bg-transparent font-sans font-medium transition-all"
         >
           ESC
         </button>
       </div>
 
       <!-- 结果区域 -->
-      <div id="search-results" class="max-h-[50vh] overflow-y-auto px-2 py-2">
-        <div id="search-empty" class="py-12 text-center text-parchment/30 text-sm">
+      <div id="search-results" class="max-h-[50vh] overflow-y-auto px-2 py-2 bg-gray-50/50">
+        <div id="search-empty" class="py-12 text-center text-gray-400 text-sm">
           输入关键词，探索这片海域
         </div>
         <div id="search-list"></div>
@@ -74,8 +71,13 @@ const { iconOnly = false } = Astro.props;
 <style>
   .pagefind-ui { display: none !important; }
   #search-input-wrap:focus-within {
-    border-color: rgba(0, 229, 255, 0.3);
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+    border-color: rgba(53, 191, 171, 0.4);
+    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.05);
+  }
+  
+  @keyframes modal-enter {
+    from { opacity: 0; transform: scale(0.98) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
 </style>
 
@@ -174,15 +176,39 @@ const { iconOnly = false } = Astro.props;
 
       if (emptyState) emptyState.classList.add('hidden');
 
+      const computedStyle = getComputedStyle(document.body);
+      const fontBody = computedStyle.getPropertyValue('--font-body') || 'Inter, sans-serif';
+      
       const html = await Promise.all(
         results.results.slice(0, 8).map(async (r: any) => {
           const data = await r.data();
+          let excerpt = data.excerpt || '';
+          
+          try {
+            // Import dynamically to ensure it's available client-side
+            const { prepareWithSegments, layoutWithLines } = await import('@chenglou/pretext');
+            // Assuming the text container max width is ~500px in the modal
+            const prepared = prepareWithSegments(excerpt.replace(/<[^>]+>/g, ''), `12px ${fontBody}`);
+            const layout = layoutWithLines(prepared, 500, 16);
+            if (layout.lines.length > 2) {
+               excerpt = layout.lines[0].text + layout.lines[1].text + '...';
+            } else {
+               excerpt = layout.lines.map((l: any) => l.text).join('');
+            }
+          } catch (e) {
+            // Fallback if pretext fails
+            console.error('Pretext measurement failed', e);
+          }
+
           return `
-            <a href="${data.url}" class="block px-4 py-3 rounded-lg hover:bg-white/[0.04] border-l-2 border-transparent hover:border-l-bio-cyan/50 transition-all no-underline group">
-              <div class="text-parchment text-sm font-heading group-hover:text-bio-cyan transition-colors mb-1">
-                ${data.meta?.title || data.url}
+            <a href="${data.url}" class="block px-4 py-3 mb-1 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-sm transition-all no-underline group bg-transparent">
+              <div class="text-gray-900 text-sm font-medium group-hover:text-brand transition-colors mb-1.5 flex items-center justify-between">
+                <span>${data.meta?.title || data.url}</span>
+                <span class="text-gray-300 group-hover:text-brand/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </span>
               </div>
-              <p class="text-parchment/40 text-xs line-clamp-2">${data.excerpt || ''}</p>
+              <p class="text-gray-500 text-xs leading-relaxed">${excerpt}</p>
             </a>
           `;
         })

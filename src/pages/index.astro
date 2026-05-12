@@ -7,93 +7,116 @@ import CalendarWidget from '../components/CalendarWidget.astro';
 import MusicPlayer from '../components/MusicPlayer.astro';
 import RandomRecommend from '../components/RandomRecommend.astro';
 import RecentTraces from '../components/RecentTraces.astro';
-import SearchModal from '../components/SearchModal.astro';
+
 import LikeCounter from '../components/LikeCounter.astro';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
 
-const logs = (await getCollection('log', ({ data }) => data.published))
+const allLogs = await getCollection('log', ({ data }) => data.published);
+const aiLogs = allLogs
+  .filter(log => log.data.category === 'ai')
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
-const latestPhoto = logs.find(l => l.data.type === 'photo');
+const latestPhoto = allLogs
+  .filter(log => log.data.type === 'photo')
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())[0];
 const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=800&auto=format&fit=crop";
 ---
 
-<Base title="秋知 — 行过万里水路" theme="nature">
+<Base title="Walker — 行过万里水路" theme="nature">
 
   <!-- 画板模式：绝对居中并根据窗口大小按比例缩放 -->
   <div class="fixed inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
     <!-- 内容容器恢复指针事件 -->
-    <div id="desktop-canvas" class="w-[1024px] pointer-events-auto transition-transform duration-300 origin-center flex justify-center">
+    <div id="desktop-canvas" class="w-[1060px] pointer-events-auto transition-transform duration-300 origin-center flex justify-center">
 
-      <!-- === 三栏 Bento Box 布局（错落感，但不交叉重叠） === -->
-      <div class="grid grid-cols-[240px_380px_320px] justify-center gap-8 items-start w-full relative pb-10">
+      <!-- === 三栏 Bento Box 布局 === -->
+      <div class="grid grid-cols-[240px_400px_320px] justify-center gap-6 items-start w-full relative pb-10">
 
         <!-- ========================================= -->
         <!-- 左栏：资料与导航 -->
         <!-- ========================================= -->
-        <div class="flex flex-col gap-8 mt-24">
+        <div class="flex flex-col gap-5 mt-20">
           <!-- 个人资料卡 + 导航菜单 -->
           <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <WalkerProfile />
           </div>
           
-          <!-- 最新文章 (轻微错开，不重叠) -->
-          <div class="pop-in delay-2 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px] ml-4">
-            <RecentTraces logs={logs.slice(0, 4)} />
+          <div class="pop-in delay-2 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px] ml-3">
+            <RecentTraces logs={aiLogs.slice(0, 4)} />
+          </div>
+
+          <!-- 搜索入口 (⌘K 风格) -->
+          <div class="pop-in delay-3 ml-1">
+            <button 
+              class="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-white/40 border border-white/60 text-parchment-dim/60 hover:bg-white/60 hover:text-parchment-dim transition-all text-[13px] font-body tracking-wide cursor-pointer backdrop-blur-sm"
+              id="search-trigger"
+              aria-label="搜索"
+            >
+              <iconify-icon icon="lucide:search" width="15" height="15"></iconify-icon>
+              <span class="flex-1 text-left">搜索文章...</span>
+              <span class="flex items-center gap-1">
+                <span class="kbd">⌘</span>
+                <span class="kbd">K</span>
+              </span>
+            </button>
           </div>
         </div>
 
         <!-- ========================================= -->
         <!-- 中栏：墙纸 + 问候 + 社交 + 推荐 -->
         <!-- ========================================= -->
-        <!-- 中栏：整体往上提，错开左右两栏 -->
-        <div class="flex flex-col items-center -mt-6">
+        <div class="flex flex-col items-center -mt-4">
           <!-- 顶部照片墙/壁纸展示 (Polaroid Collage Style) -->
-          <div class="aspect-[4/3] w-full flex items-center justify-center overflow-visible pop-in delay-2 draggable-card cursor-grab mb-2">
+          <div class="aspect-[4/3] w-full flex items-center justify-center overflow-visible pop-in delay-2 draggable-card cursor-grab mb-1">
              <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                <div class="relative w-[90%] h-[90%]">
                  <div class="absolute inset-0 rotate-[-8deg] scale-[0.8] bg-white p-2 pb-10 shadow-lg rounded-sm translate-x-[-20%] translate-y-[5%] border border-black/[0.03]">
-                   <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover rounded-sm grayscale-[0.2]" />
+                   <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover rounded-sm grayscale-[0.2]" alt="Photo 1" />
                  </div>
                  <div class="absolute inset-0 rotate-[12deg] scale-[0.85] bg-white p-2 pb-10 shadow-lg rounded-sm translate-x-[20%] translate-y-[-10%] border border-black/[0.03]">
-                   <img src="https://images.unsplash.com/photo-1493246507139-91e8bef99c02?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover rounded-sm" />
+                   <img src="https://images.unsplash.com/photo-1493246507139-91e8bef99c02?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover rounded-sm" alt="Photo 2" />
                  </div>
                  <div class="absolute inset-0 rotate-[-1deg] scale-[0.95] bg-white p-2.5 pt-2.5 pb-12 shadow-2xl rounded-sm z-10 border border-black/[0.05]">
-                   <img src={coverUrl} alt="Cover" onerror="this.src='https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=800&auto=format&fit=crop'" class="w-full h-full object-cover rounded-sm pointer-events-auto" loading="eager" />
+                   <img src={coverUrl} alt="Cover" class="w-full h-full object-cover rounded-sm pointer-events-auto" loading="eager" />
                    <div class="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-mono text-[#8a9ca0] italic font-medium tracking-wide">Moments</div>
                  </div>
                </div>
              </div>
           </div>
 
-          <!-- 问候卡 (正常间距，不再负边距重叠) -->
-          <div class="pop-in delay-3 w-full draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px] mt-4">
-            <GreetingCard />
-          </div>
+          <!-- 问候卡（可点击跳转关于我） -->
+          <a href="/about-me" class="block pop-in delay-3 w-full draggable-card cursor-grab rounded-[40px] mt-3 no-underline group/greeting transition-all hover:shadow-xl hover:-translate-y-1" id="greeting-link">
+            <div class="relative">
+              <GreetingCard />
+              <div class="absolute bottom-4 right-5 opacity-0 group-hover/greeting:opacity-60 transition-opacity text-parchment-dim">
+                <iconify-icon icon="lucide:arrow-right" width="16" height="16"></iconify-icon>
+              </div>
+            </div>
+          </a>
 
-          <!-- 社交按钮 -->
-          <div class="flex flex-wrap items-center justify-center gap-3 pop-in delay-4 mt-6 draggable-card cursor-grab">
-            <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#111] text-white hover:scale-105 transition-transform no-underline text-[14px] font-body font-medium shadow-sm">
-              <iconify-icon icon="mdi:github" width="18" height="18"></iconify-icon>
+          <!-- 社交按钮 (更精致的胶囊) -->
+          <div class="flex flex-wrap items-center justify-center gap-2.5 pop-in delay-4 mt-5 draggable-card cursor-grab">
+            <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111]/90 text-white/90 hover:bg-[#111] hover:text-white hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm">
+              <iconify-icon icon="mdi:github" width="17" height="17"></iconify-icon>
               Github
             </a>
-            <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-5 py-3 rounded-2xl bg-white/70 text-[#fb7299] hover:scale-105 transition-transform no-underline text-[14px] font-body shadow-sm">
-               <iconify-icon icon="ri:bilibili-fill" width="18" height="18"></iconify-icon>
+            <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/60 text-[#fb7299] hover:bg-white/80 hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm border border-white/60">
+               <iconify-icon icon="ri:bilibili-fill" width="17" height="17"></iconify-icon>
                Bilibili
             </a>
-            <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-5 py-3 rounded-2xl bg-white/70 text-[#ff2442] hover:scale-105 transition-transform no-underline text-[14px] font-body shadow-sm">
-               <iconify-icon icon="ri:xiaohongshu-fill" width="18" height="18"></iconify-icon>
+            <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/60 text-[#ff2442] hover:bg-white/80 hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm border border-white/60">
+               <iconify-icon icon="ri:xiaohongshu-fill" width="17" height="17"></iconify-icon>
                小红书
             </a>
-            <a href="mailto:praxiswalker@gmail.com" class="w-[44px] h-[44px] rounded-2xl bg-white/70 text-brand flex items-center justify-center hover:scale-105 transition-transform no-underline shadow-sm">
-              <iconify-icon icon="mingcute:mail-fill" width="18" height="18"></iconify-icon>
+            <a href="mailto:praxiswalker@gmail.com" class="w-[40px] h-[40px] rounded-full bg-white/60 text-brand flex items-center justify-center hover:bg-white/80 hover:scale-105 transition-all no-underline shadow-sm backdrop-blur-sm border border-white/60">
+              <iconify-icon icon="mingcute:mail-fill" width="17" height="17"></iconify-icon>
             </a>
           </div>
 
           <!-- 随机推荐 -->
-          <div class="pop-in delay-5 mt-8 w-[95%] draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
+          <div class="pop-in delay-5 mt-6 w-[95%] draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <RandomRecommend />
           </div>
         </div>
@@ -101,17 +124,8 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
         <!-- ========================================= -->
         <!-- 右栏：小组件 -->
         <!-- ========================================= -->
-        <div class="flex flex-col gap-6 mt-12 relative">
-          <!-- 顶部写文章按钮 + 搜索 -->
-          <div class="flex items-center justify-end gap-3 pop-in delay-2 draggable-card cursor-grab">
-            <a href="/log" class="px-6 h-11 flex items-center justify-center gap-2 text-white bg-[#35bfab] hover:opacity-90 transition-opacity shadow-md no-underline font-body text-[14px] font-medium tracking-wide rounded-full border-none">
-              <iconify-icon icon="lucide:pen-line" width="16" height="16"></iconify-icon>
-              写文章
-            </a>
-            <button class="w-11 h-11 flex items-center justify-center text-parchment/40 hover:text-parchment transition-colors rounded-xl bg-white/30 border-none cursor-pointer">
-              <iconify-icon icon="lucide:grip" width="20" height="20"></iconify-icon>
-            </button>
-          </div>
+        <div class="flex flex-col gap-5 mt-10 relative">
+          <!-- 占位（写文章按钮已移除） -->
 
           <!-- 数字时钟 -->
           <div class="pop-in delay-3 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
@@ -119,17 +133,17 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
           </div>
 
           <!-- 日历 -->
-          <div class="pop-in delay-4 ml-4 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
+          <div class="pop-in delay-4 ml-3 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <CalendarWidget />
           </div>
 
-          <!-- 音乐播放器 (不再交叉，只给个左边距) -->
-          <div class="pop-in delay-5 -ml-4 mt-2 w-[280px] draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
+          <!-- 音乐播放器 -->
+          <div class="pop-in delay-5 -ml-3 mt-1 w-[280px] draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <MusicPlayer />
           </div>
           
-          <!-- 点赞按钮 (放在正常文档流并居中，约束宽度防止产生巨型阴影) -->
-          <div class="flex justify-center pop-in delay-6 pt-4">
+          <!-- 点赞按钮 -->
+          <div class="flex justify-center pop-in delay-6 pt-3">
             <div class="w-max draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-full">
               <LikeCounter pagePath="/" />
             </div>
@@ -140,25 +154,35 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
     </div>
   </div>
 
+  <!-- 底部签名线 -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 text-[11px] font-mono text-parchment/25 tracking-wider pop-in delay-6" style="animation-delay: 1s;">
+    <span class="status-dot"></span>
+    <span>Walker · 行过万里水路</span>
+  </div>
+
   <style>
-    /* 弹跳式进入动画 */
+    /* 弹跳式进入动画 (更流畅的 spring 曲线) */
     .pop-in {
-      animation: popInBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      animation: popInSpring 0.9s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
       opacity: 0;
-      transform: translateY(40px) scale(0.85);
+      transform: translateY(30px) scale(0.92);
       will-change: transform, opacity;
     }
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-    .delay-4 { animation-delay: 0.4s; }
-    .delay-5 { animation-delay: 0.5s; }
-    .delay-6 { animation-delay: 0.6s; }
+    .delay-1 { animation-delay: 0.08s; }
+    .delay-2 { animation-delay: 0.16s; }
+    .delay-3 { animation-delay: 0.24s; }
+    .delay-4 { animation-delay: 0.32s; }
+    .delay-5 { animation-delay: 0.42s; }
+    .delay-6 { animation-delay: 0.52s; }
 
-    @keyframes popInBounce {
+    @keyframes popInSpring {
       0% {
         opacity: 0;
-        transform: translateY(40px) scale(0.85);
+        transform: translateY(30px) scale(0.92);
+      }
+      60% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.01);
       }
       100% {
         opacity: 1;
@@ -175,16 +199,16 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
   </style>
 
   <script>
-    // 画板缩放逻辑：始终保证 1024x800 的画板完整显示在屏幕中心
+    // 画板缩放逻辑：始终保证 1060x860 的画板完整显示在屏幕中心
     function resizeCanvas() {
       const canvas = document.getElementById('desktop-canvas');
       if (!canvas) return;
-      const CANVAS_WIDTH = 1024;
+      const CANVAS_WIDTH = 1060;
       const CANVAS_HEIGHT = 860;
       const scaleX = window.innerWidth / CANVAS_WIDTH;
       const scaleY = window.innerHeight / CANVAS_HEIGHT;
       let scale = Math.min(scaleX, scaleY);
-      scale = Math.min(scale, 1.2);
+      scale = Math.min(scale, 1.15);
       canvas.style.transform = `scale(${scale})`;
     }
     window.addEventListener('resize', resizeCanvas);
@@ -207,6 +231,7 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
           if (target.closest('a') || target.closest('button')) return;
 
           activeItem = item;
+          if (!activeItem) return;
           activeItem.classList.remove('cursor-grab');
           activeItem.classList.add('cursor-grabbing');
           
@@ -216,8 +241,8 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
           const clientX = e.type.includes('mouse') ? (e as MouseEvent).clientX : (e as TouchEvent).touches[0].clientX;
           const clientY = e.type.includes('mouse') ? (e as MouseEvent).clientY : (e as TouchEvent).touches[0].clientY;
 
-          initialX = clientX - parseFloat(activeItem.dataset.x);
-          initialY = clientY - parseFloat(activeItem.dataset.y);
+          initialX = clientX - parseFloat(activeItem.dataset.x || '0');
+          initialY = clientY - parseFloat(activeItem.dataset.y || '0');
         };
 
         item.addEventListener('mousedown', onDragStart);
@@ -237,7 +262,7 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
         activeItem.dataset.y = currentY.toString();
 
         // 应用拖拽时的 transform，并加上悬浮感 (scale) 和倾斜
-        activeItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) scale(1.03) rotate(1deg)`;
+        activeItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) scale(1.02) rotate(0.5deg)`;
       };
 
       const onDragEnd = () => {
@@ -257,10 +282,21 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
       document.addEventListener('touchend', onDragEnd);
     }
 
-    initDraggables();
-    document.addEventListener('astro:after-swap', () => {
+    document.addEventListener('astro:page-load', () => {
       resizeCanvas();
       initDraggables();
+    });
+
+    // ⌘K 快捷键搜索
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        // 触发搜索弹窗（如果有 SearchModal）
+        const modal = document.getElementById('search-modal');
+        if (modal) {
+          modal.classList.toggle('hidden');
+        }
+      }
     });
   </script>
 </Base>

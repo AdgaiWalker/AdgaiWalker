@@ -3,7 +3,7 @@ title: 一人食：蒜香橄榄油意面
 date: 2026-04-18
 tags: [厨艺]
 type: article
-domain: ai-life
+category: life
 published: true
 ---
 

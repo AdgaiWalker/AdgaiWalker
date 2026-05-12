@@ -1,0 +1,143 @@
+---
+/**
+ * /life/[slug] — 生活日志详情页
+ * 使用 ArticleLayout 三栏布局：导航 + TOC + 正文
+ */
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import LikeCounter from '../../components/LikeCounter.astro';
+import { getCollection, render } from 'astro:content';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const entries = await getCollection('log', ({ data }) => data.published && data.category === 'life');
+  return entries.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+if (!entry) {
+  return Astro.redirect('/404');
+}
+
+const { Content, headings } = await render(entry);
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+const rawBody = entry.body || '';
+const cleanBody = rawBody
+  .replace(/^---[\s\S]*?---/, '')
+  .replace(/^import\s+.*$/gm, '')
+  .replace(/<[^>]+>/g, '')
+  .replace(/[#*_`\[\]()>|]/g, '')
+  .trim();
+const description = cleanBody.slice(0, 160);
+
+// 获取同分类文章列表（供侧边栏使用）
+const allLifeArticles = await getCollection('log', ({ data }) =>
+  data.published && data.category === 'life'
+);
+const articleList = allLifeArticles
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .map(a => ({
+    id: a.id,
+    title: a.data.title,
+    date: a.data.date,
+    tags: a.data.tags,
+    summary: a.data.summary,
+  }));
+---
+
+<ArticleLayout
+  title={`${entry.data.title} — Walker 生活日志`}
+  description={description}
+  ogTitle={entry.data.title}
+  ogDescription={entry.data.summary ?? entry.data.description ?? description}
+  ogImage={entry.data.cover ?? '/images/hero-bg.png'}
+  canonicalUrl={Astro.url.href}
+  headings={headings}
+  currentSlug={entry.id}
+  category="life"
+  articleList={articleList}
+>
+  <div class="reading-mode min-h-screen">
+    <article class="max-w-3xl mx-auto px-6 pt-32 pb-24" data-pagefind-body>
+      <header class="mb-14">
+        <!-- 顶部元信息 -->
+        <div class="flex items-center gap-4 mb-6 text-[13px] font-mono tracking-wider text-slate-400">
+          <a href="/life" class="hover:text-emerald-500 transition-colors no-underline">
+            生活日志
+          </a>
+          <span>/</span>
+          <time>{formatDate(entry.data.date)}</time>
+          <div class="flex gap-2 ml-auto">
+            {entry.data.tags.map((tag: string) => (
+              <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] uppercase tracking-tighter">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <!-- 文章标题 -->
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] mb-8" data-pagefind-meta="title">
+          {entry.data.title}
+        </h1>
+
+        <!-- 封面 -->
+        {entry.data.cover && (
+          <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl">
+            <img src={entry.data.cover} alt={entry.data.title} class="w-full h-full object-cover" />
+          </div>
+        )}
+
+        <!-- 引言 -->
+        {entry.data.summary && (
+          <div class="text-xl text-slate-500 leading-relaxed font-light mb-12 italic border-l-4 border-emerald-200 pl-6">
+            {entry.data.summary}
+          </div>
+        )}
+      </header>
+
+      <!-- 文章正文 -->
+      <div class="prose prose-slate max-w-none break-words
+                  prose-p:text-lg prose-p:leading-8 prose-p:text-slate-700
+                  prose-headings:text-slate-900 prose-headings:font-bold
+                  prose-strong:text-slate-900
+                  prose-blockquote:border-emerald-500 prose-blockquote:bg-emerald-50/30 prose-blockquote:py-1
+                  prose-code:bg-slate-100 prose-code:text-emerald-600 prose-code:px-1 prose-code:rounded
+                  prose-img:rounded-2xl prose-img:shadow-xl">
+        <Content />
+      </div>
+
+      <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
+        <a href="/life" class="text-slate-400 hover:text-emerald-500 transition-colors no-underline flex items-center gap-2 text-sm font-medium">
+          <iconify-icon icon="lucide:arrow-left" width="16" height="16"></iconify-icon>
+          返回生活日志
+        </a>
+
+        <!-- 点赞组件 -->
+        <div class="scale-90 origin-right">
+          <LikeCounter pagePath={`/life/${entry.id}`} />
+        </div>
+      </footer>
+    </article>
+  </div>
+</ArticleLayout>
+
+<style is:global>
+  .reading-mode {
+    background-color: var(--reading-bg) !important;
+    color: var(--reading-text) !important;
+  }
+
+  .reading-mode #ambient-particles,
+  .reading-mode .mouse-glow,
+  .reading-mode .grain-overlay {
+    display: none !important;
+  }
+</style>

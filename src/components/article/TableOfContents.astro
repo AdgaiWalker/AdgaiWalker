@@ -1,0 +1,130 @@
+---
+/**
+ * TableOfContents — 文章目录组件
+ * 固定在中栏，跟随滚动高亮当前章节
+ */
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+
+// 仅显示 h2 和 h3
+const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+---
+
+<nav class="toc-nav" aria-label="文章目录" id="toc-nav">
+  <div class="toc-title">ON THIS PAGE</div>
+  {tocItems.length > 0 ? (
+    <ul class="toc-list">
+      {tocItems.map((heading) => (
+        <li class:list={['toc-item', heading.depth === 3 && 'toc-item-indent']}>
+          <a
+            href={`#${heading.slug}`}
+            class="toc-link"
+            data-toc-slug={heading.slug}
+            title={heading.text}
+          >
+            {heading.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="toc-empty">暂无目录</p>
+  )}
+</nav>
+
+<style>
+  .toc-nav {
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 5rem;
+  }
+
+  .toc-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: #8b9a9d;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+
+  .toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    /* 飞书风格的连续左侧线条 */
+    border-left: 1px solid #eaedf0;
+  }
+
+  .toc-item {
+    position: relative;
+  }
+
+  .toc-item-indent {
+    padding-left: 1rem;
+  }
+
+  .toc-link {
+    display: block;
+    padding: 0.4rem 0 0.4rem 1rem;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #7a8a92;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  /* 悬停态：文字变深 */
+  .toc-link:hover {
+    color: #1a2325;
+  }
+
+  /* 当前活跃章节指示器：覆盖在父级的 border-left 之上 */
+  .toc-link::before {
+    content: '';
+    position: absolute;
+    left: -1px; /* 覆盖在 ul 的边框上 */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+  }
+
+  .toc-item-indent .toc-link::before {
+    left: calc(-1rem - 1px);
+  }
+
+  /* 当前活跃章节 */
+  .toc-link.active {
+    color: #35bfab;
+    font-weight: 500;
+  }
+
+  .toc-link.active::before {
+    background-color: #35bfab;
+  }
+
+  .toc-empty {
+    font-size: 12px;
+    color: #8b9a9d;
+  }
+</style>

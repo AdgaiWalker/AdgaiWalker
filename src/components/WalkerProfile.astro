@@ -1,38 +1,47 @@
 ---
 /**
- * WalkerProfile — 首页左栏个人资料卡 (lvyovo 风格)
- * 只有名字+状态标签+纯文字导航链接
+ * WalkerProfile — 首页左栏个人资料卡 (精致风格)
+ * 名字+在线状态+纯文字导航链接
  */
 ---
 
 <div class="panel-glass p-5 pt-7 flex flex-col h-full group">
   <!-- 名字与状态 -->
-  <div class="flex items-baseline gap-2 mb-8 px-1">
-    <h2 class="font-heading text-parchment text-[24px] font-semibold tracking-wide">秋知</h2>
-    <span class="text-[12px] text-brand font-body font-medium">(开发中)</span>
+  <div class="flex items-center gap-3 mb-8 px-1">
+    <h2 class="font-heading text-parchment text-[22px] font-semibold tracking-tight">Walker</h2>
+    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/8 border border-brand/15">
+      <span class="status-dot" style="width: 6px; height: 6px;"></span>
+      <span class="text-[11px] text-brand font-body font-medium">开发中</span>
+    </div>
   </div>
 
   <!-- 导航标题 -->
-  <div class="text-[10px] font-mono text-parchment-dim/40 uppercase tracking-widest mb-4 px-1">
-    NAL
+  <div class="text-[10px] font-mono text-parchment-dim/35 uppercase tracking-[0.2em] mb-3 px-1">
+    NAVIGATION
   </div>
 
   <!-- 频道导航（纯文字，无图标） -->
-  <nav class="flex flex-col gap-1" aria-label="频道导航">
-    <a href="/log" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
-      近期文章
+  <nav class="flex flex-col gap-0.5" aria-label="频道导航">
+    <a href="/ai" class="block px-4 py-2.5 rounded-2xl bg-white/80 shadow-[0_1px_4px_rgba(0,0,0,0.03)] text-parchment transition-all text-[14px] font-body tracking-wide no-underline font-medium">
+      最新文章
     </a>
-    <a href="/works" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
-      我的项目
+    <a href="/ai/learn" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      学习
     </a>
-    <a href="/about" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
-      关于网站
+    <a href="/ai/toolkit" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      工具箱
     </a>
-    <a href="/dock" class="block px-4 py-2.5 rounded-2xl bg-white/90 shadow-sm text-parchment transition-all text-[15px] font-body tracking-wider no-underline font-medium">
-      推荐分享
+    <a href="/ai/sources" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      信息源
     </a>
-    <a href="/compass" class="block px-4 py-2.5 rounded-2xl text-parchment/60 hover:bg-white/40 hover:text-parchment transition-all text-[15px] font-body tracking-wider no-underline">
-      优秀博客
+    <a href="/ai/ideas" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      Idea
+    </a>
+    <a href="/life" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      生活日志
+    </a>
+    <a href="/about-me" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      关于我
     </a>
   </nav>
 </div>

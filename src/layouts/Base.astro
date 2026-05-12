@@ -16,8 +16,8 @@ interface Props {
 }
 
 const {
-  title = '秋知 — 行过万里水路',
-  description = '秋知的个人航海日志，记录 AI 探索、独立开发与生活点滴。',
+  title = 'Walker — 行过万里水路',
+  description = 'Walker 的个人航海日志，记录 AI 探索、独立开发与生活点滴。',
   ogImage = '/images/hero-bg.png',
   ogTitle,
   ogDescription,
@@ -42,8 +42,11 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="theme-color" content="#35bfab" />
+    <meta name="author" content="Walker (秋知)" />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title="秋知 RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
+    <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
     
     <!-- 引入外部字体 (增加 Inter + Sora) -->
     <link rel="preconnect" href="https://fonts.googleapis.cn">
@@ -54,10 +57,28 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     <meta property="og:image" content={absoluteOgImage} />
     <meta property="og:url" content={canonical} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Walker 知识空间" />
+    <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={pageDescription} />
     <meta name="twitter:image" content={absoluteOgImage} />
+    
+    <!-- JSON-LD 结构化数据 -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Walker 知识空间",
+      "alternateName": "秋知的个人博客",
+      "url": Astro.site?.toString() || "https://iwalk.pro",
+      "description": "Walker 的个人航海日志，记录 AI 探索、独立开发与生活点滴。",
+      "author": {
+        "@type": "Person",
+        "name": "Walker (秋知)",
+        "url": Astro.site?.toString() || "https://iwalk.pro"
+      },
+      "inLanguage": "zh-CN"
+    })} />
     
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <ClientRouter />
@@ -89,8 +110,12 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
       </>
     )}
 
-    {!isHome && <Navigation />}
-    <div class:list={["flex flex-col flex-1 w-full", isHome ? "" : "lg:pl-64"]}>
+    {!isHome && (
+      <Navigation transition:persist>
+        <slot name="nav-extension" />
+      </Navigation>
+    )}
+    <div class:list={["flex flex-col flex-1 w-full", isHome ? "" : "lg:pl-[260px]"]} transition:animate="fade">
       <main class="flex-1 relative z-10 w-full">
         <slot />
       </main>
@@ -150,7 +175,7 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 
       setupMouseGlow();
       setupTilt();
-      document.addEventListener('astro:after-swap', () => {
+      document.addEventListener('astro:page-load', () => {
         setupMouseGlow();
         setupTilt();
       });

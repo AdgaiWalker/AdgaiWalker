@@ -1,4 +1,8 @@
 ---
+/**
+ * LikeCounter — 点赞组件
+ * 视觉优化：未点击(描边心形 + 中性色) → 已点击(实心心形 + 粉色 + 弹跳动画)
+ */
 interface Props {
   pagePath: string;
 }
@@ -6,17 +10,27 @@ interface Props {
 const { pagePath } = Astro.props;
 ---
 
-<div class="relative flex items-center justify-center group mt-2">
-  <!-- 胶囊形点赞按钮 (爱心 + 数字并排) -->
+<div class="like-wrapper">
   <button
-    class="px-5 h-12 rounded-full bg-white/70 border border-white flex items-center justify-center gap-2.5 hover:bg-white transition-all shadow-sm disabled:opacity-60 cursor-pointer"
+    class="like-btn"
     type="button"
     data-like-counter
     data-page-path={pagePath}
     aria-label="喜欢这个页面"
   >
-    <iconify-icon icon="mingcute:heart-fill" width="20" height="20" class="text-[#fb7299]"></iconify-icon>
-    <span class="text-[13px] font-mono font-medium text-[#7b888e]" data-like-count>0</span>
+    {/* 未点击状态 — 描边心形 */}
+    <span class="like-icon like-icon-outline">
+      <iconify-icon icon="lucide:heart" width="26" height="26"></iconify-icon>
+    </span>
+    {/* 已点击状态 — 实心心形 */}
+    <span class="like-icon like-icon-filled">
+      <iconify-icon icon="mingcute:heart-fill" width="26" height="26"></iconify-icon>
+    </span>
+
+    {/* 计数气泡 */}
+    <div class="like-count-badge">
+      <span class="like-count-num" data-like-count>0</span>
+    </div>
   </button>
 </div>
 
@@ -35,7 +49,7 @@ const { pagePath } = Astro.props;
       button.dataset.ready = 'true';
 
       const pagePath = button.dataset.pagePath ?? '/';
-      const countEl = button.closest('.flex')?.querySelector<HTMLElement>('[data-like-count]');
+      const countEl = button.querySelector<HTMLElement>('[data-like-count]');
       const storageKey = `walker-liked:${pagePath}`;
 
       const setCount = (count: number) => {
@@ -44,8 +58,8 @@ const { pagePath } = Astro.props;
 
       const markLiked = () => {
         button.disabled = true;
+        button.classList.add('liked');
         button.setAttribute('aria-label', '已经喜欢过这个页面');
-        button.classList.add('text-pink-500');
       };
 
       if (localStorage.getItem(storageKey) === 'true') {
@@ -85,14 +99,12 @@ const { pagePath } = Astro.props;
           setCount(data?.count ?? nextCount);
           localStorage.setItem(storageKey, 'true');
           markLiked();
-          button.animate(
-            [
-              { transform: 'scale(1)' },
-              { transform: 'scale(1.15)' },
-              { transform: 'scale(1)' },
-            ],
-            { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
-          );
+
+          // 弹跳动画
+          button.classList.add('like-bounce');
+          button.addEventListener('animationend', () => {
+            button.classList.remove('like-bounce');
+          }, { once: true });
         } catch {
           button.disabled = false;
         }
@@ -101,5 +113,126 @@ const { pagePath } = Astro.props;
   };
 
   setupLikes();
-  document.addEventListener('astro:after-swap', setupLikes);
+  document.addEventListener('astro:page-load', setupLikes);
 </script>
+
+<style>
+  .like-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .like-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(42, 59, 62, 0.1);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(12px);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+  }
+
+  .like-btn:hover:not(.liked) {
+    border-color: rgba(255, 107, 138, 0.3);
+    background: rgba(255, 107, 138, 0.05);
+    transform: scale(1.05);
+  }
+
+  .like-btn:active:not(.liked) {
+    transform: scale(0.95);
+  }
+
+  /* 未点击 — 描边心形 */
+  .like-icon-outline {
+    color: rgba(42, 59, 62, 0.35);
+    transition: all 0.3s ease;
+  }
+
+  .like-btn:hover:not(.liked) .like-icon-outline {
+    color: rgba(255, 107, 138, 0.6);
+  }
+
+  /* 已点击 — 实心心形 */
+  .like-icon-filled {
+    position: absolute;
+    color: #ff6b8a;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* 已点击状态 */
+  .like-btn.liked {
+    border-color: rgba(255, 107, 138, 0.25);
+    background: rgba(255, 107, 138, 0.06);
+    cursor: default;
+  }
+
+  .like-btn.liked .like-icon-outline {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  .like-btn.liked .like-icon-filled {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* 弹跳动画 */
+  .like-bounce {
+    animation: like-pop 0.45s cubic-bezier(0.17, 0.89, 0.32, 1.49);
+  }
+
+  @keyframes like-pop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.2); }
+    50% { transform: scale(0.9); }
+    70% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  /* 计数气泡 */
+  .like-count-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(42, 59, 62, 0.08);
+    transition: all 0.3s ease;
+  }
+
+  .like-btn.liked .like-count-badge {
+    background: rgba(255, 107, 138, 0.12);
+  }
+
+  .like-count-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(42, 59, 62, 0.4);
+    line-height: 1;
+    transition: color 0.3s ease;
+  }
+
+  .like-btn.liked .like-count-num {
+    color: #ff6b8a;
+  }
+
+  /* disabled 样式 */
+  .like-btn:disabled {
+    opacity: 1;
+  }
+</style>

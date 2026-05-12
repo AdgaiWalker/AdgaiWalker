@@ -1,0 +1,36 @@
+---
+export interface Props {
+  type: string;
+  url: string;
+  name: string;
+  description?: string;
+}
+
+const { type, url, name, description } = Astro.props;
+
+const resourceStyleMap: Record<string, { icon: string, class: string, actionText: string }> = {
+  tool: { icon: 'lucide:wrench', class: 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-400 text-slate-900', actionText: '打开' },
+  website: { icon: 'lucide:globe', class: 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-400 text-slate-900', actionText: '访问' },
+  github: { icon: 'lucide:github', class: 'border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-100', actionText: '查看' },
+  feishu: { icon: 'lucide:book-open', class: 'border-blue-300 bg-blue-50 hover:border-blue-500 text-slate-900', actionText: '阅读' },
+  download: { icon: 'lucide:package-open', class: 'border-amber-300 bg-amber-50 hover:border-amber-500 text-slate-900', actionText: '下载' },
+};
+
+const style = resourceStyleMap[type] || resourceStyleMap.website;
+---
+
+<a href={url} target="_blank" rel="noopener noreferrer" class={`group flex items-center justify-between p-4 rounded-2xl border transition-all no-underline ${style.class}`}>
+  <div class="flex items-center gap-4 min-w-0">
+    <div class={`w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0`}>
+      <iconify-icon icon={style.icon} width="20" height="20" class={type === 'github' ? 'text-slate-900' : 'text-slate-600'}></iconify-icon>
+    </div>
+    <div class="min-w-0">
+      <div class="text-base font-bold truncate group-hover:opacity-80 transition-opacity">{name}</div>
+      {description && <div class="text-sm text-slate-500 truncate mt-0.5">{description}</div>}
+    </div>
+  </div>
+  <div class="flex items-center gap-2 text-sm font-medium text-slate-400 group-hover:text-current transition-colors shrink-0 ml-4">
+    {style.actionText}
+    <iconify-icon icon="lucide:arrow-right" width="16" height="16"></iconify-icon>
+  </div>
+</a>

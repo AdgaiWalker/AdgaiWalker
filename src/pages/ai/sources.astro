@@ -1,0 +1,198 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import DockItemCard from '../../components/DockItemCard.astro';
+
+export const prerender = true;
+
+const items = await getCollection('dockItem', ({ data }) => data.published && (data.category === 'info-source' || data.category === 'community'));
+const tags = [...new Set(items.flatMap(e => e.data.tags))];
+---
+
+<Base 
+  title="信息源 — Walker"
+  description="我日常关注的优质技术博客、Newsletter 和前沿播客。"
+  ogTitle="信息源 — Walker"
+  ogDescription="日常关注的技术资讯和内容源。"
+>
+  <div class="max-w-5xl mx-auto px-6 pt-28 pb-20">
+    <div class="mb-10">
+      <div class="flex items-center gap-3 mb-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-coral/60"></span>
+        <span class="text-xs font-mono text-parchment/25 uppercase tracking-wider">Sources</span>
+      </div>
+      <h1 class="font-heading text-4xl md:text-5xl text-parchment tracking-wide">信息源</h1>
+      <p class="text-parchment/40 text-sm font-body mt-3">
+        我日常关注的优质技术博客、Newsletter 和前沿播客。
+      </p>
+      <div class="mt-4 h-px bg-gradient-to-r from-white/[0.08] to-transparent"></div>
+    </div>
+
+    <!-- 搜索 + 标签筛选 -->
+    <div class="mb-8 space-y-4">
+      <div class="relative max-w-md">
+        <iconify-icon icon="lucide:search" width="14" height="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-parchment/25"></iconify-icon>
+        <input
+          id="dock-search"
+          type="text"
+          placeholder="搜索信息源..."
+          class="w-full bg-white/[0.03] border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-parchment placeholder:text-parchment/25 outline-none focus:border-bio-cyan/30 focus:shadow-[0_0_12px_rgba(0,229,255,0.1)] transition-all font-body"
+        />
+      </div>
+      <div class="flex flex-wrap gap-2" id="dock-filters">
+        <button class="filter-btn active px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-parchment/60 hover:text-parchment hover:bg-white/10 transition-all font-body" data-value="">
+          全部
+        </button>
+        {tags.map(tag => (
+          <button class="filter-btn px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-parchment/60 hover:text-parchment hover:bg-white/10 transition-all font-body" data-value={tag}>
+            {tag}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {items.length === 0 ? (
+      <p class="text-parchment/30 text-center py-20">这里暂时没有内容。</p>
+    ) : (
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3" id="dock-list">
+        {items.map(item => (
+          <div
+            class="dock-item"
+            data-name={item.data.name.toLowerCase()}
+            data-desc={item.data.description.toLowerCase()}
+            data-tags={item.data.tags.join(',').toLowerCase()}
+          >
+            <DockItemCard
+              name={item.data.name}
+              description={item.data.description}
+              category={item.data.category}
+              tags={item.data.tags}
+              rating={item.data.rating}
+              url={item.data.url}
+            />
+          </div>
+        ))}
+      </div>
+    )}
+
+    <p id="dock-empty" class="text-parchment/30 text-center py-20 hidden">
+      没有找到匹配的内容。
+    </p>
+  </div>
+
+  <script>
+    let activeTag = '';
+    let searchQuery = '';
+    const items = document.querySelectorAll<HTMLElement>('.dock-item');
+    const emptyEl = document.getElementById('dock-empty');
+    const listEl = document.getElementById('dock-list');
+    const searchInput = document.getElementById('dock-search') as HTMLInputElement;
+
+    function applyFilter() {
+      let visible = 0;
+      items.forEach(item => {
+        const name = item.dataset.name ?? '';
+        const desc = item.dataset.desc ?? '';
+        const tags = item.dataset.tags ?? '';
+
+        const matchTag = !activeTag || tags.includes(activeTag.toLowerCase());
+        const matchSearch = !searchQuery ||
+          name.includes(searchQuery) ||
+          desc.includes(searchQuery) ||
+          tags.includes(searchQuery);
+
+        if (matchTag && matchSearch) {
+          item.style.display = '';
+          visible++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      if (emptyEl) emptyEl.classList.toggle('hidden', visible > 0);
+      if (listEl) listEl.classList.toggle('hidden', visible === 0);
+    }
+
+    document.querySelectorAll<HTMLElement>('#dock-filters .filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeTag = btn.dataset.value ?? '';
+        document.querySelectorAll('#dock-filters .filter-btn').forEach(b => {
+          b.classList.remove('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+          b.classList.add('bg-white/5', 'border-white/10', 'text-parchment/60');
+        });
+        btn.classList.remove('bg-white/5', 'border-white/10', 'text-parchment/60');
+        btn.classList.add('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+        applyFilter();
+      });
+    });
+
+    searchInput?.addEventListener('input', () => {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      applyFilter();
+    });
+
+    // P2: Pretext Justified Tag Cloud
+    async function justifyTags() {
+      try {
+        const { prepareWithSegments, measureNaturalWidth } = await import('@chenglou/pretext');
+        const container = document.getElementById('dock-filters');
+        if (!container) return;
+        
+        const buttons = Array.from(container.querySelectorAll('.filter-btn')) as HTMLElement[];
+        const containerWidth = container.clientWidth;
+        if (!containerWidth || buttons.length === 0) return;
+
+        const gap = 8;
+        const computedStyle = getComputedStyle(document.body);
+        const fontBody = computedStyle.getPropertyValue('--font-body') || 'Inter, sans-serif';
+        const font = `12px ${fontBody}`;
+
+        const items = buttons.map(btn => {
+          const text = btn.textContent?.trim() || '';
+          const prepared = prepareWithSegments(text, font);
+          const textWidth = measureNaturalWidth(prepared);
+          const totalWidth = textWidth + 26; 
+          return { btn, width: totalWidth };
+        });
+
+        let rows: {items: typeof items, width: number}[] = [];
+        let currentRow: typeof items = [];
+        let currentWidth = 0;
+
+        for (const item of items) {
+          if (currentRow.length > 0 && currentWidth + gap + item.width > containerWidth) {
+            rows.push({ items: currentRow, width: currentWidth });
+            currentRow = [item];
+            currentWidth = item.width;
+          } else {
+            currentRow.push(item);
+            currentWidth += (currentRow.length === 1 ? 0 : gap) + item.width;
+          }
+        }
+        if (currentRow.length > 0) {
+          rows.push({ items: currentRow, width: currentWidth });
+        }
+
+        rows.forEach((row, i) => {
+          const isLast = i === rows.length - 1;
+          row.items.forEach(item => {
+            if (!isLast && row.width > containerWidth * 0.5) {
+              item.btn.style.flexGrow = '1';
+              item.btn.style.textAlign = 'center';
+            } else {
+              item.btn.style.flexGrow = '0';
+            }
+          });
+        });
+      } catch (e) {
+        console.error('Pretext justified layout failed', e);
+      }
+    }
+
+    justifyTags();
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(justifyTags, 150);
+    });
+  </script>
+</Base>

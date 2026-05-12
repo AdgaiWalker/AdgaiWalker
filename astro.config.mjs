@@ -5,7 +5,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
 import icon from 'astro-icon';
-import remarkRichEmbed from './src/plugins/remark-rich-embed';
+import remarkRichEmbed from './src/plugins/remark-rich-embed.ts';
 
 export default defineConfig({
   site: 'https://iwalk.pro',

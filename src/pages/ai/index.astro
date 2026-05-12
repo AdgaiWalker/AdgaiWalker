@@ -1,0 +1,227 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+// Fetch AI category logs
+const aiLogs = (await getCollection('log', ({ data }) => data.published && data.category === 'ai'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// Collect all tags and count them
+const tagCountMap = new Map<string, number>();
+aiLogs.forEach(entry => {
+  entry.data.tags.forEach(tag => {
+    tagCountMap.set(tag, (tagCountMap.get(tag) ?? 0) + 1);
+  });
+});
+const allTags = [...tagCountMap.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .map(([tag]) => tag);
+
+// Group by year
+const groupedLogs: Record<number, typeof aiLogs> = {};
+aiLogs.forEach(log => {
+  const year = log.data.date.getFullYear();
+  if (!groupedLogs[year]) groupedLogs[year] = [];
+  groupedLogs[year].push(log);
+});
+const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
+
+const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
+---
+
+<Base 
+  title="AI 探索 — Walker" 
+  theme="nature"
+  ogDescription="关于 AI、效率工具与哲学思考的文章记录。"
+>
+  <div class="max-w-3xl mx-auto px-6 pt-28 pb-20">
+    <!-- Header -->
+    <div class="mb-12">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-bio-cyan/60"></span>
+        <span class="text-xs font-mono text-parchment/30 uppercase tracking-wider">AI Exploration</span>
+      </div>
+      <h1 class="font-heading text-4xl text-parchment tracking-wide mb-3">AI 探索</h1>
+      <p class="text-parchment/40 text-sm font-body">
+        共 <span id="log-count" class="text-bio-cyan/80 font-mono">{aiLogs.length}</span> 篇文章
+      </p>
+      
+      <!-- Tag Filters -->
+      <div class="mt-8 flex flex-wrap items-center gap-2" id="log-filters">
+        <button class="filter-btn active px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-parchment/60 hover:text-parchment hover:bg-white/10 transition-all font-body" data-value="">
+          全部
+        </button>
+        {allTags.map(tag => (
+          <button class="filter-btn px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-parchment/60 hover:text-parchment hover:bg-white/10 transition-all font-body flex items-center gap-1.5" data-value={tag}>
+            {tag}
+            <span class="opacity-40 text-[10px] font-mono">{tagCountMap.get(tag)}</span>
+          </button>
+        ))}
+      </div>
+      <div class="mt-8 h-px bg-gradient-to-r from-white/[0.08] to-transparent"></div>
+    </div>
+
+    <!-- Timeline -->
+    <div id="timeline-container" class="space-y-12">
+      {years.map(year => (
+        <div class="year-group relative" data-year={year}>
+          <div class="flex items-end gap-3 mb-5">
+            <h2 class="font-heading text-2xl text-parchment">{year}</h2>
+            <span class="text-parchment/30 text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
+          </div>
+          
+          <div class="panel-glass rounded-2xl overflow-hidden">
+            <div class="flex flex-col divide-y divide-white/[0.04]">
+              {groupedLogs[year].map(log => (
+                <a href={`/ai/${log.id}`} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 hover:bg-white/[0.02] transition-colors no-underline" data-tags={log.data.tags.join(',')}>
+                  <time class="text-parchment/30 font-mono text-sm shrink-0 w-16">{formatDate(log.data.date)}</time>
+                  <div class="flex-1 min-w-0 flex items-center gap-3">
+                    <h3 class="text-parchment/80 text-[15px] font-body truncate group-hover:text-bio-cyan transition-colors">{log.data.title}</h3>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    {log.data.tags.slice(0, 2).map((tag: string) => (
+                      <span class="text-[11px] font-mono text-parchment/40 bg-white/5 px-2 py-0.5 rounded-md">#{tag}</span>
+                    ))}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+    
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden py-20 text-center text-parchment/30 text-sm">
+      未找到匹配的文章
+    </div>
+  </div>
+
+  <script>
+    let activeTag = '';
+    const filterBtns = document.querySelectorAll('.filter-btn');
+
+    const yearGroups = document.querySelectorAll('.year-group');
+    const emptyState = document.getElementById('empty-state');
+    const logCount = document.getElementById('log-count');
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active class
+        filterBtns.forEach(b => {
+          b.classList.remove('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+          b.classList.add('bg-white/5', 'border-white/10', 'text-parchment/60');
+        });
+        
+        btn.classList.remove('bg-white/5', 'border-white/10', 'text-parchment/60');
+        btn.classList.add('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+        
+        activeTag = (btn as HTMLElement).dataset.value || '';
+        
+        // Filter items
+        let visibleTotal = 0;
+        
+        yearGroups.forEach(group => {
+          let visibleInYear = 0;
+          const itemsInYear = group.querySelectorAll('.log-item');
+          
+          itemsInYear.forEach(item => {
+            const tags = ((item as HTMLElement).dataset.tags || '').split(',');
+            if (!activeTag || tags.includes(activeTag)) {
+              (item as HTMLElement).style.display = 'flex';
+              visibleInYear++;
+              visibleTotal++;
+            } else {
+              (item as HTMLElement).style.display = 'none';
+            }
+          });
+          
+          // Hide year group if empty
+          (group as HTMLElement).style.display = visibleInYear > 0 ? 'block' : 'none';
+          
+          // Update count in year header
+          const countSpan = group.querySelector('h2 + span');
+          if (countSpan) {
+            countSpan.textContent = `${visibleInYear} 篇`;
+          }
+        });
+        
+        // Update total count
+        if (logCount) logCount.textContent = visibleTotal.toString();
+        
+        // Update empty state
+        if (emptyState) {
+          emptyState.style.display = visibleTotal === 0 ? 'block' : 'none';
+        }
+      });
+    });
+
+    // P2: Pretext Justified Tag Cloud
+    async function justifyTags() {
+      try {
+        const { prepareWithSegments, measureNaturalWidth } = await import('@chenglou/pretext');
+        const container = document.getElementById('log-filters');
+        if (!container) return;
+        
+        const buttons = Array.from(container.querySelectorAll('.filter-btn')) as HTMLElement[];
+        const containerWidth = container.clientWidth;
+        if (!containerWidth || buttons.length === 0) return;
+
+        const gap = 8;
+        const computedStyle = getComputedStyle(document.body);
+        const fontBody = computedStyle.getPropertyValue('--font-body') || 'Inter, sans-serif';
+        const font = `12px ${fontBody}`;
+
+        const items = buttons.map(btn => {
+          const text = btn.textContent?.trim() || '';
+          const prepared = prepareWithSegments(text, font);
+          const textWidth = measureNaturalWidth(prepared);
+          const totalWidth = textWidth + 26; 
+          return { btn, width: totalWidth };
+        });
+
+        let rows: {items: typeof items, width: number}[] = [];
+        let currentRow: typeof items = [];
+        let currentWidth = 0;
+
+        for (const item of items) {
+          if (currentRow.length > 0 && currentWidth + gap + item.width > containerWidth) {
+            rows.push({ items: currentRow, width: currentWidth });
+            currentRow = [item];
+            currentWidth = item.width;
+          } else {
+            currentRow.push(item);
+            currentWidth += (currentRow.length === 1 ? 0 : gap) + item.width;
+          }
+        }
+        if (currentRow.length > 0) {
+          rows.push({ items: currentRow, width: currentWidth });
+        }
+
+        rows.forEach((row, i) => {
+          const isLast = i === rows.length - 1;
+          row.items.forEach(item => {
+            if (!isLast && row.width > containerWidth * 0.5) {
+              item.btn.style.flexGrow = '1';
+              item.btn.style.textAlign = 'center';
+              item.btn.style.justifyContent = 'center';
+            } else {
+              item.btn.style.flexGrow = '0';
+            }
+          });
+        });
+      } catch (e) {
+        console.error('Pretext justified layout failed', e);
+      }
+    }
+
+    justifyTags();
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(justifyTags, 150);
+    });
+  </script>
+</Base>

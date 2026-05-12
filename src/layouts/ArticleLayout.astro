@@ -1,0 +1,152 @@
+---
+/**
+ * ArticleLayout — 文章详情页三栏布局
+ * 左栏：导航 + 文章列表（嵌套在 Navigation 中）
+ * 中栏：TOC 目录
+ * 右栏：文章正文
+ *
+ * 用于：/ai/[slug], /life/[slug]
+ */
+import Base from './Base.astro';
+import TableOfContents from '../components/article/TableOfContents.astro';
+import ArticleSidebar from '../components/article/ArticleSidebar.astro';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface ArticleEntry {
+  id: string;
+  title: string;
+  date: Date;
+  tags?: string[];
+  summary?: string;
+}
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  canonicalUrl?: string;
+  headings: Heading[];
+  currentSlug: string;
+  category: 'ai' | 'life';
+  articleList: ArticleEntry[];
+}
+
+const {
+  title,
+  description,
+  ogImage,
+  ogTitle,
+  ogDescription,
+  canonicalUrl,
+  headings,
+  currentSlug,
+  category,
+  articleList,
+} = Astro.props;
+---
+
+<Base
+  title={title}
+  description={description}
+  ogImage={ogImage}
+  ogTitle={ogTitle}
+  ogDescription={ogDescription}
+  canonicalUrl={canonicalUrl}
+  pureMode={true}
+>
+  {/* 将文章列表注入到 Navigation 的 slot 中 */}
+  <Fragment slot="nav-extension">
+    <ArticleSidebar 
+      articles={articleList} 
+      currentSlug={currentSlug} 
+      category={category} 
+      basePath={`/${category}`} 
+    />
+  </Fragment>
+
+  <div class="article-layout" id="article-layout">
+    {/* 中栏 — TOC 目录 */}
+    <aside class="article-toc-column" id="toc-column">
+      <TableOfContents headings={headings} />
+    </aside>
+
+    {/* 右栏 — 文章正文 */}
+    <main class="article-content-column">
+      <slot />
+    </main>
+  </div>
+</Base>
+
+<style>
+  .article-layout {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    background-color: #fcfbf9; /* 纯净阅读底色 */
+  }
+
+  /* 中栏 — TOC 目录 */
+  .article-toc-column {
+    position: fixed;
+    left: 260px; /* 紧贴 Navigation */
+    top: 0;
+    bottom: 0;
+    width: 240px;
+    padding: 5rem 0 2rem;
+    overflow-y: auto;
+    z-index: 20;
+    border-right: 1px solid #f1f3f5;
+    background: #ffffff; /* 飞书风格的纯白面板 */
+  }
+
+  /* 自定义滚动条 */
+  .article-toc-column::-webkit-scrollbar {
+    width: 3px;
+  }
+  .article-toc-column::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .article-toc-column::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  .article-toc-column:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  /* 右栏 — 文章正文 */
+  .article-content-column {
+    flex: 1;
+    margin-left: 240px; /* 相对 Base 的 lg:pl-[260px]，只需再让出 TOC 的 240px */
+    min-height: 100vh;
+    padding: 3rem 4rem; /* 增加留白呼吸感 */
+    max-width: 900px;
+  }
+
+  /* 响应式：中等屏幕隐藏 TOC */
+  @media (max-width: 1279px) {
+    .article-toc-column {
+      display: none;
+    }
+    .article-content-column {
+      margin-left: 0;
+      padding: 3rem 2rem;
+    }
+  }
+
+  /* 侧边栏折叠时调整 */
+  :global(.sidebar-collapsed) .article-toc-column {
+    left: 68px;
+  }
+</style>
+
+<script>
+  import '../scripts/toc-tracker';
+</script>

@@ -1,81 +1,79 @@
 ---
 import SearchModal from './SearchModal.astro';
 
-interface NavChild {
-  label: string;
-  href: string;
-}
-
 interface NavItem {
   label: string;
   href: string;
   icon: string;
-  children?: NavChild[];
 }
 
-const navItems: NavItem[] = [
+interface NavGroup {
+  title?: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
   {
-    label: '日志',
-    href: '/log',
-    icon: 'lucide:book-open',
-    children: [
-      { label: '文章', href: '/log?type=article' },
-      { label: '随想', href: '/log?type=thought' },
-      { label: '照片', href: '/log?type=photo' },
-      { label: '项目', href: '/log?type=project' },
-      { label: '对话', href: '/log?type=dialogue' },
-    ],
+    title: 'AI 探索',
+    items: [
+      { label: '学习', href: '/ai/learn', icon: 'lucide:book-open' },
+      { label: '信息源', href: '/ai/sources', icon: 'lucide:radio' },
+      { label: '工具箱', href: '/ai/toolkit', icon: 'lucide:wrench' },
+      { label: 'Idea', href: '/ai/ideas', icon: 'lucide:lightbulb' },
+      { label: '文章', href: '/ai', icon: 'lucide:file-text' },
+    ]
   },
-  { label: 'Idea', href: '/ideas', icon: 'lucide:lightbulb' },
   {
-    label: '资源',
-    href: '/dock',
-    icon: 'lucide:wrench',
-    children: [
-      { label: '工具', href: '/dock?category=tool' },
-      { label: '技能', href: '/dock?category=skill' },
-      { label: '信息源', href: '/dock?category=info-source' },
-    ],
+    title: '生活',
+    items: [
+      { label: '日志', href: '/life', icon: 'lucide:leaf' },
+    ]
   },
-  { label: '实战', href: '/works', icon: 'lucide:radio' },
-  { label: '信息源', href: '/compass', icon: 'lucide:compass' },
-  { label: '关于', href: '/about', icon: 'lucide:user' },
+  {
+    items: [
+      { label: '关于我', href: '/about-me', icon: 'lucide:user' },
+      { label: '关于网站', href: '/about', icon: 'lucide:info' },
+    ]
+  }
 ];
 
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/';
 ---
 
+<!-- 引入真正的 SearchModal (隐藏其自带触发器，由本组件代理) -->
+<div class="hidden">
+  <SearchModal />
+</div>
+
 {isHome ? (
   <nav class="fixed top-0 left-0 right-0 z-50 bg-transparent transition-all duration-300" id="main-nav">
     <div class="max-w-7xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
-      <a href="/" class="flex items-center font-heading text-xl text-parchment hover:text-bio-cyan transition-colors no-underline">
-        <span class="relative flex h-1.5 w-1.5 mr-2.5">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bio-cyan opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-bio-cyan"></span>
-        </span>
+      <a href="/" class="flex items-center font-heading text-xl text-parchment hover:text-brand transition-colors no-underline font-bold">
         Walker
       </a>
       <div class="flex items-center">
-        <!-- 首页搜索移至第三栏的按钮 -->
+        <!-- 首页顶部栏 -->
       </div>
     </div>
   </nav>
 ) : (
-  <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-64 lg:bottom-0 lg:border-r lg:border-b-0 border-b border-white/[0.06] backdrop-blur-xl bg-abyss/80 flex flex-col" id="main-nav">
+  <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-gray-100 bg-[#f8f9fa] flex flex-col" id="main-nav">
     <!-- 移动端顶部栏 -->
-    <div class="flex lg:hidden items-center justify-between px-4 py-3 w-full">
-      <a href="/" class="flex items-center font-heading text-lg text-parchment hover:text-bio-cyan transition-colors no-underline">
-        <span class="relative flex h-1.5 w-1.5 mr-2.5">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bio-cyan opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-bio-cyan"></span>
-        </span>
+    <div class="flex lg:hidden items-center justify-between px-4 py-3 w-full bg-[#f8f9fa]/95 backdrop-blur-md">
+      <a href="/" class="flex items-center font-heading text-lg font-bold text-parchment hover:text-brand transition-colors no-underline">
         Walker
       </a>
       <div class="flex items-center gap-3">
-        <SearchModal />
         <button
-          class="text-parchment/60 hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
+          class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
+          id="mobile-search-btn"
+          aria-label="搜索"
+        >
+          <iconify-icon icon="lucide:search" width="20" height="20"></iconify-icon>
+        </button>
+        <button
+          class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
           id="menu-toggle"
           aria-label="打开菜单"
         >
@@ -85,90 +83,122 @@ const isHome = currentPath === '/';
     </div>
 
     <!-- 侧边栏/移动端菜单内容 -->
-    <div class="hidden lg:flex flex-col flex-1 w-full overflow-y-auto custom-scrollbar" id="mobile-menu">
-      <!-- 桌面端头部 -->
-      <div class="hidden lg:flex flex-col gap-6 p-6 pb-2">
-        <a href="/" class="flex items-center font-heading text-2xl text-parchment hover:text-bio-cyan transition-colors no-underline">
-          <span class="relative flex h-2 w-2 mr-3">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-bio-cyan opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-bio-cyan"></span>
-          </span>
+    <div class="hidden lg:flex flex-col flex-1 w-full overflow-y-auto custom-scrollbar bg-[#f8f9fa]" id="mobile-menu">
+      
+      <!-- 桌面端头部 (居中 Logo) -->
+      <div class="hidden lg:flex flex-col items-center pt-8 pb-5 px-6">
+        <a href="/" class="font-heading text-[20px] font-semibold text-parchment hover:text-brand transition-colors no-underline tracking-wide">
           Walker
         </a>
-        <div class="w-full">
-          <SearchModal />
-        </div>
+      </div>
+      
+      <!-- 分割线 -->
+      <div class="hidden lg:block mx-6 border-b border-gray-200/60 mb-6"></div>
+
+      <!-- 搜索框 (仿输入框样式) -->
+      <div class="hidden lg:block px-5 mb-6">
+        <button id="desktop-search-btn" class="w-full flex items-center justify-between px-3 py-2 bg-white rounded-xl border border-gray-200 text-parchment-dim hover:border-gray-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all cursor-pointer outline-none group">
+          <div class="flex items-center gap-2.5 text-[13px]">
+            <iconify-icon icon="lucide:search" width="16" height="16" class="text-gray-400 group-hover:text-gray-500 transition-colors"></iconify-icon>
+            <span class="font-body text-gray-500">Search...</span>
+          </div>
+          <kbd class="text-[10px] font-sans px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 text-gray-400 font-medium">⌘K</kbd>
+        </button>
       </div>
 
       <!-- 导航列表 -->
-      <div class="flex-1 py-4 px-4">
-        <div class="flex flex-col gap-1.5">
-          <div class="px-3 pb-2 text-[10px] font-mono text-parchment/30 uppercase tracking-widest hidden lg:block">全站导航</div>
-          {navItems.map(item => {
-            const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
-            return (
-              <div class="flex flex-col">
-                <a
-                  href={item.href}
-                  class:list={[
-                    'flex items-center gap-3 font-heading text-[15px] tracking-wider no-underline px-3 py-2.5 rounded-lg transition-colors duration-200 group',
-                    isActive
-                      ? 'text-bio-cyan bg-bio-cyan/[0.08]'
-                      : 'text-parchment/60 hover:text-parchment hover:bg-white/[0.04]',
-                  ]}
-                >
-                  <iconify-icon icon={item.icon} width="18" height="18" class={isActive ? 'text-bio-cyan' : 'text-parchment/40 group-hover:text-parchment/80 transition-colors'}></iconify-icon>
-                  {item.label}
-                </a>
-                {item.children && (
-                  <div class="flex flex-col gap-1 mt-1.5 ml-[22px] pl-4 border-l border-white/[0.06]">
-                    {item.children.map(child => (
-                      <a
-                        href={child.href}
-                        class="text-parchment/40 text-[13px] font-heading no-underline px-3 py-1.5 rounded-md hover:text-bio-cyan hover:bg-bio-cyan/[0.06] transition-colors"
-                      >
-                        {child.label}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      <div class="flex-1 px-4 pb-4">
+        <div class="flex flex-col gap-6">
+          {navGroups.map((group) => (
+            <div class="flex flex-col gap-1">
+              {group.title && (
+                <div class="px-3 pb-1.5 pt-1 text-[11px] font-sans text-gray-400 font-semibold tracking-wider hidden lg:block">{group.title}</div>
+              )}
+              {group.items.map(item => {
+                const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
+                return (
+                  <a
+                    href={item.href}
+                    class:list={[
+                      'flex items-center gap-3 font-body text-[14px] no-underline px-3 py-[9px] rounded-xl transition-all duration-200 group',
+                      isActive
+                        ? 'text-brand bg-[#e6f4ed] font-medium'
+                        : 'text-parchment-dim hover:text-parchment hover:bg-gray-100/80',
+                    ]}
+                  >
+                    <iconify-icon icon={item.icon} width="18" height="18" class={isActive ? 'text-brand' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}></iconify-icon>
+                    {item.label}
+                  </a>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        
+        <!-- 文章列表扩展插槽 -->
+        <div class="mt-4">
+          <slot />
         </div>
       </div>
       
-      <!-- 底部版权 (桌面侧边栏专有) -->
-      <div class="hidden lg:block p-6 mt-auto border-t border-white/[0.04]">
-        <p class="text-parchment/30 text-[11px] leading-relaxed tracking-wider mb-2">
-          行过万里水路，记录每一次停靠。
-        </p>
-        <div class="flex items-center gap-3 text-parchment/40">
-          <a href="mailto:praxiswalker@gmail.com" class="hover:text-bio-cyan transition-colors" aria-label="Mail"><iconify-icon icon="lucide:mail" width="14" height="14"></iconify-icon></a>
-          <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="hover:text-bio-cyan transition-colors" aria-label="GitHub"><iconify-icon icon="lucide:github" width="14" height="14"></iconify-icon></a>
-          <a href="/rss.xml" class="hover:text-bio-cyan transition-colors" aria-label="RSS"><iconify-icon icon="lucide:rss" width="14" height="14"></iconify-icon></a>
+      {/* 侧边栏折叠按钮 */}
+      <div class="hidden lg:flex items-center justify-end px-4 py-3 opacity-0 hover:opacity-100 transition-opacity absolute bottom-[72px] right-0">
+        <button
+          class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all bg-transparent border-none cursor-pointer"
+          id="sidebar-collapse-btn"
+          aria-label="折叠侧边栏"
+          title="折叠侧边栏 ( [ )"
+        >
+          <iconify-icon icon="lucide:panel-left-close" width="16" height="16"></iconify-icon>
+        </button>
+      </div>
+
+      <!-- 底部社交栏 -->
+      <div class="hidden lg:flex items-center justify-between px-6 py-5 mt-auto border-t border-gray-200/60 text-gray-400">
+        <div class="flex items-center gap-3.5">
+          <a href="https://github.com/AdgaiWalker" target="_blank" class="hover:text-gray-700 transition-colors" aria-label="Github"><iconify-icon icon="mdi:github" width="18" height="18"></iconify-icon></a>
+          <a href="mailto:praxiswalker@gmail.com" class="hover:text-gray-700 transition-colors" aria-label="Email"><iconify-icon icon="lucide:mail" width="18" height="18"></iconify-icon></a>
+          <a href="/rss.xml" class="hover:text-gray-700 transition-colors" aria-label="RSS"><iconify-icon icon="lucide:rss" width="16" height="16"></iconify-icon></a>
         </div>
+        <button class="hover:text-gray-700 transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center" aria-label="Theme toggle">
+          <iconify-icon icon="lucide:sun" width="18" height="18"></iconify-icon>
+        </button>
       </div>
     </div>
   </nav>
 )}
 
 <script>
-  const toggle = document.getElementById('menu-toggle');
-  const menu = document.getElementById('mobile-menu');
+  import '../scripts/sidebar-state';
 
-  toggle?.addEventListener('click', () => {
-    menu?.classList.toggle('hidden');
-    menu?.classList.toggle('flex');
-    menu?.classList.toggle('bg-abyss/95');
-    menu?.classList.toggle('backdrop-blur-xl');
-    menu?.classList.toggle('absolute');
-    menu?.classList.toggle('top-full');
-    menu?.classList.toggle('left-0');
-    menu?.classList.toggle('right-0');
-    menu?.classList.toggle('border-b');
-    menu?.classList.toggle('border-white/[0.06]');
-    menu?.classList.toggle('max-h-[80vh]');
+  document.addEventListener('astro:page-load', () => {
+    const toggle = document.getElementById('menu-toggle');
+    const menu = document.getElementById('mobile-menu');
+
+    toggle?.addEventListener('click', () => {
+      menu?.classList.toggle('hidden');
+      menu?.classList.toggle('flex');
+      menu?.classList.toggle('absolute');
+      menu?.classList.toggle('top-full');
+      menu?.classList.toggle('left-0');
+      menu?.classList.toggle('right-0');
+      menu?.classList.toggle('border-b');
+      menu?.classList.toggle('border-gray-200');
+      menu?.classList.toggle('shadow-lg');
+      menu?.classList.toggle('max-h-[80vh]');
+    });
+
+    // 代理触发 SearchModal
+    const desktopSearchBtn = document.getElementById('desktop-search-btn');
+    const mobileSearchBtn = document.getElementById('mobile-search-btn');
+    
+    const triggerSearch = () => {
+      // 触发键盘事件 ⌘K，让 SearchModal.astro 监听并打开
+      document.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true, key: 'k' }));
+    };
+
+    desktopSearchBtn?.addEventListener('click', triggerSearch);
+    mobileSearchBtn?.addEventListener('click', triggerSearch);
   });
 </script>
 
@@ -180,10 +210,89 @@ const isHome = currentPath === '/';
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  /* 侧边栏折叠样式适配 */
+  @media (min-width: 1024px) {
+    .sidebar-collapsed-nav {
+      width: 68px !important;
+    }
+
+    .sidebar-collapsed-nav .custom-scrollbar > div:first-child {
+      display: none !important; /* 隐藏 Logo */
+    }
+
+    .sidebar-collapsed-nav .border-b.border-gray-200\/60 {
+      display: none !important; /* 隐藏分割线 */
+    }
+
+    .sidebar-collapsed-nav [id="desktop-search-btn"] {
+      padding: 0.5rem !important;
+      justify-content: center;
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    
+    .sidebar-collapsed-nav [id="desktop-search-btn"]:hover {
+      background: rgba(0,0,0,0.05) !important;
+    }
+
+    .sidebar-collapsed-nav [id="desktop-search-btn"] span,
+    .sidebar-collapsed-nav [id="desktop-search-btn"] kbd {
+      display: none;
+    }
+
+    .sidebar-collapsed-nav .flex.flex-col.gap-1 > div {
+      display: none !important; /* 隐藏组标题 */
+    }
+
+    .sidebar-collapsed-nav a {
+      justify-content: center;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      font-size: 0;
+    }
+
+    .sidebar-collapsed-nav a iconify-icon {
+      margin: 0;
+    }
+
+    .sidebar-collapsed-nav .mt-auto {
+      display: none !important; /* 隐藏底部社交 */
+    }
+    
+    .sidebar-collapsed-nav [id="sidebar-collapse-btn"] {
+      opacity: 1 !important; /* 折叠态始终显示展开按钮 */
+    }
+  }
+
+  @media (max-width: 1023px) {
+    #mobile-menu.flex {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 49;
+      padding-bottom: 2rem;
+      animation: slideDown 0.2s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   }
 </style>

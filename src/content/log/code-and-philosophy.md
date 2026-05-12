@@ -3,7 +3,7 @@ title: 代码与哲学：论抽象的本质
 date: 2026-04-27
 tags: [技术, 哲学]
 type: article
-domain: ai-exploration
+category: ai
 published: true
 ---
 

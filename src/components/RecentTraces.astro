@@ -1,6 +1,6 @@
 ---
 /**
- * RecentTraces — lvyovo 风格最新文章卡片
+ * RecentTraces — 精致最新文章卡片 (支持多篇)
  */
 import { FORMAT_LABELS } from '../utils/formats';
 
@@ -10,8 +10,8 @@ interface LogEntry {
     title: string;
     date: Date;
     tags: string[];
-    type: 'article' | 'photo' | 'thought' | 'project' | 'dialogue';
-    domain: string;
+    type: 'article' | 'photo' | 'thought' | 'project' | 'dialogue' | 'idea';
+    category: 'ai' | 'life';
     cover?: string;
   };
   body?: string;
@@ -22,38 +22,33 @@ interface Props {
 }
 
 const { logs } = Astro.props;
-const latest = logs[0];
 
-const formatDate = (d: Date) =>
-  `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-
-let excerpt = '';
-if (latest && latest.body) {
-  excerpt = latest.body
-    .replace(/<[^>]+>/g, '')
-    .replace(/[#*_\`\[\]()>|]/g, '')
-    .trim()
-    .slice(0, 60);
-}
+const formatDate = (d: Date) => {
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${month}/${day}`;
+};
 ---
 
 <div class="panel-glass p-5 flex flex-col h-full group" style="background: rgba(255,255,255,0.35);">
-  {latest ? (
-    <a href={`/log/${latest.id}`} class="flex flex-col gap-2 no-underline">
-      <!-- 标题 -->
-      <div class="text-parchment text-[14px] font-body font-medium leading-snug line-clamp-2 group-hover:text-brand transition-colors">
-        {latest.data.title}
-      </div>
-      <!-- 摘要 -->
-      <div class="text-parchment-dim text-[12px] font-body line-clamp-2 leading-relaxed">
-        {excerpt || "暂无描述"}
-      </div>
-      <!-- 日期 -->
-      <div class="text-parchment-dim/60 text-[11px] font-body mt-1">
-        {formatDate(latest.data.date)}
-      </div>
-    </a>
-  ) : (
-    <div class="text-parchment-dim text-xs">暂无文章</div>
-  )}
+  <!-- 标题行 -->
+  <div class="flex items-center justify-between mb-3 px-0.5">
+    <div class="flex items-center gap-2">
+      <iconify-icon icon="lucide:file-text" width="13" height="13" class="text-parchment/30"></iconify-icon>
+      <span class="text-[11px] font-mono text-parchment/30 uppercase tracking-[0.15em]">Recent</span>
+    </div>
+    <a href="/log" class="text-[11px] font-mono text-brand/40 hover:text-brand no-underline tracking-wider transition-colors">All →</a>
+  </div>
+
+  <!-- 文章列表 -->
+  <div class="flex flex-col gap-1">
+    {logs.slice(0, 3).map((log) => (
+      <a href={`/${log.data.category}/${log.id}`} class="flex items-center gap-3 no-underline py-2 px-1 rounded-xl hover:bg-white/30 transition-all group/item">
+        <span class="text-[11px] font-mono text-parchment/25 w-10 shrink-0">{formatDate(log.data.date)}</span>
+        <span class="text-parchment/65 text-[13px] font-body leading-snug truncate flex-1 group-hover/item:text-parchment transition-colors">
+          {log.data.title}
+        </span>
+      </a>
+    ))}
+  </div>
 </div>

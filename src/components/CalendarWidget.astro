@@ -10,20 +10,25 @@ const firstDayMon = firstDay === 0 ? 6 : firstDay - 1;
 const daysInMonth = new Date(year, month + 1, 0).getDate();
 const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
 const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 ---
 
-<div class="panel-glass p-6" style="background: rgba(255,255,255,0.7);">
-  <!-- 日期标题 -->
-  <div class="text-[13px] font-body text-parchment/60 tracking-wider mb-4 px-1">
-    {year}/{month + 1}/{today} {dayNames[dayOfWeek]}
+<div class="panel-glass p-5" style="background: rgba(255,255,255,0.55);">
+  <!-- 日期标题 (更精致的排版) -->
+  <div class="flex items-baseline justify-between mb-4 px-0.5">
+    <div class="flex items-baseline gap-2">
+      <span class="text-[18px] font-heading font-semibold text-parchment tracking-tight">{monthNames[month]}</span>
+      <span class="text-[13px] font-mono text-parchment/35">{year}</span>
+    </div>
+    <span class="text-[11px] font-mono text-parchment/30 tracking-wider">{dayNames[dayOfWeek]}</span>
   </div>
 
   <div class="grid grid-cols-7 gap-0.5 text-center">
     <!-- 星期头 -->
     {weekdays.map((d, i) => (
       <div class:list={[
-        "text-[12px] font-body py-1.5",
-        (i === 5 || i === 6) ? "text-brand font-medium" : "text-parchment/45"
+        "text-[11px] font-body py-1",
+        (i === 5 || i === 6) ? "text-brand/60 font-medium" : "text-parchment/30"
       ]}>{d}</div>
     ))}
 
@@ -41,16 +46,16 @@ const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '�
       return (
         <div
           class:list={[
-            'text-[13px] font-body py-1.5 transition-colors leading-none',
+            'text-[12px] font-body py-1 transition-colors leading-none',
             isToday
               ? 'flex items-center justify-center'
               : isWeekend
-                ? 'text-parchment/40'
-                : 'text-parchment/60 hover:text-parchment',
+                ? 'text-parchment/30'
+                : 'text-parchment/55 hover:text-parchment',
           ]}
         >
           {isToday ? (
-            <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center font-bold text-[13px]">{day}</span>
+            <span class="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center font-bold text-[11px] shadow-[0_2px_8px_rgba(53,191,171,0.3)]">{day}</span>
           ) : (
             day
           )}

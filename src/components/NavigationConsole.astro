@@ -1,16 +1,21 @@
 ---
 /**
- * NavigationConsole — lvyovo 风格数字时钟小组件
+ * NavigationConsole — 精致数字时钟小组件 (LCD 风格)
  */
 ---
 
-<div class="panel-glass p-6 flex items-center justify-center group relative overflow-hidden h-[130px] rounded-[40px] shadow-inner" style="background: rgba(220, 226, 226, 0.5); border: none; box-shadow: inset 0 4px 10px rgba(0,0,0,0.05);">
+<div class="panel-glass p-5 flex flex-col items-center justify-center group relative overflow-hidden h-[120px] rounded-[40px]" style="background: rgba(215, 222, 220, 0.4); border: 1px solid rgba(255,255,255,0.3); box-shadow: inset 0 2px 8px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);">
   <!-- 背景模拟 LCD 网格感 -->
-  <div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 4px 4px;"></div>
+  <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 3px 3px;"></div>
   
   <!-- 数字时钟显示 -->
-  <div class="digital-clock text-[5rem] text-[#4a5f61] font-normal tracking-wider leading-none relative z-10" id="nav-clock" style="font-family: 'Share Tech Mono', monospace; font-variant-numeric: tabular-nums; opacity: 0.9;">
+  <div class="digital-clock text-[4.5rem] text-[#3a5052] font-normal tracking-wider leading-none relative z-10" id="nav-clock" style="font-family: 'Share Tech Mono', monospace; font-variant-numeric: tabular-nums; opacity: 0.85;">
     00:00
+  </div>
+  
+  <!-- 日期行 -->
+  <div class="text-[11px] font-mono text-[#3a5052]/40 tracking-[0.15em] mt-1.5 relative z-10" id="nav-date">
+    2026.05.10
   </div>
 </div>
 
@@ -18,11 +23,20 @@
   function updateNav() {
     const now = new Date();
     const clockEl = document.getElementById('nav-clock');
+    const dateEl = document.getElementById('nav-date');
     
     if (clockEl) {
       const h = String(now.getHours()).padStart(2, '0');
       const m = String(now.getMinutes()).padStart(2, '0');
       clockEl.textContent = `${h}:${m}`;
+    }
+    
+    if (dateEl) {
+      const y = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+      dateEl.textContent = `${y}.${mo}.${d} ${weekdays[now.getDay()]}`;
     }
   }
 

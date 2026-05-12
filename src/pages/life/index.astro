@@ -1,0 +1,79 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+// Fetch Life category logs
+const lifeLogs = (await getCollection('log', ({ data }) => data.published && data.category === 'life'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// Group by year
+const groupedLogs: Record<number, typeof lifeLogs> = {};
+lifeLogs.forEach(log => {
+  const year = log.data.date.getFullYear();
+  if (!groupedLogs[year]) groupedLogs[year] = [];
+  groupedLogs[year].push(log);
+});
+const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
+
+const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
+---
+
+<Base 
+  title="生活日志 — Walker" 
+  theme="nature"
+  ogDescription="生活点滴、读书分享与日常随想。"
+>
+  <div class="max-w-3xl mx-auto px-6 pt-28 pb-20">
+    <!-- Header -->
+    <div class="mb-12">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald/60"></span>
+        <span class="text-xs font-mono text-parchment/30 uppercase tracking-wider">Life Log</span>
+      </div>
+      <h1 class="font-heading text-4xl text-parchment tracking-wide mb-3">生活日志</h1>
+      <p class="text-parchment/40 text-sm font-body">
+        共 <span class="text-emerald/80 font-mono">{lifeLogs.length}</span> 篇记录
+      </p>
+      <div class="mt-8 h-px bg-gradient-to-r from-white/[0.08] to-transparent"></div>
+    </div>
+
+    <!-- Timeline -->
+    <div id="timeline-container" class="space-y-12">
+      {years.map(year => (
+        <div class="year-group relative" data-year={year}>
+          <div class="flex items-end gap-3 mb-5">
+            <h2 class="font-heading text-2xl text-parchment">{year}</h2>
+            <span class="text-parchment/30 text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
+          </div>
+          
+          <div class="panel-glass rounded-2xl overflow-hidden">
+            <div class="flex flex-col divide-y divide-white/[0.04]">
+              {groupedLogs[year].map(log => (
+                <a href={`/life/${log.id}`} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 hover:bg-white/[0.02] transition-colors no-underline">
+                  <time class="text-parchment/30 font-mono text-sm shrink-0 w-16">{formatDate(log.data.date)}</time>
+                  <div class="flex-1 min-w-0 flex items-center gap-3">
+                    <h3 class="text-parchment/80 text-[15px] font-body truncate group-hover:text-emerald transition-colors">{log.data.title}</h3>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    {log.data.tags.slice(0, 2).map((tag: string) => (
+                      <span class="text-[11px] font-mono text-parchment/40 bg-white/5 px-2 py-0.5 rounded-md">#{tag}</span>
+                    ))}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+    
+    <!-- Empty State -->
+    {lifeLogs.length === 0 && (
+      <div class="py-20 text-center text-parchment/30 text-sm">
+        暂时没有生活记录
+      </div>
+    )}
+  </div>
+</Base>

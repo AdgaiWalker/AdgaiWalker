@@ -1,0 +1,127 @@
+---
+/**
+ * /ai/learn — 学习页
+ * AI 入门教程文章列表（/ai 的子集，筛选入门类标签）
+ */
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import ArticleCard from '../../components/cards/ArticleCard.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+const allLogs = await getCollection('log', ({ data }) =>
+  data.published && data.category === 'ai'
+);
+
+// 按时间倒序
+const articles = allLogs.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// 提取所有标签（去重）
+const allTags = [...new Set(articles.flatMap(a => a.data.tags))].sort();
+---
+
+<SidebarLayout
+  title="学习 — Walker AI 探索"
+  description="AI 入门教程与学习资源，从零开始掌握 AI 工具和技术。"
+  pageTitle="学习"
+  pageSubtitle="Learning"
+  pageIcon="book-open"
+  itemCount={articles.length}
+  itemUnit="篇文章"
+>
+  {/* 标签筛选器 */}
+  <div class="filter-bar" id="learn-filter-bar">
+    <button class="filter-btn active" data-tag="all">全部</button>
+    {allTags.map(tag => (
+      <button class="filter-btn" data-tag={tag}>{tag}</button>
+    ))}
+  </div>
+
+  {/* 文章列表 */}
+  <div class="article-list" id="learn-article-list">
+    {articles.map(article => {
+      // 检查是否有飞书资源链接
+      const hasFeishu = article.data.resources?.some(r => r.type === 'feishu') ?? false;
+      return (
+        <div class="article-list-item" data-tags={JSON.stringify(article.data.tags)}>
+          <ArticleCard
+            title={article.data.title}
+            summary={article.data.summary || article.data.description}
+            date={article.data.date}
+            tags={article.data.tags}
+            cover={article.data.cover}
+            slug={article.id}
+            basePath="/ai"
+            hasFeishuLink={hasFeishu}
+          />
+        </div>
+      );
+    })}
+  </div>
+
+  {/* 空状态 */}
+  {articles.length === 0 && (
+    <div class="empty-state">
+      <iconify-icon icon="lucide:book-open" width="40" height="40"></iconify-icon>
+      <p>暂无学习文章，敬请期待</p>
+    </div>
+  )}
+</SidebarLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const filterBar = document.getElementById('learn-filter-bar');
+    const articleList = document.getElementById('learn-article-list');
+    if (!filterBar || !articleList) return;
+
+    filterBar.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // 更新按钮状态
+        filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const tag = (btn as HTMLElement).dataset.tag;
+
+        // 筛选文章
+        articleList.querySelectorAll<HTMLElement>('.article-list-item').forEach(item => {
+          if (tag === 'all') {
+            item.style.display = '';
+            return;
+          }
+          const tags: string[] = JSON.parse(item.dataset.tags || '[]');
+          item.style.display = tags.includes(tag || '') ? '' : 'none';
+        });
+      });
+    });
+  });
+</script>
+
+<style>
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .article-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem 2rem;
+    color: rgba(42, 59, 62, 0.3);
+    text-align: center;
+  }
+
+  .empty-state p {
+    font-size: 0.9rem;
+  }
+</style>

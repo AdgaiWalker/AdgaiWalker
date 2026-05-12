@@ -2,16 +2,16 @@
 
 @theme {
   /* --- 精致色彩系统 (融合 lvyovo + hylarucoder 风格) --- */
-  --color-abyss: #eef0ec;
-  /* 主背景色：偏暖的浅灰绿 */
-  --color-sea-deep: #e5e8e0;
-  --color-sea-mid: #f0f2ed;
+  --color-abyss: #fcfbf9;
+  /* 主背景色：极度纯净的 Off-White */
+  --color-sea-deep: #f5f4f1;
+  --color-sea-mid: #f9f8f6;
   --color-sea-light: #ffffff;
 
   /* 文本颜色 */
-  --color-parchment: #2a3b3e;
-  /* 主文本：更深的青灰（提升对比度） */
-  --color-parchment-dim: #6b7c82;
+  --color-parchment: #1a2325;
+  /* 主文本：深青灰（提升极简对比度） */
+  --color-parchment-dim: #7a8a92;
   /* 次要文本：中灰 */
 
   /* 品牌色 / 强调色 */
@@ -599,3 +599,224 @@
   border-radius: 6px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+
+/* ========== 虚拟滚动支持 ========== */
+.log-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 72px;
+}
+
+/* ========== 侧边栏折叠样式 ========== */
+
+/* 导航栏折叠过渡 */
+#main-nav {
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 折叠态导航栏 (仅桌面端生效) */
+@media (min-width: 1024px) {
+  .sidebar-collapsed-nav {
+    width: 64px !important;
+  }
+
+  .sidebar-collapsed-nav .custom-scrollbar > div:first-child {
+    /* 隐藏桌面端头部的文字和搜索 */
+    padding: 1rem 0.5rem !important;
+  }
+
+  .sidebar-collapsed-nav .custom-scrollbar > div:first-child a {
+    justify-content: center;
+    font-size: 0;
+  }
+
+  .sidebar-collapsed-nav .custom-scrollbar > div:first-child a iconify-icon {
+    font-size: initial;
+  }
+
+  /* 折叠态隐藏文字标签 */
+  .sidebar-collapsed-nav [class*="flex items-center gap-3"][class*="font-heading"] {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .sidebar-collapsed-nav .flex.items-center.gap-3.font-heading {
+    font-size: 0;
+  }
+
+  /* 折叠态隐藏组标题 */
+  .sidebar-collapsed-nav [class*="text-\\[10px\\]"] {
+    display: none;
+  }
+
+  /* 折叠态隐藏底部版权和搜索 */
+  .sidebar-collapsed-nav [class*="mt-auto"] {
+    display: none;
+  }
+
+  /* 内容区联动 */
+  body.sidebar-collapsed .lg\:pl-64 {
+    padding-left: 64px !important;
+  }
+
+  /* 搜索栏在折叠态下隐藏 */
+  .sidebar-collapsed-nav [class*="w-full"]:has(#search-modal-wrapper) {
+    display: none;
+  }
+}
+
+/* ========== 移动端全面适配 ========== */
+
+/* 移动端导航覆盖层 */
+@media (max-width: 1023px) {
+  #mobile-menu.flex {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(238, 240, 236, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    z-index: 49;
+    overflow-y: auto;
+    padding-bottom: 2rem;
+    animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 移动端导航项增大触控区域 */
+  #mobile-menu a {
+    min-height: 48px;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+
+  /* 移动端搜索框 */
+  #mobile-menu .w-full {
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* 三栏文章布局移动端适配 */
+@media (max-width: 1023px) {
+  .article-layout {
+    flex-direction: column;
+  }
+
+  .article-toc-column {
+    display: none !important;
+  }
+
+  .article-content-column {
+    margin-left: 0 !important;
+  }
+}
+
+/* 首页画板移动端适配 */
+@media (max-width: 768px) {
+  #desktop-canvas {
+    width: 100% !important;
+    padding: 0 1rem;
+    transform: none !important;
+  }
+
+  #desktop-canvas > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding-bottom: 6rem;
+  }
+
+  /* 首页 pop-in 动画优化 — 移动端缩短 */
+  .pop-in {
+    animation-duration: 0.6s;
+  }
+
+  /* 首页拖拽在移动端禁用 */
+  .draggable-card {
+    cursor: default !important;
+  }
+}
+
+/* 列表页移动端间距适配 */
+@media (max-width: 640px) {
+  .sidebar-layout-content {
+    padding: 5rem 1rem 3rem;
+  }
+
+  .page-header-h1 {
+    font-size: 1.5rem;
+  }
+
+  /* 面板圆角在小屏降级 */
+  .panel-glass {
+    border-radius: 20px;
+  }
+
+  /* 筛选按钮换行 */
+  .filter-bar,
+  .tag-filter-bar {
+    gap: 0.375rem;
+  }
+
+  .filter-btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.625rem;
+  }
+}
+
+/* 阅读模式移动端 */
+@media (max-width: 640px) {
+  .reading-mode .prose {
+    font-size: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  .reading-mode .prose h1 {
+    font-size: 1.75rem !important;
+  }
+
+  .reading-mode .prose h2 {
+    font-size: 1.35rem !important;
+  }
+}
+
+/* 触控设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 取消 3D 倾斜效果（移动端无法 hover） */
+  .panel-glass {
+    transform: none !important;
+  }
+
+  /* 鼠标光晕不显示 */
+  .mouse-glow {
+    display: none !important;
+  }
+
+  /* 增大所有可点击区域到 44px 最小尺寸 */
+  a, button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* 底部签名在移动端适配 */
+@media (max-width: 768px) {
+  .fixed.bottom-4 {
+    position: relative;
+    margin-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+

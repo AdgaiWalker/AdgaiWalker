@@ -1,17 +1,29 @@
 ---
-// GreetingCard.astro — lvyovo 风格问候卡
+// GreetingCard.astro — 精致问候卡 (融合 hylarucoder 简洁感)
 ---
-<div class="panel-glass p-8 flex flex-col items-center justify-center text-center reveal h-full" id="greeting-card" style="background: rgba(255,255,240,0.5);">
-  <!-- 头像圆形区 (暖黄光晕) -->
-  <div class="w-[120px] h-[120px] rounded-full flex items-center justify-center mb-6 relative bg-gradient-to-br from-[#fef3c7] to-[#fef9c3] shadow-sm overflow-hidden">
-    <img src="/images/avatar.jpg" alt="秋知" class="w-full h-full object-cover relative z-10" />
+<div class="panel-glass p-8 flex flex-col items-center justify-center text-center reveal h-full" id="greeting-card" style="background: rgba(255,255,250,0.45);">
+  <!-- 头像 (柔和光晕 + 精致描边) -->
+  <div class="w-[110px] h-[110px] rounded-full flex items-center justify-center mb-5 relative overflow-hidden shadow-[0_4px_20px_rgba(53,191,171,0.1)]">
+    <div class="absolute inset-0 rounded-full bg-gradient-to-br from-[#e8f5e9] to-[#e0f2f1] opacity-50"></div>
+    <img src="/images/avatar.jpg" alt="秋知" class="w-full h-full object-cover relative z-10 rounded-full" />
+    <!-- 描边光圈 -->
+    <div class="absolute inset-0 rounded-full border-2 border-white/60 z-20"></div>
   </div>
-  <div class="font-heading text-parchment text-[24px] font-medium tracking-wide mb-3" id="greeting-text">
+
+  <!-- 动态问候 -->
+  <div class="font-heading text-parchment/50 text-[13px] font-medium tracking-[0.15em] uppercase mb-2 font-mono" id="greeting-text">
     Good Afternoon
   </div>
-  <h2 class="font-heading text-parchment text-[22px] font-medium tracking-wide leading-snug">
-    I'm <span class="text-brand font-semibold text-[26px]">秋知</span> , Nice to<br/>meet you!
+
+  <!-- 主标题 -->
+  <h2 class="font-heading text-parchment text-[20px] font-medium tracking-tight leading-snug">
+    I'm <span class="text-brand font-semibold text-[24px]">秋知</span> , Nice to<br/>meet you!
   </h2>
+  
+  <!-- 副标题 -->
+  <p class="text-parchment-dim/50 text-[12px] font-body mt-3 leading-relaxed tracking-wide">
+    探索 AI · 独立开发 · 记录生活
+  </p>
 </div>
 
 <script>
@@ -22,17 +34,17 @@
     if (!textEl) return;
 
     const greetings: { text: string; range: [number, number] }[] = [
-      { text: 'Good Morning', range: [5, 12] },
+      { text: 'Good Morning ☀️', range: [5, 12] },
       { text: 'Good Afternoon', range: [12, 18] },
-      { text: 'Good Evening', range: [18, 22] },
-      { text: 'Good Night', range: [22, 24] },
-      { text: 'Good Night', range: [0, 5] },
+      { text: 'Good Evening 🌙', range: [18, 22] },
+      { text: 'Good Night ✨', range: [22, 24] },
+      { text: 'Good Night ✨', range: [0, 5] },
     ];
 
     const g = greetings.find(g => hour >= g.range[0] && hour < g.range[1]) ?? greetings[0];
     textEl.textContent = g.text;
   }
 
-  updateGreeting();
+  document.addEventListener('astro:page-load', updateGreeting);
   setInterval(updateGreeting, 60000);
 </script>

@@ -1,0 +1,747 @@
+---
+/**
+ * /about-me — 关于我（合并关于网站）
+ * 全屏 Hero 视频 + 个人简介 + 技能兴趣 + 项目 + 联系方式
+ * 使用 FullscreenLayout
+ */
+import FullscreenLayout from '../layouts/FullscreenLayout.astro';
+import LikeCounter from '../components/LikeCounter.astro';
+
+export const prerender = true;
+---
+
+<FullscreenLayout
+  title="关于我 — Walker"
+  description="秋知 (Walker) — 哲学专业大学生，AI 自学者。行过万里水路，记录每一次停靠。"
+>
+  {/* ===== Hero 区域（视频背景） ===== */}
+  <section class="hero-section" id="hero-section">
+    {/* 视频背景 */}
+    <div class="hero-bg">
+      <video
+        class="hero-bg-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        poster="/video/A-storyboard-2.mp4"
+      >
+        <source src="/video/A-storyboard-2.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-overlay"></div>
+    </div>
+
+    {/* 中心内容 */}
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-dot"></span>
+        <span>探索中</span>
+      </div>
+      <h1 class="hero-title">Walker</h1>
+      <p class="hero-tagline">行过万里水路，记录每一次停靠</p>
+    </div>
+
+    {/* 向下滚动提示 */}
+    <div class="hero-scroll-hint" id="scroll-hint">
+      <iconify-icon icon="lucide:chevron-down" width="24" height="24"></iconify-icon>
+    </div>
+  </section>
+
+  {/* ===== 个人简介区域 ===== */}
+  <section class="about-section" id="about-section">
+    <div class="about-card">
+      {/* 头像 */}
+      <div class="about-avatar">
+        <img src="/images/avatar.jpg" alt="秋知" />
+      </div>
+
+      {/* 标题 */}
+      <h2 class="about-name">秋知 <span class="about-name-en">Walker</span></h2>
+
+      {/* 身份标签 */}
+      <div class="about-labels">
+        <span class="about-label">
+          <iconify-icon icon="lucide:graduation-cap" width="14" height="14"></iconify-icon>
+          哲学专业大学生
+        </span>
+        <span class="about-label">
+          <iconify-icon icon="lucide:brain" width="14" height="14"></iconify-icon>
+          AI 自学者
+        </span>
+        <span class="about-label">
+          <iconify-icon icon="lucide:pen-line" width="14" height="14"></iconify-icon>
+          独立创作者
+        </span>
+      </div>
+
+      {/* 介绍文字 */}
+      <div class="about-bio">
+        <p>
+          我是秋知，一个对 AI 和哲学都充满好奇的大学生。
+          这个空间记录了我在 AI 探索中的实践、思考和踩过的坑。
+        </p>
+        <p>
+          「哲学思维 × AI 实践」是我的差异化标签 —
+          用哲学的批判性思维审视 AI，用 AI 的效率赋能学习和创作。
+        </p>
+        <p>
+          如果你也在探索 AI 的路上，希望这里的内容对你有帮助。
+          欢迎通过社交平台找到我，一起交流。
+        </p>
+      </div>
+
+      {/* 社交链接 */}
+      <div class="about-social">
+        <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="social-link social-github" aria-label="GitHub">
+          <iconify-icon icon="mdi:github" width="20" height="20"></iconify-icon>
+          <span>GitHub</span>
+        </a>
+        <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-link social-bilibili" aria-label="Bilibili">
+          <iconify-icon icon="ri:bilibili-fill" width="20" height="20"></iconify-icon>
+          <span>Bilibili</span>
+        </a>
+        <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="social-link social-xhs" aria-label="小红书">
+          <iconify-icon icon="ri:xiaohongshu-fill" width="20" height="20"></iconify-icon>
+          <span>小红书</span>
+        </a>
+        <a href="mailto:praxiswalker@gmail.com" class="social-link social-email" aria-label="Email">
+          <iconify-icon icon="lucide:mail" width="20" height="20"></iconify-icon>
+          <span>Email</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 技能与兴趣区域 ===== */}
+  <section class="skills-section" id="skills-section">
+    <div class="skills-container">
+      <div class="section-header">
+        <h2 class="section-title">技能与兴趣</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-icon skill-icon-cyan">
+            <iconify-icon icon="lucide:code-2" width="18" height="18"></iconify-icon>
+          </div>
+          <h3 class="skill-name">AI 工程</h3>
+          <p class="skill-desc">Prompt Engineering / AI Agent 构建 / LLM 应用开发 / 人机协作工作流</p>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-icon skill-icon-amber">
+            <iconify-icon icon="lucide:pen-tool" width="18" height="18"></iconify-icon>
+          </div>
+          <h3 class="skill-name">内容创作</h3>
+          <p class="skill-desc">技术写作 / 知识整理 / 跨平台内容 / 从灵感到输出的完整链路</p>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-icon skill-icon-violet">
+            <iconify-icon icon="lucide:terminal" width="18" height="18"></iconify-icon>
+          </div>
+          <h3 class="skill-name">全栈开发</h3>
+          <p class="skill-desc">TypeScript / Astro / React / Node.js / 静态站点 / 自动化部署</p>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-icon skill-icon-green">
+            <iconify-icon icon="lucide:camera" width="18" height="18"></iconify-icon>
+          </div>
+          <h3 class="skill-name">生活探索</h3>
+          <p class="skill-desc">摄影 / 烹饪 / 哲学阅读 / 旅行记录 / 观察与反思</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 关于本站 ===== */}
+  <section class="site-section" id="site-section">
+    <div class="site-container">
+      <div class="section-header">
+        <h2 class="section-title">关于本站</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="site-info-card">
+        <div class="site-info-icon">
+          <iconify-icon icon="lucide:ship" width="24" height="24"></iconify-icon>
+        </div>
+        <div class="site-info-body">
+          <h3 class="site-info-name">Walker 知识空间</h3>
+          <p class="site-info-desc">
+            这个站点是我的个人知识空间，记录航海途中的思考、工具和发现。
+            所有内容在 Obsidian 中写作，通过 Git 推送到 GitHub，由 Vercel 自动部署。
+          </p>
+          <div class="site-tech-tags">
+            <span class="tech-tag">Astro 6</span>
+            <span class="tech-tag">Tailwind v4</span>
+            <span class="tech-tag">TypeScript</span>
+            <span class="tech-tag">Supabase</span>
+            <span class="tech-tag">Vercel</span>
+          </div>
+        </div>
+      </div>
+
+      {/* AI 原则 */}
+      <div class="principle-card">
+        <div class="principle-icon">
+          <iconify-icon icon="lucide:shield-check" width="20" height="20"></iconify-icon>
+        </div>
+        <div>
+          <h4 class="principle-title">人类主权原则</h4>
+          <p class="principle-desc">
+            AI 负责推演，人类负责判断。所有内容均经过人工审阅与思考。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 底部签名 ===== */}
+  <footer class="about-footer" id="about-footer">
+    <div class="about-footer-inner">
+      <LikeCounter pagePath="/about-me" />
+      <div class="about-signature">
+        <span class="about-sig-dot"></span>
+        Walker · 行过万里水路
+      </div>
+    </div>
+  </footer>
+</FullscreenLayout>
+
+<script>
+  // 视差滚动效果
+  function initParallax() {
+    const hero = document.getElementById('hero-section');
+    const bgVideo = hero?.querySelector('.hero-bg-video') as HTMLElement | null;
+    const heroContent = hero?.querySelector('.hero-content') as HTMLElement | null;
+    const scrollHint = document.getElementById('scroll-hint');
+
+    if (!hero || !bgVideo) return;
+
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      const heroHeight = hero.offsetHeight;
+
+      if (scrollY < heroHeight) {
+        const ratio = scrollY / heroHeight;
+        bgVideo.style.transform = `scale(${1 + ratio * 0.1}) translateY(${scrollY * 0.3}px)`;
+        if (heroContent) {
+          heroContent.style.opacity = String(1 - ratio * 1.5);
+          heroContent.style.transform = `translateY(${scrollY * 0.15}px)`;
+        }
+        if (scrollHint) {
+          scrollHint.style.opacity = String(Math.max(0, 1 - ratio * 3));
+        }
+      }
+    }, { passive: true });
+
+    // 点击滚动到简介
+    scrollHint?.addEventListener('click', () => {
+      document.getElementById('about-section')?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  // 滚动淡入动画
+  function initScrollReveal() {
+    const sections = document.querySelectorAll('.skills-section, .site-section, .about-footer');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    sections.forEach(s => observer.observe(s));
+  }
+
+  initParallax();
+  initScrollReveal();
+  document.addEventListener('astro:page-load', () => {
+    initParallax();
+    initScrollReveal();
+  });
+</script>
+
+<style>
+  /* ===== Hero 区域 ===== */
+  .hero-section {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .hero-bg-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform-origin: center;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.25) 0%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.45) 100%
+    );
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    color: #fff;
+    will-change: opacity, transform;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    letter-spacing: 0.05em;
+    margin-bottom: 2rem;
+  }
+
+  .hero-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #35bfab;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.5; box-shadow: 0 0 4px rgba(53, 191, 171, 0.3); }
+    50% { opacity: 1; box-shadow: 0 0 12px rgba(53, 191, 171, 0.6); }
+  }
+
+  .hero-title {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0 0 1.25rem;
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero-tagline {
+    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+    font-size: clamp(0.9rem, 2.5vw, 1.25rem);
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.15em;
+    margin: 0;
+  }
+
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    animation: bounce-down 2s ease-in-out infinite;
+    transition: opacity 0.3s ease;
+  }
+
+  @keyframes bounce-down {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ===== 个人简介区域 ===== */
+  .about-section {
+    display: flex;
+    justify-content: center;
+    padding: 5rem 1.5rem 3rem;
+    background: linear-gradient(180deg, #1a1a2e 0%, #f4f1ea 12%);
+  }
+
+  .about-card {
+    max-width: 560px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .about-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+  }
+
+  .about-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .about-name {
+    font-family: 'Sora', 'PingFang SC', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #2a3b3e;
+    margin: 0 0 0.25rem;
+  }
+
+  .about-name-en {
+    font-weight: 400;
+    color: rgba(42, 59, 62, 0.35);
+    font-size: 1rem;
+    margin-left: 0.5rem;
+  }
+
+  .about-labels {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .about-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.775rem;
+    color: rgba(42, 59, 62, 0.6);
+    background: rgba(53, 191, 171, 0.06);
+    border: 1px solid rgba(53, 191, 171, 0.1);
+  }
+
+  .about-bio {
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+
+  .about-bio p {
+    font-size: 0.925rem;
+    line-height: 1.85;
+    color: rgba(42, 59, 62, 0.7);
+    margin: 0 0 1rem;
+  }
+
+  .about-bio p:last-child { margin-bottom: 0; }
+
+  .about-social {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 1.25rem;
+    border-radius: 24px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    border: 1px solid rgba(42, 59, 62, 0.08);
+    background: rgba(255, 255, 255, 0.6);
+    color: rgba(42, 59, 62, 0.7);
+  }
+
+  .social-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .social-github:hover { background: #111; color: #fff; border-color: #111; }
+  .social-bilibili:hover { background: #fb7299; color: #fff; border-color: #fb7299; }
+  .social-xhs:hover { background: #ff2442; color: #fff; border-color: #ff2442; }
+  .social-email:hover { background: #35bfab; color: #fff; border-color: #35bfab; }
+
+  /* ===== 通用区块头 ===== */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-family: 'Sora', 'PingFang SC', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(42, 59, 62, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(42, 59, 62, 0.08), transparent);
+  }
+
+  /* ===== 技能与兴趣 ===== */
+  .skills-section {
+    background: #f4f1ea;
+    padding: 3rem 1.5rem 4rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .skills-section.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .skills-container {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .skill-card {
+    padding: 1.25rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(42, 59, 62, 0.05);
+    transition: all 0.25s ease;
+  }
+
+  .skill-card:hover {
+    background: rgba(255, 255, 255, 0.85);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .skill-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .skill-icon-cyan { background: rgba(53, 191, 171, 0.1); color: #35bfab; }
+  .skill-icon-amber { background: rgba(245, 178, 60, 0.1); color: #d4a840; }
+  .skill-icon-violet { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+  .skill-icon-green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+
+  .skill-name {
+    font-family: 'Sora', 'PingFang SC', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2a3b3e;
+    margin: 0 0 0.375rem;
+  }
+
+  .skill-desc {
+    font-size: 0.75rem;
+    color: rgba(42, 59, 62, 0.45);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ===== 关于本站 ===== */
+  .site-section {
+    background: #f4f1ea;
+    padding: 0 1.5rem 4rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease 0.15s, transform 0.6s ease 0.15s;
+  }
+
+  .site-section.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .site-container {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .site-info-card {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(42, 59, 62, 0.05);
+    margin-bottom: 1rem;
+  }
+
+  .site-info-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(53, 191, 171, 0.08);
+    border: 1px solid rgba(53, 191, 171, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #35bfab;
+    flex-shrink: 0;
+  }
+
+  .site-info-body { flex: 1; min-width: 0; }
+
+  .site-info-name {
+    font-family: 'Sora', 'PingFang SC', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2a3b3e;
+    margin: 0 0 0.5rem;
+  }
+
+  .site-info-desc {
+    font-size: 0.825rem;
+    color: rgba(42, 59, 62, 0.55);
+    line-height: 1.7;
+    margin: 0 0 0.75rem;
+  }
+
+  .site-tech-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .tech-tag {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(42, 59, 62, 0.04);
+    color: rgba(42, 59, 62, 0.45);
+    letter-spacing: 0.02em;
+  }
+
+  .principle-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 14px;
+    background: rgba(53, 191, 171, 0.04);
+    border: 1px solid rgba(53, 191, 171, 0.08);
+    align-items: flex-start;
+  }
+
+  .principle-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(53, 191, 171, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #35bfab;
+    flex-shrink: 0;
+  }
+
+  .principle-title {
+    font-family: 'Sora', 'PingFang SC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2a3b3e;
+    margin: 0 0 0.25rem;
+  }
+
+  .principle-desc {
+    font-size: 0.775rem;
+    color: rgba(42, 59, 62, 0.5);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ===== 底部签名 ===== */
+  .about-footer {
+    background: #f4f1ea;
+    padding: 2rem 1.5rem 3rem;
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.6s ease 0.3s;
+  }
+
+  .about-footer.revealed { opacity: 1; }
+
+  .about-footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .about-signature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(42, 59, 62, 0.25);
+    letter-spacing: 0.1em;
+  }
+
+  .about-sig-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #35bfab;
+    opacity: 0.5;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 640px) {
+    .hero-title { font-size: 3rem; }
+    .about-section { padding: 3rem 1rem; }
+    .skills-grid { grid-template-columns: 1fr; }
+    .site-info-card { flex-direction: column; }
+    .about-social { gap: 0.5rem; }
+    .social-link span { display: none; }
+  }
+</style>

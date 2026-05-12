@@ -1,40 +1,40 @@
 ---
-import { DOMAIN_LABELS } from '../utils/domains';
+import { CATEGORY_LABELS } from '../utils/domains';
 
 interface Props {
   title: string;
   date: Date;
   tags: string[];
-  type: 'article' | 'photo' | 'thought' | 'project' | 'dialogue';
-  domain?: string;
+  type: 'article' | 'photo' | 'thought' | 'project';
+  category?: string;
   slug: string;
   cover?: string;
   excerpt?: string;
 }
 
-const { title, date, tags, type, domain, slug, cover, excerpt } = Astro.props;
+const { title, date, tags, type, category, slug, cover, excerpt } = Astro.props;
 
 const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 
-const domainLabel = domain ? DOMAIN_LABELS[domain] : null;
-const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:waves';
+const categoryLabel = category ? CATEGORY_LABELS[category] : null;
+const categoryIcon = category === 'ai' ? 'lucide:cpu' : 'lucide:leaf';
 ---
 
-<!-- 船长低语 -->
+<!-- 随想 (thought) -->
 {type === 'thought' && (
   <a
-    href={`/log/${slug}`}
+    href={`/${category || 'log'}/${slug}`}
     class="block reveal group mb-6 break-inside-avoid no-underline"
   >
     <div class="rounded-xl bg-gold/[0.03] p-5 transition-all duration-300 hover:bg-gold/[0.06]">
       <div class="flex items-start gap-3">
         <div class="mt-1.5 w-2 h-2 rounded-full bg-gold/60 shrink-0" style={`animation: bio-pulse 3s ease-in-out infinite`}></div>
         <div class="min-w-0">
-          {domainLabel && (
+          {categoryLabel && (
             <span class="text-gold/40 text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 mb-2">
-              <iconify-icon icon={domainIcon} width="10" height="10"></iconify-icon>
-              {domainLabel}
+              <iconify-icon icon={categoryIcon} width="10" height="10"></iconify-icon>
+              {categoryLabel}
             </span>
           )}
           <p class="text-parchment/70 text-base italic leading-relaxed group-hover:text-parchment transition-colors">
@@ -52,19 +52,19 @@ const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:wave
   </a>
 )}
 
-<!-- 声纳读数 -->
+<!-- 文章 (article) -->
 {type === 'article' && (
   <a
-    href={`/log/${slug}`}
+    href={`/${category || 'log'}/${slug}`}
     class="block reveal group mb-6 break-inside-avoid no-underline"
   >
     <div class="panel-glass card-accent-left accent-article">
       <div class="p-5 pl-6">
         <div class="flex items-center gap-2 mb-2">
-          {domainLabel && (
+          {categoryLabel && (
             <span class="flex items-center gap-1 text-bio-cyan/60 text-xs font-mono tracking-wider">
-              <iconify-icon icon={domainIcon} width="10" height="10"></iconify-icon>
-              {domainLabel}
+              <iconify-icon icon={categoryIcon} width="10" height="10"></iconify-icon>
+              {categoryLabel}
             </span>
           )}
           <span class="text-white/[0.06] text-xs">|</span>
@@ -92,10 +92,10 @@ const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:wave
   </a>
 )}
 
-<!-- 潜望镜 -->
+<!-- 摄影 (photo) -->
 {type === 'photo' && (
   <a
-    href={`/log/${slug}`}
+    href={`/${category || 'log'}/${slug}`}
     class="block reveal group mb-6 break-inside-avoid no-underline"
   >
     <div class="panel-glass overflow-hidden transition-all duration-300 hover:border-bio-cyan/30 hover:shadow-[inset_0_0_20px_rgba(0,229,255,0.05)]">
@@ -104,10 +104,10 @@ const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:wave
           <img src={cover} alt={title} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
           <div class="absolute inset-0 bg-gradient-to-t from-abyss/80 via-transparent to-transparent"></div>
           <div class="absolute bottom-0 left-0 right-0 p-4">
-            {domainLabel && (
+            {categoryLabel && (
               <span class="flex items-center gap-1 text-bio-cyan/50 text-xs font-mono mb-1">
-                <iconify-icon icon={domainIcon} width="10" height="10"></iconify-icon>
-                {domainLabel}
+                <iconify-icon icon={categoryIcon} width="10" height="10"></iconify-icon>
+                {categoryLabel}
               </span>
             )}
             <h3 class="text-parchment font-heading text-base group-hover:text-bio-cyan transition-colors">
@@ -133,10 +133,10 @@ const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:wave
   </a>
 )}
 
-<!-- 船坞 -->
+<!-- 项目 (project) -->
 {type === 'project' && (
   <a
-    href={`/log/${slug}`}
+    href={`/${category || 'log'}/${slug}`}
     class="block reveal group mb-6 break-inside-avoid no-underline"
   >
     <div class="panel-glass border-gold/20 bg-gold/[0.03] glow-gold transition-all duration-300 hover:border-gold/30 hover:bg-gold/[0.06]">
@@ -144,12 +144,12 @@ const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:wave
         <div class="flex items-center gap-2 mb-3">
           <iconify-icon icon="lucide:anchor" width="14" height="14" class="text-gold/60"></iconify-icon>
           <span class="text-gold/40 text-xs font-mono uppercase tracking-wider">Shipyard</span>
-          {domainLabel && (
+          {categoryLabel && (
             <>
               <span class="text-white/[0.06] text-xs">|</span>
               <span class="flex items-center gap-1 text-parchment/30 text-xs">
-                <iconify-icon icon={domainIcon} width="10" height="10"></iconify-icon>
-                {domainLabel}
+                <iconify-icon icon={categoryIcon} width="10" height="10"></iconify-icon>
+                {categoryLabel}
               </span>
             </>
           )}
@@ -166,47 +166,6 @@ const domainIcon = domain === 'ai-exploration' ? 'lucide:compass' : 'lucide:wave
           ))}
         </div>
         <time class="mt-3 block text-parchment/20 text-xs font-mono">{formatDate(date)}</time>
-      </div>
-    </div>
-  </a>
-)}
-
-<!-- 无线电 -->
-{type === 'dialogue' && (
-  <a
-    href={`/log/${slug}`}
-    class="block reveal group mb-6 break-inside-avoid no-underline"
-  >
-    <div class="panel-glass overflow-hidden glow-cyan transition-all duration-300 hover:border-bio-cyan/20">
-      <!-- 双色头部 -->
-      <div class="h-1 bg-gradient-to-r from-gold/40 to-bio-cyan/40"></div>
-      <div class="p-5">
-        <div class="flex items-center gap-2 mb-3">
-          <iconify-icon icon="lucide:radio" width="14" height="14" class="text-bio-cyan/60"></iconify-icon>
-          <span class="text-bio-cyan/40 text-xs font-mono uppercase tracking-wider">Radio</span>
-          {domainLabel && (
-            <>
-              <span class="text-white/[0.06] text-xs">|</span>
-              <span class="flex items-center gap-1 text-parchment/30 text-xs">
-                <iconify-icon icon={domainIcon} width="10" height="10"></iconify-icon>
-                {domainLabel}
-              </span>
-            </>
-          )}
-        </div>
-        <h3 class="text-parchment font-heading text-base leading-snug group-hover:text-bio-cyan transition-colors mb-2">
-          {title}
-        </h3>
-        {excerpt && (
-          <p class="text-parchment/40 text-sm line-clamp-2">{excerpt}</p>
-        )}
-        <!-- 波形装饰 -->
-        <div class="flex items-center gap-0.5 mt-3">
-          {[1,2,3,4,5,6,7,8].map(i => (
-            <div class="w-1 rounded-full bg-bio-cyan/20" style={`height: ${4 + Math.sin(i) * 4}px`}></div>
-          ))}
-        </div>
-        <time class="mt-2 block text-parchment/20 text-xs font-mono">{formatDate(date)}</time>
       </div>
     </div>
   </a>

@@ -1,18 +1,20 @@
-<!-- MusicPlayer — lvyovo 风格音乐播放器 -->
-<div class="panel-glass px-5 py-4 flex flex-row items-center justify-between gap-4 group cursor-pointer rounded-[40px]" id="music-player" style="background: rgba(255,255,255,0.6);">
+<!-- MusicPlayer — 精致音乐播放器 -->
+<div class="panel-glass px-5 py-3.5 flex flex-row items-center justify-between gap-3 group cursor-pointer rounded-[40px]" id="music-player" style="background: rgba(255,255,255,0.5);">
   <div class="flex items-center gap-3 w-full">
-    <iconify-icon icon="lucide:music" width="22" height="22" class="text-[#2dd4bf] shrink-0"></iconify-icon>
-    <div class="flex-1">
-      <div class="text-[#4a5f61] text-[15px] font-body font-medium tracking-wide group-hover:text-brand transition-colors" id="music-title">
+    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand/15 to-brand-secondary/10 flex items-center justify-center shrink-0">
+      <iconify-icon icon="lucide:music" width="18" height="18" class="text-brand"></iconify-icon>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="text-parchment text-[13px] font-body font-medium tracking-wide group-hover:text-brand transition-colors truncate" id="music-title">
         Close To You
       </div>
-      <div class="w-[85%] h-[6px] bg-white/40 rounded-full mt-1.5 overflow-hidden relative">
-        <div class="h-full bg-white w-2/3 rounded-full relative z-10" id="music-progress"></div>
+      <div class="w-full h-[4px] bg-parchment/[0.06] rounded-full mt-1.5 overflow-hidden relative">
+        <div class="h-full bg-brand/30 w-2/3 rounded-full relative z-10 transition-all" id="music-progress"></div>
       </div>
     </div>
   </div>
-  <button class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#2dd4bf] hover:scale-105 transition-transform shrink-0 shadow-sm border-none cursor-pointer" aria-label="Play" id="music-toggle">
-    <iconify-icon icon="lucide:play" width="16" height="16" class="ml-0.5" id="music-icon"></iconify-icon>
+  <button class="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center text-brand hover:scale-110 transition-transform shrink-0 shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-white/60 cursor-pointer" aria-label="Play" id="music-toggle">
+    <iconify-icon icon="lucide:play" width="14" height="14" class="ml-0.5" id="music-icon"></iconify-icon>
   </button>
   
   <!-- 真实的 HTML5 音频元素 -->
