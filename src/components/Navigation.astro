@@ -15,24 +15,44 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
+    title: '写作',
     items: [
-      { label: '文章', href: '/ai', icon: 'lucide:sparkles', hint: 'Posts' },
-      { label: '资源', href: '/dock', icon: 'lucide:package', hint: 'Resources' },
+      { label: 'AI 探索', href: '/ai', icon: 'lucide:brain', hint: 'Posts' },
+      { label: '生活日志', href: '/life', icon: 'lucide:leaf', hint: 'Life' },
+    ]
+  },
+  {
+    title: 'AI 探索',
+    items: [
+      { label: '学习笔记', href: '/ai/learn', icon: 'lucide:book-open', hint: 'Learn' },
+      { label: '工具箱', href: '/ai/toolkit', icon: 'lucide:wrench', hint: 'Tools' },
+      { label: '信息源', href: '/ai/sources', icon: 'lucide:radio', hint: 'Sources' },
+      { label: '想法', href: '/ai/ideas', icon: 'lucide:lightbulb', hint: 'Ideas' },
+    ]
+  },
+  {
+    title: '收藏',
+    items: [
+      { label: '装备库', href: '/dock', icon: 'lucide:package', hint: 'Resources' },
+    ]
+  },
+  {
+    items: [
       { label: '关于', href: '/about-me', icon: 'lucide:user', hint: 'About' },
     ]
-  }
+  },
 ];
 
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/';
 const normalizedPath = currentPath.replace(/\/$/, '') || '/';
-const aiUtilityPaths = ['/ai/learn', '/ai/sources', '/ai/toolkit', '/ai/ideas'];
+const aiSubPaths = ['/ai/learn', '/ai/toolkit', '/ai/sources', '/ai/ideas'];
 
 const isActiveHref = (href: string) => {
   if (href === '/ai') {
     return normalizedPath === '/ai' || (
       normalizedPath.startsWith('/ai/') &&
-      !aiUtilityPaths.some(path => normalizedPath === path || normalizedPath.startsWith(`${path}/`))
+      !aiSubPaths.some(p => normalizedPath === p || normalizedPath.startsWith(`${p}/`))
     );
   }
   if (href === '/life') {
@@ -42,7 +62,6 @@ const isActiveHref = (href: string) => {
 };
 ---
 
-<!-- 引入真正的 SearchModal (隐藏其自带触发器，由本组件代理) -->
 <div class="hidden">
   <SearchModal />
 </div>
@@ -54,13 +73,12 @@ const isActiveHref = (href: string) => {
         Walker
       </a>
       <div class="flex items-center">
-        <!-- 首页顶部栏 -->
       </div>
     </div>
   </nav>
 ) : (
   <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[rgba(42,59,62,0.08)] bg-[#fbfbfa] flex flex-col" id="main-nav">
-    <!-- 移动端顶部栏 -->
+    {/* 移动端顶部栏 */}
     <div class="flex lg:hidden items-center justify-between px-4 py-3 w-full bg-[#fbfbfa]/95 backdrop-blur-md">
       <a href="/" class="flex items-center font-heading text-lg font-bold text-parchment hover:text-brand transition-colors no-underline">
         Walker
@@ -83,10 +101,10 @@ const isActiveHref = (href: string) => {
       </div>
     </div>
 
-    <!-- 侧边栏/移动端菜单内容 -->
+    {/* 侧边栏/移动端菜单内容 */}
     <div class="hidden lg:flex flex-col flex-1 w-full overflow-y-auto custom-scrollbar bg-[#fbfbfa]" id="mobile-menu">
-      
-      <!-- 桌面端头部 -->
+
+      {/* 桌面端头部 */}
       <div class="hidden lg:flex flex-col px-5 pt-7 pb-5">
         <a href="/" class="nav-brand no-underline" title="返回首页">
           <span class="nav-brand-mark">W</span>
@@ -96,58 +114,60 @@ const isActiveHref = (href: string) => {
           </span>
         </a>
       </div>
-      
-      <!-- 分割线 -->
-      <div class="hidden lg:block mx-5 border-b border-[rgba(42,59,62,0.08)] mb-5"></div>
 
-      <!-- 搜索框 (仿输入框样式) -->
-      <div class="hidden lg:block px-4 mb-5">
+      {/* 分割线 */}
+      <div class="hidden lg:block mx-5 border-b border-[rgba(42,59,62,0.06)] mb-5"></div>
+
+      {/* 搜索框 */}
+      <div class="hidden lg:block px-4 mb-1">
         <button id="desktop-search-btn" class="nav-search group">
           <div class="flex items-center gap-2.5 text-[13px]">
             <iconify-icon icon="lucide:search" width="16" height="16" class="text-gray-400 group-hover:text-gray-500 transition-colors"></iconify-icon>
-            <span class="font-body text-gray-500">Search...</span>
+            <span class="font-body text-gray-500">搜索</span>
           </div>
           <kbd class="text-[10px] font-sans px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 text-gray-400 font-medium">⌘K</kbd>
         </button>
       </div>
 
-      <!-- 导航列表 -->
+      {/* 导航列表 */}
       <div class="flex-1 px-3 pb-4">
         <div class="flex flex-col gap-5">
           {navGroups.map((group) => (
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col">
               {group.title && (
-                <div class="nav-group-title">{group.title}</div>
+                <div class="nav-section-title">{group.title}</div>
               )}
-              {group.items.map(item => {
-                const isActive = isActiveHref(item.href);
-                return (
-                  <a
-                    href={item.href}
-                    title={item.label}
-                    class:list={[
-                      'nav-link group',
-                      isActive
-                        ? 'nav-link-active'
-                        : 'nav-link-idle',
-                    ]}
-                  >
-                    <iconify-icon icon={item.icon} width="17" height="17" class="nav-link-icon"></iconify-icon>
-                    <span class="nav-link-main">{item.label}</span>
-                    {item.hint && <span class="nav-link-hint">{item.hint}</span>}
-                  </a>
-                );
-              })}
+              <div class="flex flex-col gap-0.5">
+                {group.items.map(item => {
+                  const isActive = isActiveHref(item.href);
+                  return (
+                    <a
+                      href={item.href}
+                      title={item.label}
+                      class:list={[
+                        'nav-link group',
+                        isActive
+                          ? 'nav-link-active'
+                          : 'nav-link-idle',
+                      ]}
+                    >
+                      <iconify-icon icon={item.icon} width="18" height="18" class="nav-link-icon"></iconify-icon>
+                      <span class="nav-link-main">{item.label}</span>
+                      {item.hint && <span class="nav-link-hint">{item.hint}</span>}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
-        
-        <!-- 文章列表扩展插槽 -->
+
+        {/* 文章列表扩展插槽 */}
         <div class="nav-extension mt-4">
           <slot />
         </div>
       </div>
-      
+
       {/* 侧边栏折叠按钮 */}
       <div class="hidden lg:flex items-center justify-end px-4 py-3 opacity-0 hover:opacity-100 transition-opacity absolute bottom-[72px] right-0">
         <button
@@ -160,7 +180,7 @@ const isActiveHref = (href: string) => {
         </button>
       </div>
 
-      <!-- 底部社交栏 -->
+      {/* 底部社交栏 */}
       <div class="hidden lg:flex items-center justify-between px-5 py-5 mt-auto border-t border-[rgba(42,59,62,0.08)] text-gray-400">
         <div class="flex items-center gap-3.5">
           <a href="https://github.com/AdgaiWalker" target="_blank" class="hover:text-gray-700 transition-colors" aria-label="Github"><iconify-icon icon="mdi:github" width="18" height="18"></iconify-icon></a>
@@ -195,12 +215,10 @@ const isActiveHref = (href: string) => {
       menu?.classList.toggle('max-h-[80vh]');
     });
 
-    // 代理触发 SearchModal
     const desktopSearchBtn = document.getElementById('desktop-search-btn');
     const mobileSearchBtn = document.getElementById('mobile-search-btn');
-    
+
     const triggerSearch = () => {
-      // 触发键盘事件 ⌘K，让 SearchModal.astro 监听并打开
       document.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true, key: 'k' }));
     };
 
@@ -213,7 +231,18 @@ const isActiveHref = (href: string) => {
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
   }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
 
+  /* ===== Brand ===== */
   .nav-brand {
     display: flex;
     align-items: center;
@@ -257,12 +286,13 @@ const isActiveHref = (href: string) => {
     letter-spacing: 0.04em;
   }
 
+  /* ===== Search ===== */
   .nav-search {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.55rem 0.7rem;
+    padding: 0.6rem 0.8rem;
     border-radius: 10px;
     border: 1px solid rgba(42, 59, 62, 0.08);
     background: rgba(255, 255, 255, 0.82);
@@ -277,23 +307,25 @@ const isActiveHref = (href: string) => {
     box-shadow: 0 10px 28px rgba(25, 38, 40, 0.05);
   }
 
-  .nav-group-title {
-    padding: 0 0.75rem 0.35rem;
-    font-size: 0.68rem;
+  /* ===== Section Titles ===== */
+  .nav-section-title {
+    padding: 0 0.7rem 0.35rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgba(42, 59, 62, 0.34);
+    color: rgba(42, 59, 62, 0.32);
   }
 
+  /* ===== Nav Links ===== */
   .nav-link {
     display: grid;
     grid-template-columns: 18px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 0.65rem;
-    min-height: 38px;
-    padding: 0.48rem 0.7rem;
-    border-radius: 9px;
+    gap: 0.7rem;
+    min-height: 42px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
     border: 1px solid transparent;
     font-size: 0.86rem;
     text-decoration: none;
@@ -301,23 +333,23 @@ const isActiveHref = (href: string) => {
   }
 
   .nav-link-idle {
-    color: rgba(42, 59, 62, 0.62);
+    color: rgba(42, 59, 62, 0.6);
   }
 
   .nav-link-idle:hover {
     color: #1a2325;
-    background: rgba(42, 59, 62, 0.045);
+    background: rgba(42, 59, 62, 0.04);
   }
 
   .nav-link-active {
     color: #218f80;
-    background: rgba(53, 191, 171, 0.09);
-    border-color: rgba(53, 191, 171, 0.13);
+    background: rgba(53, 191, 171, 0.08);
+    border-color: rgba(53, 191, 171, 0.12);
     font-weight: 600;
   }
 
   .nav-link-icon {
-    color: rgba(42, 59, 62, 0.36);
+    color: rgba(42, 59, 62, 0.34);
     transition: color 0.18s ease;
   }
 
@@ -338,18 +370,8 @@ const isActiveHref = (href: string) => {
     font-size: 0.62rem;
     color: rgba(42, 59, 62, 0.26);
   }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.1);
-  }
 
-  /* 侧边栏折叠样式适配 */
+  /* ===== 侧边栏折叠样式适配 ===== */
   @media (min-width: 1024px) {
     #main-nav {
       width: var(--walker-nav-width, 260px) !important;
@@ -364,21 +386,21 @@ const isActiveHref = (href: string) => {
     }
 
     .sidebar-collapsed-nav .nav-brand-copy,
+    .sidebar-collapsed-nav .nav-section-title,
     .sidebar-collapsed-nav .nav-link-main,
     .sidebar-collapsed-nav .nav-link-hint,
-    .sidebar-collapsed-nav .nav-group-title,
     .sidebar-collapsed-nav .nav-extension {
       display: none !important;
     }
 
     .sidebar-collapsed-nav [id="desktop-search-btn"] {
-      padding: 0.58rem !important;
+      padding: 0.6rem !important;
       justify-content: center;
       border-color: transparent !important;
       background: transparent !important;
       box-shadow: none !important;
     }
-    
+
     .sidebar-collapsed-nav [id="desktop-search-btn"]:hover {
       background: rgba(0,0,0,0.05) !important;
     }
@@ -401,14 +423,15 @@ const isActiveHref = (href: string) => {
     }
 
     .sidebar-collapsed-nav .mt-auto {
-      display: none !important; /* 隐藏底部社交 */
+      display: none !important;
     }
-    
+
     .sidebar-collapsed-nav [id="sidebar-collapse-btn"] {
-      opacity: 1 !important; /* 折叠态始终显示展开按钮 */
+      opacity: 1 !important;
     }
   }
 
+  /* ===== 移动端 ===== */
   @media (max-width: 1023px) {
     #mobile-menu.flex {
       position: fixed;
