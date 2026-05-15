@@ -46,6 +46,7 @@ const {
   ogDescription={ogDescription}
   canonicalUrl={canonicalUrl}
 >
+  <slot name="nav-extension" slot="nav-extension" />
   <div class="sidebar-layout-content">
     {/* 页面头部区域 */}
     {pageTitle && (

@@ -9,7 +9,6 @@ import DialogueBubble from '../../components/DialogueBubble.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
 import BilibiliVideo from '../../components/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
-import TableOfContents from '../../components/article/TableOfContents.astro';
 
 import { getCollection, render } from 'astro:content';
 
@@ -114,13 +113,6 @@ const platformIconMap: Record<string, string> = {
           </div>
         )}
 
-        <details class="article-inline-toc">
-          <summary>
-            <span>本文目录</span>
-            <iconify-icon icon="lucide:chevron-down" width="16" height="16"></iconify-icon>
-          </summary>
-          <TableOfContents headings={headings} />
-        </details>
       </header>
 
       <!-- 文章正文 -->

@@ -1,5 +1,6 @@
 ---
 import Base from './Base.astro';
+import CategoryPanel from '../components/CategoryPanel.astro';
 import { getCollection } from 'astro:content';
 
 interface Props {
@@ -14,63 +15,33 @@ const { title, description, currentSlug } = Astro.props;
 const items = (await getCollection('dockItem', ({ data }) => data.published))
   .sort((a, b) => a.data.name.localeCompare(b.data.name, 'zh-CN'));
 
-// Group items by category
-const groupedItems = {
-  tool: items.filter(item => item.data.category === 'tool'),
-  skill: items.filter(item => item.data.category === 'skill'),
-  'info-source': items.filter(item => item.data.category === 'info-source'),
-  community: items.filter(item => item.data.category === 'community'),
-};
+const categoryGroups = [
+  { key: 'tool', label: '工具 (Tools)', icon: 'wrench' },
+  { key: 'skill', label: '技能 (Skills)', icon: 'zap' },
+  { key: 'info-source', label: '信息源 (Sources)', icon: 'radio' },
+  { key: 'community', label: '社群 (Community)', icon: 'users' },
+];
 
-const categoryNames = {
-  tool: '工具 (Tools)',
-  skill: '技能 (Skills)',
-  'info-source': '信息源 (Sources)',
-  community: '社群 (Community)'
-};
+const panelItems = items.map(item => ({
+  id: item.id,
+  name: item.data.name,
+  description: item.data.description,
+  category: item.data.category,
+  href: `/dock/${item.id}`,
+  isActive: currentSlug === item.id,
+}));
 ---
 
 <Base title={title} description={description} pureMode={true}>
   <div class="dock-master-detail-layout">
-    <div class="toolkit-resize-handle toolkit-resize-global" data-resize="global" aria-hidden="true"></div>
-
     {/* 第二栏：装备库列表 (Master) */}
-    <aside class="dock-list-column">
-      <div class="list-column-header">
-        <h2>装备库</h2>
-        <span>{items.length} 个项目</span>
-      </div>
-
-      <div class="list-column-content custom-scrollbar">
-        {Object.entries(groupedItems).map(([category, catItems]) => {
-          if (catItems.length === 0) return null;
-          return (
-            <div class="dock-category-group">
-              <h3 class="dock-category-title">{categoryNames[category as keyof typeof categoryNames]}</h3>
-              <nav class="dock-item-list">
-                {catItems.map(item => (
-                  <a 
-                    href={`/dock/${item.id}`} 
-                    class:list={['dock-item-link', currentSlug === item.id ? 'active' : '']}
-                  >
-                    <span class="dock-item-icon">
-                      {item.data.category === 'tool' && <iconify-icon icon="lucide:wrench"></iconify-icon>}
-                      {item.data.category === 'skill' && <iconify-icon icon="lucide:zap"></iconify-icon>}
-                      {item.data.category === 'info-source' && <iconify-icon icon="lucide:radio"></iconify-icon>}
-                      {item.data.category === 'community' && <iconify-icon icon="lucide:users"></iconify-icon>}
-                    </span>
-                    <span class="dock-item-info">
-                      <span class="dock-item-name">{item.data.name}</span>
-                      <span class="dock-item-desc">{item.data.description}</span>
-                    </span>
-                  </a>
-                ))}
-              </nav>
-            </div>
-          );
-        })}
-      </div>
-    </aside>
+    <CategoryPanel
+      title="装备库"
+      count={items.length}
+      items={panelItems}
+      categoryGroups={categoryGroups}
+      activeId={currentSlug}
+    />
 
     <div class="toolkit-resize-handle toolkit-resize-middle" data-resize="article" aria-hidden="true"></div>
 
@@ -86,12 +57,6 @@ const categoryNames = {
     import { initColumnResize, bootColumnResize } from '../scripts/column-resize';
 
     document.addEventListener('astro:page-load', () => {
-      initColumnResize('global', {
-        cssVar: '--walker-nav-width',
-        storageKey: 'walker-nav-width',
-        min: 220,
-        max: 340,
-      });
       initColumnResize('article', {
         cssVar: '--dock-list-width',
         storageKey: 'walker-dock-list-width',
@@ -109,126 +74,6 @@ const categoryNames = {
     display: grid;
     grid-template-columns: var(--dock-list-width, 300px) 16px minmax(0, 1fr);
     background: #f6f2ea;
-  }
-
-  /* --- 第二栏 (列表) --- */
-  .dock-list-column {
-    position: sticky;
-    top: 0;
-    align-self: start;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: #fffdf9;
-    border-right: 1px solid rgba(42, 59, 62, 0.08);
-  }
-
-  .list-column-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 1.6rem 1.35rem 1rem;
-    border-bottom: 1px solid rgba(42, 59, 62, 0.04);
-  }
-
-  .list-column-header h2 {
-    margin: 0;
-    color: #1a2325;
-    font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
-    font-size: 1.15rem;
-    font-weight: 700;
-  }
-
-  .list-column-header span {
-    color: rgba(42, 59, 62, 0.36);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-  }
-
-  .list-column-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1rem 0.75rem 2rem;
-  }
-
-  .dock-category-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .dock-category-title {
-    padding: 0 0.6rem 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: rgba(42, 59, 62, 0.4);
-    text-transform: uppercase;
-    margin: 0;
-  }
-
-  .dock-item-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .dock-item-link {
-    display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.5rem 0.6rem;
-    border-radius: 8px;
-    color: rgba(42, 59, 62, 0.65);
-    text-decoration: none;
-    transition: all 0.15s ease;
-  }
-
-  .dock-item-link:hover {
-    background: rgba(42, 59, 62, 0.04);
-    color: #1a2325;
-  }
-
-  .dock-item-link.active {
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-    color: #218f80;
-    font-weight: 500;
-  }
-
-  .dock-item-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    opacity: 0.6;
-  }
-
-  .dock-item-link.active .dock-item-icon {
-    opacity: 1;
-    color: #35bfab;
-  }
-
-  .dock-item-info {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .dock-item-name {
-    font-size: 0.85rem;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .dock-item-desc {
-    font-size: 0.68rem;
-    color: rgba(42, 59, 62, 0.4);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 0.15rem;
   }
 
   /* --- 第三栏 (详情) --- */
@@ -270,37 +115,16 @@ const categoryNames = {
     background: rgba(53, 191, 171, 0.45);
   }
 
-  .toolkit-resize-global {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: calc(var(--walker-nav-width, 260px) - 8px);
-    width: 16px;
-  }
-
-  :global(body.sidebar-collapsed) .toolkit-resize-global {
-    display: none;
-  }
-
   .toolkit-resize-middle {
     position: sticky;
     top: 0;
     height: 100vh;
   }
 
-  /* 响应式 */
   @media (max-width: 1023px) {
     .dock-master-detail-layout {
       display: block;
       padding-top: 3.5rem;
-    }
-
-    .dock-list-column {
-      position: relative;
-      height: auto;
-      max-height: 40vh;
-      border-right: none;
-      border-bottom: 1px solid rgba(42, 59, 62, 0.08);
     }
 
     .toolkit-resize-handle {

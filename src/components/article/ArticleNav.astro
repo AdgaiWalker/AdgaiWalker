@@ -1,9 +1,9 @@
 ---
 /**
- * ArticleSidebar — 详情页侧边栏文章列表
- * 展示同分类下的文章列表，支持文字/卡片两种视图
+ * ArticleNav — 文章导航组件
+ * 展示同分类下的文章列表，支持文字/卡片两种视图。
+ * 可用于 Navigation slot、独立侧栏面板等任意容器。
  */
-
 interface ArticleEntry {
   id: string;
   title: string;
@@ -30,10 +30,10 @@ const categoryLabels: Record<string, string> = {
 };
 ---
 
-<div class="article-sidebar" id="article-sidebar">
-  <div class="sidebar-section-header">
-    <span class="sidebar-section-title">{categoryLabels[category] || '文章'}</span>
-    <div class="sidebar-view-toggle" id="sidebar-view-toggle">
+<div class="article-nav" id="article-nav">
+  <div class="nav-section-header">
+    <span class="nav-section-title">{categoryLabels[category] || '文章'}</span>
+    <div class="nav-view-toggle" id="nav-view-toggle">
       <button class="view-btn active" data-view="list" aria-label="列表视图">
         <iconify-icon icon="lucide:list" width="14" height="14"></iconify-icon>
       </button>
@@ -86,12 +86,11 @@ const categoryLabels: Record<string, string> = {
 
 <script>
   document.addEventListener('astro:page-load', () => {
-    const toggle = document.getElementById('sidebar-view-toggle');
+    const toggle = document.getElementById('nav-view-toggle');
     const listView = document.getElementById('article-list-view');
     const cardView = document.getElementById('article-card-view');
     if (!toggle || !listView || !cardView) return;
 
-    // 从 localStorage 恢复视图偏好
     const saved = localStorage.getItem('walker-sidebar-view');
     if (saved === 'card') {
       listView.classList.add('hidden');
@@ -119,12 +118,12 @@ const categoryLabels: Record<string, string> = {
 </script>
 
 <style>
-  .article-sidebar {
+  .article-nav {
     padding: 0.65rem 0 0.25rem;
     border-top: 1px solid rgba(42, 59, 62, 0.07);
   }
 
-  .sidebar-section-header {
+  .nav-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -132,7 +131,7 @@ const categoryLabels: Record<string, string> = {
     margin-bottom: 0.15rem;
   }
 
-  .sidebar-section-title {
+  .nav-section-title {
     font-size: 0.7rem;
     font-weight: 600;
     color: rgba(42, 59, 62, 0.36);
@@ -141,7 +140,7 @@ const categoryLabels: Record<string, string> = {
     font-family: 'JetBrains Mono', monospace;
   }
 
-  .sidebar-view-toggle {
+  .nav-view-toggle {
     display: flex;
     gap: 2px;
     background: rgba(42, 59, 62, 0.035);

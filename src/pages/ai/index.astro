@@ -1,5 +1,6 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import ArticleNav from '../../components/article/ArticleNav.astro';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
@@ -29,6 +30,15 @@ aiLogs.forEach(log => {
 const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 
 const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
+
+// 侧栏文章导航数据
+const articleList = aiLogs.map(a => ({
+  id: a.id,
+  title: a.data.title,
+  date: a.data.date,
+  tags: a.data.tags,
+  summary: a.data.summary,
+}));
 ---
 
 <SidebarLayout
@@ -41,6 +51,14 @@ const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit'
   itemCount={aiLogs.length}
   itemUnit="篇文章"
 >
+  <Fragment slot="nav-extension">
+    <ArticleNav
+      articles={articleList}
+      currentSlug=""
+      category="ai"
+      basePath="/ai"
+    />
+  </Fragment>
   <div class="timeline-shell">
     <div class="tag-filter-bar" id="log-filters">
       <button class="filter-btn active" data-value="">
