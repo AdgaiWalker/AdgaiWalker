@@ -15,29 +15,10 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    title: '写作',
     items: [
-      { label: 'AI 探索', href: '/ai', icon: 'lucide:brain', hint: 'Posts' },
+      { label: 'AI 探索', href: '/ai', icon: 'lucide:sparkles', hint: 'Posts' },
       { label: '生活日志', href: '/life', icon: 'lucide:leaf', hint: 'Life' },
-    ]
-  },
-  {
-    title: 'AI 探索',
-    items: [
-      { label: '学习笔记', href: '/ai/learn', icon: 'lucide:book-open', hint: 'Learn' },
-      { label: '工具箱', href: '/ai/toolkit', icon: 'lucide:wrench', hint: 'Tools' },
-      { label: '信息源', href: '/ai/sources', icon: 'lucide:radio', hint: 'Sources' },
-      { label: '想法', href: '/ai/ideas', icon: 'lucide:lightbulb', hint: 'Ideas' },
-    ]
-  },
-  {
-    title: '收藏',
-    items: [
       { label: '装备库', href: '/dock', icon: 'lucide:package', hint: 'Resources' },
-    ]
-  },
-  {
-    items: [
       { label: '关于', href: '/about-me', icon: 'lucide:user', hint: 'About' },
     ]
   },
@@ -46,18 +27,8 @@ const navGroups: NavGroup[] = [
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/';
 const normalizedPath = currentPath.replace(/\/$/, '') || '/';
-const aiSubPaths = ['/ai/learn', '/ai/toolkit', '/ai/sources', '/ai/ideas'];
 
 const isActiveHref = (href: string) => {
-  if (href === '/ai') {
-    return normalizedPath === '/ai' || (
-      normalizedPath.startsWith('/ai/') &&
-      !aiSubPaths.some(p => normalizedPath === p || normalizedPath.startsWith(`${p}/`))
-    );
-  }
-  if (href === '/life') {
-    return normalizedPath === '/life' || normalizedPath.startsWith('/life/');
-  }
   return normalizedPath === href || normalizedPath.startsWith(`${href}/`);
 };
 ---
