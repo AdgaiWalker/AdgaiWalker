@@ -1,32 +1,47 @@
 ---
 /**
- * WalkerProfile — 首页个人身份卡
- * 只展示身份，不做导航。导航由 Bento 卡片承担。
+ * WalkerProfile — 首页左栏个人资料卡 (精致风格)
+ * 名字+在线状态+纯文字导航链接
  */
 ---
 
-<div class="panel-glass p-5 pt-6 flex flex-col h-full group">
-  <div class="flex items-center gap-3 mb-4 px-1">
+<div class="panel-glass p-5 pt-7 flex flex-col h-full group">
+  <!-- 名字与状态 -->
+  <div class="flex items-center gap-3 mb-8 px-1">
     <h2 class="font-heading text-parchment text-[22px] font-semibold tracking-tight">Walker</h2>
     <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/8 border border-brand/15">
       <span class="status-dot" style="width: 6px; height: 6px;"></span>
-      <span class="text-[11px] text-brand font-body font-medium">探索中</span>
+      <span class="text-[11px] text-brand font-body font-medium">开发中</span>
     </div>
   </div>
 
-  <p class="text-parchment/45 text-[13px] font-body leading-relaxed px-1 mb-5">
-    行过万里水路，记录每一次停靠。
-  </p>
-
-  <div class="mt-auto flex items-center gap-3 px-1">
-    <a href="https://github.com/AdgaiWalker" target="_blank" class="text-parchment/30 hover:text-parchment transition-colors no-underline" aria-label="Github">
-      <iconify-icon icon="mdi:github" width="16" height="16"></iconify-icon>
-    </a>
-    <a href="mailto:praxiswalker@gmail.com" class="text-parchment/30 hover:text-parchment transition-colors no-underline" aria-label="Email">
-      <iconify-icon icon="lucide:mail" width="16" height="16"></iconify-icon>
-    </a>
-    <a href="/rss.xml" class="text-parchment/30 hover:text-parchment transition-colors no-underline" aria-label="RSS">
-      <iconify-icon icon="lucide:rss" width="14" height="14"></iconify-icon>
-    </a>
+  <!-- 导航标题 -->
+  <div class="text-[10px] font-mono text-parchment-dim/35 uppercase tracking-[0.2em] mb-3 px-1">
+    NAVIGATION
   </div>
+
+  <!-- 频道导航（纯文字，无图标） -->
+  <nav class="flex flex-col gap-0.5" aria-label="频道导航">
+    <a href="/ai" class="block px-4 py-2.5 rounded-2xl bg-white/80 shadow-[0_1px_4px_rgba(0,0,0,0.03)] text-parchment transition-all text-[14px] font-body tracking-wide no-underline font-medium">
+      最新文章
+    </a>
+    <a href="/ai/learn" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      学习
+    </a>
+    <a href="/ai/toolkit" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      工具箱
+    </a>
+    <a href="/ai/sources" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      信息源
+    </a>
+    <a href="/ai/ideas" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      Idea
+    </a>
+    <a href="/life" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      生活日志
+    </a>
+    <a href="/about-me" class="block px-4 py-2.5 rounded-2xl text-parchment/55 hover:bg-white/50 hover:text-parchment transition-all text-[14px] font-body tracking-wide no-underline">
+      关于我
+    </a>
+  </nav>
 </div>
