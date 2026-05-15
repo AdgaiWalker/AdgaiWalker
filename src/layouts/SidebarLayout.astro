@@ -4,8 +4,6 @@
  * 用于：/ai, /ai/learn, /ai/sources, /ai/toolkit, /ai/ideas, /life, /about
  */
 import Base from './Base.astro';
-import Navigation from '../components/Navigation.astro';
-
 interface Props {
   title?: string;
   description?: string;
@@ -82,12 +80,12 @@ const {
   .sidebar-layout-content {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 2rem 2rem 4rem;
+    padding: 2.5rem 2.25rem 4.5rem;
   }
 
   .page-header {
     margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1.35rem;
     border-bottom: 1px solid rgba(42, 59, 62, 0.06);
   }
 
@@ -104,15 +102,16 @@ const {
     justify-content: center;
     width: 36px;
     height: 36px;
-    border-radius: 10px;
-    background: rgba(53, 191, 171, 0.1);
-    color: #35bfab;
+    border-radius: 11px;
+    border: 1px solid rgba(53, 191, 171, 0.16);
+    background: rgba(53, 191, 171, 0.08);
+    color: #218f80;
     flex-shrink: 0;
   }
 
   .page-header-h1 {
     font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
-    font-size: 1.75rem;
+    font-size: clamp(1.55rem, 2.2vw, 2rem);
     font-weight: 700;
     color: #2a3b3e;
     letter-spacing: -0.02em;
@@ -124,15 +123,15 @@ const {
     font-family: 'Inter', sans-serif;
     font-size: 0.8rem;
     font-weight: 400;
-    color: rgba(42, 59, 62, 0.35);
-    letter-spacing: 0.05em;
+    color: rgba(42, 59, 62, 0.38);
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
   .page-header-count {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
-    color: rgba(42, 59, 62, 0.4);
+    color: rgba(42, 59, 62, 0.42);
     letter-spacing: 0.03em;
     margin-top: 0.5rem;
   }

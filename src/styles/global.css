@@ -510,23 +510,11 @@
   color: #3a3a3a !important;
 }
 
-.reading-mode nav,
 .reading-mode .panel-glass {
   background: rgba(0, 0, 0, 0.04) !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
   color: #1f2937 !important;
   backdrop-filter: none !important;
-}
-
-.reading-mode nav a,
-.reading-mode nav span,
-.reading-mode nav div {
-  color: #4b5563 !important;
-}
-
-.reading-mode nav a:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: #1a1a1a !important;
 }
 
 /* ========== lvyovo 首页数字时钟样式 ========== */
@@ -615,6 +603,10 @@
 
 /* 折叠态导航栏 (仅桌面端生效) */
 @media (min-width: 1024px) {
+  .site-main-shell {
+    padding-left: var(--walker-nav-width, 260px) !important;
+  }
+
   .sidebar-collapsed-nav {
     width: 64px !important;
   }
@@ -655,8 +647,8 @@
   }
 
   /* 内容区联动 */
-  body.sidebar-collapsed .lg\:pl-64 {
-    padding-left: 64px !important;
+  body.sidebar-collapsed .site-main-shell {
+    padding-left: 68px !important;
   }
 
   /* 搜索栏在折叠态下隐藏 */
@@ -792,6 +784,47 @@
   }
 }
 
+/* ========== 文章页移动目录 ========== */
+.article-inline-toc {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  .article-inline-toc {
+    display: block;
+    margin: 0 0 2.5rem;
+    border: 1px solid rgba(42, 59, 62, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 253, 249, 0.9);
+    box-shadow: 0 16px 42px rgba(25, 38, 40, 0.05);
+    overflow: hidden;
+  }
+
+  .article-inline-toc summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    color: rgba(42, 59, 62, 0.68);
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .article-inline-toc summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .article-inline-toc[open] summary iconify-icon {
+    transform: rotate(180deg);
+  }
+
+  .article-inline-toc .toc-nav {
+    padding: 0 1rem 1rem;
+  }
+}
+
 /* 触控设备优化 */
 @media (hover: none) and (pointer: coarse) {
   /* 取消 3D 倾斜效果（移动端无法 hover） */
@@ -820,3 +853,39 @@
   }
 }
 
+/* ========== 文章页通用样式 (ai/[slug] + life/[slug] 共享) ========== */
+.article-reading-surface {
+  background-color: var(--reading-bg) !important;
+  color: var(--reading-text) !important;
+}
+
+.article-document {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 8rem 0 6rem;
+}
+
+.article-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.reading-mode #ambient-particles,
+.reading-mode .mouse-glow,
+.reading-mode .grain-overlay {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .article-document {
+    padding-top: 7rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .article-meta-tags {
+    width: 100%;
+    margin-left: 0;
+  }
+}

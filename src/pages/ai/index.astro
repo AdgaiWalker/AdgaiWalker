@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro';
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
@@ -31,36 +31,28 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
 ---
 
-<Base 
-  title="AI 探索 — Walker" 
-  theme="nature"
+<SidebarLayout
+  title="AI 探索 — Walker"
+  description="关于 AI、效率工具与哲学思考的文章记录。"
   ogDescription="关于 AI、效率工具与哲学思考的文章记录。"
+  pageTitle="AI 探索"
+  pageSubtitle="AI Exploration"
+  pageIcon="sparkles"
+  itemCount={aiLogs.length}
+  itemUnit="篇文章"
 >
-  <div class="max-w-3xl mx-auto px-6 pt-28 pb-20">
-    <!-- Header -->
-    <div class="mb-12">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-bio-cyan/60"></span>
-        <span class="text-xs font-mono text-parchment/30 uppercase tracking-wider">AI Exploration</span>
-      </div>
-      <h1 class="font-heading text-4xl text-parchment tracking-wide mb-3">AI 探索</h1>
-      <p class="text-parchment/40 text-sm font-body">
-        共 <span id="log-count" class="text-bio-cyan/80 font-mono">{aiLogs.length}</span> 篇文章
-      </p>
-      
-      <!-- Tag Filters -->
-      <div class="mt-8 flex flex-wrap items-center gap-2" id="log-filters">
-        <button class="filter-btn active px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-parchment/60 hover:text-parchment hover:bg-white/10 transition-all font-body" data-value="">
-          全部
+  <div class="timeline-shell">
+    <div class="tag-filter-bar" id="log-filters">
+      <button class="filter-btn active" data-value="">
+        全部
+        <span class="filter-count">{aiLogs.length}</span>
+      </button>
+      {allTags.map(tag => (
+        <button class="filter-btn" data-value={tag}>
+          {tag}
+          <span class="filter-count">{tagCountMap.get(tag)}</span>
         </button>
-        {allTags.map(tag => (
-          <button class="filter-btn px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-parchment/60 hover:text-parchment hover:bg-white/10 transition-all font-body flex items-center gap-1.5" data-value={tag}>
-            {tag}
-            <span class="opacity-40 text-[10px] font-mono">{tagCountMap.get(tag)}</span>
-          </button>
-        ))}
-      </div>
-      <div class="mt-8 h-px bg-gradient-to-r from-white/[0.08] to-transparent"></div>
+      ))}
     </div>
 
     <!-- Timeline -->
@@ -159,69 +151,43 @@ const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit'
     });
 
     // P2: Pretext Justified Tag Cloud
-    async function justifyTags() {
-      try {
-        const { prepareWithSegments, measureNaturalWidth } = await import('@chenglou/pretext');
-        const container = document.getElementById('log-filters');
-        if (!container) return;
-        
-        const buttons = Array.from(container.querySelectorAll('.filter-btn')) as HTMLElement[];
-        const containerWidth = container.clientWidth;
-        if (!containerWidth || buttons.length === 0) return;
-
-        const gap = 8;
-        const computedStyle = getComputedStyle(document.body);
-        const fontBody = computedStyle.getPropertyValue('--font-body') || 'Inter, sans-serif';
-        const font = `12px ${fontBody}`;
-
-        const items = buttons.map(btn => {
-          const text = btn.textContent?.trim() || '';
-          const prepared = prepareWithSegments(text, font);
-          const textWidth = measureNaturalWidth(prepared);
-          const totalWidth = textWidth + 26; 
-          return { btn, width: totalWidth };
-        });
-
-        let rows: {items: typeof items, width: number}[] = [];
-        let currentRow: typeof items = [];
-        let currentWidth = 0;
-
-        for (const item of items) {
-          if (currentRow.length > 0 && currentWidth + gap + item.width > containerWidth) {
-            rows.push({ items: currentRow, width: currentWidth });
-            currentRow = [item];
-            currentWidth = item.width;
-          } else {
-            currentRow.push(item);
-            currentWidth += (currentRow.length === 1 ? 0 : gap) + item.width;
-          }
-        }
-        if (currentRow.length > 0) {
-          rows.push({ items: currentRow, width: currentWidth });
-        }
-
-        rows.forEach((row, i) => {
-          const isLast = i === rows.length - 1;
-          row.items.forEach(item => {
-            if (!isLast && row.width > containerWidth * 0.5) {
-              item.btn.style.flexGrow = '1';
-              item.btn.style.textAlign = 'center';
-              item.btn.style.justifyContent = 'center';
-            } else {
-              item.btn.style.flexGrow = '0';
-            }
-          });
-        });
-      } catch (e) {
-        console.error('Pretext justified layout failed', e);
-      }
-    }
-
-    justifyTags();
-    let resizeTimer: ReturnType<typeof setTimeout>;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(justifyTags, 150);
-    });
+    import { watchJustifyTags } from '../../scripts/justify-tags';
+    watchJustifyTags('log-filters');
   </script>
-</Base>
+</SidebarLayout>
+
+<style>
+  .timeline-shell {
+    max-width: 760px;
+  }
+
+  .tag-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    opacity: 0.48;
+    margin-left: 0.25rem;
+  }
+
+  .year-group h2 {
+    letter-spacing: 0;
+  }
+
+  #timeline-container .panel-glass {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.04);
+  }
+
+  @media (max-width: 640px) {
+    .timeline-shell {
+      max-width: none;
+    }
+  }
+</style>

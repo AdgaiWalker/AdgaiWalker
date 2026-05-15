@@ -9,6 +9,7 @@ import DialogueBubble from '../../components/DialogueBubble.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
 import BilibiliVideo from '../../components/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
+import TableOfContents from '../../components/article/TableOfContents.astro';
 
 import { getCollection, render } from 'astro:content';
 
@@ -82,17 +83,17 @@ const platformIconMap: Record<string, string> = {
   category="ai"
   articleList={articleList}
 >
-  <div class="reading-mode min-h-screen">
-    <article class="max-w-3xl mx-auto px-6 pt-32 pb-24" data-pagefind-body>
+  <div class="article-reading-surface min-h-screen">
+    <article class="article-document" data-pagefind-body>
       <header class="mb-14">
         <!-- 顶部元信息 -->
-        <div class="flex items-center gap-4 mb-6 text-[13px] font-mono tracking-wider text-slate-400">
+        <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-slate-400">
           <a href="/ai" class="hover:text-blue-500 transition-colors no-underline">
             AI 探索
           </a>
           <span>/</span>
           <time>{formatDate(entry.data.date)}</time>
-          <div class="flex gap-2 ml-auto">
+          <div class="article-meta-tags">
             {entry.data.tags.map((tag: string) => (
               <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] uppercase tracking-tighter">
                 {tag}
@@ -112,6 +113,14 @@ const platformIconMap: Record<string, string> = {
             {entry.data.summary}
           </div>
         )}
+
+        <details class="article-inline-toc">
+          <summary>
+            <span>本文目录</span>
+            <iconify-icon icon="lucide:chevron-down" width="16" height="16"></iconify-icon>
+          </summary>
+          <TableOfContents headings={headings} />
+        </details>
       </header>
 
       <!-- 文章正文 -->
@@ -184,16 +193,3 @@ const platformIconMap: Record<string, string> = {
     </article>
   </div>
 </ArticleLayout>
-
-<style is:global>
-  .reading-mode {
-    background-color: var(--reading-bg) !important;
-    color: var(--reading-text) !important;
-  }
-
-  .reading-mode #ambient-particles,
-  .reading-mode .mouse-glow,
-  .reading-mode .grain-overlay {
-    display: none !important;
-  }
-</style>

@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro';
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getCollection } from 'astro:content';
 import DockItemCard from '../../components/DockItemCard.astro';
 
@@ -9,25 +9,19 @@ const items = await getCollection('dockItem', ({ data }) => data.published && (d
 const tags = [...new Set(items.flatMap(e => e.data.tags))];
 ---
 
-<Base 
+<SidebarLayout
   title="信息源 — Walker"
   description="我日常关注的优质技术博客、Newsletter 和前沿播客。"
   ogTitle="信息源 — Walker"
   ogDescription="日常关注的技术资讯和内容源。"
+  pageTitle="信息源"
+  pageSubtitle="Sources"
+  pageIcon="radio"
+  itemCount={items.length}
+  itemUnit="个来源"
 >
-  <div class="max-w-5xl mx-auto px-6 pt-28 pb-20">
-    <div class="mb-10">
-      <div class="flex items-center gap-3 mb-1">
-        <span class="w-1.5 h-1.5 rounded-full bg-coral/60"></span>
-        <span class="text-xs font-mono text-parchment/25 uppercase tracking-wider">Sources</span>
-      </div>
-      <h1 class="font-heading text-4xl md:text-5xl text-parchment tracking-wide">信息源</h1>
-      <p class="text-parchment/40 text-sm font-body mt-3">
-        我日常关注的优质技术博客、Newsletter 和前沿播客。
-      </p>
-      <div class="mt-4 h-px bg-gradient-to-r from-white/[0.08] to-transparent"></div>
-    </div>
-
+  <div class="resource-page-shell">
+    <p class="page-intro">我日常关注的优质技术博客、Newsletter、社群和前沿内容源。</p>
     <!-- 搜索 + 标签筛选 -->
     <div class="mb-8 space-y-4">
       <div class="relative max-w-md">
@@ -131,68 +125,21 @@ const tags = [...new Set(items.flatMap(e => e.data.tags))];
     });
 
     // P2: Pretext Justified Tag Cloud
-    async function justifyTags() {
-      try {
-        const { prepareWithSegments, measureNaturalWidth } = await import('@chenglou/pretext');
-        const container = document.getElementById('dock-filters');
-        if (!container) return;
-        
-        const buttons = Array.from(container.querySelectorAll('.filter-btn')) as HTMLElement[];
-        const containerWidth = container.clientWidth;
-        if (!containerWidth || buttons.length === 0) return;
-
-        const gap = 8;
-        const computedStyle = getComputedStyle(document.body);
-        const fontBody = computedStyle.getPropertyValue('--font-body') || 'Inter, sans-serif';
-        const font = `12px ${fontBody}`;
-
-        const items = buttons.map(btn => {
-          const text = btn.textContent?.trim() || '';
-          const prepared = prepareWithSegments(text, font);
-          const textWidth = measureNaturalWidth(prepared);
-          const totalWidth = textWidth + 26; 
-          return { btn, width: totalWidth };
-        });
-
-        let rows: {items: typeof items, width: number}[] = [];
-        let currentRow: typeof items = [];
-        let currentWidth = 0;
-
-        for (const item of items) {
-          if (currentRow.length > 0 && currentWidth + gap + item.width > containerWidth) {
-            rows.push({ items: currentRow, width: currentWidth });
-            currentRow = [item];
-            currentWidth = item.width;
-          } else {
-            currentRow.push(item);
-            currentWidth += (currentRow.length === 1 ? 0 : gap) + item.width;
-          }
-        }
-        if (currentRow.length > 0) {
-          rows.push({ items: currentRow, width: currentWidth });
-        }
-
-        rows.forEach((row, i) => {
-          const isLast = i === rows.length - 1;
-          row.items.forEach(item => {
-            if (!isLast && row.width > containerWidth * 0.5) {
-              item.btn.style.flexGrow = '1';
-              item.btn.style.textAlign = 'center';
-            } else {
-              item.btn.style.flexGrow = '0';
-            }
-          });
-        });
-      } catch (e) {
-        console.error('Pretext justified layout failed', e);
-      }
-    }
-
-    justifyTags();
-    let resizeTimer: ReturnType<typeof setTimeout>;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(justifyTags, 150);
-    });
+    import { watchJustifyTags } from '../../scripts/justify-tags';
+    watchJustifyTags('dock-filters');
   </script>
-</Base>
+</SidebarLayout>
+
+<style>
+  .resource-page-shell {
+    max-width: 1080px;
+  }
+
+  .page-intro {
+    max-width: 560px;
+    margin: -0.75rem 0 1.75rem;
+    color: rgba(42, 59, 62, 0.52);
+    font-size: 0.92rem;
+    line-height: 1.8;
+  }
+</style>

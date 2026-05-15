@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro';
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
@@ -20,25 +20,17 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
 ---
 
-<Base 
-  title="生活日志 — Walker" 
-  theme="nature"
+<SidebarLayout
+  title="生活日志 — Walker"
+  description="生活点滴、读书分享与日常随想。"
   ogDescription="生活点滴、读书分享与日常随想。"
+  pageTitle="生活日志"
+  pageSubtitle="Life Log"
+  pageIcon="leaf"
+  itemCount={lifeLogs.length}
+  itemUnit="篇记录"
 >
-  <div class="max-w-3xl mx-auto px-6 pt-28 pb-20">
-    <!-- Header -->
-    <div class="mb-12">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald/60"></span>
-        <span class="text-xs font-mono text-parchment/30 uppercase tracking-wider">Life Log</span>
-      </div>
-      <h1 class="font-heading text-4xl text-parchment tracking-wide mb-3">生活日志</h1>
-      <p class="text-parchment/40 text-sm font-body">
-        共 <span class="text-emerald/80 font-mono">{lifeLogs.length}</span> 篇记录
-      </p>
-      <div class="mt-8 h-px bg-gradient-to-r from-white/[0.08] to-transparent"></div>
-    </div>
-
+  <div class="life-timeline-shell">
     <!-- Timeline -->
     <div id="timeline-container" class="space-y-12">
       {years.map(year => (
@@ -76,4 +68,22 @@ const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit'
       </div>
     )}
   </div>
-</Base>
+</SidebarLayout>
+
+<style>
+  .life-timeline-shell {
+    max-width: 760px;
+  }
+
+  #timeline-container .panel-glass {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.04);
+  }
+
+  @media (max-width: 640px) {
+    .life-timeline-shell {
+      max-width: none;
+    }
+  }
+</style>
