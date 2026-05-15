@@ -7,6 +7,7 @@ import CalendarWidget from '../components/CalendarWidget.astro';
 import MusicPlayer from '../components/MusicPlayer.astro';
 import RandomRecommend from '../components/RandomRecommend.astro';
 import RecentTraces from '../components/RecentTraces.astro';
+import DockShowcase from '../components/DockShowcase.astro';
 
 import LikeCounter from '../components/LikeCounter.astro';
 import { getCollection } from 'astro:content';
@@ -17,39 +18,31 @@ const allLogs = await getCollection('log', ({ data }) => data.published);
 const aiLogs = allLogs
   .filter(log => log.data.category === 'ai')
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-
-const latestPhoto = allLogs
-  .filter(log => log.data.type === 'photo')
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())[0];
-const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=800&auto=format&fit=crop";
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">
 
-  <!-- 画板模式：绝对居中并根据窗口大小按比例缩放 -->
   <div class="fixed inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-    <!-- 内容容器恢复指针事件 -->
     <div id="desktop-canvas" class="w-[1060px] pointer-events-auto transition-transform duration-300 origin-center flex justify-center">
 
-      <!-- === 三栏 Bento Box 布局 === -->
+      {/* === 三栏 Bento Box 布局 === */}
       <div class="grid grid-cols-[240px_400px_320px] justify-center gap-6 items-start w-full relative pb-10">
 
-        <!-- ========================================= -->
-        <!-- 左栏：资料与导航 -->
-        <!-- ========================================= -->
+        {/* ========================================= */}
+        {/* 左栏：身份 + 最近文章 */}
+        {/* ========================================= */}
         <div class="flex flex-col gap-5 mt-20">
-          <!-- 个人资料卡 + 导航菜单 -->
           <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <WalkerProfile />
           </div>
-          
+
           <div class="pop-in delay-2 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px] ml-3">
             <RecentTraces logs={aiLogs.slice(0, 4)} />
           </div>
 
-          <!-- 搜索入口 (⌘K 风格) -->
+          {/* 搜索入口 */}
           <div class="pop-in delay-3 ml-1">
-            <button 
+            <button
               class="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-white/40 border border-white/60 text-parchment-dim/60 hover:bg-white/60 hover:text-parchment-dim transition-all text-[13px] font-body tracking-wide cursor-pointer backdrop-blur-sm"
               id="search-trigger"
               aria-label="搜索"
@@ -64,30 +57,17 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
           </div>
         </div>
 
-        <!-- ========================================= -->
-        <!-- 中栏：墙纸 + 问候 + 社交 + 推荐 -->
-        <!-- ========================================= -->
+        {/* ========================================= */}
+        {/* 中栏：装备库 + 问候 + 社交 */}
+        {/* ========================================= */}
         <div class="flex flex-col items-center -mt-4">
-          <!-- 顶部照片墙/壁纸展示 (Polaroid Collage Style) -->
-          <div class="aspect-[4/3] w-full flex items-center justify-center overflow-visible pop-in delay-2 draggable-card cursor-grab mb-1">
-             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-               <div class="relative w-[90%] h-[90%]">
-                 <div class="absolute inset-0 rotate-[-8deg] scale-[0.8] bg-white p-2 pb-10 shadow-lg rounded-sm translate-x-[-20%] translate-y-[5%] border border-black/[0.03]">
-                   <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover rounded-sm grayscale-[0.2]" alt="Photo 1" />
-                 </div>
-                 <div class="absolute inset-0 rotate-[12deg] scale-[0.85] bg-white p-2 pb-10 shadow-lg rounded-sm translate-x-[20%] translate-y-[-10%] border border-black/[0.03]">
-                   <img src="https://images.unsplash.com/photo-1493246507139-91e8bef99c02?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover rounded-sm" alt="Photo 2" />
-                 </div>
-                 <div class="absolute inset-0 rotate-[-1deg] scale-[0.95] bg-white p-2.5 pt-2.5 pb-12 shadow-2xl rounded-sm z-10 border border-black/[0.05]">
-                   <img src={coverUrl} alt="Cover" class="w-full h-full object-cover rounded-sm pointer-events-auto" loading="eager" />
-                   <div class="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] font-mono text-[#8a9ca0] italic font-medium tracking-wide">Moments</div>
-                 </div>
-               </div>
-             </div>
+          {/* 装备库展示卡（核心钩子） */}
+          <div class="pop-in delay-1 w-full draggable-card cursor-grab rounded-[40px]">
+            <DockShowcase />
           </div>
 
-          <!-- 问候卡（可点击跳转关于我） -->
-          <a href="/about-me" class="block pop-in delay-3 w-full draggable-card cursor-grab rounded-[40px] mt-3 no-underline group/greeting transition-all hover:shadow-xl hover:-translate-y-1" id="greeting-link">
+          {/* 问候卡 → 关于我 */}
+          <a href="/about-me" class="block pop-in delay-3 w-full draggable-card cursor-grab rounded-[40px] mt-5 no-underline group/greeting transition-all hover:shadow-xl hover:-translate-y-1">
             <div class="relative">
               <GreetingCard />
               <div class="absolute bottom-4 right-5 opacity-0 group-hover/greeting:opacity-60 transition-opacity text-parchment-dim">
@@ -96,7 +76,7 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
             </div>
           </a>
 
-          <!-- 社交按钮 (更精致的胶囊) -->
+          {/* 社交按钮 */}
           <div class="flex flex-wrap items-center justify-center gap-2.5 pop-in delay-4 mt-5 draggable-card cursor-grab">
             <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111]/90 text-white/90 hover:bg-[#111] hover:text-white hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm">
               <iconify-icon icon="mdi:github" width="17" height="17"></iconify-icon>
@@ -106,43 +86,33 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
                <iconify-icon icon="ri:bilibili-fill" width="17" height="17"></iconify-icon>
                Bilibili
             </a>
-            <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/60 text-[#ff2442] hover:bg-white/80 hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm border border-white/60">
-               <iconify-icon icon="ri:xiaohongshu-fill" width="17" height="17"></iconify-icon>
-               小红书
-            </a>
             <a href="mailto:praxiswalker@gmail.com" class="w-[40px] h-[40px] rounded-full bg-white/60 text-brand flex items-center justify-center hover:bg-white/80 hover:scale-105 transition-all no-underline shadow-sm backdrop-blur-sm border border-white/60">
-              <iconify-icon icon="mingcute:mail-fill" width="17" height="17"></iconify-icon>
+              <iconify-icon icon="lucide:mail" width="17" height="17"></iconify-icon>
             </a>
           </div>
 
-          <!-- 随机推荐 -->
+          {/* 随机推荐 */}
           <div class="pop-in delay-5 mt-6 w-[95%] draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <RandomRecommend />
           </div>
         </div>
 
-        <!-- ========================================= -->
-        <!-- 右栏：小组件 -->
-        <!-- ========================================= -->
+        {/* ========================================= */}
+        {/* 右栏：小组件 */}
+        {/* ========================================= */}
         <div class="flex flex-col gap-5 mt-10 relative">
-          <!-- 占位（写文章按钮已移除） -->
-
-          <!-- 数字时钟 -->
           <div class="pop-in delay-3 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <NavigationConsole />
           </div>
 
-          <!-- 日历 -->
           <div class="pop-in delay-4 ml-3 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <CalendarWidget />
           </div>
 
-          <!-- 音乐播放器 -->
           <div class="pop-in delay-5 -ml-3 mt-1 w-[280px] draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[40px]">
             <MusicPlayer />
           </div>
-          
-          <!-- 点赞按钮 -->
+
           <div class="flex justify-center pop-in delay-6 pt-3">
             <div class="w-max draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-full">
               <LikeCounter pagePath="/" />
@@ -154,14 +124,13 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
     </div>
   </div>
 
-  <!-- 底部签名线 -->
+  {/* 底部签名线 */}
   <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 text-[11px] font-mono text-parchment/25 tracking-wider pop-in delay-6" style="animation-delay: 1s;">
     <span class="status-dot"></span>
     <span>Walker · 行过万里水路</span>
   </div>
 
   <style>
-    /* 弹跳式进入动画 (更流畅的 spring 曲线) */
     .pop-in {
       animation: popInSpring 0.9s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
       opacity: 0;
@@ -189,7 +158,7 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
         transform: translateY(0) scale(1);
       }
     }
-    
+
     .cursor-grab {
       cursor: grab !important;
     }
@@ -199,7 +168,6 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
   </style>
 
   <script>
-    // 画板缩放逻辑：始终保证 1060x860 的画板完整显示在屏幕中心
     function resizeCanvas() {
       const canvas = document.getElementById('desktop-canvas');
       if (!canvas) return;
@@ -213,20 +181,17 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-    
-    // === 自由拖拽逻辑 ===
+
     function initDraggables() {
       const draggables = document.querySelectorAll('.draggable-card');
       let activeItem: HTMLElement | null = null;
       let initialX = 0, initialY = 0;
 
       draggables.forEach((item: any) => {
-        // 初始化存储坐标数据
         if (!item.dataset.x) item.dataset.x = '0';
         if (!item.dataset.y) item.dataset.y = '0';
 
         const onDragStart = (e: MouseEvent | TouchEvent) => {
-          // 如果点击的是链接或按钮，不触发拖拽
           const target = e.target as HTMLElement;
           if (target.closest('a') || target.closest('button')) return;
 
@@ -234,8 +199,6 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
           if (!activeItem) return;
           activeItem.classList.remove('cursor-grab');
           activeItem.classList.add('cursor-grabbing');
-          
-          // 提升层级，防止被遮挡
           activeItem.style.zIndex = '1000';
 
           const clientX = e.type.includes('mouse') ? (e as MouseEvent).clientX : (e as TouchEvent).touches[0].clientX;
@@ -251,7 +214,7 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
 
       const onDragMove = (e: MouseEvent | TouchEvent) => {
         if (!activeItem) return;
-        
+
         const clientX = e.type.includes('mouse') ? (e as MouseEvent).clientX : (e as TouchEvent).touches[0].clientX;
         const clientY = e.type.includes('mouse') ? (e as MouseEvent).clientY : (e as TouchEvent).touches[0].clientY;
 
@@ -261,7 +224,6 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
         activeItem.dataset.x = currentX.toString();
         activeItem.dataset.y = currentY.toString();
 
-        // 应用拖拽时的 transform，并加上悬浮感 (scale) 和倾斜
         activeItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) scale(1.02) rotate(0.5deg)`;
       };
 
@@ -269,9 +231,7 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
         if (!activeItem) return;
         activeItem.classList.remove('cursor-grabbing');
         activeItem.classList.add('cursor-grab');
-        activeItem.style.zIndex = '10'; // 恢复默认的高层级
-        
-        // 恢复 transform，只保留位移
+        activeItem.style.zIndex = '10';
         activeItem.style.transform = `translate3d(${activeItem.dataset.x}px, ${activeItem.dataset.y}px, 0)`;
         activeItem = null;
       };
@@ -287,11 +247,9 @@ const coverUrl = latestPhoto?.data.cover ?? "https://images.unsplash.com/photo-1
       initDraggables();
     });
 
-    // ⌘K 快捷键搜索
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        // 触发搜索弹窗（如果有 SearchModal）
         const modal = document.getElementById('search-modal');
         if (modal) {
           modal.classList.toggle('hidden');
