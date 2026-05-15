@@ -1,0 +1,53 @@
+---
+import { getCollection, render } from 'astro:content';
+import DockLayout from '../../layouts/DockLayout.astro';
+import DockItemCard from '../../components/DockItemCard.astro';
+
+export async function getStaticPaths() {
+  const items = await getCollection('dockItem', ({ data }) => data.published);
+  return items.map(item => ({
+    params: { slug: item.id },
+    props: { item },
+  }));
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+---
+
+<DockLayout 
+  title={`${item.data.name} — Walker`}
+  description={item.data.description}
+  currentSlug={item.id}
+>
+  <article class="dock-item-detail">
+    <header class="detail-header">
+      <div class="mb-8">
+        <DockItemCard
+          name={item.data.name}
+          description={item.data.description}
+          category={item.data.category}
+          tags={item.data.tags}
+          rating={item.data.rating}
+          url={item.data.url}
+        />
+      </div>
+    </header>
+
+    <div class="prose prose-walker max-w-none mt-10">
+      <Content />
+    </div>
+  </article>
+</DockLayout>
+
+<style>
+  .dock-item-detail {
+    max-width: 720px;
+  }
+  
+  .detail-header {
+    border-bottom: 1px solid rgba(42, 59, 62, 0.08);
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+  }
+</style>
