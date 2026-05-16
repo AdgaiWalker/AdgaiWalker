@@ -26,3 +26,9 @@ pnpm-debug.log*
 *.swp
 *.swo
 .gstack/
+
+# Playwright
+.playwright-mcp/
+
+# Obsidian
+.obsidian/

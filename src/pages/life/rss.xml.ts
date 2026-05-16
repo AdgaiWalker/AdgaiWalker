@@ -13,7 +13,7 @@ export async function GET(context: APIContext) {
       title: post.data.title,
       pubDate: post.data.date,
       description: post.data.summary || post.data.description || '阅读完整内容...',
-      link: `/life/${post.id}/`,
+      link: `/posts/${post.id}/`,
     })),
     customData: `<language>zh-cn</language>`,
   });

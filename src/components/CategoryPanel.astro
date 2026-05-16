@@ -1,0 +1,214 @@
+---
+/**
+ * CategoryPanel — 分类导航面板
+ * 按分类分组显示项目列表，支持高亮当前选中项。
+ * 可用于 DockLayout、资源页等需要二级分类的场景。
+ */
+interface CategoryGroup {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+interface PanelItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  href: string;
+  isActive?: boolean;
+}
+
+interface Props {
+  title: string;
+  count: number;
+  items: PanelItem[];
+  categoryGroups: CategoryGroup[];
+  activeId?: string;
+}
+
+const { title, count, items, categoryGroups, activeId } = Astro.props;
+---
+
+<aside class="category-panel">
+  <div class="panel-header">
+    <h2>{title}</h2>
+    <span>{count} 个项目</span>
+  </div>
+
+  <div class="panel-content custom-scrollbar">
+    {categoryGroups.map(group => {
+      const groupItems = items.filter(item => item.category === group.key);
+      if (groupItems.length === 0) return null;
+      return (
+        <div class="category-group">
+          <h3 class="category-title">{group.label}</h3>
+          <nav class="category-item-list">
+            {groupItems.map(item => (
+              <a
+                href={item.href}
+                class:list={['category-item-link', activeId === item.id ? 'active' : '']}
+              >
+                <span class="category-item-icon">
+                  <iconify-icon icon={`lucide:${group.icon}`} width="16" height="16"></iconify-icon>
+                </span>
+                <span class="category-item-info">
+                  <span class="category-item-name">{item.name}</span>
+                  <span class="category-item-desc">{item.description}</span>
+                </span>
+              </a>
+            ))}
+          </nav>
+        </div>
+      );
+    })}
+  </div>
+</aside>
+
+<style>
+  .category-panel {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #fffdf9;
+    border-right: 1px solid rgba(42, 59, 62, 0.08);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 1.6rem 1.35rem 1rem;
+    border-bottom: 1px solid rgba(42, 59, 62, 0.04);
+  }
+
+  .panel-header h2 {
+    margin: 0;
+    color: #1a2325;
+    font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .panel-header span {
+    color: rgba(42, 59, 62, 0.36);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+  }
+
+  .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  .category-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .category-title {
+    padding: 0 0.6rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: rgba(42, 59, 62, 0.4);
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .category-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .category-item-link {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 8px;
+    color: rgba(42, 59, 62, 0.65);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .category-item-link:hover {
+    background: rgba(42, 59, 62, 0.04);
+    color: #1a2325;
+  }
+
+  .category-item-link.active {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    color: #218f80;
+    font-weight: 500;
+  }
+
+  .category-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    opacity: 0.6;
+  }
+
+  .category-item-link.active .category-item-icon {
+    opacity: 1;
+    color: #35bfab;
+  }
+
+  .category-item-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .category-item-name {
+    font-size: 0.85rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .category-item-desc {
+    font-size: 0.68rem;
+    color: rgba(42, 59, 62, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.15rem;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  @media (max-width: 1023px) {
+    .category-panel {
+      position: relative;
+      height: auto;
+      max-height: 40vh;
+      border-right: none;
+      border-bottom: 1px solid rgba(42, 59, 62, 0.08);
+    }
+  }
+</style>

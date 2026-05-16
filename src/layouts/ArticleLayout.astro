@@ -9,7 +9,7 @@
  */
 import Base from './Base.astro';
 import TableOfContents from '../components/article/TableOfContents.astro';
-import ArticleSidebar from '../components/article/ArticleSidebar.astro';
+import ArticleNav from '../components/article/ArticleNav.astro';
 
 interface Heading {
   depth: number;
@@ -63,11 +63,11 @@ const {
 >
   {/* 将文章列表注入到 Navigation 的 slot 中 */}
   <Fragment slot="nav-extension">
-    <ArticleSidebar 
-      articles={articleList} 
-      currentSlug={currentSlug} 
-      category={category} 
-      basePath={`/${category}`} 
+    <ArticleNav
+      articles={articleList}
+      currentSlug={currentSlug}
+      category={category}
+      basePath="/posts"
     />
   </Fragment>
 
@@ -86,27 +86,23 @@ const {
 
 <style>
   .article-layout {
-    display: flex;
     min-height: 100vh;
-    position: relative;
-    background-color: #fcfbf9; /* 纯净阅读底色 */
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    background: #f6f2ea;
   }
 
   /* 中栏 — TOC 目录 */
   .article-toc-column {
-    position: fixed;
-    left: 260px; /* 紧贴 Navigation */
+    position: sticky;
     top: 0;
-    bottom: 0;
-    width: 240px;
-    padding: 5rem 0 2rem;
+    height: 100vh;
+    padding: 5.25rem 0 2rem;
     overflow-y: auto;
-    z-index: 20;
-    border-right: 1px solid #f1f3f5;
-    background: #ffffff; /* 飞书风格的纯白面板 */
+    border-right: 1px solid rgba(42, 59, 62, 0.08);
+    background: #fffdf9;
   }
 
-  /* 自定义滚动条 */
   .article-toc-column::-webkit-scrollbar {
     width: 3px;
   }
@@ -123,27 +119,29 @@ const {
 
   /* 右栏 — 文章正文 */
   .article-content-column {
-    flex: 1;
-    margin-left: 240px; /* 相对 Base 的 lg:pl-[260px]，只需再让出 TOC 的 240px */
     min-height: 100vh;
-    padding: 3rem 4rem; /* 增加留白呼吸感 */
-    max-width: 900px;
+    padding: 0 4rem;
   }
 
   /* 响应式：中等屏幕隐藏 TOC */
   @media (max-width: 1279px) {
+    .article-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .article-toc-column {
       display: none;
     }
+
     .article-content-column {
-      margin-left: 0;
-      padding: 3rem 2rem;
+      padding: 0 2rem;
     }
   }
 
-  /* 侧边栏折叠时调整 */
-  :global(.sidebar-collapsed) .article-toc-column {
-    left: 68px;
+  @media (max-width: 640px) {
+    .article-content-column {
+      padding: 0 1rem;
+    }
   }
 </style>
 

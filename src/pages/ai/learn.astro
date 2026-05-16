@@ -51,7 +51,7 @@ const allTags = [...new Set(articles.flatMap(a => a.data.tags))].sort();
             tags={article.data.tags}
             cover={article.data.cover}
             slug={article.id}
-            basePath="/ai"
+            basePath="/posts"
             hasFeishuLink={hasFeishu}
           />
         </div>

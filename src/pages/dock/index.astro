@@ -1,0 +1,58 @@
+---
+import DockLayout from '../../layouts/DockLayout.astro';
+
+export const prerender = true;
+---
+
+<DockLayout 
+  title="装备库 — Walker"
+  description="Walker 的工具箱、技能、信息源和社群推荐。"
+>
+  <div class="dock-index-empty">
+    <div class="empty-icon">
+      <iconify-icon icon="lucide:package-open" width="48" height="48"></iconify-icon>
+    </div>
+    <h1>装备库</h1>
+    <p>这里收录了我日常使用的工具、工作流（Skill）、信息源和社群。</p>
+    <p class="hint">👈 请在左侧列表中选择一项查看详情。</p>
+  </div>
+</DockLayout>
+
+<style>
+  .dock-index-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 60vh;
+    color: rgba(42, 59, 62, 0.6);
+  }
+
+  .empty-icon {
+    color: rgba(53, 191, 171, 0.4);
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a2325;
+    margin: 0 0 1rem;
+  }
+
+  p {
+    margin: 0 0 0.5rem;
+    line-height: 1.6;
+  }
+
+  .hint {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: rgba(53, 191, 171, 0.8);
+    background: rgba(53, 191, 171, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+  }
+</style>

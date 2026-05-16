@@ -24,7 +24,7 @@ const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
 ---
 
-<a href={`/ai/${slug}`} class:list={['idea-card', isOpen ? 'idea-card-open' : 'idea-card-done']}>
+<a href={`/posts/${slug}`} class:list={['idea-card', isOpen ? 'idea-card-open' : 'idea-card-done']}>
   {/* 状态标签 */}
   <div class="idea-card-status">
     <iconify-icon icon={statusIcon} width="12" height="12"></iconify-icon>

@@ -1,0 +1,138 @@
+---
+import Base from './Base.astro';
+import CategoryPanel from '../components/CategoryPanel.astro';
+import { getCollection } from 'astro:content';
+
+interface Props {
+  title: string;
+  description?: string;
+  currentSlug?: string;
+}
+
+const { title, description, currentSlug } = Astro.props;
+
+// Fetch all published dock items
+const items = (await getCollection('dockItem', ({ data }) => data.published))
+  .sort((a, b) => a.data.name.localeCompare(b.data.name, 'zh-CN'));
+
+const categoryGroups = [
+  { key: 'tool', label: '工具 (Tools)', icon: 'wrench' },
+  { key: 'skill', label: '技能 (Skills)', icon: 'zap' },
+  { key: 'info-source', label: '信息源 (Sources)', icon: 'radio' },
+  { key: 'community', label: '社群 (Community)', icon: 'users' },
+];
+
+const panelItems = items.map(item => ({
+  id: item.id,
+  name: item.data.name,
+  description: item.data.description,
+  category: item.data.category,
+  href: `/dock/${item.id}`,
+  isActive: currentSlug === item.id,
+}));
+---
+
+<Base title={title} description={description} pureMode={true}>
+  <div class="dock-master-detail-layout">
+    {/* 第二栏：装备库列表 (Master) */}
+    <CategoryPanel
+      title="装备库"
+      count={items.length}
+      items={panelItems}
+      categoryGroups={categoryGroups}
+      activeId={currentSlug}
+    />
+
+    <div class="toolkit-resize-handle toolkit-resize-middle" data-resize="dock-list" aria-hidden="true"></div>
+
+    {/* 第三栏：内容详情 (Detail) */}
+    <main class="dock-detail-column" transition:animate="fade">
+      <div class="dock-detail-content">
+        <slot />
+      </div>
+    </main>
+  </div>
+
+  <script>
+    import { initColumnResize, bootColumnResize } from '../scripts/column-resize';
+
+    document.addEventListener('astro:page-load', () => {
+      initColumnResize('dock-list', {
+        cssVar: '--dock-list-width',
+        storageKey: 'walker-dock-list-width',
+        min: 260,
+        max: 420,
+      });
+      bootColumnResize();
+    });
+  </script>
+</Base>
+
+<style>
+  .dock-master-detail-layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: var(--dock-list-width, 300px) 16px minmax(0, 1fr);
+    background: #f6f2ea;
+  }
+
+  /* --- 第三栏 (详情) --- */
+  .dock-detail-column {
+    position: relative;
+    width: min(860px, 100%);
+    margin: 0 auto;
+  }
+
+  .dock-detail-content {
+    padding: 3rem 4rem 6rem;
+  }
+
+  /* --- Resize handles --- */
+  .toolkit-resize-handle {
+    position: relative;
+    width: 16px;
+    cursor: col-resize;
+    touch-action: none;
+    user-select: none;
+    z-index: 80;
+  }
+
+  .toolkit-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    transform: translateX(-50%);
+    background: rgba(42, 59, 62, 0.06);
+    transition: background 0.16s ease, width 0.16s ease;
+  }
+
+  .toolkit-resize-handle:hover::after,
+  .toolkit-resize-handle.is-active::after {
+    width: 2px;
+    background: rgba(53, 191, 171, 0.45);
+  }
+
+  .toolkit-resize-middle {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  @media (max-width: 1023px) {
+    .dock-master-detail-layout {
+      display: block;
+      padding-top: 3.5rem;
+    }
+
+    .toolkit-resize-handle {
+      display: none;
+    }
+
+    .dock-detail-content {
+      padding: 2rem 1.5rem 4rem;
+    }
+  }
+</style>

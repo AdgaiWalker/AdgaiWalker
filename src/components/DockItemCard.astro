@@ -19,8 +19,8 @@ const categoryConfig: Record<string, { label: string; icon: string; style: strin
 
 const config = categoryConfig[category] ?? categoryConfig.tool;
 ---
-<div class="panel-glass reveal">
-  <div class="p-5">
+<div class="dock-card reveal">
+  <div class="dock-card-inner">
     <div class="flex items-center justify-between mb-3">
       <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono ${config.style}`}>
         <iconify-icon icon={config.icon} width="12" height="12"></iconify-icon>
@@ -62,3 +62,25 @@ const config = categoryConfig[category] ?? categoryConfig.tool;
     )}
   </div>
 </div>
+
+<style>
+  .dock-card {
+    height: 100%;
+    border: 1px solid rgba(42, 59, 62, 0.07);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.66);
+    box-shadow: 0 16px 42px rgba(25, 38, 40, 0.04);
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .dock-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(53, 191, 171, 0.18);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 20px 52px rgba(25, 38, 40, 0.07);
+  }
+
+  .dock-card-inner {
+    padding: 1.15rem;
+  }
+</style>
