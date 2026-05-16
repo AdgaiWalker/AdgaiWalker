@@ -115,7 +115,7 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
         <slot name="nav-extension" />
       </Navigation>
     )}
-    <div class:list={["site-main-shell flex flex-col flex-1 w-full", isHome ? "" : "lg:pl-[260px]"]} transition:animate="fade">
+    <div class:list={["flex flex-col flex-1 w-full", !isHome && "site-main-shell"]} transition:animate="fade">
       <main class="flex-1 relative z-10 w-full">
         <slot />
       </main>

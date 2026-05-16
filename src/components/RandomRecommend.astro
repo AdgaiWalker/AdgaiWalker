@@ -8,7 +8,7 @@ const allContent = allLogs.map(l => {
   return {
     title: l.data.title,
     type: l.data.type,
-    slug: `/${l.data.category}/${l.id}`,
+    slug: `/posts/${l.id}`,
     tags: l.data.tags,
     excerpt: rawText.slice(0, 80),
     wordCount,

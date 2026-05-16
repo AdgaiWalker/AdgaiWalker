@@ -1,0 +1,196 @@
+---
+/**
+ * /posts/[slug] — 统一文章详情页
+ * 合并原 /ai/[slug] 和 /life/[slug]，根据 entry.data.category 条件渲染。
+ */
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import PromptBlock from '../../components/PromptBlock.astro';
+import DialogueBubble from '../../components/DialogueBubble.astro';
+import LikeCounter from '../../components/LikeCounter.astro';
+import BilibiliVideo from '../../components/BilibiliVideo.astro';
+import ResourceCard from '../../components/ResourceCard.astro';
+
+import { getCollection, render } from 'astro:content';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const entries = await getCollection('log', ({ data }) => data.published);
+  return entries.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+if (!entry) {
+  return Astro.redirect('/404');
+}
+
+const { Content, headings } = await render(entry);
+const isAi = entry.data.category === 'ai';
+
+const components = isAi ? { PromptBlock, DialogueBubble, BilibiliVideo } : {};
+
+const formatDate = (d: Date) =>
+  d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+const rawBody = entry.body || '';
+const cleanBody = rawBody
+  .replace(/^---[\s\S]*?---/, '')
+  .replace(/^import\s+.*$/gm, '')
+  .replace(/<[^>]+>/g, '')
+  .replace(/[#*_`\[\]()>|]/g, '')
+  .trim();
+const description = cleanBody.slice(0, 160);
+
+const videos = isAi ? (entry.data.videos || []) : [];
+const resources = isAi ? (entry.data.resources || []) : [];
+
+const accentColor = isAi ? 'blue' : 'emerald';
+const categoryLabel = isAi ? 'AI 探索' : '生活';
+
+const allArticles = await getCollection('log', ({ data }) => data.published);
+const articleList = allArticles
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .map(a => ({
+    id: a.id,
+    title: a.data.title,
+    date: a.data.date,
+    tags: a.data.tags,
+    summary: a.data.summary,
+  }));
+
+const platformIconMap: Record<string, string> = {
+  bilibili: 'ri:bilibili-fill',
+  douyin: 'ri:tiktok-fill',
+  xiaohongshu: 'ri:xiaohongshu-fill',
+  youtube: 'ri:youtube-fill',
+  github: 'ri:github-fill',
+  zhihu: 'ri:zhihu-fill',
+};
+---
+
+<ArticleLayout
+  title={`${entry.data.title} — Walker`}
+  description={description}
+  ogTitle={entry.data.title}
+  ogDescription={entry.data.summary ?? entry.data.description ?? description}
+  ogImage={entry.data.cover ?? '/images/hero-bg.png'}
+  canonicalUrl={Astro.url.href}
+  headings={headings}
+  currentSlug={entry.id}
+  category={entry.data.category}
+  articleList={articleList}
+>
+  <div class="article-reading-surface min-h-screen">
+    <article class="article-document" data-pagefind-body>
+      <header class="mb-14">
+        <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-slate-400">
+          <a href="/posts" class={`${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline`}>
+            文章
+          </a>
+          <span>/</span>
+          <time>{formatDate(entry.data.date)}</time>
+          <span class={`px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter ${
+            isAi
+              ? 'bg-blue-50 text-blue-500'
+              : 'bg-emerald-50 text-emerald-500'
+          }`}>{categoryLabel}</span>
+          <div class="article-meta-tags">
+            {entry.data.tags.map((tag: string) => (
+              <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] uppercase tracking-tighter">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] mb-8" data-pagefind-meta="title">
+          {entry.data.title}
+        </h1>
+
+        {!isAi && entry.data.cover && (
+          <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl">
+            <img src={entry.data.cover} alt={entry.data.title} class="w-full h-full object-cover" />
+          </div>
+        )}
+
+        {entry.data.summary && (
+          <div class={`text-xl text-slate-500 leading-relaxed font-light mb-12 italic border-l-4 pl-6 ${
+            isAi ? 'border-slate-200' : 'border-emerald-200'
+          }`}>
+            {entry.data.summary}
+          </div>
+        )}
+      </header>
+
+      <div class={`prose prose-slate max-w-none break-words
+                  prose-p:text-lg prose-p:leading-8 prose-p:text-slate-700
+                  prose-headings:text-slate-900 prose-headings:font-bold
+                  prose-strong:text-slate-900
+                  ${isAi ? 'prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/30' : 'prose-blockquote:border-emerald-500 prose-blockquote:bg-emerald-50/30'}
+                  prose-blockquote:py-1
+                  ${isAi ? 'prose-code:text-blue-600' : 'prose-code:text-emerald-600'}
+                  prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded
+                  prose-img:rounded-2xl prose-img:shadow-xl`}>
+        <Content components={components} />
+      </div>
+
+      {isAi && videos.length > 0 && (
+        <div class="mt-20 pt-12 border-t border-slate-100">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <iconify-icon icon="lucide:video" width="24" height="24" class="text-blue-500"></iconify-icon>
+            配套视频
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {videos.map((vid: any) => (
+              <a href={vid.url} target="_blank" rel="noopener noreferrer" class="group block p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all no-underline bg-white">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                    <iconify-icon icon={platformIconMap[vid.platform] || 'lucide:play-circle'} width="20" height="20"></iconify-icon>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-bold text-slate-900 truncate">{vid.title || '观看视频'}</div>
+                    <div class="text-xs text-slate-400 capitalize">{vid.platform}</div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isAi && resources.length > 0 && (
+        <div class="mt-16 pt-12 border-t border-slate-100">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <iconify-icon icon="lucide:link-2" width="24" height="24" class="text-emerald-500"></iconify-icon>
+            相关资源
+          </h2>
+          <div class="flex flex-col gap-3">
+            {resources.map((res: any) => (
+              <ResourceCard
+                type={res.type}
+                url={res.url}
+                name={res.name}
+                description={res.description}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
+        <a href="/posts" class={`text-slate-400 ${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline flex items-center gap-2 text-sm font-medium`}>
+          <iconify-icon icon="lucide:arrow-left" width="16" height="16"></iconify-icon>
+          返回文章
+        </a>
+
+        <div class="scale-90 origin-right">
+          <LikeCounter pagePath={`/posts/${entry.id}`} />
+        </div>
+      </footer>
+    </article>
+  </div>
+</ArticleLayout>

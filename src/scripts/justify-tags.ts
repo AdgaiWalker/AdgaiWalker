@@ -1,6 +1,6 @@
 /**
  * Pretext-based justified tag cloud layout.
- * Usage: call `justifyTags('container-id')` on load and resize.
+ * Usage: call `watchJustifyTags('container-id')` on load.
  */
 export async function justifyTags(containerId: string) {
   try {
@@ -60,11 +60,27 @@ export async function justifyTags(containerId: string) {
   }
 }
 
+const activeWatchers = new Map<string, () => void>();
+
+// Clear stale watchers on View Transitions
+document.addEventListener('astro:before-swap', () => {
+  for (const [, cleanup] of activeWatchers) {
+    cleanup();
+  }
+  activeWatchers.clear();
+});
+
 export function watchJustifyTags(containerId: string) {
+  if (activeWatchers.has(containerId)) return;
+
   justifyTags(containerId);
   let resizeTimer: ReturnType<typeof setTimeout>;
-  window.addEventListener('resize', () => {
+
+  const onResize = () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => justifyTags(containerId), 150);
-  });
+  };
+
+  window.addEventListener('resize', onResize);
+  activeWatchers.set(containerId, () => window.removeEventListener('resize', onResize));
 }

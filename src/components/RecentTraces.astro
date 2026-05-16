@@ -37,13 +37,13 @@ const formatDate = (d: Date) => {
       <iconify-icon icon="lucide:file-text" width="13" height="13" class="text-parchment/30"></iconify-icon>
       <span class="text-[11px] font-mono text-parchment/30 uppercase tracking-[0.15em]">Recent</span>
     </div>
-    <a href="/log" class="text-[11px] font-mono text-brand/40 hover:text-brand no-underline tracking-wider transition-colors">All →</a>
+    <a href="/posts" class="text-[11px] font-mono text-brand/40 hover:text-brand no-underline tracking-wider transition-colors">All →</a>
   </div>
 
   <!-- 文章列表 -->
   <div class="flex flex-col gap-1">
     {logs.slice(0, 3).map((log) => (
-      <a href={`/${log.data.category}/${log.id}`} class="flex items-center gap-3 no-underline py-2 px-1 rounded-xl hover:bg-white/30 transition-all group/item">
+      <a href={`/posts/${log.id}`} class="flex items-center gap-3 no-underline py-2 px-1 rounded-xl hover:bg-white/30 transition-all group/item">
         <span class="text-[11px] font-mono text-parchment/25 w-10 shrink-0">{formatDate(log.data.date)}</span>
         <span class="text-parchment/65 text-[13px] font-body leading-snug truncate flex-1 group-hover/item:text-parchment transition-colors">
           {log.data.title}

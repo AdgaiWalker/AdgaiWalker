@@ -43,7 +43,7 @@ const panelItems = items.map(item => ({
       activeId={currentSlug}
     />
 
-    <div class="toolkit-resize-handle toolkit-resize-middle" data-resize="article" aria-hidden="true"></div>
+    <div class="toolkit-resize-handle toolkit-resize-middle" data-resize="dock-list" aria-hidden="true"></div>
 
     {/* 第三栏：内容详情 (Detail) */}
     <main class="dock-detail-column" transition:animate="fade">
@@ -57,7 +57,7 @@ const panelItems = items.map(item => ({
     import { initColumnResize, bootColumnResize } from '../scripts/column-resize';
 
     document.addEventListener('astro:page-load', () => {
-      initColumnResize('article', {
+      initColumnResize('dock-list', {
         cssVar: '--dock-list-width',
         storageKey: 'walker-dock-list-width',
         min: 260,

@@ -36,7 +36,7 @@ const formatShortDate = (d: Date) =>
       </div>
       <nav class="article-list-nav">
         {aiArticles.map(article => (
-          <a href={`/ai/${article.id}`} class="article-list-link">
+          <a href={`/posts/${article.id}`} class="article-list-link">
             <time>{formatShortDate(article.data.date)}</time>
             <span class="article-list-copy">
               <span class="article-list-title">{article.data.title}</span>

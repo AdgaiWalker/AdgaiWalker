@@ -10,6 +10,15 @@ interface ResizeConfig {
 }
 
 const configs: Record<string, ResizeConfig> = {};
+const wiredHandles = new Set<string>();
+
+// Clear stale state on View Transitions
+document.addEventListener('astro:before-swap', () => {
+  wiredHandles.clear();
+  for (const key of Object.keys(configs)) {
+    delete configs[key];
+  }
+});
 
 export function initColumnResize(
   kind: string,
@@ -54,8 +63,8 @@ export function bootColumnResize() {
       apply(cfg.cssVar, latest);
     };
 
-    const onUp = (e: PointerEvent) => {
-      handle.releasePointerCapture?.(e.pointerId);
+    const onUp = () => {
+      handle.releasePointerCapture?.(event.pointerId);
       handle.classList.remove('is-active');
       document.body.classList.remove('is-resizing-columns');
       localStorage.setItem(cfg.storageKey, String(latest));
@@ -70,9 +79,12 @@ export function bootColumnResize() {
   };
 
   for (const kind of Object.keys(configs)) {
+    if (wiredHandles.has(kind)) continue;
     const handle = document.querySelector<HTMLElement>(`[data-resize="${kind}"]`);
-    handle?.addEventListener('pointerdown', (event) =>
-      startResize(kind, event as PointerEvent, handle!),
+    if (!handle) continue;
+    wiredHandles.add(kind);
+    handle.addEventListener('pointerdown', (event) =>
+      startResize(kind, event as PointerEvent, handle),
     );
   }
 }

@@ -1,0 +1,249 @@
+---
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import ArticleNav from '../../components/article/ArticleNav.astro';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+const allLogs = (await getCollection('log', ({ data }) => data.published))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const tagCountMap = new Map<string, number>();
+allLogs.forEach(entry => {
+  entry.data.tags.forEach(tag => {
+    tagCountMap.set(tag, (tagCountMap.get(tag) ?? 0) + 1);
+  });
+});
+const allTags = [...tagCountMap.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .map(([tag]) => tag);
+
+const groupedLogs: Record<number, typeof allLogs> = {};
+allLogs.forEach(log => {
+  const year = log.data.date.getFullYear();
+  if (!groupedLogs[year]) groupedLogs[year] = [];
+  groupedLogs[year].push(log);
+});
+const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
+
+const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
+
+const articleList = allLogs.map(a => ({
+  id: a.id,
+  title: a.data.title,
+  date: a.data.date,
+  tags: a.data.tags,
+  summary: a.data.summary,
+}));
+
+const categoryCounts = { ai: 0, life: 0 };
+allLogs.forEach(l => { categoryCounts[l.data.category]++; });
+---
+
+<SidebarLayout
+  title="文章 — Walker"
+  description="Walker 的文章记录，涵盖 AI 探索与生活日志。"
+  ogDescription="Walker 的文章记录，涵盖 AI 探索与生活日志。"
+  pageTitle="文章"
+  pageSubtitle="Posts"
+  pageIcon="pen-line"
+  itemCount={allLogs.length}
+  itemUnit="篇"
+>
+  <Fragment slot="nav-extension">
+    <ArticleNav
+      articles={articleList}
+      currentSlug=""
+      category="ai"
+      basePath="/posts"
+    />
+  </Fragment>
+  <div class="timeline-shell">
+    <div class="category-filter-bar" id="category-filters">
+      <button class="filter-btn active" data-value="">全部<span class="filter-count">{allLogs.length}</span></button>
+      <button class="filter-btn" data-value="ai">AI<span class="filter-count">{categoryCounts.ai}</span></button>
+      <button class="filter-btn" data-value="life">生活<span class="filter-count">{categoryCounts.life}</span></button>
+    </div>
+
+    <div class="tag-filter-bar" id="log-filters">
+      <button class="filter-btn active" data-value="">
+        全部
+        <span class="filter-count">{allLogs.length}</span>
+      </button>
+      {allTags.map(tag => (
+        <button class="filter-btn" data-value={tag}>
+          {tag}
+          <span class="filter-count">{tagCountMap.get(tag)}</span>
+        </button>
+      ))}
+    </div>
+
+    <div id="timeline-container" class="space-y-12">
+      {years.map(year => (
+        <div class="year-group relative" data-year={year}>
+          <div class="flex items-end gap-3 mb-5">
+            <h2 class="font-heading text-2xl text-parchment">{year}</h2>
+            <span class="text-parchment/30 text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
+          </div>
+
+          <div class="panel-glass rounded-2xl overflow-hidden">
+            <div class="flex flex-col divide-y divide-white/[0.04]">
+              {groupedLogs[year].map(log => (
+                <a href={`/posts/${log.id}`} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 hover:bg-white/[0.02] transition-colors no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
+                  <time class="text-parchment/30 font-mono text-sm shrink-0 w-16">{formatDate(log.data.date)}</time>
+                  <div class="flex-1 min-w-0 flex items-center gap-3">
+                    <span class={`category-badge ${log.data.category}`}>{log.data.category === 'ai' ? 'AI' : '生活'}</span>
+                    <h3 class="text-parchment/80 text-[15px] font-body truncate group-hover:text-bio-cyan transition-colors">{log.data.title}</h3>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    {log.data.tags.slice(0, 2).map((tag: string) => (
+                      <span class="text-[11px] font-mono text-parchment/40 bg-white/5 px-2 py-0.5 rounded-md">#{tag}</span>
+                    ))}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div id="empty-state" class="hidden py-20 text-center text-parchment/30 text-sm">
+      未找到匹配的文章
+    </div>
+  </div>
+
+  <script>
+    let activeTag = '';
+    let activeCategory = '';
+
+    const tagBtns = document.querySelectorAll('#log-filters .filter-btn');
+    const catBtns = document.querySelectorAll('#category-filters .filter-btn');
+    const yearGroups = document.querySelectorAll('.year-group');
+    const emptyState = document.getElementById('empty-state');
+    const logCount = document.getElementById('log-count');
+
+    function applyFilters() {
+      let visibleTotal = 0;
+
+      yearGroups.forEach(group => {
+        let visibleInYear = 0;
+        const items = group.querySelectorAll('.log-item');
+
+        items.forEach(item => {
+          const el = item as HTMLElement;
+          const tags = (el.dataset.tags || '').split(',');
+          const cat = el.dataset.category || '';
+
+          const matchTag = !activeTag || tags.includes(activeTag);
+          const matchCat = !activeCategory || cat === activeCategory;
+
+          if (matchTag && matchCat) {
+            el.style.display = 'flex';
+            visibleInYear++;
+            visibleTotal++;
+          } else {
+            el.style.display = 'none';
+          }
+        });
+
+        (group as HTMLElement).style.display = visibleInYear > 0 ? 'block' : 'none';
+        const countSpan = group.querySelector('h2 + span');
+        if (countSpan) countSpan.textContent = `${visibleInYear} 篇`;
+      });
+
+      if (logCount) logCount.textContent = visibleTotal.toString();
+      if (emptyState) emptyState.style.display = visibleTotal === 0 ? 'block' : 'none';
+    }
+
+    catBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        catBtns.forEach(b => {
+          b.classList.remove('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+          b.classList.add('bg-white/5', 'border-white/10', 'text-parchment/60');
+        });
+        btn.classList.remove('bg-white/5', 'border-white/10', 'text-parchment/60');
+        btn.classList.add('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+        activeCategory = (btn as HTMLElement).dataset.value || '';
+        applyFilters();
+      });
+    });
+
+    tagBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tagBtns.forEach(b => {
+          b.classList.remove('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+          b.classList.add('bg-white/5', 'border-white/10', 'text-parchment/60');
+        });
+        btn.classList.remove('bg-white/5', 'border-white/10', 'text-parchment/60');
+        btn.classList.add('active', 'bg-bio-cyan/10', 'border-bio-cyan/20', 'text-bio-cyan');
+        activeTag = (btn as HTMLElement).dataset.value || '';
+        applyFilters();
+      });
+    });
+
+    import { watchJustifyTags } from '../../scripts/justify-tags';
+    watchJustifyTags('log-filters');
+  </script>
+</SidebarLayout>
+
+<style>
+  .timeline-shell {
+    max-width: 760px;
+  }
+
+  .category-filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tag-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    opacity: 0.48;
+    margin-left: 0.25rem;
+  }
+
+  .category-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .category-badge.ai {
+    background: rgba(0, 229, 255, 0.08);
+    color: rgba(0, 229, 255, 0.6);
+  }
+
+  .category-badge.life {
+    background: rgba(52, 211, 153, 0.08);
+    color: rgba(52, 211, 153, 0.6);
+  }
+
+  .year-group h2 {
+    letter-spacing: 0;
+  }
+
+  #timeline-container .panel-glass {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.04);
+  }
+
+  @media (max-width: 640px) {
+    .timeline-shell {
+      max-width: none;
+    }
+  }
+</style>

@@ -26,10 +26,9 @@ const formatShortDate = (d: Date) =>
 
 const categoryLabels: Record<string, string> = {
   ai: '文章',
-  life: '日志',
+  life: '文章',
 };
 ---
-
 <div class="article-nav" id="article-nav">
   <div class="nav-section-header">
     <span class="nav-section-title">{categoryLabels[category] || '文章'}</span>

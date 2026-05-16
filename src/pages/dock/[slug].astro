@@ -3,9 +3,16 @@ import { getCollection, render } from 'astro:content';
 import DockLayout from '../../layouts/DockLayout.astro';
 import DockItemCard from '../../components/DockItemCard.astro';
 
-const { slug } = Astro.params;
-if (!slug) return Astro.redirect('/404');
+export const prerender = true;
 
+export async function getStaticPaths() {
+  const items = await getCollection('dockItem', ({ data }) => data.published);
+  return items.map(item => ({
+    params: { slug: item.id },
+  }));
+}
+
+const { slug } = Astro.params;
 const items = await getCollection('dockItem', ({ data }) => data.published);
 const item = items.find(i => i.id === slug);
 if (!item) return Astro.redirect('/404');
