@@ -6,6 +6,7 @@
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import ArticleCard from '../../components/cards/ArticleCard.astro';
 import { getCollection } from 'astro:content';
+import { POSTS } from '@/lib/routes';
 
 export const prerender = true;
 
@@ -51,7 +52,7 @@ const allTags = [...new Set(articles.flatMap(a => a.data.tags))].sort();
             tags={article.data.tags}
             cover={article.data.cover}
             slug={article.id}
-            basePath="/posts"
+            basePath={POSTS}
             hasFeishuLink={hasFeishu}
           />
         </div>

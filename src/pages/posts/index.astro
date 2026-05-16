@@ -2,6 +2,7 @@
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import ArticleNav from '../../components/article/ArticleNav.astro';
 import { getCollection } from 'astro:content';
+import { POSTS, postSlug } from '@/lib/routes';
 
 export const prerender = true;
 
@@ -55,7 +56,7 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
       articles={articleList}
       currentSlug=""
       category="ai"
-      basePath="/posts"
+      basePath={POSTS}
     />
   </Fragment>
   <div class="timeline-shell">
@@ -89,7 +90,7 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
           <div class="panel-glass rounded-2xl overflow-hidden">
             <div class="flex flex-col divide-y divide-white/[0.04]">
               {groupedLogs[year].map(log => (
-                <a href={`/posts/${log.id}`} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 hover:bg-white/[0.02] transition-colors no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
+                <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 hover:bg-white/[0.02] transition-colors no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
                   <time class="text-parchment/30 font-mono text-sm shrink-0 w-16">{formatDate(log.data.date)}</time>
                   <div class="flex-1 min-w-0 flex items-center gap-3">
                     <span class={`category-badge ${log.data.category}`}>{log.data.category === 'ai' ? 'AI' : '生活'}</span>

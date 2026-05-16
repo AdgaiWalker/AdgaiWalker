@@ -35,10 +35,40 @@ const { pagePath } = Astro.props;
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://ttjfsnhmhsuohugrexwq.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0amZzbmhtaHN1b2h1Z3JleHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyODAwNTUsImV4cCI6MjA5Mzg1NjA1NX0.tgfvETm3ldMR4yvV7V2K8Ax00-FnY1yV1mK-4UtJpCg';
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+  const headers = {
+    apikey: SB_KEY,
+    Authorization: `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'resolution=merge-duplicates',
+  };
+
+  async function fetchCount(pagePath: string): Promise<number> {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/likes?select=count&page_path=eq.${encodeURIComponent(pagePath)}`,
+      { headers }
+    );
+    if (!res.ok) return 0;
+    const rows: { count: number }[] = await res.json();
+    return rows[0]?.count ?? 0;
+  }
+
+  async function upsertCount(pagePath: string, nextCount: number): Promise<number> {
+    const res = await fetch(`${SB_URL}/rest/v1/likes`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ page_path: pagePath, count: nextCount }),
+    });
+    if (!res.ok) throw new Error(`upsert failed: ${res.status}`);
+    const rows: { count: number }[] = await res.json();
+    return rows[0]?.count ?? nextCount;
+  }
 
   const setupLikes = async () => {
+    if (!SB_URL || !SB_KEY) return;
+
     // One-time migration: remap old /ai/ and /life/ like keys to /posts/
     const keysToMigrate: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -54,11 +84,6 @@ const { pagePath } = Astro.props;
       }
       localStorage.removeItem(oldKey);
     }
-
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
 
     document.querySelectorAll<HTMLButtonElement>('[data-like-counter]').forEach((button) => {
       if (button.dataset.ready === 'true') return;
@@ -82,13 +107,7 @@ const { pagePath } = Astro.props;
         markLiked();
       }
 
-      supabase
-        .from('likes')
-        .select('count')
-        .eq('page_path', pagePath)
-        .maybeSingle<{ count: number }>()
-        .then(({ data }) => setCount(data?.count ?? 0))
-        .catch(() => setCount(0));
+      fetchCount(pagePath).then(setCount).catch(() => setCount(0));
 
       button.addEventListener('click', async () => {
         if (localStorage.getItem(storageKey) === 'true') {
@@ -98,25 +117,14 @@ const { pagePath } = Astro.props;
 
         button.disabled = true;
         try {
-          const { data: current } = await supabase
-            .from('likes')
-            .select('count')
-            .eq('page_path', pagePath)
-            .maybeSingle<{ count: number }>();
+          const current = await fetchCount(pagePath);
+          const nextCount = current + 1;
+          const finalCount = await upsertCount(pagePath, nextCount);
 
-          const nextCount = (current?.count ?? 0) + 1;
-
-          const { data } = await supabase
-            .from('likes')
-            .upsert({ page_path: pagePath, count: nextCount }, { onConflict: 'page_path' })
-            .select('count')
-            .single<{ count: number }>();
-
-          setCount(data?.count ?? nextCount);
+          setCount(finalCount);
           localStorage.setItem(storageKey, 'true');
           markLiked();
 
-          // 弹跳动画
           button.classList.add('like-bounce');
           button.addEventListener('animationend', () => {
             button.classList.remove('like-bounce');
@@ -128,7 +136,6 @@ const { pagePath } = Astro.props;
     });
   };
 
-  setupLikes();
   document.addEventListener('astro:page-load', setupLikes);
 </script>
 

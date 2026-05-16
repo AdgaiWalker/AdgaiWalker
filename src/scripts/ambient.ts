@@ -33,6 +33,8 @@ function createBlob(w: number, h: number, i: number): Blob {
 
 let animId = 0;
 let running = false;
+let resizeBound = false;
+let onResize: (() => void) | null = null;
 
 export function initParticles() {
   const canvas = document.getElementById('ambient-particles') as HTMLCanvasElement;
@@ -99,13 +101,22 @@ export function initParticles() {
   spawn();
   loop();
 
-  if (!(window as any).__ambientResizeBound) {
-    window.addEventListener('resize', () => {
-      resize();
-      spawn();
-    });
-    (window as any).__ambientResizeBound = true;
+  if (!resizeBound) {
+    onResize = () => { resize(); spawn(); };
+    window.addEventListener('resize', onResize);
+    resizeBound = true;
   }
 }
 
+function cleanup() {
+  if (animId) cancelAnimationFrame(animId);
+  running = false;
+  if (onResize) {
+    window.removeEventListener('resize', onResize);
+    onResize = null;
+  }
+  resizeBound = false;
+}
+
 document.addEventListener('astro:page-load', initParticles);
+document.addEventListener('astro:before-swap', cleanup);

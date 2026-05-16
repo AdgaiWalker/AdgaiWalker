@@ -9,6 +9,7 @@ import DialogueBubble from '../../components/DialogueBubble.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
 import BilibiliVideo from '../../components/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
+import { POSTS, postSlug } from '@/lib/routes';
 
 import { getCollection, render } from 'astro:content';
 
@@ -88,7 +89,7 @@ const platformIconMap: Record<string, string> = {
     <article class="article-document" data-pagefind-body>
       <header class="mb-14">
         <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-slate-400">
-          <a href="/posts" class={`${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline`}>
+          <a href={POSTS} class={`${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline`}>
             文章
           </a>
           <span>/</span>
@@ -182,13 +183,13 @@ const platformIconMap: Record<string, string> = {
       )}
 
       <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
-        <a href="/posts" class={`text-slate-400 ${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline flex items-center gap-2 text-sm font-medium`}>
+        <a href={POSTS} class={`text-slate-400 ${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline flex items-center gap-2 text-sm font-medium`}>
           <iconify-icon icon="lucide:arrow-left" width="16" height="16"></iconify-icon>
           返回文章
         </a>
 
         <div class="scale-90 origin-right">
-          <LikeCounter pagePath={`/posts/${entry.id}`} />
+          <LikeCounter pagePath={postSlug(entry.id)} />
         </div>
       </footer>
     </article>

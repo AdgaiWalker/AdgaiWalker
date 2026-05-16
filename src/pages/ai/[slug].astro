@@ -4,6 +4,7 @@
  * 保留 getStaticPaths 以生成旧 URL 的 HTML 文件。
  */
 import { getCollection } from 'astro:content';
+import { postSlug } from '@/lib/routes';
 
 export const prerender = true;
 
@@ -15,17 +16,18 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
+const target = slug ? postSlug(slug) : '/posts';
 ---
 <!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="canonical" href={`/posts/${slug}`} />
-    <meta http-equiv="refresh" content={`0;url=/posts/${slug}`} />
+    <link rel="canonical" href={target} />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
     <title>Redirecting...</title>
   </head>
   <body>
-    <p>Redirecting to <a href={`/posts/${slug}`}>{`/posts/${slug}`}</a>...</p>
+    <p>Redirecting to <a href={target}>{target}</a>...</p>
   </body>
 </html>

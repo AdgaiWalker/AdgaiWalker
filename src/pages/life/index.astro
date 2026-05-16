@@ -2,6 +2,8 @@
 /**
  * /life/ — 重定向到 /posts
  */
+import { POSTS } from '@/lib/routes';
+
 export const prerender = true;
 ---
 <!doctype html>
@@ -9,11 +11,11 @@ export const prerender = true;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="canonical" href="/posts" />
-    <meta http-equiv="refresh" content="0;url=/posts" />
+    <link rel="canonical" href={POSTS} />
+    <meta http-equiv="refresh" content={`0;url=${POSTS}`} />
     <title>Redirecting...</title>
   </head>
   <body>
-    <p>Redirecting to <a href="/posts">/posts</a>...</p>
+    <p>Redirecting to <a href={POSTS}>{POSTS}</a>...</p>
   </body>
 </html>

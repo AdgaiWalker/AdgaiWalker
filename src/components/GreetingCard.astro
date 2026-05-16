@@ -27,6 +27,8 @@
 </div>
 
 <script>
+  let greetingTimer: ReturnType<typeof setInterval> | null = null;
+
   function updateGreeting() {
     const hour = new Date().getHours();
     const textEl = document.getElementById('greeting-text');
@@ -34,17 +36,23 @@
     if (!textEl) return;
 
     const greetings: { text: string; range: [number, number] }[] = [
-      { text: 'Good Morning ☀️', range: [5, 12] },
+      { text: 'Good Morning', range: [5, 12] },
       { text: 'Good Afternoon', range: [12, 18] },
-      { text: 'Good Evening 🌙', range: [18, 22] },
-      { text: 'Good Night ✨', range: [22, 24] },
-      { text: 'Good Night ✨', range: [0, 5] },
+      { text: 'Good Evening', range: [18, 22] },
+      { text: 'Good Night', range: [22, 24] },
+      { text: 'Good Night', range: [0, 5] },
     ];
 
     const g = greetings.find(g => hour >= g.range[0] && hour < g.range[1]) ?? greetings[0];
     textEl.textContent = g.text;
   }
 
-  document.addEventListener('astro:page-load', updateGreeting);
-  setInterval(updateGreeting, 60000);
+  document.addEventListener('astro:page-load', () => {
+    updateGreeting();
+    if (!greetingTimer) greetingTimer = setInterval(updateGreeting, 60000);
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    if (greetingTimer) { clearInterval(greetingTimer); greetingTimer = null; }
+  });
 </script>

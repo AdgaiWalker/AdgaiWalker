@@ -4,6 +4,7 @@
  * 作为首页的核心钩子，展示精选工具，引导读者进入装备库。
  */
 import { getCollection } from 'astro:content';
+import { DOCK } from '@/lib/routes';
 
 const items = (await getCollection('dockItem', ({ data }) => data.published))
   .sort((a, b) => (b.data.rating ?? 0) - (a.data.rating ?? 0));
@@ -18,7 +19,7 @@ const categoryIcons: Record<string, string> = {
 };
 ---
 
-<a href="/dock" class="block panel-glass p-6 group h-full no-underline transition-all hover:shadow-xl hover:-translate-y-1" style="background: rgba(255, 255, 255, 0.55);">
+<a href={DOCK} class="block panel-glass p-6 group h-full no-underline transition-all hover:shadow-xl hover:-translate-y-1" style="background: rgba(255, 255, 255, 0.55);">
   {/* 头部 */}
   <div class="flex items-center justify-between mb-5">
     <div class="flex items-center gap-2.5">

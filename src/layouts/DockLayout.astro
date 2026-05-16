@@ -2,6 +2,7 @@
 import Base from './Base.astro';
 import CategoryPanel from '../components/CategoryPanel.astro';
 import { getCollection } from 'astro:content';
+import { dockSlug } from '@/lib/routes';
 
 interface Props {
   title: string;
@@ -27,7 +28,7 @@ const panelItems = items.map(item => ({
   name: item.data.name,
   description: item.data.description,
   category: item.data.category,
-  href: `/dock/${item.id}`,
+  href: dockSlug(item.id),
   isActive: currentSlug === item.id,
 }));
 ---

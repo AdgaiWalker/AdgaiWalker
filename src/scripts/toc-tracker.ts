@@ -76,6 +76,4 @@ function initTocTracker(): void {
   document.addEventListener('astro:before-swap', cleanup);
 }
 
-// 初始化
-initTocTracker();
 document.addEventListener('astro:page-load', initTocTracker);

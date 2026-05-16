@@ -3,6 +3,7 @@
  * IdeaCard — Idea 卡片组件
  * 支持两种状态：开放认领 / 已完成
  */
+import { postSlug } from '@/lib/routes';
 
 interface Props {
   title: string;
@@ -24,7 +25,7 @@ const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
 ---
 
-<a href={`/posts/${slug}`} class:list={['idea-card', isOpen ? 'idea-card-open' : 'idea-card-done']}>
+<a href={postSlug(slug)} class:list={['idea-card', isOpen ? 'idea-card-open' : 'idea-card-done']}>
   {/* 状态标签 */}
   <div class="idea-card-status">
     <iconify-icon icon={statusIcon} width="12" height="12"></iconify-icon>

@@ -7,6 +7,7 @@ const STORAGE_KEY = 'walker-sidebar-collapsed';
 
 // 记录当前是否已绑定事件，防止重复绑定
 let isInitialized = false;
+let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
 function initSidebarState(): void {
   const nav = document.getElementById('main-nav');
@@ -45,17 +46,28 @@ function initSidebarState(): void {
 
   // document 级别的事件只需要绑定一次
   if (!isInitialized) {
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
+    keydownHandler = (e: KeyboardEvent) => {
       if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
         e.preventDefault();
         document.getElementById('sidebar-collapse-btn')?.click();
       }
-    });
+    };
+    document.addEventListener('keydown', keydownHandler);
     isInitialized = true;
   }
 }
+
+function cleanup() {
+  if (keydownHandler) {
+    document.removeEventListener('keydown', keydownHandler);
+    keydownHandler = null;
+  }
+  isInitialized = false;
+}
+
+document.addEventListener('astro:before-swap', cleanup);
 
 function collapse(nav: HTMLElement, layout: HTMLElement | null): void {
   nav.classList.add('sidebar-collapsed-nav');

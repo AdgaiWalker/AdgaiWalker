@@ -1,5 +1,6 @@
 ---
 import SearchModal from './SearchModal.astro';
+import { POSTS, DOCK, AI_LEARN, AI_IDEAS } from '@/lib/routes';
 
 interface NavItem {
   label: string;
@@ -16,10 +17,10 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     items: [
-      { label: '文章', href: '/posts', icon: 'lucide:pen-line', hint: 'Posts' },
-      { label: '装备库', href: '/dock', icon: 'lucide:package', hint: 'Resources' },
-      { label: '学习', href: '/ai/learn', icon: 'lucide:book-open' },
-      { label: 'Idea', href: '/ai/ideas', icon: 'lucide:lightbulb' },
+      { label: '文章', href: POSTS, icon: 'lucide:pen-line', hint: 'Posts' },
+      { label: '装备库', href: DOCK, icon: 'lucide:package', hint: 'Resources' },
+      { label: '学习', href: AI_LEARN, icon: 'lucide:book-open' },
+      { label: 'Idea', href: AI_IDEAS, icon: 'lucide:lightbulb' },
     ]
   },
 ];
@@ -169,7 +170,13 @@ const isActiveHref = (href: string) => {
 <script>
   import '../scripts/sidebar-state';
 
+  let navAbort: AbortController | null = null;
+
   document.addEventListener('astro:page-load', () => {
+    if (navAbort) navAbort.abort();
+    navAbort = new AbortController();
+    const { signal } = navAbort;
+
     const toggle = document.getElementById('menu-toggle');
     const menu = document.getElementById('mobile-menu');
 
@@ -184,7 +191,7 @@ const isActiveHref = (href: string) => {
       menu?.classList.toggle('border-gray-200');
       menu?.classList.toggle('shadow-lg');
       menu?.classList.toggle('max-h-[80vh]');
-    });
+    }, { signal });
 
     const desktopSearchBtn = document.getElementById('desktop-search-btn');
     const mobileSearchBtn = document.getElementById('mobile-search-btn');
@@ -193,8 +200,12 @@ const isActiveHref = (href: string) => {
       document.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true, key: 'k' }));
     };
 
-    desktopSearchBtn?.addEventListener('click', triggerSearch);
-    mobileSearchBtn?.addEventListener('click', triggerSearch);
+    desktopSearchBtn?.addEventListener('click', triggerSearch, { signal });
+    mobileSearchBtn?.addEventListener('click', triggerSearch, { signal });
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    if (navAbort) { navAbort.abort(); navAbort = null; }
   });
 </script>
 

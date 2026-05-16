@@ -20,17 +20,19 @@
 </div>
 
 <script>
+  let clockTimer: ReturnType<typeof setInterval> | null = null;
+
   function updateNav() {
     const now = new Date();
     const clockEl = document.getElementById('nav-clock');
     const dateEl = document.getElementById('nav-date');
-    
+
     if (clockEl) {
       const h = String(now.getHours()).padStart(2, '0');
       const m = String(now.getMinutes()).padStart(2, '0');
       clockEl.textContent = `${h}:${m}`;
     }
-    
+
     if (dateEl) {
       const y = now.getFullYear();
       const mo = String(now.getMonth() + 1).padStart(2, '0');
@@ -40,6 +42,14 @@
     }
   }
 
-  updateNav();
-  setInterval(updateNav, 1000);
+  function startClock() {
+    updateNav();
+    if (!clockTimer) clockTimer = setInterval(updateNav, 1000);
+  }
+
+  document.addEventListener('astro:page-load', startClock);
+
+  document.addEventListener('astro:before-swap', () => {
+    if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+  });
 </script>

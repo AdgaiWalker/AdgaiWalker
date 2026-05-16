@@ -84,7 +84,13 @@ const categoryLabels: Record<string, string> = {
 </div>
 
 <script>
+  let navViewAbort: AbortController | null = null;
+
   document.addEventListener('astro:page-load', () => {
+    if (navViewAbort) navViewAbort.abort();
+    navViewAbort = new AbortController();
+    const { signal } = navViewAbort;
+
     const toggle = document.getElementById('nav-view-toggle');
     const listView = document.getElementById('article-list-view');
     const cardView = document.getElementById('article-card-view');
@@ -111,8 +117,12 @@ const categoryLabels: Record<string, string> = {
           cardView.classList.add('hidden');
         }
         localStorage.setItem('walker-sidebar-view', view || 'list');
-      });
+      }, { signal });
     });
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    if (navViewAbort) { navViewAbort.abort(); navViewAbort = null; }
   });
 </script>
 

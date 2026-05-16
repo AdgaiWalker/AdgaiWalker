@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { postSlug } from '@/lib/routes';
 
 const allLogs = await getCollection('log', ({ data }) => data.published);
 const allContent = allLogs.map(l => {
@@ -8,7 +9,7 @@ const allContent = allLogs.map(l => {
   return {
     title: l.data.title,
     type: l.data.type,
-    slug: `/posts/${l.id}`,
+    slug: postSlug(l.id),
     tags: l.data.tags,
     excerpt: rawText.slice(0, 80),
     wordCount,

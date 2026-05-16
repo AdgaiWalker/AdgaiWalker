@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { aiModelNotes, workflowNotes, savingNotes } from '../../data/toolkit-notes';
+import { postSlug } from '@/lib/routes';
 
 export const prerender = true;
 
@@ -36,7 +37,7 @@ const formatShortDate = (d: Date) =>
       </div>
       <nav class="article-list-nav">
         {aiArticles.map(article => (
-          <a href={`/posts/${article.id}`} class="article-list-link">
+          <a href={postSlug(article.id)} class="article-list-link">
             <time>{formatShortDate(article.data.date)}</time>
             <span class="article-list-copy">
               <span class="article-list-title">{article.data.title}</span>

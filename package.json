@@ -26,5 +26,8 @@
     "tailwindcss": "^4.2.4",
     "typescript": "^5.9.3",
     "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "@ast-grep/cli": "^0.42.2"
   }
 }
