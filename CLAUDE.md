@@ -43,21 +43,21 @@ npm run preview    # 本地预览生产构建
 
 ### 路由结构
 
-| 路径 | 页面 | 布局 |
-|------|------|------|
-| `/` | 首页（Bento Box，预渲染） | 仅 Base |
-| `/ai` | AI 文章列表 | SidebarLayout |
-| `/ai/[slug]` | AI 文章详情 | ArticleLayout |
-| `/ai/learn` | 学习页 | SidebarLayout |
-| `/ai/sources` | 信息源页 | SidebarLayout |
-| `/ai/toolkit` | 工具箱页 | SidebarLayout |
-| `/ai/ideas` | 想法页 | SidebarLayout |
-| `/life` | 生活文章列表 | SidebarLayout |
-| `/life/[slug]` | 生活文章详情 | ArticleLayout |
-| `/dock` | 资源库列表 | DockLayout |
-| `/dock/[slug]` | 资源详情 | DockLayout |
-| `/about-me` | 关于页 | SidebarLayout |
-| `/rss.xml`、`/ai/rss.xml`、`/life/rss.xml` | RSS 订阅源 | — |
+| 路径                                       | 页面                | 布局            |
+| ---------------------------------------- | ----------------- | ------------- |
+| `/`                                      | 首页（Bento Box，预渲染） | 仅 Base        |
+| `/ai`                                    | AI 文章列表           | SidebarLayout |
+| `/ai/[slug]`                             | AI 文章详情           | ArticleLayout |
+| `/ai/learn`                              | 学习页               | SidebarLayout |
+| `/ai/sources`                            | 信息源页              | SidebarLayout |
+| `/ai/toolkit`                            | 工具箱页              | SidebarLayout |
+| `/ai/ideas`                              | 想法页               | SidebarLayout |
+| `/life`                                  | 生活文章列表            | SidebarLayout |
+| `/life/[slug]`                           | 生活文章详情            | ArticleLayout |
+| `/dock`                                  | 资源库列表             | DockLayout    |
+| `/dock/[slug]`                           | 资源详情              | DockLayout    |
+| `/about`                                 | 关于页               | FullscreenLayout |
+| `/rss.xml`、`/ai/rss.xml`、`/life/rss.xml` | RSS 订阅源           | —             |
 
 ### 核心组件
 
@@ -86,6 +86,7 @@ npm run preview    # 本地预览生产构建
 ### Remark 插件
 
 **`remark-rich-embed.ts`** — 将 `![](url)` Markdown 图片根据 URL 转换为富媒体嵌入：
+
 - B站 → 嵌入播放器 iframe
 - YouTube → 嵌入播放器 iframe
 - 音频文件（`.mp3`、`.wav` 等）→ `<audio>` 播放器

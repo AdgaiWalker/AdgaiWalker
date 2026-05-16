@@ -2,7 +2,7 @@
 /**
  * FullscreenLayout — 全屏页面布局
  * 无侧边栏、无导航栏，全屏内容展示
- * 用于：/about-me
+ * 用于：/about
  */
 
 interface Props {
@@ -22,6 +22,7 @@ const {
 } = Astro.props;
 
 import { ClientRouter } from 'astro:transitions';
+import { Font } from 'astro:assets';
 import '../styles/global.css';
 
 const pageTitle = ogTitle ?? title;
@@ -44,9 +45,11 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
 
-    <link rel="preconnect" href="https://fonts.googleapis.cn">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Fonts API 自托管字体 -->
+    <Font cssVariable="--font-body" preload />
+    <Font cssVariable="--font-heading" preload />
+    <Font cssVariable="--font-mono" />
+    <Font cssVariable="--font-cjk" />
 
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />
@@ -60,7 +63,7 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     <meta name="twitter:description" content={pageDescription} />
     <meta name="twitter:image" content={absoluteOgImage} />
 
-    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script is:inline src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <ClientRouter />
     <title>{title}</title>
   </head>

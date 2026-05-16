@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from 'astro:transitions';
+import { Font } from 'astro:assets';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
@@ -48,10 +49,11 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
     
-    <!-- 引入外部字体 (增加 Inter + Sora) -->
-    <link rel="preconnect" href="https://fonts.googleapis.cn">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.cn/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Fonts API 自托管字体 -->
+    <Font cssVariable="--font-body" preload />
+    <Font cssVariable="--font-heading" preload />
+    <Font cssVariable="--font-mono" />
+    <Font cssVariable="--font-cjk" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={pageDescription} />
     <meta property="og:image" content={absoluteOgImage} />
@@ -80,7 +82,7 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
       "inLanguage": "zh-CN"
     })} />
     
-    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <script is:inline src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <ClientRouter />
     
     <!-- 传递 pureMode 给环境脚本 -->
@@ -123,8 +125,16 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     </div>
 
     <script>
-      import '../scripts/ambient';
       import '../scripts/scroll-fade';
+
+      // Canvas 粒子动画仅首页加载
+      function loadAmbient() {
+        if (window.location.pathname === '/') {
+          import('../scripts/ambient');
+        }
+      }
+      loadAmbient();
+      document.addEventListener('astro:page-load', loadAmbient);
 
       // --- 鼠标跟随光晕 ---
       const setupMouseGlow = () => {

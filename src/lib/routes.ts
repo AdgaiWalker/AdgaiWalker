@@ -4,7 +4,7 @@
 
 // 列表页
 export const POSTS = '/posts' as const;
-export const DOCK = '/dock' as const;
+export const DOCK = '/explore' as const;
 
 // AI 子页面
 export const AI_LEARN = '/ai/learn' as const;
