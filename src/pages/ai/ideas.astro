@@ -6,6 +6,7 @@
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import IdeaCard from '../../components/cards/IdeaCard.astro';
 import { getCollection } from 'astro:content';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
@@ -44,11 +45,11 @@ const allTags = [...new Set(ideas.flatMap(i => i.data.tags))].sort();
       全部 <span class="filter-count">{ideas.length}</span>
     </button>
     <button class="filter-btn" data-filter="open">
-      <iconify-icon icon="lucide:sparkles" width="12" height="12"></iconify-icon>
+      <Icon name="lucide:sparkles" width={12} height={12} />
       开放认领 <span class="filter-count">{openCount}</span>
     </button>
     <button class="filter-btn" data-filter="completed">
-      <iconify-icon icon="lucide:check-circle-2" width="12" height="12"></iconify-icon>
+      <Icon name="lucide:circle-check" width={12} height={12} />
       已完成 <span class="filter-count">{doneCount}</span>
     </button>
   </div>
@@ -86,7 +87,7 @@ const allTags = [...new Set(ideas.flatMap(i => i.data.tags))].sort();
   {/* 空状态 */}
   {ideas.length === 0 && (
     <div class="empty-state">
-      <iconify-icon icon="lucide:lightbulb" width="40" height="40"></iconify-icon>
+      <Icon name="lucide:lightbulb" width={40} height={40} />
       <p>暂无 Idea，敬请期待</p>
     </div>
   )}

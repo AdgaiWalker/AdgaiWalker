@@ -4,6 +4,7 @@
  * 支持两种状态：开放认领 / 已完成
  */
 import { postSlug } from '@/lib/routes';
+import { Icon } from 'astro-icon/components';
 
 interface Props {
   title: string;
@@ -15,11 +16,11 @@ interface Props {
   claimInfo?: string;
 }
 
-const { title, summary, tags = [], status = 'open', slug, date, claimInfo } = Astro.props;
+const { title, summary, tags = [], status = 'open', slug, date } = Astro.props;
 
 const isOpen = status === 'open';
 const statusLabel = isOpen ? '开放认领' : '已完成';
-const statusIcon = isOpen ? 'lucide:sparkles' : 'lucide:check-circle-2';
+const statusIcon = isOpen ? 'lucide:sparkles' : 'lucide:circle-check';
 
 const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -28,7 +29,7 @@ const formatDate = (d: Date) =>
 <a href={postSlug(slug)} class:list={['idea-card', isOpen ? 'idea-card-open' : 'idea-card-done']}>
   {/* 状态标签 */}
   <div class="idea-card-status">
-    <iconify-icon icon={statusIcon} width="12" height="12"></iconify-icon>
+    <Icon name={statusIcon} width={12} height={12} />
     <span>{statusLabel}</span>
   </div>
 
@@ -53,7 +54,7 @@ const formatDate = (d: Date) =>
   {/* 认领提示 */}
   {isOpen && (
     <div class="idea-card-cta">
-      <iconify-icon icon="lucide:arrow-right" width="14" height="14"></iconify-icon>
+      <Icon name="lucide:arrow-right" width={14} height={14} />
       <span>查看详情</span>
     </div>
   )}

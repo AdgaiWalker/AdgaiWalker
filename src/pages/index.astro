@@ -11,6 +11,7 @@ import DockShowcase from '../components/DockShowcase.astro';
 
 import LikeCounter from '../components/LikeCounter.astro';
 import { getCollection } from 'astro:content';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
@@ -47,7 +48,7 @@ const aiLogs = allLogs
               id="search-trigger"
               aria-label="搜索"
             >
-              <iconify-icon icon="lucide:search" width="15" height="15"></iconify-icon>
+              <Icon name="lucide:search" width={15} height={15} />
               <span class="flex-1 text-left">搜索文章...</span>
               <span class="flex items-center gap-1">
                 <span class="kbd">⌘</span>
@@ -71,7 +72,7 @@ const aiLogs = allLogs
             <div class="relative">
               <GreetingCard />
               <div class="absolute bottom-4 right-5 opacity-0 group-hover/greeting:opacity-60 transition-opacity text-parchment-dim">
-                <iconify-icon icon="lucide:arrow-right" width="16" height="16"></iconify-icon>
+                <Icon name="lucide:arrow-right" width={16} height={16} />
               </div>
             </div>
           </a>
@@ -79,15 +80,15 @@ const aiLogs = allLogs
           {/* 社交按钮 */}
           <div class="flex flex-wrap items-center justify-center gap-2.5 pop-in delay-4 mt-5 draggable-card cursor-grab">
             <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111]/90 text-white/90 hover:bg-[#111] hover:text-white hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm">
-              <iconify-icon icon="mdi:github" width="17" height="17"></iconify-icon>
+              <Icon name="lucide:github" width={17} height={17} />
               Github
             </a>
             <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/60 text-[#fb7299] hover:bg-white/80 hover:scale-105 transition-all no-underline text-[13px] font-body font-medium shadow-sm backdrop-blur-sm border border-white/60">
-               <iconify-icon icon="ri:bilibili-fill" width="17" height="17"></iconify-icon>
+               <Icon name="lucide:circle-play" width={17} height={17} />
                Bilibili
             </a>
             <a href="mailto:praxiswalker@gmail.com" class="w-[40px] h-[40px] rounded-full bg-white/60 text-brand flex items-center justify-center hover:bg-white/80 hover:scale-105 transition-all no-underline shadow-sm backdrop-blur-sm border border-white/60">
-              <iconify-icon icon="lucide:mail" width="17" height="17"></iconify-icon>
+              <Icon name="lucide:mail" width={17} height={17} />
             </a>
           </div>
 
@@ -168,6 +169,9 @@ const aiLogs = allLogs
   </style>
 
   <script>
+    let homeAbort: AbortController | null = null;
+    let dragFrame = 0;
+
     function resizeCanvas() {
       const canvas = document.getElementById('desktop-canvas');
       if (!canvas) return;
@@ -179,13 +183,13 @@ const aiLogs = allLogs
       scale = Math.min(scale, 1.15);
       canvas.style.transform = `scale(${scale})`;
     }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
 
-    function initDraggables() {
+    function initDraggables(signal: AbortSignal) {
       const draggables = document.querySelectorAll('.draggable-card');
       let activeItem: HTMLElement | null = null;
       let initialX = 0, initialY = 0;
+      let pendingX = 0;
+      let pendingY = 0;
 
       draggables.forEach((item: any) => {
         if (!item.dataset.x) item.dataset.x = '0';
@@ -208,8 +212,8 @@ const aiLogs = allLogs
           initialY = clientY - parseFloat(activeItem.dataset.y || '0');
         };
 
-        item.addEventListener('mousedown', onDragStart);
-        item.addEventListener('touchstart', onDragStart, { passive: true });
+        item.addEventListener('mousedown', onDragStart, { signal });
+        item.addEventListener('touchstart', onDragStart, { passive: true, signal });
       });
 
       const onDragMove = (e: MouseEvent | TouchEvent) => {
@@ -221,14 +225,23 @@ const aiLogs = allLogs
         const currentX = clientX - initialX;
         const currentY = clientY - initialY;
 
-        activeItem.dataset.x = currentX.toString();
-        activeItem.dataset.y = currentY.toString();
+        pendingX = currentX;
+        pendingY = currentY;
 
-        activeItem.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) scale(1.02) rotate(0.5deg)`;
+        if (dragFrame) return;
+        dragFrame = requestAnimationFrame(() => {
+          dragFrame = 0;
+          if (!activeItem) return;
+          activeItem.dataset.x = pendingX.toString();
+          activeItem.dataset.y = pendingY.toString();
+          activeItem.style.transform = `translate3d(${pendingX}px, ${pendingY}px, 0) scale(1.02) rotate(0.5deg)`;
+        });
       };
 
       const onDragEnd = () => {
         if (!activeItem) return;
+        cancelAnimationFrame(dragFrame);
+        dragFrame = 0;
         activeItem.classList.remove('cursor-grabbing');
         activeItem.classList.add('cursor-grab');
         activeItem.style.zIndex = '10';
@@ -236,25 +249,41 @@ const aiLogs = allLogs
         activeItem = null;
       };
 
-      document.addEventListener('mousemove', onDragMove);
-      document.addEventListener('touchmove', onDragMove, { passive: true });
-      document.addEventListener('mouseup', onDragEnd);
-      document.addEventListener('touchend', onDragEnd);
+      document.addEventListener('mousemove', onDragMove, { signal });
+      document.addEventListener('touchmove', onDragMove, { passive: true, signal });
+      document.addEventListener('mouseup', onDragEnd, { signal });
+      document.addEventListener('touchend', onDragEnd, { signal });
     }
 
-    document.addEventListener('astro:page-load', () => {
-      resizeCanvas();
-      initDraggables();
-    });
+    function initHomeInteractions() {
+      homeAbort?.abort();
+      homeAbort = new AbortController();
+      const { signal } = homeAbort;
 
-    document.addEventListener('keydown', (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const modal = document.getElementById('search-modal');
-        if (modal) {
-          modal.classList.toggle('hidden');
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas, { signal });
+      initDraggables(signal);
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          const modal = document.getElementById('search-modal');
+          if (modal) {
+            modal.classList.toggle('hidden');
+          }
         }
-      }
+      }, { signal });
+    }
+
+    initHomeInteractions();
+
+    document.addEventListener('astro:page-load', initHomeInteractions);
+
+    document.addEventListener('astro:before-swap', () => {
+      homeAbort?.abort();
+      homeAbort = null;
+      cancelAnimationFrame(dragFrame);
+      dragFrame = 0;
     });
   </script>
 </Base>

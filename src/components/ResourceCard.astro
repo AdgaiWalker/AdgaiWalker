@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 export interface Props {
   type: string;
   url: string;
@@ -22,7 +23,7 @@ const style = resourceStyleMap[type] || resourceStyleMap.website;
 <a href={url} target="_blank" rel="noopener noreferrer" class={`group flex items-center justify-between p-4 rounded-2xl border transition-all no-underline ${style.class}`}>
   <div class="flex items-center gap-4 min-w-0">
     <div class={`w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0`}>
-      <iconify-icon icon={style.icon} width="20" height="20" class={type === 'github' ? 'text-slate-900' : 'text-slate-600'}></iconify-icon>
+      <Icon name={style.icon} width={20} height={20} class={type === 'github' ? 'text-slate-900' : 'text-slate-600'} />
     </div>
     <div class="min-w-0">
       <div class="text-base font-bold truncate group-hover:opacity-80 transition-opacity">{name}</div>
@@ -31,6 +32,6 @@ const style = resourceStyleMap[type] || resourceStyleMap.website;
   </div>
   <div class="flex items-center gap-2 text-sm font-medium text-slate-400 group-hover:text-current transition-colors shrink-0 ml-4">
     {style.actionText}
-    <iconify-icon icon="lucide:arrow-right" width="16" height="16"></iconify-icon>
+    <Icon name="lucide:arrow-right" width={16} height={16} />
   </div>
 </a>

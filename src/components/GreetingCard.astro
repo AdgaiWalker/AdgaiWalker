@@ -1,11 +1,13 @@
 ---
 // GreetingCard.astro — 精致问候卡 (融合 hylarucoder 简洁感)
+import { Image } from 'astro:assets';
+import avatar from '/public/images/avatar.jpg';
 ---
 <div class="panel-glass p-8 flex flex-col items-center justify-center text-center reveal h-full" id="greeting-card" style="background: rgba(255,255,250,0.45);">
   <!-- 头像 (柔和光晕 + 精致描边) -->
   <div class="w-[110px] h-[110px] rounded-full flex items-center justify-center mb-5 relative overflow-hidden shadow-[0_4px_20px_rgba(53,191,171,0.1)]">
     <div class="absolute inset-0 rounded-full bg-gradient-to-br from-[#e8f5e9] to-[#e0f2f1] opacity-50"></div>
-    <img src="/images/avatar.jpg" alt="秋知" class="w-full h-full object-cover relative z-10 rounded-full" />
+    <Image src={avatar} alt="秋知" width={110} height={110} class="w-full h-full object-cover relative z-10 rounded-full" />
     <!-- 描边光圈 -->
     <div class="absolute inset-0 rounded-full border-2 border-white/60 z-20"></div>
   </div>

@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import { postSlug } from '@/lib/routes';
+import { Icon } from 'astro-icon/components';
 
 const allLogs = await getCollection('log', ({ data }) => data.published);
 const allContent = allLogs.map(l => {
@@ -23,7 +24,7 @@ const typeIcons: Record<string, string> = {
   article: 'lucide:file-text',
   photo: 'lucide:camera',
   thought: 'lucide:lightbulb',
-  project: 'lucide:code-2',
+  project: 'lucide:code',
   dialogue: 'lucide:message-circle',
   idea: 'lucide:sparkles',
 };
@@ -32,7 +33,7 @@ const iconName = random ? typeIcons[random.type] || 'lucide:bookmark' : 'lucide:
 
 <div class="panel-glass p-5 flex flex-col h-full group rounded-[40px]" style="background: rgba(255,255,255,0.5);">
   <div class="flex items-center gap-2 mb-3.5 px-0.5">
-    <iconify-icon icon="lucide:shuffle" width="13" height="13" class="text-parchment/30"></iconify-icon>
+    <Icon name="lucide:shuffle" width={13} height={13} class="text-parchment/30" />
     <span class="text-[11px] font-mono text-parchment/30 uppercase tracking-[0.15em]">Random Pick</span>
   </div>
 
@@ -40,7 +41,7 @@ const iconName = random ? typeIcons[random.type] || 'lucide:bookmark' : 'lucide:
     <a href={random.slug} class="flex items-center gap-3.5 no-underline px-0.5">
       <!-- 左侧图标框 -->
       <div class="w-12 h-12 rounded-2xl shrink-0 overflow-hidden bg-white/60 border border-white/80 flex flex-col items-center justify-center relative shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
-        <iconify-icon icon={iconName} width="20" height="20" class="text-brand"></iconify-icon>
+        <Icon name={iconName} width={20} height={20} class="text-brand" />
       </div>
       
       <!-- 右侧信息 -->

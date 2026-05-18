@@ -1,5 +1,6 @@
 ---
 import DockLayout from '../../layouts/DockLayout.astro';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 ---
@@ -10,7 +11,7 @@ export const prerender = true;
 >
   <div class="dock-index-empty">
     <div class="empty-icon">
-      <iconify-icon icon="lucide:package-open" width="48" height="48"></iconify-icon>
+      <Icon name="lucide:package-open" width={48} height={48} />
     </div>
     <h1>AI探索</h1>
     <p>这里收录了我日常使用的工具、工作流（Skill）、信息源和社群。</p>

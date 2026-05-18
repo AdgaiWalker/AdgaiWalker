@@ -1,33 +1,7 @@
 ---
 /**
- * /life/[slug] — 重定向到 /posts/[slug]
- * 保留 getStaticPaths 以生成旧 URL 的 HTML 文件。
+ * /life/[slug] — 旧文章 URL，服务端 301 到 /posts/[slug]。
  */
-import { getCollection } from 'astro:content';
-import { postSlug } from '@/lib/routes';
-
-export const prerender = true;
-
-export async function getStaticPaths() {
-  const entries = await getCollection('log', ({ data }) => data.published && data.category === 'life');
-  return entries.map(entry => ({
-    params: { slug: entry.id },
-  }));
-}
-
-const { slug } = Astro.params;
-const target = slug ? postSlug(slug) : '/posts';
 ---
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="canonical" href={target} />
-    <meta http-equiv="refresh" content={`0;url=${target}`} />
-    <title>Redirecting...</title>
-  </head>
-  <body>
-    <p>Redirecting to <a href={target}>{target}</a>...</p>
-  </body>
-</html>
+
+{Astro.redirect(Astro.params.slug ? `/posts/${Astro.params.slug}` : '/posts', 301)}

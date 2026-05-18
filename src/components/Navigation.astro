@@ -1,6 +1,7 @@
 ---
 import SearchModal from './SearchModal.astro';
 import { POSTS, DOCK, AI_LEARN, AI_IDEAS } from '@/lib/routes';
+import { Icon } from 'astro-icon/components';
 
 interface NavItem {
   label: string;
@@ -61,14 +62,14 @@ const isActiveHref = (href: string) => {
           id="mobile-search-btn"
           aria-label="搜索"
         >
-          <iconify-icon icon="lucide:search" width="20" height="20"></iconify-icon>
+          <Icon name="lucide:search" width={20} height={20} />
         </button>
         <button
           class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
           id="menu-toggle"
           aria-label="打开菜单"
         >
-          <iconify-icon icon="lucide:menu" width="22" height="22"></iconify-icon>
+          <Icon name="lucide:menu" width={22} height={22} />
         </button>
       </div>
     </div>
@@ -94,7 +95,7 @@ const isActiveHref = (href: string) => {
       <div class="hidden lg:block px-4 mb-1">
         <button id="desktop-search-btn" class="nav-search group">
           <div class="flex items-center gap-2.5 text-[13px]">
-            <iconify-icon icon="lucide:search" width="16" height="16" class="text-gray-400 group-hover:text-gray-500 transition-colors"></iconify-icon>
+            <Icon name="lucide:search" width={16} height={16} class="text-gray-400 group-hover:text-gray-500 transition-colors" />
             <span class="font-body text-gray-500">搜索</span>
           </div>
           <kbd class="text-[10px] font-sans px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 text-gray-400 font-medium">⌘K</kbd>
@@ -123,7 +124,7 @@ const isActiveHref = (href: string) => {
                           : 'nav-link-idle',
                       ]}
                     >
-                      <iconify-icon icon={item.icon} width="18" height="18" class="nav-link-icon"></iconify-icon>
+                      <Icon name={item.icon} width={18} height={18} class="nav-link-icon" />
                       <span class="nav-link-main">{item.label}</span>
                       {item.hint && <span class="nav-link-hint">{item.hint}</span>}
                     </a>
@@ -148,19 +149,20 @@ const isActiveHref = (href: string) => {
           aria-label="折叠侧边栏"
           title="折叠侧边栏 ( [ )"
         >
-          <iconify-icon icon="lucide:panel-left-close" width="16" height="16"></iconify-icon>
+          <Icon name="lucide:panel-left-close" width={16} height={16} class="sidebar-icon-close" />
+          <Icon name="lucide:panel-left-open" width={16} height={16} class="sidebar-icon-open" />
         </button>
       </div>
 
       {/* 底部社交栏 */}
       <div class="hidden lg:flex items-center justify-between px-5 py-5 mt-auto border-t border-[rgba(42,59,62,0.08)] text-gray-400">
         <div class="flex items-center gap-3.5">
-          <a href="https://github.com/AdgaiWalker" target="_blank" class="hover:text-gray-700 transition-colors" aria-label="Github"><iconify-icon icon="mdi:github" width="18" height="18"></iconify-icon></a>
-          <a href="mailto:praxiswalker@gmail.com" class="hover:text-gray-700 transition-colors" aria-label="Email"><iconify-icon icon="lucide:mail" width="18" height="18"></iconify-icon></a>
-          <a href="/rss.xml" class="hover:text-gray-700 transition-colors" aria-label="RSS"><iconify-icon icon="lucide:rss" width="16" height="16"></iconify-icon></a>
+          <a href="https://github.com/AdgaiWalker" target="_blank" class="hover:text-gray-700 transition-colors" aria-label="Github"><Icon name="lucide:github" width={18} height={18} /></a>
+          <a href="mailto:praxiswalker@gmail.com" class="hover:text-gray-700 transition-colors" aria-label="Email"><Icon name="lucide:mail" width={18} height={18} /></a>
+          <a href="/rss.xml" class="hover:text-gray-700 transition-colors" aria-label="RSS"><Icon name="lucide:rss" width={16} height={16} /></a>
         </div>
         <button class="hover:text-gray-700 transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center" aria-label="Theme toggle">
-          <iconify-icon icon="lucide:sun" width="18" height="18"></iconify-icon>
+          <Icon name="lucide:sun" width={18} height={18} />
         </button>
       </div>
     </div>
@@ -400,8 +402,20 @@ const isActiveHref = (href: string) => {
       padding-right: 0.55rem !important;
     }
 
-    .sidebar-collapsed-nav .nav-link iconify-icon {
+    .sidebar-collapsed-nav .nav-link .nav-link-icon {
       margin: 0;
+    }
+
+    .sidebar-icon-open {
+      display: none;
+    }
+
+    .sidebar-collapsed-nav .sidebar-icon-close {
+      display: none;
+    }
+
+    .sidebar-collapsed-nav .sidebar-icon-open {
+      display: block;
     }
 
     .sidebar-collapsed-nav .mt-auto {

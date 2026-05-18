@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 /**
  * LikeCounter — 点赞组件
  * 视觉优化：未点击(描边心形 + 中性色) → 已点击(实心心形 + 粉色 + 弹跳动画)
@@ -20,11 +21,11 @@ const { pagePath } = Astro.props;
   >
     {/* 未点击状态 — 描边心形 */}
     <span class="like-icon like-icon-outline">
-      <iconify-icon icon="lucide:heart" width="26" height="26"></iconify-icon>
+      <Icon name="lucide:heart" width={26} height={26} />
     </span>
     {/* 已点击状态 — 实心心形 */}
     <span class="like-icon like-icon-filled">
-      <iconify-icon icon="mingcute:heart-fill" width="26" height="26"></iconify-icon>
+      <Icon name="lucide:heart" width={26} height={26} />
     </span>
 
     {/* 计数气泡 */}

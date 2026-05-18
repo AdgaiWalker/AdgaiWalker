@@ -2,6 +2,7 @@
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getCollection } from 'astro:content';
 import DockItemCard from '../../components/DockItemCard.astro';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
@@ -25,7 +26,7 @@ const tags = [...new Set(items.flatMap(e => e.data.tags))];
     <!-- 搜索 + 标签筛选 -->
     <div class="mb-8 space-y-4">
       <div class="relative max-w-md">
-        <iconify-icon icon="lucide:search" width="14" height="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-parchment/25"></iconify-icon>
+        <Icon name="lucide:search" width={14} height={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-parchment/25" />
         <input
           id="dock-search"
           type="text"

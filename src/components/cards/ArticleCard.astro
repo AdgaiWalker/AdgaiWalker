@@ -1,4 +1,7 @@
 ---
+import { Icon } from 'astro-icon/components';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 /**
  * ArticleCard — 文章卡片（列表视图）
  * 用于 /ai/learn 学习页的文章列表
@@ -9,7 +12,7 @@ interface Props {
   summary?: string;
   date: Date;
   tags?: string[];
-  cover?: string;
+  cover?: string | ImageMetadata;
   slug: string;
   basePath: string;
   /** 是否有飞书文档关联 */
@@ -22,11 +25,15 @@ const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
 ---
 
-<a href={`${basePath}/${slug}`} class="article-card">
+<a href={`${basePath}/${slug}`} class="article-card" data-astro-prefetch="viewport">
   {/* 封面图 */}
   {cover && (
     <div class="article-card-cover">
-      <img src={cover} alt={title} loading="lazy" />
+      {typeof cover === 'string' ? (
+        <Image src={cover} alt={title} width={240} height={160} loading="lazy" />
+      ) : (
+        <Image src={cover} alt={title} loading="lazy" />
+      )}
     </div>
   )}
 
@@ -36,7 +43,7 @@ const formatDate = (d: Date) =>
       <h3 class="article-card-title">{title}</h3>
       {hasFeishuLink && (
         <span class="article-card-feishu" title="关联飞书文档">
-          <iconify-icon icon="lucide:file-text" width="12" height="12"></iconify-icon>
+          <Icon name="lucide:file-text" width={12} height={12} />
         </span>
       )}
     </div>

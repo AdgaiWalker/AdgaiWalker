@@ -82,10 +82,9 @@ function expand(nav: HTMLElement, layout: HTMLElement | null): void {
 }
 
 function updateIcon(btn: HTMLElement, collapsed: boolean): void {
-  const icon = btn.querySelector('iconify-icon');
-  if (icon) {
-    icon.setAttribute('icon', collapsed ? 'lucide:panel-left-open' : 'lucide:panel-left-close');
-  }
+  btn.setAttribute('aria-label', collapsed ? '展开侧边栏' : '折叠侧边栏');
 }
 
 document.addEventListener('astro:page-load', initSidebarState);
+
+export {};

@@ -1,43 +1,43 @@
-# UI Image Regeneration Implementation Plan
+# UI 图片重新生成实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **给智能代理：** 必须使用的子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 来逐步实施本计划。步骤使用复选框（`- [ ]`）语法进行跟踪。
 
-**Goal:** Produce 11 high-fidelity `gpt-image-2` concept UI images for the Walker Blog page classes defined in the approved design spec.
+**目标：** 为 Walker 博客已批准的设计规格中定义的 11 个页面类别，生成 11 张高保真 `gpt-image-2` 概念 UI 图片。
 
-**Architecture:** This is an asset-production workflow, not a live UI refactor. The implementation captures real local route screenshots, uses those screenshots as edit references for `gpt-image-2`, saves final presentation images under `public/images/ui-generated/`, and records reproducible prompts plus a manifest under `docs/ui-image-generation/`.
+**架构：** 这是一个资源生产工作流，而非实时 UI 重构。实施过程包括：截取本地路由真实截图，将这些截图作为 `gpt-image-2` 的编辑参考，将最终展示图片保存至 `public/images/ui-generated/`，并在 `docs/ui-image-generation/` 下记录可复现的提示词和清单文件。
 
-**Tech Stack:** Astro dev server, PowerShell, Playwright CLI via `npx`, Python fallback image generation CLI at `C:\Users\Administrator\.codex\skills\.system\imagegen\scripts\image_gen.py`, OpenAI `gpt-image-2`.
+**技术栈：** Astro 开发服务器、PowerShell、通过 `npx` 调用的 Playwright CLI、备用 Python 图片生成 CLI（位于 `C:\Users\Administrator\.codex\skills\.system\imagegen\scripts\image_gen.py`）、OpenAI `gpt-image-2`。
 
 ---
 
-## File Structure
+## 文件结构
 
-- Create: `docs/ui-image-generation/routes.json`  
-  Route inventory and screenshot metadata for the 11 page classes.
-- Create: `docs/ui-image-generation/source-screenshots/*.png`  
-  Local source screenshots used as image-edit references.
-- Create: `docs/ui-image-generation/prompts/*.txt`  
-  One CLI-ready prompt file per final image.
-- Create: `docs/ui-image-generation/prompts.md`  
-  Human-readable prompt log with shared style contract and route-specific intent.
-- Create: `docs/ui-image-generation/manifest.md`  
-  Final route-to-asset manifest, generation settings, and validation notes.
-- Create: `public/images/ui-generated/*.png`  
-  The final 11 presentation images.
+- 创建：`docs/ui-image-generation/routes.json`
+  11 个页面类别的路由清单和截图元数据。
+- 创建：`docs/ui-image-generation/source-screenshots/*.png`
+  作为图片编辑参考的本地源截图。
+- 创建：`docs/ui-image-generation/prompts/*.txt`
+  每张最终图片对应一个可直接用于 CLI 的提示词文件。
+- 创建：`docs/ui-image-generation/prompts.md`
+  人类可读的提示词日志，包含共享样式约定和各路由的特定意图。
+- 创建：`docs/ui-image-generation/manifest.md`
+  最终的路由-资源清单、生成设置和验证说明。
+- 创建：`public/images/ui-generated/*.png`
+  最终的 11 张展示图片。
 
-No live `src/` UI files should be modified for this task.
+本任务不应修改任何 `src/` 下的 UI 文件。
 
-## Task 1: Prepare Generation Inventory
+## 任务 1：准备生成清单
 
-**Files:**
-- Create: `docs/ui-image-generation/routes.json`
-- Create directory: `docs/ui-image-generation/source-screenshots/`
-- Create directory: `docs/ui-image-generation/prompts/`
-- Create directory: `public/images/ui-generated/`
+**文件：**
+- 创建：`docs/ui-image-generation/routes.json`
+- 创建目录：`docs/ui-image-generation/source-screenshots/`
+- 创建目录：`docs/ui-image-generation/prompts/`
+- 创建目录：`public/images/ui-generated/`
 
-- [ ] **Step 1: Create output directories**
+- [ ] **步骤 1：创建输出目录**
 
-Run:
+运行：
 
 ```powershell
 New-Item -ItemType Directory -Force -Path docs\ui-image-generation\source-screenshots | Out-Null
@@ -45,11 +45,11 @@ New-Item -ItemType Directory -Force -Path docs\ui-image-generation\prompts | Out
 New-Item -ItemType Directory -Force -Path public\images\ui-generated | Out-Null
 ```
 
-Expected: command exits with code `0`.
+预期：命令以退出码 `0` 结束。
 
-- [ ] **Step 2: Write the route inventory**
+- [ ] **步骤 2：编写路由清单**
 
-Create `docs/ui-image-generation/routes.json` with this exact content:
+创建 `docs/ui-image-generation/routes.json`，内容如下：
 
 ```json
 [
@@ -60,7 +60,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/home.png",
     "promptFile": "docs/ui-image-generation/prompts/home.txt",
     "finalImage": "public/images/ui-generated/home.png",
-    "purpose": "Personal desktop and Bento entry surface"
+    "purpose": "个人桌面和 Bento 入口界面"
   },
   {
     "slug": "posts",
@@ -69,7 +69,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/posts.png",
     "promptFile": "docs/ui-image-generation/prompts/posts.txt",
     "finalImage": "public/images/ui-generated/posts.png",
-    "purpose": "Unified article archive"
+    "purpose": "统一文章归档"
   },
   {
     "slug": "post-detail",
@@ -78,7 +78,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/post-detail.png",
     "promptFile": "docs/ui-image-generation/prompts/post-detail.txt",
     "finalImage": "public/images/ui-generated/post-detail.png",
-    "purpose": "Long-form reading system"
+    "purpose": "长文阅读系统"
   },
   {
     "slug": "ai-learn",
@@ -87,7 +87,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/ai-learn.png",
     "promptFile": "docs/ui-image-generation/prompts/ai-learn.txt",
     "finalImage": "public/images/ui-generated/ai-learn.png",
-    "purpose": "AI learning article entry"
+    "purpose": "AI 学习文章入口"
   },
   {
     "slug": "ai-sources",
@@ -96,7 +96,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/ai-sources.png",
     "promptFile": "docs/ui-image-generation/prompts/ai-sources.txt",
     "finalImage": "public/images/ui-generated/ai-sources.png",
-    "purpose": "Information sources and communities"
+    "purpose": "信息源和社区"
   },
   {
     "slug": "ai-toolkit",
@@ -105,7 +105,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/ai-toolkit.png",
     "promptFile": "docs/ui-image-generation/prompts/ai-toolkit.txt",
     "finalImage": "public/images/ui-generated/ai-toolkit.png",
-    "purpose": "Tools, skills, models, and workflow reference"
+    "purpose": "工具、技能、模型和工作流参考"
   },
   {
     "slug": "ai-ideas",
@@ -114,7 +114,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/ai-ideas.png",
     "promptFile": "docs/ui-image-generation/prompts/ai-ideas.txt",
     "finalImage": "public/images/ui-generated/ai-ideas.png",
-    "purpose": "AI ideas and claimable project list"
+    "purpose": "AI 创意和可认领项目列表"
   },
   {
     "slug": "explore",
@@ -123,7 +123,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/explore.png",
     "promptFile": "docs/ui-image-generation/prompts/explore.txt",
     "finalImage": "public/images/ui-generated/explore.png",
-    "purpose": "AI resource master-detail library"
+    "purpose": "AI 资源主从式库"
   },
   {
     "slug": "explore-detail",
@@ -132,7 +132,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/explore-detail.png",
     "promptFile": "docs/ui-image-generation/prompts/explore-detail.txt",
     "finalImage": "public/images/ui-generated/explore-detail.png",
-    "purpose": "Single resource detail page"
+    "purpose": "单个资源详情页"
   },
   {
     "slug": "about",
@@ -141,7 +141,7 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/about.png",
     "promptFile": "docs/ui-image-generation/prompts/about.txt",
     "finalImage": "public/images/ui-generated/about.png",
-    "purpose": "Personal introduction and site story"
+    "purpose": "个人介绍和站点故事"
   },
   {
     "slug": "not-found",
@@ -150,50 +150,50 @@ Create `docs/ui-image-generation/routes.json` with this exact content:
     "sourceScreenshot": "docs/ui-image-generation/source-screenshots/not-found.png",
     "promptFile": "docs/ui-image-generation/prompts/not-found.txt",
     "finalImage": "public/images/ui-generated/not-found.png",
-    "purpose": "404 recovery state"
+    "purpose": "404 恢复状态"
   }
 ]
 ```
 
-- [ ] **Step 3: Verify the route inventory is valid JSON**
+- [ ] **步骤 3：验证路由清单为有效 JSON**
 
-Run:
+运行：
 
 ```powershell
 Get-Content -Raw docs\ui-image-generation\routes.json | ConvertFrom-Json | Measure-Object
 ```
 
-Expected: `Count` is `11`.
+预期：`Count` 为 `11`。
 
-- [ ] **Step 4: Commit the inventory**
+- [ ] **步骤 4：提交清单**
 
-Run:
+运行：
 
 ```powershell
 git add docs/ui-image-generation/routes.json
 git commit -m "docs: add ui image route inventory"
 ```
 
-Expected: commit succeeds and includes only `docs/ui-image-generation/routes.json`.
+预期：提交成功，仅包含 `docs/ui-image-generation/routes.json`。
 
-## Task 2: Capture Source Screenshots
+## 任务 2：截取源截图
 
-**Files:**
-- Create: `docs/ui-image-generation/source-screenshots/home.png`
-- Create: `docs/ui-image-generation/source-screenshots/posts.png`
-- Create: `docs/ui-image-generation/source-screenshots/post-detail.png`
-- Create: `docs/ui-image-generation/source-screenshots/ai-learn.png`
-- Create: `docs/ui-image-generation/source-screenshots/ai-sources.png`
-- Create: `docs/ui-image-generation/source-screenshots/ai-toolkit.png`
-- Create: `docs/ui-image-generation/source-screenshots/ai-ideas.png`
-- Create: `docs/ui-image-generation/source-screenshots/explore.png`
-- Create: `docs/ui-image-generation/source-screenshots/explore-detail.png`
-- Create: `docs/ui-image-generation/source-screenshots/about.png`
-- Create: `docs/ui-image-generation/source-screenshots/not-found.png`
+**文件：**
+- 创建：`docs/ui-image-generation/source-screenshots/home.png`
+- 创建：`docs/ui-image-generation/source-screenshots/posts.png`
+- 创建：`docs/ui-image-generation/source-screenshots/post-detail.png`
+- 创建：`docs/ui-image-generation/source-screenshots/ai-learn.png`
+- 创建：`docs/ui-image-generation/source-screenshots/ai-sources.png`
+- 创建：`docs/ui-image-generation/source-screenshots/ai-toolkit.png`
+- 创建：`docs/ui-image-generation/source-screenshots/ai-ideas.png`
+- 创建：`docs/ui-image-generation/source-screenshots/explore.png`
+- 创建：`docs/ui-image-generation/source-screenshots/explore-detail.png`
+- 创建：`docs/ui-image-generation/source-screenshots/about.png`
+- 创建：`docs/ui-image-generation/source-screenshots/not-found.png`
 
-- [ ] **Step 1: Start the Astro dev server on a fixed port**
+- [ ] **步骤 1：在固定端口启动 Astro 开发服务器**
 
-Run:
+运行：
 
 ```powershell
 $log = Join-Path (Get-Location) ".tmp-dev-ui-image-generation.log"
@@ -202,11 +202,11 @@ $p = Start-Process -FilePath npm.cmd -ArgumentList @("run","dev","--","--host","
 Set-Content -Path ".tmp-dev-ui-image-generation.pid" -Value $p.Id
 ```
 
-Expected: command exits with code `0` and writes `.tmp-dev-ui-image-generation.pid`.
+预期：命令以退出码 `0` 结束并写入 `.tmp-dev-ui-image-generation.pid`。
 
-- [ ] **Step 2: Verify the dev server responds**
+- [ ] **步骤 2：验证开发服务器响应**
 
-Run:
+运行：
 
 ```powershell
 for ($i = 0; $i -lt 60; $i++) {
@@ -219,35 +219,35 @@ for ($i = 0; $i -lt 60; $i++) {
 }
 ```
 
-Expected: output includes `ready`.
+预期：输出包含 `ready`。
 
-- [ ] **Step 3: Install Playwright Chromium for screenshot capture**
+- [ ] **步骤 3：安装 Playwright Chromium 用于截图**
 
-Run:
+运行：
 
 ```powershell
 npx -y playwright@1.56.1 install chromium
 ```
 
-Expected: command exits with code `0`. If Chromium is already installed, Playwright reports no work or completes successfully.
+预期：命令以退出码 `0` 结束。如 Chromium 已安装，Playwright 将报告无需操作或成功完成。
 
-- [ ] **Step 4: Capture all 11 screenshots**
+- [ ] **步骤 4：截取全部 11 张截图**
 
-Run:
+运行：
 
 ```powershell
 $routes = Get-Content -Raw docs\ui-image-generation\routes.json | ConvertFrom-Json
 foreach ($route in $routes) {
   npx -y playwright@1.56.1 screenshot --wait-for-timeout=2500 --viewport-size=1440,1080 $route.url $route.sourceScreenshot
-  if ($LASTEXITCODE -ne 0) { throw "Screenshot failed for $($route.slug)" }
+  if ($LASTEXITCODE -ne 0) { throw "截图失败：$($route.slug)" }
 }
 ```
 
-Expected: command exits with code `0` and writes 11 PNG files under `docs/ui-image-generation/source-screenshots/`.
+预期：命令以退出码 `0` 结束，并在 `docs/ui-image-generation/source-screenshots/` 下写入 11 个 PNG 文件。
 
-- [ ] **Step 5: Verify all screenshots exist**
+- [ ] **步骤 5：验证所有截图存在**
 
-Run:
+运行：
 
 ```powershell
 $routes = Get-Content -Raw docs\ui-image-generation\routes.json | ConvertFrom-Json
@@ -256,136 +256,136 @@ if ($missing) { $missing | Format-Table slug, sourceScreenshot; exit 1 }
 Get-ChildItem docs\ui-image-generation\source-screenshots\*.png | Measure-Object
 ```
 
-Expected: `Count` is `11`.
+预期：`Count` 为 `11`。
 
-- [ ] **Step 6: Commit source screenshots**
+- [ ] **步骤 6：提交源截图**
 
-Run:
+运行：
 
 ```powershell
 git add docs/ui-image-generation/source-screenshots
 git commit -m "docs: capture ui source screenshots"
 ```
 
-Expected: commit succeeds and includes 11 screenshot PNG files.
+预期：提交成功，包含 11 个截图 PNG 文件。
 
-## Task 3: Write Image Prompts
+## 任务 3：编写图片提示词
 
-**Files:**
-- Create: `docs/ui-image-generation/prompts/home.txt`
-- Create: `docs/ui-image-generation/prompts/posts.txt`
-- Create: `docs/ui-image-generation/prompts/post-detail.txt`
-- Create: `docs/ui-image-generation/prompts/ai-learn.txt`
-- Create: `docs/ui-image-generation/prompts/ai-sources.txt`
-- Create: `docs/ui-image-generation/prompts/ai-toolkit.txt`
-- Create: `docs/ui-image-generation/prompts/ai-ideas.txt`
-- Create: `docs/ui-image-generation/prompts/explore.txt`
-- Create: `docs/ui-image-generation/prompts/explore-detail.txt`
-- Create: `docs/ui-image-generation/prompts/about.txt`
-- Create: `docs/ui-image-generation/prompts/not-found.txt`
-- Create: `docs/ui-image-generation/prompts.md`
+**文件：**
+- 创建：`docs/ui-image-generation/prompts/home.txt`
+- 创建：`docs/ui-image-generation/prompts/posts.txt`
+- 创建：`docs/ui-image-generation/prompts/post-detail.txt`
+- 创建：`docs/ui-image-generation/prompts/ai-learn.txt`
+- 创建：`docs/ui-image-generation/prompts/ai-sources.txt`
+- 创建：`docs/ui-image-generation/prompts/ai-toolkit.txt`
+- 创建：`docs/ui-image-generation/prompts/ai-ideas.txt`
+- 创建：`docs/ui-image-generation/prompts/explore.txt`
+- 创建：`docs/ui-image-generation/prompts/explore-detail.txt`
+- 创建：`docs/ui-image-generation/prompts/about.txt`
+- 创建：`docs/ui-image-generation/prompts/not-found.txt`
+- 创建：`docs/ui-image-generation/prompts.md`
 
-- [ ] **Step 1: Create the shared prompt header**
+- [ ] **步骤 1：创建共享提示词头部**
 
-Use this shared header at the start of every prompt file:
+每个提示词文件开头使用此共享头部：
 
 ```text
-Use case: ui-mockup
-Asset type: high-fidelity concept UI image for Walker Blog project documentation
-Input image role: source screenshot that anchors the real route layout and content hierarchy
-Primary request: regenerate the provided Walker Blog page as a polished high-fidelity concept UI image while preserving the route-specific structure.
-Style/medium: refined web application UI mockup, Chinese-first personal knowledge site, not a marketing poster
-Composition/framing: landscape 1536x1024 documentation image, browser-like page crop, interface fills the frame with comfortable margins
-Lighting/mood: calm daylight, soft glass material depth, subtle shadows, restrained but crafted
-Color palette: warm off-white background, mint green and cyan accents, dark teal-gray text, tiny coral accents only where useful
-Materials/textures: translucent glass panels, fine borders, soft inner highlights, crisp Lucide-like line icons
-Text: preserve only short representative Chinese labels where legible; do not invent long claims
-Constraints: preserve the source page layout intent, route identity, and information hierarchy; keep UI realistic and readable; no emoji as semantic icons
-Avoid: watermark, fake brand names, irrelevant products, dark blue/purple gradient dominance, decorative blobs, device mockup frames, broken navigation, random English filler text
+用例：ui-mockup
+资源类型：Walker 博客项目文档的高保真概念 UI 图片
+输入图片角色：锚定真实路由布局和内容层级的源截图
+主要请求：将提供的 Walker 博客页面重新生成为精致的高保真概念 UI 图片，同时保留路由特定的结构。
+风格/媒介：精致的 Web 应用 UI 模型，中文优先的个人知识站点，而非营销海报
+构图/取景：横向 1536x1024 文档图片，类浏览器页面裁剪，界面填满画面并保持舒适的边距
+光照/氛围：平静的日间光线，柔和的玻璃材质深度，微妙的阴影，克制而精致
+色彩方案：暖白色背景，薄荷绿和青色点缀，深青灰色文字，仅在必要时使用少量珊瑚色点缀
+材质/纹理：半透明玻璃面板，精细边框，柔和的内部高光，清晰的 Lucide 风格线条图标
+文字：仅保留简短的代表性中文标签；不编造长段文字
+约束：保留源页面的布局意图、路由标识和信息层级；保持 UI 真实可读；不使用 Emoji 作为语义图标
+避免：水印、虚假品牌名、无关产品、深蓝/紫色渐变主导、装饰性色块、设备模型边框、破碎的导航、随意的英文填充文字
 ```
 
-- [ ] **Step 2: Write route-specific prompt files**
+- [ ] **步骤 2：编写各路由的提示词文件**
 
-Create each `docs/ui-image-generation/prompts/<slug>.txt` by combining the shared header with the matching route-specific block below:
-
-```text
-Route focus for home:
-Emphasize the draggable Bento desktop composition, Walker profile card, dock showcase, greeting/about card, recent traces, random recommendation, navigation console, calendar widget, music player, search affordance, and like counter. Keep the feeling of a personal digital desktop rather than a landing page.
-```
+将共享头部与下方对应路由的特定内容组合，创建各 `docs/ui-image-generation/prompts/<slug>.txt` 文件：
 
 ```text
-Route focus for posts:
-Emphasize a unified article archive with left navigation, page heading, year/date organization, article cards, category labels, and tag rhythm. Make the archive feel dense enough for repeated reading but not like an admin dashboard.
+home 路由重点：
+突出可拖拽的 Bento 桌面布局、Walker 个人资料卡、Dock 展示、问候/关于卡片、最近轨迹、随机推荐、导航控制台、日历小部件、音乐播放器、搜索入口和点赞计数器。保持个人数字桌面的感觉，而非落地页。
 ```
 
 ```text
-Route focus for post-detail:
-Emphasize the long-form reading system: left article navigation, central article document, metadata, title, prose blocks, resource/video affordances if visible, and right table of contents. Prioritize reading comfort and stable hierarchy.
+posts 路由重点：
+突出统一文章归档，包含左侧导航、页面标题、年份/日期组织、文章卡片、分类标签和标签节奏。让归档感觉足够密集适合反复阅读，但不像管理后台。
 ```
 
 ```text
-Route focus for ai-learn:
-Emphasize focused AI learning entries and article cards. The page should feel like a curated learning path for AI practice, with restrained surfaces and clear scanability.
+post-detail 路由重点：
+突出长文阅读系统：左侧文章导航、中间文章正文、元数据、标题、正文块、可见的资源/视频入口以及右侧目录。优先保证阅读舒适度和稳定的层级。
 ```
 
 ```text
-Route focus for ai-sources:
-Emphasize information source and community discovery: search, tag filtering, source cards, category badges, and compact descriptions. Keep the page practical and resource-oriented.
+ai-learn 路由重点：
+突出聚焦的 AI 学习条目和文章卡片。页面应感觉像是为 AI 实践策划的学习路径，具有克制的界面和清晰的扫描性。
 ```
 
 ```text
-Route focus for ai-toolkit:
-Emphasize a document-like toolkit surface with tools, skills, model roles, workflow sections, and adjustable-column information density. It should feel like a practical operating manual, not a card gallery.
+ai-sources 路由重点：
+突出信息源和社区发现：搜索、标签过滤、信息源卡片、分类徽章和紧凑描述。保持页面实用且以资源为导向。
 ```
 
 ```text
-Route focus for ai-ideas:
-Emphasize an early-stage idea board for AI projects, including open/completed status language and claimable concept slots. If the source screenshot shows an empty state, represent that intentionally without inventing unrelated projects.
+ai-toolkit 路由重点：
+突出类似文档的工具箱界面，包含工具、技能、模型角色、工作流板块和可调列宽的信息密度。应感觉像实用的操作手册，而非卡片画廊。
 ```
 
 ```text
-Route focus for explore:
-Emphasize the AI resource library master-detail layout, left-side resource list, selected state, category grouping, and an empty or initial detail region. Make the selection affordance and library structure clear.
+ai-ideas 路由重点：
+突出 AI 项目的早期创意看板，包含开放/完成状态和可认领的概念槽位。如果源截图显示空状态，应有意地表现空状态，而非编造无关项目。
 ```
 
 ```text
-Route focus for explore-detail:
-Emphasize a selected AI resource detail page, including the resource card, metadata, rating, tags, description, and outbound action. Preserve the master-detail Dock layout.
+explore 路由重点：
+突出 AI 资源库的主从式布局、左侧资源列表、选中状态、分类分组以及空白或初始的详情区域。让选择入口和库结构清晰可见。
 ```
 
 ```text
-Route focus for about:
-Emphasize the immersive personal identity page: video-hero feeling, Walker identity, avatar/profile, skill cards, social links, site story, and page like counter. Keep it personal and cinematic without turning it into a generic creator landing page.
+explore-detail 路由重点：
+突出选中的 AI 资源详情页，包含资源卡片、元数据、评分、标签、描述和外部链接操作。保留主从式 Dock 布局。
 ```
 
 ```text
-Route focus for not-found:
-Emphasize a 404 recovery state with consistent Walker Blog styling, Lucide-like icon language, calm empty-state layout, and a clear return-home action. It should feel like part of the product system.
+about 路由重点：
+突出沉浸式个人身份页：视频英雄区的感觉、Walker 身份、头像/简介、技能卡片、社交链接、站点故事和页面点赞计数器。保持个人化和电影感，而非通用的创作者落地页。
 ```
 
-- [ ] **Step 3: Write the human-readable prompt log**
+```text
+not-found 路由重点：
+突出 404 恢复状态，保持一致的 Walker 博客样式、Lucide 风格的图标语言、平静的空状态布局和清晰的返回首页操作。应感觉像是产品体系的一部分。
+```
 
-Create `docs/ui-image-generation/prompts.md` with:
+- [ ] **步骤 3：编写人类可读的提示词日志**
+
+创建 `docs/ui-image-generation/prompts.md`：
 
 ```markdown
-# UI Image Generation Prompts
+# UI 图片生成提示词
 
-Generation model: `gpt-image-2`
-Output size: `1536x1024`
-Quality: `high`
-Mode: screenshot-informed image edit
+生成模型：`gpt-image-2`
+输出尺寸：`1536x1024`
+质量：`high`
+模式：基于截图的图片编辑
 
-All prompt files in `docs/ui-image-generation/prompts/` share the same visual contract:
+`docs/ui-image-generation/prompts/` 中的所有提示词文件共享相同的视觉约定：
 
-- Preserve the real route layout and information hierarchy from the source screenshot.
-- Use Walker Blog's warm off-white, mint/cyan, glass-panel visual system.
-- Keep the interface Chinese-first and Lucide-like.
-- Generate polished concept UI images for documentation, not live UI replacements.
-- Avoid watermarks, fake brands, generic SaaS hero art, decorative blobs, and unrelated objects.
+- 保留源截图中真实的路由布局和信息层级。
+- 使用 Walker 博客的暖白色、薄荷/青色、玻璃面板视觉体系。
+- 保持界面中文优先和 Lucide 风格。
+- 生成用于文档的精致概念 UI 图片，而非实时 UI 替代品。
+- 避免水印、虚假品牌、通用 SaaS 英雄图、装饰性色块和无关对象。
 
-Route prompt files:
+路由提示词文件：
 
-| Slug | Prompt file | Source screenshot | Final image |
+| Slug | 提示词文件 | 源截图 | 最终图片 |
 | --- | --- | --- | --- |
 | `home` | `docs/ui-image-generation/prompts/home.txt` | `docs/ui-image-generation/source-screenshots/home.png` | `public/images/ui-generated/home.png` |
 | `posts` | `docs/ui-image-generation/prompts/posts.txt` | `docs/ui-image-generation/source-screenshots/posts.png` | `public/images/ui-generated/posts.png` |
@@ -400,9 +400,9 @@ Route prompt files:
 | `not-found` | `docs/ui-image-generation/prompts/not-found.txt` | `docs/ui-image-generation/source-screenshots/not-found.png` | `public/images/ui-generated/not-found.png` |
 ```
 
-- [ ] **Step 4: Verify all prompt files exist**
+- [ ] **步骤 4：验证所有提示词文件存在**
 
-Run:
+运行：
 
 ```powershell
 $routes = Get-Content -Raw docs\ui-image-generation\routes.json | ConvertFrom-Json
@@ -411,64 +411,64 @@ if ($missing) { $missing | Format-Table slug, promptFile; exit 1 }
 Test-Path docs\ui-image-generation\prompts.md
 ```
 
-Expected: final line is `True`.
+预期：最后一行为 `True`。
 
-- [ ] **Step 5: Commit prompts**
+- [ ] **步骤 5：提交提示词**
 
-Run:
+运行：
 
 ```powershell
 git add docs/ui-image-generation/prompts docs/ui-image-generation/prompts.md
 git commit -m "docs: add ui image generation prompts"
 ```
 
-Expected: commit succeeds and includes the 11 prompt files plus `prompts.md`.
+预期：提交成功，包含 11 个提示词文件和 `prompts.md`。
 
-## Task 4: Generate Final UI Images
+## 任务 4：生成最终 UI 图片
 
-**Files:**
-- Create: `public/images/ui-generated/home.png`
-- Create: `public/images/ui-generated/posts.png`
-- Create: `public/images/ui-generated/post-detail.png`
-- Create: `public/images/ui-generated/ai-learn.png`
-- Create: `public/images/ui-generated/ai-sources.png`
-- Create: `public/images/ui-generated/ai-toolkit.png`
-- Create: `public/images/ui-generated/ai-ideas.png`
-- Create: `public/images/ui-generated/explore.png`
-- Create: `public/images/ui-generated/explore-detail.png`
-- Create: `public/images/ui-generated/about.png`
-- Create: `public/images/ui-generated/not-found.png`
+**文件：**
+- 创建：`public/images/ui-generated/home.png`
+- 创建：`public/images/ui-generated/posts.png`
+- 创建：`public/images/ui-generated/post-detail.png`
+- 创建：`public/images/ui-generated/ai-learn.png`
+- 创建：`public/images/ui-generated/ai-sources.png`
+- 创建：`public/images/ui-generated/ai-toolkit.png`
+- 创建：`public/images/ui-generated/ai-ideas.png`
+- 创建：`public/images/ui-generated/explore.png`
+- 创建：`public/images/ui-generated/explore-detail.png`
+- 创建：`public/images/ui-generated/about.png`
+- 创建：`public/images/ui-generated/not-found.png`
 
-- [ ] **Step 1: Verify API environment**
+- [ ] **步骤 1：验证 API 环境**
 
-Run:
+运行：
 
 ```powershell
-if (-not $env:OPENAI_API_KEY) { throw "OPENAI_API_KEY is not set. Ask the user to set it locally, then rerun this step." }
+if (-not $env:OPENAI_API_KEY) { throw "OPENAI_API_KEY 未设置。请在本地设置后再运行此步骤。" }
 python -c "import openai; print('openai-python-ready')"
 ```
 
-Expected: output includes `openai-python-ready`. If the Python package is missing, run:
+预期：输出包含 `openai-python-ready`。如果缺少 Python 包，运行：
 
 ```powershell
 python -m pip install openai pillow
 ```
 
-Then rerun the verification command.
+然后重新运行验证命令。
 
-- [ ] **Step 2: Dry-run one image command**
+- [ ] **步骤 2：试运行一张图片命令**
 
-Run:
+运行：
 
 ```powershell
 python "C:\Users\Administrator\.codex\skills\.system\imagegen\scripts\image_gen.py" edit --model gpt-image-2 --quality high --size 1536x1024 --output-format png --image "docs\ui-image-generation\source-screenshots\home.png" --prompt-file "docs\ui-image-generation\prompts\home.txt" --out "public\images\ui-generated\home.png" --dry-run
 ```
 
-Expected: command prints the resolved request parameters and does not create `public/images/ui-generated/home.png`.
+预期：命令打印解析后的请求参数，且不创建 `public/images/ui-generated/home.png`。
 
-- [ ] **Step 3: Generate all 11 final images**
+- [ ] **步骤 3：生成全部 11 张最终图片**
 
-Run:
+运行：
 
 ```powershell
 $routes = Get-Content -Raw docs\ui-image-generation\routes.json | ConvertFrom-Json
@@ -482,15 +482,15 @@ foreach ($route in $routes) {
     --prompt-file $route.promptFile `
     --out $route.finalImage `
     --force
-  if ($LASTEXITCODE -ne 0) { throw "Image generation failed for $($route.slug)" }
+  if ($LASTEXITCODE -ne 0) { throw "图片生成失败：$($route.slug)" }
 }
 ```
 
-Expected: command exits with code `0` and writes 11 PNG files under `public/images/ui-generated/`.
+预期：命令以退出码 `0` 结束，并在 `public/images/ui-generated/` 下写入 11 个 PNG 文件。
 
-- [ ] **Step 4: Verify all final images exist and are valid PNGs**
+- [ ] **步骤 4：验证所有最终图片存在且为有效 PNG**
 
-Run:
+运行：
 
 ```powershell
 @'
@@ -506,61 +506,61 @@ expected = [
 for slug in expected:
     path = Path("public/images/ui-generated") / f"{slug}.png"
     if not path.exists():
-        raise SystemExit(f"missing: {path}")
+        raise SystemExit(f"缺失: {path}")
     with Image.open(path) as image:
         if image.format != "PNG":
-            raise SystemExit(f"not png: {path}")
+            raise SystemExit(f"非 PNG 格式: {path}")
         width, height = image.size
         if width < 1024 or height < 768:
-            raise SystemExit(f"too small: {path} {width}x{height}")
+            raise SystemExit(f"尺寸过小: {path} {width}x{height}")
         print(f"{slug}: {width}x{height}")
 '@ | python -
 ```
 
-Expected: output lists all 11 slugs with dimensions, and the command exits with code `0`.
+预期：输出列出全部 11 个 slug 及其尺寸，命令以退出码 `0` 结束。
 
-- [ ] **Step 5: Inspect final images visually**
+- [ ] **步骤 5：目视检查最终图片**
 
-Open or inspect each final image:
+打开或检查每张最终图片：
 
 ```powershell
 Get-ChildItem public\images\ui-generated\*.png | Select-Object Name,Length | Format-Table -AutoSize
 ```
 
-Expected: 11 files are listed. During visual inspection, reject and regenerate any image with a watermark, unrelated brand, clearly broken UI structure, dark/purple-dominant theme, unreadable primary labels, or route identity mismatch.
+预期：列出 11 个文件。目视检查时，拒收并重新生成任何包含水印、无关品牌、明显破碎的 UI 结构、深色/紫色主导主题、主要标签不可读或路由标识不匹配的图片。
 
-- [ ] **Step 6: Commit final images**
+- [ ] **步骤 6：提交最终图片**
 
-Run:
+运行：
 
 ```powershell
 git add public/images/ui-generated
 git commit -m "assets: generate ui presentation images"
 ```
 
-Expected: commit succeeds and includes 11 final PNG files.
+预期：提交成功，包含 11 个最终 PNG 文件。
 
-## Task 5: Write Manifest And Final Verification
+## 任务 5：编写清单和最终验证
 
-**Files:**
-- Create: `docs/ui-image-generation/manifest.md`
+**文件：**
+- 创建：`docs/ui-image-generation/manifest.md`
 
-- [ ] **Step 1: Write the manifest**
+- [ ] **步骤 1：编写清单**
 
-Create `docs/ui-image-generation/manifest.md` with:
+创建 `docs/ui-image-generation/manifest.md`：
 
 ```markdown
-# UI Image Generation Manifest
+# UI 图片生成清单
 
-Date: 2026-05-17
-Model: `gpt-image-2`
-Mode: screenshot-informed image edit
-Quality: `high`
-Output size: `1536x1024`
+日期：2026-05-17
+模型：`gpt-image-2`
+模式：基于截图的图片编辑
+质量：`high`
+输出尺寸：`1536x1024`
 
-## Source And Output Map
+## 源文件与输出映射
 
-| Slug | Route | Source screenshot | Prompt | Final image |
+| Slug | 路由 | 源截图 | 提示词 | 最终图片 |
 | --- | --- | --- | --- | --- |
 | `home` | `/` | `docs/ui-image-generation/source-screenshots/home.png` | `docs/ui-image-generation/prompts/home.txt` | `public/images/ui-generated/home.png` |
 | `posts` | `/posts` | `docs/ui-image-generation/source-screenshots/posts.png` | `docs/ui-image-generation/prompts/posts.txt` | `public/images/ui-generated/posts.png` |
@@ -574,19 +574,19 @@ Output size: `1536x1024`
 | `about` | `/about` | `docs/ui-image-generation/source-screenshots/about.png` | `docs/ui-image-generation/prompts/about.txt` | `public/images/ui-generated/about.png` |
 | `not-found` | `/404` | `docs/ui-image-generation/source-screenshots/not-found.png` | `docs/ui-image-generation/prompts/not-found.txt` | `public/images/ui-generated/not-found.png` |
 
-## Validation Checklist
+## 验证清单
 
-- All 11 final PNG files exist under `public/images/ui-generated/`.
-- All 11 source screenshots exist under `docs/ui-image-generation/source-screenshots/`.
-- Every final image clearly maps to the intended route class.
-- The set keeps the Walker Blog off-white, mint/cyan, glass-panel visual language.
-- No final image contains a watermark, unrelated brand, generic device mockup, or route identity mismatch.
-- Small generated text is used only as representative interface copy, not as a source of exact product claims.
+- 全部 11 个最终 PNG 文件存在于 `public/images/ui-generated/` 下。
+- 全部 11 个源截图存在于 `docs/ui-image-generation/source-screenshots/` 下。
+- 每张最终图片清晰对应其目标路由类别。
+- 整套图片保持 Walker 博客的暖白色、薄荷/青色、玻璃面板视觉语言。
+- 没有最终图片包含水印、无关品牌、通用设备模型或路由标识不匹配。
+- 少量生成的文字仅用作代表性界面文案，不作为精确的产品声明。
 ```
 
-- [ ] **Step 2: Verify the final file counts**
+- [ ] **步骤 2：验证最终文件数量**
 
-Run:
+运行：
 
 ```powershell
 (Get-ChildItem docs\ui-image-generation\source-screenshots\*.png | Measure-Object).Count
@@ -594,7 +594,7 @@ Run:
 (Get-ChildItem docs\ui-image-generation\prompts\*.txt | Measure-Object).Count
 ```
 
-Expected:
+预期：
 
 ```text
 11
@@ -602,23 +602,23 @@ Expected:
 11
 ```
 
-- [ ] **Step 3: Run the Astro validation commands**
+- [ ] **步骤 3：运行 Astro 验证命令**
 
-Run:
+运行：
 
 ```powershell
 npx astro check
 npm run build
 ```
 
-Expected:
+预期：
 
-- `npx astro check` exits with code `0`.
-- `npm run build` exits with code `0`.
+- `npx astro check` 以退出码 `0` 结束。
+- `npm run build` 以退出码 `0` 结束。
 
-- [ ] **Step 4: Stop the dev server if it is still running**
+- [ ] **步骤 4：如开发服务器仍在运行则停止**
 
-Run:
+运行：
 
 ```powershell
 if (Test-Path ".tmp-dev-ui-image-generation.pid") {
@@ -627,24 +627,24 @@ if (Test-Path ".tmp-dev-ui-image-generation.pid") {
 }
 ```
 
-Expected: command exits with code `0`.
+预期：命令以退出码 `0` 结束。
 
-- [ ] **Step 5: Commit manifest and final docs**
+- [ ] **步骤 5：提交清单和最终文档**
 
-Run:
+运行：
 
 ```powershell
 git add docs/ui-image-generation/manifest.md
 git commit -m "docs: add ui image generation manifest"
 ```
 
-Expected: commit succeeds and includes `docs/ui-image-generation/manifest.md`.
+预期：提交成功，包含 `docs/ui-image-generation/manifest.md`。
 
-- [ ] **Step 6: Report final assets**
+- [ ] **步骤 6：报告最终资产**
 
-In the final response, list:
+在最终回复中列出：
 
-- The 11 final files under `public/images/ui-generated/`.
-- The prompt log at `docs/ui-image-generation/prompts.md`.
-- The manifest at `docs/ui-image-generation/manifest.md`.
-- The validation commands run and whether they passed.
+- `public/images/ui-generated/` 下的 11 个最终文件。
+- 提示词日志 `docs/ui-image-generation/prompts.md`。
+- 清单文件 `docs/ui-image-generation/manifest.md`。
+- 已运行的验证命令及其是否通过。

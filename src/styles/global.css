@@ -31,10 +31,13 @@
   --color-card-solid: #ffffff;
   --color-border: #ffffffcc;
 
-  /* 字体 */
-  --font-heading: 'Sora', 'PingFang SC', system-ui, sans-serif;
-  --font-body: 'Inter', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-cjk: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+@theme inline {
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
 }
 
 /* ========== 全局基础样式 ========== */
@@ -621,7 +624,7 @@
     font-size: 0;
   }
 
-  .sidebar-collapsed-nav .custom-scrollbar > div:first-child a iconify-icon {
+  .sidebar-collapsed-nav .custom-scrollbar > div:first-child a svg {
     font-size: initial;
   }
 
@@ -816,7 +819,7 @@
     display: none;
   }
 
-  .article-inline-toc[open] summary iconify-icon {
+  .article-inline-toc[open] summary svg {
     transform: rotate(180deg);
   }
 

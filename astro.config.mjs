@@ -27,6 +27,7 @@ export default defineConfig({
       weights: ['300', '400', '500', '600', '700'],
       styles: ['normal'],
       subsets: ['latin'],
+      fallbacks: ['PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
     },
     {
       name: 'Sora',
@@ -35,6 +36,7 @@ export default defineConfig({
       weights: ['300', '400', '500', '600', '700'],
       styles: ['normal'],
       subsets: ['latin'],
+      fallbacks: ['PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
     },
     {
       name: 'JetBrains Mono',
@@ -43,6 +45,7 @@ export default defineConfig({
       weights: ['400', '700'],
       styles: ['normal'],
       subsets: ['latin'],
+      fallbacks: ['SFMono-Regular', 'Consolas', 'Liberation Mono', 'monospace'],
     },
     {
       name: 'Noto Sans SC',
@@ -51,8 +54,13 @@ export default defineConfig({
       weights: ['300', '400', '500', '700'],
       styles: ['normal'],
       subsets: ['chinese-simplified'],
+      fallbacks: ['PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
     },
   ],
+  redirects: {
+    '/ai': '/posts',
+    '/life': '/posts',
+  },
   experimental: {
     svgo: true,
   },

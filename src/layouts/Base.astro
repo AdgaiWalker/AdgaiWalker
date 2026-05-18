@@ -1,6 +1,5 @@
 ---
-import { ClientRouter } from 'astro:transitions';
-import { Font } from 'astro:assets';
+import HeadCommon from '../components/shared/HeadCommon.astro';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
@@ -24,50 +23,26 @@ const {
   ogDescription,
   canonicalUrl,
   pureMode = false,
-  theme = 'nature',
 } = Astro.props;
 
 const isHome = Astro.url.pathname === '/';
-const pageTitle = ogTitle ?? title;
-const pageDescription = ogDescription ?? description;
-const canonical = canonicalUrl ?? Astro.url.href;
-const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 ---
 
 <!DOCTYPE html>
 <html lang="zh-CN" style="--color-brand:#35bfab;--color-primary:#2a3b3e;--color-secondary:#6b7c82;--color-brand-secondary:#1fc9e7;--color-bg:#eef0ec;--color-border:#ffffffcc;--color-card:#ffffff80;--color-article:#ffffffcc">
 
   <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="description" content={description} />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-    <meta name="theme-color" content="#35bfab" />
-    <meta name="author" content="Walker (秋知)" />
-    <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
-    
-    <!-- Fonts API 自托管字体 -->
-    <Font cssVariable="--font-body" preload />
-    <Font cssVariable="--font-heading" preload />
-    <Font cssVariable="--font-mono" />
-    <Font cssVariable="--font-cjk" />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={pageDescription} />
-    <meta property="og:image" content={absoluteOgImage} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Walker 知识空间" />
-    <meta property="og:locale" content="zh_CN" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={pageTitle} />
-    <meta name="twitter:description" content={pageDescription} />
-    <meta name="twitter:image" content={absoluteOgImage} />
+    <HeadCommon
+      title={title}
+      description={description}
+      ogImage={ogImage}
+      ogTitle={ogTitle}
+      ogDescription={ogDescription}
+      canonicalUrl={canonicalUrl}
+    />
     
     <!-- JSON-LD 结构化数据 -->
-    <script type="application/ld+json" set:html={JSON.stringify({
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Walker 知识空间",
@@ -82,12 +57,8 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
       "inLanguage": "zh-CN"
     })} />
     
-    <script is:inline src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-    <ClientRouter />
-    
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
-    <title>{title}</title>
   </head>
   <body class:list={["min-h-screen flex flex-col", pureMode ? "bg-[#fdfdfd] reading-mode" : ""]}>
     {!pureMode && (
@@ -137,9 +108,16 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
       document.addEventListener('astro:page-load', loadAmbient);
 
       // --- 鼠标跟随光晕 ---
+      let glowAbort: AbortController | null = null;
+      let tiltAbort: AbortController | null = null;
+      let tiltFrame = 0;
+
       const setupMouseGlow = () => {
+        glowAbort?.abort();
+        glowAbort = new AbortController();
         const glow = document.getElementById('mouse-glow');
         if (!glow) return;
+        const { signal } = glowAbort;
         
         let mouseX = window.innerWidth / 2;
         let mouseY = window.innerHeight / 2;
@@ -150,15 +128,18 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
           glow.style.left = mouseX + 'px';
           glow.style.top = mouseY + 'px';
           glow.style.opacity = '1';
-        });
+        }, { signal });
 
         document.addEventListener('mouseleave', () => {
           glow.style.opacity = '0';
-        });
+        }, { signal });
       };
 
       // --- 3D 磁性卡片逻辑 ---
       const setupTilt = () => {
+        tiltAbort?.abort();
+        tiltAbort = new AbortController();
+        const { signal } = tiltAbort;
         const cards = document.querySelectorAll('.panel-glass');
         
         cards.forEach((card: any) => {
@@ -174,12 +155,16 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
             const rotateX = ((y - centerY) / centerY) * -2;
             const rotateY = ((x - centerX) / centerX) * 2;
             
-            card.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.008, 1.008, 1.008)`;
-          });
+            cancelAnimationFrame(tiltFrame);
+            tiltFrame = requestAnimationFrame(() => {
+              card.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.008, 1.008, 1.008)`;
+            });
+          }, { signal });
           
           card.addEventListener('mouseleave', () => {
+            cancelAnimationFrame(tiltFrame);
             card.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-          });
+          }, { signal });
         });
       };
 
@@ -188,6 +173,14 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
       document.addEventListener('astro:page-load', () => {
         setupMouseGlow();
         setupTilt();
+      });
+
+      document.addEventListener('astro:before-swap', () => {
+        glowAbort?.abort();
+        glowAbort = null;
+        tiltAbort?.abort();
+        tiltAbort = null;
+        cancelAnimationFrame(tiltFrame);
       });
     </script>
   </body>

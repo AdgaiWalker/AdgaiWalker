@@ -1,9 +1,10 @@
 ---
 /**
  * SidebarLayout — 内页通用布局（侧边栏 + 内容区）
- * 用于：/ai, /ai/learn, /ai/sources, /ai/toolkit, /ai/ideas, /life, /about
+ * 用于：/posts, /ai/learn, /ai/sources, /ai/toolkit, /ai/ideas
  */
 import Base from './Base.astro';
+import { Icon } from 'astro-icon/components';
 interface Props {
   title?: string;
   description?: string;
@@ -54,7 +55,7 @@ const {
         <div class="page-header-title">
           {pageIcon && (
             <span class="page-header-icon">
-              <iconify-icon icon={`lucide:${pageIcon}`} width="20" height="20"></iconify-icon>
+              <Icon name={`lucide:${pageIcon}`} width={20} height={20} />
             </span>
           )}
           <div>

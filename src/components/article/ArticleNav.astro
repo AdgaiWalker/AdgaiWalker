@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 /**
  * ArticleNav — 文章导航组件
  * 展示同分类下的文章列表，支持文字/卡片两种视图。
@@ -34,10 +35,10 @@ const categoryLabels: Record<string, string> = {
     <span class="nav-section-title">{categoryLabels[category] || '文章'}</span>
     <div class="nav-view-toggle" id="nav-view-toggle">
       <button class="view-btn active" data-view="list" aria-label="列表视图">
-        <iconify-icon icon="lucide:list" width="14" height="14"></iconify-icon>
+        <Icon name="lucide:list" width={14} height={14} />
       </button>
       <button class="view-btn" data-view="card" aria-label="卡片视图">
-        <iconify-icon icon="lucide:layout-grid" width="14" height="14"></iconify-icon>
+        <Icon name="lucide:layout-grid" width={14} height={14} />
       </button>
     </div>
   </div>
@@ -49,6 +50,7 @@ const categoryLabels: Record<string, string> = {
       return (
         <a
           href={`${basePath}/${article.id}`}
+          data-astro-prefetch="viewport"
           class:list={['article-list-item', isActive && 'article-list-item-active']}
         >
           <span class="article-list-date">{formatShortDate(article.date)}</span>
@@ -65,6 +67,7 @@ const categoryLabels: Record<string, string> = {
       return (
         <a
           href={`${basePath}/${article.id}`}
+          data-astro-prefetch="viewport"
           class:list={['article-card-item', isActive && 'article-card-item-active']}
         >
           <div class="article-card-title">{article.title}</div>

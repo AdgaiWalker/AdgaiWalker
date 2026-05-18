@@ -5,6 +5,7 @@
  */
 import { getCollection } from 'astro:content';
 import { DOCK } from '@/lib/routes';
+import { Icon } from 'astro-icon/components';
 
 const items = (await getCollection('dockItem', ({ data }) => data.published))
   .sort((a, b) => (b.data.rating ?? 0) - (a.data.rating ?? 0));
@@ -13,7 +14,7 @@ const featured = items.slice(0, 3);
 
 const categoryIcons: Record<string, string> = {
   tool: 'lucide:wrench',
-  skill: 'lucide:wand-2',
+  skill: 'lucide:wand-sparkles',
   'info-source': 'lucide:radio',
   community: 'lucide:users',
 };
@@ -24,7 +25,7 @@ const categoryIcons: Record<string, string> = {
   <div class="flex items-center justify-between mb-5">
     <div class="flex items-center gap-2.5">
       <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/15 flex items-center justify-center">
-        <iconify-icon icon="lucide:package" width="18" height="18" class="text-brand"></iconify-icon>
+        <Icon name="lucide:package" width={18} height={18} class="text-brand" />
       </div>
       <div>
         <div class="text-parchment text-[15px] font-heading font-semibold">AI探索</div>
@@ -38,14 +39,14 @@ const categoryIcons: Record<string, string> = {
   <div class="flex flex-col gap-2.5">
     {featured.map(item => (
       <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/50 group-hover:bg-white/70 transition-all">
-        <iconify-icon icon={categoryIcons[item.data.category] || 'lucide:box'} width="16" height="16" class="text-brand/60 shrink-0"></iconify-icon>
+        <Icon name={categoryIcons[item.data.category] || 'lucide:box'} width={16} height={16} class="text-brand/60 shrink-0" />
         <div class="flex-1 min-w-0">
           <div class="text-parchment/75 text-[13px] font-body truncate">{item.data.name}</div>
         </div>
         {item.data.rating && (
           <div class="flex gap-0.5 shrink-0">
             {Array.from({ length: 5 }).map((_, i) => (
-              <iconify-icon icon="lucide:star" width="10" height="10" class={i < item.data.rating! ? 'text-amber-400/60' : 'text-parchment/[0.06]'} />
+              <Icon name="lucide:star" width={10} height={10} class={i < item.data.rating! ? 'text-amber-400/60' : 'text-parchment/[0.06]'} />
             ))}
           </div>
         )}
@@ -58,7 +59,7 @@ const categoryIcons: Record<string, string> = {
     <span class="text-parchment/40 text-[12px] font-body">我日常使用的工具、信息源和社群</span>
     <span class="text-brand/50 group-hover:text-brand transition-colors flex items-center gap-1 text-[12px] font-body font-medium">
       浏览全部
-      <iconify-icon icon="lucide:arrow-right" width="14" height="14"></iconify-icon>
+      <Icon name="lucide:arrow-right" width={14} height={14} />
     </span>
   </div>
 </a>

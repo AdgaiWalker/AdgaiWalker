@@ -21,51 +21,22 @@ const {
   ogDescription,
 } = Astro.props;
 
-import { ClientRouter } from 'astro:transitions';
-import { Font } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import HeadCommon from '../components/shared/HeadCommon.astro';
 import '../styles/global.css';
-
-const pageTitle = ogTitle ?? title;
-const pageDescription = ogDescription ?? description;
-const canonical = Astro.url.href;
-const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 ---
 
 <!DOCTYPE html>
 <html lang="zh-CN">
   <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="description" content={description} />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-    <meta name="theme-color" content="#1a1a2e" />
-    <meta name="author" content="Walker (秋知)" />
-    <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
-
-    <!-- Fonts API 自托管字体 -->
-    <Font cssVariable="--font-body" preload />
-    <Font cssVariable="--font-heading" preload />
-    <Font cssVariable="--font-mono" />
-    <Font cssVariable="--font-cjk" />
-
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={pageDescription} />
-    <meta property="og:image" content={absoluteOgImage} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Walker 知识空间" />
-    <meta property="og:locale" content="zh_CN" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={pageTitle} />
-    <meta name="twitter:description" content={pageDescription} />
-    <meta name="twitter:image" content={absoluteOgImage} />
-
-    <script is:inline src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-    <ClientRouter />
-    <title>{title}</title>
+    <HeadCommon
+      title={title}
+      description={description}
+      ogImage={ogImage}
+      ogTitle={ogTitle}
+      ogDescription={ogDescription}
+      themeColor="#1a1a2e"
+    />
   </head>
 
   <body class="fullscreen-layout">
@@ -73,7 +44,7 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 
     {/* 返回首页浮动按钮 */}
     <a href="/" class="fullscreen-back-btn" aria-label="返回首页">
-      <iconify-icon icon="lucide:arrow-left" width="18" height="18"></iconify-icon>
+      <Icon name="lucide:arrow-left" width={18} height={18} />
     </a>
   </body>
 </html>
@@ -84,7 +55,7 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
     padding: 0;
     min-height: 100vh;
     overflow-x: hidden;
-    font-family: 'Inter', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

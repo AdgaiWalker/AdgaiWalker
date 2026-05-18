@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 interface Props {
   title?: string;
   tags?: string[];
@@ -10,7 +11,7 @@ const { title, tags = [] } = Astro.props;
 <div class="prompt-block my-6 panel-glass border-l-2 border-l-gold/30 overflow-hidden">
   <!-- 头部 -->
   <div class="panel-header">
-    <iconify-icon icon="lucide:terminal" width="14" height="14" class="text-gold/50"></iconify-icon>
+    <Icon name="lucide:terminal" width={14} height={14} class="text-gold/50" />
     PROMPT
     {title && (
       <span class="text-parchment/40 text-xs font-body normal-case tracking-normal">— {title}</span>

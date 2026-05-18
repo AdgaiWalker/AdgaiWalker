@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 interface Props {
   iconOnly?: boolean;
 }
@@ -11,7 +12,7 @@ const { iconOnly = false } = Astro.props;
     class="w-[50px] h-[50px] bg-white flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors border border-gray-200 cursor-pointer shadow-sm rounded-xl"
     aria-label="搜索"
   >
-    <iconify-icon icon="lucide:search" width="20" height="20"></iconify-icon>
+    <Icon name="lucide:search" width={20} height={20} />
   </button>
 ) : (
   <button

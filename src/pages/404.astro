@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 ---
@@ -13,7 +14,7 @@ export const prerender = true;
   <section class="min-h-[72vh] px-6 pt-28 pb-20 flex items-center justify-center">
     <div class="panel-glass max-w-xl w-full p-8 md:p-10 text-center">
       <div class="mx-auto mb-6 w-14 h-14 rounded-2xl bg-coral/10 border border-coral/20 flex items-center justify-center text-coral">
-        <iconify-icon icon="lucide:map-off" width="28" height="28"></iconify-icon>
+        <Icon name="lucide:map" width={28} height={28} />
       </div>
       <p class="text-xs font-mono uppercase tracking-[0.28em] text-coral/70 mb-3">404 Not Found</p>
       <h1 class="font-heading text-3xl md:text-4xl text-parchment mb-4">页面不存在</h1>
@@ -24,7 +25,7 @@ export const prerender = true;
         href="/"
         class="inline-flex items-center justify-center gap-2 rounded-xl bg-bio-cyan/12 border border-bio-cyan/20 px-5 py-3 text-sm font-heading text-bio-cyan no-underline hover:bg-bio-cyan/18 hover:border-bio-cyan/35 transition-colors"
       >
-        <iconify-icon icon="lucide:home" width="16" height="16"></iconify-icon>
+        <Icon name="lucide:house" width={16} height={16} />
         返回首页
       </a>
     </div>

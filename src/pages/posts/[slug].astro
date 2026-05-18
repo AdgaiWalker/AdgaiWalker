@@ -12,6 +12,8 @@ import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, postSlug } from '@/lib/routes';
 
 import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
@@ -45,11 +47,12 @@ const cleanBody = rawBody
   .replace(/[#*_`\[\]()>|]/g, '')
   .trim();
 const description = cleanBody.slice(0, 160);
+const coverImage = entry.data.cover;
+const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 
 const videos = isAi ? (entry.data.videos || []) : [];
 const resources = isAi ? (entry.data.resources || []) : [];
 
-const accentColor = isAi ? 'blue' : 'emerald';
 const categoryLabel = isAi ? 'AI 探索' : '生活';
 
 const allArticles = await getCollection('log', ({ data }) => data.published);
@@ -64,12 +67,12 @@ const articleList = allArticles
   }));
 
 const platformIconMap: Record<string, string> = {
-  bilibili: 'ri:bilibili-fill',
-  douyin: 'ri:tiktok-fill',
-  xiaohongshu: 'ri:xiaohongshu-fill',
-  youtube: 'ri:youtube-fill',
-  github: 'ri:github-fill',
-  zhihu: 'ri:zhihu-fill',
+  bilibili: 'lucide:circle-play',
+  douyin: 'lucide:music',
+  xiaohongshu: 'lucide:book-open',
+  youtube: 'lucide:youtube',
+  github: 'lucide:github',
+  zhihu: 'lucide:message-circle',
 };
 ---
 
@@ -78,7 +81,7 @@ const platformIconMap: Record<string, string> = {
   description={description}
   ogTitle={entry.data.title}
   ogDescription={entry.data.summary ?? entry.data.description ?? description}
-  ogImage={entry.data.cover ?? '/images/hero-bg.png'}
+  ogImage={ogImage ?? '/images/hero-bg.png'}
   canonicalUrl={Astro.url.href}
   headings={headings}
   currentSlug={entry.id}
@@ -112,9 +115,13 @@ const platformIconMap: Record<string, string> = {
           {entry.data.title}
         </h1>
 
-        {!isAi && entry.data.cover && (
+        {!isAi && coverImage && (
           <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl">
-            <img src={entry.data.cover} alt={entry.data.title} class="w-full h-full object-cover" />
+            {typeof coverImage === 'string' ? (
+              <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="w-full h-full object-cover" />
+            ) : (
+              <Image src={coverImage} alt={entry.data.title} class="w-full h-full object-cover" />
+            )}
           </div>
         )}
 
@@ -142,7 +149,7 @@ const platformIconMap: Record<string, string> = {
       {isAi && videos.length > 0 && (
         <div class="mt-20 pt-12 border-t border-slate-100">
           <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <iconify-icon icon="lucide:video" width="24" height="24" class="text-blue-500"></iconify-icon>
+            <Icon name="lucide:video" width={24} height={24} class="text-blue-500" />
             配套视频
           </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -150,7 +157,7 @@ const platformIconMap: Record<string, string> = {
               <a href={vid.url} target="_blank" rel="noopener noreferrer" class="group block p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all no-underline bg-white">
                 <div class="flex items-center gap-3 mb-3">
                   <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                    <iconify-icon icon={platformIconMap[vid.platform] || 'lucide:play-circle'} width="20" height="20"></iconify-icon>
+                    <Icon name={platformIconMap[vid.platform] || 'lucide:circle-play'} width={20} height={20} />
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-bold text-slate-900 truncate">{vid.title || '观看视频'}</div>
@@ -166,7 +173,7 @@ const platformIconMap: Record<string, string> = {
       {isAi && resources.length > 0 && (
         <div class="mt-16 pt-12 border-t border-slate-100">
           <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <iconify-icon icon="lucide:link-2" width="24" height="24" class="text-emerald-500"></iconify-icon>
+            <Icon name="lucide:link-2" width={24} height={24} class="text-emerald-500" />
             相关资源
           </h2>
           <div class="flex flex-col gap-3">
@@ -184,7 +191,7 @@ const platformIconMap: Record<string, string> = {
 
       <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
         <a href={POSTS} class={`text-slate-400 ${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline flex items-center gap-2 text-sm font-medium`}>
-          <iconify-icon icon="lucide:arrow-left" width="16" height="16"></iconify-icon>
+          <Icon name="lucide:arrow-left" width={16} height={16} />
           返回文章
         </a>
 

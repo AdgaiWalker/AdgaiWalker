@@ -24,6 +24,17 @@ function parseGitHub(url: string): { owner: string; repo: string } | null {
   return match ? { owner: match[1], repo: match[2] } : null;
 }
 
+function svgIcon(name: 'external-link' | 'music' | 'github' | 'arrow-up-right', size: number, className = ''): string {
+  const attrs = `width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${className ? ` class="${className}"` : ''} aria-hidden="true"`;
+  const paths: Record<typeof name, string> = {
+    'external-link': '<path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>',
+    music: '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>',
+    github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path>',
+    'arrow-up-right': '<path d="M7 7h10v10"></path><path d="M7 17 17 7"></path>',
+  };
+  return `<svg ${attrs}>${paths[name]}</svg>`;
+}
+
 export default function remarkRichEmbed() {
   return (tree: Root) => {
     visit(tree, 'image', (node: Image, index: number | undefined, parent: any) => {
@@ -45,7 +56,7 @@ export default function remarkRichEmbed() {
     </iframe>
   </div>
   <a href="${url}" target="_blank" rel="noopener noreferrer" class="rich-embed-link">
-    <iconify-icon icon="lucide:external-link" width="12" height="12"></iconify-icon>
+    ${svgIcon('external-link', 12)}
     在 B 站观看
   </a>
 </div>`,
@@ -67,7 +78,7 @@ export default function remarkRichEmbed() {
     </iframe>
   </div>
   <a href="${url}" target="_blank" rel="noopener noreferrer" class="rich-embed-link">
-    <iconify-icon icon="lucide:external-link" width="12" height="12"></iconify-icon>
+    ${svgIcon('external-link', 12)}
     在 YouTube 观看
   </a>
 </div>`,
@@ -82,7 +93,7 @@ export default function remarkRichEmbed() {
           type: 'html',
           value: `<div class="rich-embed rich-embed-audio">
   <div class="rich-embed-audio-bar">
-    <iconify-icon icon="lucide:music" width="16" height="16" class="rich-embed-audio-icon"></iconify-icon>
+    ${svgIcon('music', 16, 'rich-embed-audio-icon')}
     <span class="rich-embed-audio-title">${title}</span>
   </div>
   <audio controls class="rich-embed-audio-player" preload="metadata">
@@ -100,12 +111,12 @@ export default function remarkRichEmbed() {
           type: 'html',
           value: `<div class="rich-embed rich-embed-github">
   <a href="${url}" target="_blank" rel="noopener noreferrer" class="rich-embed-github-link">
-    <iconify-icon icon="lucide:github" width="18" height="18" class="rich-embed-github-icon"></iconify-icon>
+    ${svgIcon('github', 18, 'rich-embed-github-icon')}
     <div class="rich-embed-github-info">
       <span class="rich-embed-github-repo">${gh.owner}/${gh.repo}</span>
       <span class="rich-embed-github-domain">github.com</span>
     </div>
-    <iconify-icon icon="lucide:arrow-up-right" width="14" height="14" class="rich-embed-github-arrow"></iconify-icon>
+    ${svgIcon('arrow-up-right', 14, 'rich-embed-github-arrow')}
   </a>
 </div>`,
         };
@@ -126,7 +137,7 @@ export default function remarkRichEmbed() {
       <span class="rich-embed-linkcard-title">${title || domain}</span>
       <span class="rich-embed-linkcard-domain">${domain}</span>
     </div>
-    <iconify-icon icon="lucide:external-link" width="14" height="14" class="rich-embed-linkcard-icon"></iconify-icon>
+    ${svgIcon('external-link', 14, 'rich-embed-linkcard-icon')}
   </a>
 </div>`,
         };
