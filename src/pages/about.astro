@@ -15,7 +15,7 @@ export const prerender = true;
 
 <FullscreenLayout
   title="关于 — Walker"
-  description="秋知 (Walker) — 哲学专业大学生，AI 自学者。行过万里水路，记录每一次停靠。"
+  description="秋知 (Walker) — 航空服务艺术与管理专业，AI 自学者。行过万里水路，记录每一次停靠。"
 >
   {/* ===== Hero 区域（视频背景） ===== */}
   <section class="hero-section" id="hero-section">
@@ -66,7 +66,7 @@ export const prerender = true;
       <div class="about-labels">
         <span class="about-label">
           <Icon name="lucide:graduation-cap" width={14} height={14} />
-          哲学专业大学生
+          空乘专业 · 自学 AI
         </span>
         <span class="about-label">
           <Icon name="lucide:brain" width={14} height={14} />
@@ -81,17 +81,26 @@ export const prerender = true;
       {/* 介绍文字 */}
       <div class="about-bio">
         <p>
-          我是秋知，一个对 AI 和哲学都充满好奇的大学生。
-          这个空间记录了我在 AI 探索中的实践、思考和踩过的坑。
+          我是秋知，航空服务艺术与管理专业在读。
         </p>
         <p>
-          「哲学思维 × AI 实践」是我的差异化标签 —
-          用哲学的批判性思维审视 AI，用 AI 的效率赋能学习和创作。
+          自高中政治接触马哲，生存窘境与好奇心驱使，大一受马学院刘、于二老推动与纠偏。25 年 8 月底因自创项目需要，全心投入 AI 编程、AI 视听、AI 自媒体的实践学习。Agent 入门受秋芝扶持，后随海哥（海拉鲁编程客）及海拉鲁小伙伴们做技术学徒。
         </p>
         <p>
-          如果你也在探索 AI 的路上，希望这里的内容对你有帮助。
-          欢迎通过社交平台找到我，一起交流。
+          26 年 3 至 4 月，成为海哥的实习生，学会了自媒体选题调研与团队协作。海哥是人生为数不多的导师，包圆了 token 费用，多给了几顿饱饭，让我看得更远更久。虽因时间不合而分，帮助至今深重。5 月，马院二位导师再次对身心进行了洗涤。
         </p>
+        <p>
+          5 月，成功独立上线 Node 全栈项目 <a href="https://xyzidea.com" target="_blank" rel="noopener noreferrer">xyzidea.com</a>，正式成为一名 AI Node 全栈。现正设计独立博客 <a href="https://iwalk.pro" target="_blank" rel="noopener noreferrer">iwalk.pro</a>，向优秀产品经理、设计师、自媒体人前进。
+        </p>
+        <div class="bio-callout">
+          <p>25 年 9 月至 26 年 3 月，月均生活费不足两千，AI 学习月均投入 <strong>40 元</strong>，超过就挨饿。专业不匹配，身体受限，AI 不是兴趣——是唯一的路。</p>
+          <p class="bio-callout-punch">省钱，也是一种能力。</p>
+        </div>
+        <p>
+          更要感谢虽不理解但给予经济支持的亲人。同行者来自各行各业，一起加油。
+        </p>
+        <p class="bio-highlight">世界是一个巨大的 f(x) = y。</p>
+        <p class="bio-closing">这个站点，就是沿途的笔记。</p>
       </div>
 
       {/* 社交链接 */}
@@ -108,10 +117,10 @@ export const prerender = true;
           <Icon name="lucide:book-open" width={20} height={20} />
           <span>小红书</span>
         </a>
-        <a href="mailto:praxiswalker@gmail.com" class="social-link social-email" aria-label="Email">
+        <button type="button" class="social-link social-email" id="copy-email" aria-label="复制邮箱">
           <Icon name="lucide:mail" width={20} height={20} />
           <span>Email</span>
-        </a>
+        </button>
       </div>
     </div>
   </section>
@@ -211,6 +220,7 @@ export const prerender = true;
         <span class="about-sig-dot"></span>
         Walker · 行过万里水路
       </div>
+      <p class="about-marx-quote">"哲学家们只是用不同的方式解释世界，问题在于改变世界。" —— 马克思</p>
     </div>
   </footer>
 </FullscreenLayout>
@@ -266,6 +276,19 @@ export const prerender = true;
 
   initParallax();
   initScrollReveal();
+
+  // 点击复制邮箱
+  const emailBtn = document.getElementById('copy-email');
+  emailBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText('praxiswalker@gmail.com');
+      const span = emailBtn.querySelector('span');
+      const orig = span?.textContent;
+      if (span) span.textContent = '已复制';
+      setTimeout(() => { if (span && orig) span.textContent = orig; }, 1500);
+    } catch { /* fallback: silent */ }
+  });
+
   document.addEventListener('astro:page-load', () => {
     initParallax();
     initScrollReveal();
@@ -461,6 +484,44 @@ export const prerender = true;
   }
 
   .about-bio p:last-child { margin-bottom: 0; }
+
+  /* 40元生存卡片 */
+  .bio-callout {
+    margin: 1.25rem 0;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: rgba(53, 191, 171, 0.06);
+    border-left: 3px solid rgba(53, 191, 171, 0.3);
+  }
+  .bio-callout p {
+    font-size: 0.925rem;
+    line-height: 1.85;
+    color: rgba(42, 59, 62, 0.7);
+    margin: 0 0 0.5rem;
+  }
+  .bio-callout p:last-child { margin-bottom: 0; }
+  .bio-callout-punch {
+    font-weight: 600;
+    color: rgba(42, 59, 62, 0.8) !important;
+  }
+
+  /* f(x)=y 金句 */
+  .bio-highlight {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #2a3b3e !important;
+    text-align: center;
+    margin: 1.5rem 0 0.75rem !important;
+    letter-spacing: 0.02em;
+  }
+
+  /* 结尾签名 */
+  .bio-closing {
+    font-style: italic;
+    color: rgba(42, 59, 62, 0.4) !important;
+    text-align: center;
+    font-size: 0.85rem !important;
+  }
 
   .about-social {
     display: flex;
@@ -728,6 +789,15 @@ export const prerender = true;
     font-size: 0.7rem;
     color: rgba(42, 59, 62, 0.25);
     letter-spacing: 0.1em;
+  }
+
+  .about-marx-quote {
+    font-size: 0.825rem;
+    font-style: italic;
+    color: rgba(42, 59, 62, 0.35);
+    margin: 0;
+    letter-spacing: 0.02em;
+    line-height: 1.6;
   }
 
   .about-sig-dot {
