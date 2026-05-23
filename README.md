@@ -34,7 +34,7 @@
     ▼                        ▼                        ▼
 North Star ──────────→ Ferry 理论 ──────────→ FerrySerf
 校园生活站               Walkcraft                Desktop-File-Manager
-                         Skills-Walker
+                         walker-skill-test
 ```
 
 | 项目                       | 定位              | 链接                                                                                                |
@@ -43,7 +43,7 @@ North Star ──────────→ Ferry 理论 ───────�
 | **Ferry**                | 自适应提示词工程框架理论    | [GitHub](https://github.com/AdgaiWalker/Ferry)                                                    |
 | **FerrySerf**            | AI 上下文均衡分布架构    | [GitHub](https://github.com/AdgaiWalker/FerrySerf)                                                |
 | **Walkcraft**            | Skill 制作方法论     | [GitHub](https://github.com/AdgaiWalker/Walkcraft-Skill-making-skill) |
-| **Skills-Walker**        | 自创自用的 Skills 集合 | [GitHub](https://github.com/AdgaiWalker/Skills-Walker)                                            |
+| **walker-skill-test**    | 自创自用的 Skills 集合 | [GitHub](https://github.com/AdgaiWalker/walker-skill-test)                                        |
 | **Desktop-File-Manager** | AI 驱动的桌面文件管家    | [GitHub](https://github.com/AdgaiWalker/Desktop-File-Manager)                                     |
 
 ---
