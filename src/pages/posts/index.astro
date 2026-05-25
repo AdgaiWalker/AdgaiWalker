@@ -3,6 +3,7 @@ import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import ArticleNav from '../../components/article/ArticleNav.astro';
 import { getCollection } from 'astro:content';
 import { POSTS, postSlug } from '@/lib/routes';
+import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
@@ -37,8 +38,12 @@ const articleList = allLogs.map(a => ({
   summary: a.data.summary,
 }));
 
-const categoryCounts = { ai: 0, life: 0 };
-allLogs.forEach(l => { categoryCounts[l.data.category]++; });
+const categoryCounts = { utopia: 0, ai: 0, life: 0 };
+allLogs.forEach(l => {
+  if (l.data.category in categoryCounts) {
+    categoryCounts[l.data.category]++;
+  }
+});
 ---
 
 <SidebarLayout
@@ -60,10 +65,33 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
     />
   </Fragment>
   <div class="timeline-shell">
+    <!-- 🔭 哲理常驻引言 (epigraph card) -->
+    <div class="panel-glass p-5 rounded-[24px] border border-[var(--color-nav-border)] mb-7 relative overflow-hidden group/quote">
+      <div class="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-amber-400/10 blur-2xl group-hover/quote:bg-amber-400/20 transition-colors duration-500"></div>
+      <div class="absolute -left-16 -bottom-16 w-36 h-36 rounded-full bg-[var(--color-brand-glow)] blur-2xl opacity-60"></div>
+      
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-3.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-500 shrink-0 shadow-sm mt-0.5">
+            <Icon name="lucide:compass" width={16} height={16} class="animate-spin-slow text-amber-500" />
+          </div>
+          <div>
+            <p class="font-serif text-[14px] sm:text-[15px] text-parchment leading-relaxed tracking-wide font-medium italic">
+              “ 最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。 ”
+            </p>
+            <p class="text-[9px] font-mono tracking-widest text-parchment-dim opacity-50 uppercase mt-1.5">
+              — WALKER'S LIFE PHRASE / 行者宣言
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="category-filter-bar" id="category-filters">
       <button class="filter-btn active" data-value="">全部<span class="filter-count">{allLogs.length}</span></button>
-      <button class="filter-btn" data-value="ai">AI<span class="filter-count">{categoryCounts.ai}</span></button>
-      <button class="filter-btn" data-value="life">生活<span class="filter-count">{categoryCounts.life}</span></button>
+      <button class="filter-btn" data-value="utopia">理想国<span class="filter-count">{categoryCounts.utopia}</span></button>
+      <button class="filter-btn" data-value="ai">AI普惠<span class="filter-count">{categoryCounts.ai}</span></button>
+      <button class="filter-btn" data-value="life">日常<span class="filter-count">{categoryCounts.life}</span></button>
     </div>
 
     <div class="tag-filter-bar" id="log-filters">
@@ -93,7 +121,9 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
                 <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
                   <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDate(log.data.date)}</time>
                   <div class="flex-1 min-w-0 flex items-center gap-3">
-                    <span class={`category-badge ${log.data.category}`}>{log.data.category === 'ai' ? 'AI' : '生活'}</span>
+                    <span class={`category-badge ${log.data.category}`}>
+                      {log.data.category === 'utopia' ? '理想国' : log.data.category === 'ai' ? 'AI普惠' : '日常'}
+                    </span>
                     <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
@@ -223,6 +253,12 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
     transition: all 0.3s ease;
   }
 
+  .category-badge.utopia {
+    background: rgba(245, 158, 11, 0.08);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
   .category-badge.ai {
     background: var(--color-brand-glow);
     color: var(--color-brand);
@@ -256,6 +292,11 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
 
   body.theme-nature .log-item:hover {
     background: rgba(0, 0, 0, 0.015) !important;
+  }
+
+  .log-item:hover .category-badge.utopia {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+    border-color: #f59e0b;
   }
 
   .log-item:hover .category-badge.ai {

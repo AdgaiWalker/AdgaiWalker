@@ -8,7 +8,7 @@ const log = defineCollection({
     title: z.string(),
     date: z.date(),
     tags: z.array(z.string()),
-    category: z.enum(['ai', 'life']),
+    category: z.enum(['utopia', 'ai', 'life']),
     type: z.enum(['article', 'thought', 'photo', 'project', 'idea']),
     published: z.boolean().default(true),
     summary: z.string().optional(),
