@@ -19,19 +19,48 @@ function initTocTracker(): void {
 
   if (headingMap.size === 0) return;
 
+  const indicator = document.getElementById('toc-indicator') as HTMLElement | null;
   let activeSlug = '';
 
   const setActive = (slug: string): void => {
     if (slug === activeSlug) return;
     activeSlug = slug;
+    
+    let activeLink: HTMLElement | null = null;
     tocLinks.forEach((link) => {
       if (link.dataset.tocSlug === slug) {
         link.classList.add('active');
+        activeLink = link;
       } else {
         link.classList.remove('active');
       }
     });
+
+    // 联动 Liquid Indicator 平滑位移动效
+    if (indicator && activeLink) {
+      const target = activeLink as HTMLElement;
+      indicator.style.top = `${target.offsetTop}px`;
+      indicator.style.height = `${target.offsetHeight}px`;
+      indicator.style.opacity = '1';
+    }
   };
+
+  // 1. 初始化高亮位置
+  if (indicator) {
+    setTimeout(() => {
+      const activeLink = document.querySelector('[data-toc-slug].active') as HTMLElement | null;
+      if (activeLink && indicator) {
+        indicator.style.transition = 'none'; // 首次防止闪烁
+        indicator.style.top = `${activeLink.offsetTop}px`;
+        indicator.style.height = `${activeLink.offsetHeight}px`;
+        indicator.style.opacity = '1';
+        // 渲染完重新启用平滑过渡
+        setTimeout(() => {
+          indicator.style.transition = 'top 0.32s cubic-bezier(0.25, 1, 0.5, 1.15), height 0.32s cubic-bezier(0.25, 1, 0.5, 1.15), opacity 0.2s ease';
+        }, 50);
+      }
+    }, 100);
+  }
 
   // IntersectionObserver：检测哪些标题进入视口
   const observer = new IntersectionObserver(

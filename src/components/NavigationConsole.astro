@@ -1,21 +1,17 @@
 ---
 /**
- * NavigationConsole — 精致数字时钟小组件 (LCD 风格)
+ * NavigationConsole — 首页右栏拟真双框液晶数字时钟 (极具现代设计感)
+ * 像素级复现截图时钟样式：双层圆角边框 + 内嵌晶莹时钟显示框 + 极细质感 LCD 数字
  */
 ---
 
-<div class="panel-glass p-5 flex flex-col items-center justify-center group relative overflow-hidden h-[120px] rounded-[40px]" style="background: rgba(215, 222, 220, 0.4); border: 1px solid rgba(255,255,255,0.3); box-shadow: inset 0 2px 8px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);">
-  <!-- 背景模拟 LCD 网格感 -->
-  <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 3px 3px;"></div>
-  
-  <!-- 数字时钟显示 -->
-  <div class="digital-clock text-[4.5rem] text-[#3a5052] font-normal tracking-wider leading-none relative z-10" id="nav-clock" style="font-family: var(--font-mono); font-variant-numeric: tabular-nums; opacity: 0.85;">
-    00:00
-  </div>
-  
-  <!-- 日期行 -->
-  <div class="text-[11px] font-mono text-[#3a5052]/40 tracking-[0.15em] mt-1.5 relative z-10" id="nav-date">
-    2026.05.10
+<div class="panel-glass p-3.5 flex flex-col items-center justify-center group relative overflow-hidden h-[120px] rounded-[36px] pointer-events-auto">
+  <!-- 内嵌水晶边框展示盒 (双框自适应变色设计) -->
+  <div class="w-full h-full rounded-[24px] border flex items-center justify-center backdrop-blur-sm transition-all duration-300" style="background: var(--color-inner-bg, rgba(255, 255, 255, 0.3)); border-color: var(--color-inner-border, rgba(0, 0, 0, 0.04)); box-shadow: inset 0 2px 8px var(--color-inner-shadow, rgba(255, 255, 255, 0.4));">
+    <!-- 极细高雅的数字时钟显示 -->
+    <div class="digital-clock text-[3.2rem] text-parchment font-light tracking-widest leading-none" id="nav-clock" style="font-family: 'Outfit', sans-serif; font-weight: 200; font-variant-numeric: tabular-nums; opacity: 0.85;">
+      08:56
+    </div>
   </div>
 </div>
 
@@ -25,20 +21,11 @@
   function updateNav() {
     const now = new Date();
     const clockEl = document.getElementById('nav-clock');
-    const dateEl = document.getElementById('nav-date');
 
     if (clockEl) {
       const h = String(now.getHours()).padStart(2, '0');
       const m = String(now.getMinutes()).padStart(2, '0');
       clockEl.textContent = `${h}:${m}`;
-    }
-
-    if (dateEl) {
-      const y = now.getFullYear();
-      const mo = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-      dateEl.textContent = `${y}.${mo}.${d} ${weekdays[now.getDay()]}`;
     }
   }
 

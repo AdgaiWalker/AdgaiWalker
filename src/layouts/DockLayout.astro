@@ -33,7 +33,7 @@ const panelItems = items.map(item => ({
 }));
 ---
 
-<Base title={title} description={description} pureMode={true}>
+<Base title={title} description={description} pureMode={false}>
   <div class="dock-master-detail-layout">
     {/* 第二栏：AI探索列表 (Master) */}
     <CategoryPanel
@@ -74,7 +74,7 @@ const panelItems = items.map(item => ({
     min-height: 100vh;
     display: grid;
     grid-template-columns: var(--dock-list-width, 300px) 16px minmax(0, 1fr);
-    background: #f6f2ea;
+    background: transparent;
   }
 
   /* --- 第三栏 (详情) --- */
@@ -106,14 +106,14 @@ const panelItems = items.map(item => ({
     width: 1px;
     height: 100%;
     transform: translateX(-50%);
-    background: rgba(42, 59, 62, 0.06);
+    background: var(--color-nav-border);
     transition: background 0.16s ease, width 0.16s ease;
   }
 
   .toolkit-resize-handle:hover::after,
   .toolkit-resize-handle.is-active::after {
     width: 2px;
-    background: rgba(53, 191, 171, 0.45);
+    background: var(--color-brand);
   }
 
   .toolkit-resize-middle {

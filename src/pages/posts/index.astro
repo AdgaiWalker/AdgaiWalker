@@ -84,21 +84,21 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
         <div class="year-group relative" data-year={year}>
           <div class="flex items-end gap-3 mb-5">
             <h2 class="font-heading text-2xl text-parchment">{year}</h2>
-            <span class="text-parchment/30 text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
+            <span class="text-parchment-dim text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
           </div>
 
-          <div class="panel-glass rounded-2xl overflow-hidden">
-            <div class="flex flex-col divide-y divide-white/[0.04]">
+          <div class="panel-glass rounded-2xl overflow-hidden border border-[var(--color-nav-border)]">
+            <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
               {groupedLogs[year].map(log => (
-                <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 hover:bg-white/[0.02] transition-colors no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
-                  <time class="text-parchment/30 font-mono text-sm shrink-0 w-16">{formatDate(log.data.date)}</time>
+                <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
+                  <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDate(log.data.date)}</time>
                   <div class="flex-1 min-w-0 flex items-center gap-3">
                     <span class={`category-badge ${log.data.category}`}>{log.data.category === 'ai' ? 'AI' : '生活'}</span>
-                    <h3 class="text-parchment/80 text-[15px] font-body truncate group-hover:text-bio-cyan transition-colors">{log.data.title}</h3>
+                    <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
                     {log.data.tags.slice(0, 2).map((tag: string) => (
-                      <span class="text-[11px] font-mono text-parchment/40 bg-white/5 px-2 py-0.5 rounded-md">#{tag}</span>
+                      <span class="text-[11px] font-mono text-parchment-dim bg-brand/5 border border-brand/10 px-2 py-0.5 rounded-md opacity-80">#{tag}</span>
                     ))}
                   </div>
                 </a>
@@ -216,20 +216,23 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
   .category-badge {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.6rem;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
     white-space: nowrap;
     flex-shrink: 0;
+    transition: all 0.3s ease;
   }
 
   .category-badge.ai {
-    background: rgba(0, 229, 255, 0.08);
-    color: rgba(0, 229, 255, 0.6);
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border: 1px solid rgba(53, 191, 171, 0.2);
   }
 
   .category-badge.life {
     background: rgba(52, 211, 153, 0.08);
-    color: rgba(52, 211, 153, 0.6);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.2);
   }
 
   .year-group h2 {
@@ -237,9 +240,32 @@ allLogs.forEach(l => { categoryCounts[l.data.category]++; });
   }
 
   #timeline-container .panel-glass {
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.62);
-    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.04);
+    border-radius: 20px;
+    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.03) !important;
+  }
+
+  /* .log-item 弹性横移与流光反馈 */
+  .log-item {
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .log-item:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    transform: translateX(6px);
+  }
+
+  body.theme-nature .log-item:hover {
+    background: rgba(0, 0, 0, 0.015) !important;
+  }
+
+  .log-item:hover .category-badge.ai {
+    box-shadow: 0 0 12px var(--color-brand-glow);
+    border-color: var(--color-brand);
+  }
+
+  .log-item:hover .category-badge.life {
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
+    border-color: #34d399;
   }
 
   @media (max-width: 640px) {

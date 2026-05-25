@@ -71,18 +71,35 @@ const formatDate = (d: Date) =>
     gap: 1rem;
     padding: 1.25rem;
     border-radius: 16px;
-    border: 1px solid rgba(42, 59, 62, 0.06);
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-nav-border);
+    background: var(--color-card);
+    backdrop-filter: blur(30px) saturate(120%);
+    -webkit-backdrop-filter: blur(30px) saturate(120%);
     text-decoration: none;
-    transition: all 0.25s ease;
+    transition: all 0.38s cubic-bezier(0.25, 1, 0.5, 1.2);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.02);
+  }
+
+  body.theme-nature .article-card {
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 4px 12px rgba(26, 35, 37, 0.02);
   }
 
   .article-card:hover {
-    background: rgba(255, 255, 255, 0.75);
-    border-color: rgba(53, 191, 171, 0.15);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    transform: translateY(-2px);
+    background: var(--color-inner-bg);
+    border-color: var(--color-brand);
+    box-shadow: 
+      inset 0 1px 3px rgba(255, 255, 255, 0.1),
+      0 12px 28px rgba(0, 0, 0, 0.15),
+      0 0 16px var(--color-brand-glow);
+    transform: translateY(-3px);
+  }
+
+  body.theme-nature .article-card:hover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 
+      inset 0 1px 3px rgba(255, 255, 255, 0.8),
+      0 12px 28px rgba(26, 35, 37, 0.06),
+      0 0 16px var(--color-brand-glow);
   }
 
   .article-card-cover {
@@ -91,12 +108,18 @@ const formatDate = (d: Date) =>
     height: 80px;
     border-radius: 10px;
     overflow: hidden;
+    border: 1px solid var(--color-nav-border);
   }
 
   .article-card-cover img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .article-card:hover .article-card-cover img {
+    transform: scale(1.06);
   }
 
   .article-card-body {
@@ -113,10 +136,10 @@ const formatDate = (d: Date) =>
   }
 
   .article-card-title {
-    font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
+    font-family: var(--font-heading);
     font-size: 0.95rem;
     font-weight: 600;
-    color: #2a3b3e;
+    color: var(--color-parchment);
     line-height: 1.4;
     margin: 0;
     overflow: hidden;
@@ -124,6 +147,11 @@ const formatDate = (d: Date) =>
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
+    transition: color 0.25s ease;
+  }
+
+  .article-card:hover .article-card-title {
+    color: var(--color-brand);
   }
 
   .article-card-feishu {
@@ -133,15 +161,17 @@ const formatDate = (d: Date) =>
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    background: rgba(53, 191, 171, 0.08);
-    color: #35bfab;
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
     flex-shrink: 0;
     margin-top: 1px;
+    border: 1px solid rgba(53, 191, 171, 0.15);
   }
 
   .article-card-summary {
     font-size: 0.8rem;
-    color: rgba(42, 59, 62, 0.5);
+    color: var(--color-parchment-dim);
+    opacity: 0.85;
     line-height: 1.6;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -161,25 +191,33 @@ const formatDate = (d: Date) =>
   .article-card-date {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.7rem;
-    color: rgba(42, 59, 62, 0.3);
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
   }
 
   .article-card-tags {
     display: flex;
-    gap: 4px;
+    gap: 6px;
   }
 
   .article-card-tag {
     font-size: 0.625rem;
     padding: 2px 8px;
     border-radius: 6px;
-    background: rgba(42, 59, 62, 0.04);
-    color: rgba(42, 59, 62, 0.45);
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border: 1px solid rgba(53, 191, 171, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .article-card:hover .article-card-tag {
+    border-color: var(--color-brand);
   }
 
   @media (max-width: 640px) {
     .article-card {
       flex-direction: column;
+      gap: 0.75rem;
     }
     .article-card-cover {
       width: 100%;

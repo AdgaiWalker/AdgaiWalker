@@ -17,9 +17,40 @@ export const prerender = true;
   title="关于 — Walker"
   description="秋知 (Walker) — 航空服务艺术与管理专业，AI 自学者。行过万里水路，记录每一次停靠。"
 >
-  {/* ===== Hero 区域（视频背景） ===== */}
+  {/* ===== 全局 Orbs 流光自适应背景 ===== */}
+  <div class="fixed inset-0 -z-30 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div class="ambient-orb ambient-orb-1" style="background-color: var(--orb-color-1, #fee196);"></div>
+    <div class="ambient-orb ambient-orb-2" style="background-color: var(--orb-color-2, #ffafc8);"></div>
+    <div class="ambient-orb ambient-orb-3" style="background-color: var(--orb-color-3, #a0f0ff);"></div>
+    <div class="ambient-orb ambient-orb-4" style="background-color: var(--orb-color-4, #b4f5cd);"></div>
+  </div>
+
+  {/* ===== 右侧悬浮极简微导轨导航 (Floating Nav Guide) ===== */}
+  <div class="about-floating-nav" id="about-float-nav" aria-label="页面导轨">
+    <a href="#hero-section" class="float-nav-item active" data-target="hero-section" title="顶部">
+      <Icon name="lucide:arrow-up" width={16} height={16} />
+      <span class="float-nav-hint">回到顶部</span>
+    </a>
+    <a href="#about-section" class="float-nav-item" data-target="about-section" title="简介">
+      <Icon name="lucide:user" width={16} height={16} />
+      <span class="float-nav-hint">关于秋知</span>
+    </a>
+    <a href="#cruise-section" class="float-nav-item" data-target="cruise-section" title="日志">
+      <Icon name="lucide:ship" width={16} height={16} />
+      <span class="float-nav-hint">航海日志</span>
+    </a>
+    <a href="#skills-section" class="float-nav-item" data-target="skills-section" title="装备">
+      <Icon name="lucide:swords" width={16} height={16} />
+      <span class="float-nav-hint">硬核装备</span>
+    </a>
+    <a href="#site-section" class="float-nav-item" data-target="site-section" title="本站">
+      <Icon name="lucide:scroll" width={16} height={16} />
+      <span class="float-nav-hint">关于本站</span>
+    </a>
+  </div>
+
+  {/* ===== Hero 区域（视频背景与磨砂噪点蒙版） ===== */}
   <section class="hero-section" id="hero-section">
-    {/* 视频背景 */}
     <div class="hero-bg">
       <video
         class="hero-bg-video"
@@ -51,247 +82,581 @@ export const prerender = true;
     </div>
   </section>
 
-  {/* ===== 个人简介区域 ===== */}
-  <section class="about-section" id="about-section">
-    <div class="about-card">
+  {/* ===== 个人简介区域 (三折页卡片重塑) ===== */}
+  <section class="about-section py-20 px-4 sm:px-6 flex justify-center" id="about-section">
+    <div class="about-card panel-glass max-w-[620px] w-full p-8 sm:p-10 relative overflow-hidden">
+      
       {/* 头像 */}
-      <div class="about-avatar">
-        <Image src={avatar} alt="秋知" width={100} height={100} />
+      <div class="about-avatar-wrapper flex flex-col items-center mb-6">
+        <div class="about-avatar border-2 border-[var(--color-brand)] p-0.5 rounded-full overflow-hidden shadow-lg transition-transform duration-500 hover:rotate-6">
+          <Image src={avatar} alt="秋知" width={96} height={96} class="rounded-full object-cover" />
+        </div>
+        <h2 class="about-name text-2xl font-bold mt-4 flex items-center gap-2">
+          秋知 <span class="about-name-en text-sm font-mono text-parchment-dim">Walker</span>
+        </h2>
       </div>
 
-      {/* 标题 */}
-      <h2 class="about-name">秋知 <span class="about-name-en">Walker</span></h2>
-
-      {/* 身份标签 */}
-      <div class="about-labels">
-        <span class="about-label">
-          <Icon name="lucide:graduation-cap" width={14} height={14} />
-          空乘专业 · 自学 AI
-        </span>
-        <span class="about-label">
-          <Icon name="lucide:pen-line" width={14} height={14} />
-          独立创作者
-        </span>
-        <span class="about-label">
-          <Icon name="lucide:scale" width={14} height={14} />
-          AI 落地实践
-        </span>
+      {/* 身份微卡 (三折页设计) */}
+      <div class="about-labels-grid grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+          <Icon name="lucide:graduation-cap" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
+          <span class="text-xs font-semibold">空乘专业</span>
+          <span class="text-[10px] text-parchment-dim mt-0.5">蓝天下的探索视野</span>
+        </div>
+        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+          <Icon name="lucide:scale" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
+          <span class="text-xs font-semibold">马哲方法论</span>
+          <span class="text-[10px] text-parchment-dim mt-0.5">行动、验证与纠偏</span>
+        </div>
+        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+          <Icon name="lucide:cpu" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
+          <span class="text-xs font-semibold">自学 AI</span>
+          <span class="text-[10px] text-parchment-dim mt-0.5">以极小成本撬动大落地</span>
+        </div>
       </div>
 
       {/* 社交链接 */}
-      <div class="about-social about-social-top">
-        <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="social-link social-github" aria-label="GitHub">
-          <Icon name="lucide:github" width={18} height={18} />
+      <div class="about-social flex flex-wrap justify-center gap-3 mb-8">
+        <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-black hover:text-white hover:border-black transition-all">
+          <Icon name="lucide:github" width={16} height={16} />
           <span>GitHub</span>
         </a>
-        <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-link social-bilibili" aria-label="Bilibili">
-          <Icon name="lucide:circle-play" width={18} height={18} />
+        <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-[#fb7299] hover:text-white hover:border-[#fb7299] transition-all">
+          <Icon name="lucide:circle-play" width={16} height={16} />
           <span>Bilibili</span>
         </a>
-        <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="social-link social-xhs" aria-label="小红书">
-          <Icon name="lucide:book-open" width={18} height={18} />
+        <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-[#ff2442] hover:text-white hover:border-[#ff2442] transition-all">
+          <Icon name="lucide:book-open" width={16} height={16} />
           <span>小红书</span>
         </a>
-        <button type="button" class="social-link social-email" id="copy-email" aria-label="复制邮箱">
-          <Icon name="lucide:mail" width={18} height={18} />
+        <button type="button" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-[var(--color-brand)] hover:text-white hover:border-[var(--color-brand)] transition-all cursor-pointer" id="copy-email">
+          <Icon name="lucide:mail" width={16} height={16} />
           <span>Email</span>
         </button>
       </div>
 
-      <hr class="about-divider" />
+      <div class="border-b border-[var(--color-nav-border)] mb-8 opacity-40"></div>
 
-      {/* 介绍文字 */}
-      <div class="about-bio">
+      {/* 介绍文案 */}
+      <div class="about-bio text-sm leading-relaxed text-parchment/80 space-y-4">
         <p>
           我是秋知，航空服务艺术与管理专业在读（28 届）。空乘专业给了我时间，马哲给了我方法，AI 给了我路。
         </p>
-        <p>
-          25 年 8 月底因自创项目需要，全心投入 AI 工程实践。已独立上线 AI 辅助工具站 <a href="https://www.xyzidea.com" target="_blank" rel="noopener noreferrer">xyzidea.com</a>。
-        </p>
-        <div class="bio-callout">
-          <p>学习期间月均生活费不足两千，AI 投入月均 <strong>40 元</strong>。条件有限，但足够。</p>
+
+        {/* 哲理生活观金句卡片 */}
+        <div class="bio-quote-callout p-5 rounded-2xl border border-[var(--color-nav-border)] bg-[var(--color-brand-glow)] my-6 relative overflow-hidden">
+          <div class="absolute right-4 bottom-1 text-[var(--color-brand)] opacity-[0.06] select-none pointer-events-none" style="font-size: 5rem; font-family: Georgia, serif;">”</div>
+          <p class="font-heading text-[14px] font-bold text-parchment leading-relaxed text-center italic m-0">
+            “最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。”
+          </p>
         </div>
+        <p>
+          25 年 8 月底因自创项目需要，全心投入 AI 工程实践。已独立上线 AI 辅助工具站 <a href="https://www.xyzidea.com" target="_blank" rel="noopener noreferrer" class="font-bold underline decoration-brand">xyzidea.com</a>。
+        </p>
+        
+        {/* 40元硬核投入卡片 */}
+        <div class="bio-callout p-4 rounded-xl border-l-4 border-brand bg-[var(--color-brand-glow)] my-6">
+          <p class="font-medium text-parchment/90">
+            学习期间月均生活费不足两千，AI 投入月均 <strong class="text-brand">40 元</strong>。条件虽然有限，但足够在数字世界里扬帆起航。
+          </p>
+        </div>
+
         <p>
           一路走来，秋芝引我入门，海哥（海拉鲁编程客）带我成长，刘、于二老在迷茫时点醒方向。感谢虽不理解但给予经济支持的亲人。
         </p>
         <p>
-          现正设计独立博客 <a href="https://iwalk.pro" target="_blank" rel="noopener noreferrer">iwalk.pro</a>，构建 <a href="https://github.com/AdgaiWalker/Ferry" target="_blank" rel="noopener noreferrer">Ferry</a> 自适应提示词工程框架——让人机协作有据可循，筹备帮助人正确认识与使用 AI 的共创社区 <a href="https://www.xyzidea.cn" target="_blank" rel="noopener noreferrer">xyzidea.cn</a>。让 AI 落地，发现真实需求，解决真实问题。做最好的 AI 普及。向具身智能方向前进，为人的解放出一份力。
+          现正设计独立博客 <a href="https://iwalk.pro" target="_blank" rel="noopener noreferrer" class="font-bold">iwalk.pro</a>，构建 <a href="https://github.com/AdgaiWalker/Ferry" target="_blank" rel="noopener noreferrer" class="font-bold">Ferry</a> 自适应提示词工程框架——让人机协作有据可循，筹备 AI 共创社区 <a href="https://www.xyzidea.cn" target="_blank" rel="noopener noreferrer" class="font-bold">点子</a>（xyzidea.cn）。让 AI 落地，发现真实需求，解决真实问题。做最好的 AI 普及。向具身智能方向前进，为人的解放出一份力。
         </p>
         <p>
           空杯，行动，验证，纠偏。把人从重复劳动中解放出来，去追求真正的幸福。
         </p>
-        <p class="bio-highlight">世界是一个巨大的 f(x) = y。</p>
+
+        {/* f(x) = y 物理挤压引力文字区 */}
+        <div class="py-6 flex flex-col items-center justify-center">
+          <p class="bio-highlight flex items-center justify-center flex-wrap select-none font-bold text-lg cursor-default tracking-wider" id="gravity-text">
+            {"世界是一个巨大的 f(x) = y".split('').map((char) => (
+              <span class="gravity-char inline-block transition-all duration-300 ease-out">{char === ' ' ? '\u00A0' : char}</span>
+            ))}
+          </p>
+          <span class="text-[10px] text-parchment-dim mt-2 tracking-widest uppercase">物理引力波交互区 · 鼠标划过触控</span>
+        </div>
       </div>
     </div>
   </section>
 
-  {/* ===== 技能与兴趣区域 ===== */}
-  <section class="skills-section" id="skills-section">
-    <div class="skills-container">
-      <div class="section-header">
-        <h2 class="section-title">技能与兴趣</h2>
-        <div class="section-line"></div>
+  {/* ===== 纵向 SVG 航海日志时间轴 (Cruise Log) ===== */}
+  <section class="cruise-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="cruise-section">
+    <div class="section-header max-w-[700px] w-full mb-16 flex items-center gap-4">
+      <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">数字航行停靠日志</h2>
+      <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
+    </div>
+
+    <div class="cruise-timeline-container max-w-[620px] w-full relative py-6">
+      
+      {/* 纵向发光虚线航道 */}
+      <div class="absolute left-4 sm:left-1/2 top-0 bottom-0 w-0.5 sm:-translate-x-1/2 bg-dashed border-l border-brand/40 -z-10"></div>
+      
+      {/* 停靠点 1: 航线开启 */}
+      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 mb-16 w-full">
+        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
+          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
+          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
+          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">2025.08</span>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
+          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
+            <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 sm:justify-start">
+              <Icon name="lucide:anchor" width={14} height={14} class="text-brand" />
+              全速驶入 AI 数字深海
+            </h4>
+            <p class="text-xs text-parchment/70 leading-relaxed">
+              因为自创项目需要，全身心投入 AI 工程落地实践。从写下第一行 Python 和第一个自适应 Prompt 开始，开启硬核数字航线。
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div class="skills-grid">
-        <div class="skill-card">
-          <div class="skill-icon skill-icon-cyan">
-            <Icon name="lucide:code" width={18} height={18} />
+      {/* 停靠点 2: 独立上线 */}
+      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 mb-16 w-full">
+        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
+          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
+          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
+          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
+            <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 justify-start sm:justify-end">
+              独立上线 xyzidea.com
+              <Icon name="lucide:ship" width={14} height={14} class="text-brand" />
+            </h4>
+            <p class="text-xs text-parchment/70 leading-relaxed">
+              历经三个月的反复验证纠偏，独立开发的 AI 辅助点子工具站成功部署上线，开始服务首批独立创作者同好。
+            </p>
           </div>
-          <h3 class="skill-name">AI 工程</h3>
-          <p class="skill-desc">Prompt Engineering / AI Agent 应用开发 / LLM 应用 / 人机协作工作流</p>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2">
+          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">2025.11</span>
+        </div>
+      </div>
+
+      {/* 停靠点 3: Ferry 框架与点子社区 */}
+      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 mb-16 w-full">
+        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
+          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
+          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
+          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">2026.05</span>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
+          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
+            <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5">
+              <Icon name="lucide:compass" width={14} height={14} class="text-brand" />
+              设计 Ferry 框架与点子社区
+            </h4>
+            <p class="text-xs text-parchment/70 leading-relaxed">
+              为让人机协作有章可循，设计了 Ferry 自适应提示词架构，并同步开启 xyzidea.cn 社区的筹备，赋能更多 AI 普及。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 停靠点 4: 感恩致谢 (3D 明信片信封) */}
+      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 w-full">
+        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
+          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
+          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
+          
+          {/* 致谢 3D 明信片 */}
+          <div class="panel-glass thank-postcard p-6 relative overflow-hidden transition-all duration-500 hover:rotate-1 text-left sm:text-left">
+            <div class="thank-postcard-stamp absolute top-4 right-4 border-2 border-dashed border-brand/40 p-1 text-[9px] text-brand select-none opacity-40 font-mono tracking-widest">
+              航行信戳
+            </div>
+            <h4 class="text-sm font-bold mb-3 flex items-center gap-2 text-brand">
+              <Icon name="lucide:heart" width={16} height={16} />
+              致我的引路人与恩师
+            </h4>
+            <p class="text-xs leading-relaxed text-parchment/70 italic">
+              “一路走来，秋芝引我入门，海哥（海拉鲁编程客）带我成长，刘、于二老在迷茫时点醒方向。感谢虽不理解但给予经济支持的亲人。水路万里，停靠因你们而有据可循。”
+            </p>
+          </div>
+
+        </div>
+        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2">
+          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">NOW</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  {/* ===== 技能与兴趣：硬核装备库 (Tech Loadout) ===== */}
+  <section class="skills-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="skills-section">
+    <div class="skills-container max-w-[700px] w-full">
+      <div class="section-header mb-12 flex items-center gap-4">
+        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">秋知的硬核装备库</h2>
+        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
+      </div>
+
+      {/* 装备格 GRID，内置 Spotlight Cursor 局部发光追踪 */}
+      <div class="skills-grid grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        
+        {/* 装备一: 主武器 */}
+        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
+          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
+            <Icon name="lucide:swords" width={18} height={18} />
+          </div>
+          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
+            主武器: AI 工程
+            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Lv.99</span>
+          </h3>
+          <p class="skill-desc text-xs text-parchment-dim leading-relaxed relative z-10">
+            精通 Prompt Engineering / 搭建 LLM AI Agent 自适应运行工作流 / 人机协同工作流架构设计与 Ferry 自适应微调。
+          </p>
         </div>
 
-        <div class="skill-card">
-          <div class="skill-icon skill-icon-amber">
-            <Icon name="lucide:pen-tool" width={18} height={18} />
-          </div>
-          <h3 class="skill-name">内容创作</h3>
-          <p class="skill-desc">技术写作 / 知识整理 / 跨平台内容 / 从灵感到输出的完整链路</p>
-        </div>
-
-        <div class="skill-card">
-          <div class="skill-icon skill-icon-violet">
+        {/* 装备二: 副武器 */}
+        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
+          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
             <Icon name="lucide:terminal" width={18} height={18} />
           </div>
-          <h3 class="skill-name">全栈开发</h3>
-          <p class="skill-desc">TypeScript / Astro / React / Node.js / 静态站点 / 自动化部署</p>
+          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
+            副武器: 全栈极客
+            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Lv.70</span>
+          </h3>
+          <p class="skill-desc text-xs text-parchment-dim leading-relaxed relative z-10">
+            熟练掌握 TypeScript / Astro 框架 / Node.js 体系 / 静态自动化部署与 Serverless 边缘托管，用代码解决真实问题。
+          </p>
         </div>
 
-        <div class="skill-card">
-          <div class="skill-icon skill-icon-green">
-            <Icon name="lucide:camera" width={18} height={18} />
+        {/* 装备三: 常备军需 */}
+        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
+          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
+            <Icon name="lucide:pen-tool" width={18} height={18} />
           </div>
-          <h3 class="skill-name">生活探索</h3>
-          <p class="skill-desc">摄影 / 烹饪 / 哲学阅读 / 旅行记录 / 观察与反思</p>
+          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
+            日常配给: 内容创作
+            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Lv.80</span>
+          </h3>
+          <p class="skill-desc text-xs text-parchment-dim leading-relaxed relative z-10">
+            技术写作 / 知识整理与高度归档 / 跨平台自媒体运营。打通“输入-解构-重塑-极简输出”的高级个人知识库闭环。
+          </p>
+        </div>
+
+        {/* 装备四: 40元极客生存包 */}
+        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
+          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
+            <Icon name="lucide:piggy-bank" width={18} height={18} />
+          </div>
+          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
+            军需补给: 40元生存仓
+            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Hardcore</span>
+          </h3>
+          
+          {/* 微缩拟物化小装备格 */}
+          <div class="grid grid-cols-3 gap-2 mt-1 relative z-10">
+            <div class="survival-pill p-1.5 border border-[var(--color-nav-border)] rounded-lg bg-black/5 hover:scale-105 hover:bg-brand/5 hover:border-brand/40 text-center transition-all duration-200" title="买域名去'哪注册'比价">
+              <span class="block text-[9px] font-bold">域名比价</span>
+              <span class="block text-[8px] text-brand font-mono">￥40/年</span>
+            </div>
+            <div class="survival-pill p-1.5 border border-[var(--color-nav-border)] rounded-lg bg-black/5 hover:scale-105 hover:bg-brand/5 hover:border-brand/40 text-center transition-all duration-200" title="Supabase 数据库免费层">
+              <span class="block text-[9px] font-bold">数据库</span>
+              <span class="block text-[8px] text-brand font-mono">Free</span>
+            </div>
+            <div class="survival-pill p-1.5 border border-[var(--color-nav-border)] rounded-lg bg-black/5 hover:scale-105 hover:bg-brand/5 hover:border-brand/40 text-center transition-all duration-200" title="Vercel/Cloudflare 免费网络托管">
+              <span class="block text-[9px] font-bold">托管部署</span>
+              <span class="block text-[8px] text-brand font-mono">Free</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 关于本站与人机协作原则 ===== */}
+  <section class="site-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="site-section">
+    <div class="site-container max-w-[700px] w-full">
+      <div class="section-header mb-12 flex items-center gap-4">
+        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">关于本站与协作宣言</h2>
+        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="site-info-card panel-glass p-6 flex flex-col sm:flex-row gap-5 hover:border-brand/20 transition-all duration-300">
+          <div class="site-info-icon w-12 h-12 rounded-2xl flex items-center justify-center bg-brand/10 border border-brand/20 text-brand shrink-0">
+            <Icon name="lucide:compass" width={22} height={22} />
+          </div>
+          <div class="site-info-body flex-1">
+            <h3 class="site-info-name text-sm font-bold mb-1">精巧站点内容结构</h3>
+            <p class="site-info-desc text-xs text-parchment-dim leading-relaxed">
+              秋知的 AI 学习笔记、工具深度测评、精巧的项目想法、生活反思，以及我收藏的优质资源与群聊，全站配备Pagefind毫秒级全局极速检索。
+            </p>
+          </div>
+        </div>
+
+        <div class="site-info-card panel-glass p-6 flex flex-col sm:flex-row gap-5 hover:border-brand/20 transition-all duration-300">
+          <div class="site-info-icon w-12 h-12 rounded-2xl flex items-center justify-center bg-brand/10 border border-brand/20 text-brand shrink-0">
+            <Icon name="lucide:shield-alert" width={22} height={22} />
+          </div>
+          <div class="site-info-body flex-1">
+            <h3 class="site-info-name text-sm font-bold mb-1">硬核人机协同协作原则</h3>
+            <p class="site-info-desc text-xs text-parchment-dim leading-relaxed mb-3">
+              AI 编写底层代码与微重构，人类负责顶级架构、逻辑纠偏与内容质量审阅。不是 AI 替代你，是你带着 AI 去一同改变世界。
+            </p>
+            <div class="site-tech-tags flex flex-wrap gap-1.5">
+              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Claude Code × GLM 5</span>
+              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Antigravity × Gemini 3.5</span>
+              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Astro 6 × Tailwind v4</span>
+              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Supabase REST</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  {/* ===== 关于本站 ===== */}
-  <section class="site-section" id="site-section">
-    <div class="site-container">
-      <div class="section-header">
-        <h2 class="section-title">关于本站</h2>
-        <div class="section-line"></div>
-      </div>
-
-      <div class="site-info-card">
-        <div class="site-info-icon">
-          <Icon name="lucide:ship" width={24} height={24} />
-        </div>
-        <div class="site-info-body">
-          <h3 class="site-info-name">Walker 知识空间</h3>
-          <p class="site-info-desc">
-            这个站点是我的个人知识空间，记录航海途中的思考、工具和发现。
-            所有内容在 Obsidian 中写作，通过 Git 推送到 GitHub，由 Vercel 自动部署。
-          </p>
-          <div class="site-tech-tags">
-            <span class="tech-tag">Astro 6</span>
-            <span class="tech-tag">Tailwind v4</span>
-            <span class="tech-tag">TypeScript</span>
-            <span class="tech-tag">Supabase</span>
-            <span class="tech-tag">Vercel</span>
-          </div>
-        </div>
-      </div>
-
-      {/* AI 原则 */}
-      <div class="principle-card">
-        <div class="principle-icon">
-          <Icon name="lucide:shield-check" width={20} height={20} />
-        </div>
-        <div>
-          <h4 class="principle-title">人类主权原则</h4>
-          <p class="principle-desc">
-            AI 负责推演，人类负责判断。所有内容均经过人工审阅与思考。
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  {/* ===== 底部签名 ===== */}
-  <footer class="about-footer" id="about-footer">
-    <div class="about-footer-inner">
+  {/* ===== 底部情感底座 (Footer Signature with LCD timer) ===== */}
+  <footer class="about-footer py-16 px-4 sm:px-6 flex justify-center border-t border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.02)] relative z-20" id="about-footer">
+    <div class="about-footer-inner flex flex-col items-center gap-6 max-w-[620px] w-full text-center">
+      
+      {/* 极简果冻点赞胶囊 */}
       <LikeCounter pagePath="/about" />
-      <div class="about-signature">
-        <span class="about-sig-dot"></span>
+
+      {/* 站点 LCD 精密运行时间计时仪 */}
+      <div class="panel-glass px-5 py-3 rounded-full flex items-center gap-3 border border-brand/20 bg-brand/5 shadow-inner">
+        <Icon name="lucide:hourglass" width={14} height={14} class="text-brand animate-spin" style="animation-duration: 4s;" />
+        <div class="site-uptime font-mono text-xs tracking-wider text-parchment/80" id="site-uptime"></div>
+      </div>
+
+      <div class="about-signature flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
+        <span class="about-sig-dot w-2 h-2 rounded-full bg-brand animate-ping"></span>
         Walker · 行过万里水路
       </div>
-      <p class="about-marx-quote">"哲学家们只是用不同的方式解释世界，问题在于改变世界。" —— 马克思</p>
+      
+      <p class="about-marx-quote text-xs text-parchment-dim italic leading-relaxed max-w-[450px]">
+        "哲学家们只是用不同的方式解释世界，问题在于改变世界。" —— 马克思
+      </p>
     </div>
   </footer>
 </FullscreenLayout>
 
 <script>
-  // 视差滚动效果
-  function initParallax() {
+  // 视差滚动与浮动导轨高亮逻辑
+  function initParallaxAndNav() {
     const hero = document.getElementById('hero-section');
     const bgVideo = hero?.querySelector('.hero-bg-video') as HTMLElement | null;
     const heroContent = hero?.querySelector('.hero-content') as HTMLElement | null;
     const scrollHint = document.getElementById('scroll-hint');
+    const floatNav = document.getElementById('about-float-nav');
+    const navItems = document.querySelectorAll('.float-nav-item');
+    const sections = document.querySelectorAll('.hero-section, .about-section, .cruise-section, .skills-section, .site-section');
 
-    if (!hero || !bgVideo) return;
+    if (!hero) return;
 
+    // 1. 视差滚动事件绑定
     window.addEventListener('scroll', () => {
       const scrollY = window.scrollY;
       const heroHeight = hero.offsetHeight;
 
+      // 顶部视频视差
       if (scrollY < heroHeight) {
-        const ratio = scrollY / heroHeight;
-        bgVideo.style.transform = `scale(${1 + ratio * 0.1}) translateY(${scrollY * 0.3}px)`;
+        if (bgVideo) {
+          bgVideo.style.transform = `scale(${1 + scrollY / heroHeight * 0.1}) translateY(${scrollY * 0.3}px)`;
+        }
         if (heroContent) {
-          heroContent.style.opacity = String(1 - ratio * 1.5);
+          heroContent.style.opacity = String(1 - scrollY / heroHeight * 1.5);
           heroContent.style.transform = `translateY(${scrollY * 0.15}px)`;
         }
         if (scrollHint) {
-          scrollHint.style.opacity = String(Math.max(0, 1 - ratio * 3));
+          scrollHint.style.opacity = String(Math.max(0, 1 - scrollY / heroHeight * 3));
         }
       }
+
+      // 浮动导轨在离开 Hero 区域后渐显
+      if (floatNav) {
+        if (scrollY > heroHeight * 0.4) {
+          floatNav.classList.add('visible');
+        } else {
+          floatNav.classList.remove('visible');
+        }
+      }
+
+      // 滚动监听高亮右侧浮动锚点
+      let currentSectionId = 'hero-section';
+      sections.forEach(sec => {
+        const top = sec.getBoundingClientRect().top;
+        if (top <= window.innerHeight * 0.45) {
+          currentSectionId = sec.id;
+        }
+      });
+
+      navItems.forEach(item => {
+        const target = item.getAttribute('data-target') || '';
+        if (target === currentSectionId) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+
     }, { passive: true });
 
-    // 点击滚动到简介
+    // 2. 点击平滑跳转
     scrollHint?.addEventListener('click', () => {
       document.getElementById('about-section')?.scrollIntoView({ behavior: 'smooth' });
     });
+
+    navItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = item.getAttribute('data-target') || '';
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
   }
 
-  // 滚动淡入动画
-  function initScrollReveal() {
-    const sections = document.querySelectorAll('.skills-section, .site-section, .about-footer');
+  // 3D 物理磁性倾斜与玉石扫光反馈
+  function initTiltPostcards() {
+    const cards = document.querySelectorAll('.about-pillar-card, .thank-postcard');
+    
+    cards.forEach((card: any) => {
+      card.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        // 计算旋转倾斜度
+        const rotateX = ((y - centerY) / centerY) * -8;
+        const rotateY = ((x - centerX) / centerX) * 8;
+        
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+      });
+      
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      });
+    });
+  }
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('revealed');
-          observer.unobserve(entry.target);
+  // 技能卡片手电筒局部聚光追踪
+  function initSpotlightLoadout() {
+    const loadoutCards = document.querySelectorAll('.loadout-card');
+    
+    loadoutCards.forEach((card: any) => {
+      card.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+  }
+
+  // f(x)=y 文字重力引力波计算
+  function initGravityText() {
+    const gravityText = document.getElementById('gravity-text');
+    const chars = document.querySelectorAll('.gravity-char');
+    
+    if (!gravityText || chars.length === 0) return;
+
+    window.addEventListener('mousemove', (e) => {
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      chars.forEach((char: any) => {
+        const rect = char.getBoundingClientRect();
+        const charX = rect.left + rect.width / 2;
+        const charY = rect.top + rect.height / 2;
+
+        const distX = mouseX - charX;
+        const distY = mouseY - charY;
+        const dist = Math.sqrt(distX * distX + distY * distY);
+
+        // 如果鼠标在字符 160px 的辐射引力范围内
+        if (dist < 160) {
+          const force = (160 - dist) / 160; // 归一化系数 (0~1)
+          
+          // 微向上浮动，字重变粗，字符微弱放大，改变颜色
+          char.style.transform = `translateY(${force * -6}px) scale(${1 + force * 0.16})`;
+          char.style.fontWeight = String(Math.floor(400 + force * 400));
+          char.style.color = 'var(--color-brand)';
+        } else {
+          char.style.transform = 'translateY(0) scale(1)';
+          char.style.fontWeight = '400';
+          char.style.color = 'inherit';
         }
       });
-    }, { threshold: 0.15 });
+    });
 
-    sections.forEach(s => observer.observe(s));
+    gravityText.addEventListener('mouseleave', () => {
+      chars.forEach((char: any) => {
+        char.style.transform = 'translateY(0) scale(1)';
+        char.style.fontWeight = '400';
+        char.style.color = 'inherit';
+      });
+    });
   }
 
-  initParallax();
-  initScrollReveal();
+  // 站点 LCD 精密运行时间
+  function initUptime() {
+    const el = document.getElementById('site-uptime');
+    if (!el) return;
+    
+    const launch = new Date('2026-05-02T00:00:00+08:00');
+    
+    function update() {
+      const diff = new Date().getTime() - launch.getTime();
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      
+      el.textContent = `SYSTEM ONLINE: ${days}D ${hours}H ${minutes}M ${seconds}S`;
+    }
+    
+    update();
+    setInterval(update, 1000);
+  }
 
   // 点击复制邮箱
-  const emailBtn = document.getElementById('copy-email');
-  emailBtn?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText('praxiswalker@gmail.com');
-      const span = emailBtn.querySelector('span');
-      const orig = span?.textContent;
-      if (span) span.textContent = '已复制';
-      setTimeout(() => { if (span && orig) span.textContent = orig; }, 1500);
-    } catch { /* fallback: silent */ }
-  });
+  function initCopyEmail() {
+    const emailBtn = document.getElementById('copy-email');
+    emailBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('praxiswalker@gmail.com');
+        const span = emailBtn.querySelector('span');
+        const orig = span?.textContent;
+        if (span) span.textContent = '已复制邮箱';
+        setTimeout(() => { if (span && orig) span.textContent = orig; }, 1500);
+      } catch { /* fallback */ }
+    });
+  }
 
+  // 第一次进入时执行
+  initParallaxAndNav();
+  initTiltPostcards();
+  initSpotlightLoadout();
+  initGravityText();
+  initUptime();
+  initCopyEmail();
+
+  // Astro page:load 状态下恢复执行
   document.addEventListener('astro:page-load', () => {
-    initParallax();
-    initScrollReveal();
+    initParallaxAndNav();
+    initTiltPostcards();
+    initSpotlightLoadout();
+    initGravityText();
+    initUptime();
+    initCopyEmail();
   });
 </script>
 
@@ -324,10 +689,11 @@ export const prerender = true;
     inset: 0;
     background: linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0.25) 0%,
-      rgba(0, 0, 0, 0.1) 50%,
-      rgba(0, 0, 0, 0.45) 100%
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.6) 100%
     );
+    backdrop-filter: blur(1px);
   }
 
   .hero-content {
@@ -369,26 +735,26 @@ export const prerender = true;
 
   .hero-title {
     font-family: 'Sora', sans-serif;
-    font-size: clamp(3rem, 10vw, 6rem);
+    font-size: clamp(3.2rem, 10vw, 6rem);
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1;
     margin: 0 0 1.25rem;
-    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.35);
   }
 
   .hero-tagline {
     font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
     font-size: clamp(0.9rem, 2.5vw, 1.25rem);
     font-weight: 300;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.75);
     letter-spacing: 0.15em;
     margin: 0;
   }
 
   .hero-scroll-hint {
     position: absolute;
-    bottom: 2rem;
+    bottom: 2.5rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -403,429 +769,165 @@ export const prerender = true;
     50% { transform: translateX(-50%) translateY(8px); }
   }
 
-  /* ===== 个人简介区域 ===== */
-  .about-section {
-    display: flex;
-    justify-content: center;
-    padding: 5rem 1.5rem 3rem;
-    background: linear-gradient(180deg, #1a1a2e 0%, #f4f1ea 12%);
-  }
-
-  .about-card {
-    max-width: 560px;
-    width: 100%;
+  /* ===== 右侧悬浮极简微导轨导航 ===== */
+  .about-floating-nav {
+    position: fixed;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%) scale(0.95);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    gap: 0.85rem;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .about-avatar {
-    width: 100px;
-    height: 100px;
+  .about-floating-nav.visible {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+  }
+
+  .float-nav-item {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1.5rem;
-  }
-
-  .about-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .about-name {
-    font-family: 'Sora', 'PingFang SC', sans-serif;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #2a3b3e;
-    margin: 0 0 0.25rem;
-  }
-
-  .about-name-en {
-    font-weight: 400;
-    color: rgba(42, 59, 62, 0.35);
-    font-size: 1rem;
-    margin-left: 0.5rem;
-  }
-
-  .about-labels {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-parchment-dim);
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin: 1rem 0 1.5rem;
-  }
-
-  .about-label {
-    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.775rem;
-    color: rgba(42, 59, 62, 0.6);
-    background: rgba(53, 191, 171, 0.06);
-    border: 1px solid rgba(53, 191, 171, 0.1);
-  }
-
-  .about-bio {
-    margin-bottom: 2rem;
-    text-align: left;
-  }
-
-  .about-bio p {
-    font-size: 0.925rem;
-    line-height: 1.85;
-    color: rgba(42, 59, 62, 0.7);
-    margin: 0 0 1rem;
-  }
-
-  .about-bio p:last-child { margin-bottom: 0; }
-
-  /* 40元生存卡片 */
-  .bio-callout {
-    margin: 1.25rem 0;
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    background: rgba(53, 191, 171, 0.06);
-    border-left: 3px solid rgba(53, 191, 171, 0.3);
-  }
-  .bio-callout p {
-    font-size: 0.925rem;
-    line-height: 1.85;
-    color: rgba(42, 59, 62, 0.7);
-    margin: 0 0 0.5rem;
-  }
-  .bio-callout p:last-child { margin-bottom: 0; }
-  .bio-callout-punch {
-    font-weight: 600;
-    color: rgba(42, 59, 62, 0.8) !important;
-  }
-
-  /* f(x)=y 金句 */
-  .bio-highlight {
-    font-size: 1.15rem !important;
-    font-weight: 700 !important;
-    color: #2a3b3e !important;
-    text-align: center;
-    margin: 1.5rem 0 0.75rem !important;
-    letter-spacing: 0.02em;
-  }
-
-  /* 结尾签名 */
-  .bio-closing {
-    font-style: italic;
-    color: rgba(42, 59, 62, 0.4) !important;
-    text-align: center;
-    font-size: 0.85rem !important;
-  }
-
-  .about-social {
-    display: flex;
-    flex-wrap: wrap;
     justify-content: center;
-    gap: 0.75rem;
-  }
-
-  .about-social-top {
-    margin-top: 1rem;
-  }
-
-  .about-divider {
-    border: none;
-    border-top: 1px solid rgba(6, 182, 212, 0.15);
-    margin: 1.25rem 0;
-    width: 100%;
-  }
-
-  .social-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0.5rem 1.25rem;
-    border-radius: 24px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    position: relative;
     text-decoration: none;
-    transition: all 0.25s ease;
-    border: 1px solid rgba(42, 59, 62, 0.08);
-    background: rgba(255, 255, 255, 0.6);
-    color: rgba(42, 59, 62, 0.7);
-  }
-
-  .social-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  }
-
-  .social-github:hover { background: #111; color: #fff; border-color: #111; }
-  .social-bilibili:hover { background: #fb7299; color: #fff; border-color: #fb7299; }
-  .social-xhs:hover { background: #ff2442; color: #fff; border-color: #ff2442; }
-  .social-email:hover { background: #35bfab; color: #fff; border-color: #35bfab; }
-
-  /* ===== 通用区块头 ===== */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .section-title {
-    font-family: 'Sora', 'PingFang SC', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(42, 59, 62, 0.3);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    white-space: nowrap;
-    margin: 0;
-  }
-
-  .section-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(42, 59, 62, 0.08), transparent);
-  }
-
-  /* ===== 技能与兴趣 ===== */
-  .skills-section {
-    background: #f4f1ea;
-    padding: 3rem 1.5rem 4rem;
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-
-  .skills-section.revealed {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .skills-container {
-    max-width: 700px;
-    margin: 0 auto;
-  }
-
-  .skills-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  .skill-card {
-    padding: 1.25rem;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(42, 59, 62, 0.05);
-    transition: all 0.25s ease;
-  }
-
-  .skill-card:hover {
-    background: rgba(255, 255, 255, 0.85);
-    transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .skill-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.75rem;
+  .float-nav-item:hover,
+  .float-nav-item.active {
+    background: var(--color-brand);
+    color: #ffffff !important;
+    border-color: var(--color-brand);
+    transform: scale(1.12);
+    box-shadow: 0 0 14px var(--color-brand-glow);
   }
 
-  .skill-icon-cyan { background: rgba(53, 191, 171, 0.1); color: #35bfab; }
-  .skill-icon-amber { background: rgba(245, 178, 60, 0.1); color: #d4a840; }
-  .skill-icon-violet { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-  .skill-icon-green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-
-  .skill-name {
-    font-family: 'Sora', 'PingFang SC', sans-serif;
-    font-size: 0.875rem;
+  .float-nav-hint {
+    position: absolute;
+    right: 42px;
+    top: 50%;
+    transform: translateY(-50%) translateX(10px);
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    color: var(--color-parchment);
+    font-size: 0.68rem;
     font-weight: 600;
-    color: #2a3b3e;
-    margin: 0 0 0.375rem;
-  }
-
-  .skill-desc {
-    font-size: 0.75rem;
-    color: rgba(42, 59, 62, 0.45);
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  /* ===== 关于本站 ===== */
-  .site-section {
-    background: #f4f1ea;
-    padding: 0 1.5rem 4rem;
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease 0.15s, transform 0.6s ease 0.15s;
-  }
-
-  .site-section.revealed {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .site-container {
-    max-width: 700px;
-    margin: 0 auto;
-  }
-
-  .site-info-card {
-    display: flex;
-    gap: 1.25rem;
-    padding: 1.5rem;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(42, 59, 62, 0.05);
-    margin-bottom: 1rem;
-  }
-
-  .site-info-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: rgba(53, 191, 171, 0.08);
-    border: 1px solid rgba(53, 191, 171, 0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #35bfab;
-    flex-shrink: 0;
-  }
-
-  .site-info-body { flex: 1; min-width: 0; }
-
-  .site-info-name {
-    font-family: 'Sora', 'PingFang SC', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #2a3b3e;
-    margin: 0 0 0.5rem;
-  }
-
-  .site-info-desc {
-    font-size: 0.825rem;
-    color: rgba(42, 59, 62, 0.55);
-    line-height: 1.7;
-    margin: 0 0 0.75rem;
-  }
-
-  .site-tech-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-  }
-
-  .tech-tag {
-    padding: 3px 10px;
+    padding: 4px 10px;
     border-radius: 6px;
-    font-size: 0.65rem;
-    font-weight: 500;
-    font-family: 'JetBrains Mono', monospace;
-    background: rgba(42, 59, 62, 0.04);
-    color: rgba(42, 59, 62, 0.45);
-    letter-spacing: 0.02em;
-  }
-
-  .principle-card {
-    display: flex;
-    gap: 1rem;
-    padding: 1.25rem;
-    border-radius: 14px;
-    background: rgba(53, 191, 171, 0.04);
-    border: 1px solid rgba(53, 191, 171, 0.08);
-    align-items: flex-start;
-  }
-
-  .principle-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: rgba(53, 191, 171, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #35bfab;
-    flex-shrink: 0;
-  }
-
-  .principle-title {
-    font-family: 'Sora', 'PingFang SC', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #2a3b3e;
-    margin: 0 0 0.25rem;
-  }
-
-  .principle-desc {
-    font-size: 0.775rem;
-    color: rgba(42, 59, 62, 0.5);
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  /* ===== 底部签名 ===== */
-  .about-footer {
-    background: #f4f1ea;
-    padding: 2rem 1.5rem 3rem;
-    display: flex;
-    justify-content: center;
+    white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.6s ease 0.3s;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .about-footer.revealed { opacity: 1; }
-
-  .about-footer-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.25rem;
+  .float-nav-item:hover .float-nav-hint {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
   }
 
-  .about-signature {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    color: rgba(42, 59, 62, 0.25);
-    letter-spacing: 0.1em;
+  /* ===== 个人简介区域 (三折页) ===== */
+  .about-avatar {
+    width: 102px;
+    height: 102px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   }
 
-  .about-marx-quote {
-    font-size: 0.825rem;
-    font-style: italic;
-    color: rgba(42, 59, 62, 0.35);
-    margin: 0;
-    letter-spacing: 0.02em;
-    line-height: 1.6;
+  .about-social .social-btn {
+    border-color: var(--color-inner-border);
+    color: var(--color-parchment-dim);
   }
 
-  .about-sig-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #35bfab;
-    opacity: 0.5;
+  .about-social .social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  /* f(x)=y 引力字符 */
+  .gravity-char {
+    display: inline-block;
+    will-change: transform, font-weight, color;
+  }
+
+  /* ===== SVG 航线时间轴 (Cruise Log) ===== */
+  .timeline-marker {
+    box-shadow: 0 0 10px var(--color-brand-glow);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .timeline-anchor:hover .timeline-marker {
+    transform: sm:translate-x-1/2 scale(1.15);
+    border-color: var(--color-brand-secondary);
+    box-shadow: 0 0 16px var(--color-brand-glow);
+  }
+
+  /* 致谢 3D 邮戳明信片 */
+  .thank-postcard {
+    border-radius: 24px;
+    border-left: 3px solid var(--color-brand) !important;
+  }
+
+  /* ===== 技能与兴趣：硬核装备库 ===== */
+  .loadout-card {
+    border-radius: 24px;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .loadout-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(
+      240px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+      var(--color-brand-glow) 0%,
+      transparent 80%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+  
+  .loadout-card:hover::before {
+    opacity: 1;
+  }
+  
+  .loadout-card:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+
+  /* ===== 40元生存格 ===== */
+  .survival-pill {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ===== 底部 LCD 计时器 ===== */
+  .site-uptime {
+    font-variant-numeric: tabular-nums;
   }
 
   /* ===== 响应式 ===== */
   @media (max-width: 640px) {
-    .hero-title { font-size: 3rem; }
-    .about-section { padding: 3rem 1rem; }
-    .skills-grid { grid-template-columns: 1fr; }
-    .site-info-card { flex-direction: column; }
-    .about-social { gap: 0.5rem; }
-    .social-link span { display: none; }
+    .about-floating-nav { display: none !important; }
+    .hero-title { font-size: 2.8rem; }
+    .about-section { padding-top: 4rem; padding-bottom: 2rem; }
+    .cruise-section { padding-top: 2rem; padding-bottom: 2rem; }
+    .timeline-marker { left: 1rem !important; transform: none !important; }
+    .timeline-anchor:hover .timeline-marker { transform: scale(1.15) !important; }
+    .thank-postcard { margin-top: 1rem; }
+    .skills-section { padding-top: 2rem; }
   }
 </style>

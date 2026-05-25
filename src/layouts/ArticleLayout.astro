@@ -74,13 +74,17 @@ const {
 
   <div class="article-layout" id="article-layout">
     {/* 中栏 — TOC 目录 */}
-    <aside class="article-toc-column" id="toc-column">
+    <aside class="article-toc-column relative border-r border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md" id="toc-column">
+      {/* 动态液态高亮目录指示针 */}
+      <div class="toc-active-indicator opacity-0" id="toc-indicator"></div>
       <TableOfContents headings={headings} />
     </aside>
 
-    {/* 右栏 — 文章正文 */}
-    <main class="article-content-column">
-      <slot />
+    {/* 右栏 — 文章正文 (包裹在精美的磨砂白玉/黑曜石数字卷轴中) */}
+    <main class="article-content-column py-16 px-4 sm:px-8 md:px-12 flex justify-center w-full relative z-10 overflow-y-auto">
+      <article class="prose-glass-panel panel-glass w-full max-w-[800px] p-8 sm:p-12 md:p-14 relative">
+        <slot />
+      </article>
     </main>
   </div>
 </Base>
@@ -89,8 +93,8 @@ const {
   .article-layout {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    background: #f6f2ea;
+    grid-template-columns: 240px minmax(0, 1fr);
+    background: transparent; /* 通透莫兰迪背景完全显露 */
   }
 
   /* 中栏 — TOC 目录 */
@@ -100,8 +104,6 @@ const {
     height: 100vh;
     padding: 5.25rem 0 2rem;
     overflow-y: auto;
-    border-right: 1px solid rgba(42, 59, 62, 0.08);
-    background: #fffdf9;
   }
 
   .article-toc-column::-webkit-scrollbar {
@@ -121,7 +123,11 @@ const {
   /* 右栏 — 文章正文 */
   .article-content-column {
     min-height: 100vh;
-    padding: 0 4rem;
+  }
+
+  /* 磨砂纸张卷轴微悬浮发光 */
+  .prose-glass-panel {
+    border-radius: 32px;
   }
 
   /* 响应式：中等屏幕隐藏 TOC */
@@ -135,13 +141,19 @@ const {
     }
 
     .article-content-column {
-      padding: 0 2rem;
+      padding: 6rem 1rem 3rem;
+    }
+    
+    .prose-glass-panel {
+      padding: 1.5rem !important;
+      border-radius: 20px;
     }
   }
 
   @media (max-width: 640px) {
     .article-content-column {
-      padding: 0 1rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
     }
   }
 </style>

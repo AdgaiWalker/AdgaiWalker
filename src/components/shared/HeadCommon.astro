@@ -39,6 +39,10 @@ const absoluteOgImage = new URL(ogImage, Astro.site ?? Astro.url).href;
 <link rel="canonical" href={canonical} />
 <link rel="alternate" type="application/rss+xml" title="Walker RSS" href={new URL('/rss.xml', Astro.site ?? Astro.url)} />
 
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.cn/css2?family=Averia+Gruesa+Libre&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
 <Font cssVariable="--font-body" preload />
 <Font cssVariable="--font-heading" preload />
 <Font cssVariable="--font-mono" />

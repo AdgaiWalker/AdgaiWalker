@@ -1,0 +1,28 @@
+---
+/**
+ * WriteArticlePill — 首页右栏顶部极简“写文章”与格网小应用组件
+ * 像素级复现截图样式：白底晶莹药丸 + 青绿羽毛笔“写文章”按钮 + 精致 3x3 小点控制区
+ */
+import { Icon } from 'astro-icon/components';
+---
+
+<div class="panel-glass px-3.5 py-2.5 flex flex-row items-center justify-between gap-3 group rounded-[22px] pointer-events-auto" style="background: rgba(255, 255, 255, 0.48); border: 1.5px solid rgba(255, 255, 255, 0.85); min-width: 200px;">
+  <!-- 左侧“写文章”圆润胶囊按钮 -->
+  <a href="/posts/new" class="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-[#e6fcf9] text-[#35bfab] hover:bg-[#35bfab] hover:text-white hover:scale-103 transition-all duration-300 no-underline shadow-[inset_0_1px_2px_rgba(255,255,255,0.6)] border border-[#35bfab]/20">
+    <Icon name="lucide:pen-line" width={13} height={13} class="stroke-[2.5]" />
+    <span class="text-[12px] font-body font-bold tracking-wide">写文章</span>
+  </a>
+
+  <!-- 右侧精致 3x3 小灰点格网 -->
+  <div class="grid grid-cols-3 gap-0.5 w-[14px] h-[14px] opacity-25 group-hover:opacity-40 transition-opacity pr-1 cursor-pointer" title="控制中心">
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+    <span class="w-[3px] h-[3px] rounded-full bg-parchment"></span>
+  </div>
+</div>

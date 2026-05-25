@@ -11,11 +11,11 @@ interface Props {
 
 const { name, description, category, tags, rating, url } = Astro.props;
 
-const categoryConfig: Record<string, { label: string; icon: string; style: string }> = {
-  skill: { label: 'Skill', icon: 'lucide:wand-sparkles', style: 'bg-bio-cyan/10 text-bio-cyan/80 border border-bio-cyan/20' },
-  tool: { label: '工具', icon: 'lucide:wrench', style: 'bg-gold/10 text-gold/80 border border-gold/20' },
-  'info-source': { label: '信息源', icon: 'lucide:radio', style: 'bg-coral/10 text-coral/80 border border-coral/20' },
-  community: { label: '社区', icon: 'lucide:users', style: 'bg-stardust/30 text-parchment/70 border border-stardust/40' },
+const categoryConfig: Record<string, { label: string; icon: string; badgeClass: string }> = {
+  skill: { label: 'Skill', icon: 'lucide:wand-sparkles', badgeClass: 'badge-skill' },
+  tool: { label: '工具', icon: 'lucide:wrench', badgeClass: 'badge-tool' },
+  'info-source': { label: '信息源', icon: 'lucide:radio', badgeClass: 'badge-source' },
+  community: { label: '社区', icon: 'lucide:users', badgeClass: 'badge-community' },
 };
 
 const config = categoryConfig[category] ?? categoryConfig.tool;
@@ -23,7 +23,7 @@ const config = categoryConfig[category] ?? categoryConfig.tool;
 <div class="dock-card reveal">
   <div class="dock-card-inner">
     <div class="flex items-center justify-between mb-3">
-      <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono ${config.style}`}>
+      <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono ${config.badgeClass}`}>
         <Icon name={config.icon} width={12} height={12} />
         {config.label}
       </span>
@@ -33,14 +33,14 @@ const config = categoryConfig[category] ?? categoryConfig.tool;
             <Icon name="lucide:star"
               width={12}
               height={12}
-              class={i < rating ? 'text-gold/70' : 'text-white/[0.06]'} />
+              class={i < rating ? 'text-brand/70' : 'text-parchment/10'} />
           ))}
         </div>
       )}
     </div>
 
     <h3 class="text-parchment font-heading text-base mb-1.5">{name}</h3>
-    <p class="text-parchment/50 text-sm leading-relaxed mb-3">{description}</p>
+    <p class="text-parchment-dim text-sm leading-relaxed mb-3 opacity-80">{description}</p>
 
     <div class="flex flex-wrap gap-1.5 mb-3">
       {tags.map(tag => (
@@ -53,33 +53,114 @@ const config = categoryConfig[category] ?? categoryConfig.tool;
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-xs text-bio-cyan/50 hover:text-bio-cyan transition-colors no-underline"
+        class="inline-flex items-center gap-1.5 text-xs text-brand/70 hover:text-brand transition-colors no-underline font-medium"
       >
         <Icon name="lucide:external-link" width={12} height={12} />
-        访问
+        访问资源
       </a>
     )}
   </div>
 </div>
 
+<script>
+  function initDockSpotlight() {
+    const cards = document.querySelectorAll('.dock-card');
+    cards.forEach((card: any) => {
+      card.addEventListener('mousemove', (e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+  }
+
+  // Support Astro transitions
+  document.addEventListener('astro:page-load', initDockSpotlight);
+  initDockSpotlight();
+</script>
+
 <style>
   .dock-card {
+    position: relative;
     height: 100%;
-    border: 1px solid rgba(42, 59, 62, 0.07);
+    border: 1px solid var(--color-nav-border);
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.66);
-    box-shadow: 0 16px 42px rgba(25, 38, 40, 0.04);
-    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    background: var(--color-card);
+    backdrop-filter: blur(30px) saturate(120%);
+    -webkit-backdrop-filter: blur(30px) saturate(120%);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05), 0 8px 30px rgba(0, 0, 0, 0.02);
+    transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1.2), border-color 0.38s ease, background 0.38s ease, box-shadow 0.38s ease;
+    overflow: hidden;
+  }
+
+  .dock-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(
+      220px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+      var(--color-brand-glow) 0%,
+      transparent 80%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+
+  .dock-card:hover::before {
+    opacity: 1;
+  }
+
+  body.theme-nature .dock-card {
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 8px 30px rgba(26, 35, 37, 0.02);
   }
 
   .dock-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(53, 191, 171, 0.18);
+    transform: translateY(-4px);
+    border-color: var(--color-brand);
+    background: var(--color-inner-bg);
+    box-shadow: 
+      inset 0 1px 3px rgba(255, 255, 255, 0.1),
+      0 16px 40px rgba(0, 0, 0, 0.12),
+      0 0 12px var(--color-brand-glow);
+  }
+
+  body.theme-nature .dock-card:hover {
     background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 20px 52px rgba(25, 38, 40, 0.07);
+    box-shadow: 
+      inset 0 1px 3px rgba(255, 255, 255, 0.8),
+      0 16px 40px rgba(26, 35, 37, 0.06),
+      0 0 12px var(--color-brand-glow);
   }
 
   .dock-card-inner {
+    position: relative;
+    z-index: 2;
     padding: 1.15rem;
+  }
+
+  /* Badge Categories styling */
+  .badge-skill {
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border: 1px solid rgba(53, 191, 171, 0.2);
+  }
+  .badge-tool {
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border: 1px solid rgba(53, 191, 171, 0.2);
+  }
+  .badge-source {
+    background: rgba(231, 111, 81, 0.1);
+    color: #e76f51;
+    border: 1px solid rgba(231, 111, 81, 0.2);
+  }
+  .badge-community {
+    background: rgba(209, 250, 229, 0.1);
+    color: var(--color-parchment-dim);
+    border: 1px solid rgba(209, 250, 229, 0.2);
   }
 </style>

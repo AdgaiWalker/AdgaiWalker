@@ -60,34 +60,22 @@ const isHome = Astro.url.pathname === '/';
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
   </head>
-  <body class:list={["min-h-screen flex flex-col", pureMode ? "bg-[#fdfdfd] reading-mode" : ""]}>
-    {!pureMode && (
-      <>
-        <!-- 环境背景层 (精致渐变 + 大色块) -->
-        <div class="fixed inset-0 -z-20 overflow-hidden" style="background: linear-gradient(145deg, #eef2e8 0%, #e4e8dd 30%, #e8ebe5 60%, #edf0ea 100%);" aria-hidden="true">
-          <!-- 柔和渐变晕影 - 更大、更柔和 -->
-          <div class="absolute top-[-20%] left-[-5%] w-[70%] h-[60%] rounded-full blur-[160px]" style="background: rgba(216, 230, 190, 0.35); animation: subtle-float 20s ease-in-out infinite;"></div>
-          <div class="absolute bottom-[-10%] right-[-5%] w-[60%] h-[60%] rounded-full blur-[160px]" style="background: rgba(220, 235, 200, 0.3); animation: subtle-float 25s ease-in-out infinite reverse;"></div>
-          <div class="absolute top-[20%] right-[20%] w-[45%] h-[45%] rounded-full blur-[140px]" style="background: rgba(53, 191, 171, 0.06); animation: subtle-float 18s ease-in-out infinite 2s;"></div>
-          <div class="absolute bottom-[30%] left-[30%] w-[35%] h-[35%] rounded-full blur-[120px]" style="background: rgba(200, 225, 195, 0.25); animation: subtle-float 22s ease-in-out infinite 4s;"></div>
-        </div>
+  <body class:list={["min-h-screen flex flex-col", pureMode ? "reading-mode" : ""]}>
+    {/* 全局环境背景层：自适应晶莹底色，搭载细微噪声格网纹理与光晕 */}
+    <div class="fixed inset-0 -z-20 overflow-hidden bg-transparent" aria-hidden="true">
+      {/* 极弱极细格线网纹 */}
+      <div class="absolute inset-0 opacity-[0.015] pointer-events-none" style="background-image: radial-gradient(#000 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
+    </div>
+    
+    {/* 鼠标跟随光晕 */}
+    <div class="mouse-glow" id="mouse-glow" aria-hidden="true"></div>
+    
+    {/* 噪点纹理叠加 */}
+    <div class="grain-overlay" aria-hidden="true"></div>
 
-        <!-- 背景 canvas (用于动态模糊光影) -->
-        <canvas id="ambient-particles" class="fixed inset-0 -z-10 pointer-events-none opacity-15" aria-hidden="true"></canvas>
-        
-        <!-- 鼠标跟随光晕 -->
-        <div class="mouse-glow" id="mouse-glow" aria-hidden="true"></div>
-        
-        <!-- 噪点纹理叠加 -->
-        <div class="grain-overlay" aria-hidden="true"></div>
-      </>
-    )}
-
-    {!isHome && (
-      <Navigation transition:persist>
-        <slot name="nav-extension" />
-      </Navigation>
-    )}
+    <Navigation transition:persist>
+      <slot name="nav-extension" />
+    </Navigation>
     <div class:list={["flex flex-col flex-1 w-full", !isHome && "site-main-shell"]} transition:animate="fade">
       <main class="flex-1 relative z-10 w-full">
         <slot />
@@ -97,15 +85,6 @@ const isHome = Astro.url.pathname === '/';
 
     <script>
       import '../scripts/scroll-fade';
-
-      // Canvas 粒子动画仅首页加载
-      function loadAmbient() {
-        if (window.location.pathname === '/') {
-          import('../scripts/ambient');
-        }
-      }
-      loadAmbient();
-      document.addEventListener('astro:page-load', loadAmbient);
 
       // --- 鼠标跟随光晕 ---
       let glowAbort: AbortController | null = null;

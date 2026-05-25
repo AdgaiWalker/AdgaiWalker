@@ -1,4 +1,8 @@
 ---
+/**
+ * CalendarWidget — 首页右栏拟真艾薇暖黄日历小组件
+ * 像素级复现截图日历样式：2026/5/24 星期日 头部 + 浅黄暖色底座 + 圆润青色高亮圆圈
+ */
 const now = new Date();
 const year = now.getFullYear();
 const month = now.getMonth();
@@ -9,55 +13,42 @@ const firstDay = new Date(year, month, 1).getDay();
 const firstDayMon = firstDay === 0 ? 6 : firstDay - 1;
 const daysInMonth = new Date(year, month + 1, 0).getDate();
 const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
-const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 ---
 
-<div class="panel-glass p-5" style="background: rgba(255,255,255,0.55);">
-  <!-- 日期标题 (更精致的排版) -->
-  <div class="flex items-baseline justify-between mb-4 px-0.5">
-    <div class="flex items-baseline gap-2">
-      <span class="text-[18px] font-heading font-semibold text-parchment tracking-tight">{monthNames[month]}</span>
-      <span class="text-[13px] font-mono text-parchment/35">{year}</span>
-    </div>
-    <span class="text-[11px] font-mono text-parchment/30 tracking-wider">{dayNames[dayOfWeek]}</span>
+<div class="panel-glass p-5 rounded-[36px] pointer-events-auto">
+  <!-- 精致顶部日期头 -->
+  <div class="flex items-center justify-between mb-4 px-1">
+    <span class="text-[12px] font-body font-bold text-parchment/65 tracking-wide">
+      {year}/{month + 1}/{today} {dayNames[dayOfWeek]}
+    </span>
   </div>
 
-  <div class="grid grid-cols-7 gap-0.5 text-center">
+  <div class="grid grid-cols-7 gap-y-1.5 gap-x-1 text-center">
     <!-- 星期头 -->
-    {weekdays.map((d, i) => (
-      <div class:list={[
-        "text-[11px] font-body py-1",
-        (i === 5 || i === 6) ? "text-brand/60 font-medium" : "text-parchment/30"
-      ]}>{d}</div>
+    {weekdays.map((d) => (
+      <div class="text-[10px] font-body text-parchment-dim/40 py-0.5">{d}</div>
     ))}
 
     <!-- 空白填充 -->
-    {Array.from({ length: firstDayMon }, () => (
-      <div />
+    {Array.from({ length: firstDayMon }, (_, i) => (
+      <div key={`empty-${i}`} />
     ))}
 
     <!-- 日期数字 -->
     {Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const isToday = day === today;
-      const dayPos = (firstDayMon + i) % 7;
-      const isWeekend = dayPos === 5 || dayPos === 6;
+      
       return (
         <div
-          class:list={[
-            'text-[12px] font-body py-1 transition-colors leading-none',
-            isToday
-              ? 'flex items-center justify-center'
-              : isWeekend
-                ? 'text-parchment/30'
-                : 'text-parchment/55 hover:text-parchment',
-          ]}
+          key={`day-${day}`}
+          class="text-[11.5px] font-body py-0.5 transition-colors leading-none flex items-center justify-center min-h-[22px]"
         >
           {isToday ? (
-            <span class="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center font-bold text-[11px] shadow-[0_2px_8px_rgba(53,191,171,0.3)]">{day}</span>
+            <span class="w-6 h-6 rounded-full text-white flex items-center justify-center font-bold text-[10px] transition-all duration-300" style="background: var(--color-brand, #35bfab); box-shadow: 0 2px 8px var(--color-brand-glow, rgba(53, 191, 171, 0.4));">{day}</span>
           ) : (
-            day
+            <span class="text-parchment-dim/75">{day}</span>
           )}
         </div>
       );

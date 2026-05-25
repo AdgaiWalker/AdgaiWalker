@@ -58,7 +58,7 @@ export default defineConfig({
     },
   ],
   redirects: {
-    '/ai': '/posts',
+    '/ai': '/idea',
     '/life': '/posts',
   },
   experimental: {

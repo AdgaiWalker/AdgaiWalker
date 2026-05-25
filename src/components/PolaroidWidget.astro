@@ -1,0 +1,118 @@
+---
+/**
+ * PolaroidWidget — 拍立得相册小组件
+ * 像素级复现参考图中的可爱猫咪与向日葵拍立得叠放卡片
+ */
+---
+
+<div class="relative w-full h-[190px] overflow-visible flex items-center justify-center pointer-events-auto select-none mt-2">
+  
+  <!-- 照片堆叠容器 -->
+  <div class="relative w-[340px] h-[160px] flex items-center justify-center">
+    
+    <!-- 1. 左下拍立得照片 (绿底小黑猫，向左微倾斜) -->
+    <div class="polaroid-photo polaroid-1 absolute left-2 top-4 w-[115px] h-[130px] bg-white p-2 pb-5 rounded-md shadow-[0_8px_16px_rgba(0,0,0,0.06)] border border-gray-100/50 -rotate-12 transition-transform hover:scale-105 hover:rotate-0 hover:z-30 cursor-pointer duration-300">
+      <!-- 绿底小猫插画 -->
+      <div class="w-full h-[95px] rounded bg-[#e8f5e9] flex items-center justify-center overflow-hidden relative">
+        <svg viewBox="0 0 100 100" class="w-16 h-16">
+          <!-- 卡通小黑猫 -->
+          <circle cx="50" cy="55" r="28" fill="#2d3748" />
+          <circle cx="34" cy="30" r="14" fill="#2d3748" />
+          <circle cx="66" cy="30" r="14" fill="#2d3748" />
+          <!-- 猫耳朵内粉色 -->
+          <circle cx="34" cy="30" r="8" fill="#fed7d7" />
+          <circle cx="66" cy="30" r="8" fill="#fed7d7" />
+          <!-- 猫眼睛 -->
+          <circle cx="40" cy="50" r="6" fill="#fff" />
+          <circle cx="40" cy="50" r="3" fill="#000" />
+          <circle cx="60" cy="50" r="6" fill="#fff" />
+          <circle cx="60" cy="50" r="3" fill="#000" />
+          <!-- 腮红 -->
+          <ellipse cx="33" cy="58" rx="5" ry="3" fill="#feb2b2" opacity="0.8" />
+          <ellipse cx="67" cy="58" rx="5" ry="3" fill="#feb2b2" opacity="0.8" />
+          <!-- 猫胡须与嘴巴 -->
+          <path d="M 46 62 Q 50 65 54 62" stroke="#fff" stroke-width="1.5" fill="none" />
+        </svg>
+        <span class="absolute bottom-1 right-1 text-[8px] font-mono text-emerald-800/40">Ivy #1</span>
+      </div>
+    </div>
+
+    <!-- 2. 右下拍立得照片 (蓝底猫咪，向右微倾斜) -->
+    <div class="polaroid-photo polaroid-2 absolute right-2 top-6 w-[115px] h-[130px] bg-white p-2 pb-5 rounded-md shadow-[0_8px_20px_rgba(0,0,0,0.06)] border border-gray-100/50 rotate-12 transition-transform hover:scale-105 hover:rotate-0 hover:z-30 cursor-pointer duration-300">
+      <!-- 蓝底向日葵/小猫插画 -->
+      <div class="w-full h-[95px] rounded bg-[#e0f2f1] flex items-center justify-center overflow-hidden relative">
+        <svg viewBox="0 0 100 100" class="w-16 h-16">
+          <!-- 卡通白猫 -->
+          <circle cx="50" cy="55" r="28" fill="#f7fafc" />
+          <circle cx="34" cy="30" r="14" fill="#f7fafc" />
+          <circle cx="66" cy="30" r="14" fill="#f7fafc" />
+          <!-- 耳朵内 -->
+          <circle cx="34" cy="30" r="8" fill="#fed7d7" />
+          <circle cx="66" cy="30" r="8" fill="#fed7d7" />
+          <!-- 大绿眼 -->
+          <circle cx="40" cy="50" r="6" fill="#319795" />
+          <circle cx="40" cy="50" r="2.5" fill="#000" />
+          <circle cx="60" cy="50" r="6" fill="#319795" />
+          <circle cx="60" cy="50" r="2.5" fill="#000" />
+          <!-- 腮红 -->
+          <ellipse cx="32" cy="58" rx="4" ry="2" fill="#feb2b2" />
+          <ellipse cx="68" cy="58" rx="4" ry="2" fill="#feb2b2" />
+          <!-- 猫鼻子 -->
+          <polygon points="50,58 48,56 52,56" fill="#e53e3e" />
+        </svg>
+        <span class="absolute bottom-1 right-1 text-[8px] font-mono text-teal-800/40">Ivy #3</span>
+      </div>
+    </div>
+
+    <!-- 3. 中间高光拍立得照片 (向日葵黄底可爱卡通猫群，居中稍靠上) -->
+    <div class="polaroid-photo polaroid-3 absolute left-[110px] top-1 w-[120px] h-[135px] bg-white p-2 pb-6 rounded-md shadow-[0_12px_24px_rgba(0,0,0,0.08)] border border-gray-200/40 -rotate-3 transition-transform hover:scale-108 hover:rotate-0 hover:z-30 cursor-pointer duration-300 z-10">
+      <!-- 黄底猫咪们插画 -->
+      <div class="w-full h-[98px] rounded bg-[#fffdeb] flex flex-col items-center justify-center overflow-hidden relative">
+        <svg viewBox="0 0 100 100" class="w-[74px] h-[74px]">
+          <!-- 向日葵背景装饰 -->
+          <circle cx="20" cy="20" r="8" fill="#fbd38d" opacity="0.6" />
+          <circle cx="80" cy="20" r="8" fill="#fbd38d" opacity="0.6" />
+          <circle cx="80" cy="80" r="8" fill="#fbd38d" opacity="0.6" />
+          
+          <!-- 萌猫主体 -->
+          <circle cx="50" cy="52" r="24" fill="#ed8936" />
+          <circle cx="36" cy="32" r="11" fill="#ed8936" />
+          <circle cx="64" cy="32" r="11" fill="#ed8936" />
+          <!-- 猫耳内粉色 -->
+          <circle cx="36" cy="32" r="6" fill="#fed7d7" />
+          <circle cx="64" cy="32" r="6" fill="#fed7d7" />
+          <!-- 大黑眼带高光 -->
+          <circle cx="42" cy="48" r="5" fill="#fff" />
+          <circle cx="42" cy="48" r="3.5" fill="#000" />
+          <circle cx="42" cy="47" r="1" fill="#fff" />
+          <circle cx="58" cy="48" r="5" fill="#fff" />
+          <circle cx="58" cy="48" r="3.5" fill="#000" />
+          <circle cx="58" cy="47" r="1" fill="#fff" />
+          <!-- 腮红 -->
+          <ellipse cx="36" cy="55" rx="4" ry="2" fill="#f56565" opacity="0.8" />
+          <ellipse cx="64" cy="55" rx="4" ry="2" fill="#f56565" opacity="0.8" />
+          <!-- 猫咪开心胡须 -->
+          <path d="M 46 58 Q 50 61 54 58" stroke="#fff" stroke-width="1.5" fill="none" />
+        </svg>
+        <!-- 下方可爱英文标签 -->
+        <span class="absolute bottom-1 right-2 text-[8px] font-mono text-orange-800/40">Happy Day!</span>
+      </div>
+    </div>
+
+    <!-- 4. 拟真蓝色回形针 (置于中间上方，压住中间照片，栩栩如生) -->
+    <div class="absolute left-[175px] top-[-10px] w-[14px] h-[34px] bg-[#90cdf4]/90 border-[1.5px] border-[#3182ce] rounded-full z-20 rotate-12 shadow-[0_2px_4px_rgba(0,0,0,0.1)] flex items-center justify-center">
+      <div class="w-[6px] h-[22px] border border-[#2b6cb0] rounded-full opacity-60"></div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .polaroid-photo {
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+  }
+  .polaroid-photo:hover {
+    box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+</style>

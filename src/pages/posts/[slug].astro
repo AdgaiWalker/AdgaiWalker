@@ -91,32 +91,32 @@ const platformIconMap: Record<string, string> = {
   <div class="article-reading-surface min-h-screen">
     <article class="article-document" data-pagefind-body>
       <header class="mb-14">
-        <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-slate-400">
-          <a href={POSTS} class={`${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline`}>
+        <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-[var(--color-parchment-dim)] opacity-80">
+          <a href={POSTS} class="hover:text-[var(--color-brand)] transition-colors no-underline">
             文章
           </a>
           <span>/</span>
           <time>{formatDate(entry.data.date)}</time>
-          <span class={`px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter ${
+          <span class={`px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter border ${
             isAi
-              ? 'bg-blue-50 text-blue-500'
-              : 'bg-emerald-50 text-emerald-500'
+              ? 'border-brand/20 bg-brand/5 text-[var(--color-brand)]'
+              : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
           }`}>{categoryLabel}</span>
           <div class="article-meta-tags">
             {entry.data.tags.map((tag: string) => (
-              <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] uppercase tracking-tighter">
+              <span class="px-2 py-0.5 bg-[rgba(255,255,255,0.03)] border border-[var(--color-nav-border)] text-[var(--color-parchment-dim)] rounded text-[11px] uppercase tracking-tighter">
                 {tag}
               </span>
             ))}
           </div>
         </div>
 
-        <h1 class="text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] mb-8" data-pagefind-meta="title">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--color-parchment)] leading-[1.1] mb-8 tracking-tight" data-pagefind-meta="title">
           {entry.data.title}
         </h1>
 
         {!isAi && coverImage && (
-          <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl">
+          <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl border border-[var(--color-nav-border)]">
             {typeof coverImage === 'string' ? (
               <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="w-full h-full object-cover" />
             ) : (
@@ -126,23 +126,14 @@ const platformIconMap: Record<string, string> = {
         )}
 
         {entry.data.summary && (
-          <div class={`text-xl text-slate-500 leading-relaxed font-light mb-12 italic border-l-4 pl-6 ${
-            isAi ? 'border-slate-200' : 'border-emerald-200'
-          }`}>
+          <div class="text-lg md:text-xl text-[var(--color-parchment-dim)] leading-relaxed font-light mb-12 italic border-l-4 pl-6 border-brand/40">
             {entry.data.summary}
           </div>
         )}
       </header>
 
-      <div class={`prose prose-slate max-w-none break-words
-                  prose-p:text-lg prose-p:leading-8 prose-p:text-slate-700
-                  prose-headings:text-slate-900 prose-headings:font-bold
-                  prose-strong:text-slate-900
-                  ${isAi ? 'prose-blockquote:border-blue-500 prose-blockquote:bg-blue-50/30' : 'prose-blockquote:border-emerald-500 prose-blockquote:bg-emerald-50/30'}
-                  prose-blockquote:py-1
-                  ${isAi ? 'prose-code:text-blue-600' : 'prose-code:text-emerald-600'}
-                  prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded
-                  prose-img:rounded-2xl prose-img:shadow-xl`}>
+      {/* 极致高级的 CJK 衬线/Inter 无衬线混合排版 */}
+      <div class="prose prose-walker max-w-none break-words">
         <Content components={components} />
       </div>
 

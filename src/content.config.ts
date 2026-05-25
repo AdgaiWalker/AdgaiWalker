@@ -43,6 +43,14 @@ const dockItem = defineCollection({
     rating: z.number().min(1).max(5).optional(),
     url: z.url().optional(),
     published: z.boolean().default(true),
+    qrCode: z.string().optional(),
+    communities: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      qrCode: z.string(),
+      badge: z.string(),
+      tag: z.string(),
+    })).optional(),
   }),
 });
 
