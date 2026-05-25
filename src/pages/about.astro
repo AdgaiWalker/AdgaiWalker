@@ -1,6 +1,6 @@
 ---
 /**
- * /about — 关于（合并关于网站）
+ * /about — 关于
  * 全屏 Hero 视频 + 个人简介 + 技能兴趣 + 项目 + 联系方式
  * 使用 FullscreenLayout
  */
@@ -15,7 +15,7 @@ export const prerender = true;
 
 <FullscreenLayout
   title="关于 — Walker"
-  description="秋知 (Walker) — 航空服务艺术与管理专业，AI 自学者。行过万里水路，记录每一次停靠。"
+  description="秋知 (Walker) — AI 实践者、点子社区建设者。用点子连接人与 AI，将想法点石成金。"
 >
   {/* ===== 全局 Orbs 流光自适应背景 ===== */}
   <div class="fixed inset-0 -z-30 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -37,15 +37,11 @@ export const prerender = true;
     </a>
     <a href="#cruise-section" class="float-nav-item" data-target="cruise-section" title="日志">
       <Icon name="lucide:ship" width={16} height={16} />
-      <span class="float-nav-hint">航海日志</span>
+      <span class="float-nav-hint">航行日志</span>
     </a>
-    <a href="#skills-section" class="float-nav-item" data-target="skills-section" title="装备">
-      <Icon name="lucide:swords" width={16} height={16} />
-      <span class="float-nav-hint">硬核装备</span>
-    </a>
-    <a href="#site-section" class="float-nav-item" data-target="site-section" title="本站">
+    <a href="#site-section" class="float-nav-item" data-target="site-section" title="网站">
       <Icon name="lucide:scroll" width={16} height={16} />
-      <span class="float-nav-hint">关于本站</span>
+      <span class="float-nav-hint">关于网站</span>
     </a>
   </div>
 
@@ -73,7 +69,7 @@ export const prerender = true;
         <span>探索中</span>
       </div>
       <h1 class="hero-title">Walker</h1>
-      <p class="hero-tagline">行过万里水路，记录每一次停靠</p>
+      <p class="hero-tagline">用点子连接人与 AI，将想法点石成金</p>
     </div>
 
     {/* 向下滚动提示 */}
@@ -99,19 +95,19 @@ export const prerender = true;
       {/* 身份微卡 (三折页设计) */}
       <div class="about-labels-grid grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
-          <Icon name="lucide:graduation-cap" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
-          <span class="text-xs font-semibold">空乘专业</span>
-          <span class="text-[10px] text-parchment-dim mt-0.5">蓝天下的探索视野</span>
-        </div>
-        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
-          <Icon name="lucide:scale" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
-          <span class="text-xs font-semibold">马哲方法论</span>
-          <span class="text-[10px] text-parchment-dim mt-0.5">行动、验证与纠偏</span>
-        </div>
-        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
           <Icon name="lucide:cpu" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
-          <span class="text-xs font-semibold">自学 AI</span>
-          <span class="text-[10px] text-parchment-dim mt-0.5">以极小成本撬动大落地</span>
+          <span class="text-xs font-semibold">AI 实践者</span>
+          <span class="text-[10px] text-parchment-dim mt-0.5">用 AI 把想法做出来</span>
+        </div>
+        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+          <Icon name="lucide:user-round" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
+          <span class="text-xs font-semibold">点子社区建设者</span>
+          <span class="text-[10px] text-parchment-dim mt-0.5">帮普通人把点子落地</span>
+        </div>
+        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+          <Icon name="lucide:compass" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
+          <span class="text-xs font-semibold">独自前行者</span>
+          <span class="text-[10px] text-parchment-dim mt-0.5">空杯、行动、验证、纠偏</span>
         </div>
       </div>
 
@@ -140,36 +136,74 @@ export const prerender = true;
       {/* 介绍文案 */}
       <div class="about-bio text-sm leading-relaxed text-parchment/80 space-y-4">
         <p>
-          我是秋知，航空服务艺术与管理专业在读（28 届）。空乘专业给了我时间，马哲给了我方法，AI 给了我路。
+          我是秋知，Walker 是我的个人品牌。
+        </p>
+        <p>
+          Walker 不是一个人名，而是一种状态：带着目标，准备出发、正在出发、歇会再出发。
+        </p>
+        <p>
+          空乘专业给了我时间，马哲给了我方法，AI 给了我路。
         </p>
 
-        {/* 哲理生活观金句卡片 */}
+        {/* 哲理金句卡片 */}
         <div class="bio-quote-callout p-5 rounded-2xl border border-[var(--color-nav-border)] bg-[var(--color-brand-glow)] my-6 relative overflow-hidden">
           <div class="absolute right-4 bottom-1 text-[var(--color-brand)] opacity-[0.06] select-none pointer-events-none" style="font-size: 5rem; font-family: Georgia, serif;">”</div>
           <p class="font-heading text-[14px] font-bold text-parchment leading-relaxed text-center italic m-0">
-            “最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。”
-          </p>
-        </div>
-        <p>
-          25 年 8 月底因自创项目需要，全心投入 AI 工程实践。已独立上线 AI 辅助工具站 <a href="https://www.xyzidea.com" target="_blank" rel="noopener noreferrer" class="font-bold underline decoration-brand">xyzidea.com</a>。
-        </p>
-        
-        {/* 40元硬核投入卡片 */}
-        <div class="bio-callout p-4 rounded-xl border-l-4 border-brand bg-[var(--color-brand-glow)] my-6">
-          <p class="font-medium text-parchment/90">
-            学习期间月均生活费不足两千，AI 投入月均 <strong class="text-brand">40 元</strong>。条件虽然有限，但足够在数字世界里扬帆起航。
+            “用点子连接人与 AI。独自前行中，因为一个有趣的点子成为同行者。”
           </p>
         </div>
 
         <p>
-          一路走来，秋芝引我入门，海哥（海拉鲁编程客）带我成长，刘、于二老在迷茫时点醒方向。感谢虽不理解但给予经济支持的亲人。
+          25 年 8 月因自创项目需要，全心投入 AI 工程实践。我不是在学 AI，而是在用 AI 解决真实问题。已独立上线 AI 辅助工具站 <a href="https://www.xyzidea.com" target="_blank" rel="noopener noreferrer" class="font-bold underline decoration-brand">xyzidea.com</a>，正在构建点子社区。
         </p>
-        <p>
-          现正设计独立博客 <a href="https://iwalk.pro" target="_blank" rel="noopener noreferrer" class="font-bold">iwalk.pro</a>，构建 <a href="https://github.com/AdgaiWalker/Ferry" target="_blank" rel="noopener noreferrer" class="font-bold">Ferry</a> 自适应提示词工程框架——让人机协作有据可循，筹备 AI 共创社区 <a href="https://www.xyzidea.cn" target="_blank" rel="noopener noreferrer" class="font-bold">点子</a>（xyzidea.cn）。让 AI 落地，发现真实需求，解决真实问题。做最好的 AI 普及。向具身智能方向前进，为人的解放出一份力。
-        </p>
-        <p>
-          空杯，行动，验证，纠偏。把人从重复劳动中解放出来，去追求真正的幸福。
-        </p>
+
+        {/* 40元硬核投入卡片 */}
+        <div class="bio-callout p-4 rounded-xl border-l-4 border-brand bg-[var(--color-brand-glow)] my-6">
+          <p class="font-medium text-parchment/90">
+            月均生活费不足两千，AI 投入月均 <strong class="text-brand">40 元</strong>。条件有限，但足够在数字世界里扬帆起航。
+          </p>
+        </div>
+
+        {/* 我相信 */}
+        <div class="my-6">
+          <p class="text-sm font-bold text-parchment mb-3">我相信：</p>
+          <ul class="space-y-2 text-sm text-parchment/80">
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>AI 的意义不只是提效，而是把人从重复劳动中解放出来</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>点子不是空想，要在行动中验证</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>普通人也可以借助 AI，把自己的想法做成真实结果</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="my-6">
+          <p class="text-sm font-bold text-parchment mb-3">我正在学：</p>
+          <ul class="space-y-2 text-sm text-parchment/80">
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>理解 AI 的数学</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>做一个好产品</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>Agent 工程</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-brand mt-0.5">·</span>
+              <span>具身智能</span>
+            </li>
+          </ul>
+        </div>
 
         {/* f(x) = y 物理挤压引力文字区 */}
         <div class="py-6 flex flex-col items-center justify-center">
@@ -331,126 +365,26 @@ export const prerender = true;
     </div>
   </section>
 
-  {/* ===== 技能与兴趣：硬核装备库 (Tech Loadout) ===== */}
-  <section class="skills-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="skills-section">
-    <div class="skills-container max-w-[700px] w-full">
-      <div class="section-header mb-12 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">秋知的硬核装备库</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
-
-      {/* 装备格 GRID，内置 Spotlight Cursor 局部发光追踪 */}
-      <div class="skills-grid grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        
-        {/* 装备一: 主武器 */}
-        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
-          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
-            <Icon name="lucide:swords" width={18} height={18} />
-          </div>
-          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
-            主武器: AI 工程
-            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Lv.99</span>
-          </h3>
-          <p class="skill-desc text-xs text-parchment-dim leading-relaxed relative z-10">
-            精通 Prompt Engineering / 搭建 LLM AI Agent 自适应运行工作流 / 人机协同工作流架构设计与 Ferry 自适应微调。
-          </p>
-        </div>
-
-        {/* 装备二: 副武器 */}
-        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
-          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
-            <Icon name="lucide:terminal" width={18} height={18} />
-          </div>
-          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
-            副武器: 全栈极客
-            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Lv.70</span>
-          </h3>
-          <p class="skill-desc text-xs text-parchment-dim leading-relaxed relative z-10">
-            熟练掌握 TypeScript / Astro 框架 / Node.js 体系 / 静态自动化部署与 Serverless 边缘托管，用代码解决真实问题。
-          </p>
-        </div>
-
-        {/* 装备三: 常备军需 */}
-        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
-          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
-            <Icon name="lucide:pen-tool" width={18} height={18} />
-          </div>
-          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
-            日常配给: 内容创作
-            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Lv.80</span>
-          </h3>
-          <p class="skill-desc text-xs text-parchment-dim leading-relaxed relative z-10">
-            技术写作 / 知识整理与高度归档 / 跨平台自媒体运营。打通“输入-解构-重塑-极简输出”的高级个人知识库闭环。
-          </p>
-        </div>
-
-        {/* 装备四: 40元极客生存包 */}
-        <div class="skill-card panel-glass loadout-card p-6 flex flex-col transition-all duration-300">
-          <div class="skill-icon w-9 h-9 rounded-xl flex items-center justify-center bg-brand/10 text-brand mb-4 relative z-10">
-            <Icon name="lucide:piggy-bank" width={18} height={18} />
-          </div>
-          <h3 class="skill-name text-sm font-bold mb-2 relative z-10 flex items-center gap-1.5">
-            军需补给: 40元生存仓
-            <span class="text-[9px] font-mono text-brand border border-brand/20 bg-brand/5 px-1.5 py-0.5 rounded">Hardcore</span>
-          </h3>
-          
-          {/* 微缩拟物化小装备格 */}
-          <div class="grid grid-cols-3 gap-2 mt-1 relative z-10">
-            <div class="survival-pill p-1.5 border border-[var(--color-nav-border)] rounded-lg bg-black/5 hover:scale-105 hover:bg-brand/5 hover:border-brand/40 text-center transition-all duration-200" title="买域名去'哪注册'比价">
-              <span class="block text-[9px] font-bold">域名比价</span>
-              <span class="block text-[8px] text-brand font-mono">￥40/年</span>
-            </div>
-            <div class="survival-pill p-1.5 border border-[var(--color-nav-border)] rounded-lg bg-black/5 hover:scale-105 hover:bg-brand/5 hover:border-brand/40 text-center transition-all duration-200" title="Supabase 数据库免费层">
-              <span class="block text-[9px] font-bold">数据库</span>
-              <span class="block text-[8px] text-brand font-mono">Free</span>
-            </div>
-            <div class="survival-pill p-1.5 border border-[var(--color-nav-border)] rounded-lg bg-black/5 hover:scale-105 hover:bg-brand/5 hover:border-brand/40 text-center transition-all duration-200" title="Vercel/Cloudflare 免费网络托管">
-              <span class="block text-[9px] font-bold">托管部署</span>
-              <span class="block text-[8px] text-brand font-mono">Free</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  {/* ===== 关于本站与人机协作原则 ===== */}
+  {/* ===== 关于网站 ===== */}
   <section class="site-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="site-section">
     <div class="site-container max-w-[700px] w-full">
       <div class="section-header mb-12 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">关于本站与协作宣言</h2>
+        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">关于网站</h2>
         <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
       </div>
 
       <div class="space-y-4">
-        <div class="site-info-card panel-glass p-6 flex flex-col sm:flex-row gap-5 hover:border-brand/20 transition-all duration-300">
-          <div class="site-info-icon w-12 h-12 rounded-2xl flex items-center justify-center bg-brand/10 border border-brand/20 text-brand shrink-0">
-            <Icon name="lucide:compass" width={22} height={22} />
-          </div>
-          <div class="site-info-body flex-1">
-            <h3 class="site-info-name text-sm font-bold mb-1">精巧站点内容结构</h3>
-            <p class="site-info-desc text-xs text-parchment-dim leading-relaxed">
-              秋知的 AI 学习笔记、工具深度测评、精巧的项目想法、生活反思，以及我收藏的优质资源与群聊，全站配备Pagefind毫秒级全局极速检索。
+        <div class="panel-glass p-6 sm:p-8 hover:border-brand/20 transition-all duration-300">
+          <div class="text-sm leading-[1.9] text-parchment/80 space-y-5">
+            <p>
+              iwalk.pro 是 Walker 的个人中枢。对内，是整理思考、沉淀资源、酝酿点子的前进系统；对外，是给期望让 AI 赋能生活的人最好的 AI 普及站。展示个人身份、FERRY 计划、AI 实践内容、点子社区和项目记录。
             </p>
-          </div>
-        </div>
-
-        <div class="site-info-card panel-glass p-6 flex flex-col sm:flex-row gap-5 hover:border-brand/20 transition-all duration-300">
-          <div class="site-info-icon w-12 h-12 rounded-2xl flex items-center justify-center bg-brand/10 border border-brand/20 text-brand shrink-0">
-            <Icon name="lucide:shield-alert" width={22} height={22} />
-          </div>
-          <div class="site-info-body flex-1">
-            <h3 class="site-info-name text-sm font-bold mb-1">硬核人机协同协作原则</h3>
-            <p class="site-info-desc text-xs text-parchment-dim leading-relaxed mb-3">
-              AI 编写底层代码与微重构，人类负责顶级架构、逻辑纠偏与内容质量审阅。不是 AI 替代你，是你带着 AI 去一同改变世界。
+            <p>
+              因需存在，因需设计，因需开发。AI 负责生成、拆解和执行，人负责目标、判断和结果承担。这里只放经过实践验证的东西，更新不频繁，但每篇内容都有据可循。
             </p>
-            <div class="site-tech-tags flex flex-wrap gap-1.5">
-              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Claude Code × GLM 5</span>
-              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Antigravity × Gemini 3.5</span>
-              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Astro 6 × Tailwind v4</span>
-              <span class="tech-tag text-[9px] font-mono border border-[var(--color-nav-border)] bg-black/5 px-2 py-0.5 rounded text-parchment-dim">Supabase REST</span>
-            </div>
+            <p>
+              独自前行中，因为一个有趣的点子成为同行者——有点子想落地，欢迎联系。
+            </p>
           </div>
         </div>
       </div>
@@ -491,7 +425,7 @@ export const prerender = true;
     const scrollHint = document.getElementById('scroll-hint');
     const floatNav = document.getElementById('about-float-nav');
     const navItems = document.querySelectorAll('.float-nav-item');
-    const sections = document.querySelectorAll('.hero-section, .about-section, .cruise-section, .skills-section, .site-section');
+    const sections = document.querySelectorAll('.hero-section, .about-section, .cruise-section, .site-section');
 
     if (!hero) return;
 
@@ -583,22 +517,6 @@ export const prerender = true;
     });
   }
 
-  // 技能卡片手电筒局部聚光追踪
-  function initSpotlightLoadout() {
-    const loadoutCards = document.querySelectorAll('.loadout-card');
-    
-    loadoutCards.forEach((card: any) => {
-      card.addEventListener('mousemove', (e: MouseEvent) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
-      });
-    });
-  }
-
   // f(x)=y 文字重力引力波计算
   function initGravityText() {
     const gravityText = document.getElementById('gravity-text');
@@ -646,7 +564,7 @@ export const prerender = true;
 
   // 站点 LCD 精密运行时间
   function initUptime() {
-    const el = document.getElementById('site-uptime');
+    const el = document.getElementById('site-uptime') as HTMLElement;
     if (!el) return;
     
     const launch = new Date('2026-05-02T00:00:00+08:00');
@@ -682,7 +600,6 @@ export const prerender = true;
   // 第一次进入时执行
   initParallaxAndNav();
   initTiltPostcards();
-  initSpotlightLoadout();
   initGravityText();
   initUptime();
   initCopyEmail();
@@ -691,7 +608,6 @@ export const prerender = true;
   document.addEventListener('astro:page-load', () => {
     initParallaxAndNav();
     initTiltPostcards();
-    initSpotlightLoadout();
     initGravityText();
     initUptime();
     initCopyEmail();
@@ -966,6 +882,5 @@ export const prerender = true;
     .timeline-marker { left: 1rem !important; transform: none !important; }
     .timeline-anchor:hover .timeline-marker { transform: scale(1.15) !important; }
     .thank-postcard { margin-top: 1rem; }
-    .skills-section { padding-top: 2rem; }
   }
 </style>

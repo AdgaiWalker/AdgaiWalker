@@ -14,10 +14,10 @@ const ideaItems = tools.filter(entry => entry.data.type === 'idea');
 ---
 
 <SidebarLayout
-  title="工具与点子 — Walker"
+  title="资源 — Walker"
   description="前行路上用到的工具、冒出的点子。"
-  pageTitle="工具与点子"
-  pageSubtitle="Tools & Ideas"
+  pageTitle="资源"
+  pageSubtitle="Resources"
   pageIcon="wrench"
   itemCount={tools.length}
   itemUnit="件"
@@ -99,7 +99,7 @@ const ideaItems = tools.filter(entry => entry.data.type === 'idea');
     {tools.length === 0 && (
       <div class="text-center py-20 text-parchment-dim">
         <Icon name="lucide:package-open" width={40} height={40} class="mx-auto mb-4 opacity-30" />
-        <p class="text-sm">还没有工具或点子</p>
+        <p class="text-sm">还没有资源</p>
       </div>
     )}
   </div>
