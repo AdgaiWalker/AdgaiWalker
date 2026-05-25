@@ -2,8 +2,7 @@
 title: Walker 启航
 date: 2026-04-29
 tags: [随想, 哲学]
-type: thought
-category: life
+type: knowledge
 published: true
 ---
 

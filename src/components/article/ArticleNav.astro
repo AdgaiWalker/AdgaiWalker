@@ -16,23 +16,18 @@ interface ArticleEntry {
 interface Props {
   articles: ArticleEntry[];
   currentSlug: string;
-  category: 'ai' | 'life';
   basePath: string;
 }
 
-const { articles, currentSlug, category, basePath } = Astro.props;
+const { articles, currentSlug, basePath } = Astro.props;
 
 const formatShortDate = (d: Date) =>
   `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 
-const categoryLabels: Record<string, string> = {
-  ai: '文章',
-  life: '文章',
-};
 ---
 <div class="article-nav" id="article-nav">
   <div class="nav-section-header">
-    <span class="nav-section-title">{categoryLabels[category] || '文章'}</span>
+    <span class="nav-section-title">文章</span>
     <div class="nav-view-toggle" id="nav-view-toggle">
       <button class="view-btn active" data-view="list" aria-label="列表视图">
         <Icon name="lucide:list" width={14} height={14} />

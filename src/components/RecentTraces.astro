@@ -5,23 +5,10 @@
  */
 import { Icon } from 'astro-icon/components';
 import { POSTS, postSlug } from '@/lib/routes';
-import type { ImageMetadata } from 'astro';
-
-interface LogEntry {
-  id: string;
-  data: {
-    title: string;
-    date: Date;
-    tags: string[];
-    type: 'article' | 'photo' | 'thought' | 'project' | 'dialogue' | 'idea';
-    category: 'ai' | 'life';
-    cover?: string | ImageMetadata;
-  };
-  body?: string;
-}
+import type { CollectionEntry } from 'astro:content';
 
 interface Props {
-  logs: LogEntry[];
+  logs: CollectionEntry<'log'>[];
 }
 
 const { logs = [] } = Astro.props;

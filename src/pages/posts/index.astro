@@ -1,24 +1,15 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import ArticleNav from '../../components/article/ArticleNav.astro';
 import { getCollection } from 'astro:content';
-import { POSTS, postSlug } from '@/lib/routes';
+import { postSlug } from '@/lib/routes';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
-const allLogs = (await getCollection('log', ({ data }) => data.published))
+const allLogs = (await getCollection('log', ({ data }) =>
+  data.published && data.type === 'knowledge'
+))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-
-const tagCountMap = new Map<string, number>();
-allLogs.forEach(entry => {
-  entry.data.tags.forEach(tag => {
-    tagCountMap.set(tag, (tagCountMap.get(tag) ?? 0) + 1);
-  });
-});
-const allTags = [...tagCountMap.entries()]
-  .sort((a, b) => b[1] - a[1])
-  .map(([tag]) => tag);
 
 const groupedLogs: Record<number, typeof allLogs> = {};
 allLogs.forEach(log => {
@@ -30,20 +21,6 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 
 const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
 
-const articleList = allLogs.map(a => ({
-  id: a.id,
-  title: a.data.title,
-  date: a.data.date,
-  tags: a.data.tags,
-  summary: a.data.summary,
-}));
-
-const categoryCounts = { utopia: 0, ai: 0, life: 0 };
-allLogs.forEach(l => {
-  if (l.data.category in categoryCounts) {
-    categoryCounts[l.data.category]++;
-  }
-});
 ---
 
 <SidebarLayout
@@ -90,7 +67,7 @@ allLogs.forEach(l => {
           <div class="panel-glass rounded-2xl overflow-hidden border border-[var(--color-nav-border)]">
             <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
               {groupedLogs[year].map(log => (
-                <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')} data-category={log.data.category}>
+                <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
                   <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDate(log.data.date)}</time>
                   <div class="flex-1 min-w-0">
                     <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
@@ -120,12 +97,6 @@ allLogs.forEach(l => {
     max-width: 760px;
   }
 
-  .category-filter-bar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
   .tag-filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -138,34 +109,6 @@ allLogs.forEach(l => {
     font-size: 0.65rem;
     opacity: 0.48;
     margin-left: 0.25rem;
-  }
-
-  .category-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.6rem;
-    padding: 0.15rem 0.45rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-  }
-
-  .category-badge.utopia {
-    background: rgba(245, 158, 11, 0.08);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.2);
-  }
-
-  .category-badge.ai {
-    background: var(--color-brand-glow);
-    color: var(--color-brand);
-    border: 1px solid rgba(53, 191, 171, 0.2);
-  }
-
-  .category-badge.life {
-    background: rgba(52, 211, 153, 0.08);
-    color: #34d399;
-    border: 1px solid rgba(52, 211, 153, 0.2);
   }
 
   .year-group h2 {
@@ -189,21 +132,6 @@ allLogs.forEach(l => {
 
   body.theme-nature .log-item:hover {
     background: rgba(0, 0, 0, 0.015) !important;
-  }
-
-  .log-item:hover .category-badge.utopia {
-    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
-    border-color: #f59e0b;
-  }
-
-  .log-item:hover .category-badge.ai {
-    box-shadow: 0 0 12px var(--color-brand-glow);
-    border-color: var(--color-brand);
-  }
-
-  .log-item:hover .category-badge.life {
-    box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
-    border-color: #34d399;
   }
 
   @media (max-width: 640px) {

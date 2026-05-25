@@ -6,7 +6,7 @@ import { POSTS } from '@/lib/routes';
  * 中栏：TOC 目录
  * 右栏：文章正文
  *
- * 用于：/ai/[slug], /life/[slug]
+ * 用于：/posts/[slug]
  */
 import Base from './Base.astro';
 import TableOfContents from '../components/article/TableOfContents.astro';
@@ -35,7 +35,6 @@ interface Props {
   canonicalUrl?: string;
   headings: Heading[];
   currentSlug: string;
-  category: 'ai' | 'life';
   articleList: ArticleEntry[];
 }
 
@@ -48,7 +47,6 @@ const {
   canonicalUrl,
   headings,
   currentSlug,
-  category,
   articleList,
 } = Astro.props;
 ---
@@ -67,7 +65,6 @@ const {
     <ArticleNav
       articles={articleList}
       currentSlug={currentSlug}
-      category={category}
       basePath={POSTS}
     />
   </Fragment>

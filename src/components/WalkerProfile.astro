@@ -6,7 +6,7 @@
 import { Image } from 'astro:assets';
 import avatar from '/public/images/avatar.jpg';
 import { Icon } from 'astro-icon/components';
-import { POSTS, DOCK } from '@/lib/routes';
+import { POSTS, TOOLS } from '@/lib/routes';
 ---
 
 <div class="panel-glass p-5 py-6 flex flex-col h-full group rounded-[40px] pointer-events-auto" style="background: rgba(255, 255, 255, 0.48); border: 1.5px solid rgba(255, 255, 255, 0.85);">
@@ -42,10 +42,10 @@ import { POSTS, DOCK } from '@/lib/routes';
       <span>近期文章</span>
     </a>
 
-    <!-- AI探索 -->
-    <a href={DOCK} class="flex items-center gap-3.5 px-4.5 py-2.5 rounded-2xl text-parchment-dim/75 hover:bg-white/40 hover:text-parchment transition-all text-[13.5px] font-body no-underline">
-      <Icon name="lucide:package" width={15} height={15} class="text-parchment-dim/40" />
-      <span>AI 探索</span>
+    <!-- 工具 -->
+    <a href={TOOLS} class="flex items-center gap-3.5 px-4.5 py-2.5 rounded-2xl text-parchment-dim/75 hover:bg-white/40 hover:text-parchment transition-all text-[13.5px] font-body no-underline">
+      <Icon name="lucide:wrench" width={15} height={15} class="text-parchment-dim/40" />
+      <span>工具</span>
     </a>
 
     <!-- 关于 -->

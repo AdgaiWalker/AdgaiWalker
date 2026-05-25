@@ -112,8 +112,8 @@ const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
   ];
 
   function initBrandCard() {
-    const el = document.getElementById('typing-text');
-    const quoteEl = document.getElementById('brand-quote');
+    const el = document.getElementById('typing-text') as HTMLElement;
+    const quoteEl = document.getElementById('brand-quote') as HTMLElement;
     if (!el || el.dataset.typed === 'true') return;
     el.dataset.typed = 'true';
 

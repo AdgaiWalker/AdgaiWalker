@@ -18,9 +18,10 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     items: [
-      { label: '关于', href: '/', icon: 'lucide:user', hint: 'About' },
-      { label: '工具', href: TOOLS, icon: 'lucide:wrench', hint: 'Tools' },
-      { label: '知识库', href: POSTS, icon: 'lucide:pen-line', hint: 'Database' },
+      { label: '首页', href: '/', icon: 'lucide:home', hint: 'Home' },
+      { label: '思考', href: POSTS, icon: 'lucide:pen-line', hint: 'Thinking' },
+      { label: '资源', href: TOOLS, icon: 'lucide:wrench', hint: 'Resources' },
+      { label: '关于', href: '/about', icon: 'lucide:user', hint: 'About' },
     ]
   },
 ];
@@ -30,9 +31,7 @@ const isHome = currentPath === '/';
 const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
 const isActiveHref = (href: string) => {
-  if (href === '/') {
-    return normalizedPath === '/';
-  }
+  if (href === '/') return normalizedPath === '/';
   return normalizedPath === href || normalizedPath.startsWith(`${href}/`);
 };
 ---
