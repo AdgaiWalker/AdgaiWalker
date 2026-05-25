@@ -1,11 +1,12 @@
 ---
-name: 极客常用交流群 (QQ群)
-description: 关于 Antigravity 切号插件官方群、廉价 AI 探索群、Codex API 中转与低价 Gemini 账号售卖交流群。
-category: community
+title: 极客常用交流群 (QQ群)
+date: 2026-05-01
 tags: [AI, 编程, 中转, QQ群]
+type: tool
+published: true
+summary: 关于 Antigravity 切号插件官方群、廉价 AI 探索群、Codex API 中转与低价 Gemini 账号售卖交流群。
 rating: 5
 url: https://lcndccjmtf4f.feishu.cn/wiki/GEZ2wYIwSiE8BNkJON9ccDsHnMg
-published: true
 communities:
   - name: Antigravity 官方群 (1025957317)
     description: 关于 Antigravity 切号插件官方群，AI 编程技术交流与疑问解答。
@@ -28,3 +29,5 @@ communities:
     badge: 账号售卖
     tag: "921917596"
 ---
+
+以下是几个常用的极客交流群，涵盖 AI 工具、API 中转、插件开发等方向。

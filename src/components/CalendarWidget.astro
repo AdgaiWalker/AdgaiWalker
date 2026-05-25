@@ -31,8 +31,8 @@ const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四
     ))}
 
     <!-- 空白填充 -->
-    {Array.from({ length: firstDayMon }, (_, i) => (
-      <div key={`empty-${i}`} />
+    {Array.from({ length: firstDayMon }, () => (
+      <div />
     ))}
 
     <!-- 日期数字 -->
@@ -42,7 +42,6 @@ const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四
       
       return (
         <div
-          key={`day-${day}`}
           class="text-[11.5px] font-body py-0.5 transition-colors leading-none flex items-center justify-center min-h-[22px]"
         >
           {isToday ? (

@@ -1,7 +1,6 @@
 ---
 /**
  * /posts/[slug] — 统一文章详情页
- * 合并原 /ai/[slug] 和 /life/[slug]，根据 entry.data.category 条件渲染。
  */
 import ArticleLayout from '../../layouts/ArticleLayout.astro';
 import PromptBlock from '../../components/PromptBlock.astro';
@@ -18,7 +17,9 @@ import { Icon } from 'astro-icon/components';
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const entries = await getCollection('log', ({ data }) => data.published);
+  const entries = await getCollection('log', ({ data }) =>
+    data.published && data.type === 'knowledge'
+  );
   return entries.map(entry => ({
     params: { slug: entry.id },
     props: { entry },
@@ -32,9 +33,8 @@ if (!entry) {
 }
 
 const { Content, headings } = await render(entry);
-const isAi = entry.data.category === 'ai';
 
-const components = isAi ? { PromptBlock, DialogueBubble, BilibiliVideo } : {};
+const components = { PromptBlock, DialogueBubble, BilibiliVideo };
 
 const formatDate = (d: Date) =>
   d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -50,12 +50,12 @@ const description = cleanBody.slice(0, 160);
 const coverImage = entry.data.cover;
 const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 
-const videos = isAi ? (entry.data.videos || []) : [];
-const resources = isAi ? (entry.data.resources || []) : [];
+const videos = entry.data.videos || [];
+const resources = entry.data.resources || [];
 
-const categoryLabel = isAi ? 'AI 探索' : '生活';
-
-const allArticles = await getCollection('log', ({ data }) => data.published);
+const allArticles = await getCollection('log', ({ data }) =>
+  data.published && data.type === 'knowledge'
+);
 const articleList = allArticles
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .map(a => ({
@@ -85,7 +85,6 @@ const platformIconMap: Record<string, string> = {
   canonicalUrl={Astro.url.href}
   headings={headings}
   currentSlug={entry.id}
-  category={entry.data.category}
   articleList={articleList}
 >
   <div class="article-reading-surface min-h-screen">
@@ -97,11 +96,9 @@ const platformIconMap: Record<string, string> = {
           </a>
           <span>/</span>
           <time>{formatDate(entry.data.date)}</time>
-          <span class={`px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter border ${
-            isAi
-              ? 'border-brand/20 bg-brand/5 text-[var(--color-brand)]'
-              : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
-          }`}>{categoryLabel}</span>
+          <span class="px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter border border-brand/20 bg-brand/5 text-[var(--color-brand)]">
+            知识
+          </span>
           <div class="article-meta-tags">
             {entry.data.tags.map((tag: string) => (
               <span class="px-2 py-0.5 bg-[rgba(255,255,255,0.03)] border border-[var(--color-nav-border)] text-[var(--color-parchment-dim)] rounded text-[11px] uppercase tracking-tighter">
@@ -115,7 +112,7 @@ const platformIconMap: Record<string, string> = {
           {entry.data.title}
         </h1>
 
-        {!isAi && coverImage && (
+        {coverImage && (
           <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl border border-[var(--color-nav-border)]">
             {typeof coverImage === 'string' ? (
               <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="w-full h-full object-cover" />
@@ -137,7 +134,7 @@ const platformIconMap: Record<string, string> = {
         <Content components={components} />
       </div>
 
-      {isAi && videos.length > 0 && (
+      {videos.length > 0 && (
         <div class="mt-20 pt-12 border-t border-slate-100">
           <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <Icon name="lucide:video" width={24} height={24} class="text-blue-500" />
@@ -161,7 +158,7 @@ const platformIconMap: Record<string, string> = {
         </div>
       )}
 
-      {isAi && resources.length > 0 && (
+      {resources.length > 0 && (
         <div class="mt-16 pt-12 border-t border-slate-100">
           <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <Icon name="lucide:link-2" width={24} height={24} class="text-emerald-500" />
@@ -181,7 +178,7 @@ const platformIconMap: Record<string, string> = {
       )}
 
       <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
-        <a href={POSTS} class={`text-slate-400 ${isAi ? 'hover:text-blue-500' : 'hover:text-emerald-500'} transition-colors no-underline flex items-center gap-2 text-sm font-medium`}>
+        <a href={POSTS} class="text-slate-400 hover:text-[var(--color-brand)] transition-colors no-underline flex items-center gap-2 text-sm font-medium">
           <Icon name="lucide:arrow-left" width={16} height={16} />
           返回文章
         </a>

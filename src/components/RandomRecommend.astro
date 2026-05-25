@@ -5,9 +5,10 @@
  */
 import { getCollection } from 'astro:content';
 import { postSlug } from '@/lib/routes';
-import { Icon } from 'astro-icon/components';
 
-const allLogs = await getCollection('log', ({ data }) => data.published);
+const allLogs = await getCollection('log', ({ data }) =>
+  data.published && data.type === 'knowledge'
+);
 const allContent = allLogs.map(l => {
   const rawText = l.body ? l.body.replace(/<[^>]+>/g, '').replace(/[#*_\\`\\[\\]()>|]/g, '').trim() : '';
   const wordCount = rawText.length;
@@ -24,9 +25,7 @@ const random = allContent[Math.floor(Math.random() * allContent.length)];
 
 // 根据类型映射精美的小配色和代号
 const typeLabels: Record<string, { label: string; bg: string; text: string }> = {
-  article: { label: 'DOC', bg: '#e0f2f1', text: '#00796b' },
-  photo: { label: 'PIC', bg: '#fce4ec', text: '#c2185b' },
-  thought: { label: 'IDEA', bg: '#fffde7', text: '#f57f17' },
+  knowledge: { label: 'DOC', bg: '#e0f2f1', text: '#00796b' },
   project: { label: 'DEV', bg: '#e8eaf6', text: '#3f51b5' },
 };
 const currentType = random ? typeLabels[random.type] || { label: 'BOOK', bg: '#fffdeb', text: '#ed8936' } : { label: 'BOOK', bg: '#fffdeb', text: '#ed8936' };

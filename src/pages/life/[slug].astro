@@ -1,7 +1,0 @@
----
-/**
- * /life/[slug] — 旧文章 URL，服务端 301 到 /posts/[slug]。
- */
----
-
-{Astro.redirect(Astro.params.slug ? `/posts/${Astro.params.slug}` : '/posts', 301)}

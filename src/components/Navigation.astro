@@ -1,6 +1,6 @@
 ---
 import SearchModal from './SearchModal.astro';
-import { POSTS, DOCK, AI_IDEAS } from '@/lib/routes';
+import { POSTS, TOOLS } from '@/lib/routes';
 import { Icon } from 'astro-icon/components';
 
 interface NavItem {
@@ -18,10 +18,10 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     items: [
-      { label: '文章', href: POSTS, icon: 'lucide:pen-line', hint: 'Posts' },
-      { label: 'Idea空间', href: '/idea', icon: 'lucide:layout-dashboard', hint: 'Idea Hub' },
-      { label: 'AI探索', href: DOCK, icon: 'lucide:package', hint: 'Resources' },
-      { label: 'Idea', href: AI_IDEAS, icon: 'lucide:lightbulb' },
+      { label: '首页', href: '/', icon: 'lucide:home', hint: 'Home' },
+      { label: '知识', href: POSTS, icon: 'lucide:pen-line', hint: 'Knowledge' },
+      { label: '工具', href: TOOLS, icon: 'lucide:wrench', hint: 'Tools & Ideas' },
+      { label: '关于', href: '/about', icon: 'lucide:user', hint: 'About' },
     ]
   },
 ];
@@ -31,9 +31,7 @@ const isHome = currentPath === '/';
 const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
 const isActiveHref = (href: string) => {
-  if (href === '/idea') {
-    return normalizedPath === '/idea';
-  }
+  if (href === '/') return normalizedPath === '/';
   return normalizedPath === href || normalizedPath.startsWith(`${href}/`);
 };
 ---

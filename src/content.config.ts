@@ -8,17 +8,23 @@ const log = defineCollection({
     title: z.string(),
     date: z.date(),
     tags: z.array(z.string()),
-    category: z.enum(['utopia', 'ai', 'life']),
-    type: z.enum(['article', 'thought', 'photo', 'project', 'idea']),
+    type: z.enum(['knowledge', 'tool', 'idea', 'project']),
     published: z.boolean().default(true),
     summary: z.string().optional(),
     description: z.string().optional(),
     cover: z.union([image(), z.url()]).optional(),
-
-    // Idea 专属字段
-    status: z.enum(['open', 'completed']).optional(),
-    claimInfo: z.string().optional(),
-
+    category: z.string().optional(),
+    status: z.enum(['thinking', 'practicing', 'verified', 'archived']).optional(),
+    rating: z.number().min(1).max(5).optional(),
+    url: z.url().optional(),
+    qrCode: z.string().optional(),
+    communities: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      qrCode: z.string(),
+      badge: z.string(),
+      tag: z.string(),
+    })).optional(),
     videos: z.array(z.object({
       platform: z.enum(['bilibili', 'douyin', 'xiaohongshu', 'youtube', 'github', 'zhihu']),
       url: z.url(),
@@ -33,26 +39,4 @@ const log = defineCollection({
   }),
 });
 
-const dockItem = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/dock' }),
-  schema: z.object({
-    name: z.string(),
-    description: z.string(),
-    category: z.enum(['tool', 'skill', 'info-source', 'community']),
-    tags: z.array(z.string()),
-    rating: z.number().min(1).max(5).optional(),
-    url: z.url().optional(),
-    published: z.boolean().default(true),
-    qrCode: z.string().optional(),
-    communities: z.array(z.object({
-      name: z.string(),
-      description: z.string(),
-      qrCode: z.string(),
-      badge: z.string(),
-      tag: z.string(),
-    })).optional(),
-  }),
-});
-
-export const collections = { log, dockItem };
-
+export const collections = { log };

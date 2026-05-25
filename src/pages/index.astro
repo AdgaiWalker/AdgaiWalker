@@ -13,9 +13,12 @@ export const prerender = true;
 
 // 动态载入真实的文章集合
 const allLogs = await getCollection('log', ({ data }) => data.published);
-const aiLogs = allLogs
-  .filter(log => log.data.category === 'ai')
+const recentLogs = allLogs
+  .filter(log => log.data.type === 'knowledge')
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const toolEntries = await getCollection('log', ({ data }) =>
+  data.published && (data.type === 'tool' || data.type === 'idea')
+);
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">
@@ -52,7 +55,7 @@ const aiLogs = allLogs
         <div class="flex flex-col gap-4.5 mt-2">
           <!-- 最近文章 (读取真实的本地文章列表) -->
           <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px]">
-            <RecentTraces logs={aiLogs} />
+            <RecentTraces logs={recentLogs} />
           </div>
 
           <!-- 极简毛玻璃搜索入口 -->
@@ -110,7 +113,7 @@ const aiLogs = allLogs
         <div class="flex flex-col gap-4.5 mt-2">
           <!-- 装备库展示卡 -->
           <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px]">
-            <DockShowcase />
+            <DockShowcase entries={toolEntries} />
           </div>
         </div>
 
@@ -692,8 +695,6 @@ const aiLogs = allLogs
     
     // 全局视图缩放状态 (平移已固定，默认居中且一屏可见)
     let scale = 1.0;
-    let panX = 0;
-    let panY = 0;
 
     // 1. 自动计算适合当前视口的缩放比例，默认完美展示所有内容且居中 (一屏全包揽，解决滚动条痛苦)
     function autoFitScale() {
@@ -707,8 +708,6 @@ const aiLogs = allLogs
       autoScale = Math.min(autoScale, 1.05); // 最大不宜超过 1.05
       
       scale = autoScale;
-      panX = 0;
-      panY = 0;
       
       updateCanvasTransform();
     }
@@ -862,7 +861,7 @@ const aiLogs = allLogs
       const updateCustomOrbColor = (index: number, val: string) => {
         document.body.style.setProperty(`--orb-color-${index}`, val);
         
-        let savedColors = {};
+        let savedColors: Record<string, string> = {};
         try {
           savedColors = JSON.parse(localStorage.getItem('walker-custom-colors') || '{}');
         } catch {}

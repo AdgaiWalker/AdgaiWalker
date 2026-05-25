@@ -1,0 +1,142 @@
+---
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import { getCollection } from 'astro:content';
+import { Icon } from 'astro-icon/components';
+
+export const prerender = true;
+
+const allTools = await getCollection('log', ({ data }) =>
+  data.published && (data.type === 'tool' || data.type === 'idea')
+);
+const tools = allTools.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const toolItems = tools.filter(entry => entry.data.type === 'tool');
+const ideaItems = tools.filter(entry => entry.data.type === 'idea');
+---
+
+<SidebarLayout
+  title="工具与点子 — Walker"
+  description="前行路上用到的工具、冒出的点子。"
+  pageTitle="工具与点子"
+  pageSubtitle="Tools & Ideas"
+  pageIcon="wrench"
+  itemCount={tools.length}
+  itemUnit="件"
+>
+  <div class="space-y-10">
+    <div class="flex gap-2 flex-wrap" id="tool-filters">
+      <button class="filter-btn active px-3 py-1 rounded-full text-xs font-medium border transition-all" data-filter="all">
+        全部 ({tools.length})
+      </button>
+      <button class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-[var(--color-nav-border)] text-parchment-dim hover:border-brand/40 transition-all" data-filter="tool">
+        工具 ({toolItems.length})
+      </button>
+      <button class="filter-btn px-3 py-1 rounded-full text-xs font-medium border border-[var(--color-nav-border)] text-parchment-dim hover:border-brand/40 transition-all" data-filter="idea">
+        点子 ({ideaItems.length})
+      </button>
+    </div>
+
+    <div class="space-y-4" id="tools-list">
+      {tools.map(entry => {
+        const href = entry.data.url ?? '/tools';
+        const isExternal = Boolean(entry.data.url);
+
+        return (
+          <a
+            href={href}
+            target={isExternal ? '_blank' : undefined}
+            rel={isExternal ? 'noopener noreferrer' : undefined}
+            class:list={[
+              'tool-item block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline',
+              `type-${entry.data.type}`,
+            ]}
+            data-type={entry.data.type}
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <Icon
+                    name={entry.data.type === 'idea' ? 'lucide:lightbulb' : 'lucide:wrench'}
+                    width={14}
+                    height={14}
+                    class="text-brand shrink-0"
+                  />
+                  <h3 class="text-sm font-bold truncate">{entry.data.title}</h3>
+                  {entry.data.status && (
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand/10 text-brand border border-brand/20">
+                      {entry.data.status}
+                    </span>
+                  )}
+                </div>
+                {entry.data.summary && (
+                  <p class="text-xs text-parchment-dim leading-relaxed line-clamp-2">
+                    {entry.data.summary}
+                  </p>
+                )}
+                <div class="flex items-center gap-2 mt-2">
+                  {entry.data.tags.slice(0, 3).map(tag => (
+                    <span class="text-[10px] text-parchment-dim/60 font-mono">#{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                {entry.data.rating && (
+                  <div class="flex items-center gap-0.5">
+                    {Array.from({ length: entry.data.rating }).map(() => (
+                      <Icon name="lucide:star" width={10} height={10} class="text-amber-400" />
+                    ))}
+                  </div>
+                )}
+                {entry.data.url && (
+                  <Icon name="lucide:external-link" width={12} height={12} class="text-parchment-dim/40" />
+                )}
+              </div>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+
+    {tools.length === 0 && (
+      <div class="text-center py-20 text-parchment-dim">
+        <Icon name="lucide:package-open" width={40} height={40} class="mx-auto mb-4 opacity-30" />
+        <p class="text-sm">还没有工具或点子</p>
+      </div>
+    )}
+  </div>
+</SidebarLayout>
+
+<script>
+  function initFilter() {
+    const btns = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+    const items = document.querySelectorAll<HTMLElement>('.tool-item');
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+
+        btns.forEach(other => {
+          other.classList.remove('active');
+          other.classList.add('border-[var(--color-nav-border)]', 'text-parchment-dim');
+        });
+        btn.classList.add('active');
+        btn.classList.remove('border-[var(--color-nav-border)]', 'text-parchment-dim');
+
+        items.forEach(item => {
+          const type = item.getAttribute('data-type');
+          item.style.display = filter === 'all' || type === filter ? '' : 'none';
+        });
+      });
+    });
+  }
+
+  initFilter();
+  document.addEventListener('astro:page-load', initFilter);
+</script>
+
+<style>
+  .filter-btn.active {
+    background: var(--color-brand);
+    color: white;
+    border-color: var(--color-brand);
+  }
+</style>
