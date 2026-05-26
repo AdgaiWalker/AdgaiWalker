@@ -2,7 +2,7 @@
 import GreetingCard from '../GreetingCard.astro';
 import RecentTraces from '../RecentTraces.astro';
 import BrandCard from '../BrandCard.astro';
-import DockShowcase from '../DockShowcase.astro';
+import FeaturedTools from '../FeaturedTools.astro';
 import { Icon } from 'astro-icon/components';
 import type { CollectionEntry } from 'astro:content';
 
@@ -74,7 +74,7 @@ const { recentLogs, toolEntries } = Astro.props;
 
       <div class="flex flex-col gap-4.5 mt-2">
         <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px]">
-          <DockShowcase entries={toolEntries} />
+          <FeaturedTools entries={toolEntries} />
         </div>
       </div>
     </div>

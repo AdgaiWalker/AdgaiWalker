@@ -1,7 +1,7 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
-import { postSlug } from '@/lib/routes';
+import { buildPostPath } from '@/lib/routes';
 
 export async function GET(context: APIContext) {
   const logs = await getCollection('log', ({ data }) => data.published);
@@ -14,7 +14,7 @@ export async function GET(context: APIContext) {
       title: post.data.title,
       pubDate: post.data.date,
       description: post.data.summary || post.data.description || '阅读完整内容...',
-      link: `${postSlug(post.id)}/`,
+      link: `${buildPostPath(post.id)}/`,
     })),
     customData: `<language>zh-cn</language>`,
   });

@@ -438,10 +438,6 @@ body.theme-mint .nav-active-indicator {
   box-shadow: inset 0 0 20px rgba(53, 191, 171, 0.08);
 }
 
-.glow-gold {
-  box-shadow: inset 0 0 20px rgba(53, 191, 171, 0.08);
-}
-
 /* ========== 左侧彩色指示条 ========== */
 
 .card-accent-left {

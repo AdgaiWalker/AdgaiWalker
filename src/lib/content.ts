@@ -6,7 +6,7 @@ export async function getPublishedPosts() {
   )).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
-export async function getPublishedTools() {
+export async function getPublishedResources() {
   return (await getCollection('log', ({ data }) =>
     data.published && (data.type === 'tool' || data.type === 'idea')
   )).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());

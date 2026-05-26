@@ -1,8 +1,8 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { postSlug } from '@/lib/routes';
+import { buildPostPath } from '@/lib/routes';
 import { getPublishedPosts } from '@/lib/content';
-import { formatDateShort } from '@/lib/format';
+import { formatDateCompact } from '@/lib/format';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
@@ -63,13 +63,16 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
           <div class="panel-glass rounded-2xl overflow-hidden border border-[var(--color-nav-border)]">
             <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
               {groupedLogs[year].map(log => (
-                <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
-                  <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateShort(log.data.date)}</time>
+                <a href={buildPostPath(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
+                  <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateCompact(log.data.date)}</time>
                   <div class="flex-1 min-w-0">
                     <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] font-sans font-bold text-brand bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-md">🧠 思考</span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-sans font-bold text-brand bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-md">
+                      <Icon name="lucide:brain" width={10} height={10} />
+                      思考
+                    </span>
                     {log.data.tags.slice(0, 2).map((tag: string) => (
                       <span class="text-[11px] font-mono text-parchment-dim bg-brand/5 border border-brand/10 px-2 py-0.5 rounded-md opacity-80">#{tag}</span>
                     ))}

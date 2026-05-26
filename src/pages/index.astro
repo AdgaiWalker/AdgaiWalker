@@ -4,12 +4,12 @@ import HomeCanvas from '../components/home/HomeCanvas.astro';
 import SparkBoxModal from '../components/home/SparkBoxModal.astro';
 import CustomPalette from '../components/home/CustomPalette.astro';
 import CanvasZoomControls from '../components/home/CanvasZoomControls.astro';
-import { getPublishedPosts, getPublishedTools } from '@/lib/content';
+import { getPublishedPosts, getPublishedResources } from '@/lib/content';
 
 export const prerender = true;
 
 const recentLogs = await getPublishedPosts();
-const toolEntries = await getPublishedTools();
+const toolEntries = await getPublishedResources();
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">

@@ -1,11 +1,11 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { getPublishedTools } from '@/lib/content';
+import { getPublishedResources } from '@/lib/content';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
-const tools = await getPublishedTools();
+const tools = await getPublishedResources();
 const toolItems = tools.filter(entry => entry.data.type !== 'idea');
 const ideaItems = tools.filter(entry => entry.data.type === 'idea');
 ---
