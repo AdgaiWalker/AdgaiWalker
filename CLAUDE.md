@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、精选工具和社交链接；内页包含文章列表与阅读页、资源工具页、侧边栏导航、Pagefind 搜索和 Supabase 点赞。
+Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、精选工具、项目入口、点子入口和社交链接；内页包含文章列表与阅读页、资源工具页、点子库、项目页、侧边栏导航、Pagefind 搜索和 Supabase 点赞。站点结构对齐"个人前进系统"：思考（posts）、资源（tools）、点子（ideas）、项目（projects）。
 
 ## 常用命令
 
@@ -20,7 +20,7 @@ npx astro check    # Astro 类型检查
 ### 渲染与部署
 
 - **输出模式**：`output: 'server'`，通过 `@astrojs/vercel` 适配器部署。
-- **预渲染**：主要内容页启用 `prerender = true`，包括首页、文章列表、文章详情、资源列表、关于页、404；旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
+- **预渲染**：主要内容页启用 `prerender = true`，包括首页、文章列表、文章详情、资源列表、点子列表、项目列表、关于页、404；旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
 - **图片服务**：Vercel Image Optimization 已启用，`@astrojs/vercel` adapter 配置了 `imageService` 和图片尺寸。
 - **性能配置**：Astro `prefetch.defaultStrategy = 'hover'`，并启用 `experimental.svgo`。
 - **构建流程**：`astro build` → `pagefind --site dist/client --output-path .vercel/output/static/pagefind`。
@@ -29,14 +29,14 @@ npx astro check    # Astro 类型检查
 
 在 `src/content.config.ts` 中定义一个集合：
 
-- **`log`**：博客文章、想法、工具和项目，来源 `src/content/log/`。支持 `.md` 和 `.mdx`。Schema 包含 `title`、`date`、`tags`、`category`、`type`（枚举：`knowledge`、`tool`、`idea`、`project`）、`published`、`summary`、`description`、`cover`、`status`（枚举：`thinking`、`practicing`、`verified`、`archived`）、`rating`（1-5）、`url`、`qrCode`、`communities`（对象数组）、`videos`、`resources` 等字段。`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`。
+- **`log`**：博客文章、想法、工具和项目，来源 `src/content/log/`。支持 `.md` 和 `.mdx`。Schema 包含 `title`、`date`、`tags`、`category`、`type`（枚举：`knowledge`、`tool`、`idea`、`project`、`community`）、`published`、`summary`、`description`、`cover`、`status`（枚举：`thinking`、`practicing`、`verified`、`archived`）、`rating`（1-5）、`url`、`qrCode`、`communities`（对象数组）、`videos`、`resources` 等字段。`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`。
 
 ### 布局系统
 
 共有四个布局：
 
 1. **`Base.astro`**：根外壳。处理共享 head、JSON-LD、导航、页脚、环境粒子画布、鼠标光晕和阅读模式。共享 head 由 `src/components/shared/HeadCommon.astro` 提供。
-2. **`SidebarLayout.astro`**：通用内页布局，带页面头部、图标和计数。用于 `/posts`、`/tools` 等列表型页面。
+2. **`SidebarLayout.astro`**：通用内页布局，带页面头部、图标和计数。用于 `/posts`、`/tools`、`/ideas`、`/projects` 等列表型页面。
 3. **`ArticleLayout.astro`**：三栏文章视图，导航栏注入 `ArticleNav`，内容区使用 `pureMode=true` 的阅读模式。
 4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about`。
 
@@ -45,9 +45,11 @@ npx astro check    # Astro 类型检查
 | 路径 | 页面 | 布局 |
 | --- | --- | --- |
 | `/` | 个人空间（可拖拽 Bento Box 画布） | Base |
-| `/posts` | 统一文章列表 | SidebarLayout |
-| `/posts/[slug]` | 统一文章详情 | ArticleLayout |
-| `/tools` | 资源列表（工具与点子） | SidebarLayout |
+| `/posts` | 文章列表（思考） | SidebarLayout |
+| `/posts/[slug]` | 文章详情 | ArticleLayout |
+| `/tools` | 资源列表（工具） | SidebarLayout |
+| `/ideas` | 点子库 | SidebarLayout |
+| `/projects` | 项目列表 | SidebarLayout |
 | `/about` | 关于页 | FullscreenLayout |
 | `/404` | 404 页面 | Base |
 | `/rss.xml` | RSS 订阅源 | 无布局 |
@@ -109,8 +111,8 @@ npx astro check    # Astro 类型检查
 
 ### 辅助模块
 
-- **`src/lib/routes.ts`**：路由常量（`POSTS`、`TOOLS`、`buildPostPath`），被 Navigation、RSS 等模块引用。
-- **`src/lib/content.ts`**：内容查询函数（`getPublishedPosts`、`getPublishedResources`），集中过滤和排序逻辑。
+- **`src/lib/routes.ts`**：路由常量（`POSTS`、`TOOLS`、`IDEAS`、`PROJECTS`、`buildPostPath`），被 Navigation、RSS 等模块引用。
+- **`src/lib/content.ts`**：内容查询函数（`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`），集中过滤和排序逻辑。
 - **`src/lib/format.ts`**：日期格式化（`formatDateCompact` → `MM/DD`、`formatDateLocale` → zh-CN 本地化、`formatDateNumeric` → `YYYY/MM/DD`）。
 - **`src/lib/constants.ts`**：共享常量（`PLATFORM_ICON_MAP` 等）。
 
