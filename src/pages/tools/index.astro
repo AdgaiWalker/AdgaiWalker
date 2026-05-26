@@ -1,15 +1,12 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { getCollection } from 'astro:content';
+import { getPublishedTools } from '@/lib/content';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
-const allTools = await getCollection('log', ({ data }) =>
-  data.published && (data.type === 'tool' || data.type === 'idea')
-);
-const tools = allTools.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-const toolItems = tools.filter(entry => entry.data.type === 'tool');
+const tools = await getPublishedTools();
+const toolItems = tools.filter(entry => entry.data.type !== 'idea');
 const ideaItems = tools.filter(entry => entry.data.type === 'idea');
 ---
 

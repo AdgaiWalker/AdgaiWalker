@@ -1,0 +1,26 @@
+---
+import { Icon } from 'astro-icon/components';
+---
+
+{/* 移动端顶部栏 */}
+<div class="flex lg:hidden items-center justify-between px-4 py-3 w-full bg-[var(--color-nav-bg)] backdrop-blur-md border-b border-[var(--color-nav-border)]">
+  <a href="/" class="flex items-center font-heading text-lg font-bold text-parchment hover:text-brand transition-colors no-underline">
+    Walker
+  </a>
+  <div class="flex items-center gap-3">
+    <button
+      class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
+      id="mobile-search-btn"
+      aria-label="搜索"
+    >
+      <Icon name="lucide:search" width={20} height={20} />
+    </button>
+    <button
+      class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
+      id="menu-toggle"
+      aria-label="打开菜单"
+    >
+      <Icon name="lucide:menu" width={22} height={22} />
+    </button>
+  </div>
+</div>

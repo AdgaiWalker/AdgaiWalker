@@ -11,7 +11,9 @@ interface Props {
   ogTitle?: string;
   ogDescription?: string;
   canonicalUrl?: string;
+  themeColor?: string;
   pureMode?: boolean;
+  fullscreen?: boolean;
   theme?: 'nature' | 'blue' | 'emerald' | 'charcoal';
 }
 
@@ -22,7 +24,9 @@ const {
   ogTitle,
   ogDescription,
   canonicalUrl,
+  themeColor,
   pureMode = false,
+  fullscreen = false,
 } = Astro.props;
 
 const isHome = Astro.url.pathname === '/';
@@ -39,10 +43,11 @@ const isHome = Astro.url.pathname === '/';
       ogTitle={ogTitle}
       ogDescription={ogDescription}
       canonicalUrl={canonicalUrl}
+      themeColor={themeColor}
     />
     
     <!-- JSON-LD 结构化数据 -->
-    <script is:inline type="application/ld+json" set:html={JSON.stringify({
+    {!fullscreen && <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Walker 知识空间",
@@ -55,41 +60,41 @@ const isHome = Astro.url.pathname === '/';
         "url": Astro.site?.toString() || "https://iwalk.pro"
       },
       "inLanguage": "zh-CN"
-    })} />
+    })} />}
     
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
   </head>
-  <body class:list={["min-h-screen flex flex-col", pureMode ? "reading-mode" : ""]}>
+  <body class:list={["min-h-screen flex flex-col", pureMode ? "reading-mode" : "", fullscreen ? "fullscreen-layout" : ""]}>
     {/* 全局环境背景层：自适应晶莹底色，搭载细微噪声格网纹理与光晕 */}
-    <div class="fixed inset-0 -z-20 overflow-hidden bg-transparent" aria-hidden="true">
+    {!fullscreen && <div class="fixed inset-0 -z-20 overflow-hidden bg-transparent" aria-hidden="true">
       {/* 极弱极细格线网纹 */}
       <div class="absolute inset-0 opacity-[0.015] pointer-events-none" style="background-image: radial-gradient(#000 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
-    </div>
+    </div>}
     
     {/* 鼠标跟随光晕 */}
-    <div class="mouse-glow" id="mouse-glow" aria-hidden="true"></div>
+    {!fullscreen && <div class="mouse-glow" id="mouse-glow" aria-hidden="true"></div>}
     
     {/* 噪点纹理叠加 */}
-    <div class="grain-overlay" aria-hidden="true"></div>
+    {!fullscreen && <div class="grain-overlay" aria-hidden="true"></div>}
 
-    <Navigation transition:persist>
+    {!fullscreen && <Navigation transition:persist>
       <slot name="nav-extension" />
-    </Navigation>
-    <div class:list={["flex flex-col flex-1 w-full", !isHome && "site-main-shell"]} transition:animate="fade">
+    </Navigation>}
+    <div class:list={["flex flex-col flex-1 w-full", !isHome && !fullscreen && "site-main-shell"]} transition:animate="fade">
       <main class="flex-1 relative z-10 w-full">
         <slot />
       </main>
-      {!isHome && <Footer />}
+      {!isHome && !fullscreen && <Footer />}
     </div>
 
-    <script>
+    {!fullscreen && <script>
       import '../scripts/scroll-fade';
+      import { setupTilt } from '../scripts/tilt-effect';
 
       // --- 鼠标跟随光晕 ---
       let glowAbort: AbortController | null = null;
-      let tiltAbort: AbortController | null = null;
-      let tiltFrame = 0;
+      let tiltCleanup: (() => void) | null = null;
 
       const setupMouseGlow = () => {
         glowAbort?.abort();
@@ -114,53 +119,28 @@ const isHome = Astro.url.pathname === '/';
         }, { signal });
       };
 
-      // --- 3D 磁性卡片逻辑 ---
-      const setupTilt = () => {
-        tiltAbort?.abort();
-        tiltAbort = new AbortController();
-        const { signal } = tiltAbort;
-        const cards = document.querySelectorAll('.panel-glass');
-        
-        cards.forEach((card: any) => {
-          card.addEventListener('mousemove', (e: MouseEvent) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            // 计算旋转角度 (最大 2 度，更细腻)
-            const rotateX = ((y - centerY) / centerY) * -2;
-            const rotateY = ((x - centerX) / centerX) * 2;
-            
-            cancelAnimationFrame(tiltFrame);
-            tiltFrame = requestAnimationFrame(() => {
-              card.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.008, 1.008, 1.008)`;
-            });
-          }, { signal });
-          
-          card.addEventListener('mouseleave', () => {
-            cancelAnimationFrame(tiltFrame);
-            card.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-          }, { signal });
+      const setupPanelTilt = () => {
+        tiltCleanup?.();
+        tiltCleanup = setupTilt('.panel-glass', {
+          perspective: 1200,
+          maxRotation: 2,
+          scale: 1.008,
         });
       };
 
       setupMouseGlow();
-      setupTilt();
+      setupPanelTilt();
       document.addEventListener('astro:page-load', () => {
         setupMouseGlow();
-        setupTilt();
+        setupPanelTilt();
       });
 
       document.addEventListener('astro:before-swap', () => {
         glowAbort?.abort();
         glowAbort = null;
-        tiltAbort?.abort();
-        tiltAbort = null;
-        cancelAnimationFrame(tiltFrame);
+        tiltCleanup?.();
+        tiltCleanup = null;
       });
-    </script>
+    </script>}
   </body>
 </html>

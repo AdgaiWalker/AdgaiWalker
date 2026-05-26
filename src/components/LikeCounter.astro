@@ -9,6 +9,7 @@ interface Props {
 }
 
 const { pagePath } = Astro.props;
+const FALLBACK_COUNT = 17861;
 ---
 
 <div class="like-wrapper pointer-events-auto relative">
@@ -17,6 +18,7 @@ const { pagePath } = Astro.props;
     type="button"
     data-like-counter
     data-page-path={pagePath}
+    data-fallback-count={FALLBACK_COUNT}
     aria-label="喜欢这个页面"
     id="main-like-btn"
   >
@@ -31,7 +33,7 @@ const { pagePath } = Astro.props;
     </span>
 
     <!-- 计数值 -->
-    <span class="text-[11.5px] font-body font-bold text-parchment/65 leading-none transition-colors pointer-events-none" data-like-count>17861</span>
+    <span class="text-[11.5px] font-body font-bold text-parchment/65 leading-none transition-colors pointer-events-none" data-like-count>{FALLBACK_COUNT}</span>
   </button>
 </div>
 
@@ -103,14 +105,14 @@ const { pagePath } = Astro.props;
     Prefer: 'resolution=merge-duplicates',
   };
 
-  async function fetchCount(pagePath: string): Promise<number> {
+  async function fetchCount(pagePath: string, fallbackCount: number): Promise<number> {
     const res = await fetch(
       `${SB_URL}/rest/v1/likes?select=count&page_path=eq.${encodeURIComponent(pagePath)}`,
       { headers }
     );
-    if (!res.ok) return 17861;
+    if (!res.ok) return fallbackCount;
     const rows: { count: number }[] = await res.json();
-    return rows[0]?.count ?? 17861;
+    return rows[0]?.count ?? fallbackCount;
   }
 
   async function upsertCount(pagePath: string, nextCount: number): Promise<number> {
@@ -158,6 +160,7 @@ const { pagePath } = Astro.props;
       button.dataset.ready = 'true';
 
       const pagePath = button.dataset.pagePath ?? '/';
+      const fallbackCount = Number(button.dataset.fallbackCount ?? '0');
       const countEl = button.querySelector<HTMLElement>('[data-like-count]');
       const outlineIcon = button.querySelector<HTMLElement>('.heart-outline');
       const filledIcon = button.querySelector<HTMLElement>('.heart-filled');
@@ -182,9 +185,9 @@ const { pagePath } = Astro.props;
       }
 
       if (SB_URL && SB_KEY) {
-        fetchCount(pagePath).then(setCount).catch(() => setCount(17861));
+        fetchCount(pagePath, fallbackCount).then(setCount).catch(() => setCount(fallbackCount));
       } else {
-        setCount(17861);
+        setCount(fallbackCount);
       }
 
       button.addEventListener('click', async (e) => {
@@ -198,9 +201,9 @@ const { pagePath } = Astro.props;
 
         button.disabled = true;
         try {
-          let finalCount = 17862;
+          let finalCount = fallbackCount + 1;
           if (SB_URL && SB_KEY) {
-            const current = await fetchCount(pagePath);
+            const current = await fetchCount(pagePath, fallbackCount);
             const nextCount = current + 1;
             finalCount = await upsertCount(pagePath, nextCount);
           }

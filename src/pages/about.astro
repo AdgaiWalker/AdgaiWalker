@@ -94,17 +94,17 @@ export const prerender = true;
 
       {/* 身份微卡 (三折页设计) */}
       <div class="about-labels-grid grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+        <div class="about-pillar-card postcard p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
           <Icon name="lucide:cpu" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
           <span class="text-xs font-semibold">AI 实践者</span>
           <span class="text-[10px] text-parchment-dim mt-0.5">用 AI 把想法做出来</span>
         </div>
-        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+        <div class="about-pillar-card postcard p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
           <Icon name="lucide:user-round" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
           <span class="text-xs font-semibold">点子社区建设者</span>
           <span class="text-[10px] text-parchment-dim mt-0.5">帮普通人把点子落地</span>
         </div>
-        <div class="about-pillar-card p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
+        <div class="about-pillar-card postcard p-3 rounded-xl border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.03)] flex flex-col items-center text-center transition-all duration-300 hover:border-brand/40 hover:-translate-y-1">
           <Icon name="lucide:compass" width={18} height={18} class="text-[var(--color-brand)] mb-1" />
           <span class="text-xs font-semibold">独自前行者</span>
           <span class="text-[10px] text-parchment-dim mt-0.5">空杯、行动、验证、纠偏</span>
@@ -343,7 +343,7 @@ export const prerender = true;
         <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
           
           {/* 致谢 3D 明信片 */}
-          <div class="panel-glass thank-postcard p-6 relative overflow-hidden transition-all duration-500 hover:rotate-1 text-left sm:text-left">
+          <div class="panel-glass thank-postcard postcard p-6 relative overflow-hidden transition-all duration-500 hover:rotate-1 text-left sm:text-left">
             <div class="thank-postcard-stamp absolute top-4 right-4 border-2 border-dashed border-brand/40 p-1 text-[9px] text-brand select-none opacity-40 font-mono tracking-widest">
               航行信戳
             </div>
@@ -417,6 +417,10 @@ export const prerender = true;
 </FullscreenLayout>
 
 <script>
+  import { setupTilt } from '../scripts/tilt-effect';
+
+  let postcardTiltCleanup: (() => void) | null = null;
+
   // 视差滚动与浮动导轨高亮逻辑
   function initParallaxAndNav() {
     const hero = document.getElementById('hero-section');
@@ -493,27 +497,11 @@ export const prerender = true;
 
   // 3D 物理磁性倾斜与玉石扫光反馈
   function initTiltPostcards() {
-    const cards = document.querySelectorAll('.about-pillar-card, .thank-postcard');
-    
-    cards.forEach((card: any) => {
-      card.addEventListener('mousemove', (e: MouseEvent) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        
-        // 计算旋转倾斜度
-        const rotateX = ((y - centerY) / centerY) * -8;
-        const rotateY = ((x - centerX) / centerX) * 8;
-        
-        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-      });
-      
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-      });
+    postcardTiltCleanup?.();
+    postcardTiltCleanup = setupTilt('.postcard', {
+      perspective: 1000,
+      maxRotation: 8,
+      scale: 1.02,
     });
   }
 
@@ -611,6 +599,11 @@ export const prerender = true;
     initGravityText();
     initUptime();
     initCopyEmail();
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    postcardTiltCleanup?.();
+    postcardTiltCleanup = null;
   });
 </script>
 

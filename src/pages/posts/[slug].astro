@@ -9,24 +9,33 @@ import LikeCounter from '../../components/LikeCounter.astro';
 import BilibiliVideo from '../../components/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, postSlug } from '@/lib/routes';
+import { getPublishedPosts } from '@/lib/content';
+import { PLATFORM_ICON_MAP } from '@/lib/constants';
+import { formatDateLong } from '@/lib/format';
 
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import { Image } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const entries = await getCollection('log', ({ data }) =>
-    data.published && data.type === 'knowledge'
-  );
+  const entries = await getPublishedPosts();
+  const articleList = entries.map(a => ({
+    id: a.id,
+    title: a.data.title,
+    date: a.data.date,
+    tags: a.data.tags,
+    summary: a.data.summary,
+  }));
+
   return entries.map(entry => ({
     params: { slug: entry.id },
-    props: { entry },
+    props: { entry, articleList },
   }));
 }
 
-const { entry } = Astro.props;
+const { entry, articleList } = Astro.props;
 
 if (!entry) {
   return Astro.redirect('/404');
@@ -35,9 +44,6 @@ if (!entry) {
 const { Content, headings } = await render(entry);
 
 const components = { PromptBlock, DialogueBubble, BilibiliVideo };
-
-const formatDate = (d: Date) =>
-  d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
 
 const rawBody = entry.body || '';
 const cleanBody = rawBody
@@ -53,27 +59,6 @@ const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 const videos = entry.data.videos || [];
 const resources = entry.data.resources || [];
 
-const allArticles = await getCollection('log', ({ data }) =>
-  data.published && data.type === 'knowledge'
-);
-const articleList = allArticles
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .map(a => ({
-    id: a.id,
-    title: a.data.title,
-    date: a.data.date,
-    tags: a.data.tags,
-    summary: a.data.summary,
-  }));
-
-const platformIconMap: Record<string, string> = {
-  bilibili: 'lucide:circle-play',
-  douyin: 'lucide:music',
-  xiaohongshu: 'lucide:book-open',
-  youtube: 'lucide:youtube',
-  github: 'lucide:github',
-  zhihu: 'lucide:message-circle',
-};
 ---
 
 <ArticleLayout
@@ -95,7 +80,7 @@ const platformIconMap: Record<string, string> = {
             文章
           </a>
           <span>/</span>
-          <time>{formatDate(entry.data.date)}</time>
+          <time>{formatDateLong(entry.data.date)}</time>
           <span class="px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter border border-brand/20 bg-brand/5 text-[var(--color-brand)]">
             知识
           </span>
@@ -145,7 +130,7 @@ const platformIconMap: Record<string, string> = {
               <a href={vid.url} target="_blank" rel="noopener noreferrer" class="group block p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all no-underline bg-white">
                 <div class="flex items-center gap-3 mb-3">
                   <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                    <Icon name={platformIconMap[vid.platform] || 'lucide:circle-play'} width={20} height={20} />
+                    <Icon name={PLATFORM_ICON_MAP[vid.platform] || 'lucide:circle-play'} width={20} height={20} />
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-bold text-slate-900 truncate">{vid.title || '观看视频'}</div>

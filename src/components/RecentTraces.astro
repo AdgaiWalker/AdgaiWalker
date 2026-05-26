@@ -5,6 +5,7 @@
  */
 import { Icon } from 'astro-icon/components';
 import { POSTS, postSlug } from '@/lib/routes';
+import { formatDateFull, formatDateShort } from '@/lib/format';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
@@ -12,19 +13,6 @@ interface Props {
 }
 
 const { logs = [] } = Astro.props;
-
-const formatDate = (d: Date) => {
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${month}/${day}`;
-};
-
-const formatFullDate = (d: Date) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}/${month}/${day}`;
-};
 
 // 提取最新一篇文章
 const featuredLog = logs[0];
@@ -67,7 +55,7 @@ const restLogs = logs.slice(1, 3);
             {featuredLog.body ? featuredLog.body.replace(/<[^>]+>/g, '').slice(0, 30) : '点击阅读精彩内容'}
           </p>
           <span class="text-[9px] font-mono text-parchment-dim/35 mt-1.5 leading-none block">
-            {formatFullDate(featuredLog.data.date)}
+            {formatDateFull(featuredLog.data.date)}
           </span>
         </div>
       </a>
@@ -77,7 +65,7 @@ const restLogs = logs.slice(1, 3);
         <div class="flex flex-col gap-1.5 pt-2 border-t" style="border-color: var(--color-inner-border, rgba(0,0,0,0.04));">
           {restLogs.map((log) => (
             <a href={postSlug(log.id)} class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-parchment-dim/75 hover:text-parchment transition-all text-[12px] no-underline">
-              <span class="text-[9.5px] font-mono text-parchment-dim/35 shrink-0 w-8">{formatDate(log.data.date)}</span>
+              <span class="text-[9.5px] font-mono text-parchment-dim/35 shrink-0 w-8">{formatDateShort(log.data.date)}</span>
               <span class="truncate flex-1 font-body leading-none">{log.data.title}</span>
               <Icon name="lucide:chevron-right" width={11} height={11} class="text-parchment-dim/20" />
             </a>

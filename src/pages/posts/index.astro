@@ -1,15 +1,13 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { getCollection } from 'astro:content';
 import { postSlug } from '@/lib/routes';
+import { getPublishedPosts } from '@/lib/content';
+import { formatDateShort } from '@/lib/format';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
-const allLogs = (await getCollection('log', ({ data }) =>
-  data.published && data.type === 'knowledge'
-))
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const allLogs = await getPublishedPosts();
 
 const groupedLogs: Record<number, typeof allLogs> = {};
 allLogs.forEach(log => {
@@ -18,8 +16,6 @@ allLogs.forEach(log => {
   groupedLogs[year].push(log);
 });
 const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
-
-const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }).replace('/', '/');
 
 ---
 
@@ -68,7 +64,7 @@ const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { month: '2-digit'
             <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
               {groupedLogs[year].map(log => (
                 <a href={postSlug(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
-                  <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDate(log.data.date)}</time>
+                  <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateShort(log.data.date)}</time>
                   <div class="flex-1 min-w-0">
                     <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
                   </div>
