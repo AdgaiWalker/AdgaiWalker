@@ -38,7 +38,7 @@ npx astro check    # Astro 类型检查
 1. **`Base.astro`**：根外壳。处理共享 head、JSON-LD、导航、页脚、环境粒子画布、鼠标光晕和阅读模式。共享 head 由 `src/components/shared/HeadCommon.astro` 提供。
 2. **`SidebarLayout.astro`**：通用内页布局，带页面头部、图标和计数。用于 `/posts`、`/tools` 等列表型页面。
 3. **`ArticleLayout.astro`**：三栏文章视图，导航栏注入 `ArticleNav`，内容区使用 `pureMode=true` 的阅读模式。
-4. **`FullscreenLayout.astro`**：独立全屏外壳，不基于 `Base.astro`。用于 `/about`。
+4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about`。
 
 ### 路由结构
 
@@ -66,12 +66,12 @@ npx astro check    # Astro 类型检查
 
 ### 核心组件
 
-- **`Navigation.astro`**：双模式导航——首页渲染全宽顶部栏胶囊导航，内页渲染左侧边栏（桌面端可折叠，移动端为顶部栏）。包含搜索触发器、主题切换按钮。`nav-extension` slot 通过 `Base.astro` 传入。
+- **`Navigation.astro`**：导航协调器，根据路由分发到三个子组件：`nav/TopNavBar.astro`（首页胶囊栏）、`nav/SidebarNav.astro`（内页左侧边栏）、`nav/MobileMenu.astro`（移动端汉堡菜单）。包含搜索触发器、主题切换按钮。`nav-extension` slot 通过 `Base.astro` 传入。
 - **`SearchModal.astro`**：基于 Pagefind 的搜索，通过 `⌘K` 或搜索按钮触发。
 - **`ArticleNav.astro`**：文章详情页导航列表，支持文字/卡片视图。
 - **`TableOfContents.astro`**：文章页粘性目录，通过 `toc-tracker.ts` 跟踪当前标题。
-- **`GreetingCard.astro`**、**`BrandCard.astro`**、**`RecentTraces.astro`**、**`DockShowcase.astro`**：首页 Bento Box 卡片组件。
-- **`LikeCounter.astro`**：通过原生 `fetch()` 调用 Supabase REST API，无 Supabase 客户端 SDK 依赖。需要 `PUBLIC_SUPABASE_URL` 和 `PUBLIC_SUPABASE_ANON_KEY` 环境变量。
+- **首页组件**（`src/components/home/`）：`HomeCanvas.astro`（Bento 画布）、`SparkBoxModal.astro`（火花弹窗）、`CustomPalette.astro`（调色板）、`CanvasZoomControls.astro`（缩放控件）。`GreetingCard.astro`、`BrandCard.astro`、`RecentTraces.astro`、`DockShowcase.astro` 为首页卡片组件。
+- **`LikeCounter.astro`**：通过原生 `fetch()` 调用 Supabase REST API。需要 `PUBLIC_SUPABASE_URL` 和 `PUBLIC_SUPABASE_ANON_KEY` 环境变量，缺失时使用 `FALLBACK_COUNT` 常量。
 
 ### 图标与样式
 
@@ -86,11 +86,12 @@ npx astro check    # Astro 类型检查
 ### 客户端脚本
 
 - **`scroll-fade.ts`**：滚动触发 `.reveal` 元素淡入。
-- **`sidebar-state.ts`**：侧边栏折叠/展开，使用 `localStorage` 持久化。
+- **`sidebar-state.ts`**：侧边栏折叠/展开，通过 `data-sidebar-collapsed` 属性控制，使用 `localStorage` 持久化。
 - **`toc-tracker.ts`**：文章目录当前标题跟踪。
 - **`justify-tags.ts`**：文章列表标签两端对齐排版，依赖 `@chenglou/pretext`。
-
-注：`ambient.ts`（Canvas 粒子动画）和 `column-resize.ts`（列宽调整）存在于 `src/scripts/` 但当前未被页面导入。
+- **`home-canvas.ts`**：首页 Bento 画布拖拽、缩放、主题切换逻辑。
+- **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
+- **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。
 
 ### Remark 插件
 
@@ -105,8 +106,11 @@ npx astro check    # Astro 类型检查
 
 ### 辅助模块
 
-- **`src/lib/routes.ts`**：路由常量（`POSTS`、`TOOLS`、`postSlug`），被 Navigation、RSS 等模块引用，确保路由一致性。
-- **`src/data/toolkit-notes.ts`**：工具页面数据（AI 模型笔记、工作流笔记、省钱笔记），按类型导出为 `[name, desc][]` 元组数组。
+- **`src/lib/routes.ts`**：路由常量（`POSTS`、`TOOLS`、`postSlug`），被 Navigation、RSS 等模块引用。
+- **`src/lib/content.ts`**：内容查询函数（`getPublishedPosts`、`getPublishedTools`），集中过滤和排序逻辑。
+- **`src/lib/format.ts`**：日期格式化（`formatDateShort`、`formatDateLong`、`formatDateFull`）。
+- **`src/lib/constants.ts`**：共享常量（`PLATFORM_ICON_MAP` 等）。
+- **`src/data/toolkit-notes.ts`**：工具页面数据（遗留文件，当前未被页面引用）。
 
 ## 路径别名
 
