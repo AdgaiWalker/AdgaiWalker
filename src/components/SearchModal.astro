@@ -20,10 +20,7 @@ const { iconOnly = false } = Astro.props;
     class="flex items-center gap-2 text-gray-400 hover:text-brand transition-colors text-xs font-heading tracking-wider cursor-pointer bg-transparent border-none"
     aria-label="搜索"
   >
-    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"></circle>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-    </svg>
+    <Icon name="lucide:search" width={16} height={16} />
     <span class="hidden md:inline">搜索</span>
     <kbd class="hidden md:inline text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-400 bg-gray-50 ml-1 font-mono">⌘K</kbd>
   </button>
@@ -39,10 +36,7 @@ const { iconOnly = false } = Astro.props;
     <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden" id="search-panel">
       <!-- 输入框 -->
       <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 transition-all bg-white" id="search-input-wrap">
-        <svg class="w-5 h-5 text-brand/70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
+        <Icon name="lucide:search" width={20} height={20} class="text-brand/70 shrink-0" />
         <input
           id="search-input"
           type="text"

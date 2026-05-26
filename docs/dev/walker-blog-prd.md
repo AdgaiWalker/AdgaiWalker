@@ -50,34 +50,30 @@ Walker 是秋知的个人数字根据地。
 ## 3. 路由
 
 ```text
-/                         首页
+/                         首页 Bento Box
 /posts                    文章列表
 /posts/[slug]             文章详情
-
-/ai                       重定向到 /posts
-/ai/[slug]                重定向到 /posts/[slug]
-/ai/learn                 AI 学习
-/ai/sources               信息源
-/ai/toolkit               工具箱
-/ai/ideas                 Idea
-
-/life                     重定向到 /posts
-/life/[slug]              重定向到 /posts/[slug]
-
-/explore                  资源列表
-/explore/[slug]           资源详情
-
+/tools                    资源列表（工具与点子）
 /about                    关于
 /404                      404
+/rss.xml                  RSS 订阅源
 
-/rss.xml
-/ai/rss.xml
-/life/rss.xml
+# 301 重定向（astro.config.mjs）
+/ai                       → /tools
+/ai/:slug                 → /posts/:slug
+/ai/learn                 → /posts
+/ai/sources               → /tools
+/ai/toolkit               → /tools
+/ai/ideas                 → /tools
+/idea、/idea/*            → /tools 或 /posts/:slug
+/life                     → /posts
+/life/:slug               → /posts/:slug
 ```
 
 不做：
 - `/about-me`
 - `/dock`
+- `/explore`
 - `/ai` 独立文章总览
 - `/life` 独立文章总览
 
@@ -85,14 +81,13 @@ Walker 是秋知的个人数字根据地。
 
 | 入口 | 路径 | Lucide |
 | --- | --- | --- |
-| 文章 | `/posts` | `pen-line` |
-| AI 探索 | `/explore` | `package` |
-| 学习 | `/ai/learn` | `book-open` |
-| Idea | `/ai/ideas` | `lightbulb` |
+| 首页 | `/` | `home` |
+| 思考 | `/posts` | `pen-line` |
+| 资源 | `/tools` | `wrench` |
+| 关于 | `/about` | `user` |
 
 实现：
-- `Navigation.astro`
-- `WalkerProfile.astro`
+- `Navigation.astro`（首页为全宽顶部栏胶囊导航，内页为左侧边栏）
 
 ## 5. 页面规格
 
@@ -101,15 +96,10 @@ Walker 是秋知的个人数字根据地。
 定位：个人桌面。
 
 内容：
-- `WalkerProfile`
-- `DockShowcase`
 - `GreetingCard`
+- `BrandCard`
 - `RecentTraces`
-- `RandomRecommend`
-- `NavigationConsole`
-- `CalendarWidget`
-- `MusicPlayer`
-- `LikeCounter`
+- `DockShowcase`
 
 要求：
 - Bento 卡片可拖拽
@@ -137,73 +127,20 @@ Walker 是秋知的个人数字根据地。
 - AI 文章可展示视频、资源、Prompt、对话组件
 - 生活文章可展示封面图
 
-### 5.4 `/ai/learn`
+### 5.4 `/tools`
 
-定位：AI 学习文章入口。
+定位：资源列表，包含工具与点子。
 
 数据：
-- `log`
-- `category === 'ai'`
+- `log` 集合，`type === 'tool' || type === 'idea'`
 
 形式：
-- `ArticleCard`
-- 阅读路径优先，不做重装饰
+- 使用 `SidebarLayout`
+- 筛选按钮（全部/工具/点子）
+- 卡片列表，展示标题、摘要、状态、评分、标签
+- 外部链接支持新标签页打开
 
-### 5.5 `/ai/sources`
-
-定位：信息网站、社群、内容源。
-
-数据：
-- `dockItem`
-- `category === 'info-source' || category === 'community'`
-
-形式：
-- `DockItemCard`
-- 搜索
-- 标签筛选
-
-### 5.6 `/ai/toolkit`
-
-定位：工具、Skill、方法入口。
-
-数据：
-- `dockItem`
-- `toolkit-notes.ts`
-
-形式：
-- 文档式清单
-- 左侧文章导航
-- 工具、Skill、模型分工和工作流分区
-- 可调列宽
-
-### 5.7 `/ai/ideas`
-
-定位：AI 想法和项目认领。
-
-数据：
-- `log`
-- `category === 'ai'`
-- `type === 'idea'`
-
-状态：
-- `open`
-- `completed`
-
-当前差距：
-- Schema 已支持
-- 真实 `type: idea` 内容不足
-
-### 5.8 `/explore`
-
-定位：AI 探索资源库。
-
-要求：
-- 使用 `DockLayout`
-- 数据来自 `dockItem`
-- 列表页展示资源
-- 详情页展示单个资源
-
-### 5.9 `/about`
+### 5.5 `/about`
 
 定位：个人介绍与关于本站。
 
@@ -215,7 +152,7 @@ Walker 是秋知的个人数字根据地。
 - 社交链接
 - 页面点赞
 
-### 5.10 `/404`
+### 5.6 `/404`
 
 要求：
 - 使用 `Base.astro`
@@ -230,14 +167,17 @@ Walker 是秋知的个人数字根据地。
 - `title`
 - `date`
 - `tags`
-- `category: 'ai' | 'life'`
-- `type: 'article' | 'thought' | 'photo' | 'project' | 'idea'`
+- `category`
+- `type: 'knowledge' | 'tool' | 'idea' | 'project'`
 - `published`
 - `summary`
 - `description`
-- `cover`
-- `status: 'open' | 'completed'`
-- `claimInfo`
+- `cover`（内容图片或远程 URL）
+- `status: 'thinking' | 'practicing' | 'verified' | 'archived'`
+- `rating`（1-5）
+- `url`
+- `qrCode`
+- `communities`（对象数组，含 name、description、qrCode、badge、tag）
 - `videos`
 - `resources`
 
@@ -255,21 +195,6 @@ Walker 是秋知的个人数字根据地。
 - `github`
 - `website`
 - `download`
-
-### 6.2 `dockItem`
-
-字段：
-- `name`
-- `description`
-- `category: 'tool' | 'skill' | 'info-source' | 'community'`
-- `tags`
-- `rating`
-- `url`
-- `published`
-
-当前内容差距：
-- `design-review-skill.md` 仍是 `info-source`，应评估迁移为 `skill`
-- `aigc-wechat.md` 仍是 `info-source`，应评估迁移为 `community`
 
 ## 7. 技术规格
 
@@ -290,7 +215,7 @@ Astro 配置：
 - `output: 'server'`
 - `prefetch.defaultStrategy = 'hover'`
 - 自托管字体：Inter、Sora、JetBrains Mono、Noto Sans SC
-- redirects：`/ai -> /posts`、`/life -> /posts`
+- redirects：`/ai -> /tools`、`/life -> /posts`
 - integrations：MDX、Sitemap、astro-icon
 
 ## 8. Layout
@@ -298,9 +223,8 @@ Astro 配置：
 | Layout | 用途 |
 | --- | --- |
 | `Base.astro` | 全站基础外壳 |
-| `SidebarLayout.astro` | 列表型内页 |
+| `SidebarLayout.astro` | 列表型内页（/posts、/tools） |
 | `ArticleLayout.astro` | 文章详情 |
-| `DockLayout.astro` | 资源主从布局 |
 | `FullscreenLayout.astro` | 关于页 |
 
 不拆：
@@ -317,39 +241,32 @@ Astro 配置：
 
 | 脚本 | 用途 |
 | --- | --- |
-| `ambient.ts` | 首页背景动效 |
 | `scroll-fade.ts` | 滚动淡入 |
 | `sidebar-state.ts` | 侧栏状态 |
 | `toc-tracker.ts` | 目录高亮 |
-| `column-resize.ts` | 列宽调整 |
 | `justify-tags.ts` | 标签排版 |
+
+注：`ambient.ts` 和 `column-resize.ts` 存在但未被页面导入。
 
 ## 10. 当前状态
 
 已完成：
 - 首页 Bento 桌面
-- `/posts`
-- `/posts/[slug]`
-- `/ai/learn`
-- `/ai/sources`
-- `/ai/toolkit`
-- `/ai/ideas`
-- `/explore`
-- `/explore/[slug]`
+- `/posts`、`/posts/[slug]`
+- `/tools` 资源列表
 - `/about`
-- `/ai`、`/life` 重定向
+- `/ai`、`/life`、`/idea` 系列重定向
 - 旧文章 URL 重定向
 - Lucide 图标
 - 图片优化
 - Pagefind
+- 内容重组：`dockItem` 集合已合并到 `log`（type: tool/idea）
 
 待办：
 
 | 优先级 | 项目 |
 | --- | --- |
-| P1 | 评估并迁移 `dockItem` category |
 | P2 | 补真实 `type: idea` 内容 |
-| P2 | 增强 `WalkerProfile` 深层入口 |
 | P2 | 精修 About 页文案 |
 | P3 | 评估卡片级点赞 |
 | P3 | 必要时整理组件目录 |

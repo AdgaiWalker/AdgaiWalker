@@ -1,6 +1,6 @@
 # 执行计划：iwalk.pro 自媒体起手
 
-> 关联规划文档：docs/iwalkpro-media-plan.md
+> 关联规划文档：docs/media/iwalkpro-media-plan.md
 > 创建时间：2026-05-24
 
 ---
