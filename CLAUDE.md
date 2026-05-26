@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-本文件为 Claude Code 在此仓库中工作时提供指引。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 项目概述
 
-Walker（秋知 / AdgaiWalker）的个人博客，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。站点包含可拖拽 Bento Box 首页、统一文章列表与阅读页、资源工具页、侧边栏导航、Pagefind 搜索和 Supabase 点赞。
+Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、精选工具和社交链接；内页包含文章列表与阅读页、资源工具页、侧边栏导航、Pagefind 搜索和 Supabase 点赞。
 
 ## 常用命令
 
@@ -44,7 +44,7 @@ npx astro check    # Astro 类型检查
 
 | 路径 | 页面 | 布局 |
 | --- | --- | --- |
-| `/` | 首页 Bento Box | Base |
+| `/` | 个人空间（可拖拽 Bento Box 画布） | Base |
 | `/posts` | 统一文章列表 | SidebarLayout |
 | `/posts/[slug]` | 统一文章详情 | ArticleLayout |
 | `/tools` | 资源列表（工具与点子） | SidebarLayout |
@@ -68,9 +68,11 @@ npx astro check    # Astro 类型检查
 
 - **`Navigation.astro`**：导航协调器，根据路由分发到三个子组件：`nav/TopNavBar.astro`（首页胶囊栏）、`nav/SidebarNav.astro`（内页左侧边栏）、`nav/MobileMenu.astro`（移动端汉堡菜单）。包含搜索触发器、主题切换按钮。`nav-extension` slot 通过 `Base.astro` 传入。
 - **`SearchModal.astro`**：基于 Pagefind 的搜索，通过 `⌘K` 或搜索按钮触发。
-- **`ArticleNav.astro`**：文章详情页导航列表，支持文字/卡片视图。
-- **`TableOfContents.astro`**：文章页粘性目录，通过 `toc-tracker.ts` 跟踪当前标题。
-- **首页组件**（`src/components/home/`）：`HomeCanvas.astro`（Bento 画布）、`SparkBoxModal.astro`（火花弹窗）、`CustomPalette.astro`（调色板）、`CanvasZoomControls.astro`（缩放控件）。`GreetingCard.astro`、`BrandCard.astro`、`RecentTraces.astro`、`DockShowcase.astro` 为首页卡片组件。
+- **`ArticleNav.astro`**（`article/`）：文章详情页导航列表，支持文字/卡片视图。
+- **`TableOfContents.astro`**（`article/`）：文章页粘性目录，通过 `toc-highlight.ts` 高亮当前标题。
+- **首页组件**（`home/`）：`HomeCanvas.astro`（Bento 画布）、`SparkBoxModal.astro`（火花弹窗）、`CustomPalette.astro`（调色板）、`CanvasZoomControls.astro`（缩放控件）。
+- **首页卡片**（根级）：`GreetingCard.astro`、`BrandCard.astro`、`RecentTraces.astro`、`FeaturedTools.astro`、`CalendarWidget.astro`、`MusicPlayer.astro`、`PolaroidWidget.astro`、`WalkerProfile.astro`。
+- **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
 - **`LikeCounter.astro`**：通过原生 `fetch()` 调用 Supabase REST API。需要 `PUBLIC_SUPABASE_URL` 和 `PUBLIC_SUPABASE_ANON_KEY` 环境变量，缺失时使用 `FALLBACK_COUNT` 常量。
 
 ### 图标与样式
@@ -79,6 +81,7 @@ npx astro check    # Astro 类型检查
 - Tailwind CSS v4 通过 `@tailwindcss/vite` 插件接入，无 `tailwind.config`。
 - `src/styles/global.css` 使用 `@theme` 定义颜色和 `--font-cjk`。`--font-body`、`--font-heading`、`--font-mono` 由 Astro Fonts API 注入，但 `global.css` 会覆盖 `--font-heading` 为 Averia Gruesa Libre / Outfit，`--font-body` 为 Outfit。
 - 字体通过 Astro Fonts API + fontsource provider 自托管：Inter、Sora、JetBrains Mono、Noto Sans SC（实际渲染字体见 `global.css` 覆盖值）。
+- 多主题系统：`.theme-nature`（默认亮色）、`.theme-aurora`（暗色霓虹）、`.theme-sunset`（暖色暗色）、`.theme-mint`（绿色暗色），各定义完整的 CSS 自定义属性。
 - 代码块语法高亮使用 `shikiConfig: { theme: 'github-dark' }`。
 - 玻璃面板使用 `.panel-glass`，阅读模式由 `pureMode` 触发 `.reading-mode`。
 - 自定义 SVG 光标位于 `/cursor.svg`。
@@ -87,7 +90,7 @@ npx astro check    # Astro 类型检查
 
 - **`scroll-fade.ts`**：滚动触发 `.reveal` 元素淡入。
 - **`sidebar-state.ts`**：侧边栏折叠/展开，通过 `data-sidebar-collapsed` 属性控制，使用 `localStorage` 持久化。
-- **`toc-tracker.ts`**：文章目录当前标题跟踪。
+- **`toc-highlight.ts`**：文章目录当前标题高亮，通过 IntersectionObserver 追踪。
 - **`justify-tags.ts`**：文章列表标签两端对齐排版，依赖 `@chenglou/pretext`。
 - **`home-canvas.ts`**：首页 Bento 画布拖拽、缩放、主题切换逻辑。
 - **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
@@ -106,11 +109,10 @@ npx astro check    # Astro 类型检查
 
 ### 辅助模块
 
-- **`src/lib/routes.ts`**：路由常量（`POSTS`、`TOOLS`、`postSlug`），被 Navigation、RSS 等模块引用。
-- **`src/lib/content.ts`**：内容查询函数（`getPublishedPosts`、`getPublishedTools`），集中过滤和排序逻辑。
-- **`src/lib/format.ts`**：日期格式化（`formatDateShort`、`formatDateLong`、`formatDateFull`）。
+- **`src/lib/routes.ts`**：路由常量（`POSTS`、`TOOLS`、`buildPostPath`），被 Navigation、RSS 等模块引用。
+- **`src/lib/content.ts`**：内容查询函数（`getPublishedPosts`、`getPublishedResources`），集中过滤和排序逻辑。
+- **`src/lib/format.ts`**：日期格式化（`formatDateCompact` → `MM/DD`、`formatDateLocale` → zh-CN 本地化、`formatDateNumeric` → `YYYY/MM/DD`）。
 - **`src/lib/constants.ts`**：共享常量（`PLATFORM_ICON_MAP` 等）。
-- **`src/data/toolkit-notes.ts`**：工具页面数据（遗留文件，当前未被页面引用）。
 
 ## 路径别名
 

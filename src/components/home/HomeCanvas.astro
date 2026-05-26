@@ -5,13 +5,16 @@ import BrandCard from '../BrandCard.astro';
 import FeaturedTools from '../FeaturedTools.astro';
 import { Icon } from 'astro-icon/components';
 import type { CollectionEntry } from 'astro:content';
+import { PROJECTS, IDEAS } from '@/lib/routes';
 
 interface Props {
   recentLogs: CollectionEntry<'log'>[];
   toolEntries: CollectionEntry<'log'>[];
+  projectEntries: CollectionEntry<'log'>[];
+  ideaEntries: CollectionEntry<'log'>[];
 }
 
-const { recentLogs, toolEntries } = Astro.props;
+const { recentLogs, toolEntries, projectEntries, ideaEntries } = Astro.props;
 ---
 
 <div id="canvas-container" class="fixed inset-0 overflow-hidden select-none pointer-events-auto z-0 flex items-center justify-center">
@@ -76,6 +79,28 @@ const { recentLogs, toolEntries } = Astro.props;
         <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px]">
           <FeaturedTools entries={toolEntries} />
         </div>
+
+        <a href={PROJECTS} class="pop-in delay-2 draggable-card cursor-grab panel-glass rounded-[20px] px-4 py-3 flex items-center gap-3 no-underline group transition-shadow hover:shadow-xl hover:border-brand/30">
+          <div class="w-8 h-8 rounded-xl bg-brand/10 flex items-center justify-center shrink-0">
+            <Icon name="lucide:rocket" width={15} height={15} class="text-brand" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[12px] font-bold text-parchment group-hover:text-brand transition-colors">项目</div>
+            <div class="text-[10px] text-parchment-dim/50 font-mono">{projectEntries.length} 个项目</div>
+          </div>
+          <Icon name="lucide:chevron-right" width={14} height={14} class="text-parchment-dim/30 group-hover:text-brand/60 transition-colors" />
+        </a>
+
+        <a href={IDEAS} class="pop-in delay-3 draggable-card cursor-grab panel-glass rounded-[20px] px-4 py-3 flex items-center gap-3 no-underline group transition-shadow hover:shadow-xl hover:border-brand/30">
+          <div class="w-8 h-8 rounded-xl bg-amber-400/10 flex items-center justify-center shrink-0">
+            <Icon name="lucide:lightbulb" width={15} height={15} class="text-amber-500" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[12px] font-bold text-parchment group-hover:text-amber-500 transition-colors">点子</div>
+            <div class="text-[10px] text-parchment-dim/50 font-mono">{ideaEntries.length} 个点子</div>
+          </div>
+          <Icon name="lucide:chevron-right" width={14} height={14} class="text-parchment-dim/30 group-hover:text-amber-500/60 transition-colors" />
+        </a>
       </div>
     </div>
   </div>

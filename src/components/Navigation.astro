@@ -3,7 +3,7 @@ import SearchModal from './SearchModal.astro';
 import TopNavBar from './nav/TopNavBar.astro';
 import SidebarNav from './nav/SidebarNav.astro';
 import MobileMenu from './nav/MobileMenu.astro';
-import { POSTS, TOOLS } from '@/lib/routes';
+import { POSTS, TOOLS, IDEAS, PROJECTS } from '@/lib/routes';
 
 interface NavItem {
   label: string;
@@ -23,6 +23,8 @@ const navGroups: NavGroup[] = [
       { label: '首页', href: '/', icon: 'lucide:home', hint: 'Home' },
       { label: '思考', href: POSTS, icon: 'lucide:pen-line', hint: 'Thinking' },
       { label: '资源', href: TOOLS, icon: 'lucide:wrench', hint: 'Resources' },
+      { label: '点子', href: IDEAS, icon: 'lucide:lightbulb', hint: 'Ideas' },
+      { label: '项目', href: PROJECTS, icon: 'lucide:rocket', hint: 'Projects' },
       { label: '关于', href: '/about', icon: 'lucide:user', hint: 'About' },
     ]
   },
