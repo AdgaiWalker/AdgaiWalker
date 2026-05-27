@@ -1,0 +1,53 @@
+{
+  "costs": [
+    { "date": "2026-03", "category": "编程 API", "amount": 20, "note": "GLM API 初期开发" },
+    { "date": "2026-05-02", "category": "编程 API", "amount": 30, "note": "Walker 博客搭建" },
+    { "date": "2026-05-16", "category": "编程 API", "amount": 30, "note": "v3 重构" },
+    { "date": "2026-05-26", "category": "编程 API", "amount": 20, "note": "四柱系统 + 文章" },
+    { "date": "2026-05", "category": "视频/图片", "amount": 50, "note": "宣传视频生成（会员）" },
+    { "date": "2026-05", "category": "工具订阅", "amount": 40, "note": "GPT 中转站 token" },
+    { "date": "2026-05", "category": "工具订阅", "amount": 25, "note": "Gemini 账号（年费）" },
+    { "date": "2026-05", "category": "域名", "amount": 15, "note": "Spaceship 购买 .pro 首年" },
+    { "date": "2026-05", "category": "部署", "amount": 10, "note": "Chrome DevTools MCP 自动化部署" },
+    { "date": "持续", "category": "部署", "amount": 0, "note": "Vercel 托管（免费）" },
+    { "date": "持续", "category": "部署", "amount": 0, "note": "Supabase 点赞（免费额度）" }
+  ],
+  "siteTimeline": [
+    { "date": "2026.03.17", "text": "GitHub 初始化" },
+    { "date": "2026.05.02", "text": "Walker 博客正式搭建" },
+    { "date": "2026.05.05", "text": "v1 — 基础博客上线" },
+    { "date": "2026.05.09", "text": "SEO、404、点赞系统" },
+    { "date": "2026.05.16", "text": "v3 — UX/UI 全面重构" },
+    { "date": "2026.05.26", "text": "四柱系统成型（思考/资源/点子/项目）" },
+    { "date": "2026.05.27", "text": "三篇核心文章发布 + 关于网站页上线" }
+  ],
+  "personalTimeline": [
+    { "date": "2025.08", "title": "全速驶入 AI 数字深海", "desc": "因为自创项目需要，全身心投入 AI 工程落地实践。从写下第一行 Python 和第一个自适应 Prompt 开始，开启硬核数字航线。", "icon": "lucide:anchor" },
+    { "date": "2025.09", "title": "在飞书建立学习记录", "desc": "创建了多个飞书知识库，开始系统性记录学习过程和工具积累。", "icon": "lucide:book-open" },
+    { "date": "2025.11", "title": "独立上线 xyzidea.com", "desc": "历经三个月的反复验证纠偏，独立开发的 AI 辅助点子工具站成功部署上线，开始服务首批独立创作者同好。", "icon": "lucide:ship" },
+    { "date": "2026.05", "title": "设计人机协作架构与点子社区", "desc": "为让人机协作有章可循，设计了人机协作架构，并同步开启点子社群的筹备，赋能更多 AI 普及。", "icon": "lucide:compass" },
+    { "date": "NOW", "title": "你正在看的这些", "desc": "iwalk.pro 对内是整理思考、沉淀资源、酝酿点子的前进系统；对外是给期望让 AI 赋能生活的人的普及站。因需存在，因需设计。", "icon": "lucide:globe", "children": [
+      { "label": "iwalk.pro", "text": "对内是整理思考、沉淀资源、酝酿点子的前进系统；对外是给期望让 AI 赋能生活的人的普及站。因需存在，因需设计。AI 负责生成、拆解和执行，人负责目标、判断和结果承担。只放经过实践验证的东西，更新不频繁，但每篇都有据可循。" },
+      { "label": "xyzidea.com", "text": "AI 智能检索工具站。", "href": "https://www.xyzidea.com" },
+      { "label": "xyzidea.cn", "text": "知识库自媒体人的平台，大家在一起。", "href": "https://xyzidea.cn" },
+      { "label": "点子社群", "text": "点子共创：抛出各自的点子，看可行性，有人想一起做就一起做。点子共促：带着目的一起学 AI，做的过程中遇到问题互相交流。" }
+    ]}
+  ],
+  "roadmap": {
+    "done": [
+      "首页 Bento Box 看板",
+      "思考 / 资源 / 点子 / 项目页面",
+      "三篇核心文章",
+      "Pagefind 全站搜索",
+      "Supabase 点赞",
+      "RSS 订阅源",
+      "xyzidea.cn 知识库平台上线"
+    ],
+    "planned": [
+      "评论系统（Giscus）",
+      "点子社群正式运营",
+      "每个人都能拥有自己的知识库博客",
+      "迁移到 xyzidea.cn 平台共创"
+    ]
+  }
+}

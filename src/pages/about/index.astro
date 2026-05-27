@@ -3,14 +3,18 @@
  * /about — 关于
  * 全屏 Hero 视频 + 时代背景 + 引路人定位 + 航行日志 + 邀请
  * 使用 FullscreenLayout
+ * 时间轴数据来自 src/data/site-stats.json
  */
-import FullscreenLayout from '../layouts/FullscreenLayout.astro';
-import LikeCounter from '../components/LikeCounter.astro';
+import FullscreenLayout from '../../layouts/FullscreenLayout.astro';
+import LikeCounter from '../../components/LikeCounter.astro';
 import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/avatar.jpg';
+import stats from '@/data/site-stats.json';
 
 export const prerender = true;
+
+const { personalTimeline } = stats;
 ---
 
 <FullscreenLayout
@@ -70,6 +74,7 @@ export const prerender = true;
       <h1 class="hero-title">Walker</h1>
       <p class="hero-tagline">用点子连接人与 AI</p>
       <p class="hero-sub-tagline">用点子驱动 AI，点石成金，最终去到一个没有重复工作的地方</p>
+      <a href="/about/site" class="hero-site-link">关于这个站 →</a>
     </div>
 
     <div class="hero-scroll-hint" id="scroll-hint">
@@ -229,104 +234,75 @@ export const prerender = true;
       {/* 纵向发光虚线航道 */}
       <div class="absolute left-4 sm:left-1/2 top-0 bottom-0 w-0.5 sm:-translate-x-1/2 bg-dashed border-l border-brand/40 -z-10"></div>
 
-      {/* 停靠点 1: 航线开启 */}
-      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 mb-16 w-full">
-        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
-          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
-          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
-          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">2025.08</span>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
-          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
-            <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 sm:justify-start">
-              <Icon name="lucide:anchor" width={14} height={14} class="text-brand" />
-              全速驶入 AI 数字深海
-            </h4>
-            <p class="text-xs text-parchment/70 leading-relaxed">
-              因为自创项目需要，全身心投入 AI 工程落地实践。从写下第一行 Python 和第一个自适应 Prompt 开始，开启硬核数字航线。
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 停靠点 2: 独立上线 */}
-      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 mb-16 w-full">
-        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
-          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
-          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
-          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
-            <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 justify-start sm:justify-end">
-              独立上线 xyzidea.com
-              <Icon name="lucide:ship" width={14} height={14} class="text-brand" />
-            </h4>
-            <p class="text-xs text-parchment/70 leading-relaxed">
-              历经三个月的反复验证纠偏，独立开发的 AI 辅助点子工具站成功部署上线，开始服务首批独立创作者同好。
-            </p>
-          </div>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2">
-          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">2025.11</span>
-        </div>
-      </div>
-
-      {/* 停靠点 3: 人机协作架构与点子社区 */}
-      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 mb-16 w-full">
-        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
-          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
-          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
-          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">2026.05</span>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
-          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
-            <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5">
-              <Icon name="lucide:compass" width={14} height={14} class="text-brand" />
-              设计人机协作架构与点子社区
-            </h4>
-            <p class="text-xs text-parchment/70 leading-relaxed">
-              为让人机协作有章可循，设计了人机协作架构，并同步开启点子社群的筹备，赋能更多 AI 普及。
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 停靠点 4: 你正在看的这些 */}
-      <div class="timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 w-full">
-        <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
-          <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
-          <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
-          <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300 text-left sm:text-left">
-            <h4 class="text-sm font-bold mb-3 flex items-center gap-1.5 justify-start sm:justify-end">
-              <Icon name="lucide:globe" width={14} height={14} class="text-brand" />
-              你正在看的这些
-            </h4>
-            <div class="space-y-3 text-xs text-parchment/70 leading-relaxed">
-              <div class="flex items-start gap-2">
-                <span class="text-brand font-bold shrink-0">iwalk.pro</span>
-                <span>对内是整理思考、沉淀资源、酝酿点子的前进系统；对外是给期望让 AI 赋能生活的人的普及站。因需存在，因需设计。AI 负责生成、拆解和执行，人负责目标、判断和结果承担。只放经过实践验证的东西，更新不频繁，但每篇都有据可循。</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <a href="https://www.xyzidea.com" target="_blank" rel="noopener noreferrer" class="text-brand font-bold shrink-0 no-underline hover:underline">xyzidea.com</a>
-                <span>AI 辅助工具站，直接能用。</span>
-              </div>
-              <div class="flex items-start gap-2">
-                <span class="text-brand font-bold shrink-0">点子社群</span>
-                <span>点子共创：抛出各自的点子，看可行性，有人想一起做就一起做。点子共促：带着目的一起学 AI，做的过程中遇到问题互相交流。</span>
-              </div>
+      {personalTimeline.map((item, i) => {
+        const isEven = i % 2 === 0;
+        const isLast = i === personalTimeline.length - 1;
+        const hasChildren = item.children && item.children.length > 0;
+        return (
+          <div class:list={['timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 w-full', { 'mb-16': !isLast }]}>
+            <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
+              <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
+              <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
             </div>
+
+            {isEven ? (
+              <>
+                <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
+                  <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
+                </div>
+                <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
+                  <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
+                    <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 sm:justify-start">
+                      <Icon name={item.icon} width={14} height={14} class="text-brand" />
+                      {item.title}
+                    </h4>
+                    <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
+                  <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300 text-left sm:text-left">
+                    <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 justify-start sm:justify-end">
+                      {hasChildren ? (
+                        <>
+                          {item.title}
+                          <Icon name={item.icon} width={14} height={14} class="text-brand" />
+                        </>
+                      ) : (
+                        <>
+                          {item.title}
+                          <Icon name={item.icon} width={14} height={14} class="text-brand" />
+                        </>
+                      )}
+                    </h4>
+                    {hasChildren ? (
+                      <div class="space-y-3 text-xs text-parchment/70 leading-relaxed">
+                        {item.children.map((child: { label: string; text: string; href?: string }) => (
+                          <div class="flex items-start gap-2">
+                            {child.href ? (
+                              <a href={child.href} target="_blank" rel="noopener noreferrer" class="text-brand font-bold shrink-0 no-underline hover:underline">{child.label}</a>
+                            ) : (
+                              <span class="text-brand font-bold shrink-0">{child.label}</span>
+                            )}
+                            <span>{child.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
+                    )}
+                  </div>
+                </div>
+                <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2">
+                  <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-        <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2">
-          <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">NOW</span>
-        </div>
-      </div>
+        );
+      })}
 
     </div>
   </section>
@@ -371,7 +347,7 @@ export const prerender = true;
 </FullscreenLayout>
 
 <script>
-  import { setupTilt } from '../scripts/tilt-effect';
+  import { setupTilt } from '../../scripts/tilt-effect';
 
   let abort: AbortController | null = null;
   let postcardTiltCleanup: (() => void) | null = null;
@@ -574,6 +550,25 @@ export const prerender = true;
     color: rgba(255, 255, 255, 0.75);
     letter-spacing: 0.15em;
     margin: 0;
+  }
+
+  .hero-site-link {
+    display: inline-block;
+    margin-top: 1.5rem;
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .hero-site-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.95);
   }
 
   .hero-sub-tagline {
