@@ -1,10 +1,10 @@
 /**
- * toc-tracker.ts — TOC 滚动跟随高亮
+ * toc-highlight.ts — TOC 滚动跟随高亮
  * 使用 IntersectionObserver 检测当前可见的章节
  * 高亮对应的 TOC 链接
  */
 
-function initTocTracker(): void {
+function initTocHighlight(): void {
   const tocLinks = document.querySelectorAll<HTMLAnchorElement>('[data-toc-slug]');
   if (tocLinks.length === 0) return;
 
@@ -105,4 +105,4 @@ function initTocTracker(): void {
   document.addEventListener('astro:before-swap', cleanup);
 }
 
-document.addEventListener('astro:page-load', initTocTracker);
+document.addEventListener('astro:page-load', initTocHighlight);

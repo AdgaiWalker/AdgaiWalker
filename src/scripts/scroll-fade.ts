@@ -1,8 +1,6 @@
-let activeObserver: IntersectionObserver | null = null;
+import { registerLifecycle } from './with-lifecycle';
 
 function initScrollFade() {
-  if (activeObserver) activeObserver.disconnect();
-
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
@@ -32,15 +30,8 @@ function initScrollFade() {
   );
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-  activeObserver = observer;
+
+  return () => observer.disconnect();
 }
 
-function cleanup() {
-  if (activeObserver) {
-    activeObserver.disconnect();
-    activeObserver = null;
-  }
-}
-
-document.addEventListener('astro:page-load', initScrollFade);
-document.addEventListener('astro:before-swap', cleanup);
+registerLifecycle(initScrollFade);

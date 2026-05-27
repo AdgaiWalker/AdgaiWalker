@@ -27,37 +27,28 @@ interface ArticleEntry {
 }
 
 interface Props {
-  title: string;
+  title?: string;
   description?: string;
   ogImage?: string;
   ogTitle?: string;
   ogDescription?: string;
   canonicalUrl?: string;
+  themeColor?: string;
   headings: Heading[];
   currentSlug: string;
   articleList: ArticleEntry[];
 }
 
 const {
-  title,
-  description,
-  ogImage,
-  ogTitle,
-  ogDescription,
-  canonicalUrl,
   headings,
   currentSlug,
   articleList,
+  ...seoProps
 } = Astro.props;
 ---
 
 <Base
-  title={title}
-  description={description}
-  ogImage={ogImage}
-  ogTitle={ogTitle}
-  ogDescription={ogDescription}
-  canonicalUrl={canonicalUrl}
+  {...seoProps}
   pureMode={true}
 >
   {/* 将文章列表注入到 Navigation 的 slot 中 */}
@@ -156,5 +147,5 @@ const {
 </style>
 
 <script>
-  import '../scripts/toc-tracker';
+  import '../scripts/toc-highlight';
 </script>

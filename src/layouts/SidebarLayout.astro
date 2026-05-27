@@ -12,6 +12,7 @@ interface Props {
   ogTitle?: string;
   ogDescription?: string;
   canonicalUrl?: string;
+  themeColor?: string;
   /** 页面标题（中文） */
   pageTitle?: string;
   /** 页面副标题（英文） */
@@ -25,28 +26,16 @@ interface Props {
 }
 
 const {
-  title,
-  description,
-  ogImage,
-  ogTitle,
-  ogDescription,
-  canonicalUrl,
   pageTitle,
   pageSubtitle,
   pageIcon,
   itemCount,
   itemUnit = '篇文章',
+  ...seoProps
 } = Astro.props;
 ---
 
-<Base
-  title={title}
-  description={description}
-  ogImage={ogImage}
-  ogTitle={ogTitle}
-  ogDescription={ogDescription}
-  canonicalUrl={canonicalUrl}
->
+<Base {...seoProps}>
   <slot name="nav-extension" slot="nav-extension" />
   <div class="sidebar-layout-content">
     {/* 页面头部区域 */}

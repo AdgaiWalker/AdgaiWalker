@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { formatDateCompact } from '@/lib/format';
 /**
  * ArticleNav — 文章导航组件
  * 展示同分类下的文章列表，支持文字/卡片两种视图。
@@ -20,10 +21,6 @@ interface Props {
 }
 
 const { articles, currentSlug, basePath } = Astro.props;
-
-const formatShortDate = (d: Date) =>
-  `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-
 ---
 <div class="article-nav" id="article-nav">
   <div class="nav-section-header">
@@ -48,7 +45,7 @@ const formatShortDate = (d: Date) =>
           data-astro-prefetch="viewport"
           class:list={['article-list-item', isActive && 'article-list-item-active']}
         >
-          <span class="article-list-date">{formatShortDate(article.date)}</span>
+          <span class="article-list-date">{formatDateCompact(article.date)}</span>
           <span class="article-list-title">{article.title}</span>
         </a>
       );
@@ -70,7 +67,7 @@ const formatShortDate = (d: Date) =>
             <div class="article-card-summary">{article.summary}</div>
           )}
           <div class="article-card-meta">
-            <span class="article-card-date">{formatShortDate(article.date)}</span>
+            <span class="article-card-date">{formatDateCompact(article.date)}</span>
             {article.tags && article.tags.slice(0, 2).map(tag => (
               <span class="article-card-tag">{tag}</span>
             ))}

@@ -4,47 +4,42 @@
  */
 
 const STORAGE_KEY = 'walker-sidebar-collapsed';
+const COLLAPSED_ATTR = 'data-sidebar-collapsed';
 
-// 记录当前是否已绑定事件，防止重复绑定
 let isInitialized = false;
 let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
 function initSidebarState(): void {
-  const nav = document.getElementById('main-nav');
   const toggleBtn = document.getElementById('sidebar-collapse-btn');
-  const layout = document.getElementById('article-layout');
 
-  if (!nav || !toggleBtn) return;
+  if (!toggleBtn) return;
 
-  // 从 localStorage 恢复状态
+  const root = document.documentElement;
   const savedState = localStorage.getItem(STORAGE_KEY);
   if (savedState === 'true') {
-    collapse(nav, layout);
+    collapse(root);
     updateIcon(toggleBtn, true);
   } else {
-    expand(nav, layout);
+    expand(root);
     updateIcon(toggleBtn, false);
   }
 
-  // 确保每次 DOM 更新后都能正确绑定，但由于 toggleBtn 可能被重新渲染，
-  // 我们需要给 toggleBtn 加上点击事件。为了防止多次绑定，可以判断一个自定义属性
   if (!toggleBtn.dataset.sidebarInit) {
     toggleBtn.dataset.sidebarInit = 'true';
     toggleBtn.addEventListener('click', () => {
-      const isCollapsed = nav.classList.contains('sidebar-collapsed-nav');
+      const isCollapsed = root.hasAttribute(COLLAPSED_ATTR);
       if (isCollapsed) {
-        expand(nav, layout);
+        expand(root);
         updateIcon(toggleBtn, false);
         localStorage.setItem(STORAGE_KEY, 'false');
       } else {
-        collapse(nav, layout);
+        collapse(root);
         updateIcon(toggleBtn, true);
         localStorage.setItem(STORAGE_KEY, 'true');
       }
     });
   }
 
-  // document 级别的事件只需要绑定一次
   if (!isInitialized) {
     keydownHandler = (e: KeyboardEvent) => {
       if (e.key === '[' && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -69,16 +64,12 @@ function cleanup() {
 
 document.addEventListener('astro:before-swap', cleanup);
 
-function collapse(nav: HTMLElement, layout: HTMLElement | null): void {
-  nav.classList.add('sidebar-collapsed-nav');
-  layout?.classList.add('sidebar-collapsed');
-  document.body.classList.add('sidebar-collapsed');
+function collapse(root: HTMLElement): void {
+  root.setAttribute(COLLAPSED_ATTR, '');
 }
 
-function expand(nav: HTMLElement, layout: HTMLElement | null): void {
-  nav.classList.remove('sidebar-collapsed-nav');
-  layout?.classList.remove('sidebar-collapsed');
-  document.body.classList.remove('sidebar-collapsed');
+function expand(root: HTMLElement): void {
+  root.removeAttribute(COLLAPSED_ATTR);
 }
 
 function updateIcon(btn: HTMLElement, collapsed: boolean): void {

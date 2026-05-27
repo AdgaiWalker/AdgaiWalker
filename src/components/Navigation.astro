@@ -1,7 +1,9 @@
 ---
 import SearchModal from './SearchModal.astro';
-import { POSTS, TOOLS } from '@/lib/routes';
-import { Icon } from 'astro-icon/components';
+import TopNavBar from './nav/TopNavBar.astro';
+import SidebarNav from './nav/SidebarNav.astro';
+import MobileMenu from './nav/MobileMenu.astro';
+import { POSTS, TOOLS, IDEAS, PROJECTS } from '@/lib/routes';
 
 interface NavItem {
   label: string;
@@ -21,6 +23,8 @@ const navGroups: NavGroup[] = [
       { label: '首页', href: '/', icon: 'lucide:home', hint: 'Home' },
       { label: '思考', href: POSTS, icon: 'lucide:pen-line', hint: 'Thinking' },
       { label: '资源', href: TOOLS, icon: 'lucide:wrench', hint: 'Resources' },
+      { label: '点子', href: IDEAS, icon: 'lucide:lightbulb', hint: 'Ideas' },
+      { label: '项目', href: PROJECTS, icon: 'lucide:rocket', hint: 'Projects' },
       { label: '关于', href: '/about', icon: 'lucide:user', hint: 'About' },
     ]
   },
@@ -29,11 +33,6 @@ const navGroups: NavGroup[] = [
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/';
 const normalizedPath = currentPath.replace(/\/$/, '') || '/';
-
-const isActiveHref = (href: string) => {
-  if (href === '/') return normalizedPath === '/';
-  return normalizedPath === href || normalizedPath.startsWith(`${href}/`);
-};
 ---
 
 <div class="hidden">
@@ -41,145 +40,13 @@ const isActiveHref = (href: string) => {
 </div>
 
 {isHome ? (
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-transparent transition-all duration-300" id="main-nav">
-    <div class="max-w-7xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between pointer-events-auto">
-      <a href="/" class="flex items-center font-heading text-xl text-parchment hover:text-brand transition-colors no-underline font-bold">
-        Walker
-      </a>
-      
-      {/* 首页顶部高颜值胶囊导航 */}
-      <div class="flex items-center gap-1 bg-white/40 backdrop-blur-md border border-white/60 rounded-full px-2.5 py-1.5 shadow-sm">
-        {navGroups[0].items.map(item => (
-          <a
-            href={item.href}
-            class="flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[12.5px] font-body font-bold text-parchment/70 hover:text-brand hover:bg-white/50 transition-all no-underline"
-          >
-            <Icon name={item.icon} width={13} height={13} class="text-parchment-dim" />
-            {item.label}
-          </a>
-        ))}
-      </div>
-    </div>
-  </nav>
+  <TopNavBar items={navGroups[0].items} />
 ) : (
   <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md flex flex-col" id="main-nav">
-    {/* 移动端顶部栏 */}
-    <div class="flex lg:hidden items-center justify-between px-4 py-3 w-full bg-[var(--color-nav-bg)] backdrop-blur-md border-b border-[var(--color-nav-border)]">
-      <a href="/" class="flex items-center font-heading text-lg font-bold text-parchment hover:text-brand transition-colors no-underline">
-        Walker
-      </a>
-      <div class="flex items-center gap-3">
-        <button
-          class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
-          id="mobile-search-btn"
-          aria-label="搜索"
-        >
-          <Icon name="lucide:search" width={20} height={20} />
-        </button>
-        <button
-          class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"
-          id="menu-toggle"
-          aria-label="打开菜单"
-        >
-          <Icon name="lucide:menu" width={22} height={22} />
-        </button>
-      </div>
-    </div>
-
-    {/* 侧边栏/移动端菜单内容 */}
-    <div class="hidden lg:flex flex-col flex-1 w-full overflow-y-auto custom-scrollbar bg-[var(--color-nav-bg)] backdrop-blur-md" id="mobile-menu">
-
-      {/* 桌面端头部 */}
-      <div class="hidden lg:flex flex-col px-5 pt-7 pb-5">
-        <a href="/" class="nav-brand no-underline" title="返回首页">
-          <span class="nav-brand-mark">W</span>
-          <span class="nav-brand-copy">
-            <span class="nav-brand-name">Walker</span>
-            <span class="nav-brand-tagline">行过万里水路</span>
-          </span>
-        </a>
-      </div>
-
-      {/* 分割线 */}
-      <div class="hidden lg:block mx-5 border-b border-[var(--color-nav-border)] mb-5 opacity-40"></div>
-
-      {/* 搜索框 */}
-      <div class="hidden lg:block px-4 mb-1">
-        <button id="desktop-search-btn" class="nav-search group bg-[rgba(255,255,255,0.06)] border-[var(--color-nav-border)]">
-          <div class="flex items-center gap-2.5 text-[13px]">
-            <Icon name="lucide:search" width={16} height={16} class="text-parchment-dim group-hover:text-brand transition-colors" />
-            <span class="font-body text-parchment-dim">搜索</span>
-          </div>
-          <kbd class="text-[10px] font-sans px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.03)] border border-[var(--color-nav-border)] text-parchment-dim font-medium">⌘K</kbd>
-        </button>
-      </div>
-
-      {/* 导航列表 */}
-      <div class="flex-1 px-3 pb-4">
-        <div class="flex flex-col gap-5">
-          {navGroups.map((group) => (
-            <div class="flex flex-col">
-              {group.title && (
-                <div class="nav-section-title">{group.title}</div>
-              )}
-              <div class="flex flex-col gap-0.5 relative nav-links-container">
-                {/* 浮动液态滑动高亮指示器 */}
-                <div class="nav-active-indicator opacity-0" id="nav-indicator"></div>
-                {group.items.map(item => {
-                  const isActive = isActiveHref(item.href);
-                  return (
-                    <a
-                      href={item.href}
-                      title={item.label}
-                      class:list={[
-                        'nav-link group relative z-10',
-                        isActive
-                          ? 'nav-link-active'
-                          : 'nav-link-idle',
-                      ]}
-                    >
-                      <Icon name={item.icon} width={18} height={18} class="nav-link-icon" />
-                      <span class="nav-link-main">{item.label}</span>
-                      {item.hint && <span class="nav-link-hint">{item.hint}</span>}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 文章列表扩展插槽 */}
-        <div class="nav-extension mt-4">
-          <slot />
-        </div>
-      </div>
-
-      {/* 侧边栏折叠按钮 */}
-      <div class="hidden lg:flex items-center justify-end px-4 py-3 opacity-0 hover:opacity-100 transition-opacity absolute bottom-[72px] right-0 z-20">
-        <button
-          class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all bg-transparent border-none cursor-pointer"
-          id="sidebar-collapse-btn"
-          aria-label="折叠侧边栏"
-          title="折叠侧边栏 ( [ )"
-        >
-          <Icon name="lucide:panel-left-close" width={16} height={16} class="sidebar-icon-close" />
-          <Icon name="lucide:panel-left-open" width={16} height={16} class="sidebar-icon-open" />
-        </button>
-      </div>
-
-      {/* 底部社交栏 */}
-      <div class="hidden lg:flex items-center justify-between px-5 py-5 mt-auto border-t border-[var(--color-nav-border)] text-gray-400 z-20">
-        <div class="flex items-center gap-3.5">
-          <a href="https://github.com/AdgaiWalker" target="_blank" class="hover:text-brand transition-colors" aria-label="Github"><Icon name="lucide:github" width={18} height={18} /></a>
-          <a href="mailto:praxiswalker@gmail.com" class="hover:text-brand transition-colors" aria-label="Email"><Icon name="lucide:mail" width={18} height={18} /></a>
-          <a href="/rss.xml" class="hover:text-brand transition-colors" aria-label="RSS"><Icon name="lucide:rss" width={16} height={16} /></a>
-        </div>
-        <button class="hover:text-brand transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center p-1" id="nav-theme-toggle" aria-label="Theme toggle">
-          <Icon name="lucide:sun" width={18} height={18} />
-        </button>
-      </div>
-    </div>
+    <MobileMenu />
+    <SidebarNav navGroups={navGroups} normalizedPath={normalizedPath}>
+      <slot />
+    </SidebarNav>
   </nav>
 )}
 
@@ -225,7 +92,6 @@ const isActiveHref = (href: string) => {
     const themeBtn = document.getElementById('nav-theme-toggle');
     const themes = ['nature', 'aurora', 'sunset', 'mint'];
 
-    // 从 localStorage 初始化主题
     const savedTheme = localStorage.getItem('walker-theme') || 'nature';
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
     document.body.classList.add(`theme-${savedTheme}`);
@@ -234,12 +100,11 @@ const isActiveHref = (href: string) => {
       const current = localStorage.getItem('walker-theme') || 'nature';
       const nextIndex = (themes.indexOf(current) + 1) % themes.length;
       const nextTheme = themes[nextIndex];
-      
+
       document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
       document.body.classList.add(`theme-${nextTheme}`);
       localStorage.setItem('walker-theme', nextTheme);
 
-      // 发送自定义广播事件，让页面中可能存在的其他高度自定义组件实时重绘
       document.dispatchEvent(new CustomEvent('walker-theme-change', { detail: nextTheme }));
     }, { signal });
 
@@ -261,16 +126,13 @@ const isActiveHref = (href: string) => {
         indicator.style.opacity = '1';
       };
 
-      // 1. 初始化位置 (无延迟无过渡)
       const activeLink = container.querySelector('.nav-link-active') as HTMLElement | null;
       if (activeLink) {
-        // 稍微加个微小延迟确保渲染流完毕以计算高宽
         setTimeout(() => {
           if (activeLink) updateIndicator(activeLink, false);
         }, 30);
       }
 
-      // 2. 鼠标 Hover 流动反馈
       const links = container.querySelectorAll('.nav-link');
       links.forEach(link => {
         link.addEventListener('mouseenter', () => {
@@ -278,7 +140,6 @@ const isActiveHref = (href: string) => {
         }, { signal });
       });
 
-      // 3. 鼠标离开容器，弹性吸附回激活项目上
       container.addEventListener('mouseleave', () => {
         const active = container.querySelector('.nav-link-active') as HTMLElement | null;
         if (active) {
@@ -294,245 +155,3 @@ const isActiveHref = (href: string) => {
     if (navAbort) { navAbort.abort(); navAbort = null; }
   });
 </script>
-
-<style>
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
-  /* ===== Brand ===== */
-  .nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #1a2325;
-  }
-
-  .nav-brand-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    border: 1px solid rgba(42, 59, 62, 0.08);
-    background: #fff;
-    color: #35bfab;
-    font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
-    font-weight: 700;
-    box-shadow: 0 10px 26px rgba(25, 38, 40, 0.05);
-  }
-
-  .nav-brand-copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-  }
-
-  .nav-brand-name {
-    font-family: 'Sora', 'PingFang SC', system-ui, sans-serif;
-    font-size: 0.98rem;
-    font-weight: 600;
-    color: #1a2325;
-    line-height: 1.1;
-  }
-
-  .nav-brand-tagline {
-    margin-top: 0.18rem;
-    font-size: 0.68rem;
-    color: rgba(42, 59, 62, 0.38);
-    letter-spacing: 0.04em;
-  }
-
-  /* ===== Search ===== */
-  .nav-search {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.6rem 0.8rem;
-    border-radius: 10px;
-    border: 1px solid rgba(42, 59, 62, 0.08);
-    background: rgba(255, 255, 255, 0.82);
-    color: rgba(42, 59, 62, 0.52);
-    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-    cursor: pointer;
-  }
-
-  .nav-search:hover {
-    border-color: rgba(53, 191, 171, 0.24);
-    background: #fff;
-    box-shadow: 0 10px 28px rgba(25, 38, 40, 0.05);
-  }
-
-  /* ===== Section Titles ===== */
-  .nav-section-title {
-    padding: 0 0.7rem 0.35rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: rgba(42, 59, 62, 0.32);
-  }
-
-  /* ===== Nav Links ===== */
-  .nav-link {
-    display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.7rem;
-    min-height: 42px;
-    padding: 0.5rem 0.75rem;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    font-size: 0.86rem;
-    text-decoration: none;
-    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-  }
-
-  .nav-link-idle {
-    color: rgba(42, 59, 62, 0.6);
-  }
-
-  .nav-link-idle:hover {
-    color: #1a2325;
-    background: rgba(42, 59, 62, 0.04);
-  }
-
-  .nav-link-active {
-    color: #218f80;
-    background: rgba(53, 191, 171, 0.08);
-    border-color: rgba(53, 191, 171, 0.12);
-    font-weight: 600;
-  }
-
-  .nav-link-icon {
-    color: rgba(42, 59, 62, 0.34);
-    transition: color 0.18s ease;
-  }
-
-  .nav-link-active .nav-link-icon,
-  .nav-link:hover .nav-link-icon {
-    color: #35bfab;
-  }
-
-  .nav-link-main {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .nav-link-hint {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.62rem;
-    color: rgba(42, 59, 62, 0.26);
-  }
-
-  /* ===== 侧边栏折叠样式适配 ===== */
-  @media (min-width: 1024px) {
-    #main-nav {
-      width: var(--walker-nav-width, 260px) !important;
-    }
-
-    .sidebar-collapsed-nav {
-      width: 68px !important;
-    }
-
-    .sidebar-collapsed-nav .nav-brand {
-      justify-content: center;
-    }
-
-    .sidebar-collapsed-nav .nav-brand-copy,
-    .sidebar-collapsed-nav .nav-section-title,
-    .sidebar-collapsed-nav .nav-link-main,
-    .sidebar-collapsed-nav .nav-link-hint,
-    .sidebar-collapsed-nav .nav-extension {
-      display: none !important;
-    }
-
-    .sidebar-collapsed-nav [id="desktop-search-btn"] {
-      padding: 0.6rem !important;
-      justify-content: center;
-      border-color: transparent !important;
-      background: transparent !important;
-      box-shadow: none !important;
-    }
-
-    .sidebar-collapsed-nav [id="desktop-search-btn"]:hover {
-      background: rgba(0,0,0,0.05) !important;
-    }
-
-    .sidebar-collapsed-nav [id="desktop-search-btn"] span,
-    .sidebar-collapsed-nav [id="desktop-search-btn"] kbd {
-      display: none;
-    }
-
-    .sidebar-collapsed-nav .nav-link {
-      grid-template-columns: 1fr;
-      justify-content: center;
-      justify-items: center;
-      padding-left: 0.55rem !important;
-      padding-right: 0.55rem !important;
-    }
-
-    .sidebar-collapsed-nav .nav-link .nav-link-icon {
-      margin: 0;
-    }
-
-    .sidebar-icon-open {
-      display: none;
-    }
-
-    .sidebar-collapsed-nav .sidebar-icon-close {
-      display: none;
-    }
-
-    .sidebar-collapsed-nav .sidebar-icon-open {
-      display: block;
-    }
-
-    .sidebar-collapsed-nav .mt-auto {
-      display: none !important;
-    }
-
-    .sidebar-collapsed-nav [id="sidebar-collapse-btn"] {
-      opacity: 1 !important;
-    }
-  }
-
-  /* ===== 移动端 ===== */
-  @media (max-width: 1023px) {
-    #mobile-menu.flex {
-      position: fixed;
-      top: 52px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 49;
-      padding-bottom: 2rem;
-      animation: slideDown 0.2s ease-out;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  }
-</style>
