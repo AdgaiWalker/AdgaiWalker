@@ -1,158 +1,216 @@
-# Walker PRD 与代码差距文档
+# 文档一致性审核报告
 
-> 审核时间：2026-05-17  
-> 目标文件：`docs/walker-blog-prd.md`  
-> 对照范围：`src/pages/**`, `src/components/**`, `src/layouts/**`, `src/content.config.ts`, `src/content/**`, `astro.config.mjs`, `package.json`
+**审核日期**: 2026-05-28
+**审核范围**: CLAUDE.md、docs/ 全部文档 vs 源码
+**审核结论**: 有条件通过
 
-## 结论
+---
 
-整体实现与 PRD 主体一致：路由、核心 Layout、内容 Schema、Astro/Vercel/Pagefind/Supabase 点赞等技术规格基本能在代码中找到对应实现。
+## 汇总
 
-本轮发现 6 项仍需跟进的差距，其中 2 项为 PRD 已明确记录但代码/内容尚未完成，1 项为代码实现与 PRD 设计原则直接不一致，3 项为 PRD 待办项在代码中的当前状态确认。
+| 级别 | 数量 | 说明 |
+|------|------|------|
+| P0 | 2 | 缺失关键路由、PRD 严重过时 |
+| P1 | 14 | 核心描述不一致、过时报告未归档 |
+| P2 | 16 | 命名不准确、小遗漏、重复文件 |
+| P3 | 3 | 措辞/细节 |
+| **总计** | **35** | |
 
-| 优先级 | 差距 | 状态 |
-| --- | --- | --- |
-| P1 | `dockItem` 分类仍未迁移 | 未完成 |
-| P2 | 缺少真实 `type: idea` 内容 | 未完成 |
-| P2 | `/ai/toolkit` 使用 Emoji 作为标题图标 | 新发现 |
-| P2 | `WalkerProfile` 深层入口仍偏少 | 未完成 |
-| P2 | About 页文案仍处于待精修状态 | 待产品判断 |
-| P3 | 卡片级点赞仍未评估/实现 | 未完成 |
+---
 
-## 差距详情
+## P0
 
-### P1：`dockItem` 分类仍未迁移
+### 1. CLAUDE.md 缺少 `/about/site` 路由
+- **位置**: CLAUDE.md > 路由结构表
+- **证据**: 表中只有 `/about`，无 `/about/site`。实际 `src/pages/about/site.astro` 已上线。
+- **影响**: 开发者不知道这个路由存在。
+- **修复**: 添加行 `| /about/site | 关于网站 | FullscreenLayout |`
 
-目标文件说明：
-- `docs/walker-blog-prd.md:271`：`design-review-skill.md` 仍是 `info-source`，应评估迁移为 `skill`
-- `docs/walker-blog-prd.md:272`：`aigc-wechat.md` 仍是 `info-source`，应评估迁移为 `community`
+### 2. PRD 路由表缺少 3 个活跃页面
+- **位置**: `docs/walker-blog-prd.md` Section 3
+- **证据**: PRD 只列出 `/`、`/posts`、`/tools`、`/about`、`/404`、`/rss.xml`。实际还有 `/ideas`、`/projects`、`/about/site`。
+- **影响**: 产品规格文档与实际站点严重脱节。
+- **修复**: 添加三个路由到路由表和页面规格。
 
-实际代码：
-- `src/content/dock/design-review-skill.md:4`：`category: info-source`
-- `src/content/dock/aigc-wechat.md:4`：`category: info-source`
+---
 
-影响：
-- `design-review-skill` 当前不会进入 `/ai/toolkit` 的 Skill 分区。
-- `aigc-wechat` 当前在信息源分组中展示，而不是社群分组。
-- `/explore` 的主从列表分类也会继续把这两个条目归到信息源。
+## P1
 
-建议：
-- 先确认内容定位，然后分别改为 `skill` 和 `community`。
-- 修改后同步检查 `/ai/sources`, `/ai/toolkit`, `/explore` 三处展示结果。
+### 3. CLAUDE.md 重定向表错误：`/ai/ideas` 应指向 `/ideas` 非 `/tools`
+- **位置**: CLAUDE.md > 旧路由重定向表
+- **证据**: CLAUDE.md 将 `/ai/ideas` 归入指向 `/tools` 的组。实际 `astro.config.mjs` 中 `/ai/ideas` 重定向到 `/ideas`。
+- **修复**: 单独列出 `/ai/ideas → /ideas`。
 
-### P2：缺少真实 `type: idea` 内容
+### 4. CLAUDE.md 中 Base.astro 描述包含不存在的"环境粒子画布"
+- **位置**: CLAUDE.md > 布局系统 > Base.astro
+- **证据**: grep `env-particles` / `粒子画布` 在 `src/` 中零结果。实际有的是格线纹理背景、噪点叠加。
+- **修复**: 改为"格线纹理背景"或"噪点纹理叠加"。
 
-目标文件说明：
-- `docs/walker-blog-prd.md:190-194`：`/ai/ideas` 状态中写明 Schema 已支持，但真实 `type: idea` 内容不足。
-- `docs/walker-blog-prd.md:351`：待办项为“补真实 `type: idea` 内容”。
+### 5. CLAUDE.md 未提及 `src/data/site-stats.json`
+- **位置**: CLAUDE.md > 架构部分
+- **证据**: 两个 about 页面都 import 此文件，含 costs/siteTimeline/personalTimeline/roadmap。
+- **修复**: 新增"数据文件"小节。
 
-实际代码：
-- `src/content.config.ts` 已支持 `type: 'idea'`、`status`、`claimInfo`。
-- `src/pages/ai/ideas.astro` 已按 `data.category === 'ai' && data.type === 'idea'` 查询内容。
-- 当前 `src/content/log/*` 未检索到任何 `type: idea` 条目。
+### 6. PRD 导航表只有 4 项，实际有 6 项
+- **位置**: `docs/walker-blog-prd.md` Section 4
+- **证据**: PRD 列 Home/Thinking/Resources/About。实际 Navigation.astro 有 6 项（含 点子/项目）。
+- **修复**: 添加点子和项目行。
 
-影响：
-- `/ai/ideas` 页面功能存在，但内容为空，只能展示空状态。
-- PRD 中“AI 想法和项目认领”的页面定位还没有内容支撑。
+### 7. PRD 首页组件描述过时
+- **位置**: `docs/walker-blog-prd.md` Section 5.1
+- **证据**: PRD 列 GreetingCard/BrandCard/RecentTraces/FeaturedTools。实际首页已重构为 HomeCanvas 接收所有数据。
+- **修复**: 更新为实际组件结构。
 
-建议：
-- 至少补 2-3 篇真实 idea 内容，覆盖 `open` 和 `completed` 状态。
-- 每篇补充 `summary`, `status`, `claimInfo`, `tags`，便于现有 `IdeaCard` 直接展示。
+### 8. PRD 客户端脚本列表过时
+- **位置**: `docs/walker-blog-prd.md` Section 9
+- **证据**: PRD 列 4 个脚本。实际 `src/scripts/` 有 7 个，缺 home-canvas.ts、with-lifecycle.ts、tilt-effect.ts。
+- **修复**: 补全脚本列表。
 
-### P2：`/ai/toolkit` 使用 Emoji 作为标题图标
+### 9. 根目录 `doc-consistency.md` 是过时的旧报告（本文件已覆盖）
+- **位置**: `doc-consistency.md`（根目录）— 已被本报告覆盖
+- **证据**: 旧版 2026-05-17 的 gap 报告引用已删除的 `dockItem` 集合等已解决问题。
+- **修复**: 已覆盖为新报告。
 
-目标文件说明：
-- `docs/walker-blog-prd.md:35`：图标使用 Lucide，不用 Emoji 承担界面语义。
-- `docs/walker-blog-prd.md:370`：新图标使用 Lucide。
+### 10. `docs/doc-consistency.md`（2026-05-26）也已过时
+- **位置**: `docs/doc-consistency.md`
+- **证据**: 声称"三页结构"，实际已有 6+ 页面。其中多个 P0 问题已被后续重构解决。
+- **修复**: 归档或标注已解决项。
 
-实际代码：
-- `src/pages/ai/toolkit.astro:62`：`🧠`
-- `src/pages/ai/toolkit.astro:72`：`🛠️`
-- `src/pages/ai/toolkit.astro:94`：`✨`
-- `src/pages/ai/toolkit.astro:116`：`🧭`
-- `src/pages/ai/toolkit.astro:126`：`💸`
-- `src/pages/ai/toolkit.astro:136`：`📌`
+### 11. `docs/refactor-todo.md` 任务已完成但未标记
+- **位置**: `docs/refactor-todo.md` T2/T5/T9/T11/T12
+- **证据**: 全部已完成。T2 的函数名与实现略有不同（4 函数 vs 计划的 2 函数）。
+- **修复**: 标记为已完成，或归档。
 
-影响：
-- 这与 PRD 的全站图标原则直接冲突。
-- 当前页面没有导入 `astro-icon` 的 `Icon`，不能复用 Lucide 图标体系。
+### 12. PRD 未记录 `community` 类型
+- **位置**: `docs/walker-blog-prd.md` content types 部分
+- **证据**: `content.config.ts` 有 5 种 type（含 community），PRD 只列 4 种。
+- **修复**: 添加 `community`。
 
-建议：
-- 在 `/ai/toolkit` 中引入 `Icon`。
-- 将上述 Emoji 替换为 `lucide:brain`, `lucide:wrench`, `lucide:sparkles`, `lucide:compass`, `lucide:badge-dollar-sign` 或相近图标。
+### 13. UI 图片生成计划引用已删除的路由
+- **位置**: `docs/superpowers/plans/2026-05-17-ui-image-regeneration.md` 和 `docs/ui-image-generation/prompts.md`
+- **证据**: 列出 `/ai/learn`、`/ai/toolkit`、`/explore` 等已变成 301 重定向的路由。缺失 `/ideas`、`/projects`、`/about/site`。
+- **修复**: 重写路由清单。
 
-### P2：`WalkerProfile` 深层入口仍偏少
+### 14. 内容重组设计规格的导航标签与实际不同
+- **位置**: `docs/superpowers/specs/2026-05-26-content-reorg-design.md`
+- **证据**: 文档写"首页 | 工具 | 知识 | 关于"（4 项）。实际为"首页 | 思考 | 资源 | 点子 | 项目 | 关于"（6 项）。
+- **修复**: 标注最终实现差异。
 
-目标文件说明：
-- `docs/walker-blog-prd.md:352`：待办项为“增强 `WalkerProfile` 深层入口”。
+### 15. PRD 中 `/ai/ideas` 重定向到 `/ideas` 但 `/ideas` 未作为页面文档化
+- **位置**: `docs/walker-blog-prd.md` 重定向表 + 页面规格
+- **证据**: 重定向目标存在（`src/pages/ideas/index.astro`），但 PRD 无页面规格。
+- **修复**: 添加 `/ideas` 页面规格。
 
-实际代码：
-- `src/components/WalkerProfile.astro:27-36` 当前只提供 `/posts`, `/explore`, `/about` 三个入口。
-- PRD 导航和 AI 子页面还包含 `/ai/learn`, `/ai/ideas`, `/ai/toolkit`, `/ai/sources`。
+### 16. APoSD 审核报告中多个发现已解决但未标注
+- **位置**: `docs/aposd-review.md` Finding #3/#11/#13
+- **证据**: #3（Navigation 拆分）已解决。#11（with-lifecycle.ts）已存在。
+- **修复**: 标注解决状态。
 
-影响：
-- 首页身份卡只能进入总入口，无法直接分流到学习、工具箱、信息源、Idea 等更具体页面。
+---
 
-建议：
-- 在不增加首页复杂度的前提下，为 `WalkerProfile` 增加 2-4 个二级入口或折叠入口。
-- 优先考虑 `/ai/toolkit`、`/ai/learn`、`/ai/ideas`，因为它们更像个人能力与内容的深层索引。
+## P2
 
-### P2：About 页文案仍处于待精修状态
+### 17. CLAUDE.md 简化了 `/idea/*` 通配符重定向
+- **位置**: CLAUDE.md > 旧路由重定向表
+- **证据**: 实际有 8 条具体规则，至少 `/idea/ideas → /ideas` 和 `/idea/explore/:slug → /tools` 需单独标注。
+- **修复**: 补充关键差异。
 
-目标文件说明：
-- `docs/walker-blog-prd.md:353`：待办项为“精修 About 页文案”。
+### 18. ArticleLayout 描述为"三栏"但实际是两栏 grid
+- **位置**: CLAUDE.md > 布局系统 > ArticleLayout.astro
+- **证据**: CSS grid 为两列。ArticleNav 通过 slot 注入 Navigation sidebar。
+- **修复**: 改为"两栏布局（TOC + 正文），ArticleNav 通过 slot 注入导航侧边栏"。
 
-实际代码：
-- `src/pages/about.astro` 已包含视频 Hero、个人简介、技能兴趣、社交链接、页面点赞。
-- 文案已可用，但仍是通用介绍型表达，是否达到 PRD 想要的“个人介绍与关于本站”深度需要产品侧判断。
+### 19. Base.astro `theme` prop 类型与实际主题名不匹配
+- **位置**: `src/layouts/Base.astro` line 17
+- **证据**: prop 为 `'nature' | 'blue' | 'emerald' | 'charcoal'`，实际用 `nature | aurora | sunset | mint`。
+- **修复**: 更新 Base.astro 类型定义。
 
-影响：
-- 这不是功能缺口，更像内容质量缺口。
-- 若站点定位为“个人数字根据地”，About 页可进一步强化个人主张、项目脉络和连接理由。
+### 20. CLAUDE.md 未记录 `ResourceCard.astro` 组件
+- **位置**: CLAUDE.md > 核心组件
+- **证据**: `src/components/ResourceCard.astro` 存在，被 `posts/[slug].astro` 使用。
+- **修复**: 添加到组件列表。
 
-建议：
-- 将 README 中的“以人的幸福为目的的 AI 工程哲学”“项目演进路径”“Ferry”等更强识别度内容提炼到 About 页。
+### 21. Averia Gruesa Libre 非 Astro fontsource 自托管字体但未说明
+- **位置**: CLAUDE.md > 图标与样式
+- **证据**: global.css 覆盖使用 Averia Gruesa Libre，此字体不在自托管列表中。
+- **修复**: 标注为外部依赖字体。
 
-### P3：卡片级点赞仍未评估/实现
+### 22. PRD 字体描述未提及 CSS 覆盖
+- **位置**: `docs/walker-blog-prd.md` Section 7
+- **修复**: 添加 CSS 覆盖说明。
 
-目标文件说明：
-- `docs/walker-blog-prd.md:354`：待办项为“评估卡片级点赞”。
+### 23. 根目录无 README.md
+- **位置**: 根目录
+- **证据**: 克隆后无着陆页文档。
+- **修复**: 创建简短 README.md。
 
-实际代码：
-- `LikeCounter` 当前用于首页、About 页和文章详情页：
-  - `src/pages/index.astro:119`
-  - `src/pages/about.astro:209`
-  - `src/pages/posts/[slug].astro:199`
-- 未看到 `ArticleCard`, `DockItemCard`, `IdeaCard` 等卡片级点赞接入。
+### 24. `docs/README.md` 文档索引不完整
+- **位置**: `docs/README.md`
+- **证据**: 只列 2 个活跃文档，实际含 13+ 文件。
+- **修复**: 更新索引。
 
-影响：
-- 当前点赞粒度是页面级，不支持对资源卡、Idea 卡或文章列表项进行轻反馈。
+### 25. `docs/dev/walker-blog-prd.md` 是完全复制
+- **位置**: `docs/dev/walker-blog-prd.md`
+- **证据**: 与 `docs/walker-blog-prd.md` 内容完全相同。
+- **修复**: 删除重复。
 
-建议：
-- 先明确是否真的需要卡片级点赞；如果需要，应确定 `pagePath` 命名规则，例如 `/card/dock/{id}` 或 `/card/idea/{id}`。
-- 避免直接复用页面 URL 导致统计语义混乱。
+### 26. 内容重组计划引用不存在的文件路径
+- **位置**: `docs/superpowers/plans/2026-05-26-content-reorg.md` Task 9
+- **证据**: 要求删除 `src/pages/idea/` 目录，该路径从未存在。
+- **修复**: 标注计划已执行。
 
-## 已对齐项摘要
+### 27. `docs/doc-consistency.md` 字体问题机制描述不准
+- **位置**: `docs/doc-consistency.md` Issue #11
+- **证据**: 说 Inter/Sora 未自托管，实际已加载只是被 CSS 覆盖。
+- **修复**: 补充机制说明。
 
-- 路由结构基本符合 PRD：`/posts`, `/posts/[slug]`, `/ai/learn`, `/ai/sources`, `/ai/toolkit`, `/ai/ideas`, `/explore`, `/explore/[slug]`, `/about`, `/404`, RSS 路由均存在。
-- `/ai` 与 `/life` 在 `astro.config.mjs` 中配置为重定向到 `/posts`，`/ai/[slug]` 与 `/life/[slug]` 也会 301 到 `/posts/[slug]`。
-- `log` 与 `dockItem` Schema 与 PRD 字段基本一致。
-- Layout 文件与 PRD 列表一致：`Base`, `SidebarLayout`, `ArticleLayout`, `DockLayout`, `FullscreenLayout` 均存在。
-- 客户端脚本与 PRD 列表一致：`ambient`, `scroll-fade`, `sidebar-state`, `toc-tracker`, `column-resize`, `justify-tags` 均存在。
-- 技术栈与 PRD 基本一致：Astro 6、Vercel adapter、Tailwind v4、Content Collections、Pagefind、`astro-icon` + Lucide、Supabase 点赞组件均可在配置或源码中找到。
+### 28. CLAUDE.md 未提及 about 页面的 JSON 数据驱动
+- **位置**: CLAUDE.md > 路由结构
+- **证据**: about/index.astro 和 about/site.astro 都 import site-stats.json。
+- **修复**: 在路由描述中说明。
 
-## 验证说明
+### 29. `plan-next-steps.md` 已完成但未归档
+- **位置**: 根目录 `plan-next-steps.md`
+- **证据**: A/B/C 组全部完成。
+- **修复**: 归档或删除。
 
-本轮只生成差距文档，未修改业务代码。
+### 30. CLAUDE.md `buildPostPath` 函数需验证
+- **位置**: CLAUDE.md > 辅助模块 > routes.ts
+- **修复**: 验证签名是否正确。
 
-已做文件级核对：
-- 读取并对照 `docs/walker-blog-prd.md`
-- 读取核心页面、Layout、组件、内容 Schema 与内容条目
-- 使用 `Select-String` 抽查关键字段、路由、分类、点赞接入和图标实现
+### 31. CLAUDE.md `PLATFORM_ICON_MAP` 描述过简
+- **位置**: CLAUDE.md > 辅助模块 > constants.ts
+- **修复**: 补充说明。
 
-未执行：
-- `npx astro check`
-- `npm run build`
+### 32. 内容重组计划导航拆分已按不同方式实现
+- **位置**: `docs/superpowers/plans/2026-05-26-content-reorg.md` T11
+- **修复**: 标注已完成。
 
-原因：
-- 本轮没有改页面、路由、Schema 或构建配置；按 PRD 验收规则，这两项更适合在后续修复代码后执行。
+---
+
+## P3
+
+### 33. `justify-tags.ts` 导出两个函数但 CLAUDE.md 只提功能
+- **位置**: CLAUDE.md > 客户端脚本
+- **修复**: 可选补充 `watchJustifyTags`。
+
+### 34. LikeCounter 描述准确但未提及客户端 script 上下文
+- **位置**: CLAUDE.md > 核心组件 > LikeCounter
+- **修复**: 可选补充。
+
+### 35. `docs/media/execution-plan.md` 交叉引用路径正确（旧报告误报）
+- **位置**: `docs/media/execution-plan.md` line 3
+- **修复**: 无需修复。
+
+---
+
+## 修复优先级
+
+```
+P0（2 条）→ P1（14 条）→ P2（16 条）→ P3（3 条）
+```
+
+**最需要立即修复的：**
+1. CLAUDE.md — 添加 `/about/site` 路由、`site-stats.json` 数据文件、修正重定向表和 Base.astro 描述
+2. `docs/walker-blog-prd.md` — 路由表/导航/组件/脚本全面更新
+3. 过时报告归档 — `docs/doc-consistency.md`、`docs/refactor-todo.md`、`plan-next-steps.md`

@@ -35,10 +35,10 @@ npx astro check    # Astro 类型检查
 
 共有四个布局：
 
-1. **`Base.astro`**：根外壳。处理共享 head、JSON-LD、导航、页脚、环境粒子画布、鼠标光晕和阅读模式。共享 head 由 `src/components/shared/HeadCommon.astro` 提供。
+1. **`Base.astro`**：根外壳。处理共享 head、JSON-LD、导航、页脚、格线纹理背景、鼠标光晕和阅读模式。共享 head 由 `src/components/shared/HeadCommon.astro` 提供。
 2. **`SidebarLayout.astro`**：通用内页布局，带页面头部、图标和计数。用于 `/posts`、`/tools`、`/ideas`、`/projects` 等列表型页面。
-3. **`ArticleLayout.astro`**：三栏文章视图，导航栏注入 `ArticleNav`，内容区使用 `pureMode=true` 的阅读模式。
-4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about`。
+3. **`ArticleLayout.astro`**：两栏布局（TOC 目录 + 文章正文），`ArticleNav` 通过 slot 注入 Navigation 侧边栏，内容区使用 `pureMode=true` 的阅读模式。
+4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about` 和 `/about/site`。
 
 ### 路由结构
 
@@ -50,7 +50,8 @@ npx astro check    # Astro 类型检查
 | `/tools` | 资源列表（工具） | SidebarLayout |
 | `/ideas` | 点子库 | SidebarLayout |
 | `/projects` | 项目列表 | SidebarLayout |
-| `/about` | 关于页 | FullscreenLayout |
+| `/about` | 关于我 | FullscreenLayout |
+| `/about/site` | 关于网站 | FullscreenLayout |
 | `/404` | 404 页面 | Base |
 | `/rss.xml` | RSS 订阅源 | 无布局 |
 
@@ -60,9 +61,10 @@ npx astro check    # Astro 类型检查
 | --- | --- |
 | `/ai` | `/tools` |
 | `/ai/learn` | `/posts` |
-| `/ai/sources`、`/ai/toolkit`、`/ai/ideas` | `/tools` |
+| `/ai/sources`、`/ai/toolkit` | `/tools` |
+| `/ai/ideas` | `/ideas` |
 | `/ai/:slug` | `/posts/:slug` |
-| `/idea`、`/idea/*` | `/tools` 或 `/posts/:slug` |
+| `/idea`、`/idea/*` | `/tools`、`/ideas` 或 `/posts/:slug`（`/idea/ideas` → `/ideas`，其余 `/idea/:slug` → `/posts/:slug`） |
 | `/life` | `/posts` |
 | `/life/:slug` | `/posts/:slug` |
 
@@ -74,6 +76,7 @@ npx astro check    # Astro 类型检查
 - **`TableOfContents.astro`**（`article/`）：文章页粘性目录，通过 `toc-highlight.ts` 高亮当前标题。
 - **首页组件**（`home/`）：`HomeCanvas.astro`（Bento 画布）、`SparkBoxModal.astro`（火花弹窗）、`CustomPalette.astro`（调色板）、`CanvasZoomControls.astro`（缩放控件）。
 - **首页卡片**（根级）：`GreetingCard.astro`、`BrandCard.astro`、`RecentTraces.astro`、`FeaturedTools.astro`、`CalendarWidget.astro`、`MusicPlayer.astro`、`PolaroidWidget.astro`、`WalkerProfile.astro`。
+- **`ResourceCard.astro`**（根级）：资源链接卡片，在文章详情页 `posts/[slug].astro` 中使用。
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
 - **`LikeCounter.astro`**：通过原生 `fetch()` 调用 Supabase REST API。需要 `PUBLIC_SUPABASE_URL` 和 `PUBLIC_SUPABASE_ANON_KEY` 环境变量，缺失时使用 `FALLBACK_COUNT` 常量。
 
@@ -82,7 +85,7 @@ npx astro check    # Astro 类型检查
 - 图标统一使用 `astro-icon` + `@iconify-json/lucide`，在构建期内联 SVG。不再加载 Iconify CDN 运行时。
 - Tailwind CSS v4 通过 `@tailwindcss/vite` 插件接入，无 `tailwind.config`。
 - `src/styles/global.css` 使用 `@theme` 定义颜色和 `--font-cjk`。`--font-body`、`--font-heading`、`--font-mono` 由 Astro Fonts API 注入，但 `global.css` 会覆盖 `--font-heading` 为 Averia Gruesa Libre / Outfit，`--font-body` 为 Outfit。
-- 字体通过 Astro Fonts API + fontsource provider 自托管：Inter、Sora、JetBrains Mono、Noto Sans SC（实际渲染字体见 `global.css` 覆盖值）。
+- 字体通过 Astro Fonts API + fontsource provider 自托管：Inter、Sora、JetBrains Mono、Noto Sans SC。`global.css` 覆盖后实际渲染为 Averia Gruesa Libre（heading，非自托管）和 Outfit（body）。
 - 多主题系统：`.theme-nature`（默认亮色）、`.theme-aurora`（暗色霓虹）、`.theme-sunset`（暖色暗色）、`.theme-mint`（绿色暗色），各定义完整的 CSS 自定义属性。
 - 代码块语法高亮使用 `shikiConfig: { theme: 'github-dark' }`。
 - 玻璃面板使用 `.panel-glass`，阅读模式由 `pureMode` 触发 `.reading-mode`。
@@ -108,6 +111,10 @@ npx astro check    # Astro 类型检查
 - 其他 URL：通用链接卡片。
 
 插件输出静态 HTML 和内联 SVG，不依赖 Iconify 运行时。
+
+### 数据文件
+
+- **`src/data/site-stats.json`**：关于页面的动态数据源，含 `costs`（花费记录）、`siteTimeline`（站点开发时间线）、`personalTimeline`（个人成长时间线，含 `children` 用于 NOW 节点子内容）、`roadmap`（`done` + `planned`）。被 `about/index.astro` 和 `about/site.astro` 导入，更新此文件即可刷新两个页面的动态内容。
 
 ### 辅助模块
 

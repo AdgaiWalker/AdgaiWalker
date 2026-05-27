@@ -1,7 +1,9 @@
 # Walker 博客 PRD
 
-版本：v3.1  
-日期：2026-05-17  
+最后更新: 2026-05-28
+
+版本：v3.2
+日期：2026-05-28
 基准：当前代码实现
 
 ## 1. 定位
@@ -42,7 +44,7 @@ Walker 是秋知的个人数字根据地。
 | 首页拖拽 | 位移、层级、缩放 | `src/pages/index.astro` |
 | 卡片 hover | 阴影、透明度、倾斜 | `Base.astro`、`global.css` |
 | 鼠标移动 | 背景光晕跟随 | `Base.astro` |
-| 目录滚动 | 当前标题高亮 | `toc-tracker.ts` |
+| 目录滚动 | 当前标题高亮 | `toc-highlight.ts` |
 | 侧栏折叠 | 宽度、图标、状态记忆 | `sidebar-state.ts` |
 | 点赞 | 图标状态、计数变化 | `LikeCounter.astro` |
 | 搜索 | 快捷键、弹层、输入状态 | `SearchModal.astro` |
@@ -50,13 +52,16 @@ Walker 是秋知的个人数字根据地。
 ## 3. 路由
 
 ```text
-/                         首页 Bento Box
-/posts                    文章列表
-/posts/[slug]             文章详情
-/tools                    资源列表（工具与点子）
-/about                    关于
-/404                      404
-/rss.xml                  RSS 订阅源
+/                         首页 Bento Box              Base
+/posts                    文章列表                     SidebarLayout
+/posts/[slug]             文章详情                     ArticleLayout
+/tools                    资源列表（工具）              SidebarLayout
+/ideas                    点子库                       SidebarLayout
+/projects                 项目列表                     SidebarLayout
+/about                    关于我                       FullscreenLayout
+/about/site               关于网站                     FullscreenLayout
+/404                      404                          Base
+/rss.xml                  RSS 订阅源                   无布局
 
 # 301 重定向（astro.config.mjs）
 /ai                       → /tools
@@ -64,7 +69,7 @@ Walker 是秋知的个人数字根据地。
 /ai/learn                 → /posts
 /ai/sources               → /tools
 /ai/toolkit               → /tools
-/ai/ideas                 → /tools
+/ai/ideas                 → /ideas
 /idea、/idea/*            → /tools 或 /posts/:slug
 /life                     → /posts
 /life/:slug               → /posts/:slug
@@ -84,6 +89,8 @@ Walker 是秋知的个人数字根据地。
 | 首页 | `/` | `home` |
 | 思考 | `/posts` | `pen-line` |
 | 资源 | `/tools` | `wrench` |
+| 点子 | `/ideas` | `lightbulb` |
+| 项目 | `/projects` | `rocket` |
 | 关于 | `/about` | `user` |
 
 实现：
@@ -95,11 +102,22 @@ Walker 是秋知的个人数字根据地。
 
 定位：个人桌面。
 
-内容：
+组件架构：
+- `HomeCanvas.astro`：主组件，接收所有数据作为 props
+- `SparkBoxModal.astro`：火花弹窗
+- `CustomPalette.astro`：调色板
+- `CanvasZoomControls.astro`：缩放控件
+- 客户端脚本：`home-canvas.ts`（拖拽、缩放、主题切换逻辑）
+
+首页卡片（根级）：
 - `GreetingCard`
 - `BrandCard`
 - `RecentTraces`
-- `DockShowcase`
+- `FeaturedTools`
+- `CalendarWidget`
+- `MusicPlayer`
+- `PolaroidWidget`
+- `WalkerProfile`
 
 要求：
 - Bento 卡片可拖拽
@@ -129,28 +147,37 @@ Walker 是秋知的个人数字根据地。
 
 ### 5.4 `/tools`
 
-定位：资源列表，包含工具与点子。
+定位：资源列表，展示工具。
 
 数据：
-- `log` 集合，`type === 'tool' || type === 'idea'`
+- `log` 集合，`type === 'tool'`
 
 形式：
 - 使用 `SidebarLayout`
-- 筛选按钮（全部/工具/点子）
 - 卡片列表，展示标题、摘要、状态、评分、标签
 - 外部链接支持新标签页打开
 
 ### 5.5 `/about`
 
-定位：个人介绍与关于本站。
+定位：关于我。
 
-要求：
+实现：
+- `about/index.astro`
 - 使用 `FullscreenLayout`
 - 视频 Hero
 - 个人简介
 - 技能兴趣
 - 社交链接
 - 页面点赞
+
+### 5.5b `/about/site`
+
+定位：关于网站。
+
+实现：
+- `about/site.astro`
+- 使用 `FullscreenLayout`
+- 读取 `src/data/site-stats.json` 展示站点统计
 
 ### 5.6 `/404`
 
@@ -168,7 +195,7 @@ Walker 是秋知的个人数字根据地。
 - `date`
 - `tags`
 - `category`
-- `type: 'knowledge' | 'tool' | 'idea' | 'project'`
+- `type: 'knowledge' | 'tool' | 'idea' | 'project' | 'community'`
 - `published`
 - `summary`
 - `description`
@@ -223,9 +250,9 @@ Astro 配置：
 | Layout | 用途 |
 | --- | --- |
 | `Base.astro` | 全站基础外壳 |
-| `SidebarLayout.astro` | 列表型内页（/posts、/tools） |
+| `SidebarLayout.astro` | 列表型内页（/posts、/tools、/ideas、/projects） |
 | `ArticleLayout.astro` | 文章详情 |
-| `FullscreenLayout.astro` | 关于页 |
+| `FullscreenLayout.astro` | 关于页（/about、/about/site） |
 
 不拆：
 - `HomeLayout`
@@ -243,10 +270,13 @@ Astro 配置：
 | --- | --- |
 | `scroll-fade.ts` | 滚动淡入 |
 | `sidebar-state.ts` | 侧栏状态 |
-| `toc-tracker.ts` | 目录高亮 |
+| `toc-highlight.ts` | 目录高亮 |
 | `justify-tags.ts` | 标签排版 |
+| `home-canvas.ts` | 首页 Bento 画布拖拽、缩放、主题切换 |
+| `with-lifecycle.ts` | Astro View Transition 生命周期工具，导出 `registerLifecycle(init)` |
+| `tilt-effect.ts` | 3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)` |
 
-注：`ambient.ts` 和 `column-resize.ts` 存在但未被页面导入。
+注：旧的环境光晕和列宽脚本已移除。
 
 ## 10. 当前状态
 
@@ -254,7 +284,10 @@ Astro 配置：
 - 首页 Bento 桌面
 - `/posts`、`/posts/[slug]`
 - `/tools` 资源列表
-- `/about`
+- `/ideas` 点子库
+- `/projects` 项目列表
+- `/about` 关于我
+- `/about/site` 关于网站
 - `/ai`、`/life`、`/idea` 系列重定向
 - 旧文章 URL 重定向
 - Lucide 图标
