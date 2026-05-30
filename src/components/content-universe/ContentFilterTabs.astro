@@ -26,6 +26,7 @@ function getSpaceHref(space: ContentSpace) {
         href={getSpaceHref(space.id)}
         class:list={['filter-tab', { 'is-active': isActive }]}
         aria-current={isActive ? 'page' : undefined}
+        data-space={space.id}
       >
         <span class="tab-icon" aria-hidden="true">
           <Icon name={space.icon} width={17} height={17} />

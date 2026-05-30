@@ -6,15 +6,18 @@ import {
   formLabels,
   intentLabels,
   type ContentItem,
+  type ContentSpace,
   valueModeLabels,
 } from '@/lib/content-model';
 import { formatDateCompact } from '@/lib/format';
 
 interface Props {
   item: ContentItem;
+  spaces?: ContentSpace[];
 }
 
-const { item } = Astro.props;
+const { item, spaces = ['all'] } = Astro.props;
+const cardSpaces = spaces.join(' ');
 
 const statusLabels: Record<NonNullable<ContentItem['status']>, string> = {
   thinking: '思考中',
@@ -27,7 +30,7 @@ const statusLabel = item.status ? statusLabels[item.status] : '未标记';
 const summary = item.summary ?? '这条内容还没有摘要，先从标题进入阅读。';
 ---
 
-<article class="content-card panel-glass">
+<article class="content-card panel-glass" data-spaces={cardSpaces}>
   <a
     class="card-link"
     href={item.href}
