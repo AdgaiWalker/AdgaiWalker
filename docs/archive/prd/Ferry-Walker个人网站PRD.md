@@ -1,3 +1,5 @@
+> Archived: This document has been superseded by `docs/README.md`. It is kept only for historical context.
+
 # Walker 个人网站 PRD
 
 版本：v0.1  
