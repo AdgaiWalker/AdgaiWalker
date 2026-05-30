@@ -1,0 +1,152 @@
+﻿---
+import { Icon } from 'astro-icon/components';
+
+import { contentSpaces, type ContentSpace } from '@/lib/content-model';
+import { buildContentSpacePath, CONTENT } from '@/lib/routes';
+
+interface Props {
+  activeSpace: ContentSpace;
+  counts: Record<ContentSpace, number>;
+}
+
+const { activeSpace, counts } = Astro.props;
+
+function getSpaceHref(space: ContentSpace) {
+  return space === 'all' ? CONTENT : buildContentSpacePath(space);
+}
+---
+
+<nav class="content-filter-tabs" aria-label="内容宇宙筛选">
+  {contentSpaces.map((space) => {
+    const isActive = space.id === activeSpace;
+    const count = counts[space.id] ?? 0;
+
+    return (
+      <a
+        href={getSpaceHref(space.id)}
+        class:list={['filter-tab', { 'is-active': isActive }]}
+        aria-current={isActive ? 'page' : undefined}
+        data-space={space.id}
+      >
+        <span class="tab-icon" aria-hidden="true">
+          <Icon name={space.icon} width={17} height={17} />
+        </span>
+        <span class="tab-copy">
+          <span class="tab-label">{space.label}</span>
+          <span class="tab-hint">{space.hint}</span>
+        </span>
+        <span class="tab-count" aria-label={`${space.label}共 ${count} 条`}>
+          {count}
+        </span>
+      </a>
+    );
+  })}
+</nav>
+
+<style>
+  .content-filter-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .filter-tab {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 4.75rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 1.25rem;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.5);
+    color: var(--color-text, #3f3027);
+    text-decoration: none;
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .filter-tab:hover,
+  .filter-tab:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.32);
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.72);
+    box-shadow: 0 16px 40px rgba(var(--color-shadow-rgb, 75, 54, 42), 0.08);
+  }
+
+  .filter-tab:focus-visible {
+    outline: 2px solid rgba(var(--color-brand-rgb, 196, 112, 74), 0.42);
+    outline-offset: 3px;
+  }
+
+  .filter-tab.is-active {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.45);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--color-brand-rgb, 196, 112, 74), 0.16),
+      rgba(var(--color-surface-rgb, 255, 255, 255), 0.72)
+    );
+    box-shadow: inset 0 0 0 1px rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+  }
+
+  .tab-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.9rem;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a);
+  }
+
+  .tab-copy {
+    min-width: 0;
+  }
+
+  .tab-label {
+    display: block;
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-family: var(--font-heading, inherit);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .tab-hint {
+    display: -webkit-box;
+    margin-top: 0.25rem;
+    overflow: hidden;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.58));
+    font-size: 0.74rem;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .tab-count {
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.07);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.58));
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .filter-tab.is-active .tab-count {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.16);
+    color: var(--color-brand, #c4704a);
+  }
+
+  @media (max-width: 640px) {
+    .content-filter-tabs {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

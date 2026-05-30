@@ -11,10 +11,19 @@ import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/avatar.jpg';
 import stats from '@/data/site-stats.json';
+import { getPublishedContentItems } from '@/lib/content';
+import { contentSpaces, itemBelongsToSpace } from '@/lib/content-model';
 
 export const prerender = true;
 
 const { personalTimeline } = stats;
+
+const contentItems = await getPublishedContentItems();
+const contentCounts = contentSpaces.map(space => ({
+  ...space,
+  count: contentItems.filter(item => itemBelongsToSpace(item, space.id)).length,
+}));
+const totalLikesPlaceholder = 'Supabase 统计中';
 ---
 
 <FullscreenLayout
@@ -46,6 +55,10 @@ const { personalTimeline } = stats;
     <a href="#path-section" class="float-nav-item" data-target="path-section" title="路">
       <Icon name="lucide:ship" width={16} height={16} />
       <span class="float-nav-hint">正在铺的路</span>
+    </a>
+    <a href="#data" class="float-nav-item" data-target="data" title="数据台">
+      <Icon name="lucide:bar-chart-3" width={16} height={16} />
+      <span class="float-nav-hint">数据台</span>
     </a>
   </div>
 
@@ -307,7 +320,47 @@ const { personalTimeline } = stats;
     </div>
   </section>
 
-  {/* ===== 5. 一起走 ===== */}
+  {/* ===== 5. 数据台 ===== */}
+  <section class="about-data-section py-20 px-4 sm:px-6 flex justify-center" id="data">
+    <div class="max-w-[620px] w-full">
+      <div class="section-header mb-10 flex items-center gap-4">
+        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">数据台</h2>
+        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
+      </div>
+
+      <div class="about-data-panel panel-glass">
+        <p class="about-data-eyebrow">PUBLIC DATA DOCK</p>
+        <h2 class="about-data-heading">数据提供现象，不提供目的。</h2>
+        <p class="about-data-intro">
+          这里先公开系统级轻量数据：内容数量、内容空间分布和反馈入口。它用于观察表达是否被看见、哪些方向值得继续解释，但不替代 Walker 的北极星。
+        </p>
+
+        <div class="about-data-grid">
+          <div class="about-data-card">
+            <span>公开内容</span>
+            <strong>{contentItems.length}</strong>
+            <em>条</em>
+          </div>
+          <div class="about-data-card">
+            <span>点赞反馈</span>
+            <strong>{totalLikesPlaceholder}</strong>
+            <em>保持人工判断</em>
+          </div>
+        </div>
+
+        <div class="about-data-spaces">
+          {contentCounts.map(space => (
+            <a href={space.id === 'all' ? '/content' : `/content?space=${space.id}`}>
+              <span>{space.label}</span>
+              <strong>{space.count}</strong>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 6. 一起走 ===== */}
   <section class="invite-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="invite-section">
     <div class="max-w-[620px] w-full text-center space-y-6">
       <div class="panel-glass p-8 sm:p-10 rounded-[32px]">
@@ -376,7 +429,7 @@ const { personalTimeline } = stats;
     const scrollHint = document.getElementById('scroll-hint');
     const floatNav = document.getElementById('about-float-nav');
     const navItems = document.querySelectorAll('.float-nav-item');
-    const sections = document.querySelectorAll('.hero-section, .era-section, .guide-section, .path-section');
+    const sections = document.querySelectorAll('.hero-section, .era-section, .guide-section, .path-section, .about-data-section');
 
     if (hero) {
       window.addEventListener('scroll', () => {
@@ -699,6 +752,88 @@ const { personalTimeline } = stats;
   /* ===== 底部 LCD 计时器 ===== */
   .site-uptime {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* ===== 数据台 ===== */
+  .about-data-section { scroll-margin-top: 2rem; }
+
+  .about-data-panel {
+    border: 1px solid var(--color-nav-border);
+    border-radius: 28px;
+    padding: 1.5rem;
+  }
+
+  .about-data-eyebrow {
+    margin: 0 0 0.45rem;
+    color: var(--color-brand);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+  }
+
+  .about-data-heading {
+    margin: 0;
+    color: var(--color-parchment);
+    font-size: clamp(1.3rem, 2.4vw, 2rem);
+  }
+
+  .about-data-intro {
+    max-width: 760px;
+    margin: 0.75rem 0 0;
+    color: var(--color-parchment-dim);
+    line-height: 1.8;
+    font-size: 0.9rem;
+  }
+
+  .about-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+    margin-top: 1.2rem;
+  }
+
+  .about-data-card,
+  .about-data-spaces a {
+    border: 1px solid var(--color-nav-border);
+    border-radius: 18px;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .about-data-card span,
+  .about-data-card em {
+    display: block;
+    color: var(--color-parchment-dim);
+    font-size: 0.76rem;
+  }
+
+  .about-data-card strong {
+    display: block;
+    margin: 0.35rem 0;
+    color: var(--color-parchment);
+    font-size: 1.4rem;
+  }
+
+  .about-data-spaces {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.7rem;
+    margin-top: 0.9rem;
+  }
+
+  .about-data-spaces a {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: all 0.25s ease;
+  }
+
+  .about-data-spaces a:hover {
+    color: var(--color-parchment);
+    border-color: color-mix(in srgb, var(--color-brand) 35%, var(--color-nav-border));
   }
 
   /* ===== 响应式 ===== */
