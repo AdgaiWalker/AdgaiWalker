@@ -12,7 +12,7 @@ function absoluteUrl(path: string) {
 }
 
 function serializeDate(date?: Date) {
-  return date?.toISOString();
+  return date?.toISOString() ?? null;
 }
 
 export const GET: APIRoute = async () => {
