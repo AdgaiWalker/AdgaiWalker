@@ -64,6 +64,7 @@ const totalLikesPlaceholder = 'Supabase 统计中';
       <h1 class="hero-title">Walker</h1>
       <p class="hero-tagline">用点子连接人与 AI</p>
       <p class="hero-sub-tagline">用点子驱动 AI，点石成金，最终去到一个没有重复工作的地方</p>
+      <p class="hero-era-line">AI 改变了规则。从"好厉害"到"我能用它做什么"之间，缺一条路。我正在走。</p>
 
       {/* Tab 切换按钮 */}
       <div class="about-tabs" id="about-tabs">
@@ -86,34 +87,7 @@ const totalLikesPlaceholder = 'Supabase 统计中';
   {/* ===== "关于我" Tab 内容 ===== */}
   <div class="about-tab-panel" id="about-me-content">
 
-  {/* ===== 2. 这个时代 ===== */}
-  <section class="era-section py-20 px-4 sm:px-6 flex justify-center" id="era-section">
-    <div class="max-w-[620px] w-full">
-      <div class="section-header mb-12 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">这个时代</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
-
-      <div class="panel-glass p-6 sm:p-8 space-y-6">
-        <div class="text-sm leading-[1.9] text-parchment/80 space-y-5">
-          <p>
-            AI 正在改变规则。大多数人看到的是"AI 好厉害"，然后呢？没有然后了。
-          </p>
-          <p>
-            从"AI 好厉害"到"我能用它做点什么"之间，缺一条路。
-          </p>
-          <p>
-            这条路不是教程，不是课程，是有人走过、踩过坑、验证过，然后告诉你前面大概长这样的路。
-          </p>
-          <p>
-            我正在走这条路。
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  {/* ===== 3. 我为什么站在这里 ===== */}
+  {/* ===== 2. 我为什么站在这里 ===== */}
   <section class="guide-section py-20 px-4 sm:px-6 flex justify-center" id="guide-section">
     <div class="about-card panel-glass max-w-[620px] w-full p-8 sm:p-10 relative overflow-hidden">
 
@@ -238,7 +212,7 @@ const totalLikesPlaceholder = 'Supabase 统计中';
       {/* 纵向发光虚线航道 */}
       <div class="absolute left-4 sm:left-1/2 top-0 bottom-0 w-0.5 sm:-translate-x-1/2 bg-dashed border-l border-brand/40 -z-10"></div>
 
-      {personalTimeline.map((item, i) => {
+      {personalTimeline.slice(0, 2).map((item, i) => {
         const isEven = i % 2 === 0;
         const isLast = i === personalTimeline.length - 1;
         const hasChildren = item.children && item.children.length > 0;
@@ -308,29 +282,85 @@ const totalLikesPlaceholder = 'Supabase 统计中';
         );
       })}
 
+      {/* 折叠更多时间线 */}
+      {personalTimeline.length > 2 && (
+        <details class="mt-8">
+          <summary class="font-mono text-xs text-brand cursor-pointer hover:text-brand-secondary transition-colors text-center w-full py-3">
+            查看完整时间线 ↓
+          </summary>
+          <div class="space-y-16 mt-8">
+            {personalTimeline.slice(2).map((item, i) => {
+              const isEven = (i + 2) % 2 === 0;
+              const hasChildren = item.children && item.children.length > 0;
+              return (
+                <div class:list={['timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 w-full']}>
+                  <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
+                    <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
+                  </div>
+                  {isEven ? (
+                    <>
+                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
+                        <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
+                      </div>
+                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
+                        <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
+                          <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5">
+                            <Icon name={item.icon} width={14} height={14} class="text-brand" />
+                            {item.title}
+                          </h4>
+                          <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1">
+                        <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300 text-left">
+                          <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5">
+                            {item.title}
+                            <Icon name={item.icon} width={14} height={14} class="text-brand" />
+                          </h4>
+                          {hasChildren ? (
+                            <div class="space-y-3 text-xs text-parchment/70 leading-relaxed">
+                              {item.children.map((child: { label: string; text: string; href?: string }) => (
+                                <div class="flex items-start gap-2">
+                                  {child.href ? (
+                                    <a href={child.href} target="_blank" rel="noopener noreferrer" class="text-brand font-bold shrink-0 no-underline hover:underline">{child.label}</a>
+                                  ) : (
+                                    <span class="text-brand font-bold shrink-0">{child.label}</span>
+                                  )}
+                                  <span>{child.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2 sm:text-right">
+                        <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+
     </div>
   </section>
 
-  {/* ===== 5. 一起走 ===== */}
-  <section class="invite-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="invite-section">
-    <div class="max-w-[620px] w-full text-center space-y-6">
-      <div class="panel-glass p-8 sm:p-10 rounded-[32px]">
-        <p class="font-serif text-lg sm:text-xl text-parchment leading-relaxed font-medium italic">
-          独自前行中，因为一个有趣的点子成为同行者。
-        </p>
-        <div class="border-b border-[var(--color-nav-border)] my-6 opacity-30"></div>
-        <div class="flex flex-col items-center gap-4">
-          <p class="text-sm text-parchment/70 text-center">点子共促 — 带着目的一起学 AI，遇到问题互相交流。有点子，先动手，再开口。</p>
-          <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促社群" class="rounded-2xl max-w-[200px] w-full shadow-md" />
-          <p class="text-xs text-parchment-dim/50">扫码加入</p>
-        </div>
-        <div class="border-b border-[var(--color-nav-border)] my-6 opacity-30"></div>
-        <p class="text-xs text-parchment-dim/60 text-center leading-relaxed">
-          用点子驱动 AI，点石成金，最终去到一个没有重复工作的地方。
-        </p>
-      </div>
-    </div>
-  </section>
+  {/* ===== 5. 底部出口 ===== */}
+  <div class="about-exit-cta py-12 px-4 text-center">
+    <p class="text-sm text-parchment/50">觉得有意思？</p>
+    <a href="/tools#info-source" class="inline-flex items-center gap-2 mt-2 text-sm font-medium text-brand hover:underline">
+      <Icon name="lucide:users" width={14} height={14} />
+      点子共促，一起学 AI
+    </a>
+  </div>
 
   {/* ===== 底部 ===== */}
   <footer class="about-footer py-16 px-4 sm:px-6 flex justify-center border-t border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.02)] relative z-20" id="about-footer">
@@ -624,6 +654,17 @@ const totalLikesPlaceholder = 'Supabase 统计中';
     color: rgba(255, 255, 255, 0.5);
     letter-spacing: 0.08em;
     margin: 0.75rem 0 0;
+  }
+
+  .hero-era-line {
+    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+    font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.04em;
+    margin: 0.5rem 0 0;
+    max-width: 480px;
+    line-height: 1.6;
   }
 
   .hero-scroll-hint {
