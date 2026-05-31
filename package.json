@@ -19,6 +19,7 @@
     "@chenglou/pretext": "^0.0.7",
     "@iconify-json/lucide": "^1.2.105",
     "@tailwindcss/vite": "^4.2.4",
+    "@upstash/redis": "^1.38.0",
     "astro": "^6.1.10",
     "astro-icon": "^1.1.5",
     "pagefind": "^1.5.2",

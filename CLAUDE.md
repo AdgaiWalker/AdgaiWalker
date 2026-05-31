@@ -78,7 +78,7 @@ npx astro check    # Astro 类型检查
 - **首页卡片**（根级）：`GreetingCard.astro`、`BrandCard.astro`、`RecentTraces.astro`、`FeaturedTools.astro`、`CalendarWidget.astro`、`MusicPlayer.astro`、`PolaroidWidget.astro`、`WalkerProfile.astro`。
 - **`ResourceCard.astro`**（根级）：资源链接卡片，在文章详情页 `posts/[slug].astro` 中使用。
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
-- **`LikeCounter.astro`**：通过原生 `fetch()` 调用 Supabase REST API。需要 `PUBLIC_SUPABASE_URL` 和 `PUBLIC_SUPABASE_ANON_KEY` 环境变量，缺失时使用 `FALLBACK_COUNT` 常量。
+- **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。服务端 API 路由 `src/pages/api/like.ts` 使用 Upstash Redis（Vercel Marketplace）存储计数，同 IP 每路径 60s 冷却。Redis 不可用时降级为 `FALLBACK_COUNT` 常量。环境变量 `KV_REST_API_URL` / `KV_REST_API_TOKEN` / `REDIS_URL` 由 Vercel 自动注入。
 
 ### 图标与样式
 

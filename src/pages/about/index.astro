@@ -24,7 +24,7 @@ const contentCounts = contentSpaces.map(space => ({
   ...space,
   count: contentItems.filter(item => itemBelongsToSpace(item, space.id)).length,
 }));
-const totalLikesPlaceholder = 'Supabase 统计中';
+const totalLikesPlaceholder = 'Vercel KV 统计中';
 ---
 
 <FullscreenLayout

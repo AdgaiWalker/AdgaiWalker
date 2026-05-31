@@ -10,7 +10,7 @@
     { "date": "2026-05", "category": "域名", "amount": 15, "note": "Spaceship 购买 .pro 首年" },
     { "date": "2026-05", "category": "部署", "amount": 10, "note": "Chrome DevTools MCP 自动化部署" },
     { "date": "持续", "category": "部署", "amount": 0, "note": "Vercel 托管（免费）" },
-    { "date": "持续", "category": "部署", "amount": 0, "note": "Supabase 点赞（免费额度）" }
+    { "date": "持续", "category": "部署", "amount": 0, "note": "Vercel KV 点赞（免费额度）" }
   ],
   "siteTimeline": [
     { "date": "2026.03.17", "text": "GitHub 初始化" },
@@ -39,7 +39,7 @@
       "思考 / 资源 / 点子 / 项目页面",
       "三篇核心文章",
       "Pagefind 全站搜索",
-      "Supabase 点赞",
+      "Vercel KV 点赞",
       "RSS 订阅源",
       "xyzidea.cn 知识库平台上线"
     ],
