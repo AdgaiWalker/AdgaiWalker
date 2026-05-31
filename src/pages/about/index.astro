@@ -7,6 +7,7 @@
  */
 import FullscreenLayout from '../../layouts/FullscreenLayout.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
+import AboutSiteTab from '../../components/about/AboutSiteTab.astro';
 import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
@@ -87,13 +88,27 @@ const totalLikesPlaceholder = 'Supabase 统计中';
       <h1 class="hero-title">Walker</h1>
       <p class="hero-tagline">用点子连接人与 AI</p>
       <p class="hero-sub-tagline">用点子驱动 AI，点石成金，最终去到一个没有重复工作的地方</p>
-      <a href="/about/site" class="hero-site-link">关于这个站 →</a>
+
+      {/* Tab 切换按钮 */}
+      <div class="about-tabs" id="about-tabs">
+        <button class="about-tab-btn is-active" data-tab="me" type="button">
+          <Icon name="lucide:user" width={14} height={14} />
+          关于我
+        </button>
+        <button class="about-tab-btn" data-tab="site" type="button">
+          <Icon name="lucide:globe" width={14} height={14} />
+          关于站
+        </button>
+      </div>
     </div>
 
     <div class="hero-scroll-hint" id="scroll-hint">
       <Icon name="lucide:chevron-down" width={24} height={24} />
     </div>
   </section>
+
+  {/* ===== "关于我" Tab 内容 ===== */}
+  <div class="about-tab-panel" id="about-me-content">
 
   {/* ===== 2. 这个时代 ===== */}
   <section class="era-section py-20 px-4 sm:px-6 flex justify-center" id="era-section">
@@ -397,6 +412,12 @@ const totalLikesPlaceholder = 'Supabase 统计中';
       </div>
     </div>
   </footer>
+
+  </div>{/* end about-me-content */}
+
+  {/* "关于站" Tab */}
+  <AboutSiteTab />
+
 </FullscreenLayout>
 
 <script>
@@ -513,7 +534,67 @@ const totalLikesPlaceholder = 'Supabase 统计中';
   document.addEventListener('astro:before-swap', cleanup);
 </script>
 
+<script>
+  function initAboutTabs() {
+    const tabs = document.querySelectorAll('.about-tab-btn');
+    const meContent = document.getElementById('about-me-content');
+    const siteContent = document.getElementById('about-site-content');
+    if (!tabs.length || !meContent || !siteContent) return;
+
+    const showTab = (tab: string) => {
+      tabs.forEach(btn => btn.classList.toggle('is-active', (btn as HTMLElement).dataset.tab === tab));
+      meContent.hidden = tab !== 'me';
+      siteContent.hidden = tab !== 'site';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => showTab((btn as HTMLElement).dataset.tab!));
+    });
+
+    // URL ?tab=site support
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'site') showTab('site');
+  }
+  initAboutTabs();
+  document.addEventListener('astro:page-load', initAboutTabs);
+</script>
+
 <style>
+  /* ===== Tab 切换 ===== */
+  .about-tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 1.5rem;
+  }
+
+  .about-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .about-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .about-tab-btn.is-active {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+  }
+
   /* ===== Hero 区域 ===== */
   .hero-section {
     position: relative;

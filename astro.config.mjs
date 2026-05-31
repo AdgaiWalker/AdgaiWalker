@@ -73,6 +73,7 @@ export default defineConfig({
     '/idea/:slug': { status: 301, destination: '/posts/:slug' },
     '/life': { status: 301, destination: '/posts' },
     '/life/:slug': { status: 301, destination: '/posts/:slug' },
+    '/about/site': { status: 301, destination: '/about?tab=site' },
   },
   experimental: {
     svgo: true,
