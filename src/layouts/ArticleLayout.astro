@@ -67,6 +67,11 @@ const hasToc = tocItems.length > 0;
     {/* 左边缘提示线 — 侧边栏幽灵 */}
     <div class="sidebar-ghost-hint" id="sidebar-ghost-hint" aria-hidden="true"></div>
 
+    {/* 阅读进度条 */}
+    <div class="reading-progress" id="reading-progress" aria-hidden="true">
+      <div class="reading-progress-bar" id="reading-progress-bar"></div>
+    </div>
+
     {/* 幽灵 TOC — hover 右边缘或按 T 键出现 */}
     {hasToc && (
       <aside class="ghost-toc" id="ghost-toc" aria-label="文章目录">
@@ -187,6 +192,25 @@ const hasToc = tocItems.length > 0;
     opacity: 0;
   }
 
+  /* ===== 阅读进度条 ===== */
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 40;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: color-mix(in srgb, var(--color-brand) 60%, transparent);
+    transition: width 0.1s linear;
+  }
+
   /* ===== 幽灵侧边栏 — 宽度归零 ===== */
   :global(html[data-sidebar-hidden]) :global(#main-nav) {
     width: 0 !important;
@@ -249,6 +273,21 @@ const hasToc = tocItems.length > 0;
     });
   }
 
+  function initReadingProgress() {
+    const bar = document.getElementById('reading-progress-bar');
+    if (!bar) return;
+
+    const update = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+      bar.style.width = `${progress * 100}%`;
+    };
+
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+
   function initGhostSidebar() {
     const root = document.documentElement;
 
@@ -291,8 +330,10 @@ const hasToc = tocItems.length > 0;
 
   initGhostToc();
   initGhostSidebar();
+  initReadingProgress();
   document.addEventListener('astro:page-load', () => {
     initGhostToc();
     initGhostSidebar();
+    initReadingProgress();
   });
 </script>
