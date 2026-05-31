@@ -165,7 +165,7 @@ function buildInternalHref(entry: LogEntry): string {
     case 'tool':
       return TOOLS;
     case 'idea':
-      return IDEAS;
+      return `${IDEAS}#${entry.id}`;
     case 'project':
       return PROJECTS;
     default:
