@@ -5,6 +5,16 @@ tags:
   - AI
   - 未来
   - 思考
+updated: 2026-05-31
+form: article
+domain: ai
+intent: think
+valueMode: both
+aiUsePolicy:
+  level: AI-3
+  readable: true
+  citable: true
+  actionable: false
 type: knowledge
 published: true
 summary: "2027 年，你家狗汪两声，AI 就能翻译出它在说什么。从现在到 2050，AI 会把想象变成现实。问题是，你的想象力准备好了吗？"

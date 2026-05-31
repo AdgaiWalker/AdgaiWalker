@@ -1,140 +1,180 @@
 ---
 /**
- * GreetingCard — 首页中栏拟真看板萌猫交互问候卡 (秋知专属版)
- * 升级：植入纯手绘眨眼、抖耳、摆尾 SVG 看板萌猫，开发鼠标悬停弹出趣味气泡猫咪语录
+ * GreetingCard — 首页中栏头像互动问候卡 (秋知专属版)
+ * 交互节奏：??? → !!!  |  悬停好奇，点击惊喜
  */
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import avatar from '/public/images/秋知（我的头像）.jpg';
 ---
 
-<div class="panel-glass p-6 py-7 flex flex-col items-center justify-center text-center h-full rounded-[40px] pointer-events-auto relative group/greeting cursor-help" id="greeting-card">
-  
-  <!-- ========================================= -->
-  <!-- 🐱 悬浮晶莹毛玻璃猫咪趣味语录气泡 (自适应变色) -->
-  <!-- ========================================= -->
-  <div class="absolute top-[-36px] scale-90 opacity-0 pointer-events-none group-hover/greeting:scale-100 group-hover/greeting:opacity-100 transition-all duration-300 z-30 px-3.5 py-1.5 rounded-full backdrop-blur-md shadow-md flex items-center justify-center min-w-[160px] max-w-[240px]" id="cat-bubble" style="background: var(--color-inner-bg, rgba(255, 255, 255, 0.9)); border: 1.5px solid var(--color-brand, #35bfab);">
-    <span class="text-[11px] font-body font-bold tracking-wide" id="cat-quote" style="color: var(--color-brand, #35bfab);">
-      喵呜~ 今天有什么好点子喵？
-    </span>
-    <!-- 气泡尖角 -->
-    <div class="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-r border-b" style="background: var(--color-inner-bg, rgba(255, 255, 255, 0.9)); border-color: var(--color-brand, #35bfab);"></div>
+<div class="greeting-card panel-glass p-6 py-7 flex flex-col items-center justify-center text-center h-full rounded-[40px] pointer-events-auto relative select-none" id="greeting-card">
+
+  <!-- 头像与气泡区域 -->
+  <div class="relative flex flex-col items-center mb-4 shrink-0">
+    <!-- ??? → !!! → 微信语录气泡 悬停自动演出的气泡 -->
+    <div class="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 scale-75 opacity-0 pointer-events-none z-30 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg transition-all duration-300 ease-out w-max max-w-[240px] sm:max-w-[280px] text-center" id="reaction-bubble" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border: 1.5px solid var(--color-brand, #35bfab); box-shadow: 0 10px 25px -5px var(--color-brand-glow); transition-property: opacity, transform;">
+      <span class="text-[12.5px] font-body font-bold leading-normal inline-block transition-all duration-300" id="reaction-text" style="color: var(--color-brand, #35bfab);">? ? ?</span>
+      <!-- 气泡尖角 -->
+      <div class="absolute bottom-[-5.5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-r border-b" id="reaction-arrow" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border-color: var(--color-brand, #35bfab);"></div>
+    </div>
+
+    <!-- 头像 -->
+    <div class="avatar-ring w-[84px] h-[84px] rounded-full flex items-center justify-center relative overflow-hidden border-2 shadow-[0_4px_16px_rgba(53,191,171,0.06)] shrink-0 transition-all duration-500" id="avatar-ring" style="border-color: var(--color-border, #ffffff);">
+      <Image src={avatar} alt="秋知" width={84} height={84} class="w-full h-full object-cover transition-transform duration-500" id="avatar-img" />
+      <!-- 头像上的神秘光晕 (悬停浮现) -->
+      <div class="absolute inset-0 rounded-full opacity-0 transition-opacity duration-500 pointer-events-none" id="avatar-glow" style="background: radial-gradient(circle at 50% 50%, rgba(53,191,171,0.25) 0%, transparent 70%);"></div>
+    </div>
   </div>
 
-  <!-- 看板小猫卡通盒子 (背景与边框自适应) -->
-  <div class="w-[84px] h-[84px] rounded-full flex items-center justify-center mb-4 relative overflow-hidden border-2 shadow-[0_4px_16px_rgba(53,191,171,0.06)] shrink-0 transition-all duration-300" style="background: var(--color-player-icon-bg, #e6fcf9); border-color: var(--color-border, #ffffff);">
-    <svg viewBox="0 0 100 100" class="w-16 h-16 overflow-visible">
-      <!-- 猫尾巴 (摆尾动画) -->
-      <path class="cat-tail" d="M 68 62 Q 78 52 82 40" fill="none" stroke="#ed8936" stroke-width="6" stroke-linecap="round" />
-      
-      <!-- 猫耳朵 (抖耳动画) -->
-      <polygon class="cat-ear-l" points="20,40 32,15 42,35" fill="#ed8936" />
-      <polygon class="cat-ear-r" points="80,40 68,15 58,35" fill="#ed8936" />
-      <polygon class="cat-ear-l" points="23,37 32,20 39,34" fill="#fed7d7" />
-      <polygon class="cat-ear-r" points="77,37 68,20 61,34" fill="#fed7d7" />
-      
-      <!-- 猫脸 -->
-      <circle cx="50" cy="55" r="32" fill="#fff" />
-      <circle cx="50" cy="55" r="32" fill="#f7fafc" opacity="0.9" />
-      <ellipse cx="50" cy="30" rx="6" ry="3" fill="#ed8936" />
-      <ellipse cx="32" cy="40" rx="5" ry="3" fill="#ed8936" />
-      <ellipse cx="68" cy="40" rx="5" ry="3" fill="#ed8936" />
-      
-      <!-- 眼睛 (眨眼动画) -->
-      <g class="cat-eyes">
-        <path class="cat-eye-l" d="M 36 52 Q 40 48 44 52" stroke="#2d3748" stroke-width="2.5" stroke-linecap="round" fill="none" />
-        <path class="cat-eye-r" d="M 56 52 Q 60 48 64 52" stroke="#2d3748" stroke-width="2.5" stroke-linecap="round" fill="none" />
-      </g>
-      
-      <!-- 腮红 -->
-      <ellipse cx="32" cy="59" rx="5" ry="2.5" fill="#feb2b2" />
-      <ellipse cx="68" cy="59" rx="5" ry="2.5" fill="#feb2b2" />
-      
-      <!-- 可爱嘴巴与小红鼻 -->
-      <polygon points="50,56 48,54 52,54" fill="#f56565" />
-      <path d="M 46 60 Q 50 63 50 60 Q 50 63 54 60" stroke="#2d3748" stroke-width="2" fill="none" />
-      
-      <!-- 猫胡须 -->
-      <line x1="22" y1="58" x2="10" y2="56" stroke="#cbd5e0" stroke-width="1.2" />
-      <line x1="22" y1="62" x2="8" y2="63" stroke="#cbd5e0" stroke-width="1.2" />
-      <line x1="78" y1="58" x2="90" y2="56" stroke="#cbd5e0" stroke-width="1.2" />
-      <line x1="78" y1="62" x2="92" y2="63" stroke="#cbd5e0" stroke-width="1.2" />
-    </svg>
-  </div>
+  <!-- 粒子容器 -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-[40px] z-20" id="particle-container"></div>
 
-  <!-- 动态问候语 (早上好/中午好/下午好) -->
-  <div class="text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-1.5" id="greeting-time-tag" style="color: var(--color-brand, #35bfab);">
+  <!-- 动态问候语 -->
+  <div class="text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-1.5 transition-all duration-500" id="greeting-time-tag" style="color: var(--color-brand, #35bfab);">
     GOOD MORNING
   </div>
 
   <!-- 问候语内容 -->
-  <h2 class="font-heading text-parchment text-[17px] font-medium leading-relaxed tracking-wide">
+  <h2 class="font-heading text-parchment text-[17px] font-medium leading-relaxed tracking-wide transition-opacity duration-300" id="greeting-heading">
     我是<span class="font-bold text-[20px] mx-1" style="color: var(--color-brand, #35bfab);">秋知</span>，很高兴认识你！
   </h2>
-  
-  <p class="text-parchment-dim/50 text-[11px] font-body mt-2 leading-relaxed max-w-[200px]">
-    用 AI 走自己的路 · 存点子
-  </p>
+
+  <div class="mt-2 max-w-[200px]">
+    <p class="text-parchment-dim/50 text-[11px] font-body leading-relaxed" id="subtitle-origin">
+      用 AI 走自己的路 · 存点子
+    </p>
+  </div>
+
+  <!-- 社交图标：统一纯图标圆形 -->
+  <div class="flex items-center justify-center gap-2 mt-4">
+    <!-- 哔哩哔哩 -->
+    <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-icon-btn w-7 h-7 rounded-full flex items-center justify-center transition-all no-underline" style="background: rgba(0,161,214,0.08);" title="哔哩哔哩">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#00a1d6"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44c.071.071.134.142.187.213h4.267a.836.836 0 0 1 .16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.124.929.373.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373Z"/></svg>
+    </a>
+    <!-- 小红书 -->
+    <a href="https://xiaohongshu.com" target="_blank" rel="noopener noreferrer" class="social-icon-btn w-7 h-7 rounded-full flex items-center justify-center transition-all no-underline" style="background: rgba(255,36,66,0.08);" title="小红书">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#ff2442"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+    </a>
+    <!-- 抖音 -->
+    <a href="https://douyin.com" target="_blank" rel="noopener noreferrer" class="social-icon-btn w-7 h-7 rounded-full flex items-center justify-center transition-all no-underline" style="background: rgba(0,0,0,0.04);" title="抖音">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#000"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+    </a>
+    <!-- 邮箱 -->
+    <a href="mailto:praxiswalker@gmail.com" class="social-icon-btn w-7 h-7 rounded-full flex items-center justify-center transition-all no-underline" style="background: rgba(53,191,171,0.08);" title="Email">
+      <Icon name="lucide:mail" width={14} height={14} style="color: var(--color-brand, #35bfab);" />
+    </a>
+  </div>
 </div>
 
 <style>
   /* ========================================= */
-  /* 猫咪交互动效定义 */
+  /* ??? → !!! 悬停自动演出 */
   /* ========================================= */
-  
-  /* 1. 摆尾巴 */
-  .cat-tail {
-    transform-origin: 68px 62px;
-    animation: tail-wag 2.8s ease-in-out infinite alternate;
+
+  /* 悬停：头像光晕 + 微放大 */
+  .greeting-card:hover .avatar-ring {
+    box-shadow: 0 0 24px rgba(53, 191, 171, 0.2), 0 0 48px rgba(53, 191, 171, 0.08);
   }
-  @keyframes tail-wag {
-    0% { transform: rotate(-5deg); }
-    100% { transform: rotate(15deg); }
+  .greeting-card:hover #avatar-glow {
+    opacity: 1;
+  }
+  .greeting-card:hover #avatar-img {
+    transform: scale(1.06);
   }
 
-  /* 2. 眨眼睛 (每 4.5s 柔和眨一下) */
-  .cat-eyes {
-    animation: eye-blink 4.5s infinite;
+  /* ??? 气泡浮现与微调 */
+  #reaction-bubble {
+    transform: translate(-50%, 0) scale(0.75);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
   }
-  @keyframes eye-blink {
-    0%, 95%, 100% { transform: scaleY(1); }
-    97.5% { transform: scaleY(0.1); }
+  .greeting-card:hover #reaction-bubble {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1);
   }
 
-  /* 3. 抖耳朵 */
-  .group\/greeting:hover .cat-ear-l {
-    animation: ear-shake-l 0.4s ease-in-out;
+  /* ??? 呼吸脉冲 */
+  @keyframes mystery-pulse {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 1; }
   }
-  .group\/greeting:hover .cat-ear-r {
-    animation: ear-shake-r 0.4s ease-in-out;
+  .greeting-card:hover #reaction-text {
+    animation: mystery-pulse 1s ease-in-out infinite;
   }
-  @keyframes ear-shake-l {
-    0%, 100% { transform: rotate(0deg); }
-    33% { transform: rotate(-8deg); }
-    66% { transform: rotate(4deg); }
+
+  /* !!! 气泡弹入 */
+  @keyframes surprise-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); opacity: 1; }
   }
-  @keyframes ear-shake-r {
-    0%, 100% { transform: rotate(0deg); }
-    33% { transform: rotate(8deg); }
-    66% { transform: rotate(-4deg); }
+
+  /* !!! 头像弹跳 */
+  @keyframes avatar-bounce {
+    0% { transform: scale(1.06); }
+    25% { transform: scale(0.9); }
+    55% { transform: scale(1.14); }
+    75% { transform: scale(0.98); }
+    100% { transform: scale(1.06); }
+  }
+
+  /* 粒子 */
+  @keyframes particle-fly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
+  }
+  .surprise-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-fly var(--duration) ease-out forwards;
+  }
+
+  /* 卡片闪光 */
+  @keyframes card-flash {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  #card-flash-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+  }
+  #card-flash-overlay.active {
+    animation: card-flash 0.6s ease-out forwards;
+    background: radial-gradient(circle at 50% 40%, rgba(251, 191, 36, 0.14) 0%, transparent 70%);
+  }
+  /* 社交图标 */
+  .social-icon-btn {
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .social-icon-btn:hover {
+    transform: scale(1.18);
   }
 </style>
 
 <script>
   let greetingTimer: ReturnType<typeof setInterval> | null = null;
 
-  // 傲娇幽默的猫语录气泡池
-  const CAT_QUOTES = [
-    "铲屎的，你今天又在写 Bug 吗？喵呜~",
-    "碰碰运气点一下中栏的 Spark! 有惊喜喵~",
-    "喵呜~ 秋知今天也在努力写代码喵！",
-    "本喵掐指一算，你今天敲的代码毫无报错！",
-    "铲屎的，划过卡片的时候，能顺便点个赞吗？",
-    "AI 真的好神奇喵，我也想用 AI 写个捉老鼠插件！",
-    "点子都在文章里，快进去看看喵呜~"
+  const SURPRISE_QUOTES = [
+    "你发现了我.看来你是个好奇心很强的人.",
+    "秋知正在秘密研究用 AI 征服世界.的代码.",
+    "你今天的运势.写代码零 Bug.点子源源不断.",
+    "其实这里什么也没有.但你已经看到了.",
+    "来自未来的鼓励.继续走自己的路.",
+    "这个世界需要更多像你一样好奇的人.",
+    "藏在头像里的秘密.秋知其实是个 AI.",
+    "恭喜触发彩蛋.送你一整天的灵感.",
+    "听说划到这里的人.今天运气都不会太差.",
   ];
 
   function updateGreeting() {
     const hour = new Date().getHours();
     const tagEl = document.getElementById('greeting-time-tag');
-
     if (!tagEl) return;
 
     const greetings = [
@@ -149,26 +189,173 @@
     tagEl.textContent = g.text;
   }
 
-  // 绑定鼠标划过，随机调配傲娇猫语录
-  function bindCatBubble() {
+  // 粒子爆发
+  function burstParticles(container: HTMLElement) {
+    const colors = ['#35bfab', '#f59e0b', '#fb7299', '#a78bfa', '#34d399', '#fbbf24'];
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'surprise-particle';
+      const size = 3 + Math.random() * 5;
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+      const dist = 30 + Math.random() * 40;
+      const px = Math.cos(angle) * dist;
+      const py = Math.sin(angle) * dist;
+      const duration = 0.5 + Math.random() * 0.35;
+
+      p.style.cssText = `
+        width: ${size}px; height: ${size}px;
+        top: 38%; left: 50%;
+        margin-left: ${-size / 2}px; margin-top: ${-size / 2}px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        --px: ${px}px; --py: ${py}px; --duration: ${duration}s;
+      `;
+      container.appendChild(p);
+      setTimeout(() => p.remove(), duration * 1000 + 50);
+    }
+  }
+
+  let inSequence = false;
+  let sequenceTimers: ReturnType<typeof setTimeout>[] = [];
+
+  function clearSequenceTimers() {
+    sequenceTimers.forEach(t => clearTimeout(t));
+    sequenceTimers = [];
+  }
+
+  function resetCard() {
+    const bubble = document.getElementById('reaction-bubble');
+    const text = document.getElementById('reaction-text');
+    const arrow = document.getElementById('reaction-arrow');
+    const avatarRing = document.getElementById('avatar-ring');
+
+    clearSequenceTimers();
+    inSequence = false;
+
+    // 重置气泡 → ???
+    if (text) {
+      text.textContent = '? ? ?';
+      text.style.color = 'var(--color-brand, #35bfab)';
+      text.style.fontSize = '';
+      text.style.fontWeight = '';
+      text.style.textAlign = '';
+    }
+    if (bubble) {
+      bubble.style.borderColor = '';
+      bubble.style.opacity = '';
+      bubble.style.transform = '';
+    }
+    if (arrow) {
+      arrow.style.borderColor = '';
+    }
+
+    // 重置头像
+    if (avatarRing) avatarRing.style.animation = '';
+
+    // 清粒子
+    const container = document.getElementById('particle-container');
+    if (container) container.innerHTML = '';
+
+    // 清闪光
+    const flash = document.getElementById('card-flash-overlay');
+    if (flash) flash.remove();
+  }
+
+  function startSequence() {
+    if (inSequence) return;
+    inSequence = true;
+
+    const bubble = document.getElementById('reaction-bubble');
+    const text = document.getElementById('reaction-text');
+    const arrow = document.getElementById('reaction-arrow');
+    const avatarRing = document.getElementById('avatar-ring');
+    const particleContainer = document.getElementById('particle-container');
     const card = document.getElementById('greeting-card');
-    const quoteEl = document.getElementById('cat-quote');
-    
-    card?.addEventListener('mouseenter', () => {
-      if (quoteEl) {
-        const rand = CAT_QUOTES[Math.floor(Math.random() * CAT_QUOTES.length)];
-        quoteEl.textContent = rand;
+
+    // 0ms: ??? 气泡已由 CSS :hover 浮现
+
+    // 800ms: ??? → !!! 转场
+    const t1 = setTimeout(() => {
+      if (!inSequence) return;
+      // 文字变 !!!
+      if (text) {
+        text.textContent = '! ! !';
+        text.style.color = '#f59e0b';
+        text.style.animation = 'none'; // 停止脉冲
       }
-    });
+      // 气泡边框变金色
+      if (bubble) bubble.style.borderColor = '#f59e0b';
+      if (arrow) arrow.style.borderColor = '#f59e0b';
+
+      // 头像弹跳
+      if (avatarRing) {
+        avatarRing.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        setTimeout(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650);
+      }
+
+      // 粒子
+      if (particleContainer) burstParticles(particleContainer);
+
+      // 闪光
+      if (card) {
+        const flash = document.createElement('div');
+        flash.id = 'card-flash-overlay';
+        card.appendChild(flash);
+        requestAnimationFrame(() => flash.classList.add('active'));
+        setTimeout(() => flash.remove(), 700);
+      }
+    }, 800);
+    sequenceTimers.push(t1);
+
+    // 1100ms: 随机语录显示在气泡窗口中 (微信风格)
+    const t2 = setTimeout(() => {
+      if (!inSequence) return;
+      const quote = SURPRISE_QUOTES[Math.floor(Math.random() * SURPRISE_QUOTES.length)];
+      if (text) {
+        text.textContent = quote;
+        text.style.color = 'var(--color-parchment, #f4f4f5)';
+        text.style.fontSize = '12.5px';
+        text.style.fontWeight = '500';
+        text.style.textAlign = 'left';
+        text.style.animation = 'none';
+      }
+      // 气泡恢复品牌色边框 (类似微信绿色对话框效果)
+      if (bubble) {
+        bubble.style.borderColor = 'var(--color-brand, #35bfab)';
+        // 触发微信气泡弹入动画 (稍微大一点的弹跳)
+        bubble.animate([
+          { transform: 'translate(-50%, -8px) scale(1)' },
+          { transform: 'translate(-50%, -15px) scale(1.05)' },
+          { transform: 'translate(-50%, -6px) scale(0.97)' },
+          { transform: 'translate(-50%, -8px) scale(1)' }
+        ], {
+          duration: 450,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+        });
+      }
+      if (arrow) {
+        arrow.style.borderColor = 'var(--color-brand, #35bfab)';
+      }
+    }, 1100);
+    sequenceTimers.push(t2);
+  }
+
+  function bindInteractions() {
+    const card = document.getElementById('greeting-card');
+    if (!card) return;
+
+    card.addEventListener('mouseenter', () => startSequence());
+    card.addEventListener('mouseleave', () => resetCard());
   }
 
   document.addEventListener('astro:page-load', () => {
     updateGreeting();
-    bindCatBubble();
+    bindInteractions();
     if (!greetingTimer) greetingTimer = setInterval(updateGreeting, 60000);
   });
 
   document.addEventListener('astro:before-swap', () => {
     if (greetingTimer) { clearInterval(greetingTimer); greetingTimer = null; }
+    clearSequenceTimers();
   });
 </script>

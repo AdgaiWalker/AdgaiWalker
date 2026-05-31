@@ -1,80 +1,462 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { getPublishedResources } from '@/lib/content';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
-const tools = await getPublishedResources();
+const communities = [
+  {
+    name: '点子工作组',
+    desc: '我自己建的核心群。把点子做出来的人在这里碰撞，分享实战进度。',
+    badge: '我的群',
+    qrCode: '/images/qr/dianzi-gongcu.jpg',
+    featured: true,
+  },
+  {
+    name: 'AI 设计氛围群',
+    desc: 'AI 设计方向的学习氛围群，交流设计工具和工作流。',
+    badge: '设计',
+  },
+  {
+    name: 'AI 产品经理氛围群',
+    desc: 'AI 产品方向的学习氛围群，讨论产品思路和行业趋势。',
+    badge: '产品',
+  },
+  {
+    name: 'AI 前沿信息一群',
+    desc: 'AI 前沿资讯和学习资源分享，第一时间了解行业动态。',
+    badge: '前沿',
+  },
+];
+
+const aiResources = [
+  {
+    name: 'Antigravity 官方群 (1025957317)',
+    desc: '切号插件官方群，解决多账号切换。',
+    badge: '切号工具',
+    qrCode: '/images/qr/1025957317.png',
+  },
+  {
+    name: '廉价 AI 探索群 (644241363)',
+    desc: '极致挖掘最高性价比 AI 方案，群友探索到好渠道就分享。',
+    badge: '极客探索',
+    qrCode: '/images/qr/644241363.png',
+  },
+  {
+    name: 'Codex 中转群 (874615899)',
+    desc: 'API 中转服务，我目前稳定在用的一家。',
+    badge: 'API中转',
+    qrCode: '/images/qr/874615899.png',
+  },
+  {
+    name: 'Cockpit 插件交流群 (921917596)',
+    desc: '用 Cockpit 买 Gemini token，低价 Gemini 额度。',
+    badge: 'Gemini Token',
+    qrCode: '/images/qr/921917596.png',
+  },
+];
+
+const aiTools = [
+  { category: '通用编程', tools: 'GLM + GPT + Gemini' },
+  { category: 'Agent 开发', tools: 'Claude CLI、Codex、CodeBuddy' },
+  { category: '写文章', tools: 'Claude、GLM' },
+  { category: '图片参考', tools: 'Midjourney' },
+  { category: '设计 / 图片生成', tools: 'image2（gpt-image-2）' },
+  { category: '做视频', tools: 'OiiOii → Seedence' },
+  { category: '日常学习', tools: 'Gemini' },
+];
+
+const infra = [
+  { name: '雨云', desc: '国内服务器，性价比高。', url: '' },
+  { name: '腾讯云', desc: '国内服务器，配合 CodeBuddy 自动部署。', url: '' },
+  { name: '阿里云', desc: '国内服务器。', url: '' },
+  { name: 'Specship', desc: '国外域名注册，免备案，适合不想备案的场景。', url: '' },
+  { name: '禾维 AI (hvoy.ai)', desc: 'API 中转站真假检测、价格对比，买中转前先测再选。', url: 'https://hvoy.ai/' },
+  { name: '哪域名 (nazhumi)', desc: '域名比价，各后缀注册/续费/转入价格一目了然。', url: 'https://www.nazhumi.com/' },
+];
+
+const bloggers = [
+  {
+    name: '海哥（海拉鲁编程客）',
+    platform: 'YouTube',
+    desc: '科技博主、AI 工程师、猫咪奶爸。带我成长的人。',
+    url: 'https://www.youtube.com/@hylarucoder',
+    avatar: '/images/海拉鲁编程客.png',
+    initial: '海',
+  },
+  {
+    name: '秋芝2046',
+    platform: 'B站',
+    desc: 'AI 科普博主，产品经理出身。引我入门的人。',
+    url: 'https://space.bilibili.com/385670211',
+    avatar: '/images/秋芝.jpg',
+    initial: '秋',
+  },
+];
+
+const skills = [
+  {
+    name: 'Superpowers',
+    desc: 'AI 编程代理的技能框架。像产品经理一样，通过对话一步步引导出需求和设计，然后自动拆分任务、驱动子代理开发。让 AI 从"直接写代码"变成"先想清楚再做"。',
+    url: 'https://github.com/obra/superpowers',
+  },
+  {
+    name: 'HAI Stack',
+    desc: '从屎山代码到大师级应用。海哥出品，非专业 vibe 人都应该下载。',
+    url: 'https://github.com/hylarucoder/hai-stack',
+  },
+];
 ---
 
 <SidebarLayout
   title="资源 — Walker"
-  description="前行路上用到的工具。"
+  description="秋知实际在用的 AI 资源。"
   pageTitle="资源"
   pageSubtitle="Resources"
   pageIcon="wrench"
-  itemCount={tools.length}
-  itemUnit="件"
+  itemCount={aiTools.length + infra.length + bloggers.length + communities.length + aiResources.length}
+  itemUnit="个"
 >
-  <div class="space-y-10">
-    <div class="space-y-4" id="tools-list">
-      {tools.map(entry => {
-        const href = entry.data.url ?? '/tools';
-        const isExternal = Boolean(entry.data.url);
-
-        return (
-          <a
-            href={href}
-            target={isExternal ? '_blank' : undefined}
-            rel={isExternal ? 'noopener noreferrer' : undefined}
-            class="tool-item block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1.5">
-                  <Icon name="lucide:wrench" width={14} height={14} class="text-brand shrink-0" />
-                  <h3 class="text-sm font-bold truncate">{entry.data.title}</h3>
-                  {entry.data.status && (
-                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand/10 text-brand border border-brand/20">
-                      {entry.data.status}
-                    </span>
-                  )}
-                </div>
-                {entry.data.summary && (
-                  <p class="text-xs text-parchment-dim leading-relaxed line-clamp-2">
-                    {entry.data.summary}
-                  </p>
-                )}
-                <div class="flex items-center gap-2 mt-2">
-                  {entry.data.tags.slice(0, 3).map(tag => (
-                    <span class="text-[10px] text-parchment-dim/60 font-mono">#{tag}</span>
-                  ))}
-                </div>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                {entry.data.rating && (
-                  <div class="flex items-center gap-0.5">
-                    {Array.from({ length: entry.data.rating }).map(() => (
-                      <Icon name="lucide:star" width={10} height={10} class="text-amber-400" />
-                    ))}
-                  </div>
-                )}
-                {entry.data.url && (
-                  <Icon name="lucide:external-link" width={12} height={12} class="text-parchment-dim/40" />
-                )}
-              </div>
-            </div>
-          </a>
-        );
-      })}
+  <div class="resource-page">
+    {/* 顶部声明 */}
+    <div class="page-intro panel-glass">
+      <p class="intro-text">秋知实际在用的 AI 资源。<strong>以下群/服务/产品与本人无任何利益关系</strong>，我只是用户，分享出来是因为自己觉得有用。</p>
     </div>
 
-    {tools.length === 0 && (
-      <div class="text-center py-20 text-parchment-dim">
-        <Icon name="lucide:package-open" width={40} height={40} class="mx-auto mb-4 opacity-30" />
-        <p class="text-sm">还没有资源</p>
+    {/* ===== 1. 信息源（群聊）===== */}
+    <section class="resource-section">
+      <h2 class="section-title">
+        <Icon name="lucide:users" width={20} height={20} class="section-icon" />
+        信息源
+      </h2>
+
+      <h3 class="sub-title">学习氛围群</h3>
+      <p class="section-hint">一起学 AI 的地方。</p>
+      <div class="communities-list">
+        {communities.map(c => (
+          <div class:list={['community-row', c.featured && 'community-featured']}>
+            {c.qrCode ? (
+              <img src={c.qrCode} alt={`${c.name} 二维码`} class="qr-code" loading="lazy" />
+            ) : (
+              <div class="qr-placeholder">
+                <Icon name="lucide:qr-code" width={28} height={28} />
+              </div>
+            )}
+            <div class="community-detail">
+              <div class="community-top">
+                <span class="community-name">{c.name}</span>
+                <span class="community-badge">{c.badge}</span>
+              </div>
+              <span class="community-desc">{c.desc}</span>
+            </div>
+          </div>
+        ))}
       </div>
-    )}
+
+      <h3 class="sub-title">省钱用 AI</h3>
+      <p class="section-hint">获取低价 AI 额度的渠道。</p>
+      <div class="resources-grid">
+        {aiResources.map(r => (
+          <div class="resource-item">
+            <img src={r.qrCode} alt={`${r.name} 二维码`} class="qr-code" loading="lazy" />
+            <div class="resource-detail">
+              <div class="resource-top">
+                <span class="resource-name">{r.name}</span>
+                <span class="resource-badge">{r.badge}</span>
+              </div>
+              <span class="resource-desc">{r.desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    {/* ===== 2. AI 工具 ===== */}
+    <section class="resource-section">
+      <h2 class="section-title">
+        <Icon name="lucide:bot" width={20} height={20} class="section-icon" />
+        AI 工具
+      </h2>
+      <p class="section-hint">我按场景用的 AI 工具，不是全面测评，只是我用什么。</p>
+      <div class="tool-table">
+        {aiTools.map(t => (
+          <div class="tool-row">
+            <span class="tool-category">{t.category}</span>
+            <span class="tool-value">{t.tools}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    {/* ===== 3. Skill ===== */}
+    <section class="resource-section">
+      <h2 class="section-title">
+        <Icon name="lucide:zap" width={20} height={20} class="section-icon" />
+        Skill
+      </h2>
+      <p class="section-hint">实战中积累的方法，帮我省时间的东西。</p>
+      <div class="skill-list">
+        {skills.map(s => (
+          <a href={s.url} target="_blank" rel="noopener noreferrer" class="skill-item panel-glass no-underline">
+            <div class="skill-top">
+              <strong class="skill-name">{s.name}</strong>
+              <Icon name="lucide:external-link" width={12} height={12} class="skill-link" />
+            </div>
+            <span class="skill-desc">{s.desc}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    {/* ===== 4. 基础设施 ===== */}
+    <section class="resource-section">
+      <h2 class="section-title">
+        <Icon name="lucide:server" width={20} height={20} class="section-icon" />
+        基础设施
+      </h2>
+      <p class="section-hint">服务器、域名、部署——建站相关的工具。</p>
+      <div class="infra-list">
+        {infra.map(i => (
+          <div class="infra-item">
+            {i.url ? (
+              <a href={i.url} target="_blank" rel="noopener noreferrer" class="infra-name">{i.name}</a>
+            ) : (
+              <span class="infra-name">{i.name}</span>
+            )}
+            <span class="infra-desc">{i.desc}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    {/* ===== 5. 博主推荐 ===== */}
+    <section class="resource-section">
+      <h2 class="section-title">
+        <Icon name="lucide:heart" width={20} height={20} class="section-icon" />
+        博主推荐
+      </h2>
+      <p class="section-hint">切实帮到我的 AI 圈博主。</p>
+      <div class="blogger-list">
+        {bloggers.map(b => (
+          <a href={b.url} target="_blank" rel="noopener noreferrer" class="blogger-item panel-glass no-underline">
+            {b.avatar ? (
+              <img src={b.avatar} alt={b.name} class="blogger-avatar" loading="lazy" />
+            ) : (
+              <div class="blogger-avatar-placeholder">{b.initial}</div>
+            )}
+            <div class="blogger-info">
+              <div class="blogger-top">
+                <span class="blogger-name">{b.name}</span>
+                <span class="blogger-platform">{b.platform}</span>
+              </div>
+              <span class="blogger-desc">{b.desc}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    {/* 底部 */}
+    <div class="page-disclaimer">
+      <Icon name="lucide:info" width={14} height={14} />
+      <span>只列我实际在用的。不带货、不收费、不担保。按需判断。</span>
+    </div>
   </div>
 </SidebarLayout>
+
+<style>
+  .resource-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* 顶部声明 */
+  .page-intro {
+    padding: 1.25rem 1.5rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 1rem;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.5);
+  }
+  .intro-text {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.68));
+    font-size: 0.88rem;
+    line-height: 1.8;
+  }
+  .intro-text strong { color: var(--color-brand, #c4704a); }
+
+  /* 分区标题 */
+  .resource-section { display: flex; flex-direction: column; gap: 0.75rem; }
+  .section-title {
+    display: flex; align-items: center; gap: 0.5rem;
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 1.25rem; font-weight: 800;
+  }
+  .section-icon { color: var(--color-brand, #c4704a); }
+  .sub-title {
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 0.95rem; font-weight: 700;
+    margin-top: 0.5rem;
+  }
+  .section-hint {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    font-size: 0.82rem; line-height: 1.6; margin: -0.25rem 0 0;
+  }
+
+  /* 二维码 */
+  .qr-code {
+    width: 120px; height: 120px;
+    border-radius: 0.75rem; object-fit: cover; flex-shrink: 0;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.06);
+  }
+
+  /* 氛围群 */
+  .communities-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .community-row {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem; border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    border-radius: 1rem; background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.4);
+    transition: background 150ms ease;
+  }
+  .community-row:hover { background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.65); }
+  .community-featured {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.04);
+  }
+  .qr-placeholder {
+    width: 120px; height: 120px; border-radius: 0.75rem;
+    border: 1px dashed rgba(var(--color-border-rgb, 121, 85, 72), 0.15);
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.3);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(var(--color-muted-rgb, 63, 48, 39), 0.25); flex-shrink: 0;
+  }
+  .community-detail { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+  .community-top { display: flex; align-items: center; gap: 0.5rem; }
+  .community-name { color: var(--color-heading, var(--color-text, #3f3027)); font-size: 0.92rem; font-weight: 700; }
+  .community-badge {
+    display: inline-flex; padding: 0.18rem 0.5rem; border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a); font-size: 0.68rem; font-weight: 700;
+  }
+  .community-desc { color: var(--color-text-muted, rgba(63, 48, 39, 0.55)); font-size: 0.8rem; line-height: 1.6; }
+
+  /* 资源网格 */
+  .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem; }
+  .resource-item {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    padding: 1rem; border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    border-radius: 1rem; background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.4);
+    transition: background 150ms ease;
+  }
+  .resource-item:hover { background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.65); }
+  .resource-detail { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+  .resource-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .resource-name { color: var(--color-heading, var(--color-text, #3f3027)); font-size: 0.85rem; font-weight: 700; }
+  .resource-badge {
+    display: inline-flex; padding: 0.18rem 0.5rem; border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a); font-size: 0.68rem; font-weight: 700;
+  }
+  .resource-desc { color: var(--color-text-muted, rgba(63, 48, 39, 0.55)); font-size: 0.75rem; line-height: 1.6; }
+
+  /* AI 工具表 */
+  .tool-table { display: flex; flex-direction: column; gap: 0; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08); }
+  .tool-row {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.85rem 1.15rem;
+    border-bottom: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.06);
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.4);
+  }
+  .tool-row:last-child { border-bottom: none; }
+  .tool-category {
+    flex-shrink: 0; width: 8rem;
+    color: var(--color-brand, #c4704a); font-size: 0.8rem; font-weight: 700;
+  }
+  .tool-value {
+    color: var(--color-text, #3f3027); font-size: 0.85rem; font-weight: 600;
+  }
+
+  /* Skill */
+  .skill-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .skill-item {
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    border-radius: 1rem;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .skill-name { color: var(--color-heading, var(--color-text, #3f3027)); font-size: 0.9rem; }
+  .skill-top { display: flex; align-items: center; gap: 0.4rem; }
+  .skill-link { color: var(--color-brand, #c4704a); opacity: 0.5; }
+  .skill-desc { color: var(--color-text-muted, rgba(63, 48, 39, 0.55)); font-size: 0.8rem; line-height: 1.6; }
+
+  /* 基础设施 */
+  .infra-list { display: flex; flex-direction: column; gap: 0; border-radius: 1rem; overflow: hidden; border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08); }
+  .infra-item {
+    display: flex; align-items: baseline; gap: 1rem;
+    padding: 0.75rem 1.15rem;
+    border-bottom: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.06);
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.4);
+  }
+  .infra-item:last-child { border-bottom: none; }
+  .infra-name {
+    flex-shrink: 0; min-width: 5.5rem;
+    color: var(--color-brand, #c4704a); font-size: 0.82rem; font-weight: 700;
+    text-decoration: none;
+  }
+  a.infra-name:hover { text-decoration: underline; }
+  .infra-desc { color: var(--color-text-muted, rgba(63, 48, 39, 0.55)); font-size: 0.78rem; line-height: 1.5; }
+
+  /* 博主 */
+  .blogger-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .blogger-item {
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    border-radius: 1rem;
+    display: flex; flex-direction: row; align-items: center; gap: 1rem;
+    transition: background 150ms ease;
+    color: inherit;
+  }
+  .blogger-item:hover {
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.65);
+  }
+  .blogger-avatar {
+    width: 56px; height: 56px;
+    border-radius: 50%; object-fit: cover; flex-shrink: 0;
+    border: 2px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+  }
+  .blogger-avatar-placeholder {
+    width: 56px; height: 56px;
+    border-radius: 50%; flex-shrink: 0;
+    border: 2px solid rgba(var(--color-brand-rgb, 196, 112, 74), 0.15);
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand, #c4704a);
+    font-size: 1.25rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .blogger-info { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+  .blogger-top { display: flex; align-items: center; gap: 0.5rem; }
+  .blogger-name { color: var(--color-heading, var(--color-text, #3f3027)); font-size: 0.9rem; font-weight: 700; }
+  .blogger-platform {
+    padding: 0.15rem 0.45rem; border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a); font-size: 0.65rem; font-weight: 700;
+  }
+  .blogger-desc { color: var(--color-text-muted, rgba(63, 48, 39, 0.55)); font-size: 0.8rem; line-height: 1.6; }
+
+  /* 底部 */
+  .page-disclaimer {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.85rem 1.15rem; border-radius: 0.75rem;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.35);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.5));
+    font-size: 0.78rem; line-height: 1.6;
+  }
+
+  @media (max-width: 640px) {
+    .qr-code { width: 100px; height: 100px; }
+    .qr-placeholder { width: 100px; height: 100px; }
+    .resources-grid { grid-template-columns: 1fr; }
+    .tool-row { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+    .tool-category { width: auto; }
+  }
+</style>

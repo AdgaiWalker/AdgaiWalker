@@ -1,9 +1,20 @@
 ---
 title: Walker 启航
 date: 2026-04-29
+updated: 2026-05-31
 tags: [随想, 哲学]
 type: knowledge
 published: true
+summary: 行过万里水路，记录每一次停靠。这是 Walker 的第一篇日志。
+form: article
+domain: philosophy
+intent: record
+valueMode: existence
+aiUsePolicy:
+  level: AI-2
+  readable: true
+  citable: true
+  actionable: false
 ---
 
 行过万里水路，记录每一次停靠。

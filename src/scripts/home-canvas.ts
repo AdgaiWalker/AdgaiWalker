@@ -92,147 +92,18 @@ function initDraggables(signal: AbortSignal) {
   document.addEventListener('touchend', onDragEnd, { signal });
 }
 
-const PRESET_THEME_COLORS: Record<string, string[]> = {
-  nature: ['#fee196', '#ffafc8', '#a0f0ff', '#b4f5cd'],
-  aurora: ['#ec4899', '#06b6d4', '#6366f1', '#a855f7'],
-  sunset: ['#f97316', '#f43f5e', '#f59e0b', '#fecdd3'],
-  mint: ['#10b981', '#14b8a6', '#84cc16', '#06b6d4'],
-};
-
-function initControlCenter(signal: AbortSignal) {
-  const btnIn = document.getElementById('zoom-in');
-  const btnOut = document.getElementById('zoom-out');
-  const btnFit = document.getElementById('zoom-fit');
-  const themePills = document.querySelectorAll('.theme-pill');
-  const customPill = document.getElementById('custom-theme-pill');
-  const customPanel = document.getElementById('custom-palette-panel');
-  const closePanelBtn = document.getElementById('close-custom-panel');
-  const resetBtn = document.getElementById('reset-custom-colors');
-  const picker1 = document.getElementById('picker-orb-1') as HTMLInputElement;
-  const picker2 = document.getElementById('picker-orb-2') as HTMLInputElement;
-  const picker3 = document.getElementById('picker-orb-3') as HTMLInputElement;
-  const picker4 = document.getElementById('picker-orb-4') as HTMLInputElement;
-
-  btnIn?.addEventListener('click', () => {
-    scale = Math.min(scale + 0.1, 2.0);
-    updateCanvasTransform();
-  }, { signal });
-
-  btnOut?.addEventListener('click', () => {
-    scale = Math.max(scale - 0.1, 0.3);
-    updateCanvasTransform();
-  }, { signal });
-
-  btnFit?.addEventListener('click', autoFitScale, { signal });
-
-  themePills.forEach(pill => {
-    pill.addEventListener('click', () => {
-      const theme = pill.getAttribute('data-theme');
-      if (theme) applyTheme(theme);
-    }, { signal });
-  });
-
-  customPill?.addEventListener('click', () => applyTheme('custom'), { signal });
-  closePanelBtn?.addEventListener('click', () => customPanel?.classList.add('hidden'), { signal });
-
-  const updateCustomOrbColor = (index: number, val: string) => {
-    document.body.style.setProperty(`--orb-color-${index}`, val);
-
-    let savedColors: Record<string, string> = {};
-    try {
-      savedColors = JSON.parse(localStorage.getItem('walker-custom-colors') || '{}');
-    } catch {}
-
-    savedColors[`orb${index}`] = val;
-    localStorage.setItem('walker-custom-colors', JSON.stringify(savedColors));
-  };
-
-  picker1?.addEventListener('input', (e) => updateCustomOrbColor(1, (e.target as HTMLInputElement).value), { signal });
-  picker2?.addEventListener('input', (e) => updateCustomOrbColor(2, (e.target as HTMLInputElement).value), { signal });
-  picker3?.addEventListener('input', (e) => updateCustomOrbColor(3, (e.target as HTMLInputElement).value), { signal });
-  picker4?.addEventListener('input', (e) => updateCustomOrbColor(4, (e.target as HTMLInputElement).value), { signal });
-
-  resetBtn?.addEventListener('click', () => {
-    localStorage.removeItem('walker-custom-colors');
-    applyTheme('nature');
-    customPanel?.classList.add('hidden');
-  }, { signal });
-
-  applyTheme(localStorage.getItem('walker-theme') || 'nature');
-}
-
-function applyTheme(themeName: string) {
+function initThemeToggle(signal: AbortSignal) {
+  // Apply saved theme on load
+  const savedTheme = localStorage.getItem('walker-theme') || 'nature';
   document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-  document.body.classList.add(`theme-${themeName}`);
-  localStorage.setItem('walker-theme', themeName);
+  document.body.classList.add(`theme-${savedTheme}`);
 
-  document.querySelectorAll('.theme-pill, #custom-theme-pill').forEach(pill => {
-    pill.classList.toggle('active', pill.getAttribute('data-theme') === themeName);
-  });
-
-  const customPanel = document.getElementById('custom-palette-panel');
-  const picker1 = document.getElementById('picker-orb-1') as HTMLInputElement;
-  const picker2 = document.getElementById('picker-orb-2') as HTMLInputElement;
-  const picker3 = document.getElementById('picker-orb-3') as HTMLInputElement;
-  const picker4 = document.getElementById('picker-orb-4') as HTMLInputElement;
-
-  if (themeName === 'custom') {
-    customPanel?.classList.remove('hidden');
-
-    let localColors: Record<string, string> = {};
-    try {
-      localColors = JSON.parse(localStorage.getItem('walker-custom-colors') || '{}');
-    } catch {}
-
-    const col1 = localColors.orb1 || '#fee196';
-    const col2 = localColors.orb2 || '#ffafc8';
-    const col3 = localColors.orb3 || '#a0f0ff';
-    const col4 = localColors.orb4 || '#b4f5cd';
-
-    document.body.style.setProperty('--orb-color-1', col1);
-    document.body.style.setProperty('--orb-color-2', col2);
-    document.body.style.setProperty('--orb-color-3', col3);
-    document.body.style.setProperty('--orb-color-4', col4);
-
-    if (picker1) picker1.value = col1;
-    if (picker2) picker2.value = col2;
-    if (picker3) picker3.value = col3;
-    if (picker4) picker4.value = col4;
-  } else {
-    customPanel?.classList.add('hidden');
-
-    const presets = PRESET_THEME_COLORS[themeName] || PRESET_THEME_COLORS.nature;
-    if (picker1) picker1.value = presets[0];
-    if (picker2) picker2.value = presets[1];
-    if (picker3) picker3.value = presets[2];
-    if (picker4) picker4.value = presets[3];
-  }
-}
-
-function initSparkBoxModal(signal: AbortSignal) {
-  const modal = document.getElementById('spark-box-modal');
-  const card = document.getElementById('spark-box-card');
-  const btnClose = document.getElementById('spark-box-close');
-  const btnCloseTop = document.getElementById('spark-box-close-top');
-  const btnAgain = document.getElementById('spark-box-again');
-
-  function closeModal() {
-    if (!modal || !card) return;
-    card.classList.remove('scale-100', 'opacity-100');
-    card.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 250);
-  }
-
-  btnClose?.addEventListener('click', closeModal, { signal });
-  btnCloseTop?.addEventListener('click', closeModal, { signal });
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
-  }, { signal });
-
-  btnAgain?.addEventListener('click', () => {
-    closeModal();
-    setTimeout(() => document.getElementById('spark-trigger-btn')?.click(), 350);
-  }, { signal });
+  // Listen for theme changes from Navigation's home-theme-toggle button
+  document.addEventListener('walker-theme-change', ((e: CustomEvent) => {
+    const themeName = e.detail;
+    document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
+    document.body.classList.add(`theme-${themeName}`);
+  }) as EventListener, { signal });
 }
 
 function initHomeInteractions() {
@@ -242,8 +113,9 @@ function initHomeInteractions() {
   autoFitScale();
   window.addEventListener('resize', autoFitScale, { signal });
   initDraggables(signal);
-  initControlCenter(signal);
-  initSparkBoxModal(signal);
+  initThemeToggle(signal);
+  initStatusReactions(signal);
+  initClickRipple(signal);
 
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -257,6 +129,134 @@ function initHomeInteractions() {
     cancelAnimationFrame(dragFrame);
     dragFrame = 0;
   };
+}
+
+// =========================================
+// 状态栏上下文反应 + idle 鼓励语
+// =========================================
+function initStatusReactions(signal: AbortSignal) {
+  const statusText = document.getElementById('status-text');
+  if (!statusText) return;
+
+  const defaultText = '行过万里水路';
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  let idleIndex = 0;
+
+  const IDLE_MESSAGES = [
+    '试试拖拽卡片，重新排列你的画布 ✨',
+    '按 ⌘K 可以搜索任何内容 🔍',
+    '右下角可以切换主题和缩放 🎨',
+    '每个卡片都可以拖动哦 🖱️',
+    '点 Spark! 抽一个创意脑洞 💡',
+    '悬停卡片试试看，会有惊喜 👀',
+  ];
+
+  function show(text: string) {
+    if (!statusText) return;
+    statusText.style.opacity = '0';
+    setTimeout(() => {
+      if (statusText) {
+        statusText.textContent = text;
+        statusText.style.opacity = '1';
+      }
+    }, 200);
+  }
+
+  function resetToDefault() {
+    show(defaultText);
+  }
+
+  function startIdle() {
+    if (idleTimer) clearInterval(idleTimer);
+    idleTimer = setInterval(() => {
+      idleIndex = (idleIndex + 1) % IDLE_MESSAGES.length;
+      show(IDLE_MESSAGES[idleIndex]);
+      // 显示 4 秒后恢复默认
+      setTimeout(() => {
+        if (!document.querySelector('.draggable-card:hover')) {
+          resetToDefault();
+        }
+      }, 4000);
+    }, 8000);
+  }
+
+  // 根据悬停区域切换文案
+  const CONTEXT_MAP: Record<string, string> = {
+    'greeting-card': '这是秋知 — 悬停看看会发生什么 🐾',
+    'brand-card': '有点子？试试 Spark! 抽个创意盲盒 🎲',
+  };
+
+  const cardElements = document.querySelectorAll('.draggable-card');
+  cardElements.forEach(card => {
+    // 找到卡片内部具有 id 的元素或卡片本身
+    card.addEventListener('mouseenter', () => {
+      if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
+
+      // 检查是否是问候卡片
+      const greeting = card.querySelector('#greeting-card');
+      if (greeting) { show(CONTEXT_MAP['greeting-card']); return; }
+
+      const brand = card.querySelector('#brand-card');
+      if (brand) { show(CONTEXT_MAP['brand-card']); return; }
+
+      // 检查内部文本线索
+      const text = card.textContent || '';
+      if (text.includes('最新文章')) { show('最新的思考都在这里 — 点进去看看 📖'); return; }
+      if (text.includes('资源') || text.includes('RESOURCES')) { show('精选工具和资源 — 每一个都经过试用 🔧'); return; }
+      if (text.includes('项目')) { show('正在做的项目 — 从点子到现实 🚀'); return; }
+      if (text.includes('点子')) { show('灵感收集箱 — 随时记录 💡'); return; }
+    }, { signal });
+
+    card.addEventListener('mouseleave', () => {
+      resetToDefault();
+      startIdle();
+    }, { signal });
+
+    // 搜索框
+    const searchBtn = document.getElementById('search-trigger');
+    if (searchBtn) {
+      searchBtn.addEventListener('mouseenter', () => {
+        show('⌘K 快速搜索任何文章、工具或点子');
+      }, { signal });
+      searchBtn.addEventListener('mouseleave', () => {
+        resetToDefault();
+      }, { signal });
+    }
+  });
+
+  // 社交链接 hover
+  document.querySelectorAll('a[href*="bilibili"], a[href*="xiaohongshu"]').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      const href = (el as HTMLAnchorElement).href;
+      if (href.includes('bilibili')) show('B站 — 秋知的视频都在这里 📺');
+      else show('小红书 — 日常分享 📕');
+    }, { signal });
+    el.addEventListener('mouseleave', () => resetToDefault(), { signal });
+  });
+
+  // 5 秒无交互开始 idle 播报
+  startIdle();
+}
+
+// =========================================
+// 点击涟漪反馈
+// =========================================
+function initClickRipple(signal: AbortSignal) {
+  const canvas = document.getElementById('canvas-container');
+  if (!canvas) return;
+
+  canvas.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    // 不在链接、按钮、输入框上产生涟漪
+    if (target.closest('a') || target.closest('button') || target.closest('input')) return;
+
+    const ripple = document.createElement('div');
+    ripple.className = 'click-ripple';
+    ripple.style.left = e.clientX + 'px';
+    ripple.style.top = e.clientY + 'px';
+    canvas.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }, { signal });
 }
 
 registerLifecycle(initHomeInteractions);

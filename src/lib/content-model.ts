@@ -168,15 +168,27 @@ function buildInternalHref(entry: LogEntry): string {
       return IDEAS;
     case 'project':
       return PROJECTS;
-    case 'community':
-      return POSTS;
-    case 'knowledge':
-    case 'learn':
-    case 'learning':
     default:
       return buildPostPath(entry.id);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export function toContentItem(entry: LogEntry): ContentItem {
   const href = entry.data.url ?? buildInternalHref(entry);
@@ -207,16 +219,16 @@ export function itemBelongsToSpace(item: ContentItem, space: ContentSpace): bool
     case 'all':
       return true;
     case 'progress':
-      return item.status === 'practicing' || item.tags.includes('前进系统') || item.id.includes('progress');
+      return item.status === 'validating' || item.status === 'building' || item.tags.includes('前进系统') || item.id.includes('progress');
     case 'life':
       return LIFE_DOMAINS.has(item.domain);
     case 'learning':
       return LEARNING_TYPES.has(item.type) || item.form === 'lesson' || item.intent === 'teach';
     case 'tools':
-      return item.type === 'tool' || item.form === 'resource';
+      return item.type === 'tool';
     case 'works':
-      return item.type === 'project' || item.form === 'project';
+      return item.type === 'project';
     case 'ideas':
-      return item.type === 'idea' || item.form === 'idea';
+      return item.type === 'idea';
   }
 }

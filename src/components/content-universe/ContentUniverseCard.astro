@@ -20,9 +20,10 @@ const { item, spaces = ['all'] } = Astro.props;
 const cardSpaces = spaces.join(' ');
 
 const statusLabels: Record<NonNullable<ContentItem['status']>, string> = {
-  thinking: '思考中',
-  practicing: '实践中',
-  verified: '已验证',
+  thinking: '构思中',
+  validating: '验证中',
+  building: '实现中',
+  verified: '已完成',
   archived: '已归档',
 };
 

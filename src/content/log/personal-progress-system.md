@@ -5,6 +5,17 @@ tags:
   - AI
   - 个人系统
   - 思考
+updated: 2026-05-31
+form: article
+domain: life
+intent: record
+valueMode: existence
+aiUsePolicy:
+  level: AI-1
+  readable: true
+  citable: false
+  actionable: false
+  reason: 包含个人脆弱内容，仅可读作背景
 type: knowledge
 published: true
 summary: "不甘心困在小小的时空里，用有限的资源争取更大的自由空间。在这个过程中，知识库、思考和点子库自然积累，拼成了一个个人前进系统。加上 AI，它变成了第二大脑。"

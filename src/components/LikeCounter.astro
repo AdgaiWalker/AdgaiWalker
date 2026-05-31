@@ -14,7 +14,7 @@ const FALLBACK_COUNT = 17861;
 
 <div class="like-wrapper pointer-events-auto relative">
   <button
-    class="like-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/70 text-parchment-dim hover:bg-white/95 hover:scale-105 active:scale-95 transition-all shadow-sm border border-white/60 cursor-pointer overflow-visible"
+    class="like-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-inner-bg)] text-[var(--color-parchment-dim)] border border-[var(--color-border)] hover:bg-[var(--color-brand-glow)] hover:text-[var(--color-brand)] hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer overflow-visible"
     type="button"
     data-like-counter
     data-page-path={pagePath}
@@ -173,9 +173,10 @@ const FALLBACK_COUNT = 17861;
       const markLiked = () => {
         button.disabled = true;
         button.classList.add('liked');
-        button.style.boxShadow = '0 0 16px rgba(255, 107, 138, 0.25)';
-        button.style.borderColor = 'rgba(255, 107, 138, 0.3)';
-        button.style.background = 'rgba(255, 240, 243, 0.85)';
+        button.style.boxShadow = '0 0 16px rgba(255, 107, 138, 0.12)';
+        button.style.borderColor = 'rgba(255, 107, 138, 0.2)';
+        button.style.background = 'rgba(255, 107, 138, 0.08)';
+        button.style.color = 'var(--color-brand)';
         if (outlineIcon) outlineIcon.classList.add('hidden');
         if (filledIcon) filledIcon.classList.remove('hidden');
       };

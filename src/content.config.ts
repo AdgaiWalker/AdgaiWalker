@@ -27,7 +27,7 @@ const log = defineCollection({
     description: z.string().optional(),
     cover: z.union([image(), z.url()]).optional(),
     category: z.string().optional(),
-    status: z.enum(['thinking', 'practicing', 'verified', 'archived']).optional(),
+    status: z.enum(['thinking', 'validating', 'building', 'verified', 'archived']).optional(),
     rating: z.number().min(1).max(5).optional(),
     url: z.url().optional(),
     qrCode: z.string().optional(),

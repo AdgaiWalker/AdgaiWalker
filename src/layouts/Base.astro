@@ -121,7 +121,7 @@ const isHome = Astro.url.pathname === '/';
 
       const setupPanelTilt = () => {
         tiltCleanup?.();
-        tiltCleanup = setupTilt('.panel-glass', {
+        tiltCleanup = setupTilt('.panel-glass:not(.prose-glass-panel)', {
           perspective: 1200,
           maxRotation: 2,
           scale: 1.008,

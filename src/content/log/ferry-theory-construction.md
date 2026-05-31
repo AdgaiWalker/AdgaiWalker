@@ -5,6 +5,16 @@ tags: [哲学, AI, Ferry]
 type: knowledge
 published: true
 summary: 世界是一个巨大的 f(x) = y。差距驱动行动，行动逼近目标——Ferry 协议的数学表达与认知框架。
+updated: 2026-05-31
+form: article
+domain: philosophy
+intent: think
+valueMode: utility
+aiUsePolicy:
+  level: AI-3
+  readable: true
+  citable: true
+  actionable: true
 resources:
   - name: Ferry 仓库
     url: https://github.com/AdgaiWalker/Ferry

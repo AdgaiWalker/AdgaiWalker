@@ -5,6 +5,16 @@ tags:
   - AI
   - 点子
   - 思考
+updated: 2026-05-31
+form: article
+domain: ai
+intent: think
+valueMode: both
+aiUsePolicy:
+  level: AI-3
+  readable: true
+  citable: true
+  actionable: false
 type: knowledge
 published: true
 summary: "老师说过，文字是可以穿越时空的共鸣。点子也是。存的时候不知道何时取出，但 AI 让取出的成本越来越低。"

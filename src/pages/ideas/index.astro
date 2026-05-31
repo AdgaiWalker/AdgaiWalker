@@ -2,17 +2,47 @@
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getPublishedIdeas } from '@/lib/content';
 import { Icon } from 'astro-icon/components';
+import { render } from 'astro:content';
+import { formatDateCompact } from '@/lib/format';
 
 export const prerender = true;
 
 const ideas = await getPublishedIdeas();
 
+// 自定义排序权重：活跃状态靠前，已完成/已归档靠后
+const statusWeight = {
+  building: 1,
+  validating: 2,
+  thinking: 3,
+  verified: 4,
+  archived: 5,
+};
+
+ideas.sort((a, b) => {
+  const weightA = statusWeight[a.data.status || 'thinking'] ?? 3;
+  const weightB = statusWeight[b.data.status || 'thinking'] ?? 3;
+  
+  if (weightA !== weightB) {
+    return weightA - weightB;
+  }
+  return b.data.date.getTime() - a.data.date.getTime();
+});
+
 const statusLabel = {
   thinking: '构思中',
-  practicing: '验证中',
-  verified: '已验证',
+  validating: '验证中',
+  building: '实现中',
+  verified: '已完成',
   archived: '已归档',
 };
+
+// 预渲染所有 Markdown 内容，这样它们可以直接潜入卡牌背面
+const renderedIdeas = await Promise.all(
+  ideas.map(async (entry) => {
+    const { Content } = await render(entry);
+    return { entry, Content };
+  })
+);
 ---
 
 <SidebarLayout
@@ -24,47 +54,1110 @@ const statusLabel = {
   itemCount={ideas.length}
   itemUnit="个"
 >
-  <div class="space-y-10">
-    <div class="space-y-4" id="ideas-list">
-      {ideas.map(entry => {
-        const status = entry.data.status;
+  <div class="space-y-6">
+    <!-- 简短说明与引导 -->
+    <div class="intro-description panel-glass p-5 rounded-2xl border border-border">
+      <p class="text-xs sm:text-sm text-parchment-dim leading-relaxed">
+        💡 <strong>冒出来的想法，开放给所有人。</strong> 这里是我正在构思或推动的小项目与创意点子。如果你看中了哪张卡牌，欢迎加入讨论、一起动手让它落地。<strong>有点子，先动手，再开口。</strong>
+      </p>
+    </div>
 
-        return (
-          <div class="idea-item panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5">
-            <div class="flex items-start justify-between gap-4">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1.5">
-                  <Icon name="lucide:lightbulb" width={14} height={14} class="text-brand shrink-0" />
-                  <h3 class="text-sm font-bold truncate">{entry.data.title}</h3>
-                  {status && (
-                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand/10 text-brand border border-brand/20">
-                      {statusLabel[status] ?? status}
-                    </span>
+    <!-- 状态筛选标签栏 -->
+    <div class="filter-tabs-wrapper flex flex-wrap gap-2 py-1" aria-label="状态筛选">
+      <button type="button" class="filter-tab is-active" data-status="all">
+        <span class="tab-dot dot-all"></span>
+        全部 ({ideas.length})
+      </button>
+      <button type="button" class="filter-tab" data-status="thinking">
+        <span class="tab-dot dot-thinking"></span>
+        💡 构思中 ({ideas.filter(i => i.data.status === 'thinking').length})
+      </button>
+      <button type="button" class="filter-tab" data-status="validating">
+        <span class="tab-dot dot-validating"></span>
+        🔬 验证中 ({ideas.filter(i => i.data.status === 'validating').length})
+      </button>
+      <button type="button" class="filter-tab" data-status="building">
+        <span class="tab-dot dot-building"></span>
+        ⚡ 实现中 ({ideas.filter(i => i.data.status === 'building').length})
+      </button>
+      <button type="button" class="filter-tab" data-status="verified">
+        <span class="tab-dot dot-verified"></span>
+        ✅ 已完成 ({ideas.filter(i => i.data.status === 'verified').length})
+      </button>
+      <button type="button" class="filter-tab" data-status="archived">
+        <span class="tab-dot dot-archived"></span>
+        📁 已归档 ({ideas.filter(i => i.data.status === 'archived').length})
+      </button>
+    </div>
+
+    <!-- 卡牌桌区域 -->
+    <div class="ideas-tabletop relative">
+      <!-- 桌面微妙质感的光晕效果 -->
+      <div class="tabletop-ambient-glow"></div>
+      
+      <div class="card-grid" id="ideas-grid">
+        {renderedIdeas.map(({ entry, Content }) => {
+          const status = entry.data.status || 'thinking';
+          const isThinking = status === 'thinking';
+
+          return (
+            <div 
+              class={`card-container ${isThinking ? 'is-blurred' : ''}`} 
+              data-status={status}
+              data-id={entry.id}
+              tabindex="0"
+              role="button"
+              aria-expanded="false"
+              aria-haspopup="dialog"
+              aria-label={`点子：${entry.data.title}，状态：${statusLabel[status] ?? status}`}
+            >
+              <div class="card-inner">
+                <!-- 正面 (牌面) -->
+                <div class="card-face card-front">
+                  <!-- Thinking 状态特有的模糊遮罩层 -->
+                  {isThinking && (
+                    <div class="thinking-overlay">
+                      <div class="overlay-lock-glow">
+                        <Icon name="lucide:lock" width={22} height={22} class="text-brand shrink-0" />
+                      </div>
+                      <span class="overlay-status-title">💡 构思中</span>
+                      <p class="overlay-status-desc">构思中的点子，点击此卡牌解密解锁</p>
+                      <button type="button" class="reveal-btn">点击翻开解密</button>
+                    </div>
                   )}
+
+                  <div class="card-body">
+                    <!-- 顶部元信息 -->
+                    <div class="card-header-meta">
+                      <span class="card-date">{formatDateCompact(entry.data.date)}</span>
+                      <span class={`status-badge badge-${status}`}>
+                        <span class="status-indicator"></span>
+                        {statusLabel[status] ?? status}
+                      </span>
+                    </div>
+
+                    <!-- 标题 -->
+                    <h3 class="card-title">
+                      {entry.data.title}
+                    </h3>
+
+                    <!-- 摘要 -->
+                    <p class="card-summary">
+                      {entry.data.summary ?? '这只是一星闪现的火花，先点击解密翻开查看细节。'}
+                    </p>
+
+                    <!-- 标签 (最多4个) -->
+                    {entry.data.tags && entry.data.tags.length > 0 && (
+                      <div class="card-tags">
+                        {entry.data.tags.slice(0, 4).map(tag => (
+                          <span class="card-tag">#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    <!-- 底部翻牌操作 -->
+                    <div class="card-footer">
+                      <button type="button" class="flip-btn-action">
+                        <Icon name="lucide:rotate-3d" width={14} height={14} class="flip-icon" />
+                        查看详细构想
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                {entry.data.summary && (
-                  <p class="text-xs text-parchment-dim leading-relaxed line-clamp-3">
-                    {entry.data.summary}
-                  </p>
-                )}
-                <div class="flex items-center gap-2 mt-2">
-                  {entry.data.tags.slice(0, 4).map(tag => (
-                    <span class="text-[10px] text-parchment-dim/60 font-mono">#{tag}</span>
-                  ))}
+
+                <!-- 背面 (详情) -->
+                <div class="card-face card-back">
+                  <div class="card-back-container">
+                    <!-- 背面头部 -->
+                    <div class="card-back-header">
+                      <div class="flex-1 min-w-0">
+                        <span class="text-[9px] font-mono tracking-widest text-brand uppercase">IDEA DETAILS / 深度规划</span>
+                        <h4 class="card-back-title">{entry.data.title}</h4>
+                      </div>
+                      <button type="button" class="close-back-btn" aria-label="返回正面">
+                        <Icon name="lucide:x" width={16} height={16} />
+                      </button>
+                    </div>
+
+                    <!-- 详情区域 - 带原生滚动条与视觉淡出指示器 -->
+                    <div class="card-back-scroll-wrapper relative flex-grow overflow-hidden flex flex-col mb-3">
+                      <div class="card-back-scroll scrollable-y flex-grow">
+                        <div class="prose-mini">
+                          <Content />
+                        </div>
+                      </div>
+                      <div class="scroll-fade-overlay pointer-events-none"></div>
+                    </div>
+
+                    <!-- 底部返回与连结 -->
+                    <div class="card-back-footer">
+                      <button type="button" class="flip-back-btn">
+                        <Icon name="lucide:arrow-left" width={12} height={12} />
+                        返回牌面
+                      </button>
+                      <a href={`/posts/${entry.id}`} class="read-full-link">
+                        阅读全文
+                        <Icon name="lucide:arrow-up-right" width={12} height={12} />
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+
+      <!-- 空状态 -->
+      <div class="empty-state text-center py-20 text-parchment-dim" id="ideas-empty" hidden>
+        <Icon name="lucide:lightbulb-off" width={42} height={42} class="mx-auto mb-4 opacity-30 animate-pulse text-brand" />
+        <p class="text-sm font-bold">该状态下暂无点子牌</p>
+        <p class="text-xs mt-1 opacity-60">灵感火花正在孕育中，稍后再来瞧瞧吧。</p>
+      </div>
     </div>
 
-    {ideas.length === 0 && (
-      <div class="text-center py-20 text-parchment-dim">
-        <Icon name="lucide:lightbulb" width={40} height={40} class="mx-auto mb-4 opacity-30" />
-        <p class="text-sm">还没有点子</p>
-        <p class="text-xs mt-1 opacity-50">点子在路上。</p>
+    <!-- 底部高价值组队 CTA -->
+    <div class="cta-section panel-glass p-6 sm:p-8 rounded-[2rem] border border-border">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 text-center md:text-left">
+          <div class="cta-kicker">TEAM UP / 共促社区</div>
+          <h3 class="text-lg sm:text-xl font-bold text-parchment">🃏 看中了哪张牌？来组队。</h3>
+          <p class="text-xs sm:text-sm text-parchment-dim leading-relaxed max-w-2xl">
+            此处的每个点子都开放共享，期待同行者一起加入，不管是提出交互反馈、技术建议还是共同编码，都随时欢迎。
+          </p>
+          <a href="mailto:praxiswalker@gmail.com" class="cta-mail-link">
+            <Icon name="lucide:mail" width={11} height={11} />
+            praxiswalker@gmail.com
+          </a>
+        </div>
+        <div class="flex flex-col items-center gap-3 shrink-0">
+          <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促群二维码" class="cta-qr" loading="lazy" />
+          <span class="text-[10px] font-mono text-parchment-dim tracking-wide">扫码加入点子共促群</span>
+        </div>
       </div>
-    )}
+    </div>
   </div>
 </SidebarLayout>
+
+<style>
+  /* ------------------- Tabletop 桌面风格 ------------------- */
+  .ideas-tabletop {
+    border-radius: 1.75rem;
+    padding: clamp(1rem, 3.5vw, 2.5rem);
+    min-height: 520px;
+    background-color: var(--color-inner-bg);
+    background-image:
+      radial-gradient(circle at 50% 50%, var(--color-brand-glow) 0%, transparent 100%),
+      linear-gradient(color-mix(in srgb, var(--color-brand) 6%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-brand) 6%, transparent) 1px, transparent 1px);
+    background-size: 100% 100%, 30px 30px, 30px 30px;
+    border: 1px solid var(--color-border);
+    box-shadow: 
+      inset 0 24px 48px rgba(0, 0, 0, 0.03),
+      0 12px 36px var(--color-inner-shadow);
+    transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  body.theme-aurora .ideas-tabletop,
+  body.theme-sunset .ideas-tabletop,
+  body.theme-mint .ideas-tabletop {
+    box-shadow: 
+      inset 0 24px 48px rgba(0, 0, 0, 0.55),
+      0 12px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .tabletop-ambient-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    background: radial-gradient(circle, var(--color-brand-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ------------------- Grid 与卡牌卡槽 ------------------- */
+  .card-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 2rem;
+  }
+
+  .card-container {
+    perspective: 1200px;
+    height: 380px;
+    width: 100%;
+    position: relative;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 3D 翻转动作 */
+  .card-container.is-flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  /* 当翻开牌面阅读时，强力清除所有外部投影、发光、脉冲与动画，安安静静看书 */
+  .card-container.is-flipped .card-inner {
+    box-shadow: none !important;
+    animation: none !important;
+  }
+  .card-container.is-flipped .card-front,
+  .card-container.is-flipped .card-back {
+    animation: none !important;
+    box-shadow: inset 0 0 20px var(--color-inner-shadow) !important; /* 仅保留极弱内凹陷，彻底移除外部发光 */
+  }
+
+  /* 卡牌面基础面貌 */
+  .card-face {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ------------------- Card Front 正面 (全息毛玻璃) ------------------- */
+  .card-front {
+    background: var(--color-card);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+  }
+
+  .card-container:hover .card-front {
+    transform: translateY(-12px) rotate(0.8deg);
+    border-color: rgba(var(--color-brand-rgb), 0.45);
+    box-shadow: 
+      inset 0 1px 3px rgba(255, 255, 255, 0.15),
+      0 20px 40px -8px var(--color-brand-glow),
+      0 8px 16px -4px rgba(0, 0, 0, 0.2);
+  }
+
+  body.theme-aurora .card-container:hover .card-front,
+  body.theme-sunset .card-container:hover .card-front,
+  body.theme-mint .card-container:hover .card-front {
+    box-shadow: 
+      inset 0 1.5px 3.5px rgba(255, 255, 255, 0.12),
+      0 24px 48px -8px rgba(0, 0, 0, 0.6),
+      0 0 20px var(--color-brand-glow);
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.35rem;
+  }
+
+  .card-header-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+  }
+
+  .card-date {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--color-brand);
+    font-weight: 700;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+
+  .status-indicator {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  /* 状态特异性配色 */
+  .badge-thinking {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand);
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.18);
+  }
+  .badge-thinking .status-indicator { background: var(--color-brand); }
+
+  .badge-validating {
+    background: color-mix(in srgb, var(--color-brand-secondary) 12%, transparent);
+    color: var(--color-brand-secondary);
+    border-color: color-mix(in srgb, var(--color-brand-secondary) 25%, transparent);
+  }
+  .badge-validating .status-indicator { background: var(--color-brand-secondary); }
+
+  .badge-building {
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+  }
+  .badge-building .status-indicator { background: var(--color-brand); }
+
+  .badge-verified {
+    background: color-mix(in srgb, var(--color-brand-secondary) 12%, transparent);
+    color: var(--color-brand-secondary);
+    border-color: color-mix(in srgb, var(--color-brand-secondary) 25%, transparent);
+  }
+  .badge-verified .status-indicator { background: var(--color-brand-secondary); }
+
+  .badge-archived {
+    background: color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    color: var(--color-parchment-dim);
+    border-color: color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
+  }
+  .badge-archived .status-indicator { background: var(--color-parchment-dim); opacity: 0.5; }
+
+  .card-title {
+    margin: 0 0 0.65rem;
+    font-family: var(--font-heading, inherit);
+    color: var(--color-parchment);
+    font-size: 1.15rem;
+    font-weight: 850;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-summary {
+    font-size: 0.82rem;
+    color: var(--color-parchment-dim);
+    line-height: 1.7;
+    margin: 0 0 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    padding-top: 0.65rem;
+    border-top: 1px dashed var(--color-border);
+  }
+
+  .card-tag {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.68rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.8;
+  }
+
+  .card-footer {
+    margin-top: auto;
+  }
+
+  .flip-btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-inner-bg);
+    color: var(--color-parchment);
+    font-size: 0.75rem;
+    font-weight: 750;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .flip-btn-action:hover {
+    background: var(--color-brand);
+    color: #ffffff;
+    border-color: var(--color-brand);
+    box-shadow: 0 4px 12px var(--color-brand-glow);
+  }
+
+  .flip-icon {
+    transition: transform 0.4s ease;
+  }
+
+  .flip-btn-action:hover .flip-icon {
+    transform: rotate(180deg);
+  }
+
+  /* ------------------- Card Back 背面 ------------------- */
+  .card-back {
+    transform: rotateY(180deg);
+    background: var(--color-card);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid var(--color-border);
+    box-shadow: inset 0 0 20px var(--color-inner-shadow);
+  }
+
+  .card-back-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.15rem;
+  }
+
+  .card-back-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 0.85rem;
+  }
+
+  .card-back-title {
+    margin: 0.15rem 0 0;
+    font-family: var(--font-heading, inherit);
+    color: var(--color-parchment);
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .close-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-parchment-dim);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .close-back-btn:hover {
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border-color: var(--color-brand);
+  }
+
+  .card-back-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+    margin-bottom: 0.85rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-brand) transparent;
+  }
+
+  .card-back-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .card-back-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-brand);
+    border-radius: 99px;
+  }
+
+  /* 精简的 Markdown 正文排版 */
+  .prose-mini {
+    font-size: 0.78rem;
+    line-height: 1.65;
+    color: var(--color-parchment-dim);
+  }
+
+  .prose-mini :global(h2), .prose-mini :global(h3) {
+    color: var(--color-parchment);
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin: 1rem 0 0.45rem;
+  }
+
+  .prose-mini :global(h2:first-child), .prose-mini :global(h3:first-child) {
+    margin-top: 0;
+  }
+
+  .prose-mini :global(p) {
+    margin: 0 0 0.65rem;
+    text-indent: 2em !important; /* 同样支持首行缩进，空出两格 */
+  }
+
+  .prose-mini :global(ul), .prose-mini :global(ol) {
+    margin: 0 0 0.65rem;
+    padding-left: 1.1rem;
+  }
+
+  .prose-mini :global(li) {
+    margin-bottom: 0.25rem;
+  }
+
+  .prose-mini :global(code) {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    padding: 0.1rem 0.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    color: var(--color-brand);
+  }
+
+  .prose-mini :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    margin: 0.8rem 0;
+  }
+
+  .prose-mini :global(th), .prose-mini :global(td) {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.3rem 0.45rem;
+    text-align: left;
+  }
+
+  .prose-mini :global(th) {
+    background: rgba(var(--color-brand-rgb), 0.12);
+    color: #ffffff;
+  }
+
+  .card-back-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .flip-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    flex: 1;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-parchment-dim);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .flip-back-btn:hover {
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    border-color: var(--color-brand);
+  }
+
+  .read-full-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    flex: 1;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.65rem;
+    background: var(--color-brand);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .read-full-link:hover {
+    background: var(--color-brand-secondary);
+    box-shadow: 0 4px 12px var(--color-brand-glow);
+  }
+
+  /* ------------------- Accessibility Focus Rings (无障碍焦点环) ------------------- */
+  .card-container:focus-visible {
+    outline: none;
+  }
+  .card-container:focus-visible .card-inner {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-brand);
+    border-radius: 1.25rem;
+  }
+
+  /* ------------------- Card Back scroll fade (背面视觉淡出指示器) ------------------- */
+  .card-back-scroll-wrapper {
+    position: relative;
+  }
+  .scroll-fade-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(to top, var(--color-bg) 0%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ------------------- Thinking Blur 遮罩 ------------------- */
+  .card-container.is-blurred .card-front {
+    cursor: pointer;
+  }
+
+  .card-container.is-blurred:hover .card-front {
+    transform: translateY(-5px) rotate(0.5deg);
+    border-color: color-mix(in srgb, var(--color-brand) 25%, transparent);
+    box-shadow:
+      0 15px 30px -6px color-mix(in srgb, var(--color-brand) 10%, transparent),
+      0 6px 12px -3px color-mix(in srgb, var(--color-brand) 6%, transparent);
+  }
+
+  .card-container.is-blurred .card-body {
+    filter: blur(4px);
+    opacity: 0.25;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+
+  .card-container.is-blurred:hover .card-body {
+    filter: blur(2.5px); /* Hover 时轻微减淡模糊 */
+    opacity: 0.38; /* Hover 时轻微增亮内容 */
+  }
+
+  .thinking-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    text-align: center;
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    border: 1px solid transparent;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+
+  .card-container.is-blurred:hover .thinking-overlay {
+    background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand) 35%, transparent);
+  }
+
+  .overlay-lock-glow {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-brand-glow);
+    border: 1px solid rgba(var(--color-brand-rgb), 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 0 15px var(--color-brand-glow);
+    animation: lock-pulse 2s infinite alternate;
+  }
+
+  @keyframes lock-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 10px var(--color-brand-glow); }
+    100% { transform: scale(1.06); box-shadow: 0 0 20px var(--color-brand-glow); }
+  }
+
+  .overlay-status-title {
+    font-size: 0.85rem;
+    font-weight: 850;
+    color: var(--color-brand);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+  }
+
+  .overlay-status-desc {
+    font-size: 0.72rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.85;
+    line-height: 1.5;
+    max-width: 180px;
+    margin: 0 0 1rem;
+  }
+
+  .reveal-btn {
+    padding: 0.45rem 0.9rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--color-brand);
+    background: var(--color-brand-glow);
+    color: var(--color-brand);
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reveal-btn:hover {
+    background: var(--color-brand);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(var(--color-brand-rgb), 0.35);
+  }
+
+  /* ------------------- 特别状态效果 (Glow & Pulse) ------------------- */
+  
+  /* 验证中 - 全息边缘微光 */
+  .card-container[data-status="validating"] .card-front {
+    border-color: rgba(var(--color-brand-rgb), 0.35);
+    box-shadow: 
+      0 0 14px var(--color-brand-glow),
+      0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  }
+  .card-container[data-status="validating"]:hover .card-front {
+    border-color: var(--color-brand);
+    box-shadow: 
+      0 0 22px var(--color-brand-glow),
+      0 20px 40px -8px var(--color-brand-glow);
+  }
+
+  /* 实现中 - 脉冲发光 */
+  .card-container[data-status="building"] .card-front {
+    border-color: rgba(var(--color-brand-rgb), 0.45);
+    animation: building-glow 3s infinite alternate;
+  }
+  @keyframes building-glow {
+    0% {
+      box-shadow: 
+        0 0 12px var(--color-brand-glow),
+        0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+    100% {
+      box-shadow: 
+        0 0 24px var(--color-brand-glow),
+        0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    }
+  }
+  .card-container[data-status="building"]:hover .card-front {
+    animation: none;
+    border-color: var(--color-brand);
+    box-shadow: 
+      0 0 28px var(--color-brand-glow),
+      0 20px 40px -8px var(--color-brand-glow);
+  }
+
+  /* 已归档 - 降饱和度 */
+  .card-container[data-status="archived"] {
+    opacity: 0.55;
+    filter: saturate(0.35);
+  }
+  .card-container[data-status="archived"]:hover {
+    opacity: 0.85;
+    filter: saturate(0.7);
+  }
+
+  /* ------------------- Status tabs 筛选器 ------------------- */
+  .filter-tabs-wrapper {
+    position: relative;
+    z-index: 5;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .filter-tabs-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    backdrop-filter: blur(20px);
+    color: var(--color-parchment-dim);
+    font-size: 0.76rem;
+    font-weight: 750;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .filter-tab:hover {
+    background: var(--color-inner-bg);
+    color: var(--color-parchment);
+    border-color: var(--color-brand);
+    transform: translateY(-1px);
+  }
+
+  .filter-tab.is-active {
+    background: var(--color-brand);
+    color: #ffffff;
+    border-color: var(--color-brand);
+    box-shadow: 0 4px 12px var(--color-brand-glow);
+  }
+
+  .tab-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: transparent;
+  }
+
+  .filter-tab.is-active .tab-dot {
+    background: #ffffff !important;
+  }
+
+  .dot-all { background: var(--color-brand); }
+  .dot-thinking { background: var(--color-brand); opacity: 0.5; }
+  .dot-validating { background: var(--color-brand-secondary); }
+  .dot-building { background: var(--color-brand); }
+  .dot-verified { background: var(--color-brand-secondary); }
+  .dot-archived { background: var(--color-parchment-dim); opacity: 0.4; }
+
+  /* ------------------- Bottom CTA Section ------------------- */
+  .cta-section {
+    background: 
+      radial-gradient(circle at 10% 20%, rgba(var(--color-brand-rgb), 0.08), transparent 35%),
+      var(--color-card);
+  }
+
+  .cta-kicker {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--color-brand);
+    letter-spacing: 0.12em;
+  }
+
+  .cta-mail-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-parchment-dim);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, color 0.2s ease;
+  }
+
+  .cta-mail-link:hover {
+    opacity: 1;
+    color: var(--color-brand);
+  }
+
+  .cta-qr {
+    width: 120px;
+    height: 120px;
+    border-radius: 0.75rem;
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    transition: border-color 0.25s ease;
+  }
+
+  .cta-qr:hover {
+    border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+  }
+
+  /* ------------------- Responsive ------------------- */
+  @media (max-width: 640px) {
+    .ideas-tabletop {
+      padding: 1rem;
+      min-height: 480px;
+    }
+    .card-grid {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    .card-container {
+      height: 390px;
+    }
+    .card-summary {
+      -webkit-line-clamp: 3;
+    }
+    .cta-section {
+      padding: 1.25rem;
+      border-radius: 1.5rem;
+    }
+    .cta-qr {
+      width: 100px;
+      height: 100px;
+    }
+  }
+</style>
+
+<script>
+  const validStatuses = new Set(['all', 'thinking', 'validating', 'building', 'verified', 'archived']);
+  
+  function getRequestedStatus() {
+    const requested = new URLSearchParams(location.search).get('status');
+    return requested && validStatuses.has(requested) ? requested : 'all';
+  }
+
+  function updateIdeasFilter() {
+    const activeStatus = getRequestedStatus();
+    const cards = [...document.querySelectorAll('.card-container')];
+    const tabs = [...document.querySelectorAll('.filter-tab')];
+    let visibleCount = 0;
+
+    // 过滤卡牌
+    for (const card of cards) {
+      const cardStatus = card.getAttribute('data-status') ?? 'thinking';
+      const isVisible = activeStatus === 'all' || cardStatus === activeStatus;
+      
+      card.toggleAttribute('hidden', !isVisible);
+      if (isVisible) {
+        visibleCount += 1;
+      }
+    }
+
+    // 更新 Tab 按钮的激活状态
+    const tabButtons = document.querySelectorAll('.filter-tab');
+    tabButtons.forEach(btn => {
+      const btnStatus = btn.getAttribute('data-status');
+      const isActive = btnStatus === activeStatus;
+      btn.classList.toggle('is-active', isActive);
+      if (isActive) {
+        btn.setAttribute('aria-current', 'page');
+      } else {
+        btn.removeAttribute('aria-current');
+      }
+    });
+
+    // 计数更新
+    const countEl = document.querySelector('#log-count');
+    if (countEl) {
+      countEl.textContent = `${visibleCount} 个`;
+    }
+
+    // 空状态提示
+    const emptyState = document.getElementById('ideas-empty');
+    if (emptyState) {
+      emptyState.toggleAttribute('hidden', visibleCount > 0);
+    }
+  }
+
+  function registerCardInteractions() {
+    const grid = document.getElementById('ideas-grid');
+    if (!grid) return;
+
+    // 1. 点击交互处理器
+    grid.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const container = target.closest('.card-container') as HTMLElement | null;
+      if (!container) return;
+
+      // 2. 解密/翻开 Thinking 模糊遮罩
+      if (container.classList.contains('is-blurred')) {
+        const revealBtn = target.closest('.reveal-btn');
+        const clickFront = target.closest('.card-front');
+        if (revealBtn || clickFront) {
+          container.classList.remove('is-blurred');
+          container.focus(); // 解密后给予焦点
+          e.stopPropagation();
+          return;
+        }
+      }
+
+      // 3. 点击翻页 (Front -> Back)
+      const flipAction = target.closest('.flip-btn-action');
+      const clickBody = target.closest('.card-front');
+      if (container && !container.classList.contains('is-blurred') && (flipAction || (clickBody && !target.closest('.card-tag') && !target.closest('.status-badge') && !target.closest('a')))) {
+        container.classList.add('is-flipped');
+        container.setAttribute('aria-expanded', 'true');
+        e.stopPropagation();
+        return;
+      }
+
+      // 4. 点击返回 (Back -> Front)
+      const closeBackBtn = target.closest('.close-back-btn');
+      const flipBackBtn = target.closest('.flip-back-btn');
+      if (container && (closeBackBtn || flipBackBtn)) {
+        container.classList.remove('is-flipped');
+        container.setAttribute('aria-expanded', 'false');
+        e.stopPropagation();
+        return;
+      }
+    });
+
+    // 2. 键盘无障碍交互处理器 (Keyboard a11y)
+    grid.addEventListener('keydown', (e) => {
+      const keyboardEvent = e as KeyboardEvent;
+      if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
+        const container = keyboardEvent.target as HTMLElement;
+        if (container && container.classList.contains('card-container')) {
+          keyboardEvent.preventDefault(); // 防止按空格键时页面滚动
+
+          // 如果处于模糊锁定状态，先解锁
+          if (container.classList.contains('is-blurred')) {
+            container.classList.remove('is-blurred');
+            return;
+          }
+
+          // 触发翻牌状态切换
+          const isFlipped = container.classList.contains('is-flipped');
+          if (isFlipped) {
+            container.classList.remove('is-flipped');
+            container.setAttribute('aria-expanded', 'false');
+          } else {
+            container.classList.add('is-flipped');
+            container.setAttribute('aria-expanded', 'true');
+          }
+        }
+      }
+    });
+  }
+
+  function setupFilterRouting() {
+    const tabsWrapper = document.querySelector('.filter-tabs-wrapper');
+    if (!tabsWrapper) return;
+
+    tabsWrapper.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('.filter-tab');
+      if (!btn) return;
+
+      const status = btn.getAttribute('data-status');
+      if (status) {
+        const url = new URL(location.href);
+        if (status === 'all') {
+          url.searchParams.delete('status');
+        } else {
+          url.searchParams.set('status', status);
+        }
+        history.pushState(null, '', url.toString());
+        updateIdeasFilter();
+      }
+    });
+  }
+
+  // 挂载初始与生命周期
+  function setup() {
+    updateIdeasFilter();
+    registerCardInteractions();
+    setupFilterRouting();
+  }
+
+  setup();
+  document.addEventListener('astro:page-load', setup);
+  window.addEventListener('popstate', updateIdeasFilter);
+</script>

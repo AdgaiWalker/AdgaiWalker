@@ -4,8 +4,8 @@
   },
   "mcpServers": {
     "chrome-devtools": {
-      "command": "npx",
-      "args": ["-y", "chrome-devtools-mcp"]
+      "command": "chrome-devtools-mcp",
+      "args": ["--headless"]
     }
   }
 }

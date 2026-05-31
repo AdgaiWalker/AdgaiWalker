@@ -1,11 +1,35 @@
 ---
 title: 点子共促
 date: 2026-05-01
-tags: [AI, 提效, 落地, 微信]
+updated: 2026-05-31
+tags: [AI, 落地, 微信, 社群, 学习]
 type: tool
 published: true
-summary: 点子共促是一个 AI 学以致用与落地实践群，帮助普通人把点子做出来。
-qrCode: /images/点子共促.jpg
+summary: 我自己建的学习氛围群。有一个点子想把它做出来的人，欢迎加入。免费，只为更好的未来。
+form: resource
+domain: community
+intent: connect
+valueMode: both
+aiUsePolicy:
+  level: AI-2
+  readable: true
+  citable: true
+  actionable: false
+qrCode: /images/qr/dianzi-gongcu.jpg
 ---
 
-点子共促是一个 AI 学以致用与落地实践群。如果你有一个点子，想要把它做出来，欢迎加入。
+## 这是什么群
+
+我自己建的学习氛围群。核心目的：帮普通人把点子做出来。
+
+如果你有一个点子，想用 AI 把它变成现实但不知道怎么做，这里能找到一起摸索的人。我会在群里分享 AI 落地经验、工具推荐和实战方法。
+
+**免费加入，不收费，不为任何人带货。** 只是为了更好的未来。
+
+---
+
+## 想了解更多？
+
+我还有一个[AI 实用资源群](/posts/cheap-communities)，放了我常用的低价 AI token 群、中转群等。
+
+如果你对 AI 学习群、工具群感兴趣但上面没列出来的，可以联系我。**加我时请附上你从 iwalk.pro 哪个页面来的**（复制链接就行），这样我知道你是从哪里看到我的。

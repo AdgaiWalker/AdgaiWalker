@@ -1095,6 +1095,15 @@ body.theme-mint .nav-active-indicator {
   font-size: 1.08rem;
   line-height: 1.95;
   opacity: 0.88;
+  text-indent: 2em !important; /* 升级为强力最高权重，免疫客户端无刷切换导致的样式覆盖 */
+}
+
+/* 排除含有多媒体的段落，防止图片、视频或框架因为缩进发生偏移 */
+.prose-walker p:has(img),
+.prose-walker p:has(iframe),
+.prose-walker p:has(video),
+.prose-walker p:has(audio) {
+  text-indent: 0 !important;
 }
 
 .prose-walker h1,
@@ -1199,10 +1208,9 @@ body.theme-mint .prose-walker :not(pre) > code {
   content: '';
   position: absolute;
   left: -1.2rem;
-  top: 0.6em;
+  top: 0.65em;
   width: 5px;
   height: 5px;
-  background: var(--color-brand);
-  border-radius: 1px;
-  box-shadow: 0 0 6px var(--color-brand-glow);
+  background: var(--color-parchment-dim);
+  border-radius: 50%;
 }

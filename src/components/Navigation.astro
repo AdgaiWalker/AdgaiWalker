@@ -3,6 +3,7 @@ import SearchModal from './SearchModal.astro';
 import TopNavBar from './nav/TopNavBar.astro';
 import SidebarNav from './nav/SidebarNav.astro';
 import MobileMenu from './nav/MobileMenu.astro';
+import { Icon } from 'astro-icon/components';
 import { ABOUT, CONTENT, HOME } from '@/lib/routes';
 
 interface NavItem {
@@ -37,7 +38,30 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 </div>
 
 {isHome ? (
-  <TopNavBar items={navGroups[0].items} />
+  <div class="fixed top-4 right-4 z-50 flex items-center gap-1.5 pointer-events-auto">
+    <a
+      href={CONTENT}
+      class="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md border border-white/60 flex items-center justify-center hover:bg-white/80 transition-all no-underline shadow-sm"
+      title="内容宇宙"
+    >
+      <Icon name="lucide:layout-grid" width={14} height={14} class="text-parchment/60" />
+    </a>
+    <a
+      href={ABOUT}
+      class="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md border border-white/60 flex items-center justify-center hover:bg-white/80 transition-all no-underline shadow-sm"
+      title="关于"
+    >
+      <Icon name="lucide:user" width={14} height={14} class="text-parchment/60" />
+    </a>
+    <button
+      class="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md border border-white/60 flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer shadow-sm"
+      id="home-theme-toggle"
+      aria-label="切换主题"
+      title="切换主题"
+    >
+      <Icon name="lucide:sun" width={14} height={14} class="text-parchment/60" />
+    </button>
+  </div>
 ) : (
   <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md flex flex-col" id="main-nav">
     <MobileMenu />
@@ -87,13 +111,14 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
     // --- (c) 全站多主题自适应换肤控制 (Nature, Aurora, Sunset, Mint) ---
     const themeBtn = document.getElementById('nav-theme-toggle');
+    const homeThemeBtn = document.getElementById('home-theme-toggle');
     const themes = ['nature', 'aurora', 'sunset', 'mint'];
 
     const savedTheme = localStorage.getItem('walker-theme') || 'nature';
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
     document.body.classList.add(`theme-${savedTheme}`);
 
-    themeBtn?.addEventListener('click', () => {
+    const cycleTheme = () => {
       const current = localStorage.getItem('walker-theme') || 'nature';
       const nextIndex = (themes.indexOf(current) + 1) % themes.length;
       const nextTheme = themes[nextIndex];
@@ -103,7 +128,10 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
       localStorage.setItem('walker-theme', nextTheme);
 
       document.dispatchEvent(new CustomEvent('walker-theme-change', { detail: nextTheme }));
-    }, { signal });
+    };
+
+    themeBtn?.addEventListener('click', cycleTheme, { signal });
+    homeThemeBtn?.addEventListener('click', cycleTheme, { signal });
 
     // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
     const container = document.querySelector('.nav-links-container');
