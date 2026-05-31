@@ -1,6 +1,7 @@
 ---
 /**
  * /posts/[slug] — 统一文章详情页
+ * 沉浸式阅读：内容直接浮在空间里
  */
 import ArticleLayout from '../../layouts/ArticleLayout.astro';
 import PromptBlock from '../../components/content/PromptBlock.astro';
@@ -58,7 +59,6 @@ const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 
 const videos = entry.data.videos || [];
 const resources = entry.data.resources || [];
-
 ---
 
 <ArticleLayout
@@ -72,106 +72,322 @@ const resources = entry.data.resources || [];
   currentSlug={entry.id}
   articleList={articleList}
 >
-  <div class="article-reading-surface min-h-screen">
-    <article class="article-document" data-pagefind-body>
-      <header class="mb-14">
-        <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-[var(--color-parchment-dim)] opacity-80">
-          <a href={POSTS} class="hover:text-[var(--color-brand)] transition-colors no-underline">
-            文章
-          </a>
-          <span>/</span>
-          <time>{formatDateLocale(entry.data.date)}</time>
-          <span class="px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter border border-brand/20 bg-brand/5 text-[var(--color-brand)]">
-            知识
-          </span>
-          <div class="article-meta-tags">
-            {entry.data.tags.map((tag: string) => (
-              <span class="px-2 py-0.5 bg-[rgba(255,255,255,0.03)] border border-[var(--color-nav-border)] text-[var(--color-parchment-dim)] rounded text-[11px] uppercase tracking-tighter">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
+  <article data-pagefind-body>
+    {/* 面包屑 — 方向感 */}
+    <div class="article-breadcrumb">
+      <a href={POSTS} class="breadcrumb-link">
+        <Icon name="lucide:arrow-left" width={14} height={14} />
+        文章
+      </a>
+      <span class="breadcrumb-sep">/</span>
+      <time class="breadcrumb-date">{formatDateLocale(entry.data.date)}</time>
+    </div>
 
-        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--color-parchment)] leading-[1.1] mb-8 tracking-tight" data-pagefind-meta="title">
-          {entry.data.title}
-        </h1>
+    {/* 标题 — 文章的门面 */}
+    <h1 class="article-title" data-pagefind-meta="title">
+      {entry.data.title}
+    </h1>
 
-        {coverImage && (
-          <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl border border-[var(--color-nav-border)]">
-            {typeof coverImage === 'string' ? (
-              <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="w-full h-full object-cover" />
-            ) : (
-              <Image src={coverImage} alt={entry.data.title} class="w-full h-full object-cover" />
-            )}
-          </div>
+    {/* 标签 — 身份 */}
+    <div class="article-tags">
+      {entry.data.tags.map((tag: string) => (
+        <span class="article-tag">{tag}</span>
+      ))}
+    </div>
+
+    {/* 封面图 */}
+    {coverImage && (
+      <div class="article-cover">
+        {typeof coverImage === 'string' ? (
+          <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="cover-img" />
+        ) : (
+          <Image src={coverImage} alt={entry.data.title} class="cover-img" />
         )}
-
-        {entry.data.summary && (
-          <div class="text-lg md:text-xl text-[var(--color-parchment-dim)] leading-relaxed font-light mb-12 italic border-l-4 pl-6 border-brand/40">
-            {entry.data.summary}
-          </div>
-        )}
-      </header>
-
-      {/* 极致高级的 CJK 衬线/Inter 无衬线混合排版 */}
-      <div class="prose prose-walker max-w-none break-words">
-        <Content components={components} />
       </div>
+    )}
 
-      {videos.length > 0 && (
-        <div class="mt-20 pt-12 border-t border-slate-100">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <Icon name="lucide:video" width={24} height={24} class="text-blue-500" />
-            配套视频
-          </h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {videos.map((vid: any) => (
-              <a href={vid.url} target="_blank" rel="noopener noreferrer" class="group block p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all no-underline bg-white">
-                <div class="flex items-center gap-3 mb-3">
-                  <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                    <Icon name={PLATFORM_ICON_MAP[vid.platform] || 'lucide:circle-play'} width={20} height={20} />
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-sm font-bold text-slate-900 truncate">{vid.title || '观看视频'}</div>
-                    <div class="text-xs text-slate-400 capitalize">{vid.platform}</div>
-                  </div>
+    {/* 摘要 */}
+    {entry.data.summary && (
+      <div class="article-summary">
+        {entry.data.summary}
+      </div>
+    )}
+
+    {/* 正文 — 内容即主角 */}
+    <div class="prose prose-walker max-w-none break-words">
+      <Content components={components} />
+    </div>
+
+    {/* 配套视频 */}
+    {videos.length > 0 && (
+      <section class="article-section">
+        <h2 class="section-heading">
+          <Icon name="lucide:video" width={20} height={20} class="section-icon" />
+          配套视频
+        </h2>
+        <div class="video-grid">
+          {videos.map((vid: any) => (
+            <a href={vid.url} target="_blank" rel="noopener noreferrer" class="video-card">
+              <div class="video-card-inner">
+                <div class="video-platform">
+                  <Icon name={PLATFORM_ICON_MAP[vid.platform] || 'lucide:circle-play'} width={18} height={18} />
                 </div>
-              </a>
-            ))}
-          </div>
+                <div class="video-info">
+                  <div class="video-title">{vid.title || '观看视频'}</div>
+                  <div class="video-platform-name">{vid.platform}</div>
+                </div>
+              </div>
+            </a>
+          ))}
         </div>
-      )}
+      </section>
+    )}
 
-      {resources.length > 0 && (
-        <div class="mt-16 pt-12 border-t border-slate-100">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <Icon name="lucide:link-2" width={24} height={24} class="text-emerald-500" />
-            相关资源
-          </h2>
-          <div class="flex flex-col gap-3">
-            {resources.map((res: any) => (
-              <ResourceCard
-                type={res.type}
-                url={res.url}
-                name={res.name}
-                description={res.description}
-              />
-            ))}
-          </div>
+    {/* 相关资源 */}
+    {resources.length > 0 && (
+      <section class="article-section">
+        <h2 class="section-heading">
+          <Icon name="lucide:link-2" width={20} height={20} class="section-icon" />
+          相关资源
+        </h2>
+        <div class="resource-list">
+          {resources.map((res: any) => (
+            <ResourceCard
+              type={res.type}
+              url={res.url}
+              name={res.name}
+              description={res.description}
+            />
+          ))}
         </div>
-      )}
+      </section>
+    )}
 
-      <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
-        <a href={POSTS} class="text-slate-400 hover:text-[var(--color-brand)] transition-colors no-underline flex items-center gap-2 text-sm font-medium">
-          <Icon name="lucide:arrow-left" width={16} height={16} />
-          返回文章
-        </a>
-
-        <div class="scale-90 origin-right">
-          <LikeCounter pagePath={buildPostPath(entry.id)} />
-        </div>
-      </footer>
-    </article>
-  </div>
+    {/* 底部 — 阅读结束 */}
+    <footer class="article-footer">
+      <a href={POSTS} class="footer-back">
+        <Icon name="lucide:arrow-left" width={14} height={14} />
+        返回文章
+      </a>
+      <div class="scale-90 origin-right">
+        <LikeCounter pagePath={buildPostPath(entry.id)} />
+      </div>
+    </footer>
+  </article>
 </ArticleLayout>
+
+<style>
+  /* ===== 面包屑 ===== */
+  .article-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.7;
+  }
+
+  .breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--color-brand);
+  }
+
+  .breadcrumb-sep {
+    opacity: 0.4;
+  }
+
+  .breadcrumb-date {
+    opacity: 0.6;
+  }
+
+  /* ===== 标题 ===== */
+  .article-title {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 850;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--color-parchment);
+    margin-bottom: 1rem;
+  }
+
+  /* ===== 标签 ===== */
+  .article-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .article-tag {
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
+  }
+
+  /* ===== 封面 ===== */
+  .article-cover {
+    margin: 0 -2rem 2.5rem;
+    aspect-ratio: 21/9;
+    overflow: hidden;
+    border-radius: 1rem;
+  }
+
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ===== 摘要 ===== */
+  .article-summary {
+    margin-bottom: 2.5rem;
+    padding-left: 1.5rem;
+    border-left: 3px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--color-parchment-dim);
+    font-style: italic;
+  }
+
+  /* ===== 分区（视频/资源）===== */
+  .article-section {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+    margin-bottom: 1rem;
+  }
+
+  .section-icon {
+    color: var(--color-brand);
+  }
+
+  /* ===== 视频 ===== */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .video-card {
+    text-decoration: none;
+    display: block;
+  }
+
+  .video-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    border-radius: 0.75rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .video-card:hover .video-card-inner {
+    border-color: color-mix(in srgb, var(--color-brand) 25%, transparent);
+    background: var(--color-brand-glow);
+  }
+
+  .video-platform {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--color-parchment-dim) 6%, transparent);
+    color: var(--color-parchment-dim);
+    flex-shrink: 0;
+  }
+
+  .video-card:hover .video-platform {
+    color: var(--color-brand);
+  }
+
+  .video-info {
+    min-width: 0;
+  }
+
+  .video-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-parchment);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .video-platform-name {
+    font-size: 0.7rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+    text-transform: capitalize;
+  }
+
+  /* ===== 资源 ===== */
+  .resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* ===== 底部 ===== */
+  .article-footer {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-back:hover {
+    color: var(--color-brand);
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 640px) {
+    .article-cover {
+      margin: 0 -1rem 2rem;
+      border-radius: 0.75rem;
+    }
+
+    .video-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
