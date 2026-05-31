@@ -14,7 +14,7 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
   <div class="relative flex flex-col items-center mb-4 shrink-0">
     <!-- ??? → !!! → 微信语录气泡 悬停自动演出的气泡 -->
     <div class="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 scale-75 opacity-0 pointer-events-none z-30 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg transition-all duration-300 ease-out w-max max-w-[240px] sm:max-w-[280px] text-center" id="reaction-bubble" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border: 1.5px solid var(--color-brand, #35bfab); box-shadow: 0 10px 25px -5px var(--color-brand-glow); transition-property: opacity, transform;">
-      <span class="text-[12.5px] font-body font-bold leading-normal inline-block transition-all duration-300" id="reaction-text" style="color: var(--color-brand, #35bfab);">? ? ?</span>
+      <span class="text-[12.5px] font-body font-bold leading-normal inline-block transition-all duration-300" id="reaction-text" style="color: var(--color-brand, #35bfab);">探索中</span>
       <!-- 气泡尖角 -->
       <div class="absolute bottom-[-5.5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-r border-b" id="reaction-arrow" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border-color: var(--color-brand, #35bfab);"></div>
     </div>
@@ -160,6 +160,10 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
 <script>
   let greetingTimer: ReturnType<typeof setInterval> | null = null;
 
+  // Walker 三态 — 首页问候卡默认显示
+  const WALKER_STATES = ['探索中', '思考中', '创造中'];
+  const stateIndex = Math.floor(Math.random() * WALKER_STATES.length);
+
   const SURPRISE_QUOTES = [
     "你发现了我.看来你是个好奇心很强的人.",
     "秋知正在秘密研究用 AI 征服世界.的代码.",
@@ -232,9 +236,9 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
     clearSequenceTimers();
     inSequence = false;
 
-    // 重置气泡 → ???
+    // 重置气泡 → 默认状态
     if (text) {
-      text.textContent = '? ? ?';
+      text.textContent = WALKER_STATES[stateIndex];
       text.style.color = 'var(--color-brand, #35bfab)';
       text.style.fontSize = '';
       text.style.fontWeight = '';
@@ -350,6 +354,9 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
 
   document.addEventListener('astro:page-load', () => {
     updateGreeting();
+    // 设置初始状态文字
+    const text = document.getElementById('reaction-text');
+    if (text) text.textContent = WALKER_STATES[stateIndex];
     bindInteractions();
     if (!greetingTimer) greetingTimer = setInterval(updateGreeting, 60000);
   });
