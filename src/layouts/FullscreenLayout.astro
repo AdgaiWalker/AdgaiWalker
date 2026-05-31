@@ -37,11 +37,13 @@ const {
   <div class="fullscreen-nav">
     <a href="/" class="fullscreen-nav-btn" title="首页">
       <Icon name="lucide:home" width={14} height={14} />
+      <span>首页</span>
     </a>
     <a href="/content" class="fullscreen-nav-btn" title="内容">
       <Icon name="lucide:layout-grid" width={14} height={14} />
+      <span>内容</span>
     </a>
-    <button class="fullscreen-nav-btn" id="fullscreen-theme-toggle" aria-label="切换主题" title="切换主题">
+    <button class="fullscreen-nav-btn fullscreen-nav-icon-only" id="fullscreen-theme-toggle" aria-label="切换主题" title="切换主题">
       <Icon name="lucide:sun" width={14} height={14} />
     </button>
   </div>
@@ -69,19 +71,21 @@ const {
   }
 
   .fullscreen-nav-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 32px;
+    gap: 6px;
     height: 32px;
-    border-radius: 50%;
+    padding: 0 14px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: rgba(255, 255, 255, 0.8);
+    font-size: 0.78rem;
+    font-weight: 600;
     text-decoration: none;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
@@ -89,6 +93,12 @@ const {
     background: rgba(255, 255, 255, 0.25);
     color: #fff;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .fullscreen-nav-icon-only {
+    padding: 0;
+    width: 32px;
+    justify-content: center;
   }
 </style>
 
