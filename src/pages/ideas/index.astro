@@ -68,25 +68,17 @@ const renderedIdeas = await Promise.all(
         <span class="tab-dot dot-all"></span>
         全部 ({ideas.length})
       </button>
-      <button type="button" class="filter-tab" data-status="thinking">
+      <button type="button" class="filter-tab" data-status="active">
         <span class="tab-dot dot-thinking"></span>
-        💡 构思中 ({ideas.filter(i => i.data.status === 'thinking').length})
-      </button>
-      <button type="button" class="filter-tab" data-status="validating">
-        <span class="tab-dot dot-validating"></span>
-        🔬 验证中 ({ideas.filter(i => i.data.status === 'validating').length})
-      </button>
-      <button type="button" class="filter-tab" data-status="building">
-        <span class="tab-dot dot-building"></span>
-        ⚡ 实现中 ({ideas.filter(i => i.data.status === 'building').length})
+        进行中 ({ideas.filter(i => ['thinking', 'validating', 'building'].includes(i.data.status || 'thinking')).length})
       </button>
       <button type="button" class="filter-tab" data-status="verified">
         <span class="tab-dot dot-verified"></span>
-        ✅ 已完成 ({ideas.filter(i => i.data.status === 'verified').length})
+        已完成 ({ideas.filter(i => i.data.status === 'verified').length})
       </button>
       <button type="button" class="filter-tab" data-status="archived">
         <span class="tab-dot dot-archived"></span>
-        📁 已归档 ({ideas.filter(i => i.data.status === 'archived').length})
+        已归档 ({ideas.filter(i => i.data.status === 'archived').length})
       </button>
     </div>
 
@@ -231,9 +223,12 @@ const renderedIdeas = await Promise.all(
             praxiswalker@gmail.com
           </a>
         </div>
-        <div class="flex flex-col items-center gap-3 shrink-0">
-          <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促群二维码" class="cta-qr" loading="lazy" />
-          <span class="text-[10px] font-mono text-parchment-dim tracking-wide">扫码加入点子共促群</span>
+        <div class="flex flex-col items-center gap-2 shrink-0">
+          <a href="/tools#info-source" class="cta-join-link">
+            <Icon name="lucide:users" width={14} height={14} />
+            加入点子共促
+          </a>
+          <span class="text-[10px] font-mono text-parchment-dim tracking-wide">二维码在工具页</span>
         </div>
       </div>
     </div>
@@ -967,6 +962,24 @@ const renderedIdeas = await Promise.all(
     color: var(--color-brand);
   }
 
+  .cta-join-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: var(--color-brand);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cta-join-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--color-brand-glow);
+  }
+
   .cta-qr {
     width: 120px;
     height: 120px;
@@ -1008,11 +1021,14 @@ const renderedIdeas = await Promise.all(
 </style>
 
 <script>
-  const validStatuses = new Set(['all', 'thinking', 'validating', 'building', 'verified', 'archived']);
+  const validStatuses = new Set(['all', 'active', 'thinking', 'validating', 'building', 'verified', 'archived']);
   
   function getRequestedStatus() {
     const requested = new URLSearchParams(location.search).get('status');
-    return requested && validStatuses.has(requested) ? requested : 'all';
+    if (!requested || !validStatuses.has(requested)) return 'all';
+    // Legacy individual statuses map to 'active'
+    if (['thinking', 'validating', 'building'].includes(requested)) return 'active';
+    return requested;
   }
 
   function updateIdeasFilter() {
@@ -1024,7 +1040,10 @@ const renderedIdeas = await Promise.all(
     // 过滤卡牌
     for (const card of cards) {
       const cardStatus = card.getAttribute('data-status') ?? 'thinking';
-      const isVisible = activeStatus === 'all' || cardStatus === activeStatus;
+      const activeStatuses = activeStatus === 'active'
+        ? ['thinking', 'validating', 'building']
+        : [activeStatus];
+      const isVisible = activeStatus === 'all' || activeStatuses.includes(cardStatus);
       
       card.toggleAttribute('hidden', !isVisible);
       if (isVisible) {
