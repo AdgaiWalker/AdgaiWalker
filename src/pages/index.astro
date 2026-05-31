@@ -5,7 +5,7 @@ import { getPublishedPosts } from '@/lib/content';
 
 export const prerender = true;
 
-const recentLogs = await getPublishedPosts();
+const recentLogs = (await getPublishedPosts()).filter(post => post.data.type === 'knowledge');
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">
