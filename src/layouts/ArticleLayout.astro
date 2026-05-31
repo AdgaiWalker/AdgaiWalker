@@ -1,10 +1,8 @@
 ---
 import { POSTS } from '@/lib/routes';
 /**
- * ArticleLayout — 文章详情页三栏布局
- * 左栏：导航 + 文章列表（嵌套在 Navigation 中）
- * 中栏：TOC 目录（可折叠 + 可拖拽调整宽度）
- * 右栏：文章正文
+ * ArticleLayout — 沉浸式阅读布局
+ * 内容直接浮在空间里，没有盒子。工具是幽灵，需要时才出现。
  *
  * 用于：/posts/[slug]
  */
@@ -46,13 +44,16 @@ const {
   articleList,
   ...seoProps
 } = Astro.props;
+
+const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+const hasToc = tocItems.length > 0;
 ---
 
 <Base
   {...seoProps}
   pureMode={false}
 >
-  {/* 将文章列表注入到 Navigation 的 slot 中 */}
+  {/* 文章列表注入到 Navigation 的 slot 中 */}
   <Fragment slot="nav-extension">
     <ArticleNav
       articles={articleList}
@@ -61,260 +62,157 @@ const {
     />
   </Fragment>
 
-  <div class="article-layout" id="article-layout">
-    {/* 中栏 — TOC 目录（可折叠 + 可调整宽度） */}
-    <aside class="article-toc-column" id="toc-column">
-      {/* 折叠按钮 */}
-      <button
-        class="toc-toggle-btn"
-        id="toc-toggle-btn"
-        type="button"
-        aria-label="折叠目录"
-      >
-        <Icon name="lucide:panel-left-close" width={14} height={14} class="toggle-icon" />
-      </button>
+  {/* 沉浸式阅读区域 */}
+  <div class="reading-space" id="reading-space">
+    {/* 左边缘提示线 — 侧边栏幽灵 */}
+    <div class="sidebar-ghost-hint" id="sidebar-ghost-hint" aria-hidden="true"></div>
 
-      {/* 动态液态高亮目录指示针 */}
-      <div class="toc-active-indicator opacity-0" id="toc-indicator"></div>
-      <TableOfContents headings={headings} />
+    {/* 幽灵 TOC — hover 右边缘或按 T 键出现 */}
+    {hasToc && (
+      <aside class="ghost-toc" id="ghost-toc" aria-label="文章目录">
+        <div class="ghost-toc-inner">
+          <TableOfContents headings={headings} />
+        </div>
+      </aside>
+    )}
 
-      {/* 拖拽调整宽度的手柄 */}
-      <div class="toc-resize-handle" id="toc-resize-handle" aria-hidden="true">
-        <div class="resize-grip"></div>
-      </div>
-    </aside>
+    {/* 右边缘提示线 — TOC 幽灵（放在 aside 外部，避免继承 opacity） */}
+    {hasToc && (
+      <div class="ghost-toc-hint" id="ghost-toc-hint" aria-hidden="true"></div>
+    )}
 
-    {/* 展开按钮（TOC 折叠时显示） */}
-    <button
-      class="toc-expand-btn"
-      id="toc-expand-btn"
-      type="button"
-      aria-label="展开目录"
-      hidden
-    >
-      <Icon name="lucide:panel-left-open" width={14} height={14} />
-    </button>
-
-    {/* 右栏 — 文章正文 */}
-    <main class="article-content-column">
-      <article class="prose-glass-panel panel-glass" id="prose-panel">
-        <slot />
-      </article>
-    </main>
+    {/* 内容 — 直接浮在空间里，没有盒子 */}
+    <div class="reading-content">
+      <slot />
+    </div>
   </div>
 </Base>
 
 <style>
-  /* ===== 三栏布局：CSS 变量驱动宽度 ===== */
-  .article-layout {
-    --toc-width: 220px;
-    --toc-min: 160px;
-    --toc-max: 340px;
-
+  /* ===== 沉浸式阅读空间 ===== */
+  .reading-space {
+    position: relative;
     min-height: 100vh;
     display: flex;
-    background: transparent;
+    justify-content: center;
   }
 
-  /* 中栏 — TOC 目录 */
-  .article-toc-column {
+  /* ===== 内容 — 无容器，直接浮在空间 ===== */
+  .reading-content {
+    width: 100%;
+    max-width: 700px;
+    padding: 6rem 2rem 8rem;
     position: relative;
-    flex-shrink: 0;
-    width: var(--toc-width);
-    min-width: var(--toc-min);
-    max-width: var(--toc-max);
-    height: 100vh;
-    position: sticky;
+    z-index: 1;
+  }
+
+  /* ===== 幽灵 TOC ===== */
+  .ghost-toc {
+    position: fixed;
     top: 0;
-    padding: 5.25rem 0 2rem;
+    right: 0;
+    width: 220px;
+    height: 100vh;
+    padding: 5.5rem 1rem 2rem 0;
+    z-index: 30;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .ghost-toc.is-visible {
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .ghost-toc-inner {
+    height: 100%;
+    padding: 1rem 1.25rem;
+    border-left: 1px solid var(--color-nav-border);
+    background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     overflow-y: auto;
-    overflow-x: hidden;
-    border-right: 1px solid var(--color-nav-border);
-    background: var(--color-nav-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                min-width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                padding 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.2s ease;
   }
 
-  .article-toc-column::-webkit-scrollbar {
-    width: 3px;
+  .ghost-toc-inner::-webkit-scrollbar {
+    width: 2px;
   }
-  .article-toc-column::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .article-toc-column::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
-    border-radius: 3px;
-  }
-  .article-toc-column:hover::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--color-parchment-dim) 35%, transparent);
+  .ghost-toc-inner::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
+    border-radius: 2px;
   }
 
-  /* ===== TOC 折叠状态 ===== */
-  .article-toc-column.is-collapsed {
-    width: 0;
-    min-width: 0;
-    padding: 5.25rem 0 2rem;
-    border-right: none;
+  /* ===== 右边缘提示线（TOC） ===== */
+  .ghost-toc-hint {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    width: 2px;
+    height: 40px;
+    transform: translateY(-50%);
+    background: color-mix(in srgb, var(--color-brand) 20%, transparent);
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+    z-index: 29;
+  }
+
+  /* TOC 可见时隐藏提示线 */
+  .ghost-toc.is-visible ~ .ghost-toc-hint {
+    opacity: 0;
+  }
+
+  /* ===== 左边缘提示线（侧边栏） ===== */
+  .sidebar-ghost-hint {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    width: 2px;
+    height: 40px;
+    transform: translateY(-50%);
+    background: color-mix(in srgb, var(--color-brand) 15%, transparent);
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    z-index: 29;
+  }
+
+  /* 侧边栏可见时隐藏提示线 */
+  :global(html:not([data-sidebar-hidden])) .sidebar-ghost-hint {
+    opacity: 0;
+  }
+
+  /* ===== 幽灵侧边栏 — 宽度归零 ===== */
+  :global(html[data-sidebar-hidden]) :global(#main-nav) {
+    width: 0 !important;
+    min-width: 0 !important;
+    opacity: 0;
     overflow: hidden;
     pointer-events: none;
+    transition: opacity 0.3s ease, width 0.3s ease;
   }
 
-  /* ===== 折叠按钮 ===== */
-  .toc-toggle-btn {
-    position: absolute;
-    top: 4.75rem;
-    right: 0.5rem;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    border: 1px solid var(--color-nav-border);
-    background: var(--color-nav-bg);
-    color: var(--color-parchment-dim);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s ease, background 0.15s ease, color 0.15s ease;
-  }
-
-  .article-toc-column:hover .toc-toggle-btn {
-    opacity: 0.7;
-  }
-
-  .toc-toggle-btn:hover {
-    opacity: 1;
-    background: var(--color-brand-glow);
-    color: var(--color-brand);
-    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
-  }
-
-  /* ===== 展开按钮（折叠时出现） ===== */
-  .toc-expand-btn {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 100vh;
-    position: sticky;
-    top: 0;
-    border: none;
-    border-right: 1px solid var(--color-nav-border);
-    background: var(--color-nav-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: var(--color-parchment-dim);
-    cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.2s ease, color 0.2s ease, background 0.2s ease;
-  }
-
-  .toc-expand-btn:hover {
-    opacity: 1;
-    color: var(--color-brand);
-    background: var(--color-brand-glow);
-  }
-
-  .toc-expand-btn[hidden] {
-    display: none;
-  }
-
-  /* ===== 拖拽手柄 ===== */
-  .toc-resize-handle {
-    position: absolute;
-    top: 0;
-    right: -3px;
-    width: 6px;
-    height: 100%;
-    cursor: col-resize;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .resize-grip {
-    width: 3px;
-    height: 32px;
-    border-radius: 3px;
-    background: var(--color-parchment-dim);
-    opacity: 0;
-    transition: opacity 0.2s ease, height 0.2s ease, background 0.15s ease;
-  }
-
-  .toc-resize-handle:hover .resize-grip {
-    opacity: 0.35;
-    height: 48px;
-  }
-
-  .toc-resize-handle.is-dragging .resize-grip {
-    opacity: 0.6;
-    height: 64px;
-    background: var(--color-brand);
-  }
-
-  .article-toc-column.is-collapsed .toc-resize-handle {
-    display: none;
-  }
-
-  /* ===== 右栏 — 文章正文 ===== */
-  .article-content-column {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    justify-content: center;
-    padding: 1rem 2rem 6rem;
-  }
-
-  /* 磨砂纸张卷轴 */
-  .prose-glass-panel {
-    width: 100%;
-    max-width: 780px;
-    padding: 2.5rem 3rem;
-    border-radius: 32px;
-    box-shadow: inset 0 0 20px var(--color-inner-shadow) !important;
-    border-color: var(--color-border) !important;
-    background: var(--color-card) !important;
-    transform: none !important;
-  }
-
-  .prose-glass-panel:hover {
-    box-shadow: inset 0 0 20px var(--color-inner-shadow) !important;
-    border-color: var(--color-border) !important;
-    background: var(--color-card) !important;
-    transform: none !important;
-  }
-
-  /* ===== 响应式：中等屏幕隐藏 TOC ===== */
+  /* ===== 响应式 ===== */
   @media (max-width: 1279px) {
-    .article-toc-column {
+    .ghost-toc,
+    .ghost-toc-hint,
+    .sidebar-ghost-hint {
       display: none;
     }
 
-    .toc-expand-btn {
-      display: none !important;
-    }
-
-    .article-content-column {
-      padding: 6rem 1rem 3rem;
-    }
-
-    .prose-glass-panel {
-      padding: 1.5rem !important;
-      border-radius: 20px;
+    .reading-content {
+      padding: 6rem 1.5rem 4rem;
     }
   }
 
   @media (max-width: 640px) {
-    .article-content-column {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
+    .reading-content {
+      padding: 5.5rem 1rem 3rem;
     }
   }
 </style>
@@ -322,114 +220,79 @@ const {
 <script>
   import '../scripts/toc-highlight';
 
-  const TOC_WIDTH_KEY = 'walker-toc-width';
-  const TOC_COLLAPSED_KEY = 'walker-toc-collapsed';
-  const DEFAULT_TOC_WIDTH = 220;
-  const MIN_TOC_WIDTH = 160;
-  const MAX_TOC_WIDTH = 340;
+  function initGhostToc() {
+    const toc = document.getElementById('ghost-toc');
+    if (!toc) return;
 
-  function initArticleLayout() {
-    const layout = document.getElementById('article-layout');
-    const tocColumn = document.getElementById('toc-column');
-    const toggleBtn = document.getElementById('toc-toggle-btn');
-    const expandBtn = document.getElementById('toc-expand-btn');
-    const resizeHandle = document.getElementById('toc-resize-handle');
-
-    if (!layout || !tocColumn || !toggleBtn || !expandBtn || !resizeHandle) return;
-
-    // ---- Auto-collapse when TOC is empty ----
-    const tocLinks = tocColumn.querySelectorAll('.toc-link');
-    if (tocLinks.length === 0) {
-      collapseToc(tocColumn, expandBtn);
-      localStorage.setItem(TOC_COLLAPSED_KEY, 'true');
-      return; // no need for resize/toggle when empty
-    }
-
-    // ---- Restore saved state ----
-    const savedWidth = localStorage.getItem(TOC_WIDTH_KEY);
-    const savedCollapsed = localStorage.getItem(TOC_COLLAPSED_KEY);
-    const tocWidth = savedWidth ? parseInt(savedWidth, 10) : DEFAULT_TOC_WIDTH;
-
-    if (savedCollapsed === 'true') {
-      collapseToc(tocColumn, expandBtn);
-    } else {
-      setTocWidth(tocColumn, tocWidth);
-    }
-
-    // ---- Toggle button ----
-    toggleBtn.addEventListener('click', () => {
-      collapseToc(tocColumn, expandBtn);
-      localStorage.setItem(TOC_COLLAPSED_KEY, 'true');
-    });
-
-    // ---- Expand button ----
-    expandBtn.addEventListener('click', () => {
-      expandToc(tocColumn, expandBtn);
-      localStorage.setItem(TOC_COLLAPSED_KEY, 'false');
-    });
-
-    // ---- Drag resize ----
-    let isDragging = false;
-    let startX = 0;
-    let startWidth = 0;
-
-    resizeHandle.addEventListener('mousedown', (e: MouseEvent) => {
-      isDragging = true;
-      startX = e.clientX;
-      startWidth = tocColumn.offsetWidth;
-      resizeHandle.classList.add('is-dragging');
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      e.preventDefault();
-    });
+    let hideTimer: ReturnType<typeof setTimeout>;
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
-      if (!isDragging) return;
-      const delta = e.clientX - startX;
-      const newWidth = Math.min(MAX_TOC_WIDTH, Math.max(MIN_TOC_WIDTH, startWidth + delta));
-      setTocWidth(tocColumn, newWidth);
-    });
+      const viewportWidth = window.innerWidth;
+      const inRightZone = e.clientX > viewportWidth - 60;
 
-    document.addEventListener('mouseup', () => {
-      if (!isDragging) return;
-      isDragging = false;
-      resizeHandle.classList.remove('is-dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      localStorage.setItem(TOC_WIDTH_KEY, String(tocColumn.offsetWidth));
-    });
-
-    // ---- Double-click to collapse/expand ----
-    resizeHandle.addEventListener('dblclick', () => {
-      if (tocColumn.classList.contains('is-collapsed')) {
-        expandToc(tocColumn, expandBtn);
-        localStorage.setItem(TOC_COLLAPSED_KEY, 'false');
+      clearTimeout(hideTimer);
+      if (inRightZone) {
+        toc.classList.add('is-visible');
       } else {
-        collapseToc(tocColumn, expandBtn);
-        localStorage.setItem(TOC_COLLAPSED_KEY, 'true');
+        hideTimer = setTimeout(() => {
+          toc.classList.remove('is-visible');
+        }, 400);
+      }
+    });
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
+      if (e.key === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        toc.classList.toggle('is-visible');
       }
     });
   }
 
-  function setTocWidth(tocColumn: HTMLElement, width: number) {
-    tocColumn.style.width = `${width}px`;
-    tocColumn.style.minWidth = `${width}px`;
+  function initGhostSidebar() {
+    const root = document.documentElement;
+
+    // 自动折叠并隐藏侧边栏
+    root.setAttribute('data-sidebar-collapsed', '');
+    root.setAttribute('data-sidebar-hidden', '');
+
+    // 侧边栏被展开时（[ 键），同步移除 ghost 隐藏
+    const observer = new MutationObserver(() => {
+      if (!root.hasAttribute('data-sidebar-collapsed')) {
+        root.removeAttribute('data-sidebar-hidden');
+      }
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] });
+
+    // 鼠标移到左边缘 → 露出折叠图标
+    let sidebarHideTimer: ReturnType<typeof setTimeout>;
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      const inLeftZone = e.clientX < 60;
+      clearTimeout(sidebarHideTimer);
+
+      if (inLeftZone && root.hasAttribute('data-sidebar-collapsed')) {
+        root.removeAttribute('data-sidebar-hidden');
+      } else if (!inLeftZone && root.hasAttribute('data-sidebar-collapsed')) {
+        sidebarHideTimer = setTimeout(() => {
+          if (root.hasAttribute('data-sidebar-collapsed')) {
+            root.setAttribute('data-sidebar-hidden', '');
+          }
+        }, 600);
+      }
+    });
+
+    // 离开文章页时恢复侧边栏
+    document.addEventListener('astro:before-swap', () => {
+      observer.disconnect();
+      root.removeAttribute('data-sidebar-hidden');
+    });
   }
 
-  function collapseToc(tocColumn: HTMLElement, expandBtn: HTMLElement) {
-    tocColumn.classList.add('is-collapsed');
-    expandBtn.removeAttribute('hidden');
-  }
-
-  function expandToc(tocColumn: HTMLElement, expandBtn: HTMLElement) {
-    tocColumn.classList.remove('is-collapsed');
-    expandBtn.setAttribute('hidden', '');
-    // Restore saved width
-    const savedWidth = localStorage.getItem(TOC_WIDTH_KEY);
-    const width = savedWidth ? parseInt(savedWidth, 10) : DEFAULT_TOC_WIDTH;
-    setTocWidth(tocColumn, width);
-  }
-
-  initArticleLayout();
-  document.addEventListener('astro:page-load', initArticleLayout);
+  initGhostToc();
+  initGhostSidebar();
+  document.addEventListener('astro:page-load', () => {
+    initGhostToc();
+    initGhostSidebar();
+  });
 </script>
