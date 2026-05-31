@@ -35,22 +35,7 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
   ogDescription="Walker 的内容宇宙：点子是驱动力，生活是土壤，所有公开内容在这里按空间重新组织。"
 >
 
-  <!-- 顶部极简导航栏 -->
-  <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" id="content-nav">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between pointer-events-auto">
-      <a href="/" class="flex items-center gap-2 no-underline group" title="返回首页">
-        <span class="w-6 h-6 rounded-lg bg-brand/12 border border-brand/15 flex items-center justify-center shrink-0 transition-all group-hover:bg-brand/20">
-          <span class="text-brand text-[11px] font-heading font-bold leading-none">W</span>
-        </span>
-        <span class="text-[12px] font-heading text-parchment/60 font-bold tracking-wide group-hover:text-parchment/80 transition-colors">Walker</span>
-      </a>
-      <div class="flex items-center gap-3">
-        <span class="text-[11px] font-mono text-parchment/30" id="log-count">{contentItems.length} 条</span>
-        <a href="/about" class="text-[11px] font-body text-parchment/40 hover:text-parchment/70 transition-colors no-underline">关于</a>
-      </div>
-    </div>
-  </nav>
-  <section class="content-universe-shell" aria-labelledby="content-universe-title" style="max-width: 1100px; margin: 0 auto; padding: 5rem 2rem 4rem;">
+  <section class="content-universe-shell" aria-labelledby="content-universe-title" style="max-width: 1100px; margin: 0 auto; padding: 2rem 2rem 4rem;">
     <div class="content-hero panel-glass">
       <div class="hero-kicker">CONTENT UNIVERSE</div>
       <h2 id="content-universe-title">点子是驱动力，生活是土壤。</h2>

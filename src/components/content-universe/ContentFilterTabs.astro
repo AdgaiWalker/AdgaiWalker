@@ -17,7 +17,7 @@ function getSpaceHref(space: ContentSpace) {
 ---
 
 <nav class="content-filter-tabs" aria-label="内容宇宙筛选">
-  {contentSpaces.map((space) => {
+  {contentSpaces.filter(s => ['all', 'progress', 'tools', 'ideas'].includes(s.id)).map((space) => {
     const isActive = space.id === activeSpace;
     const count = counts[space.id] ?? 0;
 
