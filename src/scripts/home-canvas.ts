@@ -98,7 +98,20 @@ function initThemeToggle(signal: AbortSignal) {
   document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
   document.body.classList.add(`theme-${savedTheme}`);
 
-  // Listen for theme changes from Navigation's home-theme-toggle button
+  // 目录卡主题切换按钮
+  const canvasToggle = document.getElementById('canvas-theme-toggle');
+  if (canvasToggle) {
+    canvasToggle.addEventListener('click', () => {
+      const themes = ['nature', 'aurora', 'sunset', 'mint'];
+      const current = localStorage.getItem('walker-theme') || 'nature';
+      const next = themes[(themes.indexOf(current) + 1) % themes.length];
+      document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
+      document.body.classList.add(`theme-${next}`);
+      localStorage.setItem('walker-theme', next);
+    }, { signal });
+  }
+
+  // Also listen for theme changes from other sources
   document.addEventListener('walker-theme-change', ((e: CustomEvent) => {
     const themeName = e.detail;
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '');

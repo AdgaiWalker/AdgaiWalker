@@ -38,32 +38,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 </div>
 
 {isHome ? (
-  <div class="fixed top-4 right-4 z-50 flex items-center gap-2 pointer-events-auto">
-    <a
-      href={CONTENT}
-      class="home-nav-pill"
-      title="内容宇宙"
-    >
-      <Icon name="lucide:layout-grid" width={14} height={14} />
-      <span>内容</span>
-    </a>
-    <a
-      href={ABOUT}
-      class="home-nav-pill"
-      title="关于"
-    >
-      <Icon name="lucide:user" width={14} height={14} />
-      <span>关于</span>
-    </a>
-    <button
-      class="home-nav-pill home-nav-icon-only"
-      id="home-theme-toggle"
-      aria-label="切换主题"
-      title="切换主题"
-    >
-      <Icon name="lucide:sun" width={14} height={14} />
-    </button>
-  </div>
+  {/* 首页导航已移入画布目录卡，不再需要浮动胶囊 */}
 ) : (
   <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md flex flex-col" id="main-nav">
     <MobileMenu />
