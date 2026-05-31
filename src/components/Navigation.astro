@@ -37,9 +37,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
   <SearchModal />
 </div>
 
-{isHome ? (
-  {/* 首页导航已移入画布目录卡，不再需要浮动胶囊 */}
-) : (
+{isHome ? null : (
   <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md flex flex-col" id="main-nav">
     <MobileMenu />
     <SidebarNav navGroups={navGroups} normalizedPath={normalizedPath}>
