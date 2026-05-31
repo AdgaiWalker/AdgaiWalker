@@ -5,8 +5,16 @@
  */
 import { Icon } from 'astro-icon/components';
 import stats from '@/data/site-stats.json';
+import { getPublishedContentItems } from '@/lib/content';
+import { contentSpaces, itemBelongsToSpace } from '@/lib/content-model';
 
 const { costs, siteTimeline, roadmap } = stats;
+
+const contentItems = await getPublishedContentItems();
+const contentCounts = contentSpaces.map(space => ({
+  ...space,
+  count: contentItems.filter(item => itemBelongsToSpace(item, space.id)).length,
+}));
 const totalCost = costs.reduce((sum, c) => sum + c.amount, 0);
 const costByCategory = Object.entries(
   costs.reduce<Record<string, number>>((acc, c) => {
@@ -217,6 +225,41 @@ const aiTools = [
             <span class="text-sm text-parchment-dim/60">{item}</span>
           </div>
         ))}
+      </div>
+    </div>
+  </section>
+
+  {/* 5. 数据台 */}
+  <section class="site-section py-16 px-4 sm:px-6 flex justify-center">
+    <div class="max-w-[620px] w-full">
+      <div class="section-header mb-10 flex items-center gap-4">
+        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">数据台</h2>
+        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
+      </div>
+
+      <div class="about-data-panel panel-glass">
+        <p class="about-data-eyebrow">PUBLIC DATA DOCK</p>
+        <h2 class="about-data-heading">数据提供现象，不提供目的。</h2>
+        <p class="about-data-intro">
+          这里先公开系统级轻量数据：内容数量、内容空间分布和反馈入口。它用于观察表达是否被看见、哪些方向值得继续解释，但不替代 Walker 的北极星。
+        </p>
+
+        <div class="about-data-grid">
+          <div class="about-data-card">
+            <span>公开内容</span>
+            <strong>{contentItems.length}</strong>
+            <em>条</em>
+          </div>
+        </div>
+
+        <div class="about-data-spaces">
+          {contentCounts.map(space => (
+            <a href={space.id === 'all' ? '/content' : `/content?space=${space.id}`}>
+              <span>{space.label}</span>
+              <strong>{space.count}</strong>
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   </section>

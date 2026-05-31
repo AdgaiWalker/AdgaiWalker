@@ -1,8 +1,7 @@
 ---
 import GreetingCard from '../GreetingCard.astro';
-import RecentTraces from '../RecentTraces.astro';
 import { Icon } from 'astro-icon/components';
-import { CONTENT, ABOUT } from '@/lib/routes';
+import { CONTENT, ABOUT, buildPostPath } from '@/lib/routes';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
@@ -27,37 +26,32 @@ const { recentLogs } = Astro.props;
   <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex justify-center items-center">
     <div class="grid grid-cols-[280px_400px] justify-center gap-6 items-start w-full relative pb-4 pointer-events-auto px-4">
 
-      <!-- 左栏：目录卡 + 文章 -->
-      <div class="flex flex-col gap-5 mt-6">
-        <!-- 目录卡 — 品牌身份 + 导航入口 -->
-        <div class="directory-card panel-glass p-4 pop-in" style="animation-delay: 0.04s;">
+      <!-- 左栏：身份条 + 内容钩子 -->
+      <div class="flex flex-col gap-4 mt-6">
+        <!-- 身份条 — 品牌缩影 + 最近一条内容 -->
+        <div class="directory-card panel-glass p-4 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[24px]" style="animation-delay: 0.04s;">
           <div class="directory-brand">
             <span class="directory-mark">
               <span class="text-brand text-[12px] font-heading font-bold leading-none">W</span>
             </span>
             <div class="directory-copy">
               <span class="directory-name">Walker</span>
-              <span class="directory-tagline" id="status-text">行过万里水路</span>
+              <span class="directory-tagline" id="status-text">用 AI 走自己的路</span>
             </div>
           </div>
-          <div class="directory-nav">
-            <a href={CONTENT} class="directory-link">
-              <Icon name="lucide:layout-grid" width={13} height={13} />
-              内容
+          {recentLogs[0] && (
+            <a href={buildPostPath(recentLogs[0].id)} class="directory-trace group/trace">
+              <span class="directory-trace-label">最近</span>
+              <span class="directory-trace-title group-hover/trace:text-brand transition-colors">{recentLogs[0].data.title}</span>
+              <Icon name="lucide:arrow-right" width={12} height={12} class="directory-trace-arrow" />
             </a>
-            <a href={ABOUT} class="directory-link">
-              <Icon name="lucide:user" width={13} height={13} />
-              关于
-            </a>
-            <button class="directory-link directory-theme-btn" id="canvas-theme-toggle" aria-label="切换主题" title="切换主题">
-              <Icon name="lucide:sun" width={13} height={13} />
-              主题
-            </button>
+          )}
+          <!-- 隐形导航：hover 身份条时显示 -->
+          <div class="directory-ghost-nav">
+            <a href={CONTENT}>内容</a>
+            <a href={ABOUT}>关于</a>
+            <button id="canvas-theme-toggle" aria-label="切换主题" title="切换主题">主题</button>
           </div>
-        </div>
-
-        <div class="pop-in delay-1 draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[32px]">
-          <RecentTraces logs={recentLogs} />
         </div>
       </div>
 
@@ -162,7 +156,7 @@ const { recentLogs } = Astro.props;
     cursor: grab !important;
   }
 
-  /* ===== 目录卡 ===== */
+  /* ===== 身份条 ===== */
   .directory-card {
     border-radius: 24px;
   }
@@ -171,9 +165,6 @@ const { recentLogs } = Astro.props;
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
   }
 
   .directory-mark {
@@ -211,33 +202,90 @@ const { recentLogs } = Astro.props;
     opacity: 0.5;
   }
 
-  .directory-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .directory-link {
+  /* 内容钩子 — 最近一条线索 */
+  .directory-trace {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 7px 10px;
-    border-radius: 10px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: var(--color-parchment-dim);
+    gap: 8px;
+    margin-top: 14px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
     text-decoration: none;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    width: 100%;
-    text-align: left;
-    transition: background 0.18s ease, color 0.18s ease;
+    transition: background 0.2s ease;
+  }
+  .directory-trace:hover {
+    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
   }
 
-  .directory-link:hover {
-    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
-    color: var(--color-parchment);
+  .directory-trace-label {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--color-brand);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .directory-trace-title {
+    font-size: 0.78rem;
+    color: var(--color-parchment-dim);
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+  }
+
+  .directory-trace-arrow {
+    color: var(--color-parchment-dim);
+    opacity: 0.3;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .directory-trace:hover .directory-trace-arrow {
+    opacity: 0.6;
+    transform: translateX(2px);
+  }
+
+  /* 隐形导航 — hover 身份条时淡入 */
+  .directory-ghost-nav {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 6%, transparent);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+
+  .directory-card:hover .directory-ghost-nav {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .directory-ghost-nav a,
+  .directory-ghost-nav button {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.2s ease, color 0.2s ease;
+  }
+  .directory-ghost-nav a:hover,
+  .directory-ghost-nav button:hover {
+    opacity: 1;
+    color: var(--color-brand);
   }
 
   .cursor-grabbing {

@@ -39,30 +39,6 @@ const totalLikesPlaceholder = 'Supabase 统计中';
     <div class="ambient-orb ambient-orb-4" style="background-color: var(--orb-color-4, #b4f5cd);"></div>
   </div>
 
-  {/* ===== 右侧悬浮极简微导轨导航 ===== */}
-  <div class="about-floating-nav" id="about-float-nav" aria-label="页面导轨">
-    <a href="#hero-section" class="float-nav-item active" data-target="hero-section" title="顶部">
-      <Icon name="lucide:arrow-up" width={16} height={16} />
-      <span class="float-nav-hint">回到顶部</span>
-    </a>
-    <a href="#era-section" class="float-nav-item" data-target="era-section" title="时代">
-      <Icon name="lucide:globe" width={16} height={16} />
-      <span class="float-nav-hint">这个时代</span>
-    </a>
-    <a href="#guide-section" class="float-nav-item" data-target="guide-section" title="引路人">
-      <Icon name="lucide:user" width={16} height={16} />
-      <span class="float-nav-hint">我为什么在这里</span>
-    </a>
-    <a href="#path-section" class="float-nav-item" data-target="path-section" title="路">
-      <Icon name="lucide:ship" width={16} height={16} />
-      <span class="float-nav-hint">正在铺的路</span>
-    </a>
-    <a href="#data" class="float-nav-item" data-target="data" title="数据台">
-      <Icon name="lucide:bar-chart-3" width={16} height={16} />
-      <span class="float-nav-hint">数据台</span>
-    </a>
-  </div>
-
   {/* ===== 1. Hero 区域 ===== */}
   <section class="hero-section" id="hero-section">
     <div class="hero-bg">
@@ -335,47 +311,7 @@ const totalLikesPlaceholder = 'Supabase 统计中';
     </div>
   </section>
 
-  {/* ===== 5. 数据台 ===== */}
-  <section class="about-data-section py-20 px-4 sm:px-6 flex justify-center" id="data">
-    <div class="max-w-[620px] w-full">
-      <div class="section-header mb-10 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">数据台</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
-
-      <div class="about-data-panel panel-glass">
-        <p class="about-data-eyebrow">PUBLIC DATA DOCK</p>
-        <h2 class="about-data-heading">数据提供现象，不提供目的。</h2>
-        <p class="about-data-intro">
-          这里先公开系统级轻量数据：内容数量、内容空间分布和反馈入口。它用于观察表达是否被看见、哪些方向值得继续解释，但不替代 Walker 的北极星。
-        </p>
-
-        <div class="about-data-grid">
-          <div class="about-data-card">
-            <span>公开内容</span>
-            <strong>{contentItems.length}</strong>
-            <em>条</em>
-          </div>
-          <div class="about-data-card">
-            <span>点赞反馈</span>
-            <strong>{totalLikesPlaceholder}</strong>
-            <em>保持人工判断</em>
-          </div>
-        </div>
-
-        <div class="about-data-spaces">
-          {contentCounts.map(space => (
-            <a href={space.id === 'all' ? '/content' : `/content?space=${space.id}`}>
-              <span>{space.label}</span>
-              <strong>{space.count}</strong>
-            </a>
-          ))}
-        </div>
-      </div>
-    </div>
-  </section>
-
-  {/* ===== 6. 一起走 ===== */}
+  {/* ===== 5. 一起走 ===== */}
   <section class="invite-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="invite-section">
     <div class="max-w-[620px] w-full text-center space-y-6">
       <div class="panel-glass p-8 sm:p-10 rounded-[32px]">
@@ -443,14 +379,11 @@ const totalLikesPlaceholder = 'Supabase 统计中';
     abort = new AbortController();
     const { signal } = abort;
 
-    // 视差滚动与浮动导轨高亮
+    // 视差滚动
     const hero = document.getElementById('hero-section');
     const bgVideo = hero?.querySelector('.hero-bg-video') as HTMLElement | null;
     const heroContent = hero?.querySelector('.hero-content') as HTMLElement | null;
     const scrollHint = document.getElementById('scroll-hint');
-    const floatNav = document.getElementById('about-float-nav');
-    const navItems = document.querySelectorAll('.float-nav-item');
-    const sections = document.querySelectorAll('.hero-section, .era-section, .guide-section, .path-section, .about-data-section');
 
     if (hero) {
       window.addEventListener('scroll', () => {
@@ -465,32 +398,11 @@ const totalLikesPlaceholder = 'Supabase 统计中';
           }
           if (scrollHint) scrollHint.style.opacity = String(Math.max(0, 1 - scrollY / heroHeight * 3));
         }
-
-        if (floatNav) {
-          floatNav.classList.toggle('visible', scrollY > heroHeight * 0.4);
-        }
-
-        let currentSectionId = 'hero-section';
-        sections.forEach(sec => {
-          if (sec.getBoundingClientRect().top <= window.innerHeight * 0.45) {
-            currentSectionId = sec.id;
-          }
-        });
-        navItems.forEach(item => {
-          item.classList.toggle('active', item.getAttribute('data-target') === currentSectionId);
-        });
       }, { passive: true, signal });
 
       scrollHint?.addEventListener('click', () => {
         document.getElementById('era-section')?.scrollIntoView({ behavior: 'smooth' });
       }, { signal });
-
-      navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-          e.preventDefault();
-          document.getElementById(item.getAttribute('data-target') || '')?.scrollIntoView({ behavior: 'smooth' });
-        }, { signal });
-      });
     }
 
     // 3D 物理磁性倾斜
@@ -731,76 +643,6 @@ const totalLikesPlaceholder = 'Supabase 统计中';
     50% { transform: translateX(-50%) translateY(8px); }
   }
 
-  /* ===== 右侧悬浮微导轨导航 ===== */
-  .about-floating-nav {
-    position: fixed;
-    right: 1.5rem;
-    top: 50%;
-    transform: translateY(-50%) scale(0.95);
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    z-index: 100;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .about-floating-nav.visible {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
-    pointer-events: auto;
-  }
-
-  .float-nav-item {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    color: var(--color-parchment-dim);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    text-decoration: none;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .float-nav-item:hover,
-  .float-nav-item.active {
-    background: var(--color-brand);
-    color: #ffffff !important;
-    border-color: var(--color-brand);
-    transform: scale(1.12);
-    box-shadow: 0 0 14px var(--color-brand-glow);
-  }
-
-  .float-nav-hint {
-    position: absolute;
-    right: 42px;
-    top: 50%;
-    transform: translateY(-50%) translateX(10px);
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    color: var(--color-parchment);
-    font-size: 0.68rem;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 6px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .float-nav-item:hover .float-nav-hint {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
-
   /* ===== 个人简介区域 ===== */
   .about-avatar {
     width: 102px;
@@ -919,7 +761,6 @@ const totalLikesPlaceholder = 'Supabase 统计中';
 
   /* ===== 响应式 ===== */
   @media (max-width: 640px) {
-    .about-floating-nav { display: none !important; }
     .hero-title { font-size: 2.8rem; }
     .era-section,
     .guide-section,
