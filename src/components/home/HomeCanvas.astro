@@ -2,7 +2,6 @@
 import GreetingCard from '../GreetingCard.astro';
 import RecentTraces from '../RecentTraces.astro';
 import type { CollectionEntry } from 'astro:content';
-import { POSTS, TOOLS, IDEAS, PROJECTS } from '@/lib/routes';
 
 interface Props {
   recentLogs: CollectionEntry<'log'>[];
@@ -53,20 +52,6 @@ const { recentLogs } = Astro.props;
     </div>
   </div>
 
-  <!-- 底部极简文字导航 -->
-  <div class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 text-[11px] font-body text-parchment/25 tracking-wide pointer-events-auto" style="animation: popInSpring 0.9s cubic-bezier(0.22, 1.2, 0.36, 1) 0.6s forwards; opacity: 0; transform: translateY(20px) scale(0.95);">
-    <a href={POSTS} class="hover:text-parchment/60 transition-colors no-underline">文章</a>
-    <span class="text-parchment/10">·</span>
-    <a href={TOOLS} class="hover:text-parchment/60 transition-colors no-underline">工具</a>
-    <span class="text-parchment/10">·</span>
-    <a href={IDEAS} class="hover:text-parchment/60 transition-colors no-underline">点子</a>
-    <span class="text-parchment/10">·</span>
-    <a href={PROJECTS} class="hover:text-parchment/60 transition-colors no-underline">项目</a>
-    <span class="text-parchment/10">·</span>
-    <a href="/content" class="hover:text-parchment/60 transition-colors no-underline">内容</a>
-    <span class="text-parchment/10">·</span>
-    <a href="/about" class="hover:text-parchment/60 transition-colors no-underline">关于</a>
-  </div>
 </div>
 
 <style>
