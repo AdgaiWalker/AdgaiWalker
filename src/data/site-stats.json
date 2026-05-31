@@ -10,7 +10,7 @@
     { "date": "2026-05", "category": "域名", "amount": 15, "note": "Spaceship 购买 .pro 首年" },
     { "date": "2026-05", "category": "部署", "amount": 10, "note": "Chrome DevTools MCP 自动化部署" },
     { "date": "持续", "category": "部署", "amount": 0, "note": "Vercel 托管（免费）" },
-    { "date": "持续", "category": "部署", "amount": 0, "note": "Vercel KV 点赞（免费额度）" }
+    { "date": "持续", "category": "部署", "amount": 0, "note": "Upstash Redis 点赞（免费额度）" }
   ],
   "siteTimeline": [
     { "date": "2026.03.17", "text": "GitHub 初始化" },
@@ -19,7 +19,8 @@
     { "date": "2026.05.09", "text": "SEO、404、点赞系统" },
     { "date": "2026.05.16", "text": "v3 — UX/UI 全面重构" },
     { "date": "2026.05.26", "text": "四柱系统成型（思考/资源/点子/项目）" },
-    { "date": "2026.05.27", "text": "三篇核心文章发布 + 关于网站页上线" }
+    { "date": "2026.05.27", "text": "三篇核心文章发布 + 关于网站页上线" },
+    { "date": "2026.05.31", "text": "Hockney 审计 + Giscus 评论 + Upstash Redis" }
   ],
   "personalTimeline": [
     { "date": "2025.08", "title": "全速驶入 AI 数字深海", "desc": "因为自创项目需要，全身心投入 AI 工程落地实践。从写下第一行 Python 和第一个自适应 Prompt 开始，开启硬核数字航线。", "icon": "lucide:anchor" },
@@ -39,12 +40,12 @@
       "思考 / 资源 / 点子 / 项目页面",
       "三篇核心文章",
       "Pagefind 全站搜索",
-      "Vercel KV 点赞",
+      "Upstash Redis 点赞",
+      "Giscus 评论系统",
       "RSS 订阅源",
       "xyzidea.cn 知识库平台上线"
     ],
     "planned": [
-      "评论系统（Giscus）",
       "点子社群正式运营",
       "每个人都能拥有自己的知识库博客",
       "迁移到 xyzidea.cn 平台共创"
