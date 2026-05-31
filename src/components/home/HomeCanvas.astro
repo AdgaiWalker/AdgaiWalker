@@ -6,9 +6,11 @@ import type { CollectionEntry } from 'astro:content';
 
 interface Props {
   recentLogs: CollectionEntry<'log'>[];
+  featuredLog?: CollectionEntry<'log'>;
 }
 
-const { recentLogs } = Astro.props;
+const { recentLogs, featuredLog } = Astro.props;
+const traceLog = featuredLog || recentLogs[0];
 ---
 
 <div id="canvas-container" class="fixed inset-0 overflow-hidden select-none pointer-events-auto z-0 flex items-center justify-center">
@@ -39,10 +41,10 @@ const { recentLogs } = Astro.props;
               <span class="directory-tagline" id="status-text">用 AI 走自己的路</span>
             </div>
           </div>
-          {recentLogs[0] && (
-            <a href={buildPostPath(recentLogs[0].id)} class="directory-trace group/trace">
-              <span class="directory-trace-label">最近</span>
-              <span class="directory-trace-title group-hover/trace:text-brand transition-colors">{recentLogs[0].data.title}</span>
+          {traceLog && (
+            <a href={buildPostPath(traceLog.id)} class="directory-trace group/trace">
+              <span class="directory-trace-label">{traceLog.data.featured ? '推荐' : '最近'}</span>
+              <span class="directory-trace-title group-hover/trace:text-brand transition-colors">{traceLog.data.title}</span>
               <Icon name="lucide:arrow-right" width={12} height={12} class="directory-trace-arrow" />
             </a>
           )}

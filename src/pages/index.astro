@@ -6,10 +6,11 @@ import { getPublishedPosts } from '@/lib/content';
 export const prerender = true;
 
 const recentLogs = (await getPublishedPosts()).filter(post => post.data.type === 'knowledge');
+const featuredLog = recentLogs.find(post => post.data.featured) || recentLogs[0];
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">
-  <HomeCanvas recentLogs={recentLogs} />
+  <HomeCanvas recentLogs={recentLogs} featuredLog={featuredLog} />
 
   <script>
     import '../scripts/home-canvas';

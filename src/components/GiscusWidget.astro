@@ -1,0 +1,82 @@
+---
+/**
+ * GiscusWidget — 文章页评论组件
+ * 基于 GitHub Discussions，配置通过环境变量注入
+ * 主题跟随 walker-theme-change 事件自动切换
+ */
+---
+
+{import.meta.env.PUBLIC_GISCUS_REPO && (
+  <div class="giscus-wrapper" id="giscus-container">
+    <script
+      src="https://giscus.app/client.js"
+      data-repo={import.meta.env.PUBLIC_GISCUS_REPO}
+      data-repo-id={import.meta.env.PUBLIC_GISCUS_REPO_ID}
+      data-category={import.meta.env.PUBLIC_GISCUS_CATEGORY}
+      data-category-id={import.meta.env.PUBLIC_GISCUS_CATEGORY_ID}
+      data-mapping="pathname"
+      data-strict="0"
+      data-reactions-enabled="1"
+      data-emit-metadata="0"
+      data-input-position="top"
+      data-theme="light"
+      data-lang="zh-CN"
+      data-loading="lazy"
+      crossorigin="anonymous"
+      async
+    ></script>
+  </div>
+)}
+
+{!import.meta.env.PUBLIC_GISCUS_REPO && (
+  <div class="giscus-placeholder panel-glass p-6 rounded-2xl text-center">
+    <p class="text-xs text-parchment-dim/40">评论系统配置中</p>
+  </div>
+)}
+
+<script>
+  function setupGiscusTheme() {
+    const savedTheme = localStorage.getItem('walker-theme') || 'nature';
+    const giscusTheme = ['aurora', 'sunset', 'mint'].includes(savedTheme) ? 'dark_dimmed' : 'light';
+
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      iframe.contentWindow?.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app'
+      );
+    }
+  }
+
+  // 主题切换时同步 Giscus
+  document.addEventListener('walker-theme-change', ((e: CustomEvent) => {
+    const themeName = e.detail;
+    const giscusTheme = ['aurora', 'sunset', 'mint'].includes(themeName) ? 'dark_dimmed' : 'light';
+
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (iframe) {
+      iframe.contentWindow?.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app'
+      );
+    }
+  }) as EventListener);
+
+  // Giscus iframe 加载完成后同步主题
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://giscus.app') return;
+    if (!(typeof event.data === 'object' && event.data.giscus)) return;
+    setupGiscusTheme();
+  });
+
+  setupGiscusTheme();
+  document.addEventListener('astro:page-load', setupGiscusTheme);
+</script>
+
+<style>
+  .giscus-wrapper {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-nav-border);
+  }
+</style>
