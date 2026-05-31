@@ -24,7 +24,7 @@ function getSpaceHref(space: ContentSpace) {
     return (
       <a
         href={getSpaceHref(space.id)}
-        class:list={['filter-tab', { 'is-active': isActive }]}
+        class:list={['filter-tab', { 'is-active': isActive, 'is-empty': count === 0 }]}
         aria-current={isActive ? 'page' : undefined}
         data-space={space.id}
       >
@@ -142,6 +142,18 @@ function getSpaceHref(space: ContentSpace) {
   .filter-tab.is-active .tab-count {
     background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.16);
     color: var(--color-brand, #c4704a);
+  }
+
+  /* 空 space 降级 */
+  .filter-tab.is-empty {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .filter-tab.is-empty .tab-count {
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.65rem;
   }
 
   @media (max-width: 640px) {
