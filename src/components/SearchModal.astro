@@ -1,21 +1,8 @@
 ---
 import { Icon } from 'astro-icon/components';
-interface Props {
-  iconOnly?: boolean;
-}
-const { iconOnly = false } = Astro.props;
 ---
 <!-- 搜索按钮 -->
-{iconOnly ? (
-  <button
-    id="search-open"
-    class="w-[50px] h-[50px] bg-white flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors border border-gray-200 cursor-pointer shadow-sm rounded-xl"
-    aria-label="搜索"
-  >
-    <Icon name="lucide:search" width={20} height={20} />
-  </button>
-) : (
-  <button
+<button
     id="search-open"
     class="flex items-center gap-2 text-gray-400 hover:text-brand transition-colors text-xs font-heading tracking-wider cursor-pointer bg-transparent border-none"
     aria-label="搜索"
@@ -24,7 +11,6 @@ const { iconOnly = false } = Astro.props;
     <span class="hidden md:inline">搜索</span>
     <kbd class="hidden md:inline text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-gray-400 bg-gray-50 ml-1 font-mono">⌘K</kbd>
   </button>
-)}
 
 <!-- 搜索浮层 -->
 <div id="search-modal" class="fixed inset-0 z-[100] hidden" style="animation: modal-enter 0.2s ease-out;">
@@ -77,73 +63,79 @@ const { iconOnly = false } = Astro.props;
 </style>
 
 <script>
-  const modal = document.getElementById('search-modal');
-  const input = document.getElementById('search-input') as HTMLInputElement;
-  const openBtn = document.getElementById('search-open');
-  const closeBtn = document.getElementById('search-close');
-  const backdrop = document.getElementById('search-backdrop');
-  const resultsList = document.getElementById('search-list');
-  const emptyState = document.getElementById('search-empty');
+  let searchAbort: AbortController | null = null;
 
-  function openSearch() {
-    modal?.classList.remove('hidden');
-    input?.focus();
-    document.body.style.overflow = 'hidden';
-  }
+  function initSearch() {
+    searchAbort?.abort();
+    searchAbort = new AbortController();
+    const { signal } = searchAbort;
 
-  function closeSearch() {
-    modal?.classList.add('hidden');
-    input.value = '';
-    if (resultsList) resultsList.innerHTML = '';
-    if (emptyState) emptyState.classList.remove('hidden');
-    document.body.style.overflow = '';
-  }
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('search-input') as HTMLInputElement;
+    const openBtn = document.getElementById('search-open');
+    const closeBtn = document.getElementById('search-close');
+    const backdrop = document.getElementById('search-backdrop');
+    const resultsList = document.getElementById('search-list');
+    const emptyState = document.getElementById('search-empty');
 
-  openBtn?.addEventListener('click', openSearch);
-  closeBtn?.addEventListener('click', closeSearch);
-  backdrop?.addEventListener('click', closeSearch);
-
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault();
-      openSearch();
+    function openSearch() {
+      modal?.classList.remove('hidden');
+      input?.focus();
+      document.body.style.overflow = 'hidden';
     }
-    if (e.key === 'Escape') closeSearch();
-  });
 
-  let pagefindSearch: any = null;
-  let pagefindLoaded = false;
-  let pagefindReady: (() => void) | null = null;
-  const pagefindReadyPromise = new Promise<void>((resolve) => { pagefindReady = resolve; });
+    function closeSearch() {
+      modal?.classList.add('hidden');
+      if (input) input.value = '';
+      if (resultsList) resultsList.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      document.body.style.overflow = '';
+    }
 
-  async function loadPagefind() {
-    if (pagefindLoaded) return;
-    pagefindLoaded = true;
-    const script = document.createElement('script');
-    script.src = '/pagefind/pagefind.js';
-    script.onload = async () => {
-      // @ts-ignore
-      pagefindSearch = window.pagefind;
-      if (pagefindSearch) {
-        await pagefindSearch.init();
-        pagefindReady?.();
+    closeBtn?.addEventListener('click', closeSearch, { signal });
+    backdrop?.addEventListener('click', closeSearch, { signal });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openSearch();
       }
-    };
-    script.onerror = () => {
-      console.log('Pagefind 未就绪，请先构建');
-    };
-    document.head.appendChild(script);
-  }
+      if (e.key === 'Escape') closeSearch();
+    }, { signal });
 
-  const openSearchWithIndex = () => {
-    openSearch();
-    loadPagefind();
-  };
-  openBtn?.removeEventListener('click', openSearch);
-  openBtn?.addEventListener('click', openSearchWithIndex);
+    // Pagefind 延迟加载
+    let pagefindSearch: any = null;
+    let pagefindLoaded = false;
+    let pagefindReady: (() => void) | null = null;
+    const pagefindReadyPromise = new Promise<void>((resolve) => { pagefindReady = resolve; });
 
-  let debounceTimer: ReturnType<typeof setTimeout>;
-  input?.addEventListener('input', () => {
+    async function loadPagefind() {
+      if (pagefindLoaded) return;
+      pagefindLoaded = true;
+      const script = document.createElement('script');
+      script.src = '/pagefind/pagefind.js';
+      script.onload = async () => {
+        // @ts-ignore
+        pagefindSearch = window.pagefind;
+        if (pagefindSearch) {
+          await pagefindSearch.init();
+          pagefindReady?.();
+        }
+      };
+      script.onerror = () => {
+        console.log('Pagefind 未就绪，请先构建');
+      };
+      document.head.appendChild(script);
+    }
+
+    const openSearchWithIndex = () => {
+      openSearch();
+      loadPagefind();
+    };
+    openBtn?.addEventListener('click', openSearchWithIndex, { signal });
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    input?.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
       await pagefindReadyPromise;
@@ -211,5 +203,13 @@ const { iconOnly = false } = Astro.props;
 
       if (resultsList) resultsList.innerHTML = html.join('');
     }, 200);
+    }, { signal });
+  }
+
+  initSearch();
+  document.addEventListener('astro:page-load', initSearch);
+  document.addEventListener('astro:before-swap', () => {
+    searchAbort?.abort();
+    searchAbort = null;
   });
 </script>

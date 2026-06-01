@@ -1,16 +1,12 @@
 ---
-import { Icon } from 'astro-icon/components';
-
 interface Props {
   title: string;
-  icon?: string;
 }
 
-const { title, icon } = Astro.props;
+const { title } = Astro.props;
 ---
 <div class="section-header mb-10 flex items-center gap-4">
   <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest flex items-center gap-2">
-    {icon && <Icon name={icon} width={18} height={18} />}
     {title}
   </h2>
   <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>

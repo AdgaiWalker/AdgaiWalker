@@ -318,7 +318,10 @@ const hasToc = tocItems.length > 0;
 <script>
   import '../scripts/toc-highlight';
 
-  function initGhostToc() {
+  let articleAbort: AbortController | null = null;
+  let ghostSidebarObserver: MutationObserver | null = null;
+
+  function initGhostToc(signal: AbortSignal) {
     const toc = document.getElementById('ghost-toc');
     if (!toc) return;
 
@@ -336,7 +339,7 @@ const hasToc = tocItems.length > 0;
           toc.classList.remove('is-visible');
         }, 400);
       }
-    });
+    }, { signal });
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
@@ -344,10 +347,10 @@ const hasToc = tocItems.length > 0;
         e.preventDefault();
         toc.classList.toggle('is-visible');
       }
-    });
+    }, { signal });
   }
 
-  function initReadingProgress() {
+  function initReadingProgress(signal: AbortSignal) {
     const bar = document.getElementById('reading-progress-bar');
     if (!bar) return;
 
@@ -358,11 +361,11 @@ const hasToc = tocItems.length > 0;
       bar.style.width = `${progress * 100}%`;
     };
 
-    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('scroll', update, { passive: true, signal });
     update();
   }
 
-  function initGhostSidebar() {
+  function initGhostSidebar(signal: AbortSignal) {
     const root = document.documentElement;
 
     // 自动折叠并隐藏侧边栏
@@ -370,12 +373,12 @@ const hasToc = tocItems.length > 0;
     root.setAttribute('data-sidebar-hidden', '');
 
     // 侧边栏被展开时（[ 键），同步移除 ghost 隐藏
-    const observer = new MutationObserver(() => {
+    ghostSidebarObserver = new MutationObserver(() => {
       if (!root.hasAttribute('data-sidebar-collapsed')) {
         root.removeAttribute('data-sidebar-hidden');
       }
     });
-    observer.observe(root, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] });
+    ghostSidebarObserver.observe(root, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] });
 
     // 鼠标移到左边缘 → 露出折叠图标
     let sidebarHideTimer: ReturnType<typeof setTimeout>;
@@ -393,37 +396,36 @@ const hasToc = tocItems.length > 0;
           }
         }, 600);
       }
-    });
-
-    // 离开文章页时恢复侧边栏
-    document.addEventListener('astro:before-swap', () => {
-      observer.disconnect();
-      root.removeAttribute('data-sidebar-hidden');
-    });
+    }, { signal });
   }
 
-  initGhostToc();
-  initGhostSidebar();
-  initReadingProgress();
-
-  // 移动端浮动导航按钮 → 打开移动菜单
-  const fabNav = document.getElementById('article-fab-nav');
-  if (fabNav) {
-    fabNav.addEventListener('click', () => {
-      document.getElementById('menu-toggle')?.click();
-    });
-  }
-
-  document.addEventListener('astro:page-load', () => {
-    initGhostToc();
-    initGhostSidebar();
-    initReadingProgress();
-
-    const fab = document.getElementById('article-fab-nav');
-    if (fab) {
-      fab.addEventListener('click', () => {
+  function initFabNav(signal: AbortSignal) {
+    const fabNav = document.getElementById('article-fab-nav');
+    if (fabNav) {
+      fabNav.addEventListener('click', () => {
         document.getElementById('menu-toggle')?.click();
-      });
+      }, { signal });
     }
+  }
+
+  function initArticleScripts() {
+    articleAbort?.abort();
+    articleAbort = new AbortController();
+    const { signal } = articleAbort;
+
+    initGhostToc(signal);
+    initGhostSidebar(signal);
+    initReadingProgress(signal);
+    initFabNav(signal);
+  }
+
+  initArticleScripts();
+  document.addEventListener('astro:page-load', initArticleScripts);
+  document.addEventListener('astro:before-swap', () => {
+    articleAbort?.abort();
+    articleAbort = null;
+    ghostSidebarObserver?.disconnect();
+    ghostSidebarObserver = null;
+    document.documentElement.removeAttribute('data-sidebar-hidden');
   });
 </script>

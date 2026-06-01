@@ -209,6 +209,8 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
 </style>
 
 <script>
+  let contentAbort: AbortController | null = null;
+
   const validSpaces = new Set(['all', 'progress', 'life', 'learning', 'tools', 'works', 'ideas']);
   const spaceLabels = new Map([
     ['all', '全部内容'],
@@ -265,7 +267,19 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
     }
   }
 
-  updateContentFilter();
-  document.addEventListener('astro:page-load', updateContentFilter);
-  window.addEventListener('popstate', updateContentFilter);
+  function initContentFilter() {
+    contentAbort?.abort();
+    contentAbort = new AbortController();
+    const { signal } = contentAbort;
+
+    updateContentFilter();
+    window.addEventListener('popstate', updateContentFilter, { signal });
+  }
+
+  initContentFilter();
+  document.addEventListener('astro:page-load', initContentFilter);
+  document.addEventListener('astro:before-swap', () => {
+    contentAbort?.abort();
+    contentAbort = null;
+  });
 </script>

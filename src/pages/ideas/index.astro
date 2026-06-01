@@ -1066,12 +1066,13 @@ const renderedIdeas = await Promise.all(
 </style>
 
 <script>
+  let ideasAbort: AbortController | null = null;
+
   const validStatuses = new Set(['all', 'active', 'thinking', 'validating', 'building', 'verified', 'archived']);
-  
+
   function getRequestedStatus() {
     const requested = new URLSearchParams(location.search).get('status');
     if (!requested || !validStatuses.has(requested)) return 'all';
-    // Legacy individual statuses map to 'active'
     if (['thinking', 'validating', 'building'].includes(requested)) return 'active';
     return requested;
   }
@@ -1121,7 +1122,7 @@ const renderedIdeas = await Promise.all(
     }
   }
 
-  function registerCardInteractions() {
+  function registerCardInteractions(signal: AbortSignal) {
     const grid = document.getElementById('ideas-grid');
     if (!grid) return;
 
@@ -1166,9 +1167,9 @@ const renderedIdeas = await Promise.all(
         e.stopPropagation();
         return;
       }
-    });
+    }, { signal });
 
-    // 2. 键盘无障碍交互处理器 (Keyboard a11y)
+    // 键盘无障碍交互处理器
     grid.addEventListener('keydown', (e) => {
       const keyboardEvent = e as KeyboardEvent;
       if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
@@ -1193,10 +1194,10 @@ const renderedIdeas = await Promise.all(
           }
         }
       }
-    });
+    }, { signal });
   }
 
-  function setupFilterRouting() {
+  function setupFilterRouting(signal: AbortSignal) {
     const tabsWrapper = document.querySelector('.filter-tabs-wrapper');
     if (!tabsWrapper) return;
 
@@ -1215,17 +1216,25 @@ const renderedIdeas = await Promise.all(
         history.pushState(null, '', url.toString());
         updateIdeasFilter();
       }
-    });
+    }, { signal });
   }
 
   // 挂载初始与生命周期
   function setup() {
+    ideasAbort?.abort();
+    ideasAbort = new AbortController();
+    const { signal } = ideasAbort;
+
     updateIdeasFilter();
-    registerCardInteractions();
-    setupFilterRouting();
+    registerCardInteractions(signal);
+    setupFilterRouting(signal);
+    window.addEventListener('popstate', updateIdeasFilter, { signal });
   }
 
   setup();
   document.addEventListener('astro:page-load', setup);
-  window.addEventListener('popstate', updateIdeasFilter);
+  document.addEventListener('astro:before-swap', () => {
+    ideasAbort?.abort();
+    ideasAbort = null;
+  });
 </script>

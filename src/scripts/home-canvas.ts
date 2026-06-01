@@ -1,5 +1,5 @@
 import { registerLifecycle } from './with-lifecycle';
-import { cycleTheme } from '../lib/theme';
+import { applyTheme, cycleTheme } from '../lib/theme';
 
 let dragFrame = 0;
 let scale = 1.0;
@@ -94,10 +94,8 @@ function initDraggables(signal: AbortSignal) {
 }
 
 function initThemeToggle(signal: AbortSignal) {
-  // Apply saved theme on load
-  const savedTheme = localStorage.getItem('walker-theme') || 'nature';
-  document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-  document.body.classList.add(`theme-${savedTheme}`);
+  // 应用已保存的主题
+  applyTheme();
 
   // 目录卡主题切换按钮
   const canvasToggle = document.getElementById('canvas-theme-toggle');
@@ -105,11 +103,9 @@ function initThemeToggle(signal: AbortSignal) {
     canvasToggle.addEventListener('click', () => cycleTheme(), { signal });
   }
 
-  // Also listen for theme changes from other sources
+  // 监听其他来源的主题变更
   document.addEventListener('walker-theme-change', ((e: CustomEvent) => {
-    const themeName = e.detail;
-    document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-    document.body.classList.add(`theme-${themeName}`);
+    applyTheme(e.detail);
   }) as EventListener, { signal });
 }
 
@@ -261,7 +257,6 @@ function initIdleMessages(statusEl: HTMLElement, signal: AbortSignal) {
     idleTimer = setInterval(() => {
       idleIndex = (idleIndex + 1) % IDLE_MESSAGES.length;
       showStatusText(statusEl, IDLE_MESSAGES[idleIndex]);
-      // 显示 4 秒后恢复默认
       setTimeout(() => {
         if (!document.querySelector('.draggable-card:hover')) {
           resetToDefault();
@@ -273,6 +268,9 @@ function initIdleMessages(statusEl: HTMLElement, signal: AbortSignal) {
   function stopIdle() {
     if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
   }
+
+  // abort 时清理 interval
+  signal.addEventListener('abort', stopIdle);
 
   // Expose stop/start so sibling handlers can coordinate
   (statusEl as any)._statusResetToDefault = resetToDefault;

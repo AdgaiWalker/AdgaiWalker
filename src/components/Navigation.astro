@@ -35,7 +35,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
 <script>
   import '../scripts/sidebar-state';
-  import { cycleTheme } from '../lib/theme';
+  import { applyTheme, cycleTheme } from '../lib/theme';
 
   let navAbort: AbortController | null = null;
 
@@ -72,13 +72,11 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     desktopSearchBtn?.addEventListener('click', triggerSearch, { signal });
     mobileSearchBtn?.addEventListener('click', triggerSearch, { signal });
 
-    // --- (c) 全站多主题自适应换肤控制 (Nature, Aurora, Sunset, Mint) ---
+    // --- (c) 全站多主题自适应换肤控制 ---
     const themeBtn = document.getElementById('nav-theme-toggle');
     const mobileThemeBtn = document.getElementById('mobile-theme-toggle');
 
-    const savedTheme = localStorage.getItem('walker-theme') || 'nature';
-    document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-    document.body.classList.add(`theme-${savedTheme}`);
+    applyTheme();
 
     themeBtn?.addEventListener('click', () => cycleTheme(), { signal });
     mobileThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });

@@ -9,7 +9,7 @@ interface Props {
 }
 
 const { pagePath } = Astro.props;
-const FALLBACK_COUNT = 17861;
+const FALLBACK_COUNT = 0;
 ---
 
 <div class="like-wrapper pointer-events-auto relative">
@@ -161,7 +161,7 @@ const FALLBACK_COUNT = 17861;
       button.dataset.ready = 'true';
 
       const pagePath = button.dataset.pagePath ?? '/';
-      const fallbackCount = Number(button.dataset.fallbackCount ?? '17861');
+      const fallbackCount = Number(button.dataset.fallbackCount ?? '0');
       const outlineIcon = button.querySelector<HTMLElement>('.heart-outline');
       const filledIcon = button.querySelector<HTMLElement>('.heart-filled');
       const storageKey = `walker-liked:${pagePath}`;

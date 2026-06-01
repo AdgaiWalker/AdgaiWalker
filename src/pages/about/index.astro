@@ -12,7 +12,7 @@ import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 import stats from '@/data/site-stats.json';
-import { SITE_EMAIL, MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE, MS_PER_SECOND } from '@/lib/constants';
+import { SITE_EMAIL } from '@/lib/constants';
 
 export const prerender = true;
 
@@ -419,11 +419,11 @@ const { personalTimeline } = stats;
   function initUptimeCounter() {
     const uptimeDisplay = document.getElementById('site-uptime') as HTMLElement;
     if (!uptimeDisplay) return;
+    const launch = new Date('2026-05-02T00:00:00+08:00');
     const MS_PER_DAY = 86400000;
     const MS_PER_HOUR = 3600000;
     const MS_PER_MINUTE = 60000;
     const MS_PER_SECOND = 1000;
-    const launch = new Date('2026-05-02T00:00:00+08:00');
     const update = () => {
       const diff = Date.now() - launch.getTime();
       const days = Math.floor(diff / MS_PER_DAY);
@@ -473,7 +473,13 @@ const { personalTimeline } = stats;
 </script>
 
 <script>
+  let tabAbort: AbortController | null = null;
+
   function initAboutTabs() {
+    tabAbort?.abort();
+    tabAbort = new AbortController();
+    const { signal } = tabAbort;
+
     const tabs = document.querySelectorAll('.about-tab-btn');
     const meContent = document.getElementById('about-me-content');
     const siteContent = document.getElementById('about-site-content');
@@ -487,15 +493,20 @@ const { personalTimeline } = stats;
     };
 
     tabs.forEach(btn => {
-      btn.addEventListener('click', () => showTab((btn as HTMLElement).dataset.tab!));
+      btn.addEventListener('click', () => showTab((btn as HTMLElement).dataset.tab!), { signal });
     });
 
     // URL ?tab=site support
     const params = new URLSearchParams(location.search);
     if (params.get('tab') === 'site') showTab('site');
   }
+
   initAboutTabs();
   document.addEventListener('astro:page-load', initAboutTabs);
+  document.addEventListener('astro:before-swap', () => {
+    tabAbort?.abort();
+    tabAbort = null;
+  });
 </script>
 
 <style>
