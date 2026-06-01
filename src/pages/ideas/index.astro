@@ -55,18 +55,26 @@ const renderedIdeas = await Promise.all(
         <span class="tab-dot dot-all"></span>
         全部 ({ideas.length})
       </button>
-      <button type="button" class="filter-tab" data-status="active">
-        <span class="tab-dot dot-thinking"></span>
-        进行中 ({ideas.filter(i => ['thinking', 'validating', 'building'].includes(i.data.status || 'thinking')).length})
-      </button>
-      <button type="button" class="filter-tab" data-status="verified">
-        <span class="tab-dot dot-verified"></span>
-        已完成 ({ideas.filter(i => i.data.status === 'verified').length})
-      </button>
-      <button type="button" class="filter-tab" data-status="archived">
-        <span class="tab-dot dot-archived"></span>
-        已归档 ({ideas.filter(i => i.data.status === 'archived').length})
-      </button>
+      {(() => {
+        const activeCount = ideas.filter(i => ['thinking', 'validating', 'building'].includes(i.data.status || 'thinking')).length;
+        const verifiedCount = ideas.filter(i => i.data.status === 'verified').length;
+        return (
+          <>
+            {activeCount > 0 && (
+              <button type="button" class="filter-tab" data-status="active">
+                <span class="tab-dot dot-thinking"></span>
+                进行中 ({activeCount})
+              </button>
+            )}
+            {verifiedCount > 0 && (
+              <button type="button" class="filter-tab" data-status="verified">
+                <span class="tab-dot dot-verified"></span>
+                已完成 ({verifiedCount})
+              </button>
+            )}
+          </>
+        );
+      })()}
     </div>
 
     <!-- 卡牌桌区域 -->

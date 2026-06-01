@@ -369,6 +369,11 @@ const { personalTimeline } = stats;
   {/* "关于站" Tab */}
   <AboutSiteTab />
 
+  {/* 返回顶部 */}
+  <button class="back-to-top" id="back-to-top" aria-label="返回顶部">
+    <Icon name="lucide:arrow-up" width={18} height={18} />
+  </button>
+
 </FullscreenLayout>
 
 <script>
@@ -549,6 +554,21 @@ const { personalTimeline } = stats;
     document.addEventListener('astro:before-swap', () => observer.disconnect());
   }
 
+  function initBackToTop(signal: AbortSignal) {
+    const btn = document.getElementById('back-to-top');
+    if (!btn) return;
+
+    const update = () => {
+      btn.classList.toggle('is-visible', window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', update, { passive: true, signal });
+    btn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, { signal });
+    update();
+  }
+
   function initAll() {
     cleanup();
     abort = new AbortController();
@@ -566,6 +586,7 @@ const { personalTimeline } = stats;
     initUptimeCounter();
     initEmailCopy(signal);
     initDataDock();
+    initBackToTop(signal);
   }
 
   initAll();
@@ -640,9 +661,10 @@ const { personalTimeline } = stats;
   }
 
   .about-tab-btn.is-active {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
     color: #fff;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   /* ===== Hero 区域 ===== */
@@ -1072,5 +1094,40 @@ const { personalTimeline } = stats;
     .invite-section { padding-top: 2rem; padding-bottom: 2rem; }
     .timeline-marker { left: 1rem !important; transform: none !important; }
     .timeline-anchor:hover .timeline-marker { transform: scale(1.15) !important; }
+  }
+
+  /* 返回顶部 */
+  .back-to-top {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 50;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-card);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--color-border);
+    color: var(--color-parchment-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease, color 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .back-to-top.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .back-to-top:hover {
+    color: var(--color-brand);
+    transform: translateY(-2px);
   }
 </style>
