@@ -373,6 +373,7 @@ const { personalTimeline } = stats;
 
 <script>
   import { setupTilt } from '../../scripts/tilt-effect';
+  import { gsap } from 'gsap';
 
   let abort: AbortController | null = null;
   let postcardTiltCleanup: (() => void) | null = null;
@@ -449,6 +450,63 @@ const { personalTimeline } = stats;
     }, { signal });
   }
 
+  function initDataDock() {
+    const section = document.getElementById('data-dock-section');
+    if (!section) return;
+
+    // 数字计数动画
+    const nums = section.querySelectorAll<HTMLElement>('.data-metric-num');
+    const hasCounted = new WeakSet<HTMLElement>();
+
+    const countUp = (el: HTMLElement) => {
+      if (hasCounted.has(el)) return;
+      hasCounted.add(el);
+      const target = parseInt(el.dataset.target || '0');
+      gsap.fromTo(el,
+        { innerText: 0 },
+        {
+          innerText: target,
+          duration: 1.2,
+          ease: 'power2.out',
+          snap: { innerText: 1 },
+          onUpdate() {
+            el.textContent = Math.round(parseFloat(el.textContent || '0')).toString();
+          },
+        },
+      );
+    };
+
+    // 条形图入场
+    const fills = section.querySelectorAll<HTMLElement>('.data-space-fill');
+    const fillAnimated = new WeakSet<HTMLElement>();
+
+    const animateFills = () => {
+      fills.forEach(fill => {
+        if (fillAnimated.has(fill)) return;
+        fillAnimated.add(fill);
+        const pct = fill.style.getPropertyValue('--fill-pct');
+        fill.style.width = pct;
+      });
+    };
+
+    // 用 IntersectionObserver 触发
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          nums.forEach(countUp);
+          animateFills();
+          observer.disconnect();
+          break;
+        }
+      }
+    }, { threshold: 0.3 });
+
+    observer.observe(section);
+
+    // 清理
+    document.addEventListener('astro:before-swap', () => observer.disconnect());
+  }
+
   function initAll() {
     cleanup();
     abort = new AbortController();
@@ -465,6 +523,7 @@ const { personalTimeline } = stats;
 
     initUptimeCounter();
     initEmailCopy(signal);
+    initDataDock();
   }
 
   initAll();
@@ -756,55 +815,138 @@ const { personalTimeline } = stats;
     font-size: 0.9rem;
   }
 
-  .about-data-grid {
+  /* 核心指标卡片 */
+  .data-metrics {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.85rem;
-    margin-top: 1.2rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.5rem;
   }
 
-  .about-data-card,
-  .about-data-spaces a {
+  .data-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1.25rem 0.75rem;
     border: 1px solid var(--color-nav-border);
     border-radius: 18px;
-    padding: 1rem;
     background: rgba(255, 255, 255, 0.03);
+    text-align: center;
   }
 
-  .about-data-card span,
-  .about-data-card em {
-    display: block;
-    color: var(--color-parchment-dim);
-    font-size: 0.76rem;
-  }
-
-  .about-data-card strong {
-    display: block;
-    margin: 0.35rem 0;
-    color: var(--color-parchment);
-    font-size: 1.4rem;
-  }
-
-  .about-data-spaces {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.7rem;
-    margin-top: 0.9rem;
-  }
-
-  .about-data-spaces a {
+  .data-metric-icon {
     display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    color: var(--color-parchment-dim);
-    text-decoration: none;
-    font-size: 0.8rem;
-    transition: all 0.25s ease;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
+    color: var(--color-brand);
+    margin-bottom: 0.2rem;
   }
 
-  .about-data-spaces a:hover {
+  .data-metric-body {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+
+  .data-metric-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 800;
     color: var(--color-parchment);
-    border-color: color-mix(in srgb, var(--color-brand) 35%, var(--color-nav-border));
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .data-metric-unit {
+    font-size: 0.75rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+  }
+
+  .data-metric-label {
+    font-size: 0.7rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.55;
+    margin-top: 0.15rem;
+  }
+
+  /* 空间分布条形图 */
+  .data-sub-title {
+    margin: 1.5rem 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+    opacity: 0.45;
+    letter-spacing: 0.06em;
+  }
+
+  .data-space-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .data-space-row {
+    display: grid;
+    grid-template-columns: 24px 56px 1fr 32px;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--color-parchment-dim);
+    transition: background 0.2s ease;
+  }
+
+  .data-space-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .data-space-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-brand);
+    opacity: 0.6;
+  }
+
+  .data-space-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .data-space-track {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+  }
+
+  .data-space-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--color-brand), color-mix(in srgb, var(--color-brand) 60%, var(--color-brand-secondary)));
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .data-space-row:hover .data-space-fill {
+    background: linear-gradient(90deg, var(--color-brand), var(--color-brand));
+  }
+
+  .data-space-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ===== 响应式 ===== */

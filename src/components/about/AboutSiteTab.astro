@@ -192,7 +192,7 @@ const contentCounts = contentSpaces.map(space => ({
   </section>
 
   {/* 5. 数据台 */}
-  <section class="site-section py-16 px-4 sm:px-6 flex justify-center">
+  <section class="site-section py-16 px-4 sm:px-6 flex justify-center" id="data-dock-section">
     <div class="max-w-[620px] w-full">
       <SectionHeader title="数据台" />
 
@@ -200,24 +200,64 @@ const contentCounts = contentSpaces.map(space => ({
         <p class="about-data-eyebrow">PUBLIC DATA DOCK</p>
         <h2 class="about-data-heading">数据提供现象，不提供目的。</h2>
         <p class="about-data-intro">
-          这里先公开系统级轻量数据：内容数量、内容空间分布和反馈入口。它用于观察表达是否被看见、哪些方向值得继续解释，但不替代 Walker 的北极星。
+          这里公开系统级轻量数据：内容数量、空间分布和建设成本。它用于观察表达是否被看见、哪些方向值得继续解释，但不替代 Walker 的北极星。
         </p>
 
-        <div class="about-data-grid">
-          <div class="about-data-card">
-            <span>公开内容</span>
-            <strong>{contentItems.length}</strong>
-            <em>条</em>
+        {/* 核心指标 */}
+        <div class="data-metrics" data-count-up>
+          <div class="data-metric">
+            <span class="data-metric-icon">
+              <Icon name="lucide:file-text" width={18} height={18} />
+            </span>
+            <div class="data-metric-body">
+              <strong class="data-metric-num" data-target={contentItems.length}>0</strong>
+              <span class="data-metric-unit">条</span>
+            </div>
+            <span class="data-metric-label">公开内容</span>
+          </div>
+          <div class="data-metric">
+            <span class="data-metric-icon">
+              <Icon name="lucide:lightbulb" width={18} height={18} />
+            </span>
+            <div class="data-metric-body">
+              <strong class="data-metric-num" data-target={contentCounts.find(s => s.id === 'ideas')?.count ?? 0}>0</strong>
+              <span class="data-metric-unit">个</span>
+            </div>
+            <span class="data-metric-label">点子火花</span>
+          </div>
+          <div class="data-metric">
+            <span class="data-metric-icon">
+              <Icon name="lucide:coins" width={18} height={18} />
+            </span>
+            <div class="data-metric-body">
+              <strong class="data-metric-num" data-target={totalCost}>0</strong>
+              <span class="data-metric-unit">元</span>
+            </div>
+            <span class="data-metric-label">总建设成本</span>
           </div>
         </div>
 
-        <div class="about-data-spaces">
-          {contentCounts.map(space => (
-            <a href={space.id === 'all' ? '/content' : `/content?space=${space.id}`}>
-              <span>{space.label}</span>
-              <strong>{space.count}</strong>
-            </a>
-          ))}
+        {/* 内容空间分布 */}
+        <p class="data-sub-title">内容空间分布</p>
+        <div class="data-space-bars">
+          {contentCounts.filter(s => s.id !== 'all').map(space => {
+            const maxCount = Math.max(...contentCounts.map(s => s.count));
+            const pct = maxCount > 0 ? Math.round((space.count / maxCount) * 100) : 0;
+            return (
+              <a href={space.id === 'all' ? '/content' : `/content?space=${space.id}`}
+                class="data-space-row group"
+              >
+                <span class="data-space-icon">
+                  <Icon name={space.icon} width={14} height={14} />
+                </span>
+                <span class="data-space-label">{space.label}</span>
+                <div class="data-space-track">
+                  <div class="data-space-fill" style={`--fill-pct: ${pct}%`}></div>
+                </div>
+                <span class="data-space-count">{space.count}</span>
+              </a>
+            );
+          })}
         </div>
       </div>
     </div>
