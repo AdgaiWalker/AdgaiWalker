@@ -124,7 +124,7 @@ const skills = [
     </div>
 
     {/* ===== 1. 信息源（群聊）===== */}
-    <section class="resource-section reveal">
+    <section id="info-source" class="resource-section reveal">
       <h2 class="section-title">
         <Icon name="lucide:users" width={20} height={20} class="section-icon" />
         信息源
@@ -133,15 +133,15 @@ const skills = [
       <h3 class="sub-title">学习氛围群</h3>
       <p class="section-hint">一起学 AI 的地方。</p>
       <div class="communities-list">
-        {communities.map(c => (
-          <div class:list={['community-row', c.featured && 'community-featured']}>
-            {c.qrCode ? (
+        {communities.map(community => (
+          <div class:list={['community-row', community.featured && 'community-featured']}>
+            {community.qrCode ? (
               <details class="qr-details" open>
                 <summary class="qr-summary">
                   <Icon name="lucide:scan-line" width={14} height={14} />
                   扫码加入
                 </summary>
-                <img src={c.qrCode} alt={`${c.name} 二维码`} class="qr-code" loading="lazy" />
+                <img src={community.qrCode} alt={`${community.name} 二维码`} class="qr-code" loading="lazy" />
               </details>
             ) : (
               <div class="qr-placeholder">
@@ -150,10 +150,10 @@ const skills = [
             )}
             <div class="community-detail">
               <div class="community-top">
-                <span class="community-name">{c.name}</span>
-                <span class="community-badge">{c.badge}</span>
+                <span class="community-name">{community.name}</span>
+                <span class="community-badge">{community.badge}</span>
               </div>
-              <span class="community-desc">{c.desc}</span>
+              <span class="community-desc">{community.desc}</span>
             </div>
           </div>
         ))}
@@ -162,21 +162,21 @@ const skills = [
       <h3 class="sub-title">省钱用 AI</h3>
       <p class="section-hint">获取低价 AI 额度的渠道。</p>
       <div class="resources-grid">
-        {aiResources.map(r => (
+        {aiResources.map(resource => (
           <div class="resource-item">
             <details class="qr-details" open>
               <summary class="qr-summary">
                 <Icon name="lucide:scan-line" width={14} height={14} />
                 扫码加入
               </summary>
-              <img src={r.qrCode} alt={`${r.name} 二维码`} class="qr-code" loading="lazy" />
+              <img src={resource.qrCode} alt={`${resource.name} 二维码`} class="qr-code" loading="lazy" />
             </details>
             <div class="resource-detail">
               <div class="resource-top">
-                <span class="resource-name">{r.name}</span>
-                <span class="resource-badge">{r.badge}</span>
+                <span class="resource-name">{resource.name}</span>
+                <span class="resource-badge">{resource.badge}</span>
               </div>
-              <span class="resource-desc">{r.desc}</span>
+              <span class="resource-desc">{resource.desc}</span>
             </div>
           </div>
         ))}
@@ -184,84 +184,84 @@ const skills = [
     </section>
 
     {/* ===== 2. AI 工具 ===== */}
-    <section class="resource-section reveal">
+    <section id="ai-tools" class="resource-section reveal">
       <h2 class="section-title">
         <Icon name="lucide:bot" width={20} height={20} class="section-icon" />
         AI 工具
       </h2>
       <p class="section-hint">我按场景用的 AI 工具，不是全面测评，只是我用什么。</p>
       <div class="tool-grid">
-        {aiTools.map(t => (
+        {aiTools.map(tool => (
           <div class="tool-card">
-            <span class="tool-category">{t.category}</span>
-            <span class="tool-value">{t.tools}</span>
+            <span class="tool-category">{tool.category}</span>
+            <span class="tool-value">{tool.tools}</span>
           </div>
         ))}
       </div>
     </section>
 
     {/* ===== 3. Skill ===== */}
-    <section class="resource-section reveal">
+    <section id="skill" class="resource-section reveal">
       <h2 class="section-title">
         <Icon name="lucide:zap" width={20} height={20} class="section-icon" />
         Skill
       </h2>
       <p class="section-hint">实战中积累的方法，帮我省时间的东西。</p>
       <div class="skill-list">
-        {skills.map(s => (
-          <a href={s.url} target="_blank" rel="noopener noreferrer" class="skill-item panel-glass no-underline">
+        {skills.map(skill => (
+          <a href={skill.url} target="_blank" rel="noopener noreferrer" class="skill-item panel-glass no-underline">
             <div class="skill-top">
-              <strong class="skill-name">{s.name}</strong>
+              <strong class="skill-name">{skill.name}</strong>
               <Icon name="lucide:external-link" width={12} height={12} class="skill-link" />
             </div>
-            <span class="skill-desc">{s.desc}</span>
+            <span class="skill-desc">{skill.desc}</span>
           </a>
         ))}
       </div>
     </section>
 
     {/* ===== 4. 基础设施 ===== */}
-    <section class="resource-section reveal">
+    <section id="infra" class="resource-section reveal">
       <h2 class="section-title">
         <Icon name="lucide:server" width={20} height={20} class="section-icon" />
         基础设施
       </h2>
       <p class="section-hint">服务器、域名、部署——建站相关的工具。</p>
       <div class="infra-list">
-        {infra.map(i => (
+        {infra.map(infraItem => (
           <div class="infra-item">
-            {i.url ? (
-              <a href={i.url} target="_blank" rel="noopener noreferrer" class="infra-name">{i.name}</a>
+            {infraItem.url ? (
+              <a href={infraItem.url} target="_blank" rel="noopener noreferrer" class="infra-name">{infraItem.name}</a>
             ) : (
-              <span class="infra-name">{i.name}</span>
+              <span class="infra-name">{infraItem.name}</span>
             )}
-            <span class="infra-desc">{i.desc}</span>
+            <span class="infra-desc">{infraItem.desc}</span>
           </div>
         ))}
       </div>
     </section>
 
     {/* ===== 5. 博主推荐 ===== */}
-    <section class="resource-section reveal">
+    <section id="bloggers" class="resource-section reveal">
       <h2 class="section-title">
         <Icon name="lucide:heart" width={20} height={20} class="section-icon" />
         博主推荐
       </h2>
       <p class="section-hint">切实帮到我的 AI 圈博主。</p>
       <div class="blogger-list">
-        {bloggers.map(b => (
-          <a href={b.url} target="_blank" rel="noopener noreferrer" class="blogger-item panel-glass no-underline">
-            {b.avatar ? (
-              <img src={b.avatar} alt={b.name} class="blogger-avatar" loading="lazy" />
+        {bloggers.map(blogger => (
+          <a href={blogger.url} target="_blank" rel="noopener noreferrer" class="blogger-item panel-glass no-underline">
+            {blogger.avatar ? (
+              <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" loading="lazy" />
             ) : (
-              <div class="blogger-avatar-placeholder">{b.initial}</div>
+              <div class="blogger-avatar-placeholder">{blogger.initial}</div>
             )}
             <div class="blogger-info">
               <div class="blogger-top">
-                <span class="blogger-name">{b.name}</span>
-                <span class="blogger-platform">{b.platform}</span>
+                <span class="blogger-name">{blogger.name}</span>
+                <span class="blogger-platform">{blogger.platform}</span>
               </div>
-              <span class="blogger-desc">{b.desc}</span>
+              <span class="blogger-desc">{blogger.desc}</span>
             </div>
           </a>
         ))}

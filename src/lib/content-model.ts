@@ -192,8 +192,6 @@ function buildInternalHref(entry: LogEntry): string {
 
 
 
-
-
 export function toContentItem(entry: LogEntry): ContentItem {
   const href = entry.data.url ?? buildInternalHref(entry);
 

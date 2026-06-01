@@ -3,18 +3,7 @@ import SearchModal from './SearchModal.astro';
 import SidebarNav from './nav/SidebarNav.astro';
 import MobileMenu from './nav/MobileMenu.astro';
 import { ABOUT, CONTENT, HOME } from '@/lib/routes';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: string;
-  hint?: string;
-}
-
-interface NavGroup {
-  title?: string;
-  items: NavItem[];
-}
+import type { NavItem, NavGroup } from '@/types/nav';
 
 const navGroups: NavGroup[] = [
   {
@@ -46,6 +35,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
 <script>
   import '../scripts/sidebar-state';
+  import { cycleTheme } from '../lib/theme';
 
   let navAbort: AbortController | null = null;
 
@@ -85,26 +75,13 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     // --- (c) 全站多主题自适应换肤控制 (Nature, Aurora, Sunset, Mint) ---
     const themeBtn = document.getElementById('nav-theme-toggle');
     const homeThemeBtn = document.getElementById('home-theme-toggle');
-    const themes = ['nature', 'aurora', 'sunset', 'mint'];
 
     const savedTheme = localStorage.getItem('walker-theme') || 'nature';
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
     document.body.classList.add(`theme-${savedTheme}`);
 
-    const cycleTheme = () => {
-      const current = localStorage.getItem('walker-theme') || 'nature';
-      const nextIndex = (themes.indexOf(current) + 1) % themes.length;
-      const nextTheme = themes[nextIndex];
-
-      document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-      document.body.classList.add(`theme-${nextTheme}`);
-      localStorage.setItem('walker-theme', nextTheme);
-
-      document.dispatchEvent(new CustomEvent('walker-theme-change', { detail: nextTheme }));
-    };
-
-    themeBtn?.addEventListener('click', cycleTheme, { signal });
-    homeThemeBtn?.addEventListener('click', cycleTheme, { signal });
+    themeBtn?.addEventListener('click', () => cycleTheme(), { signal });
+    homeThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });
 
     // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
     const container = document.querySelector('.nav-links-container');

@@ -1,6 +1,7 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getPublishedIdeas } from '@/lib/content';
+import { STATUS_LABELS, STATUS_WEIGHT, SITE_EMAIL } from '@/lib/constants';
 import { Icon } from 'astro-icon/components';
 import { render } from 'astro:content';
 import { formatDateCompact } from '@/lib/format';
@@ -10,31 +11,17 @@ export const prerender = true;
 const ideas = await getPublishedIdeas();
 
 // 自定义排序权重：活跃状态靠前，已完成/已归档靠后
-const statusWeight = {
-  building: 1,
-  validating: 2,
-  thinking: 3,
-  verified: 4,
-  archived: 5,
-};
-
 ideas.sort((a, b) => {
-  const weightA = statusWeight[a.data.status || 'thinking'] ?? 3;
-  const weightB = statusWeight[b.data.status || 'thinking'] ?? 3;
-  
+  const weightA = STATUS_WEIGHT[a.data.status || 'thinking'] ?? 3;
+  const weightB = STATUS_WEIGHT[b.data.status || 'thinking'] ?? 3;
+
   if (weightA !== weightB) {
     return weightA - weightB;
   }
   return b.data.date.getTime() - a.data.date.getTime();
 });
 
-const statusLabel = {
-  thinking: '构思中',
-  validating: '验证中',
-  building: '实现中',
-  verified: '已完成',
-  archived: '已归档',
-};
+const statusLabel = STATUS_LABELS;
 
 // 预渲染所有 Markdown 内容，这样它们可以直接潜入卡牌背面
 const renderedIdeas = await Promise.all(
@@ -218,9 +205,9 @@ const renderedIdeas = await Promise.all(
           <p class="text-xs sm:text-sm text-parchment-dim leading-relaxed max-w-2xl">
             此处的每个点子都开放共享，期待同行者一起加入，不管是提出交互反馈、技术建议还是共同编码，都随时欢迎。
           </p>
-          <a href="mailto:praxiswalker@gmail.com" class="cta-mail-link">
+          <a href={`mailto:${SITE_EMAIL}`} class="cta-mail-link">
             <Icon name="lucide:mail" width={11} height={11} />
-            praxiswalker@gmail.com
+            {SITE_EMAIL}
           </a>
         </div>
         <div class="flex flex-col items-center gap-2 shrink-0">
@@ -1101,7 +1088,11 @@ const renderedIdeas = await Promise.all(
       // 3. 点击翻页 (Front -> Back)
       const flipAction = target.closest('.flip-btn-action');
       const clickBody = target.closest('.card-front');
-      if (container && !container.classList.contains('is-blurred') && (flipAction || (clickBody && !target.closest('.card-tag') && !target.closest('.status-badge') && !target.closest('a')))) {
+      const isUnblurred = container && !container.classList.contains('is-blurred');
+      const isInteractiveChild = target.closest('.card-tag') || target.closest('.status-badge') || target.closest('a');
+      const wantsFlip = flipAction || (clickBody && !isInteractiveChild);
+
+      if (isUnblurred && wantsFlip) {
         container.classList.add('is-flipped');
         container.setAttribute('aria-expanded', 'true');
         e.stopPropagation();

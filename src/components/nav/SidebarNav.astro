@@ -1,17 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: string;
-  hint?: string;
-}
-
-interface NavGroup {
-  title?: string;
-  items: NavItem[];
-}
+import type { NavItem, NavGroup } from '@/types/nav';
 
 interface Props {
   navGroups: NavGroup[];

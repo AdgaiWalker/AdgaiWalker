@@ -37,34 +37,42 @@ function initScrollFade() {
       // stagger 容器内的元素统一处理
       staggerParents.forEach((parent) => {
         const children = parent.querySelectorAll('.reveal');
-        gsap.from(children, {
-          y: 24,
-          opacity: 0,
-          duration: 0.5,
-          stagger: 0.08,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: parent,
-            start: 'top 90%',
-            once: true,
+        gsap.fromTo(
+          children,
+          { y: 24, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            stagger: 0.08,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: parent,
+              start: 'top 90%',
+              once: true,
+            },
           },
-        });
+        );
       });
 
       // 独立元素
       reveals.forEach((el) => {
         if (el.closest('[data-stagger]')) return; // 已在 stagger 中处理
-        gsap.from(el, {
-          y: 20,
-          opacity: 0,
-          duration: 0.5,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: el,
-            start: 'top 92%',
-            once: true,
+        gsap.fromTo(
+          el,
+          { y: 20, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 92%',
+              once: true,
+            },
           },
-        });
+        );
       });
     },
   );

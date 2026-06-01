@@ -5,6 +5,7 @@
  */
 import { Image } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
+import { SITE_EMAIL } from '@/lib/constants';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 ---
 
@@ -70,7 +71,7 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
       <span class="social-label">抖音</span>
     </a>
     <!-- 邮箱 -->
-    <a href="mailto:praxiswalker@gmail.com" class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="Email">
+    <a href={`mailto:${SITE_EMAIL}`} class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="Email">
       <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(53,191,171,0.08);">
         <Icon name="lucide:mail" width={14} height={14} style="color: var(--color-brand, #35bfab);" />
       </span>
@@ -287,6 +288,61 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
     if (flash) flash.remove();
   }
 
+  function transitionBubbleToExcited(
+    bubble: HTMLElement | null,
+    text: HTMLElement | null,
+    arrow: HTMLElement | null,
+  ) {
+    // 文字变 !!!
+    if (text) {
+      text.textContent = '! ! !';
+      text.style.color = '#f59e0b';
+      text.style.animation = 'none'; // 停止脉冲
+    }
+    // 气泡边框变金色
+    if (bubble) bubble.style.borderColor = '#f59e0b';
+    if (arrow) arrow.style.borderColor = '#f59e0b';
+  }
+
+  function triggerAvatarBounce(avatarEl: HTMLElement | null) {
+    if (!avatarEl) return;
+    avatarEl.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    setTimeout(() => { if (avatarEl) avatarEl.style.animation = ''; }, 650);
+  }
+
+  function revealRandomQuote(
+    bubble: HTMLElement | null,
+    text: HTMLElement | null,
+    arrow: HTMLElement | null,
+  ) {
+    const quote = SURPRISE_QUOTES[Math.floor(Math.random() * SURPRISE_QUOTES.length)];
+    if (text) {
+      text.textContent = quote;
+      text.style.color = 'var(--color-parchment, #f4f4f5)';
+      text.style.fontSize = '12.5px';
+      text.style.fontWeight = '500';
+      text.style.textAlign = 'left';
+      text.style.animation = 'none';
+    }
+    // 气泡恢复品牌色边框 (类似微信绿色对话框效果)
+    if (bubble) {
+      bubble.style.borderColor = 'var(--color-brand, #35bfab)';
+      // 触发微信气泡弹入动画 (稍微大一点的弹跳)
+      bubble.animate([
+        { transform: 'translate(-50%, -8px) scale(1)' },
+        { transform: 'translate(-50%, -15px) scale(1.05)' },
+        { transform: 'translate(-50%, -6px) scale(0.97)' },
+        { transform: 'translate(-50%, -8px) scale(1)' }
+      ], {
+        duration: 450,
+        easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+      });
+    }
+    if (arrow) {
+      arrow.style.borderColor = 'var(--color-brand, #35bfab)';
+    }
+  }
+
   function startSequence() {
     if (inSequence) return;
     inSequence = true;
@@ -303,21 +359,9 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
     // 800ms: ??? → !!! 转场
     const t1 = setTimeout(() => {
       if (!inSequence) return;
-      // 文字变 !!!
-      if (text) {
-        text.textContent = '! ! !';
-        text.style.color = '#f59e0b';
-        text.style.animation = 'none'; // 停止脉冲
-      }
-      // 气泡边框变金色
-      if (bubble) bubble.style.borderColor = '#f59e0b';
-      if (arrow) arrow.style.borderColor = '#f59e0b';
 
-      // 头像弹跳
-      if (avatarRing) {
-        avatarRing.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        setTimeout(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650);
-      }
+      transitionBubbleToExcited(bubble, text, arrow);
+      triggerAvatarBounce(avatarRing);
 
       // 粒子
       if (particleContainer) burstParticles(particleContainer);
@@ -336,32 +380,7 @@ import avatar from '/public/images/秋知（我的头像）.jpg';
     // 1100ms: 随机语录显示在气泡窗口中 (微信风格)
     const t2 = setTimeout(() => {
       if (!inSequence) return;
-      const quote = SURPRISE_QUOTES[Math.floor(Math.random() * SURPRISE_QUOTES.length)];
-      if (text) {
-        text.textContent = quote;
-        text.style.color = 'var(--color-parchment, #f4f4f5)';
-        text.style.fontSize = '12.5px';
-        text.style.fontWeight = '500';
-        text.style.textAlign = 'left';
-        text.style.animation = 'none';
-      }
-      // 气泡恢复品牌色边框 (类似微信绿色对话框效果)
-      if (bubble) {
-        bubble.style.borderColor = 'var(--color-brand, #35bfab)';
-        // 触发微信气泡弹入动画 (稍微大一点的弹跳)
-        bubble.animate([
-          { transform: 'translate(-50%, -8px) scale(1)' },
-          { transform: 'translate(-50%, -15px) scale(1.05)' },
-          { transform: 'translate(-50%, -6px) scale(0.97)' },
-          { transform: 'translate(-50%, -8px) scale(1)' }
-        ], {
-          duration: 450,
-          easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
-        });
-      }
-      if (arrow) {
-        arrow.style.borderColor = 'var(--color-brand, #35bfab)';
-      }
+      revealRandomQuote(bubble, text, arrow);
     }, 1100);
     sequenceTimers.push(t2);
   }

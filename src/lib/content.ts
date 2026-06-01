@@ -36,6 +36,26 @@ export async function getPublishedProjects() {
 }
 
 /**
+ * Walk backwards through previousVersion links to find the chain head.
+ */
+function findChainHead<T extends { id: string; data: { version?: number; previousVersion?: string } }>(
+  entry: T,
+  allEntries: T[],
+  maxDepth: number,
+): T {
+  if (entry.data.version === 1 || !entry.data.previousVersion) return entry;
+
+  let cur: T | undefined = entry;
+  let depth = 0;
+  while (cur?.data.previousVersion && depth++ < maxDepth) {
+    const prev = allEntries.find(e => e.id === cur!.data.previousVersion);
+    if (!prev) break;
+    cur = prev;
+  }
+  return cur ?? entry;
+}
+
+/**
  * 获取某篇文章的完整版本链（按版本号升序）
  * 返回包含当前文章在内的所有版本
  */
@@ -61,28 +81,12 @@ export function getVersionChain<T extends { id: string; data: { version?: number
     }
   }
 
-  // 找到链头（没有任何文章指向它为 previousVersion 的版本号最小的文章）
-  const chain: T[] = [];
-  let head: T | undefined;
   const maxDepth = allEntries.length; // 循环引用安全限制
-
-  if (current.data.version === 1 || !current.data.previousVersion) {
-    head = current;
-  } else {
-    // 向前追溯
-    let cur: T | undefined = current;
-    let depth = 0;
-    while (cur?.data.previousVersion && depth++ < maxDepth) {
-      const prev = allEntries.find(e => e.id === cur!.data.previousVersion);
-      if (!prev) break;
-      cur = prev;
-    }
-    head = cur;
-  }
-
+  const head = findChainHead(current, allEntries, maxDepth);
   if (!head) return [current];
 
   // 从链头开始向后遍历（线性链：每个版本只取第一个指向它的后续版本）
+  const chain: T[] = [];
   let node: T | undefined = head;
   let depth = 0;
   while (node && depth++ < maxDepth) {

@@ -1,4 +1,5 @@
 import { registerLifecycle } from './with-lifecycle';
+import { cycleTheme } from '../lib/theme';
 
 let dragFrame = 0;
 let scale = 1.0;
@@ -101,14 +102,7 @@ function initThemeToggle(signal: AbortSignal) {
   // 目录卡主题切换按钮
   const canvasToggle = document.getElementById('canvas-theme-toggle');
   if (canvasToggle) {
-    canvasToggle.addEventListener('click', () => {
-      const themes = ['nature', 'aurora', 'sunset', 'mint'];
-      const current = localStorage.getItem('walker-theme') || 'nature';
-      const next = themes[(themes.indexOf(current) + 1) % themes.length];
-      document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-      document.body.classList.add(`theme-${next}`);
-      localStorage.setItem('walker-theme', next);
-    }, { signal });
+    canvasToggle.addEventListener('click', () => cycleTheme(), { signal });
   }
 
   // Also listen for theme changes from other sources
@@ -147,43 +141,47 @@ function initHomeInteractions() {
 // =========================================
 // 状态栏上下文反应 + idle 鼓励语
 // =========================================
-function initStatusReactions(signal: AbortSignal) {
-  const statusText = document.getElementById('status-text');
-  if (!statusText) return;
 
-  const defaultText = '行过万里水路';
-  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+const STATUS_DEFAULT_TEXT = '行过万里水路';
+
+const IDLE_MESSAGES = [
+  '试试拖拽卡片，重新排列你的画布 ✨',
+  '按 ⌘K 可以搜索任何内容 🔍',
+  '右下角可以切换主题和缩放 🎨',
+  '每个卡片都可以拖动哦 🖱️',
+  '点 Spark! 抽一个创意脑洞 💡',
+  '悬停卡片试试看，会有惊喜 👀',
+];
+
+const CONTEXT_MAP: Record<string, string> = {
+  'greeting-card': '这是秋知 — 悬停看看会发生什么 🐾',
+  'brand-card': '有点子？试试 Spark! 抽个创意盲盒 🎲',
+};
+
+function showStatusText(statusEl: HTMLElement | null, text: string) {
+  if (!statusEl) return;
+  statusEl.style.opacity = '0';
+  setTimeout(() => {
+    if (statusEl) {
+      statusEl.textContent = text;
+      statusEl.style.opacity = '1';
+    }
+  }, 200);
+}
+
+function initIdleMessages(statusEl: HTMLElement, signal: AbortSignal) {
+  let idleTimer: ReturnType<typeof setInterval> | null = null;
   let idleIndex = 0;
 
-  const IDLE_MESSAGES = [
-    '试试拖拽卡片，重新排列你的画布 ✨',
-    '按 ⌘K 可以搜索任何内容 🔍',
-    '右下角可以切换主题和缩放 🎨',
-    '每个卡片都可以拖动哦 🖱️',
-    '点 Spark! 抽一个创意脑洞 💡',
-    '悬停卡片试试看，会有惊喜 👀',
-  ];
-
-  function show(text: string) {
-    if (!statusText) return;
-    statusText.style.opacity = '0';
-    setTimeout(() => {
-      if (statusText) {
-        statusText.textContent = text;
-        statusText.style.opacity = '1';
-      }
-    }, 200);
-  }
-
   function resetToDefault() {
-    show(defaultText);
+    showStatusText(statusEl, STATUS_DEFAULT_TEXT);
   }
 
   function startIdle() {
     if (idleTimer) clearInterval(idleTimer);
     idleTimer = setInterval(() => {
       idleIndex = (idleIndex + 1) % IDLE_MESSAGES.length;
-      show(IDLE_MESSAGES[idleIndex]);
+      showStatusText(statusEl, IDLE_MESSAGES[idleIndex]);
       // 显示 4 秒后恢复默认
       setTimeout(() => {
         if (!document.querySelector('.draggable-card:hover')) {
@@ -193,62 +191,79 @@ function initStatusReactions(signal: AbortSignal) {
     }, 8000);
   }
 
-  // 根据悬停区域切换文案
-  const CONTEXT_MAP: Record<string, string> = {
-    'greeting-card': '这是秋知 — 悬停看看会发生什么 🐾',
-    'brand-card': '有点子？试试 Spark! 抽个创意盲盒 🎲',
-  };
+  function stopIdle() {
+    if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
+  }
+
+  // Expose stop/start so sibling handlers can coordinate
+  (statusEl as any)._statusResetToDefault = resetToDefault;
+  (statusEl as any)._statusStartIdle = startIdle;
+  (statusEl as any)._statusStopIdle = stopIdle;
+
+  startIdle();
+}
+
+function initCardHoverReactions(statusEl: HTMLElement, signal: AbortSignal) {
+  const resetToDefault = (statusEl as any)._statusResetToDefault as () => void;
+  const startIdle = (statusEl as any)._statusStartIdle as () => void;
+  const stopIdle = (statusEl as any)._statusStopIdle as () => void;
 
   const cardElements = document.querySelectorAll('.draggable-card');
   cardElements.forEach(card => {
-    // 找到卡片内部具有 id 的元素或卡片本身
     card.addEventListener('mouseenter', () => {
-      if (idleTimer) { clearInterval(idleTimer); idleTimer = null; }
+      stopIdle();
 
-      // 检查是否是问候卡片
       const greeting = card.querySelector('#greeting-card');
-      if (greeting) { show(CONTEXT_MAP['greeting-card']); return; }
+      if (greeting) { showStatusText(statusEl, CONTEXT_MAP['greeting-card']); return; }
 
       const brand = card.querySelector('#brand-card');
-      if (brand) { show(CONTEXT_MAP['brand-card']); return; }
+      if (brand) { showStatusText(statusEl, CONTEXT_MAP['brand-card']); return; }
 
-      // 检查内部文本线索
       const text = card.textContent || '';
-      if (text.includes('最新文章')) { show('最新的思考都在这里 — 点进去看看 📖'); return; }
-      if (text.includes('资源') || text.includes('RESOURCES')) { show('精选工具和资源 — 每一个都经过试用 🔧'); return; }
-      if (text.includes('项目')) { show('正在做的项目 — 从点子到现实 🚀'); return; }
-      if (text.includes('点子')) { show('灵感收集箱 — 随时记录 💡'); return; }
+      if (text.includes('最新文章')) { showStatusText(statusEl, '最新的思考都在这里 — 点进去看看 📖'); return; }
+      if (text.includes('资源') || text.includes('RESOURCES')) { showStatusText(statusEl, '精选工具和资源 — 每一个都经过试用 🔧'); return; }
+      if (text.includes('项目')) { showStatusText(statusEl, '正在做的项目 — 从点子到现实 🚀'); return; }
+      if (text.includes('点子')) { showStatusText(statusEl, '灵感收集箱 — 随时记录 💡'); return; }
     }, { signal });
 
     card.addEventListener('mouseleave', () => {
       resetToDefault();
       startIdle();
     }, { signal });
-
-    // 搜索框
-    const searchBtn = document.getElementById('search-trigger');
-    if (searchBtn) {
-      searchBtn.addEventListener('mouseenter', () => {
-        show('⌘K 快速搜索任何文章、工具或点子');
-      }, { signal });
-      searchBtn.addEventListener('mouseleave', () => {
-        resetToDefault();
-      }, { signal });
-    }
   });
 
-  // 社交链接 hover
+  // 搜索框
+  const searchBtn = document.getElementById('search-trigger');
+  if (searchBtn) {
+    searchBtn.addEventListener('mouseenter', () => {
+      showStatusText(statusEl, '⌘K 快速搜索任何文章、工具或点子');
+    }, { signal });
+    searchBtn.addEventListener('mouseleave', () => {
+      resetToDefault();
+    }, { signal });
+  }
+}
+
+function initSocialLinkReactions(statusEl: HTMLElement, signal: AbortSignal) {
+  const resetToDefault = (statusEl as any)._statusResetToDefault as () => void;
+
   document.querySelectorAll('a[href*="bilibili"], a[href*="xiaohongshu"]').forEach(el => {
     el.addEventListener('mouseenter', () => {
       const href = (el as HTMLAnchorElement).href;
-      if (href.includes('bilibili')) show('B站 — 秋知的视频都在这里 📺');
-      else show('小红书 — 日常分享 📕');
+      if (href.includes('bilibili')) showStatusText(statusEl, 'B站 — 秋知的视频都在这里 📺');
+      else showStatusText(statusEl, '小红书 — 日常分享 📕');
     }, { signal });
     el.addEventListener('mouseleave', () => resetToDefault(), { signal });
   });
+}
 
-  // 5 秒无交互开始 idle 播报
-  startIdle();
+function initStatusReactions(signal: AbortSignal) {
+  const statusEl = document.getElementById('status-text');
+  if (!statusEl) return;
+
+  initIdleMessages(statusEl, signal);
+  initCardHoverReactions(statusEl, signal);
+  initSocialLinkReactions(statusEl, signal);
 }
 
 // =========================================

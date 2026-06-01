@@ -175,9 +175,9 @@ const { iconOnly = false } = Astro.props;
       const fontBody = computedStyle.getPropertyValue('--font-body') || 'Inter, sans-serif';
       
       const html = await Promise.all(
-        results.results.slice(0, 8).map(async (r: any) => {
-          const data = await r.data();
-          let excerpt = data.excerpt || '';
+        results.results.slice(0, 8).map(async (searchEntry: any) => {
+          const searchResult = await searchEntry.data();
+          let excerpt = searchResult.excerpt || '';
           
           try {
             // Import dynamically to ensure it's available client-side
@@ -196,9 +196,9 @@ const { iconOnly = false } = Astro.props;
           }
 
           return `
-            <a href="${data.url}" class="block px-4 py-3 mb-1 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-sm transition-all no-underline group bg-transparent">
+            <a href="${searchResult.url}" class="block px-4 py-3 mb-1 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-sm transition-all no-underline group bg-transparent">
               <div class="text-gray-900 text-sm font-medium group-hover:text-brand transition-colors mb-1.5 flex items-center justify-between">
-                <span>${data.meta?.title || data.url}</span>
+                <span>${searchResult.meta?.title || searchResult.url}</span>
                 <span class="text-gray-300 group-hover:text-brand/40 opacity-0 group-hover:opacity-100 transition-opacity">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </span>

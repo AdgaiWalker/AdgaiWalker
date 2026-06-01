@@ -115,20 +115,14 @@ const {
 </style>
 
 <script>
+  import { cycleTheme } from '../lib/theme';
+
   function initFullscreenNav() {
     const btn = document.getElementById('fullscreen-theme-toggle');
     if (!btn) return;
 
-    btn.addEventListener('click', () => {
-      const themes = ['nature', 'aurora', 'sunset', 'mint'];
-      const current = localStorage.getItem('walker-theme') || 'nature';
-      const next = themes[(themes.indexOf(current) + 1) % themes.length];
-      document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-      document.body.classList.add(`theme-${next}`);
-      localStorage.setItem('walker-theme', next);
-    });
+    btn.addEventListener('click', () => cycleTheme());
   }
   initFullscreenNav();
   document.addEventListener('astro:page-load', initFullscreenNav);
 </script>
-</style>

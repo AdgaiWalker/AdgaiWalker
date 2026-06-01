@@ -35,7 +35,7 @@ const featured = entries
   <div class="flex flex-col gap-2.5">
     {featured.map(entry => (
       <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/50 group-hover:bg-white/70 transition-all">
-        <Icon name={entry.data.type === 'idea' ? 'lucide:lightbulb' : 'lucide:wrench'} width={16} height={16} class="text-brand/60 shrink-0" />
+        <Icon name="lucide:wrench" width={16} height={16} class="text-brand/60 shrink-0" />
         <div class="flex-1 min-w-0">
           <div class="text-parchment/75 text-[13px] font-body truncate">{entry.data.title}</div>
           {entry.data.summary && (

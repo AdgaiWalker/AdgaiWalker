@@ -12,6 +12,7 @@ import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 import stats from '@/data/site-stats.json';
+import { SITE_EMAIL, MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE, MS_PER_SECOND } from '@/lib/constants';
 
 export const prerender = true;
 
@@ -234,17 +235,10 @@ const { personalTimeline } = stats;
                 <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
                   <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300 text-left sm:text-left">
                     <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 justify-start sm:justify-end">
-                      {hasChildren ? (
-                        <>
-                          {item.title}
-                          <Icon name={item.icon} width={14} height={14} class="text-brand" />
-                        </>
-                      ) : (
-                        <>
-                          {item.title}
-                          <Icon name={item.icon} width={14} height={14} class="text-brand" />
-                        </>
-                      )}
+                      <>
+                        {item.title}
+                        <Icon name={item.icon} width={14} height={14} class="text-brand" />
+                      </>
                     </h4>
                     {hasChildren ? (
                       <div class="space-y-3 text-xs text-parchment/70 leading-relaxed">
@@ -395,12 +389,7 @@ const { personalTimeline } = stats;
     }
   }
 
-  function initAll() {
-    cleanup();
-    abort = new AbortController();
-    const { signal } = abort;
-
-    // 视差滚动
+  function initParallax(signal: AbortSignal) {
     const hero = document.getElementById('hero-section');
     const bgVideo = hero?.querySelector('.hero-bg-video') as HTMLElement | null;
     const heroContent = hero?.querySelector('.hero-content') as HTMLElement | null;
@@ -425,31 +414,29 @@ const { personalTimeline } = stats;
         document.getElementById('era-section')?.scrollIntoView({ behavior: 'smooth' });
       }, { signal });
     }
+  }
 
-    // 3D 物理磁性倾斜
-    postcardTiltCleanup = setupTilt('.postcard', {
-      perspective: 1000,
-      maxRotation: 8,
-      scale: 1.02,
-    });
+  function initUptimeCounter() {
+    const uptimeDisplay = document.getElementById('site-uptime') as HTMLElement;
+    if (!uptimeDisplay) return;
+    const MS_PER_DAY = 86400000;
+    const MS_PER_HOUR = 3600000;
+    const MS_PER_MINUTE = 60000;
+    const MS_PER_SECOND = 1000;
+    const launch = new Date('2026-05-02T00:00:00+08:00');
+    const update = () => {
+      const diff = Date.now() - launch.getTime();
+      const days = Math.floor(diff / MS_PER_DAY);
+      const hours = Math.floor((diff % MS_PER_DAY) / MS_PER_HOUR);
+      const minutes = Math.floor((diff % MS_PER_HOUR) / MS_PER_MINUTE);
+      const seconds = Math.floor((diff % MS_PER_MINUTE) / MS_PER_SECOND);
+      uptimeDisplay.textContent = `SYSTEM ONLINE: ${days}D ${hours}H ${minutes}M ${seconds}S`;
+    };
+    update();
+    uptimeTimer = setInterval(update, MS_PER_SECOND);
+  }
 
-    // 站点 LCD 运行时间
-    const el = document.getElementById('site-uptime') as HTMLElement;
-    if (el) {
-      const launch = new Date('2026-05-02T00:00:00+08:00');
-      const update = () => {
-        const diff = Date.now() - launch.getTime();
-        const days = Math.floor(diff / 86400000);
-        const hours = Math.floor((diff % 86400000) / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-        el.textContent = `SYSTEM ONLINE: ${days}D ${hours}H ${minutes}M ${seconds}S`;
-      };
-      update();
-      uptimeTimer = setInterval(update, 1000);
-    }
-
-    // 点击复制邮箱
+  function initEmailCopy(signal: AbortSignal) {
     const emailBtn = document.getElementById('copy-email');
     emailBtn?.addEventListener('click', async () => {
       try {
@@ -460,6 +447,24 @@ const { personalTimeline } = stats;
         setTimeout(() => { if (span && orig) span.textContent = orig; }, 1500);
       } catch { /* fallback */ }
     }, { signal });
+  }
+
+  function initAll() {
+    cleanup();
+    abort = new AbortController();
+    const { signal } = abort;
+
+    initParallax(signal);
+
+    // 3D 物理磁性倾斜
+    postcardTiltCleanup = setupTilt('.postcard', {
+      perspective: 1000,
+      maxRotation: 8,
+      scale: 1.02,
+    });
+
+    initUptimeCounter();
+    initEmailCopy(signal);
   }
 
   initAll();

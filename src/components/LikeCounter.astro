@@ -63,8 +63,6 @@ const FALLBACK_COUNT = 17861;
 <script>
   import { gsap } from 'gsap';
 
-  const FALLBACK_COUNT = 17861;
-
   async function fetchCount(pagePath: string, fallbackCount: number): Promise<number> {
     try {
       const res = await fetch(`/api/like?path=${encodeURIComponent(pagePath)}`);
@@ -128,6 +126,33 @@ const FALLBACK_COUNT = 17861;
     }
   }
 
+  function fetchAndDisplayCount(
+    button: HTMLButtonElement,
+    pagePath: string,
+    fallbackCount: number,
+  ) {
+    const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+    const setCount = (count: number) => {
+      if (countEl) countEl.textContent = String(count);
+    };
+    fetchCount(pagePath, fallbackCount).then(setCount).catch(() => setCount(fallbackCount));
+  }
+
+  function markAsLiked(
+    button: HTMLButtonElement,
+    outlineIcon: HTMLElement | null,
+    filledIcon: HTMLElement | null,
+  ) {
+    button.disabled = true;
+    button.classList.add('liked');
+    button.style.boxShadow = '0 0 16px rgba(255, 107, 138, 0.12)';
+    button.style.borderColor = 'rgba(255, 107, 138, 0.2)';
+    button.style.background = 'rgba(255, 107, 138, 0.08)';
+    button.style.color = 'var(--color-brand)';
+    if (outlineIcon) outlineIcon.classList.add('hidden');
+    if (filledIcon) filledIcon.classList.remove('hidden');
+  }
+
   const setupLikes = async () => {
     const buttons = document.querySelectorAll<HTMLButtonElement>('[data-like-counter]');
 
@@ -136,37 +161,21 @@ const FALLBACK_COUNT = 17861;
       button.dataset.ready = 'true';
 
       const pagePath = button.dataset.pagePath ?? '/';
-      const fallbackCount = Number(button.dataset.fallbackCount ?? String(FALLBACK_COUNT));
-      const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+      const fallbackCount = Number(button.dataset.fallbackCount ?? '17861');
       const outlineIcon = button.querySelector<HTMLElement>('.heart-outline');
       const filledIcon = button.querySelector<HTMLElement>('.heart-filled');
       const storageKey = `walker-liked:${pagePath}`;
 
-      const setCount = (count: number) => {
-        if (countEl) countEl.textContent = String(count);
-      };
-
-      const markLiked = () => {
-        button.disabled = true;
-        button.classList.add('liked');
-        button.style.boxShadow = '0 0 16px rgba(255, 107, 138, 0.12)';
-        button.style.borderColor = 'rgba(255, 107, 138, 0.2)';
-        button.style.background = 'rgba(255, 107, 138, 0.08)';
-        button.style.color = 'var(--color-brand)';
-        if (outlineIcon) outlineIcon.classList.add('hidden');
-        if (filledIcon) filledIcon.classList.remove('hidden');
-      };
-
       if (localStorage.getItem(storageKey) === 'true') {
-        markLiked();
+        markAsLiked(button, outlineIcon, filledIcon);
       }
 
       // 从 KV 拉取真实计数
-      fetchCount(pagePath, fallbackCount).then(setCount).catch(() => setCount(fallbackCount));
+      fetchAndDisplayCount(button, pagePath, fallbackCount);
 
       button.addEventListener('click', async (e) => {
         if (localStorage.getItem(storageKey) === 'true') {
-          markLiked();
+          markAsLiked(button, outlineIcon, filledIcon);
           return;
         }
 
@@ -176,9 +185,10 @@ const FALLBACK_COUNT = 17861;
         button.disabled = true;
         try {
           const finalCount = await incrementCount(pagePath, fallbackCount);
-          setCount(finalCount);
+          const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+          if (countEl) countEl.textContent = String(finalCount);
           localStorage.setItem(storageKey, 'true');
-          markLiked();
+          markAsLiked(button, outlineIcon, filledIcon);
 
           button.classList.add('like-bounce');
           button.addEventListener('animationend', () => {

@@ -12,7 +12,7 @@ import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, buildPostPath } from '@/lib/routes';
 import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/lib/content';
-import { PLATFORM_ICON_MAP } from '@/lib/constants';
+import { PLATFORM_ICON_MAP, CHARS_PER_MINUTE_ZH } from '@/lib/constants';
 import { formatDateLocale } from '@/lib/format';
 
 import { render } from 'astro:content';
@@ -23,12 +23,12 @@ export const prerender = true;
 
 export async function getStaticPaths() {
   const entries = await getPublishedPosts();
-  const articleList = entries.map(a => ({
-    id: a.id,
-    title: a.data.title,
-    date: a.data.date,
-    tags: a.data.tags,
-    summary: a.data.summary,
+  const articleList = entries.map(articleEntry => ({
+    id: articleEntry.id,
+    title: articleEntry.data.title,
+    date: articleEntry.data.date,
+    tags: articleEntry.data.tags,
+    summary: articleEntry.data.summary,
   }));
 
   return entries.map(entry => ({
@@ -55,8 +55,8 @@ const cleanBody = rawBody
   .replace(/[#*_`\[\]()>|]/g, '')
   .trim();
 const description = cleanBody.slice(0, 160);
-// 阅读时间估算：中文 ~400 字/分钟
-const readingTime = Math.max(1, Math.ceil(cleanBody.length / 400));
+// 阅读时间估算
+const readingTime = Math.max(1, Math.ceil(cleanBody.length / CHARS_PER_MINUTE_ZH));
 const coverImage = entry.data.cover;
 const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 

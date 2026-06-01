@@ -6,38 +6,12 @@
 import FullscreenLayout from '../../layouts/FullscreenLayout.astro';
 import { Icon } from 'astro-icon/components';
 import stats from '@/data/site-stats.json';
+import { articles, pillars, aiTools, totalCost, costByCategory } from '@/data/site-data';
+import SectionHeader from '@/components/about/SectionHeader.astro';
 
 export const prerender = true;
 
 const { costs, siteTimeline, roadmap } = stats;
-const totalCost = costs.reduce((sum, c) => sum + c.amount, 0);
-const costByCategory = Object.entries(
-  costs.reduce<Record<string, number>>((acc, c) => {
-    acc[c.category] = (acc[c.category] || 0) + c.amount;
-    return acc;
-  }, {})
-);
-
-const articles = [
-  { title: '我的畏惧，也是动力', summary: '不甘心困在小小的时空里，三样东西自然积累，拼成了一个个人前进系统。', href: '/posts/personal-progress-system' },
-  { title: '点子是不分时空的资产', summary: '存的时候不知道何时取出，但 AI 让取出的成本越来越低。', href: '/posts/ideas-transcend-time' },
-  { title: '未来已经在来了', summary: '从现在到 2050，AI 会把想象变成现实。想象力是最后的壁垒。', href: '/posts/future-vision' },
-];
-
-const pillars = [
-  { label: '思考', route: '/posts', icon: 'lucide:pen-line', hint: 'POSTS', desc: '写下来的思考，走过的路不想白走' },
-  { label: '资源', route: '/tools', icon: 'lucide:wrench', hint: 'TOOLS', desc: '验证过的工具，便宜好用能解决问题' },
-  { label: '点子', route: '/ideas', icon: 'lucide:lightbulb', hint: 'IDEAS', desc: '还没用上的灵感，先存着等时机' },
-  { label: '项目', route: '/projects', icon: 'lucide:rocket', hint: 'PROJECTS', desc: '做出来的东西，从点子到现实' },
-];
-
-const aiTools = [
-  { name: 'Claude Code', role: '主力编程 Agent', model: 'GLM-5.1' },
-  { name: 'Codex', role: '辅助编程 Agent', model: 'GPT-5.5 中转' },
-  { name: 'Cherry Studio', role: '图片生成', model: 'GPT Image 2' },
-  { name: 'OiiOii', role: '视频生成', model: 'Seedence 2.0' },
-  { name: 'Gemini', role: '美化辅助', model: '—' },
-];
 ---
 
 <FullscreenLayout
@@ -63,10 +37,7 @@ const aiTools = [
   {/* ===== 1. 为什么建 ===== */}
   <section class="site-section py-16 px-4 sm:px-6 flex justify-center" id="why">
     <div class="max-w-[620px] w-full">
-      <div class="section-header mb-10 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">为什么建</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
+      <SectionHeader title="为什么建" />
 
       <div class="panel-glass p-6 sm:p-8 space-y-5 mb-8">
         <p class="text-sm leading-[1.9] text-parchment/80">
@@ -101,10 +72,7 @@ const aiTools = [
   {/* ===== 2. 是什么 ===== */}
   <section class="site-section py-16 px-4 sm:px-6 flex justify-center" id="what">
     <div class="max-w-[700px] w-full">
-      <div class="section-header mb-10 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">是什么</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
+      <SectionHeader title="是什么" />
 
       <div class="panel-glass p-6 sm:p-8 mb-8">
         <p class="text-sm text-parchment/70 leading-relaxed text-center">
@@ -171,10 +139,7 @@ const aiTools = [
   {/* ===== 3. 怎么做的 ===== */}
   <section class="site-section py-16 px-4 sm:px-6 flex justify-center" id="how">
     <div class="max-w-[620px] w-full">
-      <div class="section-header mb-10 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">怎么做的</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
+      <SectionHeader title="怎么做的" />
 
       <div class="panel-glass p-6 sm:p-8 mb-8 border-l-3 border-brand">
         <p class="font-heading text-[15px] text-parchment leading-relaxed font-medium italic">
@@ -272,10 +237,7 @@ const aiTools = [
   {/* ===== 4. 现状与未来 ===== */}
   <section class="site-section py-16 px-4 sm:px-6 flex justify-center" id="roadmap">
     <div class="max-w-[620px] w-full">
-      <div class="section-header mb-10 flex items-center gap-4">
-        <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">现状与未来</h2>
-        <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-      </div>
+      <SectionHeader title="现状与未来" />
 
       <div class="panel-glass p-6 sm:p-8 space-y-1.5 mb-3">
         <p class="text-[10px] font-mono text-brand uppercase tracking-widest mb-3">已上线</p>
