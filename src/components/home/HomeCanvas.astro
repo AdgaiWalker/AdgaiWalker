@@ -485,4 +485,29 @@ const traceLog = featuredLog || recentLogs[0];
     opacity: 0.5;
     margin-left: auto;
   }
+
+  /* ===== 首次导航引导脉冲 ===== */
+  @keyframes directory-hint-breathe {
+    0% { box-shadow: 0 0 0 0 rgba(53, 191, 171, 0); }
+    50% { box-shadow: 0 0 0 3px rgba(53, 191, 171, 0.15); }
+    100% { box-shadow: 0 0 0 0 rgba(53, 191, 171, 0); }
+  }
+
+  .directory-card.is-hinting {
+    animation: directory-hint-breathe 0.6s ease-out;
+  }
+
+  .directory-card.is-hinting .directory-ghost-nav {
+    opacity: 0.7;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .directory-card.hint-done .directory-ghost-nav {
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
 </style>

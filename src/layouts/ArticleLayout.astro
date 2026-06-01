@@ -70,12 +70,25 @@ const hasToc = tocItems.length > 0;
     {/* 阅读进度条 */}
     <div class="reading-progress" id="reading-progress" aria-hidden="true">
       <div class="reading-progress-bar" id="reading-progress-bar"></div>
+      <span class="reading-progress-pct" id="reading-progress-pct"></span>
     </div>
 
     {/* 移动端浮动导航按钮 */}
     <button class="article-fab-nav" id="article-fab-nav" aria-label="打开导航">
       <Icon name="lucide:compass" width={18} height={18} />
     </button>
+
+    {/* 移动端 TOC 抽屉 */}
+    {hasToc && (
+      <div class="mobile-toc-drawer" id="mobile-toc-drawer">
+        <div class="mobile-toc-overlay" id="mobile-toc-overlay"></div>
+        <div class="mobile-toc-content">
+          <div class="mobile-toc-handle"></div>
+          <div class="mobile-toc-header">目录</div>
+          <TableOfContents headings={headings} />
+        </div>
+      </div>
+    )}
 
     {/* 幽灵 TOC — hover 右边缘或按 T 键出现 */}
     {hasToc && (
@@ -176,6 +189,18 @@ const hasToc = tocItems.length > 0;
     opacity: 0;
   }
 
+  /* TOC 首次引导脉冲 */
+  @keyframes toc-hint-pulse {
+    0% { opacity: 0.6; height: 40px; }
+    30% { opacity: 1; height: 80px; }
+    60% { opacity: 0.8; height: 60px; }
+    100% { opacity: 0.6; height: 40px; }
+  }
+
+  .ghost-toc-hint.is-pulsing {
+    animation: toc-hint-pulse 0.8s ease-out;
+  }
+
   /* ===== 左边缘提示区（侧边栏） ===== */
   .sidebar-ghost-hint {
     position: fixed;
@@ -253,6 +278,18 @@ const hasToc = tocItems.length > 0;
     transition: width 0.1s linear;
   }
 
+  .reading-progress-pct {
+    position: fixed;
+    top: 5px;
+    font-family: var(--font-mono, monospace);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-brand);
+    opacity: 0;
+    transition: opacity 0.2s ease, left 0.1s linear;
+    pointer-events: none;
+  }
+
   /* ===== 幽灵侧边栏 — 宽度归零 ===== */
   :global(html[data-sidebar-hidden]) :global(#main-nav) {
     width: 0 !important;
@@ -291,6 +328,63 @@ const hasToc = tocItems.length > 0;
     color: var(--color-brand);
   }
 
+  /* ===== 移动端 TOC 抽屉 ===== */
+  .mobile-toc-drawer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+  }
+
+  .mobile-toc-drawer.is-open {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .mobile-toc-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .mobile-toc-drawer.is-open .mobile-toc-overlay {
+    opacity: 1;
+  }
+
+  .mobile-toc-content {
+    position: relative;
+    max-height: 60vh;
+    background: var(--color-card);
+    border-top-left-radius: 1.25rem;
+    border-top-right-radius: 1.25rem;
+    padding: 0.75rem 1.25rem 1.5rem;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mobile-toc-drawer.is-open .mobile-toc-content {
+    transform: translateY(0);
+  }
+
+  .mobile-toc-handle {
+    width: 2rem;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--color-nav-border);
+    margin: 0 auto 0.75rem;
+  }
+
+  .mobile-toc-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+    margin-bottom: 0.5rem;
+  }
+
   /* ===== 响应式 ===== */
   @media (max-width: 1279px) {
     .ghost-toc,
@@ -303,8 +397,22 @@ const hasToc = tocItems.length > 0;
       display: flex;
     }
 
+    .mobile-toc-drawer {
+      display: none;
+    }
+
+    .mobile-toc-drawer.is-open {
+      display: flex;
+    }
+
     .reading-content {
       padding: 6rem 1.5rem 4rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .mobile-toc-drawer {
+      display: none !important;
     }
   }
 
@@ -324,6 +432,18 @@ const hasToc = tocItems.length > 0;
   function initGhostToc(signal: AbortSignal) {
     const toc = document.getElementById('ghost-toc');
     if (!toc) return;
+
+    // 首次引导脉冲
+    const tocHint = document.getElementById('ghost-toc-hint');
+    if (tocHint && !localStorage.getItem('walker-toc-hint-seen')) {
+      setTimeout(() => {
+        tocHint.classList.add('is-pulsing');
+        tocHint.addEventListener('animationend', () => {
+          tocHint.classList.remove('is-pulsing');
+        }, { once: true, signal });
+        localStorage.setItem('walker-toc-hint-seen', '1');
+      }, 1500);
+    }
 
     let hideTimer: ReturnType<typeof setTimeout>;
 
@@ -352,13 +472,25 @@ const hasToc = tocItems.length > 0;
 
   function initReadingProgress(signal: AbortSignal) {
     const bar = document.getElementById('reading-progress-bar');
+    const pct = document.getElementById('reading-progress-pct');
     if (!bar) return;
 
     const update = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const progress = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
-      bar.style.width = `${progress * 100}%`;
+      const widthPct = progress * 100;
+      bar.style.width = `${widthPct}%`;
+
+      if (pct) {
+        if (progress > 0.05 && progress < 0.99) {
+          pct.textContent = `${Math.round(widthPct)}%`;
+          pct.style.left = `${widthPct}%`;
+          pct.style.opacity = '0.7';
+        } else {
+          pct.style.opacity = '0';
+        }
+      }
     };
 
     window.addEventListener('scroll', update, { passive: true, signal });
@@ -401,7 +533,26 @@ const hasToc = tocItems.length > 0;
 
   function initFabNav(signal: AbortSignal) {
     const fabNav = document.getElementById('article-fab-nav');
-    if (fabNav) {
+    const drawer = document.getElementById('mobile-toc-drawer');
+    const overlay = document.getElementById('mobile-toc-overlay');
+
+    if (fabNav && drawer) {
+      // 有 TOC 的文章页 → FAB 打开 TOC 抽屉
+      fabNav.addEventListener('click', () => {
+        drawer.classList.toggle('is-open');
+      }, { signal });
+
+      overlay?.addEventListener('click', () => {
+        drawer.classList.remove('is-open');
+      }, { signal });
+
+      drawer.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          drawer.classList.remove('is-open');
+        }, { signal });
+      });
+    } else if (fabNav) {
+      // 无 TOC → 打开导航菜单
       fabNav.addEventListener('click', () => {
         document.getElementById('menu-toggle')?.click();
       }, { signal });
