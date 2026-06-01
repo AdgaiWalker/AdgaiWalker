@@ -6,17 +6,39 @@
 import { Icon } from 'astro-icon/components';
 import stats from '@/data/site-stats.json';
 import { getPublishedContentItems } from '@/lib/content';
-import { contentSpaces, itemBelongsToSpace } from '@/lib/content-model';
+import { contentSpaces, itemBelongsToSpace, domainLabels, type ContentDomain } from '@/lib/content-model';
 import { articles, pillars, aiTools, totalCost, costByCategory } from '@/data/site-data';
 import SectionHeader from '@/components/about/SectionHeader.astro';
 
 const { siteTimeline, roadmap } = stats;
 
 const contentItems = await getPublishedContentItems();
-const contentCounts = contentSpaces.map(space => ({
-  ...space,
-  count: contentItems.filter(item => itemBelongsToSpace(item, space.id)).length,
-}));
+
+// 按 domain 统计分布
+const domainCounts = new Map<ContentDomain, number>();
+for (const item of contentItems) {
+  domainCounts.set(item.domain, (domainCounts.get(item.domain) || 0) + 1);
+}
+const maxDomainCount = Math.max(...domainCounts.values(), 1);
+
+function domainToSpace(d: ContentDomain): string {
+  if (['ai', 'coding', 'product', 'community'].includes(d)) return 'progress';
+  if (['life', 'cooking', 'calligraphy', 'reading', 'travel', 'emotion'].includes(d)) return 'life';
+  return 'learning';
+}
+
+const domainEntries = [...domainCounts.entries()]
+  .map(([id, count]) => ({
+    id,
+    label: domainLabels[id],
+    count,
+    pct: Math.round((count / maxDomainCount) * 100),
+    space: domainToSpace(id),
+  }))
+  .sort((a, b) => b.count - a.count);
+
+// 成本分类颜色
+const costColors = ['#35bfab', '#f59e0b', '#fb7299', '#a78bfa', '#34d399'];
 ---
 
 <div class="site-tab-content" id="about-site-content" hidden>
@@ -160,105 +182,100 @@ const contentCounts = contentSpaces.map(space => ({
     </div>
   </section>
 
-  {/* 4. 现状与未来 */}
-  <section class="site-section py-16 px-4 sm:px-6 flex justify-center">
-    <div class="max-w-[620px] w-full">
-      <SectionHeader title="现状与未来" />
-
-      <div class="panel-glass p-6 sm:p-8 space-y-1.5 mb-3">
-        <p class="text-[10px] font-mono text-brand uppercase tracking-widest mb-3">已上线</p>
-        {roadmap.done.map((item) => (
-          <div class="flex items-center gap-3 py-1.5">
-            <span class="w-5 h-5 rounded-full bg-brand/15 flex items-center justify-center shrink-0">
-              <Icon name="lucide:check" width={12} height={12} class="text-brand" />
-            </span>
-            <span class="text-sm text-parchment/70">{item}</span>
-          </div>
-        ))}
-      </div>
-
-      <div class="panel-glass p-6 sm:p-8 space-y-1.5 opacity-60">
-        <p class="text-[10px] font-mono text-parchment-dim/40 uppercase tracking-widest mb-3">计划中</p>
-        {roadmap.planned.map((item) => (
-          <div class="flex items-center gap-3 py-1.5">
-            <span class="w-5 h-5 rounded-full border border-dashed border-parchment-dim/30 flex items-center justify-center shrink-0">
-              <Icon name="lucide:circle-dashed" width={10} height={10} class="text-parchment-dim/40" />
-            </span>
-            <span class="text-sm text-parchment-dim/60">{item}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  {/* 5. 数据台 */}
+  {/* 4. 数据台 — 航海仪表盘 */}
   <section class="site-section py-16 px-4 sm:px-6 flex justify-center" id="data-dock-section">
     <div class="max-w-[620px] w-full">
       <SectionHeader title="数据台" />
 
       <div class="about-data-panel panel-glass">
-        <p class="about-data-eyebrow">PUBLIC DATA DOCK</p>
-        <h2 class="about-data-heading">数据提供现象，不提供目的。</h2>
-        <p class="about-data-intro">
-          这里公开系统级轻量数据：内容数量、空间分布和建设成本。它用于观察表达是否被看见、哪些方向值得继续解释，但不替代 Walker 的北极星。
-        </p>
 
-        {/* 核心指标 */}
-        <div class="data-metrics" data-count-up>
-          <div class="data-metric">
-            <span class="data-metric-icon">
-              <Icon name="lucide:file-text" width={18} height={18} />
-            </span>
-            <div class="data-metric-body">
-              <strong class="data-metric-num" data-target={contentItems.length}>0</strong>
-              <span class="data-metric-unit">条</span>
-            </div>
-            <span class="data-metric-label">公开内容</span>
+        {/* 英雄数字 */}
+        <div class="data-hero" data-animate="hero">
+          <span class="data-hero-label">航行至今，留下</span>
+          <div class="data-hero-number">
+            <strong class="data-hero-num" data-target={contentItems.length}>0</strong>
+            <span class="data-hero-unit">条记录</span>
           </div>
-          <div class="data-metric">
-            <span class="data-metric-icon">
-              <Icon name="lucide:lightbulb" width={18} height={18} />
-            </span>
-            <div class="data-metric-body">
-              <strong class="data-metric-num" data-target={contentCounts.find(s => s.id === 'ideas')?.count ?? 0}>0</strong>
-              <span class="data-metric-unit">个</span>
-            </div>
-            <span class="data-metric-label">点子火花</span>
-          </div>
-          <div class="data-metric">
-            <span class="data-metric-icon">
-              <Icon name="lucide:coins" width={18} height={18} />
-            </span>
-            <div class="data-metric-body">
-              <strong class="data-metric-num" data-target={totalCost}>0</strong>
-              <span class="data-metric-unit">元</span>
-            </div>
-            <span class="data-metric-label">总建设成本</span>
-          </div>
+          <p class="data-hero-footnote">数据提供现象，不提供目的。</p>
         </div>
 
-        {/* 内容空间分布 */}
-        <p class="data-sub-title">内容空间分布</p>
-        <div class="data-space-bars">
-          {contentCounts.filter(s => s.id !== 'all').map(space => {
-            const maxCount = Math.max(...contentCounts.map(s => s.count));
-            const pct = maxCount > 0 ? Math.round((space.count / maxCount) * 100) : 0;
-            return (
-              <a href={space.id === 'all' ? '/content' : `/content?space=${space.id}`}
-                class="data-space-row group"
+        {/* 海域图 — 按 domain 分布的气泡 */}
+        <div class="data-archipelago" data-animate="archipelago">
+          <p class="data-sub-label">内容海域</p>
+          <div class="archipelago-map">
+            {domainEntries.map((d, i) => {
+              const size = Math.max(32, 24 + d.pct * 0.4);
+              return (
+              <a
+                href={`/content?space=${d.space}`}
+                class="island"
+                style={`--size: ${size}px; --delay: ${i * 0.06}s;`}
+                title={`${d.label}：${d.count} 条`}
               >
-                <span class="data-space-icon">
-                  <Icon name={space.icon} width={14} height={14} />
-                </span>
-                <span class="data-space-label">{space.label}</span>
-                <div class="data-space-track">
-                  <div class="data-space-fill" style={`--fill-pct: ${pct}%`}></div>
-                </div>
-                <span class="data-space-count">{space.count}</span>
+                <span class="island-core"></span>
+                <span class="island-label">{d.label}</span>
+                <span class="island-count">{d.count}</span>
               </a>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
+
+        {/* 成本透明条 */}
+        <div class="data-cost-bar" data-animate="cost">
+          <div class="cost-header">
+            <span class="cost-label">建设成本</span>
+            <span class="cost-total" data-target={totalCost} data-suffix=" 元">0 元</span>
+          </div>
+          <div class="cost-track">
+            {costByCategory.map(([cat, amount], i) => {
+              const pct = totalCost > 0 ? (amount / totalCost * 100) : 0;
+              return (
+                <div
+                  class="cost-segment"
+                  style={`--color: ${costColors[i % costColors.length]}; --pct: ${pct}%; --delay: ${0.8 + i * 0.1}s;`}
+                  title={`${cat}：${amount} 元`}
+                >
+                </div>
+              );
+            })}
+          </div>
+          <div class="cost-legend">
+            {costByCategory.map(([cat, amount], i) => (
+              <span class="cost-legend-item">
+                <span class="cost-dot" style={`background: ${costColors[i % costColors.length]}`}></span>
+                {cat} {amount}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 航线状态 — 合并原 roadmap */}
+        <div class="data-roadmap" data-animate="roadmap">
+          <div class="roadmap-col">
+            <p class="data-sub-label">已上线</p>
+            <div class="roadmap-list">
+              {roadmap.done.map((item) => (
+                <div class="roadmap-item roadmap-done">
+                  <Icon name="lucide:check" width={12} height={12} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div class="roadmap-col roadmap-col-planned">
+            <p class="data-sub-label">计划中</p>
+            <div class="roadmap-list">
+              {roadmap.planned.map((item) => (
+                <div class="roadmap-item roadmap-planned">
+                  <Icon name="lucide:circle-dashed" width={10} height={10} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>

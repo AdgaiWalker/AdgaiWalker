@@ -454,56 +454,98 @@ const { personalTimeline } = stats;
     const section = document.getElementById('data-dock-section');
     if (!section) return;
 
-    // 数字计数动画
-    const nums = section.querySelectorAll<HTMLElement>('.data-metric-num');
-    const hasCounted = new WeakSet<HTMLElement>();
+    let fired = false;
 
-    const countUp = (el: HTMLElement) => {
-      if (hasCounted.has(el)) return;
-      hasCounted.add(el);
-      const target = parseInt(el.dataset.target || '0');
-      gsap.fromTo(el,
-        { innerText: 0 },
-        {
-          innerText: target,
-          duration: 1.2,
-          ease: 'power2.out',
-          snap: { innerText: 1 },
-          onUpdate() {
-            el.textContent = Math.round(parseFloat(el.textContent || '0')).toString();
+    const runAnimations = () => {
+      if (fired) return;
+      fired = true;
+
+      // 1. 英雄数字 — 弹入 + 计数
+      const heroNum = section.querySelector<HTMLElement>('.data-hero-num');
+      if (heroNum) {
+        const target = parseInt(heroNum.dataset.target || '0');
+        gsap.fromTo(heroNum,
+          { scale: 0.6, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.7)' },
+        );
+        gsap.fromTo(heroNum,
+          { innerText: 0 },
+          {
+            innerText: target,
+            duration: 1.4,
+            ease: 'power2.out',
+            snap: { innerText: 1 },
+            onUpdate() {
+              heroNum.textContent = Math.round(parseFloat(heroNum.textContent || '0')).toString();
+            },
           },
-        },
-      );
-    };
+        );
+      }
 
-    // 条形图入场
-    const fills = section.querySelectorAll<HTMLElement>('.data-space-fill');
-    const fillAnimated = new WeakSet<HTMLElement>();
+      // 2. 海域图气泡 — stagger 入场
+      const islands = section.querySelectorAll<HTMLElement>('.island');
+      if (islands.length) {
+        gsap.to(islands, {
+          opacity: 1,
+          scale: 1,
+          duration: 0.5,
+          ease: 'back.out(1.4)',
+          stagger: 0.06,
+        });
+      }
 
-    const animateFills = () => {
-      fills.forEach(fill => {
-        if (fillAnimated.has(fill)) return;
-        fillAnimated.add(fill);
-        const pct = fill.style.getPropertyValue('--fill-pct');
-        fill.style.width = pct;
+      // 3. 成本条 — 延迟后展开
+      const segments = section.querySelectorAll<HTMLElement>('.cost-segment');
+      segments.forEach(seg => {
+        const pct = getComputedStyle(seg).getPropertyValue('--pct').trim();
+        setTimeout(() => { seg.style.width = pct; }, 100);
       });
+
+      // 4. Roadmap items — stagger
+      const roadmapItems = section.querySelectorAll<HTMLElement>('.roadmap-item');
+      if (roadmapItems.length) {
+        gsap.to(roadmapItems, {
+          opacity: 1,
+          y: 0,
+          duration: 0.35,
+          ease: 'power2.out',
+          stagger: 0.04,
+          delay: 0.3,
+        });
+      }
+
+      // 5. 成本总额计数
+      const costTotal = section.querySelector<HTMLElement>('.cost-total');
+      if (costTotal) {
+        const target = parseInt(costTotal.dataset.target || '0');
+        const suffix = costTotal.dataset.suffix || '';
+        gsap.fromTo(costTotal,
+          { innerText: 0 },
+          {
+            innerText: target,
+            duration: 1.2,
+            ease: 'power2.out',
+            snap: { innerText: 1 },
+            delay: 0.6,
+            onUpdate() {
+              costTotal.textContent = Math.round(parseFloat(costTotal.textContent || '0')).toString() + suffix;
+            },
+          },
+        );
+      }
     };
 
-    // 用 IntersectionObserver 触发
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
-          nums.forEach(countUp);
-          animateFills();
+          runAnimations();
           observer.disconnect();
           break;
         }
       }
-    }, { threshold: 0.3 });
+    }, { threshold: 0.25 });
 
     observer.observe(section);
-
-    // 清理
     document.addEventListener('astro:before-swap', () => observer.disconnect());
   }
 
@@ -784,169 +826,241 @@ const { personalTimeline } = stats;
     font-variant-numeric: tabular-nums;
   }
 
-  /* ===== 数据台 ===== */
-  .about-data-section { scroll-margin-top: 2rem; }
-
+  /* ===== 数据台 — 航海仪表盘 ===== */
   .about-data-panel {
     border: 1px solid var(--color-nav-border);
     border-radius: 28px;
-    padding: 1.5rem;
-  }
-
-  .about-data-eyebrow {
-    margin: 0 0 0.45rem;
-    color: var(--color-brand);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-  }
-
-  .about-data-heading {
-    margin: 0;
-    color: var(--color-parchment);
-    font-size: clamp(1.3rem, 2.4vw, 2rem);
-  }
-
-  .about-data-intro {
-    max-width: 760px;
-    margin: 0.75rem 0 0;
-    color: var(--color-parchment-dim);
-    line-height: 1.8;
-    font-size: 0.9rem;
-  }
-
-  /* 核心指标卡片 */
-  .data-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-  }
-
-  .data-metric {
+    padding: 2rem 1.5rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 1.25rem 0.75rem;
-    border: 1px solid var(--color-nav-border);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.03);
+    gap: 2rem;
+  }
+
+  /* 英雄数字 */
+  .data-hero {
     text-align: center;
+    padding: 0.5rem 0 0;
   }
 
-  .data-metric-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
-    color: var(--color-brand);
-    margin-bottom: 0.2rem;
+  .data-hero-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
   }
 
-  .data-metric-body {
+  .data-hero-number {
     display: flex;
     align-items: baseline;
-    gap: 2px;
+    justify-content: center;
+    gap: 0.3rem;
+    margin: 0.5rem 0 0.3rem;
   }
 
-  .data-metric-num {
+  .data-hero-num {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.6rem;
-    font-weight: 800;
+    font-size: clamp(3rem, 8vw, 4.5rem);
+    font-weight: 900;
     color: var(--color-parchment);
-    font-variant-numeric: tabular-nums;
     line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
 
-  .data-metric-unit {
-    font-size: 0.75rem;
+  .data-hero-unit {
+    font-size: 1.1rem;
     color: var(--color-parchment-dim);
-    opacity: 0.6;
+    opacity: 0.5;
   }
 
-  .data-metric-label {
-    font-size: 0.7rem;
-    color: var(--color-parchment-dim);
-    opacity: 0.55;
-    margin-top: 0.15rem;
-  }
-
-  /* 空间分布条形图 */
-  .data-sub-title {
-    margin: 1.5rem 0 0.6rem;
+  .data-hero-footnote {
     font-size: 0.72rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.35;
+    font-style: italic;
+  }
+
+  /* 子区域标签 */
+  .data-sub-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
     font-weight: 700;
     color: var(--color-parchment-dim);
-    opacity: 0.45;
-    letter-spacing: 0.06em;
+    opacity: 0.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
   }
 
-  .data-space-bars {
+  /* 海域图 — 气泡群岛 */
+  .archipelago-map {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    padding: 1rem 0;
+  }
+
+  .island {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .data-space-row {
-    display: grid;
-    grid-template-columns: 24px 56px 1fr 32px;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.45rem 0.6rem;
-    border-radius: 10px;
+    gap: 0.25rem;
     text-decoration: none;
-    color: var(--color-parchment-dim);
-    transition: background 0.2s ease;
+    cursor: default;
+    opacity: 0;
+    transform: scale(0.3);
+    /* GSAP 会控制入场动画 */
   }
 
-  .data-space-row:hover {
-    background: rgba(255, 255, 255, 0.04);
+  .island-core {
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--color-brand) 25%, transparent), color-mix(in srgb, var(--color-brand) 8%, transparent));
+    border: 1px solid color-mix(in srgb, var(--color-brand) 15%, transparent);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
   }
 
-  .data-space-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-brand);
-    opacity: 0.6;
+  .island:hover .island-core {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand) 20%, transparent);
   }
 
-  .data-space-label {
-    font-size: 0.78rem;
+  .island-label {
+    font-size: 0.68rem;
     font-weight: 600;
+    color: var(--color-parchment-dim);
+    opacity: 0.7;
     white-space: nowrap;
   }
 
-  .data-space-track {
-    height: 6px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.04);
-    overflow: hidden;
+  .island-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--color-brand);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    position: absolute;
+    top: -0.85rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-card);
+    border: 1px solid var(--color-nav-border);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
   }
 
-  .data-space-fill {
+  .island:hover .island-count {
+    opacity: 1;
+  }
+
+  /* 成本透明条 */
+  .cost-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .cost-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+  }
+
+  .cost-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--color-brand);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cost-track {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .cost-segment {
     height: 100%;
     width: 0%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--color-brand), color-mix(in srgb, var(--color-brand) 60%, var(--color-brand-secondary)));
+    background: var(--color);
     transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--delay);
   }
 
-  .data-space-row:hover .data-space-fill {
-    background: linear-gradient(90deg, var(--color-brand), var(--color-brand));
+  .cost-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.45rem;
   }
 
-  .data-space-count {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 700;
+  .cost-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.65rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+  }
+
+  .cost-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* 航线状态 */
+  .data-roadmap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .roadmap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .roadmap-done {
     color: var(--color-parchment);
-    text-align: right;
-    font-variant-numeric: tabular-nums;
+    opacity: 0;
+  }
+
+  .roadmap-done > :global(svg) {
+    color: var(--color-brand);
+    flex-shrink: 0;
+  }
+
+  .roadmap-col-planned {
+    opacity: 0.5;
+  }
+
+  .roadmap-planned {
+    color: var(--color-parchment-dim);
+    opacity: 0;
+  }
+
+  .roadmap-planned > :global(svg) {
+    opacity: 0.4;
+    flex-shrink: 0;
   }
 
   /* ===== 响应式 ===== */
