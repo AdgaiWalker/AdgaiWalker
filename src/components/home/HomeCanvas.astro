@@ -171,29 +171,11 @@ const traceLog = featuredLog || recentLogs[0];
   }
 
   .pop-in {
-    animation: popInSpring 0.9s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
-    opacity: 0;
-    transform: translateY(30px) scale(0.92);
     will-change: transform, opacity;
   }
-  .delay-1 { animation-delay: 0.08s; }
-  .delay-2 { animation-delay: 0.16s; }
-  .delay-3 { animation-delay: 0.24s; }
-
-  @keyframes popInSpring {
-    0% {
-      opacity: 0;
-      transform: translateY(30px) scale(0.92);
-    }
-    60% {
-      opacity: 1;
-      transform: translateY(-4px) scale(1.01);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
+  .delay-1 { }
+  .delay-2 { }
+  .delay-3 { }
 
   .cursor-grab {
     cursor: grab !important;
