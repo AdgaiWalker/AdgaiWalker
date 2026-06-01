@@ -11,7 +11,7 @@ import GiscusWidget from '../../components/GiscusWidget.astro';
 import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, buildPostPath } from '@/lib/routes';
-import { getPublishedPosts } from '@/lib/content';
+import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/lib/content';
 import { PLATFORM_ICON_MAP } from '@/lib/constants';
 import { formatDateLocale } from '@/lib/format';
 
@@ -33,11 +33,11 @@ export async function getStaticPaths() {
 
   return entries.map(entry => ({
     params: { slug: entry.id },
-    props: { entry, articleList },
+    props: { entry, articleList, allEntries: entries },
   }));
 }
 
-const { entry, articleList } = Astro.props;
+const { entry, articleList, allEntries } = Astro.props;
 
 if (!entry) {
   return Astro.redirect('/404');
@@ -60,6 +60,23 @@ const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 
 const videos = entry.data.videos || [];
 const resources = entry.data.resources || [];
+
+// 版本链 & 系列导航
+const versionChain = allEntries ? getVersionChain(allEntries, entry.id) : [];
+const hasVersion = versionChain.length > 0;
+
+const seriesName = entry.data.series;
+const seriesEntries = seriesName && allEntries
+  ? getSeriesEntries(allEntries, seriesName).map(e => ({
+      id: e.id,
+      title: e.data.title,
+      order: e.data.seriesOrder ?? 0,
+    }))
+  : [];
+const currentSeriesIndex = seriesEntries.findIndex(e => e.id === entry.id);
+const hasSeries = seriesEntries.length > 1; // 系列只有 1 篇时不显示导航
+const seriesPrev = hasSeries && currentSeriesIndex > 0 ? seriesEntries[currentSeriesIndex - 1] : null;
+const seriesNext = hasSeries && currentSeriesIndex < seriesEntries.length - 1 ? seriesEntries[currentSeriesIndex + 1] : null;
 ---
 
 <ArticleLayout
@@ -161,6 +178,57 @@ const resources = entry.data.resources || [];
             />
           ))}
         </div>
+      </section>
+    )}
+
+    {/* 版本 & 系列导航 */}
+    {(hasVersion || hasSeries) && (
+      <section class="article-nav-links">
+        {/* 版本导航 */}
+        {hasVersion && (
+          <div class="nav-block version-block">
+            <div class="nav-label">
+              <Icon name="lucide:git-branch" width={14} height={14} />
+              版本迭代
+            </div>
+            <div class="version-chain">
+              {versionChain.map((v, i) => (
+                v.id === entry.id ? (
+                  <span class="version-current">v{v.data.version ?? i + 1}</span>
+                ) : (
+                  <a href={buildPostPath(v.id)} class="version-link">
+                    v{v.data.version ?? i + 1}
+                  </a>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 系列导航 */}
+        {hasSeries && (
+          <div class="nav-block series-block">
+            <div class="nav-label">
+              <Icon name="lucide:layers" width={14} height={14} />
+              {seriesName}
+              <span class="series-progress">{currentSeriesIndex + 1}/{seriesEntries.length}</span>
+            </div>
+            <div class="series-nav">
+              {seriesPrev ? (
+                <a href={buildPostPath(seriesPrev.id)} class="series-link series-prev">
+                  <Icon name="lucide:chevron-left" width={14} height={14} />
+                  {seriesPrev.title}
+                </a>
+              ) : <span />}
+              {seriesNext ? (
+                <a href={buildPostPath(seriesNext.id)} class="series-link series-next">
+                  {seriesNext.title}
+                  <Icon name="lucide:chevron-right" width={14} height={14} />
+                </a>
+              ) : <span />}
+            </div>
+          </div>
+        )}
       </section>
     )}
 
@@ -356,6 +424,108 @@ const resources = entry.data.resources || [];
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  /* ===== 版本 & 系列导航 ===== */
+  .article-nav-links {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .nav-block {
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--color-parchment-dim) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 8%, transparent);
+  }
+
+  .nav-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .version-chain {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .version-current {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    background: color-mix(in srgb, var(--color-brand) 15%, transparent);
+    color: var(--color-brand);
+    border: 1px solid color-mix(in srgb, var(--color-brand) 25%, transparent);
+  }
+
+  .version-link {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 12%, transparent);
+    transition: all 0.2s ease;
+  }
+
+  .version-link:hover {
+    color: var(--color-brand);
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
+  }
+
+  .series-progress {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    opacity: 0.5;
+    margin-left: auto;
+  }
+
+  .series-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .series-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+  }
+
+  .series-link:hover {
+    color: var(--color-brand);
+  }
+
+  .series-next {
+    margin-left: auto;
+    text-align: right;
+    flex-direction: row-reverse;
   }
 
   /* ===== 底部 ===== */

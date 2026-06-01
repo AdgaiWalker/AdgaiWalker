@@ -35,6 +35,7 @@ npx astro check    # Astro 类型检查
   - 内容模型：`form`（`article`/`note`/`diary`/`rant`/`gallery`/`video`/`recipe`/`calligraphy`/`resource`/`project`/`idea`/`lesson`）、`domain`（`ai`/`coding`/`product`/`philosophy`/`life`/`cooking`/`calligraphy`/`reading`/`travel`/`emotion`/`community`）、`intent`（`think`/`record`/`teach`/`share`/`verify`/`showcase`/`reflect`/`connect`/`vent`）、`valueMode`（`utility`/`existence`/`both`）。
   - AI 策略：`aiUsePolicy`（含 `level`：`AI-0`~`AI-4`、`readable`、`citable`、`actionable`、`reason`）。
   - 关联：`related`（ID 数组）、`featured`（布尔）。
+  - 版本与系列：`version`（版本号，数字）、`previousVersion`（上一版 slug）、`series`（系列名，自由文本）、`seriesOrder`（系列内序号）。版本迭代用 `version` + `previousVersion` 串联同一篇文章的不同版本（独立文件、独立 URL）。系列连载用 `series` + `seriesOrder` 串联同一主题的多篇文章。
   - 媒体与资源：`communities`（对象数组）、`videos`（`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`）、`resources`（`resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`）。
 
 ### 布局系统
@@ -150,6 +151,9 @@ npx astro check    # Astro 类型检查
 ## 内容创作
 
 - 语言：中文（zh-CN），UI 文案和内容以中文为主。
+- 文件命名：中文 slug（如 `设计为人与内容搭桥.md`），方便 Obsidian 检索。MDX 同理（如 `减法对话.mdx`）。
 - Markdown 支持 MDX，可在文章中使用交互组件。
 - `cover` 支持内容图片或远程图片 URL。
 - `resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`。
+- 版本迭代：同一篇文章认知升级时新建文件（如 `设计为人与内容搭桥 v2.md`），通过 `version` + `previousVersion` 字段串联。文章详情页底部自动显示版本链导航。
+- 系列连载：通过 `series` + `seriesOrder` 字段串联同一主题的多篇文章。文章详情页底部自动显示系列导航（系列名 + 序号 + 上一篇/下一篇）。

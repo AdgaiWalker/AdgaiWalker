@@ -28,6 +28,10 @@ export interface ContentItem {
   isExternal: boolean;
   aiUseLevel: NonNullable<LogEntry['data']['aiUsePolicy']>['level'];
   related: string[];
+  version?: number;
+  previousVersion?: string;
+  series?: string;
+  seriesOrder?: number;
 }
 
 export interface ContentSpaceMeta {
@@ -211,6 +215,10 @@ export function toContentItem(entry: LogEntry): ContentItem {
     isExternal: Boolean(entry.data.url),
     aiUseLevel: entry.data.aiUsePolicy?.level ?? 'AI-2',
     related: entry.data.related,
+    version: entry.data.version,
+    previousVersion: entry.data.previousVersion,
+    series: entry.data.series,
+    seriesOrder: entry.data.seriesOrder,
   };
 }
 

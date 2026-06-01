@@ -45,6 +45,10 @@ export const GET: APIRoute = async () => {
       status: item.status ?? null,
       aiUseLevel: item.aiUseLevel,
       related: item.related,
+      version: item.version ?? null,
+      previousVersion: item.previousVersion ?? null,
+      series: item.series ?? null,
+      seriesOrder: item.seriesOrder ?? null,
     })),
   };
 
