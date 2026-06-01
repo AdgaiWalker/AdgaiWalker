@@ -535,25 +535,7 @@ const renderedIdeas = await Promise.all(
     text-overflow: ellipsis;
   }
 
-  .close-back-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 1px solid var(--color-border);
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--color-parchment-dim);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .close-back-btn:hover {
-    background: var(--color-brand-glow);
-    color: var(--color-brand);
-    border-color: var(--color-brand);
-  }
+  .close-back-btn { display: none; }
 
   .card-back-scroll {
     flex-grow: 1;
@@ -1164,9 +1146,8 @@ const renderedIdeas = await Promise.all(
       }
 
       // 4. 点击返回 (Back -> Front)
-      const closeBackBtn = target.closest('.close-back-btn');
       const flipBackBtn = target.closest('.flip-back-btn');
-      if (container && (closeBackBtn || flipBackBtn)) {
+      if (container && flipBackBtn) {
         container.classList.remove('is-flipped');
         container.setAttribute('aria-expanded', 'false');
         e.stopPropagation();
