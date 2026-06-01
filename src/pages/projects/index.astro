@@ -1,6 +1,7 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { getPublishedProjects } from '@/lib/content';
+import { IDEAS } from '@/lib/routes';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
@@ -76,6 +77,10 @@ const statusLabel = {
         <Icon name="lucide:rocket" width={40} height={40} class="mx-auto mb-4 opacity-30" />
         <p class="text-sm">还没有项目</p>
         <p class="text-xs mt-1 opacity-50">想法在路上，项目在路上。</p>
+        <a href={IDEAS} class="empty-cta inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-xl border border-brand/20 bg-brand/5 text-brand text-sm font-medium no-underline transition-all hover:bg-brand/10 hover:border-brand/30">
+          <Icon name="lucide:lightbulb" width={16} height={16} />
+          去看看点子库
+        </a>
       </div>
     )}
   </div>

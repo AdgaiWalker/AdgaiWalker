@@ -1,15 +1,17 @@
 ---
 import GreetingCard from '../GreetingCard.astro';
 import { Icon } from 'astro-icon/components';
-import { CONTENT, ABOUT, buildPostPath } from '@/lib/routes';
+import { CONTENT, ABOUT, POSTS, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/lib/routes';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
   recentLogs: CollectionEntry<'log'>[];
   featuredLog?: CollectionEntry<'log'>;
+  recentPosts: CollectionEntry<'log'>[];
+  ideasCount: number;
 }
 
-const { recentLogs, featuredLog } = Astro.props;
+const { recentLogs, featuredLog, recentPosts, ideasCount } = Astro.props;
 const traceLog = featuredLog || recentLogs[0];
 ---
 
@@ -28,7 +30,7 @@ const traceLog = featuredLog || recentLogs[0];
   <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex justify-center items-center">
     <div class="grid grid-cols-[280px_400px] justify-center gap-6 items-start w-full relative pb-4 pointer-events-auto px-4">
 
-      <!-- 左栏：身份条 + 内容钩子 -->
+      <!-- 左栏：身份条 + 最近文章 -->
       <div class="flex flex-col gap-4 mt-6">
         <!-- 身份条 — 品牌缩影 + 最近一条内容 -->
         <div class="directory-card panel-glass p-4 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[24px]" style="animation-delay: 0.04s;">
@@ -53,6 +55,45 @@ const traceLog = featuredLog || recentLogs[0];
             <a href={CONTENT}>内容</a>
             <a href={ABOUT}>关于</a>
             <button id="canvas-theme-toggle" aria-label="切换主题" title="切换主题">主题</button>
+          </div>
+        </div>
+
+        <!-- 最近文章 — 让用户一眼看到内容 -->
+        <div class="panel-glass p-4 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[24px] delay-1" style="animation-delay: 0.12s;">
+          <div class="recent-header">
+            <Icon name="lucide:pen-line" width={13} height={13} class="text-brand" />
+            <span class="recent-label">最近文章</span>
+            <a href={POSTS} class="recent-more">全部 →</a>
+          </div>
+          <div class="recent-list">
+            {recentPosts.map(post => (
+              <a href={buildPostPath(post.id)} class="recent-item group/item">
+                <span class="recent-item-title group-hover/item:text-brand transition-colors">{post.data.title}</span>
+                <span class="recent-item-date">{(post.data.date.getMonth() + 1).toString().padStart(2, '0')}/{post.data.date.getDate().toString().padStart(2, '0')}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <!-- 快速入口 — 四大板块 -->
+        <div class="panel-glass p-3 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[20px] delay-2" style="animation-delay: 0.20s;">
+          <div class="quick-grid">
+            <a href={POSTS} class="quick-link group/q">
+              <Icon name="lucide:pen-line" width={15} height={15} />
+              <span>文章</span>
+            </a>
+            <a href={TOOLS} class="quick-link group/q">
+              <Icon name="lucide:wrench" width={15} height={15} />
+              <span>工具</span>
+            </a>
+            <a href={IDEAS} class="quick-link group/q">
+              <Icon name="lucide:lightbulb" width={15} height={15} />
+              <span>点子</span>
+            </a>
+            <a href={PROJECTS} class="quick-link group/q">
+              <Icon name="lucide:folder-kanban" width={15} height={15} />
+              <span>项目</span>
+            </a>
           </div>
         </div>
       </div>
@@ -318,5 +359,94 @@ const traceLog = featuredLog || recentLogs[0];
 
   #status-text {
     transition: opacity 0.25s ease;
+  }
+
+  /* ===== 最近文章卡 ===== */
+  .recent-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .recent-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+    letter-spacing: 0.02em;
+  }
+  .recent-more {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    opacity: 0.5;
+    transition: opacity 0.2s ease, color 0.2s ease;
+  }
+  .recent-more:hover {
+    opacity: 1;
+    color: var(--color-brand);
+  }
+  .recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+  .recent-item:hover {
+    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
+  }
+  .recent-item-title {
+    font-size: 0.76rem;
+    color: var(--color-parchment-dim);
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+  }
+  .recent-item-date {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+
+  /* ===== 快速入口 ===== */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--color-parchment-dim);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .quick-link:hover {
+    background: color-mix(in srgb, var(--color-brand) 6%, transparent);
+    color: var(--color-brand);
+  }
+  .quick-link span {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 </style>

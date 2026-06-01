@@ -1,16 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
 import HomeCanvas from '../components/home/HomeCanvas.astro';
-import { getPublishedPosts } from '@/lib/content';
+import { getPublishedPosts, getPublishedIdeas } from '@/lib/content';
 
 export const prerender = true;
 
 const recentLogs = (await getPublishedPosts()).filter(post => post.data.type === 'knowledge');
 const featuredLog = recentLogs.find(post => post.data.featured) || recentLogs[0];
+const recentPosts = recentLogs.slice(0, 3); // 最近 3 篇文章
+const ideasCount = (await getPublishedIdeas()).length;
 ---
 
 <Base title="Walker — 行过万里水路" theme="nature">
-  <HomeCanvas recentLogs={recentLogs} featuredLog={featuredLog} />
+  <HomeCanvas recentLogs={recentLogs} featuredLog={featuredLog} recentPosts={recentPosts} ideasCount={ideasCount} />
 
   <script>
     import '../scripts/home-canvas';

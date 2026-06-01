@@ -89,6 +89,18 @@ const {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
+  /* 亮色主题下增强导航可见度 */
+  :global(body.theme-nature) .fullscreen-nav-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: var(--color-parchment-dim);
+  }
+
+  :global(body.theme-nature) .fullscreen-nav-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--color-parchment);
+  }
+
   .fullscreen-nav-btn:hover {
     background: rgba(255, 255, 255, 0.25);
     color: #fff;
