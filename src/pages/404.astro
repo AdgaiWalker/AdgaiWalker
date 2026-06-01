@@ -28,6 +28,48 @@ export const prerender = true;
         <Icon name="lucide:house" width={16} height={16} />
         返回首页
       </a>
+
+      {/* 搜索入口 */}
+      <div class="mt-6 pt-5 border-t border-coral/15">
+        <p class="text-xs text-parchment-dim mb-3">试试搜索你想找的内容：</p>
+        <button
+          id="notfound-search-btn"
+          class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm bg-[var(--color-card)] border border-[var(--color-border)] text-parchment-dim hover:text-parchment hover:border-brand/30 transition-colors cursor-pointer w-full"
+        >
+          <Icon name="lucide:search" width={16} height={16} />
+          <span>在这片海域中搜索...</span>
+          <kbd class="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/5 border border-[var(--color-nav-border)] text-parchment-dim">⌘K</kbd>
+        </button>
+      </div>
+
+      {/* 推荐航线 */}
+      <div class="mt-5">
+        <p class="text-[10px] font-mono uppercase tracking-widest text-parchment-dim/60 mb-3">推荐航线</p>
+        <div class="grid grid-cols-2 gap-2 text-left">
+          <a href="/posts" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-card)] border border-[var(--color-border)] text-parchment-dim text-xs no-underline hover:border-brand/30 hover:text-brand transition-colors">
+            <Icon name="lucide:pen-line" width={14} height={14} />
+            文章
+          </a>
+          <a href="/ideas" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-card)] border border-[var(--color-border)] text-parchment-dim text-xs no-underline hover:border-brand/30 hover:text-brand transition-colors">
+            <Icon name="lucide:lightbulb" width={14} height={14} />
+            点子
+          </a>
+          <a href="/tools" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-card)] border border-[var(--color-border)] text-parchment-dim text-xs no-underline hover:border-brand/30 hover:text-brand transition-colors">
+            <Icon name="lucide:wrench" width={14} height={14} />
+            工具
+          </a>
+          <a href="/about" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-card)] border border-[var(--color-border)] text-parchment-dim text-xs no-underline hover:border-brand/30 hover:text-brand transition-colors">
+            <Icon name="lucide:user" width={14} height={14} />
+            关于
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 </Base>
+
+<script>
+  document.getElementById('notfound-search-btn')?.addEventListener('click', () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true, key: 'k' }));
+  });
+</script>

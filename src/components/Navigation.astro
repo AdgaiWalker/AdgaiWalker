@@ -74,14 +74,14 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
     // --- (c) 全站多主题自适应换肤控制 (Nature, Aurora, Sunset, Mint) ---
     const themeBtn = document.getElementById('nav-theme-toggle');
-    const homeThemeBtn = document.getElementById('home-theme-toggle');
+    const mobileThemeBtn = document.getElementById('mobile-theme-toggle');
 
     const savedTheme = localStorage.getItem('walker-theme') || 'nature';
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
     document.body.classList.add(`theme-${savedTheme}`);
 
     themeBtn?.addEventListener('click', () => cycleTheme(), { signal });
-    homeThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });
+    mobileThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });
 
     // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
     const container = document.querySelector('.nav-links-container');

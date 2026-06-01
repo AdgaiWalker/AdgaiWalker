@@ -50,9 +50,12 @@ Ferry vNext 方法论更新
 1. **决策文档过多**：PRD、站点架构、技术架构、Agent 架构、新总架构分散在多个文件里，容易互相冲突。
 2. **当前路由和长期方向不一致**：现状仍是 `/posts`、`/tools`、`/ideas`、`/projects` 等多入口；新方向是主导航收敛为 `首页 / 内容 / 关于`，由 `/content` 承载内容宇宙。
 3. **内容结构不够可扩展**：现有 `type` 不足以表达厨艺、书法、日记、吐槽、视频、图片、点子生命周期、存在价值等内容。
-4. **AI 可读接口未落地** ~~已落地（2026-05-31）：`/llms.txt`、`/walker-style.md`、`/index.json` 均已上线且使用 `prerender = true`~~。
-5. **数据台未落地** ~~轻量版已上线（2026-05-31）：关于站 → 数据台 section，含内容数量统计和空间分布。完整分析后台待 Plan 4~~。
-6. **iwalk.pro 与 NorthStar 边界需要保持**：iwalk.pro 不应过早承担多人平台复杂度；NorthStar 不应替代个人表达与方法沉淀。
+4. **iwalk.pro 与 NorthStar 边界需要保持**：iwalk.pro 不应过早承担多人平台复杂度；NorthStar 不应替代个人表达与方法沉淀。
+
+### 已解决的问题
+
+- ~~AI 可读接口未落地~~ → 已落地（2026-05-31）：`/llms.txt`、`/walker-style.md`、`/index.json` 均已上线且使用 `prerender = true`。
+- ~~数据台未落地~~ → 轻量版已上线（2026-05-31）：关于站 → 数据台 section，含内容数量统计和空间分布。完整分析后台待 Plan 4。
 
 ---
 
@@ -71,7 +74,7 @@ Ferry vNext 方法论更新
 
 ### 3.2 iwalk.pro 产品决策
 
-- 主导航目标：`首页 / 内容 / 关于`。
+- 主导航目标：`首页 / 内容 / 关于`（注：首页不渲染 `<nav>`，导航由 HomeCanvas identity card ghost nav 和快速入口承担；三栏导航仅在内页可见）。
 - `/content` 是内容宇宙，不是普通文章列表。
 - 旧路由 `/posts`、`/tools`、`/ideas`、`/projects` 先保留兼容，不立即删除。
 - `/about` 承载关于我、关于站、路线图、数据台、技术与 AI、联系方式。
@@ -85,17 +88,20 @@ Ferry vNext 方法论更新
 - `domain`：AI、编程、产品、哲学、生活、厨艺、书法、阅读、旅行、情绪、社群。
 - `intent`：思考、记录、教学、分享、验证、展示、复盘、连接、表达。
 - `valueMode`：工具价值、存在价值、二者兼有。
+- `status`：`thinking`（构思中）、`validating`（验证中）、`building`（实现中）、`verified`（已完成）、`archived`（已归档）。
 - `aiUsePolicy`：AI-0 不可读，AI-1 可读作背景，AI-2 可引用，AI-3 可推荐，AI-4 可执行任务。
 
-点子生命周期映射 Ferry P0-P4：
+点子生命周期（长期方向，映射 Ferry P0-P4，当前实现使用上方 `status` 枚举）：
 
-| Ferry 阶段 | 产品状态 | 前端显示 |
+| Ferry 阶段 | 当前 status | 前端显示 |
 | --- | --- | --- |
-| P0 Chaos | 混沌显影 | 想法中 |
-| P1 Blueprint | 蓝图成型 | 规划中 |
-| P2 Reality | 执行造物 | 实践中 |
-| P3 Dialectic | 偏差修正 | 修正中 |
-| P4 Synthesis | 复盘沉淀 | 已沉淀 |
+| P0 Chaos | `thinking` | 构思中 |
+| P1 Blueprint | `validating` | 验证中 |
+| P2 Reality | `building` | 实现中 |
+| P3 Dialectic | — | — |
+| P4 Synthesis | `verified` | 已完成 |
+
+（`archived` 为额外的归档状态，不映射 Ferry 阶段）
 
 ---
 
@@ -226,12 +232,14 @@ Ferry vNext 方法论更新
 
 旧 PRD、旧架构设计、旧 Agent 规划和历史讨论统一归档到 `docs/archive/`。
 
-归档文档只用于追溯“当时怎么想”，不再作为当前决策依据。当前判断以本 README 为准。
+归档文档只用于追溯”当时怎么想”，不再作为当前决策依据。当前判断以本 README 为准。
 
-本次架构讨论的视觉草稿保存在本地：
+### 未归入 archive/ 的参考文件
 
-```text
-.superpowers/brainstorm/7146-1780128339/
-```
+以下文件不在当前决策链中，仅作参考：
 
-如需长期保留视觉稿，可后续精选关键文件放入 `docs/archive/visual/`。当前不新增该目录，避免继续增加实体。
+- `docs/2026-05-30-ai-era-idea-co-creation-architecture-design.md` — AI 时代点子共创架构设计初稿
+- `docs/2026-05-31-ideas-page-redesign-spec.md` — 点子页重设计规格
+- `docs/superpowers/plans/2026-05-30-ai-era-idea-co-creation-implementation.md` — 实施计划初稿
+- `docs/media/` — 媒体计划参考
+- `docs/AI赋能/` — AI 赋能笔记参考

@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import HomeCanvas from '../components/home/HomeCanvas.astro';
+import SparkBoxModal from '../components/home/SparkBoxModal.astro';
 import { getPublishedPosts, getPublishedIdeas } from '@/lib/content';
 
 export const prerender = true;
@@ -13,6 +14,7 @@ const ideasCount = (await getPublishedIdeas()).length;
 
 <Base title="Walker — 行过万里水路" theme="nature">
   <HomeCanvas recentLogs={recentLogs} featuredLog={featuredLog} recentPosts={recentPosts} ideasCount={ideasCount} />
+  <SparkBoxModal />
 
   <script>
     import '../scripts/home-canvas';

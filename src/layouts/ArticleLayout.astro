@@ -9,6 +9,7 @@ import { POSTS } from '@/lib/routes';
 import Base from './Base.astro';
 import TableOfContents from '../components/article/TableOfContents.astro';
 import ArticleNav from '../components/article/ArticleNav.astro';
+import { Icon } from 'astro-icon/components';
 
 interface Heading {
   depth: number;
@@ -63,13 +64,18 @@ const hasToc = tocItems.length > 0;
 
   {/* 沉浸式阅读区域 */}
   <div class="reading-space" id="reading-space">
-    {/* 左边缘提示线 — 侧边栏幽灵 */}
+    {/* 左边缘提示区 — 侧边栏幽灵（扩大悬停热区 + 悬停文字提示） */}
     <div class="sidebar-ghost-hint" id="sidebar-ghost-hint" aria-hidden="true"></div>
 
     {/* 阅读进度条 */}
     <div class="reading-progress" id="reading-progress" aria-hidden="true">
       <div class="reading-progress-bar" id="reading-progress-bar"></div>
     </div>
+
+    {/* 移动端浮动导航按钮 */}
+    <button class="article-fab-nav" id="article-fab-nav" aria-label="打开导航">
+      <Icon name="lucide:compass" width={18} height={18} />
+    </button>
 
     {/* 幽灵 TOC — hover 右边缘或按 T 键出现 */}
     {hasToc && (
@@ -170,20 +176,57 @@ const hasToc = tocItems.length > 0;
     opacity: 0;
   }
 
-  /* ===== 左边缘提示线（侧边栏） ===== */
+  /* ===== 左边缘提示区（侧边栏） ===== */
   .sidebar-ghost-hint {
     position: fixed;
     top: 50%;
     left: 0;
+    width: 24px;
+    height: 80px;
+    transform: translateY(-50%);
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 29;
+  }
+
+  /* 可见的竖线（伪元素绘制，保持 2px） */
+  .sidebar-ghost-hint::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
     width: 2px;
     height: 40px;
-    transform: translateY(-50%);
     background: color-mix(in srgb, var(--color-brand) 15%, transparent);
     border-radius: 2px;
     pointer-events: none;
     opacity: 0.5;
     transition: opacity 0.3s ease;
-    z-index: 29;
+  }
+
+  /* 悬停时显示"导航"文字提示 */
+  .sidebar-ghost-hint::after {
+    content: '导航';
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    font-family: var(--font-mono, monospace);
+    color: var(--color-brand);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .sidebar-ghost-hint:hover::before {
+    opacity: 0.8;
+  }
+
+  .sidebar-ghost-hint:hover::after {
+    opacity: 0.7;
   }
 
   /* 侧边栏可见时隐藏提示线 */
@@ -220,12 +263,44 @@ const hasToc = tocItems.length > 0;
     transition: opacity 0.3s ease, width 0.3s ease;
   }
 
+  /* ===== 移动端浮动导航按钮 ===== */
+  .article-fab-nav {
+    display: none;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1rem;
+    z-index: 35;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--color-border);
+    color: var(--color-parchment-dim);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  }
+
+  .article-fab-nav:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    color: var(--color-brand);
+  }
+
   /* ===== 响应式 ===== */
   @media (max-width: 1279px) {
     .ghost-toc,
     .ghost-toc-hint,
     .sidebar-ghost-hint {
       display: none;
+    }
+
+    .article-fab-nav {
+      display: flex;
     }
 
     .reading-content {
@@ -330,9 +405,25 @@ const hasToc = tocItems.length > 0;
   initGhostToc();
   initGhostSidebar();
   initReadingProgress();
+
+  // 移动端浮动导航按钮 → 打开移动菜单
+  const fabNav = document.getElementById('article-fab-nav');
+  if (fabNav) {
+    fabNav.addEventListener('click', () => {
+      document.getElementById('menu-toggle')?.click();
+    });
+  }
+
   document.addEventListener('astro:page-load', () => {
     initGhostToc();
     initGhostSidebar();
     initReadingProgress();
+
+    const fab = document.getElementById('article-fab-nav');
+    if (fab) {
+      fab.addEventListener('click', () => {
+        document.getElementById('menu-toggle')?.click();
+      });
+    }
   });
 </script>

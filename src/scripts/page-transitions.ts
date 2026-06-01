@@ -20,14 +20,11 @@ function initPageTransitions() {
 
       if (reduceMotion) return; // 不播动画
 
-      // 页面入场：从下方微移 + 淡入
-      gsap.from(main, {
-        y: 12,
-        opacity: 0,
-        duration: 0.35,
-        ease: 'power2.out',
-        delay: 0.05,
-      });
+      // 页面入场：从下方微移 + 淡入（fromTo 明确起止状态）
+      gsap.fromTo(main,
+        { y: 12, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.35, ease: 'power2.out', delay: 0.05 },
+      );
     },
   );
 }

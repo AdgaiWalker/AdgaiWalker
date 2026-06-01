@@ -81,7 +81,7 @@ const isHome = Astro.url.pathname === '/';
     {!fullscreen && <Navigation transition:persist>
       <slot name="nav-extension" />
     </Navigation>}
-    <div class:list={["flex flex-col flex-1 w-full", !isHome && !fullscreen && "site-main-shell"]} transition:animate="fade">
+    <div class:list={["flex flex-col flex-1 w-full", !isHome && !fullscreen && "site-main-shell"]}>
       <main class="flex-1 relative z-10 w-full">
         <slot />
       </main>
