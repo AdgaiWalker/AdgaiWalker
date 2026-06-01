@@ -1,0 +1,72 @@
+---
+import { Icon } from 'astro-icon/components';
+---
+
+<div id="custom-palette-panel" class="fixed bottom-22 left-6 z-50 hidden flex flex-col gap-4 p-4.5 rounded-3xl bg-white/80 backdrop-blur-md border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-300 w-[240px]">
+  <div class="flex items-center justify-between border-b border-parchment/5 pb-2">
+    <span class="text-[12px] font-body font-bold text-parchment/70 flex items-center gap-1.5">
+      <Icon name="lucide:sliders" width={12} height={12} class="text-[#35bfab]" />
+      自定义调色板 (仅本地)
+    </span>
+    <button id="close-custom-panel" class="text-parchment-dim hover:text-parchment transition-colors text-[10px] cursor-pointer">
+      <Icon name="lucide:x" width={12} height={12} />
+    </button>
+  </div>
+
+  <div class="flex flex-col gap-2.5">
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] font-body text-parchment-dim/60 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> 暖黄光晕
+      </span>
+      <input type="color" id="picker-orb-1" class="w-7 h-7 rounded-lg border-2 border-white shadow-sm cursor-pointer overflow-hidden p-0" />
+    </div>
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] font-body text-parchment-dim/60 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-pink-400"></span> 嫩粉光晕
+      </span>
+      <input type="color" id="picker-orb-2" class="w-7 h-7 rounded-lg border-2 border-white shadow-sm cursor-pointer overflow-hidden p-0" />
+    </div>
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] font-body text-parchment-dim/60 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> 天青光晕
+      </span>
+      <input type="color" id="picker-orb-3" class="w-7 h-7 rounded-lg border-2 border-white shadow-sm cursor-pointer overflow-hidden p-0" />
+    </div>
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] font-body text-parchment-dim/60 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> 嫩绿光晕
+      </span>
+      <input type="color" id="picker-orb-4" class="w-7 h-7 rounded-lg border-2 border-white shadow-sm cursor-pointer overflow-hidden p-0" />
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2 pt-1 border-t border-parchment/5">
+    <button id="reset-custom-colors" class="flex-1 py-1.5 rounded-xl bg-parchment/[0.04] text-parchment-dim hover:bg-parchment/[0.08] hover:text-parchment transition-all text-[11px] font-body font-bold cursor-pointer text-center">
+      恢复默认
+    </button>
+  </div>
+</div>
+
+<style>
+  input[type="color"] {
+    -webkit-appearance: none;
+    border: none;
+    outline: none;
+    background: none;
+  }
+
+  input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  input[type="color"]::-webkit-color-swatch {
+    border: 1.5px solid rgba(255,255,255,0.95);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s;
+  }
+
+  input[type="color"]::-webkit-color-swatch:hover {
+    transform: scale(1.08);
+  }
+</style>

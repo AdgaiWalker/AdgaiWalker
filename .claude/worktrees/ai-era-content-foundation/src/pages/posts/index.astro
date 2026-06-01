@@ -1,0 +1,141 @@
+---
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import { buildPostPath } from '@/lib/routes';
+import { getPublishedPosts } from '@/lib/content';
+import { formatDateCompact } from '@/lib/format';
+import { Icon } from 'astro-icon/components';
+
+export const prerender = true;
+
+const allLogs = await getPublishedPosts();
+
+const groupedLogs: Record<number, typeof allLogs> = {};
+allLogs.forEach(log => {
+  const year = log.data.date.getFullYear();
+  if (!groupedLogs[year]) groupedLogs[year] = [];
+  groupedLogs[year].push(log);
+});
+const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
+
+---
+
+<SidebarLayout
+  title="文章 — Walker"
+  description="Walker 的文章记录，涵盖 AI 探索与生活日志。"
+  ogDescription="Walker 的文章记录，涵盖 AI 探索与生活日志。"
+  pageTitle="文章"
+  pageSubtitle="Posts"
+  pageIcon="pen-line"
+  itemCount={allLogs.length}
+  itemUnit="篇"
+>
+  <div class="timeline-shell">
+    <!-- 🔭 哲理常驻引言 (epigraph card) -->
+    <div class="panel-glass p-5 rounded-[24px] border border-[var(--color-nav-border)] mb-7 relative overflow-hidden group/quote">
+      <div class="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-amber-400/10 blur-2xl group-hover/quote:bg-amber-400/20 transition-colors duration-500"></div>
+      <div class="absolute -left-16 -bottom-16 w-36 h-36 rounded-full bg-[var(--color-brand-glow)] blur-2xl opacity-60"></div>
+      
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-3.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-500 shrink-0 shadow-sm mt-0.5">
+            <Icon name="lucide:compass" width={16} height={16} class="animate-spin-slow text-amber-500" />
+          </div>
+          <div>
+            <p class="font-serif text-[14px] sm:text-[15px] text-parchment leading-relaxed tracking-wide font-medium italic">
+              “ 最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。 ”
+            </p>
+            <p class="text-[9px] font-mono tracking-widest text-parchment-dim opacity-50 uppercase mt-1.5">
+              — WALKER'S LIFE PHRASE / 行者宣言
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="timeline-container" class="space-y-12">
+      {years.map(year => (
+        <div class="year-group relative" data-year={year}>
+          <div class="flex items-end gap-3 mb-5">
+            <h2 class="font-heading text-2xl text-parchment">{year}</h2>
+            <span class="text-parchment-dim text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
+          </div>
+
+          <div class="panel-glass rounded-2xl overflow-hidden border border-[var(--color-nav-border)]">
+            <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
+              {groupedLogs[year].map(log => (
+                <a href={buildPostPath(log.id)} class="log-item group flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
+                  <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateCompact(log.data.date)}</time>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-sans font-bold text-brand bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-md">
+                      <Icon name="lucide:brain" width={10} height={10} />
+                      思考
+                    </span>
+                    {log.data.tags.slice(0, 2).map((tag: string) => (
+                      <span class="text-[11px] font-mono text-parchment-dim bg-brand/5 border border-brand/10 px-2 py-0.5 rounded-md opacity-80">#{tag}</span>
+                    ))}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div id="empty-state" class="hidden py-20 text-center text-parchment/30 text-sm">
+      未找到匹配的文章
+    </div>
+  </div>
+</SidebarLayout>
+
+<style>
+  .timeline-shell {
+    max-width: 760px;
+  }
+
+  .tag-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    opacity: 0.48;
+    margin-left: 0.25rem;
+  }
+
+  .year-group h2 {
+    letter-spacing: 0;
+  }
+
+  #timeline-container .panel-glass {
+    border-radius: 20px;
+    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.03) !important;
+  }
+
+  /* .log-item 弹性横移与流光反馈 */
+  .log-item {
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .log-item:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    transform: translateX(6px);
+  }
+
+  body.theme-nature .log-item:hover {
+    background: rgba(0, 0, 0, 0.015) !important;
+  }
+
+  @media (max-width: 640px) {
+    .timeline-shell {
+      max-width: none;
+    }
+  }
+</style>

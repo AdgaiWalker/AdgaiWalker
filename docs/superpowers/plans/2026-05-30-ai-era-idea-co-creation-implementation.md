@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the current Astro content collection as the source of truth, then add small helper modules that project existing entries into the new multi-dimensional content model. Ship additive routes and components first, keep legacy `/posts`, `/tools`, `/ideas`, and `/projects` working, and only change main navigation after `/content` is usable. AI-facing files are static/generated from existing public data and do not introduce LLM calls.
 
-**Tech Stack:** Astro 6, Astro Content Collections + Zod, TypeScript, Tailwind CSS v4/global CSS, astro-icon Lucide icons, Pagefind existing build, Supabase LikeCounter existing integration.
+**Tech Stack:** Astro 6, Astro Content Collections + Zod, TypeScript, Tailwind CSS v4/global CSS, astro-icon Lucide icons, Pagefind existing build, Upstash Redis LikeCounter via `/api/like`.
 
 ---
 

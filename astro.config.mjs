@@ -21,7 +21,7 @@ export default defineConfig({
   },
   fonts: [
     {
-      name: 'Inter',
+      name: 'Outfit',
       cssVariable: '--font-body',
       provider: fontProviders.fontsource(),
       weights: ['300', '400', '500', '600', '700'],
@@ -30,13 +30,13 @@ export default defineConfig({
       fallbacks: ['PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
     },
     {
-      name: 'Sora',
+      name: 'Averia Gruesa Libre',
       cssVariable: '--font-heading',
       provider: fontProviders.fontsource(),
-      weights: ['300', '400', '500', '600', '700'],
+      weights: ['300', '400', '700'],
       styles: ['normal'],
       subsets: ['latin'],
-      fallbacks: ['PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+      fallbacks: ['Outfit', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
     },
     {
       name: 'JetBrains Mono',

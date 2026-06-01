@@ -1,0 +1,227 @@
+---
+import { Icon } from 'astro-icon/components';
+/**
+ * LikeCounter — 首页爱心点赞卡片 (Walker 专属灵感粒子爆裂版)
+ * 升级：点赞时触发果冻弹性缩放，并从点击处爆发出 6 颗呈抛物线飞散逐渐淡出的晶莹粉色小爱心粒子，极度解压！
+ */
+interface Props {
+  pagePath: string;
+}
+
+const { pagePath } = Astro.props;
+const FALLBACK_COUNT = 17861;
+---
+
+<div class="like-wrapper pointer-events-auto relative">
+  <button
+    class="like-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/70 text-parchment-dim hover:bg-white/95 hover:scale-105 active:scale-95 transition-all shadow-sm border border-white/60 cursor-pointer overflow-visible"
+    type="button"
+    data-like-counter
+    data-page-path={pagePath}
+    data-fallback-count={FALLBACK_COUNT}
+    aria-label="喜欢这个页面"
+    id="main-like-btn"
+  >
+    <!-- 爱心图标 (未点击描边，点击后实心) -->
+    <span class="like-icon flex items-center justify-center text-[#ff6b8a] transition-all duration-300 pointer-events-none">
+      <span class="heart-outline block">
+        <Icon name="lucide:heart" width={14} height={14} class="stroke-[2.5]" />
+      </span>
+      <span class="heart-filled hidden">
+        <Icon name="lucide:heart" width={14} height={14} class="fill-[#ff6b8a] stroke-[#ff6b8a]" />
+      </span>
+    </span>
+
+    <!-- 计数值 -->
+    <span class="text-[11.5px] font-body font-bold text-parchment/65 leading-none transition-colors pointer-events-none" data-like-count>{FALLBACK_COUNT}</span>
+  </button>
+</div>
+
+<style is:global>
+  /* ========================================= */
+  /* 点赞粒子爆裂与消散动画 */
+  /* ========================================= */
+  .like-bounce {
+    animation: like-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.35) !important;
+  }
+  @keyframes like-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+
+  .like-particle {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  /* 6 个不同方向与弧度的粒子关键帧 */
+  .particle-1 { animation: p-drift-1 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+  .particle-2 { animation: p-drift-2 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+  .particle-3 { animation: p-drift-3 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+  .particle-4 { animation: p-drift-4 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+  .particle-5 { animation: p-drift-5 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+  .particle-6 { animation: p-drift-6 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+
+  @keyframes p-drift-1 {
+    0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(-35px, -55px, 0) scale(0.9) rotate(-45deg); opacity: 0; }
+  }
+  @keyframes p-drift-2 {
+    0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(35px, -55px, 0) scale(0.9) rotate(45deg); opacity: 0; }
+  }
+  @keyframes p-drift-3 {
+    0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(-55px, -20px, 0) scale(0.8) rotate(-75deg); opacity: 0; }
+  }
+  @keyframes p-drift-4 {
+    0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(55px, -20px, 0) scale(0.8) rotate(75deg); opacity: 0; }
+  }
+  @keyframes p-drift-5 {
+    0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(-15px, -70px, 0) scale(1) rotate(-15deg); opacity: 0; }
+  }
+  @keyframes p-drift-6 {
+    0% { transform: translate3d(0, 0, 0) scale(0.6) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(15px, -70px, 0) scale(1) rotate(15deg); opacity: 0; }
+  }
+</style>
+
+<script>
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+  const headers = {
+    apikey: SB_KEY,
+    Authorization: `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'resolution=merge-duplicates',
+  };
+
+  async function fetchCount(pagePath: string, fallbackCount: number): Promise<number> {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/likes?select=count&page_path=eq.${encodeURIComponent(pagePath)}`,
+      { headers }
+    );
+    if (!res.ok) return fallbackCount;
+    const rows: { count: number }[] = await res.json();
+    return rows[0]?.count ?? fallbackCount;
+  }
+
+  async function upsertCount(pagePath: string, nextCount: number): Promise<number> {
+    const res = await fetch(`${SB_URL}/rest/v1/likes`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ page_path: pagePath, count: nextCount }),
+    });
+    if (!res.ok) throw new Error(`upsert failed: ${res.status}`);
+    const rows: { count: number }[] = await res.json();
+    return rows[0]?.count ?? nextCount;
+  }
+
+  // 动态创建粉色小爱心爆裂粒子
+  function spawnLikeParticles(clientX: number, clientY: number) {
+    const particleCount = 6;
+    
+    for (let i = 1; i <= particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = `like-particle particle-${i}`;
+      
+      // 粒子居中于点击坐标点
+      particle.style.left = `${clientX - 7}px`;
+      particle.style.top = `${clientY - 7}px`;
+      
+      // 手绘 SVG 爱心
+      particle.innerHTML = `
+        <svg viewBox="0 0 24 24" width="100%" height="100%">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff6b8a" />
+        </svg>
+      `;
+      
+      document.body.appendChild(particle);
+      
+      // 动画结束后销毁 DOM
+      setTimeout(() => particle.remove(), 750);
+    }
+  }
+
+  const setupLikes = async () => {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-like-counter]');
+    
+    buttons.forEach(async (button) => {
+      if (button.dataset.ready === 'true') return;
+      button.dataset.ready = 'true';
+
+      const pagePath = button.dataset.pagePath ?? '/';
+      const fallbackCount = Number(button.dataset.fallbackCount ?? '0');
+      const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+      const outlineIcon = button.querySelector<HTMLElement>('.heart-outline');
+      const filledIcon = button.querySelector<HTMLElement>('.heart-filled');
+      const storageKey = `walker-liked:${pagePath}`;
+
+      const setCount = (count: number) => {
+        if (countEl) countEl.textContent = String(count);
+      };
+
+      const markLiked = () => {
+        button.disabled = true;
+        button.classList.add('liked');
+        button.style.boxShadow = '0 0 16px rgba(255, 107, 138, 0.25)';
+        button.style.borderColor = 'rgba(255, 107, 138, 0.3)';
+        button.style.background = 'rgba(255, 240, 243, 0.85)';
+        if (outlineIcon) outlineIcon.classList.add('hidden');
+        if (filledIcon) filledIcon.classList.remove('hidden');
+      };
+
+      if (localStorage.getItem(storageKey) === 'true') {
+        markLiked();
+      }
+
+      if (SB_URL && SB_KEY) {
+        fetchCount(pagePath, fallbackCount).then(setCount).catch(() => setCount(fallbackCount));
+      } else {
+        setCount(fallbackCount);
+      }
+
+      button.addEventListener('click', async (e) => {
+        if (localStorage.getItem(storageKey) === 'true') {
+          markLiked();
+          return;
+        }
+
+        // 1. 触发爆裂粒子 (抓取鼠标点击的物理视口坐标)
+        spawnLikeParticles(e.clientX, e.clientY);
+
+        button.disabled = true;
+        try {
+          let finalCount = fallbackCount + 1;
+          if (SB_URL && SB_KEY) {
+            const current = await fetchCount(pagePath, fallbackCount);
+            const nextCount = current + 1;
+            finalCount = await upsertCount(pagePath, nextCount);
+          }
+          
+          setCount(finalCount);
+          localStorage.setItem(storageKey, 'true');
+          markLiked();
+
+          button.classList.add('like-bounce');
+          button.addEventListener('animationend', () => {
+            button.classList.remove('like-bounce');
+          }, { once: true });
+        } catch {
+          button.disabled = false;
+        }
+      });
+    });
+  };
+
+  document.addEventListener('astro:page-load', setupLikes);
+</script>

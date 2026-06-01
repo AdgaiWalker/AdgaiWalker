@@ -37,9 +37,11 @@ Ferry vNext 方法论更新
 - 样式：Tailwind CSS v4 + 全局 CSS 变量
 - 内容：Astro Content Collections，集合名为 `log`
 - 搜索：Pagefind
-- 点赞：Supabase REST API
+- 点赞：Upstash Redis（Vercel Marketplace）via `/api/like`
+- 评论：Giscus（GitHub Discussions）
 - 图标：Lucide via `astro-icon`
-- 当前主要路由：`/`、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/about`、`/about/site`
+- AI 接口：`/llms.txt`、`/walker-style.md`、`/index.json`（已上线）
+- 当前主要路由：`/`、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/content`、`/about`
 
 ---
 
@@ -48,8 +50,8 @@ Ferry vNext 方法论更新
 1. **决策文档过多**：PRD、站点架构、技术架构、Agent 架构、新总架构分散在多个文件里，容易互相冲突。
 2. **当前路由和长期方向不一致**：现状仍是 `/posts`、`/tools`、`/ideas`、`/projects` 等多入口；新方向是主导航收敛为 `首页 / 内容 / 关于`，由 `/content` 承载内容宇宙。
 3. **内容结构不够可扩展**：现有 `type` 不足以表达厨艺、书法、日记、吐槽、视频、图片、点子生命周期、存在价值等内容。
-4. **AI 可读接口未落地**：`llms.txt`、`walker-style.md`、结构化 `index.json` 仍未在站点中稳定生成。
-5. **数据台未落地**：访问、点赞、评论、搜索无结果等反馈还没有统一入口，无法稳定支持内容方向调整。
+4. **AI 可读接口未落地** ~~已落地（2026-05-31）：`/llms.txt`、`/walker-style.md`、`/index.json` 均已上线且使用 `prerender = true`~~。
+5. **数据台未落地** ~~轻量版已上线（2026-05-31）：关于站 → 数据台 section，含内容数量统计和空间分布。完整分析后台待 Plan 4~~。
 6. **iwalk.pro 与 NorthStar 边界需要保持**：iwalk.pro 不应过早承担多人平台复杂度；NorthStar 不应替代个人表达与方法沉淀。
 
 ---
@@ -81,7 +83,7 @@ Ferry vNext 方法论更新
 
 - `form`：文章、笔记、日记、吐槽、图集、视频、菜谱、书法、资源、项目、点子、教程。
 - `domain`：AI、编程、产品、哲学、生活、厨艺、书法、阅读、旅行、情绪、社群。
-- `intent`：思考、记录、教学、分享、验证、展示、复盘、连接、释放。
+- `intent`：思考、记录、教学、分享、验证、展示、复盘、连接、表达。
 - `valueMode`：工具价值、存在价值、二者兼有。
 - `aiUsePolicy`：AI-0 不可读，AI-1 可读作背景，AI-2 可引用，AI-3 可推荐，AI-4 可执行任务。
 

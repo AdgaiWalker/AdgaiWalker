@@ -1,0 +1,154 @@
+---
+import SearchModal from './SearchModal.astro';
+import TopNavBar from './nav/TopNavBar.astro';
+import SidebarNav from './nav/SidebarNav.astro';
+import MobileMenu from './nav/MobileMenu.astro';
+import { ABOUT, CONTENT, HOME } from '@/lib/routes';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: string;
+  hint?: string;
+}
+
+interface NavGroup {
+  title?: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    items: [
+      { label: '首页', href: HOME, icon: 'lucide:home', hint: 'Home' },
+      { label: '内容', href: CONTENT, icon: 'lucide:layout-grid', hint: 'Content' },
+      { label: '关于', href: ABOUT, icon: 'lucide:user', hint: 'About' },
+    ]
+  },
+];
+
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === '/';
+const normalizedPath = currentPath.replace(/\/$/, '') || '/';
+---
+
+<div class="hidden">
+  <SearchModal />
+</div>
+
+{isHome ? (
+  <TopNavBar items={navGroups[0].items} />
+) : (
+  <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md flex flex-col" id="main-nav">
+    <MobileMenu />
+    <SidebarNav navGroups={navGroups} normalizedPath={normalizedPath}>
+      <slot />
+    </SidebarNav>
+  </nav>
+)}
+
+<script>
+  import '../scripts/sidebar-state';
+
+  let navAbort: AbortController | null = null;
+
+  document.addEventListener('astro:page-load', () => {
+    if (navAbort) navAbort.abort();
+    navAbort = new AbortController();
+    const { signal } = navAbort;
+
+    // --- (a) 移动端菜单开关 ---
+    const toggle = document.getElementById('menu-toggle');
+    const menu = document.getElementById('mobile-menu');
+
+    toggle?.addEventListener('click', () => {
+      menu?.classList.toggle('hidden');
+      menu?.classList.toggle('flex');
+      menu?.classList.toggle('absolute');
+      menu?.classList.toggle('top-full');
+      menu?.classList.toggle('left-0');
+      menu?.classList.toggle('right-0');
+      menu?.classList.toggle('border-b');
+      menu?.classList.toggle('border-gray-200');
+      menu?.classList.toggle('shadow-lg');
+      menu?.classList.toggle('max-h-[80vh]');
+    }, { signal });
+
+    // --- (b) 搜索框唤起 ---
+    const desktopSearchBtn = document.getElementById('desktop-search-btn');
+    const mobileSearchBtn = document.getElementById('mobile-search-btn');
+
+    const triggerSearch = () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true, key: 'k' }));
+    };
+
+    desktopSearchBtn?.addEventListener('click', triggerSearch, { signal });
+    mobileSearchBtn?.addEventListener('click', triggerSearch, { signal });
+
+    // --- (c) 全站多主题自适应换肤控制 (Nature, Aurora, Sunset, Mint) ---
+    const themeBtn = document.getElementById('nav-theme-toggle');
+    const themes = ['nature', 'aurora', 'sunset', 'mint'];
+
+    const savedTheme = localStorage.getItem('walker-theme') || 'nature';
+    document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
+    document.body.classList.add(`theme-${savedTheme}`);
+
+    themeBtn?.addEventListener('click', () => {
+      const current = localStorage.getItem('walker-theme') || 'nature';
+      const nextIndex = (themes.indexOf(current) + 1) % themes.length;
+      const nextTheme = themes[nextIndex];
+
+      document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
+      document.body.classList.add(`theme-${nextTheme}`);
+      localStorage.setItem('walker-theme', nextTheme);
+
+      document.dispatchEvent(new CustomEvent('walker-theme-change', { detail: nextTheme }));
+    }, { signal });
+
+    // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
+    const container = document.querySelector('.nav-links-container');
+    const indicator = document.getElementById('nav-indicator') as HTMLElement | null;
+
+    if (container && indicator) {
+      const updateIndicator = (target: HTMLElement, animate = true) => {
+        if (!animate) {
+          indicator.style.transition = 'none';
+        } else {
+          indicator.style.transition = 'top 0.38s cubic-bezier(0.25, 1, 0.5, 1.2), height 0.38s cubic-bezier(0.25, 1, 0.5, 1.2), opacity 0.25s ease';
+        }
+        indicator.style.top = `${target.offsetTop}px`;
+        indicator.style.height = `${target.offsetHeight}px`;
+        indicator.style.left = `${target.offsetLeft}px`;
+        indicator.style.width = `${target.offsetWidth}px`;
+        indicator.style.opacity = '1';
+      };
+
+      const activeLink = container.querySelector('.nav-link-active') as HTMLElement | null;
+      if (activeLink) {
+        setTimeout(() => {
+          if (activeLink) updateIndicator(activeLink, false);
+        }, 30);
+      }
+
+      const links = container.querySelectorAll('.nav-link');
+      links.forEach(link => {
+        link.addEventListener('mouseenter', () => {
+          updateIndicator(link as HTMLElement, true);
+        }, { signal });
+      });
+
+      container.addEventListener('mouseleave', () => {
+        const active = container.querySelector('.nav-link-active') as HTMLElement | null;
+        if (active) {
+          updateIndicator(active, true);
+        } else {
+          indicator.style.opacity = '0';
+        }
+      }, { signal });
+    }
+  });
+
+  document.addEventListener('astro:before-swap', () => {
+    if (navAbort) { navAbort.abort(); navAbort = null; }
+  });
+</script>

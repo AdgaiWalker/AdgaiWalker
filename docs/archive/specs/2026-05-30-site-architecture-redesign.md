@@ -1,4 +1,6 @@
 > Archived: This document has been superseded by `docs/README.md`. It is kept only for historical context.
+>
+> ⚠️ **未采纳此方案（2026-06-01）**：实际 `/ideas` 和 `/projects` 保留为独立路由；`/learn` 未创建；新增了 `/content` 内容宇宙路由。请以 `CLAUDE.md` 路由表为准。
 
 # 站点架构重设计
 

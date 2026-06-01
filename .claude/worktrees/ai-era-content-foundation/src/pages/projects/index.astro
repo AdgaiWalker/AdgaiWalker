@@ -1,0 +1,81 @@
+---
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import { getPublishedProjects } from '@/lib/content';
+import { Icon } from 'astro-icon/components';
+
+export const prerender = true;
+
+const projects = await getPublishedProjects();
+
+const statusLabel = {
+  thinking: '构思中',
+  practicing: '进行中',
+  verified: '已完成',
+  archived: '已归档',
+};
+---
+
+<SidebarLayout
+  title="项目 · Walker"
+  description="动手做过的事，留下来的痕迹。"
+  pageTitle="项目"
+  pageSubtitle="Projects"
+  pageIcon="rocket"
+  itemCount={projects.length}
+  itemUnit="个"
+>
+  <div class="space-y-10">
+    <div class="space-y-4" id="projects-list">
+      {projects.map(entry => {
+        const href = entry.data.url ?? '#';
+        const isExternal = Boolean(entry.data.url);
+
+        return (
+          <a
+            href={href}
+            target={isExternal ? '_blank' : undefined}
+            rel={isExternal ? 'noopener noreferrer' : undefined}
+            class="project-item block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <Icon name="lucide:rocket" width={14} height={14} class="text-brand shrink-0" />
+                  <h3 class="text-sm font-bold truncate">{entry.data.title}</h3>
+                  {entry.data.status && (
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand/10 text-brand border border-brand/20">
+                      {statusLabel[entry.data.status] ?? entry.data.status}
+                    </span>
+                  )}
+                </div>
+                {entry.data.summary && (
+                  <p class="text-xs text-parchment-dim leading-relaxed line-clamp-2">
+                    {entry.data.summary}
+                  </p>
+                )}
+                <div class="flex items-center gap-2 mt-2">
+                  {entry.data.tags.slice(0, 3).map(tag => (
+                    <span class="text-[10px] text-parchment-dim/60 font-mono">#{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                {entry.data.url && (
+                  <Icon name="lucide:external-link" width={12} height={12} class="text-parchment-dim/40" />
+                )}
+              </div>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+
+    {projects.length === 0 && (
+      <div class="text-center py-20 text-parchment-dim">
+        <Icon name="lucide:rocket" width={40} height={40} class="mx-auto mb-4 opacity-30" />
+        <p class="text-sm">还没有项目</p>
+        <p class="text-xs mt-1 opacity-50">想法在路上，项目在路上。</p>
+      </div>
+    )}
+  </div>
+</SidebarLayout>

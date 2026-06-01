@@ -1,4 +1,6 @@
 > Archived: This document has been superseded by `docs/README.md`. It is kept only for historical context.
+>
+> ⚠️ **技术栈信息已过时（2026-06-01）**：点赞已从 Supabase 迁移到 Upstash Redis；Giscus 评论已上线；`content-types.ts` 实际创建为 `content-model.ts`。请以 `CLAUDE.md` 为准。
 
 # 技术架构总览
 

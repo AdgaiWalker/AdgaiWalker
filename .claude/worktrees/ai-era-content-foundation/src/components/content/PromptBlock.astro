@@ -1,0 +1,65 @@
+---
+import { Icon } from 'astro-icon/components';
+interface Props {
+  title?: string;
+  tags?: string[];
+}
+
+const { title, tags = [] } = Astro.props;
+---
+
+<div class="prompt-block my-6 panel-glass border-l-2 border-l-gold/30 overflow-hidden">
+  <!-- 头部 -->
+  <div class="panel-header">
+    <Icon name="lucide:terminal" width={14} height={14} class="text-gold/50" />
+    PROMPT
+    {title && (
+      <span class="text-parchment/40 text-xs font-body normal-case tracking-normal">— {title}</span>
+    )}
+    <div class="ml-auto flex items-center gap-2">
+      {tags.length > 0 && (
+        <div class="flex gap-1">
+          {tags.map(tag => (
+            <span class="tag-pill">{tag}</span>
+          ))}
+        </div>
+      )}
+      <button
+        class="copy-btn px-2 py-1 rounded bg-white/[0.06] text-xs text-parchment/40 hover:bg-white/[0.1] hover:text-parchment/60 cursor-pointer border-none transition-all font-mono"
+        data-prompt-target="prompt-content"
+      >
+        复制
+      </button>
+    </div>
+  </div>
+
+  <!-- 提示词内容 -->
+  <div class="prompt-content px-5 py-4 text-parchment/70 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words">
+    <slot />
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const block = btn.closest('.prompt-block');
+      const content = block?.querySelector('.prompt-content')?.textContent?.trim();
+      if (!content) return;
+
+      try {
+        await navigator.clipboard.writeText(content);
+        const original = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = original; }, 2000);
+      } catch {
+        btn.textContent = '失败';
+      }
+    });
+  });
+</script>
+
+<style>
+  .prompt-block {
+    break-inside: avoid;
+  }
+</style>

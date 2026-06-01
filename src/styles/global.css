@@ -26,8 +26,6 @@
   --color-border: var(--color-border);
 
   --font-cjk: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
-  --font-heading: 'Averia Gruesa Libre', 'Outfit', 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
-  --font-body: 'Outfit', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
 @theme inline {

@@ -1,0 +1,73 @@
+---
+import { Icon } from 'astro-icon/components';
+---
+
+<div id="canvas-controls" class="fixed bottom-6 left-6 z-50 flex items-center gap-3.5 px-4.5 py-3 rounded-2xl bg-white/80 backdrop-blur-md border border-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.06)] pointer-events-auto transition-all duration-300">
+  <div class="flex items-center gap-2 border-r border-parchment/10 pr-3.5">
+    <button id="zoom-out" class="w-8 h-8 rounded-lg hover:bg-parchment/5 flex items-center justify-center text-parchment-dim hover:text-parchment transition-all active:scale-95 cursor-pointer" title="缩小">
+      <Icon name="lucide:minus" width={14} height={14} />
+    </button>
+    <span id="zoom-text" class="text-[12px] font-mono font-medium text-parchment/70 min-w-[36px] text-center">100%</span>
+    <button id="zoom-in" class="w-8 h-8 rounded-lg hover:bg-parchment/5 flex items-center justify-center text-parchment-dim hover:text-parchment transition-all active:scale-95 cursor-pointer" title="放大">
+      <Icon name="lucide:plus" width={14} height={14} />
+    </button>
+    <button id="zoom-fit" class="w-8 h-8 rounded-lg hover:bg-parchment/5 flex items-center justify-center text-parchment-dim hover:text-parchment transition-all active:scale-95 cursor-pointer ml-1" title="居中适合">
+      <Icon name="lucide:target" width={14} height={14} />
+    </button>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <Icon name="lucide:palette" width={14} height={14} class="text-parchment/30 mr-1" />
+    <button class="theme-pill bg-gradient-to-br from-yellow-300 via-pink-400 to-cyan-400 border border-white/60 shadow-sm" data-theme="nature" title="流光霜雾 (Luminous Mist)"></button>
+    <button class="theme-pill bg-gradient-to-br from-fuchsia-500 via-purple-600 to-cyan-500" data-theme="aurora" title="极光霓虹 (Aurora Neon)"></button>
+    <button class="theme-pill bg-gradient-to-br from-orange-500 via-rose-500 to-amber-400" data-theme="sunset" title="落日余晖 (Sunset Glow)"></button>
+    <button class="theme-pill bg-gradient-to-br from-emerald-500 via-teal-500 to-lime-400" data-theme="mint" title="数码薄荷 (Cyber Mint)"></button>
+    <button id="custom-theme-pill" class="theme-pill bg-gradient-to-br from-indigo-400 via-pink-500 to-yellow-400 flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all cursor-pointer" data-theme="custom" title="自定义流光调色板">
+      <Icon name="lucide:plus" width={10} height={10} class="text-white font-bold stroke-[3]" />
+    </button>
+  </div>
+</div>
+
+<style>
+  #canvas-controls.controls-collapsed {
+    opacity: 0.5;
+  }
+
+  #canvas-controls.controls-collapsed:hover {
+    opacity: 1;
+  }
+
+  :global(body.theme-aurora) #canvas-controls,
+  :global(body.theme-sunset) #canvas-controls,
+  :global(body.theme-mint) #canvas-controls {
+    background: rgba(18, 14, 38, 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .theme-pill {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-pill:hover {
+    transform: scale(1.25);
+  }
+
+  .theme-pill.active {
+    transform: scale(1.25);
+    border-color: #1a2325;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  }
+
+  :global(body.theme-aurora) .theme-pill.active,
+  :global(body.theme-sunset) .theme-pill.active,
+  :global(body.theme-mint) .theme-pill.active,
+  :global(body.theme-custom) .theme-pill.active {
+    border-color: #f3f4f6;
+    box-shadow: 0 0 12px var(--color-brand);
+  }
+</style>

@@ -1,0 +1,177 @@
+---
+/**
+ * /posts/[slug] — 统一文章详情页
+ */
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import PromptBlock from '../../components/content/PromptBlock.astro';
+import DialogueBubble from '../../components/content/DialogueBubble.astro';
+import LikeCounter from '../../components/LikeCounter.astro';
+import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
+import ResourceCard from '../../components/ResourceCard.astro';
+import { POSTS, buildPostPath } from '@/lib/routes';
+import { getPublishedPosts } from '@/lib/content';
+import { PLATFORM_ICON_MAP } from '@/lib/constants';
+import { formatDateLocale } from '@/lib/format';
+
+import { render } from 'astro:content';
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const entries = await getPublishedPosts();
+  const articleList = entries.map(a => ({
+    id: a.id,
+    title: a.data.title,
+    date: a.data.date,
+    tags: a.data.tags,
+    summary: a.data.summary,
+  }));
+
+  return entries.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry, articleList },
+  }));
+}
+
+const { entry, articleList } = Astro.props;
+
+if (!entry) {
+  return Astro.redirect('/404');
+}
+
+const { Content, headings } = await render(entry);
+
+const components = { PromptBlock, DialogueBubble, BilibiliVideo };
+
+const rawBody = entry.body || '';
+const cleanBody = rawBody
+  .replace(/^---[\s\S]*?---/, '')
+  .replace(/^import\s+.*$/gm, '')
+  .replace(/<[^>]+>/g, '')
+  .replace(/[#*_`\[\]()>|]/g, '')
+  .trim();
+const description = cleanBody.slice(0, 160);
+const coverImage = entry.data.cover;
+const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
+
+const videos = entry.data.videos || [];
+const resources = entry.data.resources || [];
+
+---
+
+<ArticleLayout
+  title={`${entry.data.title} — Walker`}
+  description={description}
+  ogTitle={entry.data.title}
+  ogDescription={entry.data.summary ?? entry.data.description ?? description}
+  ogImage={ogImage ?? '/images/hero-bg.png'}
+  canonicalUrl={Astro.url.href}
+  headings={headings}
+  currentSlug={entry.id}
+  articleList={articleList}
+>
+  <div class="article-reading-surface min-h-screen">
+    <article class="article-document" data-pagefind-body>
+      <header class="mb-14">
+        <div class="flex flex-wrap items-center gap-3 mb-6 text-[13px] font-mono tracking-wider text-[var(--color-parchment-dim)] opacity-80">
+          <a href={POSTS} class="hover:text-[var(--color-brand)] transition-colors no-underline">
+            文章
+          </a>
+          <span>/</span>
+          <time>{formatDateLocale(entry.data.date)}</time>
+          <span class="px-2 py-0.5 rounded text-[11px] uppercase tracking-tighter border border-brand/20 bg-brand/5 text-[var(--color-brand)]">
+            知识
+          </span>
+          <div class="article-meta-tags">
+            {entry.data.tags.map((tag: string) => (
+              <span class="px-2 py-0.5 bg-[rgba(255,255,255,0.03)] border border-[var(--color-nav-border)] text-[var(--color-parchment-dim)] rounded text-[11px] uppercase tracking-tighter">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--color-parchment)] leading-[1.1] mb-8 tracking-tight" data-pagefind-meta="title">
+          {entry.data.title}
+        </h1>
+
+        {coverImage && (
+          <div class="mt-4 mb-12 aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl border border-[var(--color-nav-border)]">
+            {typeof coverImage === 'string' ? (
+              <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="w-full h-full object-cover" />
+            ) : (
+              <Image src={coverImage} alt={entry.data.title} class="w-full h-full object-cover" />
+            )}
+          </div>
+        )}
+
+        {entry.data.summary && (
+          <div class="text-lg md:text-xl text-[var(--color-parchment-dim)] leading-relaxed font-light mb-12 italic border-l-4 pl-6 border-brand/40">
+            {entry.data.summary}
+          </div>
+        )}
+      </header>
+
+      {/* 极致高级的 CJK 衬线/Inter 无衬线混合排版 */}
+      <div class="prose prose-walker max-w-none break-words">
+        <Content components={components} />
+      </div>
+
+      {videos.length > 0 && (
+        <div class="mt-20 pt-12 border-t border-slate-100">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <Icon name="lucide:video" width={24} height={24} class="text-blue-500" />
+            配套视频
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {videos.map((vid: any) => (
+              <a href={vid.url} target="_blank" rel="noopener noreferrer" class="group block p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all no-underline bg-white">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                    <Icon name={PLATFORM_ICON_MAP[vid.platform] || 'lucide:circle-play'} width={20} height={20} />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-bold text-slate-900 truncate">{vid.title || '观看视频'}</div>
+                    <div class="text-xs text-slate-400 capitalize">{vid.platform}</div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {resources.length > 0 && (
+        <div class="mt-16 pt-12 border-t border-slate-100">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <Icon name="lucide:link-2" width={24} height={24} class="text-emerald-500" />
+            相关资源
+          </h2>
+          <div class="flex flex-col gap-3">
+            {resources.map((res: any) => (
+              <ResourceCard
+                type={res.type}
+                url={res.url}
+                name={res.name}
+                description={res.description}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <footer class="mt-24 pt-12 border-t border-slate-100 flex items-center justify-between">
+        <a href={POSTS} class="text-slate-400 hover:text-[var(--color-brand)] transition-colors no-underline flex items-center gap-2 text-sm font-medium">
+          <Icon name="lucide:arrow-left" width={16} height={16} />
+          返回文章
+        </a>
+
+        <div class="scale-90 origin-right">
+          <LikeCounter pagePath={buildPostPath(entry.id)} />
+        </div>
+      </footer>
+    </article>
+  </div>
+</ArticleLayout>

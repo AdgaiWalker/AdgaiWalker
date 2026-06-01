@@ -1,0 +1,151 @@
+---
+import { POSTS } from '@/lib/routes';
+/**
+ * ArticleLayout — 文章详情页三栏布局
+ * 左栏：导航 + 文章列表（嵌套在 Navigation 中）
+ * 中栏：TOC 目录
+ * 右栏：文章正文
+ *
+ * 用于：/posts/[slug]
+ */
+import Base from './Base.astro';
+import TableOfContents from '../components/article/TableOfContents.astro';
+import ArticleNav from '../components/article/ArticleNav.astro';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface ArticleEntry {
+  id: string;
+  title: string;
+  date: Date;
+  tags?: string[];
+  summary?: string;
+}
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  canonicalUrl?: string;
+  themeColor?: string;
+  headings: Heading[];
+  currentSlug: string;
+  articleList: ArticleEntry[];
+}
+
+const {
+  headings,
+  currentSlug,
+  articleList,
+  ...seoProps
+} = Astro.props;
+---
+
+<Base
+  {...seoProps}
+  pureMode={true}
+>
+  {/* 将文章列表注入到 Navigation 的 slot 中 */}
+  <Fragment slot="nav-extension">
+    <ArticleNav
+      articles={articleList}
+      currentSlug={currentSlug}
+      basePath={POSTS}
+    />
+  </Fragment>
+
+  <div class="article-layout" id="article-layout">
+    {/* 中栏 — TOC 目录 */}
+    <aside class="article-toc-column relative border-r border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md" id="toc-column">
+      {/* 动态液态高亮目录指示针 */}
+      <div class="toc-active-indicator opacity-0" id="toc-indicator"></div>
+      <TableOfContents headings={headings} />
+    </aside>
+
+    {/* 右栏 — 文章正文 (包裹在精美的磨砂白玉/黑曜石数字卷轴中) */}
+    <main class="article-content-column py-16 px-4 sm:px-8 md:px-12 flex justify-center w-full relative z-10 overflow-y-auto">
+      <article class="prose-glass-panel panel-glass w-full max-w-[800px] p-8 sm:p-12 md:p-14 relative">
+        <slot />
+      </article>
+    </main>
+  </div>
+</Base>
+
+<style>
+  .article-layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    background: transparent; /* 通透莫兰迪背景完全显露 */
+  }
+
+  /* 中栏 — TOC 目录 */
+  .article-toc-column {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 5.25rem 0 2rem;
+    overflow-y: auto;
+  }
+
+  .article-toc-column::-webkit-scrollbar {
+    width: 3px;
+  }
+  .article-toc-column::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .article-toc-column::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  .article-toc-column:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  /* 右栏 — 文章正文 */
+  .article-content-column {
+    min-height: 100vh;
+  }
+
+  /* 磨砂纸张卷轴微悬浮发光 */
+  .prose-glass-panel {
+    border-radius: 32px;
+  }
+
+  /* 响应式：中等屏幕隐藏 TOC */
+  @media (max-width: 1279px) {
+    .article-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .article-toc-column {
+      display: none;
+    }
+
+    .article-content-column {
+      padding: 6rem 1rem 3rem;
+    }
+    
+    .prose-glass-panel {
+      padding: 1.5rem !important;
+      border-radius: 20px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .article-content-column {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  import '../scripts/toc-highlight';
+</script>
