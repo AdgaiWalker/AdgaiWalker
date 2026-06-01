@@ -245,7 +245,6 @@ const traceLog = featuredLog || recentLogs[0];
     margin-top: 14px;
     padding: 8px 10px;
     border-radius: 12px;
-    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
     text-decoration: none;
     transition: background 0.2s ease;
   }
@@ -260,6 +259,13 @@ const traceLog = featuredLog || recentLogs[0];
     font-weight: 600;
     letter-spacing: 0.04em;
     flex-shrink: 0;
+  }
+
+  /* 推荐文章特殊样式 */
+  .directory-trace:has(.directory-trace-label) {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 5%, transparent), color-mix(in srgb, var(--color-brand) 2%, transparent));
+    border-left: 2px solid color-mix(in srgb, var(--color-brand) 30%, transparent);
+    padding-left: 10px;
   }
 
   .directory-trace-title {

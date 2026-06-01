@@ -30,3 +30,34 @@ function initPageTransitions() {
 }
 
 registerLifecycle(initPageTransitions);
+
+/**
+ * 页面切换顶部进度条
+ * astro:before-preparation 时显示，astro:after-swap 时隐藏
+ */
+function initTransitionBar() {
+  document.addEventListener('astro:before-preparation', () => {
+    let bar = document.getElementById('transition-progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'transition-progress-bar';
+      bar.style.cssText = 'position:fixed;top:0;left:0;height:2px;z-index:9999;pointer-events:none;background:var(--color-brand);opacity:0;transition:opacity 0.15s ease,width 0.3s ease;';
+      document.body.appendChild(bar);
+    }
+    bar.style.width = '0%';
+    bar.style.opacity = '1';
+    requestAnimationFrame(() => {
+      if (bar) bar.style.width = '60%';
+    });
+  });
+
+  document.addEventListener('astro:after-swap', () => {
+    const bar = document.getElementById('transition-progress-bar');
+    if (bar) {
+      bar.style.width = '100%';
+      bar.style.opacity = '0';
+    }
+  });
+}
+
+initTransitionBar();
