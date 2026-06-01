@@ -47,7 +47,7 @@
     const savedTheme = localStorage.getItem('walker-theme') || 'nature';
     const giscusTheme = ['aurora', 'sunset', 'mint'].includes(savedTheme) ? 'dark_dimmed' : 'light';
 
-    const iframe = document.querySelector('iframe.giscus-frame');
+    const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement | null;
     if (iframe) {
       iframe.contentWindow?.postMessage(
         { giscus: { setConfig: { theme: giscusTheme } } },
@@ -75,7 +75,7 @@
     const themeName = e.detail;
     const giscusTheme = ['aurora', 'sunset', 'mint'].includes(themeName) ? 'dark_dimmed' : 'light';
 
-    const iframe = document.querySelector('iframe.giscus-frame');
+    const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement | null;
     if (iframe) {
       iframe.contentWindow?.postMessage(
         { giscus: { setConfig: { theme: giscusTheme } } },

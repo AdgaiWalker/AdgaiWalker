@@ -1,6 +1,6 @@
 ﻿import type { CollectionEntry } from 'astro:content';
 
-import { buildPostPath, IDEAS, POSTS, PROJECTS, TOOLS } from '@/lib/routes';
+import { buildPostPath, IDEAS, PROJECTS, TOOLS } from '@/lib/routes';
 
 export type LogEntry = CollectionEntry<'log'>;
 

@@ -12,7 +12,7 @@ function initHomeEntrance() {
       reduceMotion: '(prefers-reduced-motion: reduce)',
     },
     (context) => {
-      const { reduceMotion } = context.conditions;
+      const { reduceMotion } = context.conditions as Record<string, boolean>;
 
       const cards = document.querySelectorAll<HTMLElement>('.draggable-card');
       if (!cards.length) return;

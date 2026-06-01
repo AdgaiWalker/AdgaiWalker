@@ -12,19 +12,10 @@ import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 import stats from '@/data/site-stats.json';
-import { getPublishedContentItems } from '@/lib/content';
-import { contentSpaces, itemBelongsToSpace } from '@/lib/content-model';
 
 export const prerender = true;
 
 const { personalTimeline } = stats;
-
-const contentItems = await getPublishedContentItems();
-const contentCounts = contentSpaces.map(space => ({
-  ...space,
-  count: contentItems.filter(item => itemBelongsToSpace(item, space.id)).length,
-}));
-const totalLikesPlaceholder = 'Upstash Redis 统计中';
 ---
 
 <FullscreenLayout

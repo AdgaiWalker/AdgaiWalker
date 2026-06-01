@@ -13,7 +13,7 @@ function initPageTransitions() {
       reduceMotion: '(prefers-reduced-motion: reduce)',
     },
     (context) => {
-      const { reduceMotion } = context.conditions;
+      const { reduceMotion } = context.conditions as Record<string, boolean>;
 
       const main = document.querySelector('main');
       if (!main) return;

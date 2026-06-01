@@ -1034,7 +1034,6 @@ const renderedIdeas = await Promise.all(
   function updateIdeasFilter() {
     const activeStatus = getRequestedStatus();
     const cards = [...document.querySelectorAll('.card-container')];
-    const tabs = [...document.querySelectorAll('.filter-tab')];
     let visibleCount = 0;
 
     // 过滤卡牌

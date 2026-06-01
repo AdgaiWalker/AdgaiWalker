@@ -11,7 +11,7 @@ interface Props {
   ideasCount: number;
 }
 
-const { recentLogs, featuredLog, recentPosts, ideasCount } = Astro.props;
+const { recentLogs, featuredLog, recentPosts } = Astro.props;
 const traceLog = featuredLog || recentLogs[0];
 ---
 

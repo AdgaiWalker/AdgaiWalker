@@ -13,7 +13,7 @@ function initScrollFade() {
       reduceMotion: '(prefers-reduced-motion: reduce)',
     },
     (context) => {
-      const { isMotion, reduceMotion } = context.conditions;
+      const { reduceMotion } = context.conditions as Record<string, boolean>;
 
       // 如果用户偏好减少动画，直接显示所有元素
       if (reduceMotion) {

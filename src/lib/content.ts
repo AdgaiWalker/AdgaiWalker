@@ -87,7 +87,7 @@ export function getVersionChain<T extends { id: string; data: { version?: number
   let depth = 0;
   while (node && depth++ < maxDepth) {
     chain.push(node);
-    const next = byPrevious.get(node.id)?.[0];
+    const next: T | undefined = byPrevious.get(node.id)?.[0];
     node = next;
   }
 
