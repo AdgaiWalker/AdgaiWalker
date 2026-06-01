@@ -52,6 +52,18 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
       </div>
     </div>
 
+    {/* 标签筛选栏 */}
+    <div class="tag-filter-bar" id="tag-filter-bar">
+      <button class="filter-pill is-active" data-tag="all">
+        全部<span class="filter-count">{allLogs.length}</span>
+      </button>
+      {[...new Set(allLogs.flatMap(l => l.data.tags))].map(tag => (
+        <button class="filter-pill" data-tag={tag}>
+          #{tag}<span class="filter-count">{allLogs.filter(l => l.data.tags.includes(tag)).length}</span>
+        </button>
+      ))}
+    </div>
+
     <div id="timeline-container" class="space-y-12" data-stagger>
       {years.map(year => (
         <div class="year-group relative" data-year={year}>
@@ -102,6 +114,32 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 2rem;
+  }
+
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    background: transparent;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .filter-pill:hover {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+    color: var(--color-brand);
+  }
+
+  .filter-pill.is-active {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
+    color: var(--color-brand);
   }
 
   .filter-count {
@@ -159,3 +197,43 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
     }
   }
 </style>
+
+<script>
+  function initTagFilter() {
+    const pills = document.querySelectorAll<HTMLButtonElement>('.filter-pill');
+    const items = document.querySelectorAll<HTMLElement>('.log-item');
+    const emptyState = document.getElementById('empty-state');
+    const yearGroups = document.querySelectorAll<HTMLElement>('.year-group');
+    if (!pills.length || !items.length) return;
+
+    pills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        pills.forEach(p => p.classList.remove('is-active'));
+        pill.classList.add('is-active');
+
+        const tag = pill.dataset.tag || 'all';
+        let visibleCount = 0;
+
+        items.forEach(item => {
+          const tags = (item.dataset.tags || '').split(',');
+          const show = tag === 'all' || tags.includes(tag);
+          item.classList.toggle('hidden', !show);
+          if (show) visibleCount++;
+        });
+
+        // 隐藏空年份组
+        yearGroups.forEach(group => {
+          const visible = group.querySelectorAll<HTMLElement>('.log-item:not(.hidden)');
+          group.classList.toggle('hidden', visible.length === 0);
+        });
+
+        if (emptyState) {
+          emptyState.classList.toggle('hidden', visibleCount > 0);
+        }
+      });
+    });
+  }
+
+  initTagFilter();
+  document.addEventListener('astro:page-load', initTagFilter);
+</script>

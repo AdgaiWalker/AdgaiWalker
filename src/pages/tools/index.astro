@@ -21,6 +21,25 @@ export const prerender = true;
       <p class="intro-text">秋知实际在用的 AI 资源。<strong>以下群/服务/产品与本人无任何利益关系</strong>，我只是用户，分享出来是因为自己觉得有用。</p>
     </div>
 
+    {/* 章节快速导航 */}
+    <nav class="section-nav" id="section-nav">
+      <a href="#info-source" class="section-nav-tab is-active" data-target="info-source">
+        <Icon name="lucide:users" width={14} height={14} /> 信息源
+      </a>
+      <a href="#ai-tools" class="section-nav-tab" data-target="ai-tools">
+        <Icon name="lucide:bot" width={14} height={14} /> AI 工具
+      </a>
+      <a href="#skill" class="section-nav-tab" data-target="skill">
+        <Icon name="lucide:zap" width={14} height={14} /> Skill
+      </a>
+      <a href="#infra" class="section-nav-tab" data-target="infra">
+        <Icon name="lucide:server" width={14} height={14} /> 基础设施
+      </a>
+      <a href="#bloggers" class="section-nav-tab" data-target="bloggers">
+        <Icon name="lucide:heart" width={14} height={14} /> 博主推荐
+      </a>
+    </nav>
+
     {/* ===== 1. 信息源（群聊）===== */}
     <section id="info-source" class="resource-section reveal">
       <h2 class="section-title">
@@ -34,7 +53,7 @@ export const prerender = true;
         {communities.map(community => (
           <div class:list={['community-row', community.featured && 'community-featured']}>
             {community.qrCode ? (
-              <details class="qr-details" open>
+              <details class="qr-details">
                 <summary class="qr-summary">
                   <Icon name="lucide:scan-line" width={14} height={14} />
                   扫码加入
@@ -62,7 +81,7 @@ export const prerender = true;
       <div class="resources-grid">
         {aiResources.map(resource => (
           <div class="resource-item">
-            <details class="qr-details" open>
+            <details class="qr-details">
               <summary class="qr-summary">
                 <Icon name="lucide:scan-line" width={14} height={14} />
                 扫码加入
@@ -409,6 +428,46 @@ export const prerender = true;
     font-size: 0.78rem; line-height: 1.6;
   }
 
+  /* 章节锚点导航 */
+  .section-nav {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in srgb, var(--color-bg) 90%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    margin: 0 -1.5rem;
+    padding: 0.6rem 1.5rem;
+  }
+  .section-nav-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    background: transparent;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+  }
+  .section-nav-tab:hover {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+    color: var(--color-brand);
+  }
+  .section-nav-tab.is-active {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
+    color: var(--color-brand);
+  }
+
   @media (max-width: 640px) {
     .qr-code { width: 100px; height: 100px; }
     .qr-placeholder { width: 100px; height: 100px; }
@@ -417,3 +476,40 @@ export const prerender = true;
     .tool-category { width: auto; }
   }
 </style>
+
+<script>
+  function initSectionNav() {
+    const tabs = document.querySelectorAll<HTMLAnchorElement>('.section-nav-tab');
+    const sections = document.querySelectorAll<HTMLElement>('.resource-section');
+    if (!tabs.length || !sections.length) return;
+
+    // 点击跳转
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const id = tab.getAttribute('data-target');
+        const target = document.getElementById(id || '');
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // 滚动高亮
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tabs.forEach(t => t.classList.remove('is-active'));
+          const activeTab = document.querySelector(`.section-nav-tab[data-target="${entry.target.id}"]`);
+          activeTab?.classList.add('is-active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+
+    // 清理
+    document.addEventListener('astro:before-swap', () => observer.disconnect(), { once: true });
+  }
+
+  initSectionNav();
+  document.addEventListener('astro:page-load', initSectionNav);
+</script>

@@ -1,6 +1,6 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { getPublishedProjects } from '@/lib/content';
+import { getPublishedProjects, getPublishedIdeas } from '@/lib/content';
 import { IDEAS } from '@/lib/routes';
 import { STATUS_LABELS } from '@/lib/constants';
 import { Icon } from 'astro-icon/components';
@@ -8,6 +8,10 @@ import { Icon } from 'astro-icon/components';
 export const prerender = true;
 
 const projects = await getPublishedProjects();
+const ideas = await getPublishedIdeas();
+const activeIdeas = ideas.filter(i =>
+  ['validating', 'building'].includes(i.data.status || 'thinking')
+);
 
 const statusLabel = STATUS_LABELS;
 ---
@@ -67,7 +71,34 @@ const statusLabel = STATUS_LABELS;
       })}
     </div>
 
-    {projects.length === 0 && (
+    {projects.length === 0 && activeIdeas.length > 0 && (
+      <div class="space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-parchment flex items-center gap-2">
+            <Icon name="lucide:compass" width={18} height={18} class="text-brand" />
+            正在路上
+          </h2>
+          <p class="text-xs text-parchment-dim mt-1">这些点子正在变成项目</p>
+        </div>
+        <div class="grid gap-3">
+          {activeIdeas.map(idea => (
+            <a href={`/ideas#${idea.id}`} class="block panel-glass p-4 rounded-2xl border border-[var(--color-nav-border)] transition-all hover:border-brand/30 hover:-translate-y-0.5 no-underline">
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-brand/10 text-brand border border-brand/20">
+                  {statusLabel[idea.data.status || 'thinking']}
+                </span>
+                <h3 class="text-sm font-bold text-parchment truncate">{idea.data.title}</h3>
+              </div>
+              {idea.data.summary && (
+                <p class="text-xs text-parchment-dim leading-relaxed line-clamp-2">{idea.data.summary}</p>
+              )}
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {projects.length === 0 && activeIdeas.length === 0 && (
       <div class="text-center py-20 text-parchment-dim">
         <Icon name="lucide:rocket" width={40} height={40} class="mx-auto mb-4 opacity-30" />
         <p class="text-sm">还没有项目</p>
