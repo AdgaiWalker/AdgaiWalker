@@ -42,3 +42,6 @@ pnpm-debug.log*
 screenshot-*
 wiki-auth-qr.png
 *.pid
+
+# Skills lock file (managed by superpowers)
+skills-lock.json
