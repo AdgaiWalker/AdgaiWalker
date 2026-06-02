@@ -1,3 +1,5 @@
+import { gsap } from 'gsap';
+
 /**
  * toc-highlight.ts — TOC 滚动跟随高亮
  * 使用 IntersectionObserver 检测当前可见的章节
@@ -36,12 +38,41 @@ function initTocHighlight(): void {
       }
     });
 
-    // 联动 Liquid Indicator 平滑位移动效
+    // 联动 Liquid Indicator 平滑粘弹性滑移动效 (Metaball Stretch & Snap)
     if (indicator && activeLink) {
       const target = activeLink as HTMLElement;
-      indicator.style.top = `${target.offsetTop}px`;
-      indicator.style.height = `${target.offsetHeight}px`;
-      indicator.style.opacity = '1';
+      const prevTop = parseFloat(indicator.style.top) || target.offsetTop;
+      const diff = target.offsetTop - prevTop;
+
+      if (Math.abs(diff) > 4) {
+        const direction = Math.sign(diff); // +1 往下移，-1 往上移
+        const stretch = Math.min(24, Math.abs(diff) * 0.22); // 计算粘性拉伸长度
+
+        gsap.killTweensOf(indicator);
+        gsap.timeline()
+          .to(indicator, {
+            top: direction > 0 ? prevTop : target.offsetTop - stretch,
+            height: target.offsetHeight + stretch,
+            opacity: 1,
+            duration: 0.18,
+            ease: 'power1.out',
+          })
+          .to(indicator, {
+            top: target.offsetTop,
+            height: target.offsetHeight,
+            duration: 0.32,
+            ease: 'back.out(1.5)',
+          });
+      } else {
+        gsap.killTweensOf(indicator);
+        gsap.to(indicator, {
+          top: target.offsetTop,
+          height: target.offsetHeight,
+          opacity: 1,
+          duration: 0.25,
+          ease: 'power2.out',
+        });
+      }
     }
   };
 
@@ -50,14 +81,11 @@ function initTocHighlight(): void {
     setTimeout(() => {
       const activeLink = document.querySelector('[data-toc-slug].active') as HTMLElement | null;
       if (activeLink && indicator) {
-        indicator.style.transition = 'none'; // 首次防止闪烁
-        indicator.style.top = `${activeLink.offsetTop}px`;
-        indicator.style.height = `${activeLink.offsetHeight}px`;
-        indicator.style.opacity = '1';
-        // 渲染完重新启用平滑过渡
-        setTimeout(() => {
-          indicator.style.transition = 'top 0.32s cubic-bezier(0.25, 1, 0.5, 1.15), height 0.32s cubic-bezier(0.25, 1, 0.5, 1.15), opacity 0.2s ease';
-        }, 50);
+        gsap.set(indicator, {
+          top: activeLink.offsetTop,
+          height: activeLink.offsetHeight,
+          opacity: 1,
+        });
       }
     }, 100);
   }

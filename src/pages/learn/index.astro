@@ -1,96 +1,117 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { getPublishedLearningPosts } from '@/lib/content';
+import { buildLearnGuidePath, buildPostPath } from '@/lib/routes';
 import { Icon } from 'astro-icon/components';
-import { learnLevels, learnTools } from '@/data/learn-data';
-import { buildLearnGuidePath } from '@/lib/routes';
 import '../../styles/learn.css';
 
 export const prerender = true;
+
+const learnTools = await getCollection('log', ({ data }) => data.published && data.type === 'learn');
+const journalPosts = (await getPublishedLearningPosts()).filter(post => post.data.type !== 'learn');
+
+const currentTab = Astro.url.searchParams.get('tab') || 'guide';
 ---
 
-<Base title="学习 — Walker" description="用 AI 解决让你在意的问题——生活、好奇心、还是想让世界更好？Walker 的 AI 学习路线。">
+<Base title="学习 — Walker" description="以用促学，学有止，碰到在学。简单一点，学任何领域你所感兴趣的事。">
 
   <div class="learn-page">
-
-    {/* ===== Page Header ===== */}
-    <header class="learn-page-header">
-      <h1 class="learn-page-title">学习</h1>
-      <p class="learn-page-subtitle">Learning</p>
+    <!-- Header -->
+    <header class="learn-pane-header">
+      <h1>以用促学，学有止，碰到在学。</h1>
+      <p>简单一点，学任何领域你所感兴趣的事。</p>
     </header>
 
-    {/* — a) Hero Section — */}
-    <section class="learn-hero">
-      <h1 class="learn-hero-title">为了幸福，改造世界</h1>
-      <p class="learn-hero-subtitle">用最经典的 AI 工具解决让你在意的问题——生活、好奇心、还是想让世界更好？</p>
-      <a href={buildLearnGuidePath('入门', 'claude-code')} class="learn-hero-cta">
-        <Icon name="lucide:arrow-right" width={16} height={16} />
-        从第一个经典工具开始
-      </a>
-    </section>
-
-    {/* — b) Level & Tool Grid Section — */}
-    <div class="learn-levels-section">
-      {learnLevels.map((level) => (
-        <div class="learn-level-group reveal">
-          <header class="learn-level-header" style={`--level-color: ${level.color}`}>
-            <div class="learn-level-title-wrap">
-              <span class="learn-level-emoji">{level.emoji}</span>
-              <h2 class="learn-level-title">{level.title}</h2>
-              <span class="learn-level-subtitle">{level.subtitle}</span>
-            </div>
-            <p class="learn-level-desc">{level.description}</p>
-          </header>
-
-          <div class="learn-tools-grid">
-            {learnTools
-              .filter((tool) => tool.levelId === level.id)
-              .map((tool) => {
-                const isAvailable = tool.status === 'active';
-                
-                return isAvailable ? (
-                  <a
-                    href={buildLearnGuidePath(level.id, tool.id)}
-                    class="learn-tool-card panel-glass active-card"
-                    style={`--level-color: ${level.color}`}
-                  >
-                    <div class="tool-card-header">
-                      <span class="tool-domain-badge">{tool.domainLabel}</span>
-                      <span class="tool-y-badge">{tool.yValue}</span>
-                    </div>
-                    <div class="tool-card-body">
-                      <span class="tool-emoji">{tool.emoji}</span>
-                      <h3 class="tool-title">{tool.title}</h3>
-                      <p class="tool-desc">{tool.description}</p>
-                    </div>
-                    <div class="tool-card-footer">
-                      <span class="tool-status-badge tool-status-badge--active">
-                        开始学习
-                        <Icon name="lucide:arrow-right" width={12} height={12} />
-                      </span>
-                    </div>
-                  </a>
-                ) : (
-                  <div class="learn-tool-card panel-glass coming-soon-card">
-                    <div class="tool-card-header">
-                      <span class="tool-domain-badge">{tool.domainLabel}</span>
-                      <span class="tool-y-badge">{tool.yValue}</span>
-                    </div>
-                    <div class="tool-card-body">
-                      <span class="tool-emoji">{tool.emoji}</span>
-                      <h3 class="tool-title">{tool.title}</h3>
-                      <p class="tool-desc">{tool.description}</p>
-                    </div>
-                    <div class="tool-card-footer">
-                      <span class="tool-status-badge tool-status-badge--soon">即将开放</span>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      ))}
+    <!-- Elegant Tab Switcher (Apple Minimalist Styles) -->
+    <div class="learn-tabs">
+      <button class:list={['learn-tab', { active: currentTab === 'guide' }]} data-tab="guide">
+        <Icon name="lucide:rocket" width={14} height={14} class="inline-block mr-1.5 -mt-0.5" />
+        帮你学
+      </button>
+      <button class:list={['learn-tab', { active: currentTab === 'journal' }]} data-tab="journal">
+        <Icon name="lucide:notebook-pen" width={14} height={14} class="inline-block mr-1.5 -mt-0.5" />
+        我在学
+      </button>
     </div>
 
+    <!-- Tab Content 1: 帮你学 (Structured Guides) -->
+    <div class:list={['learn-tab-content', { active: currentTab === 'guide' }]} id="tab-guide">
+      <div class="learn-apple-cards-stack">
+        {learnTools.map((tool) => (
+          <a
+            href={buildLearnGuidePath(tool.data.level || '入门', tool.id)}
+            class="learn-tool-apple-card panel-glass reveal"
+          >
+            <span class="tool-emoji-large">{tool.data.emoji}</span>
+            <div class="tool-content-wrap">
+              <h3 class="tool-title-clean">{tool.data.title}</h3>
+              <p class="tool-desc-clean">{tool.data.description}</p>
+            </div>
+            <span class="tool-arrow-chevron">›</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Tab Content 2: 我在学 (Learning Logs & Reflections) -->
+    <div class:list={['learn-tab-content', { active: currentTab === 'journal' }]} id="tab-journal">
+      {journalPosts.length > 0 ? (
+        <div class="learn-journal">
+          {journalPosts.map((post) => (
+            <a href={buildPostPath(post.id)} class="learn-journal-item panel-glass">
+              <span class="learn-journal-date">
+                {post.data.date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+              </span>
+              <div class="learn-journal-content">
+                <h3 class="learn-journal-title">{post.data.title}</h3>
+                {post.data.summary && <p class="learn-journal-summary">{post.data.summary}</p>}
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="learn-journal-empty py-16 text-center text-parchment-dim opacity-40">
+          <Icon name="lucide:notebook" width={32} height={32} class="mx-auto mb-2 opacity-50" />
+          <p>暂无日志与感悟发布</p>
+        </div>
+      )}
+    </div>
   </div>
+
+  <!-- Client-side Tab Switcher Script (Zero Page Reload) -->
+  <script>
+    function initLearnTabs() {
+      const tabs = document.querySelectorAll('.learn-tab');
+      const contents = document.querySelectorAll('.learn-tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = (tab as HTMLElement).dataset.tab;
+          
+          // Update active tab buttons
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          // Update active contents
+          contents.forEach(c => c.classList.remove('active'));
+          document.getElementById(`tab-${target}`)?.classList.add('active');
+          
+          // Update URL query parameters without reloading the page
+          const url = new URL(window.location.href);
+          if (target === 'guide') {
+            url.searchParams.delete('tab');
+          } else {
+            url.searchParams.set('tab', target!);
+          }
+          window.history.replaceState({}, '', url.toString());
+        });
+      });
+    }
+
+    initLearnTabs();
+    document.addEventListener('astro:page-load', initLearnTabs);
+  </script>
 
 </Base>

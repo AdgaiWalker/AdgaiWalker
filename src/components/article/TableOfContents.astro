@@ -24,6 +24,7 @@ const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
   <div class="toc-title">ON THIS PAGE</div>
   {tocItems.length > 0 ? (
     <ul class="toc-list">
+      <div class="toc-active-indicator" id="toc-indicator" style="opacity: 0;"></div>
       {tocItems.map((heading) => (
         <li class:list={['toc-item', heading.depth === 3 && 'toc-item-indent']}>
           <a

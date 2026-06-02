@@ -14,6 +14,16 @@ const log = defineCollection({
     domain: z.enum(['ai', 'coding', 'product', 'philosophy', 'life', 'cooking', 'calligraphy', 'reading', 'travel', 'emotion', 'community']).optional(),
     intent: z.enum(['think', 'record', 'teach', 'share', 'verify', 'showcase', 'reflect', 'connect', 'vent']).optional(),
     valueMode: z.enum(['utility', 'existence', 'both']).optional(),
+    
+    // 学习指南专属元数据字段
+    emoji: z.string().optional(),
+    subtitle: z.string().optional(),
+    level: z.enum(['入门', '学徒', '专家']).optional(),
+    yValue: z.string().optional(),
+    graduation: z.string().optional(),
+    safetyNote: z.string().optional(),
+    shareAction: z.string().optional(),
+
     aiUsePolicy: z.object({
       level: z.enum(['AI-0', 'AI-1', 'AI-2', 'AI-3', 'AI-4']).default('AI-2'),
       readable: z.boolean().default(true),

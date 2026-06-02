@@ -321,56 +321,68 @@ body.theme-mint {
 
 /* ========== 玻璃面板 (自适应多主题) ========== */
 
+/* ========== 玻璃面板 (自适应多主题 Glassmorphism 2.0) ========== */
+
 .panel-glass {
   background: var(--color-card) !important;
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(220%);
+  -webkit-backdrop-filter: blur(40px) saturate(220%);
   border: 1px solid var(--color-border) !important;
   border-radius: 40px;
   color: var(--color-parchment) !important;
   transition:
-    background 0.4s ease,
-    border-color 0.4s ease,
-    box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   transform-style: preserve-3d;
-  will-change: transform;
+  will-change: transform, box-shadow;
 }
 
-/* 亮色阴影配置 */
+/* 亮色阴影配置 (Nature Light - 柔和白玉底座) */
 body.theme-nature .panel-glass {
   box-shadow: 
-    inset 0 1px 2px rgba(255, 255, 255, 0.6),
-    0 4px 20px -6px rgba(26, 35, 37, 0.04),
-    0 24px 50px -12px rgba(26, 35, 37, 0.07) !important;
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.01),
+    0 2px 6px rgba(0, 0, 0, 0.01),
+    0 8px 24px -8px rgba(42, 59, 62, 0.04),
+    0 20px 40px -12px rgba(42, 59, 62, 0.06) !important;
 }
 
 body.theme-nature .panel-glass:hover {
-  background: rgba(255, 255, 255, 0.75) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.98) !important;
   box-shadow: 
-    inset 0 1px 3px rgba(255, 255, 255, 0.8),
-    0 12px 36px -8px rgba(26, 35, 37, 0.06),
-    0 32px 60px -24px rgba(26, 35, 37, 0.12) !important;
+    inset 0 1px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -0.5px 0.5px rgba(0, 0, 0, 0.005),
+    0 4px 12px rgba(42, 59, 62, 0.02),
+    0 16px 36px -8px rgba(42, 59, 62, 0.06),
+    0 32px 64px -16px rgba(42, 59, 62, 0.12) !important;
 }
 
-/* 暗色主题阴影配置 */
+/* 暗色主题阴影配置 (Aurora, Sunset, Mint) */
 body.theme-aurora .panel-glass,
 body.theme-sunset .panel-glass,
 body.theme-mint .panel-glass {
   box-shadow: 
-    inset 0 1px 2px rgba(255, 255, 255, 0.06),
-    0 12px 40px -10px rgba(0, 0, 0, 0.55) !important;
+    inset 0 1px 1px rgba(255, 255, 255, 0.08),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 12px 35px -10px rgba(0, 0, 0, 0.55),
+    0 24px 60px -15px rgba(0, 0, 0, 0.65) !important;
 }
 
 body.theme-aurora .panel-glass:hover,
 body.theme-sunset .panel-glass:hover,
 body.theme-mint .panel-glass:hover {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
   box-shadow: 
-    inset 0 1.5px 3.5px rgba(255, 255, 255, 0.12),
-    0 16px 48px -8px rgba(0, 0, 0, 0.65) !important;
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.14),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 16px 45px -8px rgba(0, 0, 0, 0.65),
+    0 32px 80px -16px rgba(0, 0, 0, 0.75) !important;
 }
 
 /* ========== 侧边栏/目录 液态高亮指示器 (Liquid Indicator) ========== */
@@ -404,10 +416,7 @@ body.theme-mint .nav-active-indicator {
   z-index: 5;
   pointer-events: none;
   box-shadow: 0 0 8px var(--color-brand);
-  transition: 
-    top 0.32s cubic-bezier(0.25, 1, 0.5, 1.15), 
-    height 0.32s cubic-bezier(0.25, 1, 0.5, 1.15),
-    opacity 0.2s ease;
+  will-change: top, height;
 }
 
 /* 面板标题栏 */
@@ -657,39 +666,42 @@ body.theme-mint .nav-active-indicator {
 
 /* ========== 护眼阅读模式 (羊皮纸质感) ========== */
 .reading-mode {
-  --reading-bg: #f4f1ea;
-  /* 经典护眼米黄色 */
-  --reading-text: #2c2c2c;
-  /* 柔和的墨色 */
-  --reading-secondary: #5a5a5a;
+  --reading-bg: #f2eedf;
+  /* 经典古籍暖白玉色 */
+  --reading-text: #2a2a2a;
+  /* 柔和的烟墨色 */
+  --reading-secondary: #555555;
   --reading-accent: #8b5e3c;
   /* 暖棕色点缀 */
 
   background-color: var(--reading-bg) !important;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.06'/%3E%3C/svg%3E") !important;
   color: var(--reading-text) !important;
   min-height: 100vh;
 }
 
 .reading-mode .prose {
-  max-width: 720px;
+  max-width: 700px;
   margin: 0 auto;
-  line-height: 1.9;
+  line-height: 2.0;
   font-size: 1.15rem;
+  font-family: Georgia, 'PT Serif', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', SimSun, serif;
 }
 
 .reading-mode .prose h1,
 .reading-mode .prose h2,
 .reading-mode .prose h3 {
-  color: #1a1a1a !important;
+  color: #111111 !important;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
   font-weight: 700;
   margin-top: 2.2em;
   margin-bottom: 1.2em;
+  letter-spacing: -0.02em;
 }
 
 .reading-mode .prose p {
   margin-bottom: 1.6em;
-  color: #3a3a3a !important;
+  color: #2b2b2b !important;
 }
 
 .reading-mode .panel-glass {

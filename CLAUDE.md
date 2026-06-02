@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、快速入口和 Spark 抽点子盲盒；内页包含文章列表与阅读页、资源工具页、点子库、项目页、内容宇宙、侧边栏导航、Pagefind 搜索、Upstash Redis 点赞和 Giscus 评论。站点结构对齐"个人前进系统"：思考（posts）、资源（tools）、点子（ideas）、项目（projects）。决策和规划参见 `docs/README.md`。
+Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、快速入口和 Spark 抽点子盲盒；内页包含文章列表与阅读页、资源工具页、点子库、项目页、学习指南页、内容宇宙、侧边栏导航、Pagefind 搜索、Upstash Redis 点赞和 Giscus 评论。站点结构对齐"个人前进系统"：思考（posts）、资源（tools）、点子（ideas）、项目（projects）、学习（learn）。决策和规划参见 `docs/README.md`。
 
 ## 常用命令
 
 ```bash
 npm run dev        # 启动开发服务器
 npm run build      # 生产构建 + Pagefind 索引生成
+npm run build:mcp  # 编译 MCP server（src/mcp/ + src/lib/content-query.ts → dist/mcp/index.mjs）
 npm run preview    # 本地预览生产构建
 npx astro check    # Astro 类型检查
 ```
@@ -20,7 +21,7 @@ npx astro check    # Astro 类型检查
 ### 渲染与部署
 
 - **输出模式**：`output: 'server'`，通过 `@astrojs/vercel` 适配器部署。
-- **预渲染**：主要内容页启用 `prerender = true`，包括首页、文章列表、文章详情、资源列表、点子列表、项目列表、关于页、404；旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
+- **预渲染**：主要内容页启用 `prerender = true`，包括首页、文章列表、文章详情、资源列表、点子列表、项目列表、学习页、关于页、404；旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
 - **图片服务**：Vercel Image Optimization 已启用，`@astrojs/vercel` adapter 配置了 `imageService` 和图片尺寸。
 - **性能配置**：Astro `prefetch.defaultStrategy = 'hover'`，并启用 `experimental.svgo`。
 - **构建流程**：`astro build` → `pagefind --site dist/client --output-path .vercel/output/static/pagefind`。
@@ -29,13 +30,14 @@ npx astro check    # Astro 类型检查
 
 在 `src/content.config.ts` 中定义一个集合：
 
-- **`log`**：博客文章、想法、工具和项目，来源 `src/content/log/`。支持 `.md` 和 `.mdx`。Schema 包含以下字段：
+- **`log`**：博客文章、想法、工具、项目和学习指南，来源 `src/content/log/`。支持 `.md` 和 `.mdx`。Schema 包含以下字段：
   - 基础：`title`、`date`、`updated`（可选）、`tags`、`category`、`published`、`summary`、`description`、`cover`、`rating`（1-5）、`url`、`qrCode`。
   - 分类：`type`（枚举：`knowledge`、`tool`、`idea`、`project`、`community`、`learn`、`learning`）、`status`（枚举：`thinking`、`validating`、`building`、`verified`、`archived`）。
   - 内容模型：`form`（`article`/`note`/`diary`/`rant`/`gallery`/`video`/`recipe`/`calligraphy`/`resource`/`project`/`idea`/`lesson`）、`domain`（`ai`/`coding`/`product`/`philosophy`/`life`/`cooking`/`calligraphy`/`reading`/`travel`/`emotion`/`community`）、`intent`（`think`/`record`/`teach`/`share`/`verify`/`showcase`/`reflect`/`connect`/`vent`）、`valueMode`（`utility`/`existence`/`both`）。
   - AI 策略：`aiUsePolicy`（含 `level`：`AI-0`~`AI-4`、`readable`、`citable`、`actionable`、`reason`）。
   - 关联：`related`（ID 数组）、`featured`（布尔）。
   - 版本与系列：`version`（版本号，数字）、`previousVersion`（上一版 slug）、`series`（系列名，自由文本）、`seriesOrder`（系列内序号）。版本迭代用 `version` + `previousVersion` 串联同一篇文章的不同版本（独立文件、独立 URL）。系列连载用 `series` + `seriesOrder` 串联同一主题的多篇文章。
+  - 学习指南专属：`level`（`入门`/`学徒`/`专家`）、`emoji`、`subtitle`、`yValue`（效果范围描述）、`graduation`（毕业项目）、`safetyNote`（安全提醒）、`shareAction`（分享建议）。这些字段仅在 `type: learn` 时使用。
   - 媒体与资源：`communities`（对象数组）、`videos`（`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`）、`resources`（`resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`）。
 
 ### 布局系统
@@ -57,6 +59,8 @@ npx astro check    # Astro 类型检查
 | `/tools` | 资源列表（工具） | SidebarLayout |
 | `/ideas` | 点子库 | SidebarLayout |
 | `/projects` | 项目列表 | SidebarLayout |
+| `/learn` | 学习指南（含指南 Tab + 学习感悟 Tab） | Base |
+| `/learn/guide/[level]/[tool]` | 学习指南详情（入门/学徒/专家 × 工具） | Base |
 | `/content` | 内容宇宙（多维度内容聚合） | Base |
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
@@ -82,6 +86,15 @@ npx astro check    # Astro 类型检查
 | `/life` | `/posts` |
 | `/life/:slug` | `/posts/:slug` |
 | `/about/site` | `/about?tab=site` |
+
+### 学习指南页（/learn）
+
+学习指南是一个独立于文章系统的教学模块，数据来源有两部分：
+
+- **指南内容**：`type: learn` 的 log 集合条目（`.md`/`.mdx`），通过 `level` 字段分配到入门/学徒/专家三个阶段。每个指南的 frontmatter 包含 `emoji`、`subtitle`、`yValue`、`graduation`、`safetyNote`、`shareAction` 等教学元数据。指南详情页使用 `src/styles/learn.css` 的独立样式。
+- **学习感悟**：`type: learn | learning | knowledge` 的 log 条目，显示在"学习感悟"Tab 下，本质是文章列表。
+- **数据层**：`src/data/learn-data.ts` 定义 `LearnLevel`（阶段）、`LearnTool`（工具指南）接口和 `learnLevels` 常量。页面通过 `getPublishedLearningPosts()` 查询感悟类文章。
+- **路由**：`/learn`（列表页，`?tab=guide` / `?tab=journal` 切换）→ `/learn/guide/[level]/[tool]`（指南详情，SSG 预渲染）。
 
 ### 核心组件
 
@@ -135,15 +148,24 @@ npx astro check    # Astro 类型检查
 
 插件输出静态 HTML 和内联 SVG，不依赖 Iconify 运行时。
 
+### Agent 化基础设施
+
+独立于 Astro 构建管道的内容查询和 Agent 接口层，用于让 LLM / Agent 结构化地读写 Obsidian markdown 内容。
+
+- **`src/lib/content-query.ts`**：独立查询引擎。直接读文件系统，用 `gray-matter` 解析 frontmatter + body，提供 `getAll()`、`findBySlug()`、`query(filter)`、`search(text)`、`countByType()` 查询函数。带内存缓存，`invalidateCache()` 清空。不依赖 Astro 构建上下文。
+- **`src/mcp/index.ts`**：基于 `@modelcontextprotocol/sdk` 的 MCP server（stdio transport），注册 4 个工具：`walker_query`（多条件过滤）、`walker_search`（全文搜索）、`walker_get`（按 slug 取完整内容）、`walker_stats`（统计概览）。封装 `content-query.ts` 的查询能力为 MCP 协议。
+- **`scripts/build-mcp.cjs`**：将 TypeScript 源码（content-query + MCP server）编译打包为单个 `dist/mcp/index.mjs`。`npm run build:mcp` 一键构建。`dist/` 在 `.gitignore` 中，不进 git。
+
 ### 数据文件
 
 - **`src/data/site-stats.json`**：关于页面的动态数据源，含 `costs`（花费记录）、`siteTimeline`（站点开发时间线）、`personalTimeline`（个人成长时间线，含 `children` 用于 NOW 节点子内容）、`roadmap`（`done` + `planned`）。被 `about/index.astro`（通过 `AboutSiteTab.astro`）导入，更新此文件即可刷新关于页的动态内容。
 - **`src/data/site-data.ts`**：关于站页面派生数据，导出 `articles`、`pillars`、`aiTools`、`totalCost`、`costByCategory`。被 `AboutSiteTab.astro` 引用。
+- **`src/data/learn-data.ts`**：学习指南数据层，定义 `LearnLevel`（入门/学徒/专家阶段）和 `LearnTool`（工具指南）接口与常量。被 `/learn` 页面和指南详情页引用。
 
 ### 辅助模块
 
-- **`src/lib/routes.ts`**：路由常量（`HOME`、`POSTS`、`TOOLS`、`IDEAS`、`PROJECTS`、`CONTENT`、`ABOUT`、`buildPostPath`、`buildContentSpacePath`），被 Navigation、RSS、内容宇宙等模块引用。
-- **`src/lib/content.ts`**：内容查询函数（`getPublishedContentItems`、`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。
+- **`src/lib/routes.ts`**：路由常量（`HOME`、`POSTS`、`TOOLS`、`IDEAS`、`PROJECTS`、`CONTENT`、`ABOUT`、`LEARN`、`buildPostPath`、`buildContentSpacePath`、`buildLearnGuidePath`），被 Navigation、RSS、内容宇宙、学习页等模块引用。
+- **`src/lib/content.ts`**：Astro 构建时内容查询函数（`getPublishedContentItems`、`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`、`getPublishedLearningPosts`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。仅在 Astro 渲染上下文中可用。
 - **`src/lib/content-model.ts`**：内容模型核心。定义 `ContentSpace`（`all`/`progress`/`life`/`learning`/`tools`/`works`/`ideas`）、`ContentItem` 接口、`toContentItem()` 适配器（将 Astro log 条目投影为多维度内容项）、`itemBelongsToSpace()` 空间分配逻辑、`contentSpaces` 元数据数组。推断函数 `inferForm()`、`inferDomain()`、`inferIntent()`、`inferValueMode()` 从内容属性派生维度。还导出 `formLabels`、`domainLabels`、`intentLabels`、`valueModeLabels` 等显示映射。
 - **`src/lib/format.ts`**：日期格式化（`formatDateCompact` → `MM/DD`、`formatDateLocale` → zh-CN 本地化、`formatDateNumeric` → `YYYY/MM/DD`）。
 - **`src/lib/constants.ts`**：共享常量：`PLATFORM_ICON_MAP`（平台图标映射）、`STATUS_LABELS`（状态中文标签）、`STATUS_WEIGHT`（状态排序权重）、`SITE_EMAIL`（站点邮箱）、`CHARS_PER_MINUTE_ZH`（中文阅读速度）、`MS_PER_*` 时间常量。
@@ -165,3 +187,4 @@ npx astro check    # Astro 类型检查
 - `resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`。
 - 版本迭代：同一篇文章认知升级时新建文件（如 `设计为人与内容搭桥 v2.md`），通过 `version` + `previousVersion` 字段串联。文章详情页底部自动显示版本链导航。
 - 系列连载：通过 `series` + `seriesOrder` 字段串联同一主题的多篇文章。文章详情页底部自动显示系列导航（系列名 + 序号 + 上一篇/下一篇）。
+- 学习指南：`type: learn` 的内容条目作为学习指南，需设置 `level`（`入门`/`学徒`/`专家`）和教学元数据字段（`emoji`、`subtitle`、`yValue`、`graduation`、`safetyNote`、`shareAction`）。指南详情页路由为 `/learn/guide/[level]/[tool]`。

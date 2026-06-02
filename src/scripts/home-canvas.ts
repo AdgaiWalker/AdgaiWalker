@@ -76,9 +76,9 @@ function initDraggables(signal: AbortSignal) {
       gsap.killTweensOf(activeItem);
       
       gsap.to(activeItem, {
-        scale: 1.035,
-        boxShadow: '0 20px 45px rgba(var(--color-shadow-rgb, 75, 54, 42), 0.15)',
-        duration: 0.25,
+        scale: 1.045,
+        boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.35), 0 10px 22px -8px rgba(0, 0, 0, 0.2), 0 0 20px rgba(53, 191, 171, 0.15)',
+        duration: 0.3,
         ease: 'power2.out'
       });
     };
@@ -147,7 +147,8 @@ function initDraggables(signal: AbortSignal) {
 
     // Smooth inertia slide, boundary snap and shape restore using GSAP
     gsap.killTweensOf(activeItem);
-    gsap.to(activeItem, {
+    const targetItem = activeItem;
+    gsap.to(targetItem, {
       x: limitX,
       y: limitY,
       skewX: 0,
@@ -156,10 +157,13 @@ function initDraggables(signal: AbortSignal) {
       boxShadow: '0 8px 32px rgba(53, 191, 171, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04)',
       duration: 0.85,
       ease: 'power3.out', // beautiful decaying damping easing
+      onComplete: () => {
+        gsap.set(targetItem, { clearProps: 'boxShadow,scale' });
+      },
       onUpdate: () => {
-        if (!activeItem) return;
-        activeItem.dataset.x = gsap.getProperty(activeItem, 'x').toString();
-        activeItem.dataset.y = gsap.getProperty(activeItem, 'y').toString();
+        if (!targetItem) return;
+        targetItem.dataset.x = gsap.getProperty(targetItem, 'x').toString();
+        targetItem.dataset.y = gsap.getProperty(targetItem, 'y').toString();
       }
     });
 

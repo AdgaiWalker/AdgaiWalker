@@ -1,4 +1,4 @@
-﻿---
+---
 import { Icon } from 'astro-icon/components';
 
 import {
@@ -22,9 +22,10 @@ const cardSpaces = spaces.join(' ');
 
 const statusLabel = item.status ? STATUS_LABELS[item.status] : '未标记';
 const summary = item.summary ?? '这条内容还没有摘要，先从标题进入阅读。';
+const cardFormClass = `form-${item.form}`;
 ---
 
-<article class="content-card panel-glass" data-spaces={cardSpaces}>
+<article class:list={["content-card panel-glass", cardFormClass]} data-spaces={cardSpaces}>
   <a
     class="card-link"
     href={item.href}
@@ -32,6 +33,9 @@ const summary = item.summary ?? '这条内容还没有摘要，先从标题进�
     rel={item.isExternal ? 'noopener noreferrer' : undefined}
   >
     <div class="card-topline">
+      {item.form === 'idea' && (
+        <span class="idea-sparkle-dot" aria-hidden="true" title="创意火花"></span>
+      )}
       <span class="date">{formatDateCompact(item.date)}</span>
       <span class="meta-pill">{formLabels[item.form]}</span>
       {item.isExternal && (
@@ -66,21 +70,93 @@ const summary = item.summary ?? '这条内容还没有摘要，先从标题进�
   .content-card {
     height: 100%;
     overflow: hidden;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.58);
+    position: relative;
+    border: 1px solid var(--color-border) !important;
+    background: var(--color-card) !important;
     transition:
-      transform 180ms ease,
-      border-color 180ms ease,
-      box-shadow 180ms ease,
-      background 180ms ease;
+      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      background 0.4s ease;
   }
 
   .content-card:hover,
   .content-card:focus-within {
-    transform: translateY(-3px);
-    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.3);
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.72);
-    box-shadow: 0 20px 46px rgba(var(--color-shadow-rgb, 75, 54, 42), 0.1);
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-color: var(--color-brand) !important;
+  }
+
+  body.theme-aurora .content-card:hover,
+  body.theme-sunset .content-card:hover,
+  body.theme-mint .content-card:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  /* --- 差异化语义卡片外观 (Card Semantic Styles) --- */
+
+  /* 1. 点子 (Idea) */
+  .form-idea:hover {
+    box-shadow: 0 16px 40px -10px rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+  }
+  body.theme-aurora .form-idea:hover,
+  body.theme-sunset .form-idea:hover,
+  body.theme-mint .form-idea:hover {
+    box-shadow: 0 16px 40px -10px rgba(245, 158, 11, 0.3) !important;
+    border-color: rgba(245, 158, 11, 0.5) !important;
+  }
+
+  .idea-sparkle-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+    animation: idea-pulse 2s ease-in-out infinite;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  @keyframes idea-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 12px #f59e0b; }
+  }
+
+  /* 2. 工具/项目 (Resource/Project) */
+  .form-resource,
+  .form-project {
+    padding-left: 3px;
+  }
+  .form-resource::before,
+  .form-project::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20px;
+    bottom: 20px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--color-brand);
+    opacity: 0.4;
+    transition: opacity 0.3s ease, height 0.3s ease;
+  }
+  .form-resource:hover::before,
+  .form-project:hover::before {
+    opacity: 1;
+  }
+
+  /* 3. 吐槽/日记 (Rant/Diary) */
+  .form-rant,
+  .form-diary {
+    opacity: 0.88;
+  }
+  .form-rant:hover,
+  .form-diary:hover {
+    opacity: 1;
+    border-color: var(--color-border) !important;
+    box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.05) !important;
   }
 
   .card-link {
