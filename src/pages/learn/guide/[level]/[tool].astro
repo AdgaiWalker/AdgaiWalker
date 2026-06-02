@@ -1,0 +1,183 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import { Icon } from 'astro-icon/components';
+import { learnLevels, learnTools } from '@/data/learn-data';
+import type { LearnTool } from '@/data/learn-data';
+import { buildLearnGuidePath } from '@/lib/routes';
+import '../../../../styles/learn.css';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  const activeTools = learnTools.filter(tool => tool.status === 'active');
+  return activeTools.map((tool) => ({
+    params: { level: tool.levelId, tool: tool.id },
+    props: { tool },
+  }));
+}
+
+interface Props {
+  tool: LearnTool;
+}
+
+const { tool } = Astro.props;
+const currentLevel = learnLevels.find(l => l.id === tool.levelId);
+const levelTools = learnTools.filter(t => t.levelId === tool.levelId && t.status === 'active');
+
+function renderMarkdown(content: string) {
+  let html = content;
+  // Parse links: [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // Parse bold: **text**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Parse inline code: `text`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  const lines = html.split('\n');
+  const result: string[] = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inList) {
+        result.push('</ul>');
+        inList = false;
+      }
+      continue;
+    }
+
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      if (!inList) {
+        result.push('<ul>');
+        inList = true;
+      }
+      result.push(`<li>${trimmed.substring(2)}</li>`);
+    } else {
+      if (inList) {
+        result.push('</ul>');
+        inList = false;
+      }
+      result.push(`<p>${trimmed}</p>`);
+    }
+  }
+
+  if (inList) {
+    result.push('</ul>');
+  }
+
+  return result.join('\n');
+}
+---
+
+<Base title={`${tool.title} — ${tool.levelId}学习 — Walker`} description={tool.description}>
+  <div class="stage-detail stage-detail--has-nav" style={`--stage-color: ${currentLevel?.color || 'var(--color-brand)'}`}>
+
+    <!-- Breadcrumb -->
+    <nav class="stage-breadcrumb">
+      <a href="/learn">学习</a>
+      <Icon name="lucide:chevron-right" width={14} height={14} />
+      <span>AI入门</span>
+      <Icon name="lucide:chevron-right" width={14} height={14} />
+      <span>{tool.levelId}</span>
+      <Icon name="lucide:chevron-right" width={14} height={14} />
+      <span class="stage-breadcrumb-current">{tool.title}</span>
+    </nav>
+
+    <div class="stage-layout">
+      <!-- Sidebar Nav (desktop) -->
+      <aside class="stage-nav">
+        <div class="stage-nav-label">{tool.levelId}级经典工具</div>
+        {levelTools.map((t) => (
+          <a
+            href={buildLearnGuidePath(tool.levelId, t.id)}
+            class:list={['stage-nav-item', { active: t.id === tool.id }]}
+            style={`--stage-color: ${currentLevel?.color}`}
+          >
+            <span class="stage-nav-emoji">{t.emoji}</span>
+            <span class="stage-nav-text">{t.title}</span>
+          </a>
+        ))}
+        <a href="/learn" class="stage-nav-back">
+          <Icon name="lucide:arrow-left" width={14} height={14} />
+          返回总览
+        </a>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="stage-content">
+        <!-- Stage Header -->
+        <header class="stage-header">
+          <span class="stage-header-accent"></span>
+          <div class="stage-header-top">
+            <span class="stage-header-emoji">{tool.emoji}</span>
+            <div>
+              <h1>{tool.title}</h1>
+              <span class="stage-header-subtitle">{tool.subtitle}</span>
+            </div>
+            <span class="stage-y-badge">{tool.yValue}</span>
+          </div>
+          <p class="stage-header-goal">
+            <Icon name="lucide:target" width={16} height={16} />
+            <strong>介绍：</strong>{tool.description}
+          </p>
+        </header>
+
+        <!-- Content Sections -->
+        <div class="stage-sections">
+          {tool.sections.map((section, i) => (
+            <section class="stage-section">
+              <h2 class="stage-section-title">
+                <span class="stage-section-num">{String(i + 1).padStart(2, '0')}</span>
+                {section.title}
+              </h2>
+              <div class="stage-section-body" set:html={renderMarkdown(section.content)} />
+            </section>
+          ))}
+        </div>
+
+        <!-- Safety Note -->
+        {tool.safetyNote && (
+          <div class="stage-safety panel-glass">
+            <div class="safety-icon">
+              <Icon name="lucide:shield-check" width={18} height={18} />
+            </div>
+            <div>
+              <strong>安全提醒：</strong>{tool.safetyNote}
+            </div>
+          </div>
+        )}
+
+        <!-- Graduation Task -->
+        {tool.graduation && (
+          <div class="stage-graduation panel-glass">
+            <span class="graduation-label">
+              <Icon name="lucide:trophy" width={14} height={14} />
+              毕业任务
+            </span>
+            <p class="graduation-desc">{tool.graduation}</p>
+          </div>
+        )}
+
+        <!-- Share Action -->
+        {tool.shareAction && (
+          <div class="stage-share panel-glass">
+            <Icon name="lucide:share-2" width={14} height={14} />
+            <span><strong>分享动作：</strong>{tool.shareAction}</span>
+          </div>
+        )}
+
+        <!-- Back Link -->
+        <nav class="stage-next">
+          <a href="/learn" class="stage-next-link stage-next-link--prev">
+            <Icon name="lucide:arrow-left" width={16} height={16} />
+            <div>
+              <span class="stage-next-hint">返回</span>
+              <span class="stage-next-name">学习板块首页</span>
+            </div>
+          </a>
+        </nav>
+      </main>
+    </div>
+  </div>
+</Base>

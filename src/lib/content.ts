@@ -35,6 +35,15 @@ export async function getPublishedProjects() {
   ));
 }
 
+/** 获取学习感悟类文章（用于 /learn?tab=journal） */
+export async function getPublishedLearningPosts() {
+  const all = await getCollection('log', (entry) =>
+    entry.data.published !== false &&
+    (entry.data.type === 'learn' || entry.data.type === 'learning' || entry.data.type === 'knowledge')
+  );
+  return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+}
+
 /**
  * Walk backwards through previousVersion links to find the chain head.
  */

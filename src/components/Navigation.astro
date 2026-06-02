@@ -2,13 +2,14 @@
 import SearchModal from './SearchModal.astro';
 import SidebarNav from './nav/SidebarNav.astro';
 import MobileMenu from './nav/MobileMenu.astro';
-import { ABOUT, CONTENT, HOME, POSTS, TOOLS, IDEAS, PROJECTS } from '@/lib/routes';
-import type { NavItem, NavGroup } from '@/types/nav';
+import { ABOUT, CONTENT, HOME, POSTS, TOOLS, IDEAS, PROJECTS, LEARN } from '@/lib/routes';
+import type { NavGroup } from '@/types/nav';
 
 const navGroups: NavGroup[] = [
   {
     items: [
       { label: '首页', href: HOME, icon: 'lucide:home', hint: 'Home' },
+      { label: '学习', href: LEARN, icon: 'lucide:rocket', hint: 'Learn' },
       { label: '内容', href: CONTENT, icon: 'lucide:layout-grid', hint: 'Content' },
       { label: '关于', href: ABOUT, icon: 'lucide:user', hint: 'About' },
     ]
@@ -91,10 +92,12 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     mobileThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });
 
     // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
-    const container = document.querySelector('.nav-links-container');
-    const indicator = document.getElementById('nav-indicator') as HTMLElement | null;
+    const containers = document.querySelectorAll('.nav-links-container');
 
-    if (container && indicator) {
+    containers.forEach(container => {
+      const indicator = container.querySelector('.nav-indicator') as HTMLElement | null;
+      if (!indicator) return;
+
       const updateIndicator = (target: HTMLElement, animate = true) => {
         if (!animate) {
           indicator.style.transition = 'none';
@@ -130,7 +133,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
           indicator.style.opacity = '0';
         }
       }, { signal });
-    }
+    });
   });
 
   document.addEventListener('astro:before-swap', () => {

@@ -1,5 +1,6 @@
 import { registerLifecycle } from './with-lifecycle';
 import { applyTheme, cycleTheme } from '../lib/theme';
+import { gsap } from 'gsap';
 
 let dragFrame = 0;
 let scale = 1.0;
@@ -33,9 +34,22 @@ function initDraggables(signal: AbortSignal) {
   let pendingX = 0;
   let pendingY = 0;
 
+  // Velocity tracking variables
+  let lastTime = 0;
+  let lastX = 0;
+  let lastY = 0;
+  let vx = 0;
+  let vy = 0;
+
   draggables.forEach(item => {
     if (!item.dataset.x) item.dataset.x = '0';
     if (!item.dataset.y) item.dataset.y = '0';
+
+    // Set initial position using GSAP to keep transform matrix cleaner
+    gsap.set(item, {
+      x: parseFloat(item.dataset.x),
+      y: parseFloat(item.dataset.y)
+    });
 
     const onDragStart = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
@@ -51,6 +65,22 @@ function initDraggables(signal: AbortSignal) {
 
       initialX = clientX - parseFloat(activeItem.dataset.x || '0');
       initialY = clientY - parseFloat(activeItem.dataset.y || '0');
+
+      lastTime = performance.now();
+      lastX = clientX;
+      lastY = clientY;
+      vx = 0;
+      vy = 0;
+
+      // Stop any running inertia tween
+      gsap.killTweensOf(activeItem);
+      
+      gsap.to(activeItem, {
+        scale: 1.035,
+        boxShadow: '0 20px 45px rgba(var(--color-shadow-rgb, 75, 54, 42), 0.15)',
+        duration: 0.25,
+        ease: 'power2.out'
+      });
     };
 
     item.addEventListener('mousedown', onDragStart, { signal });
@@ -66,13 +96,34 @@ function initDraggables(signal: AbortSignal) {
     pendingX = clientX - initialX;
     pendingY = clientY - initialY;
 
+    // Track instantaneous velocity
+    const now = performance.now();
+    const dt = Math.max(1, now - lastTime); // prevent division by zero
+    vx = (clientX - lastX) / dt;
+    vy = (clientY - lastY) / dt;
+
+    lastTime = now;
+    lastX = clientX;
+    lastY = clientY;
+
     if (dragFrame) return;
     dragFrame = requestAnimationFrame(() => {
       dragFrame = 0;
       if (!activeItem) return;
+      
       activeItem.dataset.x = pendingX.toString();
       activeItem.dataset.y = pendingY.toString();
-      activeItem.style.transform = `translate3d(${pendingX}px, ${pendingY}px, 0) scale(1.02) rotate(0.5deg)`;
+
+      // Dynamic Skew: skew card on X-axis and apply subtle tilt rotation based on drag velocity
+      const skewVal = Math.max(-12, Math.min(12, vx * 12));
+      const rotVal = Math.max(-6, Math.min(6, vx * 6));
+
+      gsap.set(activeItem, {
+        x: pendingX,
+        y: pendingY,
+        skewX: skewVal,
+        rotate: rotVal
+      });
     });
   };
 
@@ -80,10 +131,38 @@ function initDraggables(signal: AbortSignal) {
     if (!activeItem) return;
     cancelAnimationFrame(dragFrame);
     dragFrame = 0;
+
     activeItem.classList.remove('cursor-grabbing');
     activeItem.classList.add('cursor-grab');
     activeItem.style.zIndex = '10';
-    activeItem.style.transform = `translate3d(${activeItem.dataset.x}px, ${activeItem.dataset.y}px, 0)`;
+
+    // Calculate target position based on velocity-induced inertia (px/ms to px multiplier)
+    const inertiaFactor = 160; // Damping scale multiplier
+    const finalX = parseFloat(activeItem.dataset.x || '0') + vx * inertiaFactor;
+    const finalY = parseFloat(activeItem.dataset.y || '0') + vy * inertiaFactor;
+
+    // Limit cards from sliding too far off-screen
+    const limitX = Math.max(-450, Math.min(450, finalX));
+    const limitY = Math.max(-300, Math.min(300, finalY));
+
+    // Smooth inertia slide, boundary snap and shape restore using GSAP
+    gsap.killTweensOf(activeItem);
+    gsap.to(activeItem, {
+      x: limitX,
+      y: limitY,
+      skewX: 0,
+      rotate: 0,
+      scale: 1.0,
+      boxShadow: '0 8px 32px rgba(53, 191, 171, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04)',
+      duration: 0.85,
+      ease: 'power3.out', // beautiful decaying damping easing
+      onUpdate: () => {
+        if (!activeItem) return;
+        activeItem.dataset.x = gsap.getProperty(activeItem, 'x').toString();
+        activeItem.dataset.y = gsap.getProperty(activeItem, 'y').toString();
+      }
+    });
+
     activeItem = null;
   };
 

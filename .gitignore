@@ -34,3 +34,11 @@ pnpm-debug.log*
 # Obsidian
 .obsidian/
 .claude/worktrees/
+
+# Local agents and temp files
+.agents/
+.claudian/
+.lighthouse/
+screenshot-*
+wiki-auth-qr.png
+*.pid

@@ -287,12 +287,12 @@ const renderedIdeas = await Promise.all(
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+    /* transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1); */ /* GSAP 接管 */
   }
 
   /* 3D 翻转动作 */
   .card-container.is-flipped .card-inner {
-    transform: rotateY(180deg);
+    /* transform: rotateY(180deg); */ /* GSAP 接管 */
   }
 
   /* 当翻开牌面阅读时，强力清除所有外部投影、发光、脉冲与动画，安安静静看书 */
@@ -328,7 +328,7 @@ const renderedIdeas = await Promise.all(
   }
 
   .card-container:hover .card-front {
-    transform: translateY(-12px) rotate(0.8deg);
+    /* transform: translateY(-12px) rotate(0.8deg); */ /* GSAP 接管 */
     border-color: rgba(var(--color-brand-rgb), 0.45);
     box-shadow: 
       inset 0 1px 3px rgba(255, 255, 255, 0.15),
@@ -698,7 +698,7 @@ const renderedIdeas = await Promise.all(
   }
 
   .card-container.is-blurred:hover .card-front {
-    transform: translateY(-5px) rotate(0.5deg);
+    /* transform: translateY(-5px) rotate(0.5deg); */ /* GSAP 接管 */
     border-color: color-mix(in srgb, var(--color-brand) 25%, transparent);
     box-shadow:
       0 15px 30px -6px color-mix(in srgb, var(--color-brand) 10%, transparent),
@@ -1053,6 +1053,8 @@ const renderedIdeas = await Promise.all(
 </style>
 
 <script>
+  import { gsap } from 'gsap';
+
   let ideasAbort: AbortController | null = null;
 
   const validStatuses = new Set(['all', 'active', 'thinking', 'validating', 'building', 'verified', 'archived']);
@@ -1066,7 +1068,7 @@ const renderedIdeas = await Promise.all(
 
   function updateIdeasFilter() {
     const activeStatus = getRequestedStatus();
-    const cards = [...document.querySelectorAll('.card-container')];
+    const cards = [...document.querySelectorAll('.card-container')] as HTMLElement[];
     let visibleCount = 0;
 
     // 过滤卡牌
@@ -1077,9 +1079,25 @@ const renderedIdeas = await Promise.all(
         : [activeStatus];
       const isVisible = activeStatus === 'all' || activeStatuses.includes(cardStatus);
       
-      card.toggleAttribute('hidden', !isVisible);
       if (isVisible) {
         visibleCount += 1;
+        card.removeAttribute('hidden');
+        gsap.killTweensOf(card);
+        gsap.fromTo(card,
+          { opacity: 0, scale: 0.85 },
+          { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.15)', clearProps: 'opacity,scale' }
+        );
+      } else {
+        gsap.killTweensOf(card);
+        gsap.to(card, {
+          opacity: 0,
+          scale: 0.85,
+          duration: 0.3,
+          ease: 'power2.in',
+          onComplete: () => {
+            card.setAttribute('hidden', '');
+          }
+        });
       }
     }
 
@@ -1109,74 +1127,230 @@ const renderedIdeas = await Promise.all(
     }
   }
 
-  function registerCardInteractions(signal: AbortSignal) {
+  function setupCardGSAP(signal: AbortSignal) {
+    const cards = [...document.querySelectorAll('.card-container')] as HTMLElement[];
+    
+    cards.forEach((card) => {
+      const id = card.dataset.id || '';
+      
+      // Calculate a stable pseudo-random rotation angle based on the card's ID hash
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const rotateZ = (hash % 5) / 2; // Stable pseudorandom tilt between -2.5 and +2.5 degrees
+      
+      // Store the stable random rotation on the element to reference later
+      card.dataset.stableRotate = rotateZ.toString();
+      
+      // Set the initial tilt
+      gsap.set(card, { rotateZ });
+      
+      // 1. Mouse Enter / Focus - Hover纠偏并轻微拉起
+      const onEnter = () => {
+        if (card.classList.contains('is-flipped')) return;
+        
+        gsap.killTweensOf(card);
+        gsap.to(card, {
+          rotateZ: 0,
+          y: -12,
+          scale: 1.025,
+          boxShadow: '0 20px 40px -8px var(--color-brand-glow)',
+          duration: 0.35,
+          ease: 'power2.out'
+        });
+      };
+      
+      // 2. Mouse Leave / Blur - 随机倾斜还原
+      const onLeave = () => {
+        if (card.classList.contains('is-flipped')) return;
+        
+        gsap.killTweensOf(card);
+        gsap.to(card, {
+          rotateZ: parseFloat(card.dataset.stableRotate || '0'),
+          y: 0,
+          scale: 1.0,
+          boxShadow: 'none',
+          duration: 0.4,
+          ease: 'power2.out'
+        });
+      };
+      
+      card.addEventListener('mouseenter', onEnter, { signal });
+      card.addEventListener('focus', onEnter, { signal });
+      card.addEventListener('mouseleave', onLeave, { signal });
+      card.addEventListener('blur', onLeave, { signal });
+    });
+
     const grid = document.getElementById('ideas-grid');
     if (!grid) return;
 
-    // 1. 点击交互处理器
+    // 3. 点击翻转 (Front -> Back & Back -> Front)
     grid.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const container = target.closest('.card-container') as HTMLElement | null;
       if (!container) return;
 
-      // 2. 解密/翻开 Thinking 模糊遮罩
+      // 如果处于模糊锁定状态，点击任意前端解锁
       if (container.classList.contains('is-blurred')) {
         const revealBtn = target.closest('.reveal-btn');
         const clickFront = target.closest('.card-front');
         if (revealBtn || clickFront) {
           container.classList.remove('is-blurred');
-          container.focus(); // 解密后给予焦点
+          container.focus();
           e.stopPropagation();
           return;
         }
       }
 
-      // 3. 点击翻页 (Front -> Back)
       const flipAction = target.closest('.flip-btn-action');
       const clickBody = target.closest('.card-front');
-      const isUnblurred = container && !container.classList.contains('is-blurred');
+      const isUnblurred = !container.classList.contains('is-blurred');
       const isInteractiveChild = target.closest('.card-tag') || target.closest('.status-badge') || target.closest('a');
       const wantsFlip = flipAction || (clickBody && !isInteractiveChild);
+      const inner = container.querySelector('.card-inner') as HTMLElement;
 
-      if (isUnblurred && wantsFlip) {
+      // 翻到背面 (Front -> Back)
+      if (isUnblurred && wantsFlip && !container.classList.contains('is-flipped')) {
         container.classList.add('is-flipped');
         container.setAttribute('aria-expanded', 'true');
+
+        gsap.killTweensOf([container, inner]);
+        const tl = gsap.timeline();
+        
+        // 磁性抬升 + rotateY + 落桌反弹
+        tl.to(container, {
+          z: 50,
+          y: -15,
+          scale: 1.05,
+          rotateZ: 0,
+          boxShadow: '0 25px 50px -12px rgba(var(--color-shadow-rgb), 0.25)',
+          duration: 0.25,
+          ease: 'power2.out'
+        })
+        .to(inner, {
+          rotateY: 180,
+          duration: 0.5,
+          ease: 'back.out(1.1)'
+        }, 0)
+        .to(container, {
+          z: 0,
+          y: 0,
+          scale: 1.0,
+          boxShadow: 'none',
+          duration: 0.35,
+          ease: 'power2.inOut'
+        }, 0.25);
+
         e.stopPropagation();
         return;
       }
 
-      // 4. 点击返回 (Back -> Front)
+      // 翻回正面 (Back -> Front)
       const flipBackBtn = target.closest('.flip-back-btn');
-      if (container && flipBackBtn) {
+      if (container && flipBackBtn && container.classList.contains('is-flipped')) {
         container.classList.remove('is-flipped');
         container.setAttribute('aria-expanded', 'false');
+
+        gsap.killTweensOf([container, inner]);
+        const tl = gsap.timeline();
+        const originalRotate = parseFloat(container.dataset.stableRotate || '0');
+
+        tl.to(container, {
+          z: 50,
+          y: -15,
+          scale: 1.05,
+          rotateZ: originalRotate,
+          boxShadow: '0 25px 50px -12px rgba(var(--color-shadow-rgb), 0.25)',
+          duration: 0.25,
+          ease: 'power2.out'
+        })
+        .to(inner, {
+          rotateY: 0,
+          duration: 0.5,
+          ease: 'back.out(1.1)'
+        }, 0)
+        .to(container, {
+          z: 0,
+          y: 0,
+          scale: 1.0,
+          boxShadow: 'none',
+          duration: 0.35,
+          ease: 'power2.inOut'
+        }, 0.25);
+
         e.stopPropagation();
         return;
       }
     }, { signal });
 
-    // 键盘无障碍交互处理器
+    // 键盘无障碍交互
     grid.addEventListener('keydown', (e) => {
       const keyboardEvent = e as KeyboardEvent;
       if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
         const container = keyboardEvent.target as HTMLElement;
         if (container && container.classList.contains('card-container')) {
-          keyboardEvent.preventDefault(); // 防止按空格键时页面滚动
-
-          // 如果处于模糊锁定状态，先解锁
+          keyboardEvent.preventDefault();
+          
           if (container.classList.contains('is-blurred')) {
             container.classList.remove('is-blurred');
             return;
           }
 
-          // 触发翻牌状态切换
+          const inner = container.querySelector('.card-inner') as HTMLElement;
           const isFlipped = container.classList.contains('is-flipped');
+          gsap.killTweensOf([container, inner]);
+          const tl = gsap.timeline();
+
           if (isFlipped) {
             container.classList.remove('is-flipped');
             container.setAttribute('aria-expanded', 'false');
+            const originalRotate = parseFloat(container.dataset.stableRotate || '0');
+
+            tl.to(container, {
+              z: 50,
+              y: -15,
+              scale: 1.05,
+              rotateZ: originalRotate,
+              duration: 0.25,
+              ease: 'power2.out'
+            })
+            .to(inner, {
+              rotateY: 0,
+              duration: 0.5,
+              ease: 'back.out(1.1)'
+            }, 0)
+            .to(container, {
+              z: 0,
+              y: 0,
+              scale: 1.0,
+              duration: 0.35,
+              ease: 'power2.inOut'
+            }, 0.25);
           } else {
             container.classList.add('is-flipped');
             container.setAttribute('aria-expanded', 'true');
+
+            tl.to(container, {
+              z: 50,
+              y: -15,
+              scale: 1.05,
+              rotateZ: 0,
+              duration: 0.25,
+              ease: 'power2.out'
+            })
+            .to(inner, {
+              rotateY: 180,
+              duration: 0.5,
+              ease: 'back.out(1.1)'
+            }, 0)
+            .to(container, {
+              z: 0,
+              y: 0,
+              scale: 1.0,
+              duration: 0.35,
+              ease: 'power2.inOut'
+            }, 0.25);
           }
         }
       }
@@ -1212,7 +1386,7 @@ const renderedIdeas = await Promise.all(
     const { signal } = ideasAbort;
 
     updateIdeasFilter();
-    registerCardInteractions(signal);
+    setupCardGSAP(signal);
     setupFilterRouting(signal);
     window.addEventListener('popstate', updateIdeasFilter, { signal });
   }

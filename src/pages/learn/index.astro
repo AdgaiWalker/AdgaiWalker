@@ -1,0 +1,96 @@
+---
+import Base from '../../layouts/Base.astro';
+import { Icon } from 'astro-icon/components';
+import { learnLevels, learnTools } from '@/data/learn-data';
+import { buildLearnGuidePath } from '@/lib/routes';
+import '../../styles/learn.css';
+
+export const prerender = true;
+---
+
+<Base title="学习 — Walker" description="用 AI 解决让你在意的问题——生活、好奇心、还是想让世界更好？Walker 的 AI 学习路线。">
+
+  <div class="learn-page">
+
+    {/* ===== Page Header ===== */}
+    <header class="learn-page-header">
+      <h1 class="learn-page-title">学习</h1>
+      <p class="learn-page-subtitle">Learning</p>
+    </header>
+
+    {/* — a) Hero Section — */}
+    <section class="learn-hero">
+      <h1 class="learn-hero-title">为了幸福，改造世界</h1>
+      <p class="learn-hero-subtitle">用最经典的 AI 工具解决让你在意的问题——生活、好奇心、还是想让世界更好？</p>
+      <a href={buildLearnGuidePath('入门', 'claude-code')} class="learn-hero-cta">
+        <Icon name="lucide:arrow-right" width={16} height={16} />
+        从第一个经典工具开始
+      </a>
+    </section>
+
+    {/* — b) Level & Tool Grid Section — */}
+    <div class="learn-levels-section">
+      {learnLevels.map((level) => (
+        <div class="learn-level-group reveal">
+          <header class="learn-level-header" style={`--level-color: ${level.color}`}>
+            <div class="learn-level-title-wrap">
+              <span class="learn-level-emoji">{level.emoji}</span>
+              <h2 class="learn-level-title">{level.title}</h2>
+              <span class="learn-level-subtitle">{level.subtitle}</span>
+            </div>
+            <p class="learn-level-desc">{level.description}</p>
+          </header>
+
+          <div class="learn-tools-grid">
+            {learnTools
+              .filter((tool) => tool.levelId === level.id)
+              .map((tool) => {
+                const isAvailable = tool.status === 'active';
+                
+                return isAvailable ? (
+                  <a
+                    href={buildLearnGuidePath(level.id, tool.id)}
+                    class="learn-tool-card panel-glass active-card"
+                    style={`--level-color: ${level.color}`}
+                  >
+                    <div class="tool-card-header">
+                      <span class="tool-domain-badge">{tool.domainLabel}</span>
+                      <span class="tool-y-badge">{tool.yValue}</span>
+                    </div>
+                    <div class="tool-card-body">
+                      <span class="tool-emoji">{tool.emoji}</span>
+                      <h3 class="tool-title">{tool.title}</h3>
+                      <p class="tool-desc">{tool.description}</p>
+                    </div>
+                    <div class="tool-card-footer">
+                      <span class="tool-status-badge tool-status-badge--active">
+                        开始学习
+                        <Icon name="lucide:arrow-right" width={12} height={12} />
+                      </span>
+                    </div>
+                  </a>
+                ) : (
+                  <div class="learn-tool-card panel-glass coming-soon-card">
+                    <div class="tool-card-header">
+                      <span class="tool-domain-badge">{tool.domainLabel}</span>
+                      <span class="tool-y-badge">{tool.yValue}</span>
+                    </div>
+                    <div class="tool-card-body">
+                      <span class="tool-emoji">{tool.emoji}</span>
+                      <h3 class="tool-title">{tool.title}</h3>
+                      <p class="tool-desc">{tool.description}</p>
+                    </div>
+                    <div class="tool-card-footer">
+                      <span class="tool-status-badge tool-status-badge--soon">即将开放</span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+
+</Base>

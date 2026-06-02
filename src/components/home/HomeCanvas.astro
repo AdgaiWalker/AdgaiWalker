@@ -16,16 +16,7 @@ const traceLog = featuredLog || recentLogs[0];
 ---
 
 <div id="canvas-container" class="fixed inset-0 overflow-hidden select-none pointer-events-auto z-0 flex items-center justify-center">
-  <div id="dynamic-bg-glows" class="absolute inset-0 -z-30 overflow-hidden pointer-events-none transition-all duration-1000">
-    <div class="glow-orb absolute w-[80vw] h-[80vw] rounded-full blur-[160px] opacity-[0.10] transition-all duration-1000" id="orb-1"></div>
-    <div class="glow-orb absolute w-[70vw] h-[70vw] rounded-full blur-[160px] opacity-[0.08] transition-all duration-1000" id="orb-2"></div>
-    <div class="glow-orb absolute w-[60vw] h-[60vw] rounded-full blur-[140px] opacity-[0.08] transition-all duration-1000" id="orb-3"></div>
-    <div class="glow-orb absolute w-[55vw] h-[55vw] rounded-full blur-[140px] opacity-[0.08] transition-all duration-1000" id="orb-4"></div>
-  </div>
 
-  <div id="mist-overlay" class="absolute inset-0 -z-10 pointer-events-none backdrop-blur-[120px] saturate-[140%] transition-all duration-1000"></div>
-
-  <div class="absolute inset-0 -z-5 opacity-[0.02] pointer-events-none" style="background-image: radial-gradient(#000 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
 
   <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex justify-center items-center">
     <div class="grid grid-cols-[280px_400px] justify-center gap-6 items-start w-full relative pb-4 pointer-events-auto px-4">
@@ -44,7 +35,7 @@ const traceLog = featuredLog || recentLogs[0];
             </div>
           </div>
           {traceLog && (
-            <a href={buildPostPath(traceLog.id)} class="directory-trace group/trace">
+            <a href={buildPostPath(traceLog.id)} class:list={["directory-trace group/trace", { "is-featured": traceLog.data.featured }]}>
               <span class="directory-trace-label">{traceLog.data.featured ? '推荐' : '最近'}</span>
               <span class="directory-trace-title group-hover/trace:text-brand transition-colors">{traceLog.data.title}</span>
               <Icon name="lucide:arrow-right" width={12} height={12} class="directory-trace-arrow" />
@@ -124,64 +115,11 @@ const traceLog = featuredLog || recentLogs[0];
 </div>
 
 <style>
-  .glow-orb#orb-1 { background: var(--orb-color-1); top: -10%; left: -10%; }
-  .glow-orb#orb-2 { background: var(--orb-color-2); bottom: -15%; right: -10%; }
-  .glow-orb#orb-3 { background: var(--orb-color-3); top: 20%; right: 15%; }
-  .glow-orb#orb-4 { background: var(--orb-color-4); bottom: 10%; left: 20%; }
-
-  #mist-overlay {
-    background: rgba(251, 251, 248, 0.45);
-  }
-  :global(body.theme-aurora) #mist-overlay {
-    background: rgba(7, 6, 20, 0.5) !important;
-  }
-  :global(body.theme-sunset) #mist-overlay {
-    background: rgba(18, 9, 6, 0.5) !important;
-  }
-  :global(body.theme-mint) #mist-overlay {
-    background: rgba(4, 15, 12, 0.5) !important;
-  }
-  :global(body.theme-custom) #mist-overlay {
-    background: rgba(251, 251, 248, 0.45) !important;
-  }
-
   :global(body:not(.theme-aurora):not(.theme-sunset):not(.theme-mint) .panel-glass) {
     background: rgba(255, 255, 255, 0.65) !important;
     backdrop-filter: blur(32px) !important;
     border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
     transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  }
-
-  .glow-orb {
-    animation: subtle-drift-1 25s ease-in-out infinite;
-  }
-  .glow-orb:nth-child(2) {
-    animation: subtle-drift-2 30s ease-in-out infinite reverse;
-  }
-  .glow-orb:nth-child(3) {
-    animation: subtle-drift-3 28s ease-in-out infinite 2s;
-  }
-  .glow-orb:nth-child(4) {
-    animation: subtle-drift-4 32s ease-in-out infinite 4s;
-  }
-
-  @keyframes subtle-drift-1 {
-    0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
-    33% { transform: translate(12%, 8%) scale(1.08) rotate(120deg); }
-    66% { transform: translate(-8%, 12%) scale(0.92) rotate(240deg); }
-  }
-  @keyframes subtle-drift-2 {
-    0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
-    40% { transform: translate(-12%, -8%) scale(1.05) rotate(-120deg); }
-    70% { transform: translate(8%, -12%) scale(0.95) rotate(-240deg); }
-  }
-  @keyframes subtle-drift-3 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(10%, -6%) scale(1.1); }
-  }
-  @keyframes subtle-drift-4 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-10%, 10%) scale(1.08); }
   }
 
   .pop-in {
@@ -262,7 +200,7 @@ const traceLog = featuredLog || recentLogs[0];
   }
 
   /* 推荐文章特殊样式 */
-  .directory-trace:has(.directory-trace-label) {
+  .directory-trace.is-featured {
     background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 5%, transparent), color-mix(in srgb, var(--color-brand) 2%, transparent));
     border-left: 2px solid color-mix(in srgb, var(--color-brand) 30%, transparent);
     padding-left: 10px;

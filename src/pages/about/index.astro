@@ -1,35 +1,27 @@
 ---
 /**
- * /about — 关于
- * 全屏 Hero 视频 + 时代背景 + 引路人定位 + 航行日志 + 邀请
+ * /about — 关于（重设计版）
+ * 单页长卷叙事：Hero → 简介 → 时间轴 → Bento Grid → Pipeline → Footer
  * 使用 FullscreenLayout
- * 时间轴数据来自 src/data/site-stats.json
  */
 import FullscreenLayout from '../../layouts/FullscreenLayout.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
-import AboutSiteTab from '../../components/about/AboutSiteTab.astro';
+import SectionHeader from '../../components/about/SectionHeader.astro';
 import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 import stats from '@/data/site-stats.json';
-import { SITE_EMAIL } from '@/lib/constants';
+import { articles, pillars, aiTools, totalCost, costByCategory } from '@/data/site-data';
 
 export const prerender = true;
 
-const { personalTimeline } = stats;
+const { personalTimeline, siteTimeline } = stats;
 ---
 
 <FullscreenLayout
   title="关于 — Walker"
   description="秋知 (Walker) — 用点子连接人与 AI，将想法点石成金。"
 >
-  {/* ===== 全局 Orbs 流光自适应背景 ===== */}
-  <div class="fixed inset-0 -z-30 pointer-events-none overflow-hidden" aria-hidden="true">
-    <div class="ambient-orb ambient-orb-1" style="background-color: var(--orb-color-1, #fee196);"></div>
-    <div class="ambient-orb ambient-orb-2" style="background-color: var(--orb-color-2, #ffafc8);"></div>
-    <div class="ambient-orb ambient-orb-3" style="background-color: var(--orb-color-3, #a0f0ff);"></div>
-    <div class="ambient-orb ambient-orb-4" style="background-color: var(--orb-color-4, #b4f5cd);"></div>
-  </div>
 
   {/* ===== 1. Hero 区域 ===== */}
   <section class="hero-section" id="hero-section">
@@ -49,352 +41,451 @@ const { personalTimeline } = stats;
     </div>
 
     <div class="hero-content">
-      <div class="hero-badge">
-        <span class="hero-dot"></span>
-        <span>探索中</span>
+      <div class="hero-avatar-wrapper">
+        <div class="hero-avatar-ring">
+          <Image src={avatar} alt="秋知" width={100} height={100} class="hero-avatar-img" />
+        </div>
       </div>
       <h1 class="hero-title">Walker</h1>
-      <p class="hero-tagline">用点子连接人与 AI</p>
-      <p class="hero-sub-tagline">用点子驱动 AI，点石成金，最终去到一个没有重复工作的地方</p>
-      <p class="hero-era-line">AI 改变了规则。从"好厉害"到"我能用它做什么"之间，缺一条路。我正在走。</p>
-
-      {/* Tab 切换按钮 */}
-      <div class="about-tabs" id="about-tabs">
-        <button class="about-tab-btn is-active" data-tab="me" type="button">
-          <Icon name="lucide:user" width={14} height={14} />
-          关于我
-        </button>
-        <button class="about-tab-btn" data-tab="site" type="button">
-          <Icon name="lucide:globe" width={14} height={14} />
-          关于站
-        </button>
+      <p class="hero-typing" id="hero-typing" aria-label="用点子连接人与 AI"></p>
+      <p class="hero-sub" id="hero-sub">赋能，不依赖 — 让每个人都能用 AI 解决真实问题</p>
+      <p class="hero-era">一个人 + AI，240 元，从零搭了这整个站。你也可以。</p>
+      <div class="hero-actions" id="hero-actions">
+        <a href="#why-section" class="hero-btn hero-btn--primary">
+          <Icon name="lucide:compass" width={15} height={15} />
+          开始探索
+        </a>
+        <a href="/tools#info-source" class="hero-btn hero-btn--ghost">
+          <Icon name="lucide:users" width={15} height={15} />
+          点子共促
+        </a>
       </div>
     </div>
 
     <div class="hero-scroll-hint" id="scroll-hint">
       <Icon name="lucide:chevron-down" width={24} height={24} />
     </div>
+
+    <div class="hero-gradient-bar"></div>
   </section>
 
-  {/* ===== "关于我" Tab 内容 ===== */}
-  <div class="about-tab-panel" id="about-me-content">
+  {/* ===== 2. 关于我 ===== */}
+  <section class="about-bio-section" id="bio-section">
+    <div class="about-container">
+      <SectionHeader title="秋知 Walker" />
 
-  {/* ===== 2. 我为什么站在这里 ===== */}
-  <section class="guide-section py-20 px-4 sm:px-6 flex justify-center" id="guide-section">
-    <div class="about-card panel-glass max-w-[620px] w-full p-8 sm:p-10 relative overflow-hidden">
-
-      {/* 头像 + 名字 */}
-      <div class="about-avatar-wrapper flex flex-col items-center mb-6">
-        <div class="about-avatar border-2 border-[var(--color-brand)] p-0.5 rounded-full overflow-hidden shadow-lg transition-transform duration-500 hover:rotate-6">
-          <Image src={avatar} alt="秋知" width={96} height={96} class="rounded-full object-cover" />
+      <div class="bio-card panel-glass">
+        <div class="bio-narrative">
+          <p>Walker 不是一个人名，而是一种状态：带着自己的目标，准备出发、正在出发、歇会再出发。</p>
+          <p>空乘专业给了我时间，马哲给了我方法，AI 给了我路。</p>
+          <p>我不是在学 AI，而是在用 AI 解决真实问题。</p>
         </div>
-        <h2 class="about-name text-2xl font-bold mt-4 flex items-center gap-2">
-          秋知 <span class="about-name-en text-sm font-mono text-parchment-dim">Walker</span>
-        </h2>
-      </div>
 
-      {/* 叙事文案 */}
-      <div class="text-sm leading-relaxed text-parchment/80 space-y-4">
-        <p>
-          Walker 不是一个人名，而是一种状态：带着自己的目标，准备出发、正在出发、歇会再出发。
-        </p>
-        <p>
-          空乘专业给了我时间，马哲给了我方法，AI 给了我路。
-        </p>
-        <p>
-          我不是在学 AI，而是在用 AI 解决真实问题。
-        </p>
-      </div>
-
-      {/* 马克思名言 */}
-      <div class="bio-quote-callout p-5 rounded-2xl border border-[var(--color-nav-border)] bg-[var(--color-brand-glow)] my-6 relative overflow-hidden">
-        <div class="absolute right-4 bottom-1 text-[var(--color-brand)] opacity-[0.06] select-none pointer-events-none" style="font-size: 5rem; font-family: Georgia, serif;">"</div>
-        <p class="font-heading text-[14px] font-bold text-parchment leading-relaxed text-center italic m-0">
-          "哲学家们只是用不同的方式解释世界，问题在于改变世界。"
-        </p>
-        <p class="text-[9px] font-mono tracking-widest text-parchment-dim opacity-50 uppercase mt-2 text-center">
-          —— 马克思
-        </p>
-      </div>
-
-      {/* 致谢 */}
-      <div class="panel-glass p-5 rounded-2xl border-l-3 border-brand relative overflow-hidden my-6">
-        <div class="absolute top-3 right-4 border-2 border-dashed border-brand/40 p-1 text-[9px] text-brand select-none opacity-40 font-mono tracking-widest">
-          航行信戳
+        <div class="bio-quote">
+          <div class="bio-quote-mark" aria-hidden="true">"</div>
+          <p class="bio-quote-text">哲学家们只是用不同的方式解释世界，问题在于改变世界。</p>
+          <p class="bio-quote-author">—— 马克思</p>
         </div>
-        <h4 class="text-sm font-bold mb-3 flex items-center gap-2 text-brand">
-          <Icon name="lucide:heart" width={16} height={16} />
-          致我的引路人与恩师
-        </h4>
-        <p class="text-xs leading-relaxed text-parchment/70 italic">
-          "一路走来，秋芝引我入门，海哥（海拉鲁编程客）带我成长，刘、于二老在迷茫时点醒方向。感谢虽不理解但给予经济支持的亲人。水路万里，停靠因你们而有据可循。"
-        </p>
-      </div>
 
-      <div class="border-b border-[var(--color-nav-border)] mb-6 opacity-40"></div>
+        <div class="bio-gratitude panel-glass">
+          <div class="bio-gratitude-stamp">航行信戳</div>
+          <h4 class="bio-gratitude-title">
+            <Icon name="lucide:heart" width={16} height={16} />
+            致我的引路人与恩师
+          </h4>
+          <p class="bio-gratitude-text">
+            "一路走来，秋芝引我入门，海哥（海拉鲁编程客）带我成长，刘、于二老在迷茫时点醒方向。感谢虽不理解但给予经济支持的亲人。水路万里，停靠因你们而有据可循。"
+          </p>
+        </div>
 
-      {/* 社交链接 */}
-      <div class="about-social flex flex-wrap justify-center gap-3">
-        <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-black hover:text-white hover:border-black transition-all">
-          <Icon name="lucide:github" width={16} height={16} />
-          <span>GitHub</span>
-        </a>
-        <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-[#fb7299] hover:text-white hover:border-[#fb7299] transition-all">
-          <Icon name="lucide:circle-play" width={16} height={16} />
-          <span>Bilibili</span>
-        </a>
-        <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-[#ff2442] hover:text-white hover:border-[#ff2442] transition-all">
-          <Icon name="lucide:book-open" width={16} height={16} />
-          <span>小红书</span>
-        </a>
-        <button type="button" class="social-btn flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.04)] text-sm font-medium hover:bg-[var(--color-brand)] hover:text-white hover:border-[var(--color-brand)] transition-all cursor-pointer" id="copy-email">
-          <Icon name="lucide:mail" width={16} height={16} />
-          <span>Email</span>
-        </button>
+        <div class="bio-social">
+          <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="social-pill">
+            <Icon name="lucide:github" width={16} height={16} />
+            <span>GitHub</span>
+          </a>
+          <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-pill social-pill--bili">
+            <Icon name="lucide:circle-play" width={16} height={16} />
+            <span>Bilibili</span>
+          </a>
+          <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="social-pill social-pill--xhs">
+            <Icon name="lucide:book-open" width={16} height={16} />
+            <span>小红书</span>
+          </a>
+          <button type="button" class="social-pill social-pill--email" id="copy-email">
+            <Icon name="lucide:mail" width={16} height={16} />
+            <span>Email</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>
 
-  {/* ===== 4. 我正在铺的路 ===== */}
-  <section class="path-section py-20 px-4 sm:px-6 flex flex-col items-center relative overflow-hidden" id="path-section">
-    <div class="section-header max-w-[700px] w-full mb-16 flex items-center gap-4">
-      <h2 class="section-title text-sm font-bold text-parchment-dim tracking-widest">正在铺的路</h2>
-      <div class="section-line flex-1 h-px bg-gradient-to-r from-[var(--color-nav-border)] to-transparent"></div>
-    </div>
+  {/* ===== 3. 航行日志 · 时间轴 ===== */}
+  <section class="journey-section" id="journey-section">
+    <div class="about-container">
+      <SectionHeader title="航行日志 · 正在铺的路" />
 
-    <div class="cruise-timeline-container max-w-[620px] w-full relative py-6">
       {/* 航行者宣言 */}
-      <div class="panel-glass p-6 rounded-[28px] border border-[var(--color-nav-border)] mb-12 relative overflow-hidden group/philosophy shadow-lg">
-        <div class="absolute -right-20 -top-20 w-44 h-44 rounded-full bg-amber-400/10 blur-3xl group-hover/philosophy:bg-amber-400/18 transition-all duration-700"></div>
-        <div class="absolute -left-20 -bottom-20 w-44 h-44 rounded-full bg-[var(--color-brand-glow)] blur-3xl opacity-50"></div>
-
-        <div class="relative z-10 flex flex-col gap-5">
-          <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand shrink-0 shadow-sm mt-0.5 group-hover/philosophy:scale-105 transition-transform duration-300">
-              <Icon name="lucide:compass" width={18} height={18} class="animate-spin-slow text-brand" />
-            </div>
-            <div>
-              <p class="font-serif text-[15px] sm:text-[16px] text-parchment leading-relaxed tracking-wide font-medium italic">
-                " 最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。 "
-              </p>
-              <p class="text-[9px] font-mono tracking-widest text-parchment-dim opacity-50 uppercase mt-2">
-                — VOYAGER'S SPIRITUAL MANIFESTO / 航行者宣言
-              </p>
-            </div>
+      <div class="manifesto panel-glass">
+        <div class="manifesto-inner">
+          <div class="manifesto-icon">
+            <Icon name="lucide:compass" width={20} height={20} />
           </div>
-
-          {/* 三态指示器 */}
-          <div class="flex items-center justify-around bg-[rgba(0,0,0,0.03)] dark:bg-[rgba(255,255,255,0.03)] border border-[var(--color-nav-border)] rounded-2xl p-2.5 mt-1">
-            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-body text-parchment-dim/60 font-semibold cursor-default">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 opacity-60"></span>
-              准备出发
-            </div>
-            <div class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11.5px] font-body text-brand font-black bg-brand/10 border border-brand/20 shadow-sm cursor-default">
-              <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
-              正在出发
-            </div>
-            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-body text-parchment-dim/60 font-semibold cursor-default">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 opacity-60"></span>
-              歇会再出发
-            </div>
+          <div>
+            <p class="manifesto-text">" 最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。 "</p>
+            <p class="manifesto-source">— VOYAGER'S SPIRITUAL MANIFESTO / 航行者宣言</p>
+          </div>
+        </div>
+        <div class="manifesto-states">
+          <div class="manifesto-state">
+            <span class="state-dot state-dot--amber"></span>
+            准备出发
+          </div>
+          <div class="manifesto-state manifesto-state--active">
+            <span class="state-dot state-dot--brand"></span>
+            正在出发
+          </div>
+          <div class="manifesto-state">
+            <span class="state-dot state-dot--emerald"></span>
+            歇会再出发
           </div>
         </div>
       </div>
 
-      {/* 纵向发光虚线航道 */}
-      <div class="absolute left-4 sm:left-1/2 top-0 bottom-0 w-0.5 sm:-translate-x-1/2 bg-dashed border-l border-brand/40 -z-10"></div>
+      {/* 时间轴 */}
+      <div class="timeline-container">
+        <div class="timeline-track" aria-hidden="true"></div>
+        <div class="timeline-progress" id="timeline-progress" aria-hidden="true"></div>
 
-      {personalTimeline.slice(0, 2).map((item, i) => {
-        const isEven = i % 2 === 0;
-        const isLast = i === personalTimeline.length - 1;
-        const hasChildren = item.children && item.children.length > 0;
-        return (
-          <div class:list={['timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 w-full', { 'mb-16': !isLast }]}>
-            <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
-              <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
-              <span class="marker-ripple absolute inset-0 rounded-full border border-brand opacity-0"></span>
-            </div>
+        {personalTimeline.map((item, i) => {
+          const isEven = i % 2 === 0;
+          const hasChildren = item.children && item.children.length > 0;
+          return (
+            <div class:list={['timeline-item', { 'timeline-item--right': !isEven }]}>
+              <div class="timeline-dot">
+                <span class="timeline-dot-core"></span>
+                <span class="timeline-dot-ripple"></span>
+              </div>
 
-            {isEven ? (
-              <>
-                <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
-                  <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
-                </div>
-                <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
-                  <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
-                    <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 sm:justify-start">
-                      <Icon name={item.icon} width={14} height={14} class="text-brand" />
-                      {item.title}
-                    </h4>
-                    <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1 sm:text-right">
-                  <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300 text-left sm:text-left">
-                    <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5 justify-start sm:justify-end">
-                      <>
-                        {item.title}
-                        <Icon name={item.icon} width={14} height={14} class="text-brand" />
-                      </>
-                    </h4>
-                    {hasChildren ? (
-                      <div class="space-y-3 text-xs text-parchment/70 leading-relaxed">
-                        {item.children.map((child: { label: string; text: string; href?: string }) => (
-                          <div class="flex items-start gap-2">
-                            {child.href ? (
-                              <a href={child.href} target="_blank" rel="noopener noreferrer" class="text-brand font-bold shrink-0 no-underline hover:underline">{child.label}</a>
-                            ) : (
-                              <span class="text-brand font-bold shrink-0">{child.label}</span>
-                            )}
-                            <span>{child.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
-                    )}
-                  </div>
-                </div>
-                <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2">
-                  <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
-                </div>
-              </>
-            )}
-          </div>
-        );
-      })}
+              <div class="timeline-date-col">
+                <span class="timeline-date">{item.date}</span>
+              </div>
 
-      {/* 折叠更多时间线 */}
-      {personalTimeline.length > 2 && (
-        <details class="mt-8">
-          <summary class="font-mono text-xs text-brand cursor-pointer hover:text-brand-secondary transition-colors text-center w-full py-3">
-            查看完整时间线 ↓
-          </summary>
-          <div class="space-y-16 mt-8">
-            {personalTimeline.slice(2).map((item, i) => {
-              const isEven = (i + 2) % 2 === 0;
-              const hasChildren = item.children && item.children.length > 0;
-              return (
-                <div class:list={['timeline-anchor relative flex flex-col sm:flex-row items-start sm:justify-between gap-8 w-full']}>
-                  <div class="timeline-marker absolute left-4 sm:left-1/2 sm:-translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center bg-[var(--color-bg)] border-2 border-brand z-20 cursor-default">
-                    <span class="marker-dot w-2.5 h-2.5 rounded-full bg-brand"></span>
-                  </div>
-                  {isEven ? (
-                    <>
-                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0 sm:text-right">
-                        <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
-                      </div>
-                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0">
-                        <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300">
-                          <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5">
-                            <Icon name={item.icon} width={14} height={14} class="text-brand" />
-                            {item.title}
-                          </h4>
-                          <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-2 sm:order-1">
-                        <div class="panel-glass p-5 rounded-2xl hover:border-brand/30 transition-all duration-300 text-left">
-                          <h4 class="text-sm font-bold mb-1.5 flex items-center gap-1.5">
-                            {item.title}
-                            <Icon name={item.icon} width={14} height={14} class="text-brand" />
-                          </h4>
-                          {hasChildren ? (
-                            <div class="space-y-3 text-xs text-parchment/70 leading-relaxed">
-                              {item.children.map((child: { label: string; text: string; href?: string }) => (
-                                <div class="flex items-start gap-2">
-                                  {child.href ? (
-                                    <a href={child.href} target="_blank" rel="noopener noreferrer" class="text-brand font-bold shrink-0 no-underline hover:underline">{child.label}</a>
-                                  ) : (
-                                    <span class="text-brand font-bold shrink-0">{child.label}</span>
-                                  )}
-                                  <span>{child.text}</span>
-                                </div>
-                              ))}
-                            </div>
+              <div class="timeline-card-col">
+                <div class="timeline-card panel-glass">
+                  <h4 class="timeline-card-title">
+                    <Icon name={item.icon} width={14} height={14} />
+                    {item.title}
+                  </h4>
+                  {hasChildren ? (
+                    <div class="timeline-children">
+                      {item.children.map((child: { label: string; text: string; href?: string }) => (
+                        <div class="timeline-child">
+                          {child.href ? (
+                            <a href={child.href} target="_blank" rel="noopener noreferrer" class="timeline-child-label">{child.label}</a>
                           ) : (
-                            <p class="text-xs text-parchment/70 leading-relaxed">{item.desc}</p>
+                            <span class="timeline-child-label">{child.label}</span>
                           )}
+                          <span class="timeline-child-text">{child.text}</span>
                         </div>
-                      </div>
-                      <div class="w-full sm:w-[45%] pl-10 sm:pl-0 order-1 sm:order-2 sm:text-right">
-                        <span class="timeline-date font-mono text-xs text-brand font-bold bg-brand/10 px-2 py-0.5 rounded-full">{item.date}</span>
-                      </div>
-                    </>
+                      ))}
+                    </div>
+                  ) : (
+                    <p class="timeline-card-desc">{item.desc}</p>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        </details>
-      )}
-
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   </section>
 
-  {/* ===== 5. 底部出口 ===== */}
-  <div class="about-exit-cta py-12 px-4 text-center">
-    <p class="text-sm text-parchment/50">觉得有意思？</p>
-    <a href="/tools#info-source" class="inline-flex items-center gap-2 mt-2 text-sm font-medium text-brand hover:underline">
-      <Icon name="lucide:users" width={14} height={14} />
-      点子共促，一起学 AI
-    </a>
-  </div>
+  {/* ===== 4. 航行誓言 · 为什么建 ===== */}
+  <section class="why-section" id="why-section">
+    <div class="about-container">
+      <SectionHeader title="航行誓言 · 为什么建" />
 
-  {/* ===== 底部 ===== */}
-  <footer class="about-footer py-16 px-4 sm:px-6 flex justify-center border-t border-[var(--color-nav-border)] bg-[rgba(255,255,255,0.02)] relative z-20" id="about-footer">
-    <div class="about-footer-inner flex flex-col items-center gap-6 max-w-[620px] w-full text-center">
-      <LikeCounter pagePath="/about" />
-
-      <div class="panel-glass px-5 py-3 rounded-full flex items-center gap-3 border border-brand/20 bg-brand/5 shadow-inner">
-        <Icon name="lucide:hourglass" width={14} height={14} class="text-brand animate-spin" style="animation-duration: 4s;" />
-        <div class="site-uptime font-mono text-xs tracking-wider text-parchment/80" id="site-uptime"></div>
+      <div class="why-story panel-glass">
+        <p>从去年（25年）九月开始，我一直在飞书写学习记录，建了好几个知识库。飞书很好用，但 15G 不够用，而且它没法按我的想法长成我想要的样子。</p>
+        <p>后来看到 lvy01 的博客，他的内容就是 his 个人介绍，既是知识库又是名片。还有海哥的博客，像一个小型飞书，但比飞书灵活，足够承载他的内容。</p>
+        <p>我想，我已经会用 AI 编程了，为什么不自己搭一个？</p>
+        <p>对内，沉淀之后能反哺自己——省时间、提效率、保证做事的质量。对外，就是我的个人介绍。也满足我的好奇心：用好奇心去创造，创造出新的东西让自己继续好奇。</p>
       </div>
 
-      <div class="about-signature flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-parchment-dim">
-        <span class="about-sig-dot w-2 h-2 rounded-full bg-brand animate-ping"></span>
+      <p class="why-articles-hint">这三篇日志记录了完整的远征来龙去脉</p>
+      <div class="why-articles-grid">
+        {articles.map((a) => (
+          <a href={a.href} class="why-article panel-glass">
+            <Icon name="lucide:file-text" width={14} height={14} class="text-brand" />
+            <div>
+              <h4 class="why-article-title">{a.title}</h4>
+              <p class="why-article-summary">{a.summary}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 5. 赋能 CTA ===== */}
+  <section class="cta-section" id="cta-section">
+    <div class="about-container">
+      <div class="cta-card">
+        <div class="cta-card-inner">
+          <div class="cta-text-col">
+            <h2 class="cta-headline">点子共促 · 一起学 AI</h2>
+            <p class="cta-philosophy">赋能，不依赖。</p>
+            <p class="cta-desc">带着自己的目标来，用 AI 解决你自己的真实问题。这里不教你依赖任何工具，而是帮你学会用工具武装自己。</p>
+            <div class="cta-highlights">
+              <div class="cta-highlight">
+                <Icon name="lucide:lightbulb" width={16} height={16} />
+                <span>点子共创 — 抛出各自的点子，看可行性，有人想一起做就一起做</span>
+              </div>
+              <div class="cta-highlight">
+                <Icon name="lucide:rocket" width={16} height={16} />
+                <span>点子共促 — 带着目的一起学 AI，遇到问题互相交流</span>
+              </div>
+            </div>
+            <div class="cta-actions">
+              <a href="/tools#info-source" class="cta-btn cta-btn--primary">
+                <Icon name="lucide:arrow-right" width={15} height={15} />
+                了解更多
+              </a>
+              <div class="cta-social-row">
+                <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="cta-social-icon" title="GitHub">
+                  <Icon name="lucide:github" width={16} height={16} />
+                </a>
+                <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="cta-social-icon" title="Bilibili">
+                  <Icon name="lucide:circle-play" width={16} height={16} />
+                </a>
+                <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="cta-social-icon" title="小红书">
+                  <Icon name="lucide:book-open" width={16} height={16} />
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="cta-qr-col">
+            <div class="cta-qr-wrapper">
+              <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促群二维码" class="cta-qr-img" loading="lazy" />
+              <p class="cta-qr-label">扫码加入点子共促</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 6. 装配舱单 · Bento Grid ===== */}
+  <section class="bento-section" id="bento-section">
+    <div class="about-container">
+      <SectionHeader title="装配舱单 · 这个站是什么" />
+
+      {/* 建站动机 */}
+      <div class="bento-motivation panel-glass">
+        <p>对内是整理思考、沉淀资源、酝酿点子的<strong>前进系统</strong>。</p>
+        <p>对外是给想用 AI 解决真实问题的人的<strong>参考</strong>。</p>
+      </div>
+
+      {/* 四柱 Bento Grid */}
+      <div class="bento-grid">
+        {pillars.map((p) => (
+          <a href={p.route} class="bento-cell panel-glass">
+            <div class="bento-cell-icon">
+              <Icon name={p.icon} width={20} height={20} />
+            </div>
+            <div class="bento-cell-body">
+              <div class="bento-cell-header">
+                <span class="bento-cell-label">{p.label}</span>
+                <span class="bento-cell-hint">{p.hint}</span>
+              </div>
+              <p class="bento-cell-desc">{p.desc}</p>
+            </div>
+            <Icon name="lucide:arrow-right" width={14} height={14} class="bento-cell-arrow" />
+          </a>
+        ))}
+      </div>
+
+      {/* 开源 + 成本 双列 */}
+      <div class="bento-bottom-row">
+        <div class="bento-opensource panel-glass">
+          <Icon name="lucide:github" width={20} height={20} class="text-brand" />
+          <p class="bento-opensource-text">这个站永久免费开源，同更多人同行。</p>
+          <a href="https://github.com/AdgaiWalker/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="bento-opensource-link">
+            查看 GitHub 仓库
+            <Icon name="lucide:external-link" width={12} height={12} />
+          </a>
+        </div>
+
+        <div class="bento-cost panel-glass">
+          <div class="bento-cost-header">
+            <span class="bento-cost-label">总装载荷成本</span>
+            <span class="bento-cost-total">{totalCost} 元</span>
+          </div>
+          <div class="bento-cost-grid">
+            {costByCategory.map(([cat, amount]) => (
+              <div class="bento-cost-item">
+                <span class="bento-cost-cat">{cat}</span>
+                <span class="bento-cost-amount">{amount} 元</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 5. 工具链 Pipeline ===== */}
+  <section class="pipeline-section" id="pipeline-section">
+    <div class="about-container">
+      <SectionHeader title="战舰装配 · 怎么做的" />
+
+      <div class="pipeline-philosophy panel-glass">
+        <p class="pipeline-philosophy-main">因为需要，所以存在。</p>
+        <p class="pipeline-philosophy-sub">我不是先选了一个框架，然后看它能做什么。是我先想清楚这个产品要填补我什么需求，然后 AI 根据我的需求推荐框架。</p>
+      </div>
+
+      {/* AI 工具矩阵 */}
+      <div class="tools-grid">
+        {aiTools.map((t) => (
+          <div class="tool-card panel-glass">
+            <span class="tool-card-dot"></span>
+            <p class="tool-card-name">{t.name}</p>
+            <p class="tool-card-role">{t.role}</p>
+            <span class="tool-card-model">{t.model}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pipeline 管线 */}
+      <div class="pipeline-flow panel-glass">
+        <p class="pipeline-flow-label">星联远征 · 自动装配管线</p>
+        <div class="pipeline-nodes">
+          <div class="pipeline-node">
+            <Icon name="lucide:book-open" width={20} height={20} />
+            <span class="pipeline-node-name">Obsidian</span>
+            <span class="pipeline-node-role">思想沉淀舱</span>
+          </div>
+          <div class="pipeline-connector">
+            <svg width="100%" height="24" overflow="visible">
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-nav-border)" stroke-width="1.5" stroke-dasharray="4 4" />
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" class="pipeline-pulse-line" />
+            </svg>
+          </div>
+          <div class="pipeline-node">
+            <Icon name="lucide:git-compare" width={20} height={20} />
+            <span class="pipeline-node-name">GitHub</span>
+            <span class="pipeline-node-role">中枢集结港</span>
+          </div>
+          <div class="pipeline-connector">
+            <svg width="100%" height="24" overflow="visible">
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-nav-border)" stroke-width="1.5" stroke-dasharray="4 4" />
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" class="pipeline-pulse-line" />
+            </svg>
+          </div>
+          <div class="pipeline-node">
+            <Icon name="lucide:cloud-lightning" width={20} height={20} />
+            <span class="pipeline-node-name">Vercel</span>
+            <span class="pipeline-node-role">云端启航机</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 开荒星历时间轴 */}
+      <div class="site-timeline panel-glass">
+        <p class="site-timeline-label">开荒星历时间轴</p>
+        <div class="site-timeline-items">
+          {siteTimeline.map((t) => (
+            <div class="site-timeline-item">
+              <span class="site-timeline-date">{t.date}</span>
+              <span class="site-timeline-text">{t.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 6. Footer ===== */}
+  <footer class="about-footer" id="about-footer">
+    <div class="about-footer-inner">
+      <LikeCounter pagePath="/about" />
+
+      <div class="about-uptime panel-glass">
+        <Icon name="lucide:hourglass" width={14} height={14} class="uptime-icon" />
+        <div class="uptime-text" id="site-uptime"></div>
+      </div>
+
+      <a href="#cta-section" class="about-cta-link">
+        <Icon name="lucide:arrow-up" width={14} height={14} />
+        回到点子共促
+      </a>
+
+      <div class="about-signature">
+        <span class="about-sig-dot"></span>
         Walker · 行过万里水路
       </div>
     </div>
   </footer>
 
-  </div>{/* end about-me-content */}
-
-  {/* "关于站" Tab */}
-  <AboutSiteTab />
-
-  {/* 返回顶部 */}
-  <button class="back-to-top" id="back-to-top" aria-label="返回顶部">
-    <Icon name="lucide:arrow-up" width={18} height={18} />
-  </button>
-
 </FullscreenLayout>
 
+
 <script>
-  import { setupTilt } from '../../scripts/tilt-effect';
   import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
 
   let abort: AbortController | null = null;
-  let postcardTiltCleanup: (() => void) | null = null;
   let uptimeTimer: ReturnType<typeof setInterval> | null = null;
+  let typingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function isAboutPage() {
+    return !!(document.getElementById('hero-section') && document.querySelector('.about-bio-section'));
+  }
 
   function cleanup() {
+    if (!isAboutPage()) return;
     abort?.abort();
     abort = null;
-    postcardTiltCleanup?.();
-    postcardTiltCleanup = null;
     if (uptimeTimer !== null) {
       clearInterval(uptimeTimer);
       uptimeTimer = null;
     }
+    if (typingTimer !== null) {
+      clearTimeout(typingTimer);
+      typingTimer = null;
+    }
+    ScrollTrigger.getAll().forEach(t => t.kill());
   }
 
+  /* ---- Typing Effect ---- */
+  function initTyping() {
+    const el = document.getElementById('hero-typing');
+    if (!el) return;
+    // Reset state completely
+    el.textContent = '';
+    el.classList.remove('typing-done');
+    if (typingTimer !== null) clearTimeout(typingTimer);
+
+    const text = '用点子连接人与 AI';
+    let i = 0;
+    const type = () => {
+      if (i < text.length) {
+        el.textContent = text.slice(0, i + 1);
+        i++;
+        typingTimer = setTimeout(type, 100 + Math.random() * 60);
+      } else {
+        el.classList.add('typing-done');
+        typingTimer = null;
+      }
+    };
+    typingTimer = setTimeout(type, 800);
+  }
+
+  /* ---- Hero Parallax ---- */
   function initParallax(signal: AbortSignal) {
     const hero = document.getElementById('hero-section');
     const bgVideo = hero?.querySelector('.hero-bg-video') as HTMLElement | null;
@@ -405,7 +496,6 @@ const { personalTimeline } = stats;
       window.addEventListener('scroll', () => {
         const scrollY = window.scrollY;
         const heroHeight = hero.offsetHeight;
-
         if (scrollY < heroHeight) {
           if (bgVideo) bgVideo.style.transform = `scale(${1 + scrollY / heroHeight * 0.1}) translateY(${scrollY * 0.3}px)`;
           if (heroContent) {
@@ -417,176 +507,158 @@ const { personalTimeline } = stats;
       }, { passive: true, signal });
 
       scrollHint?.addEventListener('click', () => {
-        document.getElementById('era-section')?.scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('bio-section')?.scrollIntoView({ behavior: 'smooth' });
       }, { signal });
     }
   }
 
+  /* ---- Uptime Counter ---- */
   function initUptimeCounter() {
-    const uptimeDisplay = document.getElementById('site-uptime') as HTMLElement;
-    if (!uptimeDisplay) return;
+    const el = document.getElementById('site-uptime');
+    if (!el) return;
     const launch = new Date('2026-05-02T00:00:00+08:00');
-    const MS_PER_DAY = 86400000;
-    const MS_PER_HOUR = 3600000;
-    const MS_PER_MINUTE = 60000;
-    const MS_PER_SECOND = 1000;
     const update = () => {
       const diff = Date.now() - launch.getTime();
-      const days = Math.floor(diff / MS_PER_DAY);
-      const hours = Math.floor((diff % MS_PER_DAY) / MS_PER_HOUR);
-      const minutes = Math.floor((diff % MS_PER_HOUR) / MS_PER_MINUTE);
-      const seconds = Math.floor((diff % MS_PER_MINUTE) / MS_PER_SECOND);
-      uptimeDisplay.textContent = `SYSTEM ONLINE: ${days}D ${hours}H ${minutes}M ${seconds}S`;
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      el.textContent = `SYSTEM ONLINE: ${d}D ${h}H ${m}M ${s}S`;
     };
     update();
-    uptimeTimer = setInterval(update, MS_PER_SECOND);
+    uptimeTimer = setInterval(update, 1000);
   }
 
+  /* ---- Email Copy ---- */
   function initEmailCopy(signal: AbortSignal) {
-    const emailBtn = document.getElementById('copy-email');
-    emailBtn?.addEventListener('click', async () => {
+    const btn = document.getElementById('copy-email');
+    btn?.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText('praxiswalker@gmail.com');
-        const span = emailBtn.querySelector('span');
+        const span = btn.querySelector('span');
         const orig = span?.textContent;
-        if (span) span.textContent = '已复制邮箱';
+        if (span) span.textContent = '已复制！';
         setTimeout(() => { if (span && orig) span.textContent = orig; }, 1500);
       } catch { /* fallback */ }
     }, { signal });
   }
 
-  function initDataDock() {
-    const section = document.getElementById('data-dock-section');
-    if (!section) return;
-
-    let fired = false;
-
-    const runAnimations = () => {
-      if (fired) return;
-      fired = true;
-
-      // 1. 英雄数字 — 弹入 + 计数
-      const heroNum = section.querySelector<HTMLElement>('.data-hero-num');
-      if (heroNum) {
-        const target = parseInt(heroNum.dataset.target || '0');
-        gsap.fromTo(heroNum,
-          { scale: 0.6, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.7)' },
-        );
-        gsap.fromTo(heroNum,
-          { innerText: 0 },
-          {
-            innerText: target,
-            duration: 1.4,
-            ease: 'power2.out',
-            snap: { innerText: 1 },
-            onUpdate() {
-              heroNum.textContent = Math.round(parseFloat(heroNum.textContent || '0')).toString();
-            },
-          },
-        );
+  /* ---- GSAP ScrollTrigger Reveals ---- */
+  function initScrollReveal() {
+    // Bio section
+    gsap.fromTo('#bio-section .bio-card',
+      { opacity: 0, y: 50 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: '#bio-section', start: 'top 80%' }
       }
+    );
 
-      // 2. 海域图气泡 — stagger 入场
-      const islands = section.querySelectorAll<HTMLElement>('.island');
-      if (islands.length) {
-        gsap.to(islands, {
-          opacity: 1,
-          scale: 1,
-          duration: 0.5,
-          ease: 'back.out(1.4)',
-          stagger: 0.06,
-        });
+    // Manifesto
+    gsap.fromTo('.manifesto',
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: '.manifesto', start: 'top 85%' }
       }
+    );
 
-      // 3. 成本条 — 延迟后展开
-      const segments = section.querySelectorAll<HTMLElement>('.cost-segment');
-      segments.forEach(seg => {
-        const pct = getComputedStyle(seg).getPropertyValue('--pct').trim();
-        setTimeout(() => { seg.style.width = pct; }, 100);
-      });
-
-      // 4. Roadmap items — stagger
-      const roadmapItems = section.querySelectorAll<HTMLElement>('.roadmap-item');
-      if (roadmapItems.length) {
-        gsap.to(roadmapItems, {
-          opacity: 1,
-          y: 0,
-          duration: 0.35,
-          ease: 'power2.out',
-          stagger: 0.04,
-          delay: 0.3,
-        });
+    // Timeline items stagger
+    gsap.fromTo('.timeline-item',
+      { opacity: 0, y: 40, scale: 0.96 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.1)', stagger: 0.12,
+        scrollTrigger: { trigger: '.timeline-container', start: 'top 80%' }
       }
+    );
 
-      // 5. 成本总额计数
-      const costTotal = section.querySelector<HTMLElement>('.cost-total');
-      if (costTotal) {
-        const target = parseInt(costTotal.dataset.target || '0');
-        const suffix = costTotal.dataset.suffix || '';
-        gsap.fromTo(costTotal,
-          { innerText: 0 },
-          {
-            innerText: target,
-            duration: 1.2,
-            ease: 'power2.out',
-            snap: { innerText: 1 },
-            delay: 0.6,
-            onUpdate() {
-              costTotal.textContent = Math.round(parseFloat(costTotal.textContent || '0')).toString() + suffix;
-            },
-          },
-        );
+    // Why section story
+    gsap.fromTo('.why-story',
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: '.why-story', start: 'top 85%' }
       }
-    };
+    );
 
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          runAnimations();
-          observer.disconnect();
-          break;
+    // Why articles stagger
+    gsap.fromTo('.why-article',
+      { opacity: 0, y: 25 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', stagger: 0.1,
+        scrollTrigger: { trigger: '.why-articles-grid', start: 'top 85%' }
+      }
+    );
+
+    // Timeline progress line
+    const progressLine = document.getElementById('timeline-progress');
+    if (progressLine) {
+      gsap.fromTo(progressLine,
+        { scaleY: 0 },
+        { scaleY: 1, ease: 'none',
+          scrollTrigger: { trigger: '.timeline-container', start: 'top 60%', end: 'bottom 75%', scrub: 0.5 }
         }
-      }
-    }, { threshold: 0.25 });
+      );
+    }
 
-    observer.observe(section);
-    document.addEventListener('astro:before-swap', () => observer.disconnect());
+    // CTA section
+    gsap.fromTo('.cta-card',
+      { opacity: 0, y: 50, scale: 0.97 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: '#cta-section', start: 'top 80%' }
+      }
+    );
+
+    // Bento Grid cells stagger
+    gsap.fromTo('.bento-cell',
+      { opacity: 0, y: 30, scale: 0.95 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'power2.out', stagger: 0.1,
+        scrollTrigger: { trigger: '.bento-grid', start: 'top 85%' }
+      }
+    );
+
+    // Bento bottom row
+    gsap.fromTo('.bento-bottom-row > *',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', stagger: 0.15,
+        scrollTrigger: { trigger: '.bento-bottom-row', start: 'top 85%' }
+      }
+    );
+
+    // Pipeline nodes
+    gsap.fromTo('.pipeline-node',
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)', stagger: 0.2,
+        scrollTrigger: { trigger: '.pipeline-nodes', start: 'top 85%' }
+      }
+    );
+
+    // Tools grid
+    gsap.fromTo('.tool-card',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', stagger: 0.08,
+        scrollTrigger: { trigger: '.tools-grid', start: 'top 85%' }
+      }
+    );
   }
 
-  function initBackToTop(signal: AbortSignal) {
-    const btn = document.getElementById('back-to-top');
-    if (!btn) return;
-
-    const update = () => {
-      btn.classList.toggle('is-visible', window.scrollY > 300);
-    };
-
-    window.addEventListener('scroll', update, { passive: true, signal });
-    btn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, { signal });
-    update();
+  /* ---- Hero sub-text fade in ---- */
+  function initHeroFadeIn() {
+    const sub = document.getElementById('hero-sub');
+    const era = document.querySelector('.hero-era') as HTMLElement | null;
+    const actions = document.getElementById('hero-actions');
+    if (sub) gsap.fromTo(sub, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.2, delay: 2.2, ease: 'power2.out' });
+    if (era) gsap.fromTo(era, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.2, delay: 2.8, ease: 'power2.out' });
+    if (actions) gsap.fromTo(actions, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.8, delay: 3.4, ease: 'power2.out' });
   }
 
   function initAll() {
+    if (!isAboutPage()) return;
     cleanup();
     abort = new AbortController();
     const { signal } = abort;
 
+    initTyping();
+    initHeroFadeIn();
     initParallax(signal);
-
-    // 3D 物理磁性倾斜
-    postcardTiltCleanup = setupTilt('.postcard', {
-      perspective: 1000,
-      maxRotation: 8,
-      scale: 1.02,
-    });
-
     initUptimeCounter();
     initEmailCopy(signal);
-    initDataDock();
-    initBackToTop(signal);
+    initScrollReveal();
   }
 
   initAll();
@@ -594,80 +666,17 @@ const { personalTimeline } = stats;
   document.addEventListener('astro:before-swap', cleanup);
 </script>
 
-<script>
-  let tabAbort: AbortController | null = null;
-
-  function initAboutTabs() {
-    tabAbort?.abort();
-    tabAbort = new AbortController();
-    const { signal } = tabAbort;
-
-    const tabs = document.querySelectorAll('.about-tab-btn');
-    const meContent = document.getElementById('about-me-content');
-    const siteContent = document.getElementById('about-site-content');
-    if (!tabs.length || !meContent || !siteContent) return;
-
-    const showTab = (tab: string) => {
-      tabs.forEach(btn => btn.classList.toggle('is-active', (btn as HTMLElement).dataset.tab === tab));
-      meContent.hidden = tab !== 'me';
-      siteContent.hidden = tab !== 'site';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    tabs.forEach(btn => {
-      btn.addEventListener('click', () => showTab((btn as HTMLElement).dataset.tab!), { signal });
-    });
-
-    // URL ?tab=site support
-    const params = new URLSearchParams(location.search);
-    if (params.get('tab') === 'site') showTab('site');
-  }
-
-  initAboutTabs();
-  document.addEventListener('astro:page-load', initAboutTabs);
-  document.addEventListener('astro:before-swap', () => {
-    tabAbort?.abort();
-    tabAbort = null;
-  });
-</script>
 
 <style>
-  /* ===== Tab 切换 ===== */
-  .about-tabs {
-    display: flex;
-    gap: 8px;
-    margin-top: 1.5rem;
+  /* ===== 通用容器 ===== */
+  .about-container {
+    max-width: 680px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 1.25rem;
   }
 
-  .about-tab-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 20px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    backdrop-filter: blur(8px);
-  }
-
-  .about-tab-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-  }
-
-  .about-tab-btn.is-active {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    color: #fff;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  /* ===== Hero 区域 ===== */
+  /* ===== 1. Hero ===== */
   .hero-section {
     position: relative;
     height: 100vh;
@@ -693,12 +702,7 @@ const { personalTimeline } = stats;
   .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.4) 0%,
-      rgba(0, 0, 0, 0.15) 50%,
-      rgba(0, 0, 0, 0.6) 100%
-    );
+    background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 100%);
     backdrop-filter: blur(1px);
   }
 
@@ -708,102 +712,143 @@ const { personalTimeline } = stats;
     text-align: center;
     color: #fff;
     will-change: opacity, transform;
-  }
-
-  .hero-badge {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
-    letter-spacing: 0.05em;
-    margin-bottom: 2rem;
+    gap: 0.5rem;
   }
 
-  .hero-dot {
-    width: 6px;
-    height: 6px;
+  .hero-avatar-wrapper {
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-avatar-ring {
+    width: 108px;
+    height: 108px;
     border-radius: 50%;
-    background: #35bfab;
-    animation: pulse-dot 2s ease-in-out infinite;
+    padding: 3px;
+    background: linear-gradient(135deg, var(--color-brand), var(--color-brand-secondary, #1fc9e7));
+    box-shadow: 0 0 30px rgba(53, 191, 171, 0.3), 0 0 60px rgba(53, 191, 171, 0.1);
+    animation: ring-breathe 3s ease-in-out infinite;
   }
 
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 0.5; box-shadow: 0 0 4px rgba(53, 191, 171, 0.3); }
-    50% { opacity: 1; box-shadow: 0 0 12px rgba(53, 191, 171, 0.6); }
+  @keyframes ring-breathe {
+    0%, 100% { box-shadow: 0 0 30px rgba(53, 191, 171, 0.25), 0 0 60px rgba(53, 191, 171, 0.08); }
+    50% { box-shadow: 0 0 40px rgba(53, 191, 171, 0.4), 0 0 80px rgba(53, 191, 171, 0.15); }
+  }
+
+  .hero-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
   }
 
   .hero-title {
     font-family: 'Sora', sans-serif;
-    font-size: clamp(3.2rem, 10vw, 6rem);
+    font-size: clamp(3rem, 9vw, 5.5rem);
     font-weight: 700;
     letter-spacing: -0.04em;
     line-height: 1;
-    margin: 0 0 1.25rem;
-    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.35);
-  }
-
-  .hero-tagline {
-    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
-    font-size: clamp(0.9rem, 2.5vw, 1.25rem);
-    font-weight: 300;
-    color: rgba(255, 255, 255, 0.75);
-    letter-spacing: 0.15em;
     margin: 0;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.35);
   }
 
-  .hero-site-link {
-    display: inline-block;
-    margin-top: 1.5rem;
-    padding: 8px 20px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.8rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-  }
-
-  .hero-site-link:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.95);
-  }
-
-  .hero-sub-tagline {
+  .hero-typing {
     font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
-    font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+    font-size: clamp(0.95rem, 2.5vw, 1.3rem);
     font-weight: 300;
-    color: rgba(255, 255, 255, 0.5);
-    letter-spacing: 0.08em;
-    margin: 0.75rem 0 0;
-  }
-
-  .hero-era-line {
-    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
-    font-size: clamp(0.7rem, 1.5vw, 0.85rem);
-    font-weight: 300;
-    color: rgba(255, 255, 255, 0.35);
-    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.15em;
     margin: 0.5rem 0 0;
-    max-width: 480px;
+    min-height: 1.6em;
+    border-right: 2px solid rgba(255,255,255,0.7);
+    padding-right: 2px;
+    animation: blink-cursor 0.8s step-end infinite;
+  }
+
+  .hero-typing.typing-done {
+    border-right-color: transparent;
+    animation: none;
+  }
+
+  @keyframes blink-cursor {
+    0%, 100% { border-right-color: rgba(255,255,255,0.7); }
+    50% { border-right-color: transparent; }
+  }
+
+  .hero-sub {
+    font-size: clamp(0.72rem, 1.5vw, 0.9rem);
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.06em;
+    margin: 0.5rem 0 0;
+    opacity: 0;
+  }
+
+  .hero-era {
+    font-size: clamp(0.68rem, 1.3vw, 0.82rem);
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.04em;
+    margin: 0.25rem 0 0;
+    max-width: 440px;
     line-height: 1.6;
+    opacity: 0;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    opacity: 0;
+  }
+
+  .hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.5rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+  }
+
+  .hero-btn--primary {
+    background: var(--color-brand);
+    color: #fff;
+    border: 1px solid var(--color-brand);
+    box-shadow: 0 4px 20px rgba(53, 191, 171, 0.3);
+  }
+
+  .hero-btn--primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(53, 191, 171, 0.45);
+  }
+
+  .hero-btn--ghost {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(12px);
+  }
+
+  .hero-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: translateY(-2px);
   }
 
   .hero-scroll-hint {
     position: absolute;
-    bottom: 2.5rem;
+    bottom: 3.5rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255,255,255,0.5);
     cursor: pointer;
     animation: bounce-down 2s ease-in-out infinite;
     transition: opacity 0.3s ease;
@@ -814,320 +859,1275 @@ const { personalTimeline } = stats;
     50% { transform: translateX(-50%) translateY(8px); }
   }
 
-  /* ===== 个人简介区域 ===== */
-  .about-avatar {
-    width: 102px;
-    height: 102px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  }
-
-  .about-social .social-btn {
-    border-color: var(--color-inner-border);
-    color: var(--color-parchment-dim);
-  }
-
-  .about-social .social-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-  }
-
-  /* ===== 时间轴 ===== */
-  .timeline-marker {
-    box-shadow: 0 0 10px var(--color-brand-glow);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .timeline-anchor:hover .timeline-marker {
-    transform: sm:translate-x-1/2 scale(1.15);
-    border-color: var(--color-brand-secondary);
-    box-shadow: 0 0 16px var(--color-brand-glow);
-  }
-
-  /* ===== 底部 LCD 计时器 ===== */
-  .site-uptime {
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ===== 数据台 — 航海仪表盘 ===== */
-  .about-data-panel {
-    border: 1px solid var(--color-nav-border);
-    border-radius: 28px;
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  /* 英雄数字 */
-  .data-hero {
-    text-align: center;
-    padding: 0.5rem 0 0;
-  }
-
-  .data-hero-label {
-    display: block;
-    font-size: 0.85rem;
-    color: var(--color-parchment-dim);
-    opacity: 0.6;
-  }
-
-  .data-hero-number {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 0.3rem;
-    margin: 0.5rem 0 0.3rem;
-  }
-
-  .data-hero-num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: clamp(3rem, 8vw, 4.5rem);
-    font-weight: 900;
-    color: var(--color-parchment);
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .data-hero-unit {
-    font-size: 1.1rem;
-    color: var(--color-parchment-dim);
-    opacity: 0.5;
-  }
-
-  .data-hero-footnote {
-    font-size: 0.72rem;
-    color: var(--color-parchment-dim);
-    opacity: 0.35;
-    font-style: italic;
-  }
-
-  /* 子区域标签 */
-  .data-sub-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--color-parchment-dim);
-    opacity: 0.4;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-  }
-
-  /* 海域图 — 气泡群岛 */
-  .archipelago-map {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: center;
-    padding: 1rem 0;
-  }
-
-  .island {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-    text-decoration: none;
-    cursor: default;
-    opacity: 0;
-    transform: scale(0.3);
-    /* GSAP 会控制入场动画 */
-  }
-
-  .island-core {
-    width: var(--size);
-    height: var(--size);
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--color-brand) 25%, transparent), color-mix(in srgb, var(--color-brand) 8%, transparent));
-    border: 1px solid color-mix(in srgb, var(--color-brand) 15%, transparent);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
-  }
-
-  .island:hover .island-core {
-    transform: scale(1.2);
-    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand) 20%, transparent);
-  }
-
-  .island-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--color-parchment-dim);
-    opacity: 0.7;
-    white-space: nowrap;
-  }
-
-  .island-count {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.6rem;
-    color: var(--color-brand);
-    opacity: 0;
-    transition: opacity 0.2s ease;
+  .hero-gradient-bar {
     position: absolute;
-    top: -0.85rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-card);
-    border: 1px solid var(--color-nav-border);
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to top, var(--color-bg), transparent);
+    z-index: 5;
+    pointer-events: none;
   }
 
-  .island:hover .island-count {
-    opacity: 1;
+  /* ===== 2. Bio ===== */
+  .about-bio-section {
+    padding: 5rem 0 4rem;
   }
 
-  /* 成本透明条 */
-  .cost-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 0.4rem;
+  .bio-card {
+    padding: 2rem 2rem 1.5rem;
+    margin-top: 1.5rem;
   }
 
-  .cost-label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--color-parchment-dim);
-    opacity: 0.6;
-  }
-
-  .cost-total {
-    font-family: 'JetBrains Mono', monospace;
+  .bio-narrative {
     font-size: 0.9rem;
-    font-weight: 800;
-    color: var(--color-brand);
-    font-variant-numeric: tabular-nums;
+    line-height: 1.9;
+    color: var(--color-parchment);
+    opacity: 0.8;
   }
 
-  .cost-track {
-    display: flex;
-    height: 8px;
-    border-radius: 4px;
+  .bio-narrative p {
+    margin: 0 0 0.75rem;
+  }
+
+  .bio-quote {
+    position: relative;
+    padding: 1.25rem 1.5rem;
+    border-radius: 16px;
+    border: 1px solid var(--color-nav-border);
+    background: var(--color-brand-glow);
+    margin: 1.5rem 0;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
+    text-align: center;
   }
 
-  .cost-segment {
-    height: 100%;
-    width: 0%;
-    background: var(--color);
-    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    transition-delay: var(--delay);
+  .bio-quote-mark {
+    position: absolute;
+    right: 1rem;
+    bottom: -0.5rem;
+    font-size: 5rem;
+    font-family: Georgia, serif;
+    color: var(--color-brand);
+    opacity: 0.06;
+    pointer-events: none;
+    user-select: none;
   }
 
-  .cost-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-top: 0.45rem;
+  .bio-quote-text {
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-style: italic;
+    color: var(--color-parchment);
+    line-height: 1.7;
+    margin: 0;
   }
 
-  .cost-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.65rem;
+  .bio-quote-author {
+    font-size: 0.56rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
     color: var(--color-parchment-dim);
     opacity: 0.5;
+    margin: 0.5rem 0 0;
   }
 
-  .cost-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
+  .bio-gratitude {
+    position: relative;
+    padding: 1.25rem 1.5rem;
+    border-radius: 16px;
+    border-left: 3px solid var(--color-brand) !important;
+    margin: 1.5rem 0;
+    overflow: hidden;
   }
 
-  /* 航线状态 */
-  .data-roadmap {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .bio-gratitude-stamp {
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    border: 2px dashed rgba(53, 191, 171, 0.3);
+    padding: 2px 6px;
+    font-size: 0.56rem;
+    color: var(--color-brand);
+    opacity: 0.4;
+    font-family: var(--font-mono);
+    letter-spacing: 0.15em;
+    user-select: none;
+  }
+
+  .bio-gratitude-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-brand);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .bio-gratitude-text {
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: var(--color-parchment);
+    opacity: 0.65;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .bio-social {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-nav-border);
+  }
+
+  .social-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-nav-border);
+    background: rgba(255,255,255,0.04);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+
+  .social-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    background: #000;
+    color: #fff;
+    border-color: #000;
+  }
+
+  .social-pill--bili:hover { background: #fb7299; border-color: #fb7299; }
+  .social-pill--xhs:hover { background: #ff2442; border-color: #ff2442; }
+  .social-pill--email:hover { background: var(--color-brand); border-color: var(--color-brand); }
+
+  /* ===== 3. Journey / Timeline ===== */
+  .journey-section {
+    padding: 4rem 0 5rem;
+  }
+
+  .manifesto {
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 3rem;
+    overflow: hidden;
+  }
+
+  .manifesto-inner {
+    display: flex;
+    align-items: flex-start;
     gap: 1rem;
   }
 
-  .roadmap-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-
-  .roadmap-item {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.78rem;
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  .roadmap-done {
-    color: var(--color-parchment);
-    opacity: 0;
-  }
-
-  .roadmap-done > :global(svg) {
-    color: var(--color-brand);
-    flex-shrink: 0;
-  }
-
-  .roadmap-col-planned {
-    opacity: 0.5;
-  }
-
-  .roadmap-planned {
-    color: var(--color-parchment-dim);
-    opacity: 0;
-  }
-
-  .roadmap-planned > :global(svg) {
-    opacity: 0.4;
-    flex-shrink: 0;
-  }
-
-  /* ===== 响应式 ===== */
-  @media (max-width: 640px) {
-    .hero-title { font-size: 2.8rem; }
-    .era-section,
-    .guide-section,
-    .path-section,
-    .invite-section { padding-top: 2rem; padding-bottom: 2rem; }
-    .timeline-marker { left: 1rem !important; transform: none !important; }
-    .timeline-anchor:hover .timeline-marker { transform: scale(1.15) !important; }
-  }
-
-  /* 返回顶部 */
-  .back-to-top {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    z-index: 50;
+  .manifesto-icon {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    background: var(--color-card);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--color-border);
-    color: var(--color-parchment-dim);
-    cursor: pointer;
+    border-radius: 12px;
+    background: rgba(53, 191, 171, 0.1);
+    border: 1px solid rgba(53, 191, 171, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transform: translateY(8px);
-    pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease, color 0.2s ease;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  }
-
-  .back-to-top.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .back-to-top:hover {
     color: var(--color-brand);
+    flex-shrink: 0;
+  }
+
+  .manifesto-text {
+    font-family: serif;
+    font-size: 0.95rem;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-parchment);
+    line-height: 1.7;
+    letter-spacing: 0.03em;
+    margin: 0;
+  }
+
+  .manifesto-source {
+    font-size: 0.56rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+    margin: 0.5rem 0 0;
+  }
+
+  .manifesto-states {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(0,0,0,0.03);
+    border: 1px solid var(--color-nav-border);
+    border-radius: 16px;
+    padding: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  :global(body.theme-aurora) .manifesto-states,
+  :global(body.theme-sunset) .manifesto-states,
+  :global(body.theme-mint) .manifesto-states {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .manifesto-state {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    opacity: 0.55;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .manifesto-state--active {
+    opacity: 1;
+    color: var(--color-brand);
+    font-weight: 800;
+    font-size: 0.72rem;
+    background: rgba(53, 191, 171, 0.1);
+    border: 1px solid rgba(53, 191, 171, 0.2);
+    box-shadow: 0 2px 8px rgba(53, 191, 171, 0.1);
+  }
+
+  .state-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .state-dot--amber { background: #f59e0b; opacity: 0.6; }
+  .state-dot--brand { background: var(--color-brand); animation: pulse-dot 2s ease-in-out infinite; }
+  .state-dot--emerald { background: #34d399; opacity: 0.6; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; box-shadow: 0 0 8px rgba(53, 191, 171, 0.5); }
+  }
+
+  /* Timeline */
+  .timeline-container {
+    position: relative;
+    padding: 1rem 0;
+  }
+
+  .timeline-track {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-nav-border);
+  }
+
+  .timeline-progress {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    transform-origin: top;
+    transform: scaleY(0);
+    background: linear-gradient(to bottom, var(--color-brand) 70%, var(--color-brand-secondary, #1fc9e7));
+    box-shadow: 0 0 12px var(--color-brand);
+    border-radius: 99px;
+    z-index: 2;
+  }
+
+  .timeline-item {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-left: 2.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: 0.35rem;
+    top: 0.3rem;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--color-bg);
+    border: 2px solid var(--color-brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    box-shadow: 0 0 10px var(--color-brand-glow);
+  }
+
+  .timeline-dot-core {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-brand);
+  }
+
+  .timeline-dot-ripple {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(53, 191, 171, 0.4);
+    animation: ripple-out 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  @keyframes ripple-out {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  .timeline-date {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-brand);
+    background: rgba(53, 191, 171, 0.1);
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  .timeline-card-col {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .timeline-card {
+    padding: 1rem 1.25rem;
+    border-radius: 16px !important;
+    transition: border-color 0.3s ease !important;
+  }
+
+  .timeline-card:hover {
+    border-color: rgba(53, 191, 171, 0.3) !important;
+  }
+
+  .timeline-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--color-parchment);
+  }
+
+  .timeline-card-title [data-icon] {
+    color: var(--color-brand);
+  }
+
+  .timeline-card-desc {
+    font-size: 0.78rem;
+    color: var(--color-parchment);
+    opacity: 0.65;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .timeline-children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .timeline-child {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--color-parchment);
+    opacity: 0.65;
+    line-height: 1.6;
+  }
+
+  .timeline-child-label {
+    color: var(--color-brand);
+    font-weight: 700;
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+
+  a.timeline-child-label:hover {
+    text-decoration: underline;
+  }
+
+  /* Desktop: alternate sides */
+  @media (min-width: 640px) {
+    .timeline-track {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .timeline-progress {
+      left: 50%;
+      transform: translateX(-50%) scaleY(0);
+    }
+    .timeline-item {
+      padding-left: 0;
+      width: 100%;
+      justify-content: flex-end;
+    }
+    .timeline-dot {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .timeline-date-col {
+      position: absolute;
+      left: 0;
+      width: 45%;
+      text-align: right;
+      padding-right: 2rem;
+    }
+    .timeline-card-col {
+      width: 45%;
+      margin-left: 55%;
+    }
+    .timeline-item--right .timeline-date-col {
+      left: auto;
+      right: 0;
+      width: 45%;
+      text-align: left;
+      padding-right: 0;
+      padding-left: 2rem;
+    }
+    .timeline-item--right .timeline-card-col {
+      width: 45%;
+      margin-left: 0;
+      margin-right: 55%;
+    }
+  }
+
+  /* ===== 4. Bento Grid ===== */
+  .bento-section {
+    padding: 4rem 0 5rem;
+  }
+
+  .bento-motivation {
+    padding: 1.5rem 2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--color-parchment);
+    opacity: 0.75;
+  }
+
+  .bento-motivation strong {
+    color: var(--color-brand);
+    font-weight: 700;
+  }
+
+  .bento-motivation p {
+    margin: 0 0 0.3rem;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .bento-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.1rem 1rem;
+    border-radius: 20px !important;
+    text-decoration: none;
+    color: var(--color-parchment);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bento-cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-brand-glow);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+  }
+
+  .bento-cell:hover::before { opacity: 1; }
+  .bento-cell:hover {
+    transform: translateY(-2px) scale(1.02);
+    border-color: rgba(53, 191, 171, 0.3) !important;
+  }
+
+  .bento-cell-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(53, 191, 171, 0.1);
+    border: 1px solid rgba(53, 191, 171, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-brand);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bento-cell-body {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bento-cell-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .bento-cell-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .bento-cell-hint {
+    font-size: 0.56rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+  }
+
+  .bento-cell-desc {
+    font-size: 0.72rem;
+    color: var(--color-parchment);
+    opacity: 0.55;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .bento-cell-arrow {
+    color: var(--color-parchment-dim);
+    opacity: 0.3;
+    flex-shrink: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bento-cell:hover .bento-cell-arrow {
+    opacity: 0.8;
+    transform: translateX(3px);
+    color: var(--color-brand);
+  }
+
+  @media (max-width: 480px) {
+    .bento-grid { grid-template-columns: 1fr; }
+  }
+
+  .bento-bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 560px) {
+    .bento-bottom-row { grid-template-columns: 1fr; }
+  }
+
+  .bento-opensource {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .bento-opensource-text {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--color-parchment);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .bento-opensource-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    color: var(--color-brand);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .bento-opensource-link:hover { text-decoration: underline; }
+
+  .bento-cost {
+    padding: 1.25rem;
+  }
+
+  .bento-cost-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .bento-cost-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+  }
+
+  .bento-cost-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-brand);
+  }
+
+  .bento-cost-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+
+  .bento-cost-item {
+    text-align: center;
+  }
+
+  .bento-cost-cat {
+    display: block;
+    font-size: 0.62rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+  }
+
+  .bento-cost-amount {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+  }
+
+  /* ===== Why Section ===== */
+  .why-section {
+    padding: 4rem 0 4rem;
+  }
+
+  .why-story {
+    padding: 1.75rem 2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .why-story p {
+    font-size: 0.88rem;
+    line-height: 1.9;
+    color: var(--color-parchment);
+    opacity: 0.78;
+    margin: 0 0 0.75rem;
+  }
+
+  .why-story p:last-child {
+    margin-bottom: 0;
+  }
+
+  .why-articles-hint {
+    font-size: 0.72rem;
+    text-align: center;
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+    margin-bottom: 0.75rem;
+  }
+
+  .why-articles-grid {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .why-article {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px !important;
+    text-decoration: none;
+    color: var(--color-parchment);
+    transition: border-color 0.3s ease !important;
+  }
+
+  .why-article:hover {
+    border-color: rgba(53, 191, 171, 0.3) !important;
+  }
+
+  .why-article [data-icon] {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .why-article-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    transition: color 0.2s;
+  }
+
+  .why-article:hover .why-article-title {
+    color: var(--color-brand);
+  }
+
+  .why-article-summary {
+    font-size: 0.72rem;
+    color: var(--color-parchment);
+    opacity: 0.55;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ===== 5. Pipeline ===== */
+  .pipeline-section {
+    padding: 4rem 0 5rem;
+  }
+
+  .pipeline-philosophy {
+    padding: 1.5rem 2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 3px solid var(--color-brand) !important;
+  }
+
+  .pipeline-philosophy-main {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--color-parchment);
+    margin: 0;
+  }
+
+  .pipeline-philosophy-sub {
+    font-size: 0.82rem;
+    color: var(--color-parchment);
+    opacity: 0.55;
+    line-height: 1.7;
+    margin: 0.75rem 0 0;
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 480px) {
+    .tools-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .tool-card {
+    padding: 0.9rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease !important;
+  }
+
+  .tool-card:hover {
+    transform: scale(1.03);
+    border-color: rgba(53, 191, 171, 0.35) !important;
+  }
+
+  .tool-card-dot {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-brand);
+    opacity: 0.3;
+    transition: opacity 0.3s;
+  }
+
+  .tool-card:hover .tool-card-dot {
+    opacity: 1;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+
+  .tool-card-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+    margin: 0;
+    transition: color 0.2s;
+  }
+
+  .tool-card:hover .tool-card-name {
+    color: var(--color-brand);
+  }
+
+  .tool-card-role {
+    font-size: 0.62rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+    margin: 0.25rem 0 0;
+  }
+
+  .tool-card-model {
+    display: inline-block;
+    font-size: 0.56rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--color-brand);
+    border: 1px solid rgba(53, 191, 171, 0.2);
+    background: rgba(53, 191, 171, 0.05);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    transform: scale(0.9);
+  }
+
+  .pipeline-flow {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .pipeline-flow-label {
+    font-size: 0.62rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-brand);
+    margin: 0 0 1rem;
+  }
+
+  .pipeline-nodes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .pipeline-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(53, 191, 171, 0.2);
+    background: rgba(53, 191, 171, 0.05);
+    color: var(--color-brand);
+    min-width: 90px;
+    text-align: center;
+    z-index: 2;
+    transition: transform 0.3s ease;
+  }
+
+  .pipeline-node:hover {
+    transform: scale(1.05);
+  }
+
+  .pipeline-node-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+  }
+
+  .pipeline-node-role {
+    font-size: 0.5rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+  }
+
+  .pipeline-connector {
+    flex: 1;
+    min-width: 30px;
+  }
+
+  @keyframes pipeline-flow {
+    0% { stroke-dashoffset: 24; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  .pipeline-pulse-line {
+    stroke-dasharray: 8 16;
+    animation: pipeline-flow 1.5s linear infinite;
+  }
+
+  @media (max-width: 480px) {
+    .pipeline-nodes { flex-direction: column; gap: 0.5rem; }
+    .pipeline-connector { min-height: 24px; min-width: auto; transform: rotate(90deg); }
+    .pipeline-node { min-width: 80%; }
+  }
+
+  .site-timeline {
+    padding: 1.5rem;
+  }
+
+  .site-timeline-label {
+    font-size: 0.62rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-brand);
+    margin: 0 0 1rem;
+  }
+
+  .site-timeline-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .site-timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .site-timeline-date {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-brand);
+    background: rgba(53, 191, 171, 0.1);
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .site-timeline-text {
+    font-size: 0.82rem;
+    color: var(--color-parchment);
+    opacity: 0.65;
+  }
+
+  /* ===== CTA Section ===== */
+  .cta-section {
+    padding: 4rem 0 4rem;
+  }
+
+  .cta-card {
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(53, 191, 171, 0.08), rgba(53, 191, 171, 0.02));
+    border: 1.5px solid rgba(53, 191, 171, 0.2);
+    padding: 2.5rem;
+    box-shadow: 0 8px 40px rgba(53, 191, 171, 0.06);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .cta-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(53, 191, 171, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-card-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-text-col {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cta-headline {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-parchment);
+    margin: 0 0 0.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  .cta-philosophy {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-brand);
+    letter-spacing: 0.1em;
+    margin: 0 0 0.75rem;
+  }
+
+  .cta-desc {
+    font-size: 0.85rem;
+    line-height: 1.8;
+    color: var(--color-parchment);
+    opacity: 0.7;
+    margin: 0 0 1rem;
+  }
+
+  .cta-highlights {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-highlight {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--color-parchment);
+    opacity: 0.75;
+    line-height: 1.5;
+  }
+
+  .cta-highlight [data-icon] {
+    color: var(--color-brand);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .cta-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.5rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+  }
+
+  .cta-btn--primary {
+    background: var(--color-brand);
+    color: #fff;
+    border: 1px solid var(--color-brand);
+    box-shadow: 0 4px 16px rgba(53, 191, 171, 0.25);
+  }
+
+  .cta-btn--primary:hover {
     transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(53, 191, 171, 0.4);
+  }
+
+  .cta-social-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .cta-social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--color-nav-border);
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+
+  .cta-social-icon:hover {
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+    color: #fff;
+    transform: scale(1.1);
+  }
+
+  .cta-qr-col {
+    flex-shrink: 0;
+  }
+
+  .cta-qr-wrapper {
+    text-align: center;
+  }
+
+  .cta-qr-img {
+    width: 140px;
+    height: 140px;
+    border-radius: 16px;
+    border: 2px solid rgba(53, 191, 171, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    object-fit: cover;
+  }
+
+  .cta-qr-label {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+    margin: 0.5rem 0 0;
+  }
+
+  @media (max-width: 640px) {
+    .cta-card { padding: 1.75rem; }
+    .cta-card-inner { flex-direction: column; align-items: center; text-align: center; }
+    .cta-text-col { display: flex; flex-direction: column; align-items: center; }
+    .cta-highlights { align-items: flex-start; text-align: left; }
+    .cta-actions { flex-direction: column; gap: 0.75rem; }
+    .cta-qr-col { order: -1; }
+  }
+
+  /* ===== 6. Footer ===== */
+  .about-footer {
+    padding: 4rem 1rem 3rem;
+    border-top: 1px solid var(--color-nav-border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .about-footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    max-width: 620px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .about-uptime {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid rgba(53, 191, 171, 0.2) !important;
+    background: rgba(53, 191, 171, 0.05) !important;
+  }
+
+  .uptime-icon {
+    color: var(--color-brand);
+    animation: spin 4s linear infinite;
+  }
+
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+
+  .uptime-text {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    color: var(--color-parchment);
+    opacity: 0.75;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .about-cta-text {
+    font-size: 0.82rem;
+    color: var(--color-parchment);
+    opacity: 0.45;
+    margin: 0;
+  }
+
+  .about-cta-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-brand);
+    text-decoration: none;
+  }
+
+  .about-cta-link:hover { text-decoration: underline; }
+
+  .about-signature {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-parchment-dim);
+    margin-top: 0.5rem;
+  }
+
+  .about-sig-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-brand);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .hero-title { font-size: 2.6rem; }
+    .about-bio-section,
+    .journey-section,
+    .bento-section,
+    .pipeline-section {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+    .bio-card { padding: 1.5rem; }
+    .timeline-dot { left: 0.35rem !important; transform: none !important; }
+  }
+
+  /* ===== 右上角导航增强可见度 ===== */
+  :global(.fullscreen-nav) {
+    gap: 0.35rem;
+  }
+
+  :global(.fullscreen-nav-btn) {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
+    font-weight: 600;
+  }
+
+  :global(.fullscreen-nav-btn:hover) {
+    background: rgba(0, 0, 0, 0.65) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
   }
 </style>

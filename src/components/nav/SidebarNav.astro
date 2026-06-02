@@ -53,7 +53,7 @@ const isActiveHref = (href: string) => {
           )}
           <div class="flex flex-col gap-0.5 relative nav-links-container">
             {/* 浮动液态滑动高亮指示器 */}
-            <div class="nav-active-indicator opacity-0" id="nav-indicator"></div>
+            <div class="nav-indicator nav-active-indicator opacity-0"></div>
             {group.items.map(item => {
               const isActive = isActiveHref(item.href);
               return (
