@@ -47,24 +47,19 @@ export const prerender = true;
         信息源
       </h2>
 
-      <h3 class="sub-title">学习氛围群</h3>
-      <p class="section-hint">一起学 AI 的地方。</p>
+      <h3 class="sub-title">AI 学习氛围群</h3>
+      <p class="section-hint">有二维码的直接扫。博主维护的群，关注他们加入。</p>
       <div class="communities-list">
         {communities.map(community => (
           <div class:list={['community-row', community.featured && 'community-featured']}>
             {community.qrCode ? (
-              <details class="qr-details">
-                <summary class="qr-summary">
-                  <Icon name="lucide:scan-line" width={14} height={14} />
-                  扫码加入
-                </summary>
-                <img src={community.qrCode} alt={`${community.name} 二维码`} class="qr-code" loading="lazy" />
-              </details>
-            ) : (
-              <div class="qr-placeholder">
-                <Icon name="lucide:qr-code" width={28} height={28} />
-              </div>
-            )}
+              <img src={community.qrCode} alt={`${community.name} 二维码`} class="qr-code" loading="lazy" />
+            ) : community.blogger ? (
+              <a href="#bloggers" class="community-blogger">
+                <Icon name="lucide:user-plus" width={13} height={13} />
+                关注 {community.blogger}
+              </a>
+            ) : null}
             <div class="community-detail">
               <div class="community-top">
                 <span class="community-name">{community.name}</span>
@@ -76,18 +71,19 @@ export const prerender = true;
         ))}
       </div>
 
+      <div class="referral-note">
+        <Icon name="lucide:arrow-down" width={14} height={14} />
+        <span>博主维护的群 → 关注对应博主，通过他们的渠道加入。见下方「<a href="#bloggers">博主推荐</a>」。</span>
+      </div>
+
       <h3 class="sub-title">省钱用 AI</h3>
-      <p class="section-hint">获取低价 AI 额度的渠道。</p>
+      <p class="section-hint">获取低价 AI 额度的渠道。QQ 群，直接扫。</p>
       <div class="resources-grid">
         {aiResources.map(resource => (
           <div class="resource-item">
-            <details class="qr-details">
-              <summary class="qr-summary">
-                <Icon name="lucide:scan-line" width={14} height={14} />
-                扫码加入
-              </summary>
+            {resource.qrCode && (
               <img src={resource.qrCode} alt={`${resource.name} 二维码`} class="qr-code" loading="lazy" />
-            </details>
+            )}
             <div class="resource-detail">
               <div class="resource-top">
                 <span class="resource-name">{resource.name}</span>
@@ -164,9 +160,9 @@ export const prerender = true;
         <Icon name="lucide:heart" width={20} height={20} class="section-icon" />
         博主推荐
       </h2>
-      <p class="section-hint">切实帮到我的 AI 圈博主。</p>
+      <p class="section-hint">切实帮到我的 AI 圈博主。关注他们，通过他们的渠道加入学习群。</p>
       <div class="blogger-list">
-        {bloggers.map(blogger => (
+        {bloggers.map(blogger => blogger.url ? (
           <a href={blogger.url} target="_blank" rel="noopener noreferrer" class="blogger-item panel-glass no-underline">
             {blogger.avatar ? (
               <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" loading="lazy" />
@@ -181,6 +177,21 @@ export const prerender = true;
               <span class="blogger-desc">{blogger.desc}</span>
             </div>
           </a>
+        ) : (
+          <div class="blogger-item panel-glass">
+            {blogger.avatar ? (
+              <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" loading="lazy" />
+            ) : (
+              <div class="blogger-avatar-placeholder">{blogger.initial}</div>
+            )}
+            <div class="blogger-info">
+              <div class="blogger-top">
+                <span class="blogger-name">{blogger.name}</span>
+                <span class="blogger-platform">{blogger.platform}</span>
+              </div>
+              <span class="blogger-desc">{blogger.desc}</span>
+            </div>
+          </div>
         ))}
       </div>
     </section>
@@ -188,7 +199,7 @@ export const prerender = true;
     {/* 底部 */}
     <div class="page-disclaimer">
       <Icon name="lucide:info" width={14} height={14} />
-      <span>只列我实际在用的。不带货、不收费、不担保。按需判断。</span>
+      <span>只列我实际在用的。不带货、不收费、不担保。按需判断。二维码有时效，扫不了加我微信备注来意。</span>
     </div>
   </div>
 </SidebarLayout>
@@ -232,44 +243,49 @@ export const prerender = true;
     font-size: 0.82rem; line-height: 1.6; margin: -0.25rem 0 0;
   }
 
-  /* 二维码折叠 */
-  .qr-details {
-    flex-shrink: 0;
-  }
-  .qr-summary {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.5);
-    color: var(--color-brand, #c4704a);
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    list-style: none;
-    transition: background 0.2s ease;
-  }
-  .qr-summary::-webkit-details-marker { display: none; }
-  .qr-summary:hover {
-    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
-  }
-  .qr-details[open] .qr-summary {
-    margin-bottom: 8px;
-    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
-  }
+  /* 二维码直接展示 */
   .qr-code {
-    width: 120px; height: 120px;
+    width: 120px; height: 120px; flex-shrink: 0;
     border-radius: 0.75rem; object-fit: cover;
     border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.06);
   }
 
-  /* 移动端二维码默认展开 */
-  @media (min-width: 768px) {
-    .qr-details:not([data-mobile]) { }
-    /* 桌面端默认折叠 — 用 JS 处理更可靠，但 CSS-only 也可以 */
+  /* 博主引荐标签 */
+  .community-blogger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px dashed rgba(var(--color-brand-rgb, 196, 112, 74), 0.25);
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.04);
+    color: var(--color-brand, #c4704a);
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease;
   }
+  .community-blogger:hover {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+  }
+
+  /* 引荐说明 */
+  .referral-note {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.5));
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .referral-note a {
+    color: var(--color-brand, #c4704a);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .referral-note a:hover { text-decoration: underline; }
 
   /* 氛围群 */
   .communities-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -284,15 +300,8 @@ export const prerender = true;
     border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
     background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.04);
   }
-  .qr-placeholder {
-    width: 120px; height: 120px; border-radius: 0.75rem;
-    border: 1px dashed rgba(var(--color-border-rgb, 121, 85, 72), 0.15);
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.3);
-    display: flex; align-items: center; justify-content: center;
-    color: rgba(var(--color-muted-rgb, 63, 48, 39), 0.25); flex-shrink: 0;
-  }
   .community-detail { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
-  .community-top { display: flex; align-items: center; gap: 0.5rem; }
+  .community-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
   .community-name { color: var(--color-heading, var(--color-text, #3f3027)); font-size: 0.92rem; font-weight: 700; }
   .community-badge {
     display: inline-flex; padding: 0.18rem 0.5rem; border-radius: 999px;
@@ -470,7 +479,6 @@ export const prerender = true;
 
   @media (max-width: 640px) {
     .qr-code { width: 100px; height: 100px; }
-    .qr-placeholder { width: 100px; height: 100px; }
     .resources-grid { grid-template-columns: 1fr; }
     .tool-row { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
     .tool-category { width: auto; }

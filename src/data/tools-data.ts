@@ -9,6 +9,8 @@ export interface Community {
   badge: string;
   qrCode?: string;
   featured?: boolean;
+  /** 博主名 — 有此字段表示通过关注博主加入，不直接放二维码 */
+  blogger?: string;
 }
 
 export interface AIResource {
@@ -46,26 +48,35 @@ export interface SkillEntry {
 
 export const communities: Community[] = [
   {
-    name: '点子工作组',
-    desc: '我自己建的核心群。把点子做出来的人在这里碰撞，分享实战进度。',
+    name: '点子共促',
+    desc: '一起学 AI、聊点子、找合作。学以致用，把想法变成现实。',
     badge: '我的群',
     qrCode: '/images/qr/dianzi-gongcu.jpg',
     featured: true,
   },
   {
+    name: 'AI 前沿信息一群',
+    desc: '海外 AI 前沿资讯和学习资源，程序员为主，第一时间掌握行业动态。',
+    badge: '前沿',
+    blogger: '海哥',
+  },
+  {
     name: 'AI 设计氛围群',
     desc: 'AI 设计方向的学习氛围群，交流设计工具和工作流。',
     badge: '设计',
+    blogger: '黄白',
   },
   {
-    name: 'AI 产品经理氛围群',
-    desc: 'AI 产品方向的学习氛围群，讨论产品思路和行业趋势。',
-    badge: '产品',
+    name: '西门聪明蛋的朋友们',
+    desc: 'AI 编程、自媒体、AI 炒股，什么 AI 话题都聊。氛围自由，群友各有所长。',
+    badge: '交流',
+    blogger: '西门聪明蛋',
   },
   {
-    name: 'AI 前沿信息一群',
-    desc: 'AI 前沿资讯和学习资源分享，第一时间了解行业动态。',
-    badge: '前沿',
+    name: '简老师 AI 变现群',
+    desc: '每晚 23:00–凌晨直播，讲 AI 落地与变现。自由职业、独立做事的人多。抖音群，关注博主加入。',
+    badge: '变现',
+    blogger: '简老师讲AI',
   },
 ];
 
@@ -119,7 +130,7 @@ export const bloggers: Blogger[] = [
   {
     name: '海哥（海拉鲁编程客）',
     platform: 'YouTube',
-    desc: '科技博主、AI 工程师、猫咪奶爸。带我成长的人。',
+    desc: '科技博主、AI 工程师、猫咪奶爸。带我成长的人。维护 AI 前沿信息群。',
     url: 'https://www.youtube.com/@hylarucoder',
     avatar: '/images/海拉鲁编程客.png',
     initial: '海',
@@ -131,6 +142,30 @@ export const bloggers: Blogger[] = [
     url: 'https://space.bilibili.com/385670211',
     avatar: '/images/秋芝.jpg',
     initial: '秋',
+  },
+  {
+    name: '黄白',
+    platform: '小红书',
+    desc: '大厂在职设计师，AIGC 创作者。分享有用的 AI 工具和工作流。',
+    url: 'https://www.xiaohongshu.com/user/profile/5b85033f6e68470001debc86',
+    avatar: '/images/黄白.webp',
+    initial: '黄',
+  },
+  {
+    name: '西门聪明蛋',
+    platform: '抖音',
+    desc: 'AI 编程 / vibe coding 实战派，维护 AI 产品学习社群。',
+    url: 'https://www.douyin.com/user/MS4wLjABAAAACqJi0ISN_iKeH5JhOhbmqnf6WLx0Zt8MAa_h_DKUIVo',
+    avatar: '/images/西门聪明蛋.jpeg',
+    initial: '西',
+  },
+  {
+    name: '简老师讲AI',
+    platform: '抖音',
+    desc: 'AI 落地方案与培训赋能。每晚 23:00–凌晨直播，讲 AI 机会和落地。有付费社群。',
+    url: 'https://www.douyin.com/user/MS4wLjABAAAAtAsgejXkyl4XpbFXDsb0AirMkQLLeRegV3BSHHhgZ2NZSulv4-GFmMex15YcEuix',
+    avatar: '/images/jian-teacher-ai.jpg',
+    initial: '简',
   },
 ];
 
