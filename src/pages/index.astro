@@ -1,20 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
 import HomeCanvas from '../components/home/HomeCanvas.astro';
-import SparkBoxModal from '../components/home/SparkBoxModal.astro';
 import { getPublishedPosts, getPublishedIdeas } from '@/lib/content';
 
 export const prerender = true;
 
 const recentLogs = (await getPublishedPosts()).filter(post => post.data.type === 'knowledge');
 const featuredLog = recentLogs.find(post => post.data.featured) || recentLogs[0];
-const recentPosts = recentLogs.slice(0, 3); // 最近 3 篇文章
+const recentPosts = recentLogs.slice(0, 3);
 const ideasCount = (await getPublishedIdeas()).length;
 ---
 
 <Base title="Walker — 行过万里水路">
   <HomeCanvas recentLogs={recentLogs} featuredLog={featuredLog} recentPosts={recentPosts} ideasCount={ideasCount} />
-  <SparkBoxModal />
 
   <script>
     import '../scripts/home-canvas';

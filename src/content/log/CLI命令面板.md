@@ -10,7 +10,7 @@ valueMode: utility
 published: true
 summary: 面向企业用户的 CLI 命令面板，用卡牌隐喻将技能/MCP/工具装载到槽位，点击即出。像小时候打牌一样——装一张卡，打一张卡，产出一份内容。
 status: validating
-related: [卡牌桌, agent-coding, 设计为人与内容搭桥]
+related: [卡牌桌, 设计为人与内容搭桥]
 aiUsePolicy:
   level: AI-2
   readable: true

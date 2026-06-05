@@ -668,6 +668,13 @@ const { personalTimeline, siteTimeline } = stats;
 
 
 <style>
+  /* ===== 覆盖全局 panel-glass 过白背景 ===== */
+  :global(body:not(.theme-aurora):not(.theme-sunset):not(.theme-mint) .about-container .panel-glass) {
+    background: rgba(255, 255, 255, 0.25) !important;
+    backdrop-filter: blur(16px) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
+
   /* ===== 通用容器 ===== */
   .about-container {
     max-width: 680px;
@@ -1219,7 +1226,8 @@ const { personalTimeline, siteTimeline } = stats;
   }
 
   .timeline-card:hover {
-    border-color: rgba(53, 191, 171, 0.3) !important;
+    border-color: rgba(53, 191, 171, 0.35) !important;
+    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.08);
   }
 
   .timeline-card-title {
@@ -1357,24 +1365,17 @@ const { personalTimeline, siteTimeline } = stats;
     text-decoration: none;
     color: var(--color-parchment);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    position: relative;
-    overflow: hidden;
   }
 
   .bento-cell::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--color-brand-glow);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 0;
+    display: none;
   }
 
-  .bento-cell:hover::before { opacity: 1; }
+  .bento-cell:hover::before { display: none; }
   .bento-cell:hover {
-    transform: translateY(-2px) scale(1.02);
-    border-color: rgba(53, 191, 171, 0.3) !important;
+    transform: translateY(-2px);
+    border-color: rgba(53, 191, 171, 0.35) !important;
+    box-shadow: 0 4px 16px rgba(53, 191, 171, 0.1);
   }
 
   .bento-cell-icon {
@@ -1388,15 +1389,11 @@ const { personalTimeline, siteTimeline } = stats;
     justify-content: center;
     color: var(--color-brand);
     flex-shrink: 0;
-    position: relative;
-    z-index: 1;
   }
 
   .bento-cell-body {
     flex: 1;
     min-width: 0;
-    position: relative;
-    z-index: 1;
   }
 
   .bento-cell-header {
@@ -1432,8 +1429,6 @@ const { personalTimeline, siteTimeline } = stats;
     opacity: 0.3;
     flex-shrink: 0;
     transition: opacity 0.3s, transform 0.3s;
-    position: relative;
-    z-index: 1;
   }
 
   .bento-cell:hover .bento-cell-arrow {
@@ -1583,7 +1578,8 @@ const { personalTimeline, siteTimeline } = stats;
   }
 
   .why-article:hover {
-    border-color: rgba(53, 191, 171, 0.3) !important;
+    border-color: rgba(53, 191, 171, 0.35) !important;
+    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.08);
   }
 
   .why-article [data-icon] {
@@ -1659,8 +1655,8 @@ const { personalTimeline, siteTimeline } = stats;
   }
 
   .tool-card:hover {
-    transform: scale(1.03);
     border-color: rgba(53, 191, 171, 0.35) !important;
+    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.08);
   }
 
   .tool-card-dot {

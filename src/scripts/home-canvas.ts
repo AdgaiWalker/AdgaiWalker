@@ -193,82 +193,8 @@ function initThemeToggle(signal: AbortSignal) {
 }
 
 // =========================================
-// Spark! 抽点子盲盒
+// Spark! 抽点子盲盒 — 已迁移至 GreetingCard
 // =========================================
-
-const BRAIN_SPARKS = [
-  "🐾 开发一个可以将猫咪喵喵声自动翻译成拍立得卡通日记的 APP！",
-  "🎷 做一款 VSCode 插件：当你的代码写出 Bug 时，自动播放悲伤的萨克斯风！",
-  "💆‍♂️ 构建一个 AI 虚拟老板：每天早晨用极其温柔的声线催你写代码，并提供心理按摩！",
-  "☕ 设计一款智能水杯：AI 会根据你今天敲键盘的次数和写 Bug 的频率，强行提醒你喝咖啡！",
-  "🌙 打造一款 AI 梦境发生器：晚上输入你想梦到的场景，AI 自动为你脑补一段催眠故事！",
-  "🍳 做个 AI 厨艺拯救者：拍一下冰箱里剩下的烂西红柿和半盒豆腐，AI 自动生成一道米其林级别的黑暗料理菜谱！",
-  "🐾 开发一款 AI 宠物社交机器人：让你的猫在网上和隔壁的狗通过 GPT 聊天，甚至能网恋！",
-  "🌸 做一款'键盘侠净化器'：用 AI 自动把你写在终端里的脏话脏代码注释重写成高雅的古典诗词！",
-  "🛹 开发一款'滑板AI跟拍仪'：用 AI 动作捕捉算法，自动在滑板腾空那一瞬间抓拍出最帅的侧脸！",
-  "💤 做一款'睡眠AI监控器'：通过 AI 分析你晚上的呼噜声，自动编排出一首舒缓的白噪音钢琴曲！",
-];
-
-function initSparkBox(signal: AbortSignal) {
-  const triggerBtn = document.getElementById('spark-trigger-btn');
-  const modal = document.getElementById('spark-box-modal');
-  const card = document.getElementById('spark-box-card');
-  const btnClose = document.getElementById('spark-box-close');
-  const btnCloseTop = document.getElementById('spark-box-close-top');
-  const btnAgain = document.getElementById('spark-box-again');
-
-  function closeModal() {
-    if (!modal || !card) return;
-    card.classList.remove('scale-100', 'opacity-100');
-    card.classList.add('scale-95', 'opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 250);
-  }
-
-  function openModal() {
-    if (!modal || !card) return;
-    const contentEl = document.getElementById('spark-box-content');
-    if (contentEl) {
-      contentEl.textContent = BRAIN_SPARKS[Math.floor(Math.random() * BRAIN_SPARKS.length)];
-    }
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-      card.classList.remove('scale-95', 'opacity-0');
-      card.classList.add('scale-100', 'opacity-100');
-    }, 50);
-  }
-
-  function fireMeteor() {
-    const container = document.getElementById('spark-meteor-container');
-    if (!container) return;
-    const meteor = document.createElement('div');
-    meteor.className = 'spark-meteor';
-    meteor.style.top = '-100px';
-    meteor.style.right = `${10 + Math.random() * 30}%`;
-    container.appendChild(meteor);
-    setTimeout(() => meteor.remove(), 1000);
-  }
-
-  // 点击 Spark 按钮 → 流星 + 延迟弹窗
-  triggerBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    fireMeteor();
-    setTimeout(openModal, 400);
-  }, { signal });
-
-  btnClose?.addEventListener('click', closeModal, { signal });
-  btnCloseTop?.addEventListener('click', closeModal, { signal });
-  modal?.addEventListener('click', (e) => {
-    if (e.target === modal) closeModal();
-  }, { signal });
-
-  btnAgain?.addEventListener('click', () => {
-    closeModal();
-    setTimeout(() => {
-      fireMeteor();
-      setTimeout(openModal, 400);
-    }, 350);
-  }, { signal });
-}
 
 function initHomeInteractions() {
   const abort = new AbortController();
@@ -278,7 +204,6 @@ function initHomeInteractions() {
   window.addEventListener('resize', autoFitScale, { signal });
   initDraggables(signal);
   initThemeToggle(signal);
-  initSparkBox(signal);
   initStatusReactions(signal);
   initClickRipple(signal);
 

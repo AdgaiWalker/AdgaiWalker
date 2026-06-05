@@ -17,6 +17,14 @@ allLogs.forEach(log => {
 });
 const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 
+// 标签筛选：仅展示出现 ≥ 2 次的高频标签
+const tagCounts: Record<string, number> = {};
+allLogs.flatMap(l => l.data.tags).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+const frequentTags = Object.entries(tagCounts)
+  .filter(([, c]) => c >= 2)
+  .sort((a, b) => b[1] - a[1])
+  .map(([t]) => t);
+
 ---
 
 <SidebarLayout
@@ -52,14 +60,14 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
       </div>
     </div>
 
-    {/* 标签筛选栏 */}
+    {/* 标签筛选栏 — 仅展示出现 ≥ 2 次的标签，低频标签保留在文章卡片上 */}
     <div class="tag-filter-bar" id="tag-filter-bar">
       <button class="filter-pill is-active" data-tag="all">
         全部<span class="filter-count">{allLogs.length}</span>
       </button>
-      {[...new Set(allLogs.flatMap(l => l.data.tags))].map(tag => (
+      {frequentTags.map(tag => (
         <button class="filter-pill" data-tag={tag}>
-          #{tag}<span class="filter-count">{allLogs.filter(l => l.data.tags.includes(tag)).length}</span>
+          #{tag}<span class="filter-count">{tagCounts[tag]}</span>
         </button>
       ))}
     </div>

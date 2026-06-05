@@ -10,7 +10,7 @@ form: resource
 domain: ai
 intent: share
 valueMode: utility
-related: [点子共促, claude-code]
+related: [点子共促]
 aiUsePolicy:
   level: AI-2
   readable: true

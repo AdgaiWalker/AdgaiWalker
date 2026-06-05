@@ -21,7 +21,7 @@ const traceLog = featuredLog || recentLogs[0];
   <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex justify-center items-center">
     <div class="grid grid-cols-[280px_400px] justify-center gap-6 items-start w-full relative pb-4 pointer-events-auto px-4">
 
-      <!-- 左栏：身份条 + 最近文章 -->
+      <!-- 左栏：身份条 + 快速入口 + 最近文章 -->
       <div class="flex flex-col gap-4 mt-6">
         <!-- 身份条 — 品牌缩影 + 最近一条内容 -->
         <div class="directory-card panel-glass p-4 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[24px]" style="animation-delay: 0.04s;">
@@ -49,25 +49,8 @@ const traceLog = featuredLog || recentLogs[0];
           </div>
         </div>
 
-        <!-- 最近文章 — 让用户一眼看到内容 -->
-        <div class="panel-glass p-4 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[24px] delay-1" style="animation-delay: 0.12s;">
-          <div class="recent-header">
-            <Icon name="lucide:pen-line" width={13} height={13} class="text-brand" />
-            <span class="recent-label">最近文章</span>
-            <a href={POSTS} class="recent-more">全部 →</a>
-          </div>
-          <div class="recent-list">
-            {recentPosts.map(post => (
-              <a href={buildPostPath(post.id)} class="recent-item group/item">
-                <span class="recent-item-title group-hover/item:text-brand transition-colors">{post.data.title}</span>
-                <span class="recent-item-date">{(post.data.date.getMonth() + 1).toString().padStart(2, '0')}/{post.data.date.getDate().toString().padStart(2, '0')}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-
         <!-- 快速入口 — 四大板块 -->
-        <div class="panel-glass p-3 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[20px] delay-2" style="animation-delay: 0.20s;">
+        <div class="panel-glass p-3 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[20px] delay-1" style="animation-delay: 0.12s;">
           <div class="quick-grid">
             <a href={POSTS} class="quick-link group/q">
               <Icon name="lucide:pen-line" width={15} height={15} />
@@ -88,24 +71,28 @@ const traceLog = featuredLog || recentLogs[0];
           </div>
         </div>
 
-        <!-- Spark! 抽点子盲盒按钮 -->
-        <button
-          id="spark-trigger-btn"
-          class="spark-trigger pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[20px] delay-3 flex items-center gap-2 w-full"
-          style="animation-delay: 0.28s;"
-          title="碰碰运气抽个点子盲盒"
-        >
-          <div class="spark-icon-wrap">
-            <Icon name="lucide:wand-sparkles" width={14} height={14} />
+        <!-- 最近文章 — 让用户一眼看到内容 -->
+        <div class="panel-glass p-4 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[24px] delay-2" style="animation-delay: 0.20s;">
+          <div class="recent-header">
+            <Icon name="lucide:pen-line" width={13} height={13} class="text-brand" />
+            <span class="recent-label">最近文章</span>
+            <a href={POSTS} class="recent-more">全部 →</a>
           </div>
-          <span class="spark-label">Spark!</span>
-          <span class="spark-hint">抽个创意脑洞</span>
-        </button>
+          <div class="recent-list">
+            {recentPosts.map(post => (
+              <a href={buildPostPath(post.id)} class="recent-item group/item">
+                <span class="recent-item-title group-hover/item:text-brand transition-colors">{post.data.title}</span>
+                <span class="recent-item-date">{(post.data.date.getMonth() + 1).toString().padStart(2, '0')}/{post.data.date.getDate().toString().padStart(2, '0')}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
       </div>
 
       <!-- 右栏：头像卡 -->
       <div class="flex flex-col items-center gap-5 -mt-3">
-        <div class="pop-in delay-1 w-full draggable-card cursor-grab rounded-[40px]">
+        <div class="pop-in delay-1 w-full draggable-card cursor-grab rounded-[40px] relative">
           <GreetingCard />
         </div>
       </div>
@@ -229,42 +216,73 @@ const traceLog = featuredLog || recentLogs[0];
     transform: translateX(2px);
   }
 
-  /* 隐形导航 — hover 身份条时淡入 */
+  /* 隐形导航 — 音符跳动：平时隐形，轮流蹦出亮起再落回隐形 */
   .directory-ghost-nav {
     display: flex;
     gap: 16px;
+    justify-content: center;
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 6%, transparent);
-    opacity: 0;
-    transform: translateY(-4px);
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    pointer-events: none;
-  }
-
-  .directory-card:hover .directory-ghost-nav {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+    position: relative;
   }
 
   .directory-ghost-nav a,
   .directory-ghost-nav button {
     font-size: 0.68rem;
     font-family: var(--font-mono);
-    color: var(--color-parchment-dim);
-    opacity: 0.5;
+    font-weight: 700;
     text-decoration: none;
     background: none;
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: opacity 0.2s ease, color 0.2s ease;
+    color: var(--color-brand);
+    opacity: 0;
+    transform: translateY(6px);
+    animation: note-bounce 4.5s ease-in-out infinite;
   }
+
+  .directory-ghost-nav a:nth-child(1) { animation-delay: 0s; }
+  .directory-ghost-nav a:nth-child(2) { animation-delay: 1.5s; }
+  .directory-ghost-nav button:nth-child(3) { animation-delay: 3s; }
+
   .directory-ghost-nav a:hover,
   .directory-ghost-nav button:hover {
     opacity: 1;
+    transform: translateY(0);
     color: var(--color-brand);
+    animation-play-state: paused;
+  }
+
+  @keyframes note-bounce {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    8% {
+      opacity: 1;
+      transform: translateY(-4px);
+    }
+    16% {
+      transform: translateY(1px);
+    }
+    22% {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+    28% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    38% {
+      opacity: 0.6;
+      transform: translateY(2px);
+    }
+    45%, 100% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
   }
 
   .cursor-grabbing {
@@ -386,83 +404,6 @@ const traceLog = featuredLog || recentLogs[0];
     letter-spacing: 0.04em;
   }
 
-  /* ===== Spark! 抽点子按钮 (Premium Rotating Gradient & Pulse) ===== */
-  .spark-trigger {
-    padding: 10px 16px;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 10%, transparent), color-mix(in srgb, var(--color-brand) 4%, transparent));
-    border: 1.5px solid color-mix(in srgb, var(--color-brand) 22%, transparent);
-    color: var(--color-brand);
-    font-family: var(--font-body);
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    box-shadow: 
-      inset 0 1px 1px rgba(255, 255, 255, 0.05),
-      0 4px 12px -2px rgba(53, 191, 171, 0.05);
-    transition: 
-      background 0.3s ease,
-      border-color 0.3s ease,
-      transform 0.3s cubic-bezier(0.25, 1, 0.5, 1.2),
-      box-shadow 0.3s ease;
-  }
-
-  .spark-trigger::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-    transition: 0.5s;
-  }
-
-  .spark-trigger:hover {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--color-brand) 18%, transparent), color-mix(in srgb, var(--color-brand) 8%, transparent));
-    border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
-    transform: translateY(-2px);
-    box-shadow: 
-      0 8px 20px -4px rgba(53, 191, 171, 0.15),
-      0 0 12px var(--color-brand-glow);
-  }
-
-  .spark-trigger:hover::before {
-    left: 100%;
-    transition: 0.6s ease;
-  }
-
-  .spark-trigger:active {
-    transform: scale(0.96) translateY(0);
-  }
-
-  .spark-icon-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--color-brand) 16%, transparent);
-    color: var(--color-brand);
-    flex-shrink: 0;
-    transition: transform 0.3s ease;
-  }
-
-  .spark-trigger:hover .spark-icon-wrap {
-    transform: rotate(15deg) scale(1.08);
-  }
-
-  .spark-label {
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-  }
-
-  .spark-hint {
-    font-size: 0.6rem;
-    color: var(--color-parchment-dim);
-    opacity: 0.5;
-    margin-left: auto;
-  }
-
   /* ===== 首次导航引导脉冲 ===== */
   @keyframes directory-hint-breathe {
     0% { box-shadow: 0 0 0 0 rgba(53, 191, 171, 0); }
@@ -472,19 +413,5 @@ const traceLog = featuredLog || recentLogs[0];
 
   .directory-card.is-hinting {
     animation: directory-hint-breathe 0.6s ease-out;
-  }
-
-  .directory-card.is-hinting .directory-ghost-nav {
-    opacity: 0.7;
-    transform: translateY(0);
-    pointer-events: auto;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-
-  .directory-card.hint-done .directory-ghost-nav {
-    opacity: 0;
-    transform: translateY(-4px);
-    pointer-events: none;
-    transition: opacity 0.5s ease, transform 0.5s ease;
   }
 </style>
