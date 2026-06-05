@@ -668,11 +668,20 @@ const { personalTimeline, siteTimeline } = stats;
 
 
 <style>
-  /* ===== 覆盖全局 panel-glass 过白背景 ===== */
+  /* ===== Apple 现代风格：去掉 panel-glass 白色/模糊 ===== */
   :global(body:not(.theme-aurora):not(.theme-sunset):not(.theme-mint) .about-container .panel-glass) {
-    background: rgba(255, 255, 255, 0.25) !important;
-    backdrop-filter: blur(16px) !important;
-    border-color: rgba(255, 255, 255, 0.5) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-color: var(--color-nav-border) !important;
+    box-shadow: none !important;
+  }
+
+  :global(body.theme-aurora .about-container .panel-glass),
+  :global(body.theme-sunset .about-container .panel-glass),
+  :global(body.theme-mint .about-container .panel-glass) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
   }
 
   /* ===== 通用容器 ===== */
@@ -1226,8 +1235,7 @@ const { personalTimeline, siteTimeline } = stats;
   }
 
   .timeline-card:hover {
-    border-color: rgba(53, 191, 171, 0.35) !important;
-    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.08);
+    border-color: var(--color-nav-border) !important;
   }
 
   .timeline-card-title {
@@ -1367,15 +1375,8 @@ const { personalTimeline, siteTimeline } = stats;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  .bento-cell::before {
-    display: none;
-  }
-
-  .bento-cell:hover::before { display: none; }
   .bento-cell:hover {
-    transform: translateY(-2px);
-    border-color: rgba(53, 191, 171, 0.35) !important;
-    box-shadow: 0 4px 16px rgba(53, 191, 171, 0.1);
+    border-color: var(--color-nav-border) !important;
   }
 
   .bento-cell-icon {
@@ -1578,8 +1579,7 @@ const { personalTimeline, siteTimeline } = stats;
   }
 
   .why-article:hover {
-    border-color: rgba(53, 191, 171, 0.35) !important;
-    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.08);
+    border-color: var(--color-nav-border) !important;
   }
 
   .why-article [data-icon] {
@@ -1655,8 +1655,7 @@ const { personalTimeline, siteTimeline } = stats;
   }
 
   .tool-card:hover {
-    border-color: rgba(53, 191, 171, 0.35) !important;
-    box-shadow: 0 4px 12px rgba(53, 191, 171, 0.08);
+    border-color: var(--color-nav-border) !important;
   }
 
   .tool-card-dot {

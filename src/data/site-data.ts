@@ -1,9 +1,9 @@
 import stats from './site-stats.json';
 
 export const articles = [
-  { title: '我的畏惧，也是动力', summary: '不甘心困在小小的时空里，三样东西自然积累，拼成了一个个人前进系统。', href: '/posts/personal-progress-system' },
-  { title: '点子是不分时空的资产', summary: '存的时候不知道何时取出，但 AI 让取出的成本越来越低。', href: '/posts/ideas-transcend-time' },
-  { title: '未来已经在来了', summary: '从现在到 2050，AI 会把想象变成现实。想象力是最后的壁垒。', href: '/posts/future-vision' },
+  { title: '我的畏惧，也是动力', summary: '不甘心困在小小的时空里，三样东西自然积累，拼成了一个个人前进系统。', href: '/posts/我的畏惧也是动力' },
+  { title: '点子是不分时空的资产', summary: '存的时候不知道何时取出，但 AI 让取出的成本越来越低。', href: '/posts/点子超越时间' },
+  { title: '未来已经在来了', summary: '从现在到 2050，AI 会把想象变成现实。想象力是最后的壁垒。', href: '/posts/未来已经在来了' },
 ];
 
 export const pillars = [
