@@ -15,6 +15,7 @@ import {
   type NeedCategory,
 } from '@/profiles/resource-index';
 import { compactText, isMinorAudience, redactSensitiveText } from '@/agent/privacy';
+import { callGateway } from '@/agent/gateway';
 import { matchSiteResources } from '@/agent/match';
 import {
   createSessionId,
@@ -294,6 +295,7 @@ function parseModelJson(text: string): ModelChoice | null {
   }
 }
 
+// 替换后的 askModel 函数
 async function askModel(input: {
   messages: ChatMessage[];
   localBridge: string;
@@ -301,54 +303,29 @@ async function askModel(input: {
   audienceGroup?: AudienceGroup;
   aiStage?: AiStage;
 }): Promise<ModelChoice | null> {
-  const apiKey = import.meta.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+  const userPrompt = [
+    `用户人群：${input.audienceGroup ? audienceGroupLabels[input.audienceGroup] : '未说明'}`,
+    `AI 阶段：${input.aiStage ? aiStageLabels[input.aiStage] : '未说明'}`,
+    `本地初筛资料 ID：${input.localResourceIds.join('、')}`,
+    `本地串联语：${input.localBridge}`,
+    '用户对话：',
+    input.messages.map(message => `${message.role}: ${message.content}`).join('\n'),
+  ].join('\n');
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
+  const result = await callGateway<ModelChoice | null>(
+    {
+      route: 'match.askModel',
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt,
+      model: MODEL_VERSION,
+      maxTokens: MAX_MODEL_TOKENS,
+      timeoutMs: MODEL_TIMEOUT_MS,
+    },
+    null,
+    (text) => parseModelJson(text),
+  );
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'x-api-key': apiKey,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL_VERSION,
-        max_tokens: MAX_MODEL_TOKENS,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              `用户人群：${input.audienceGroup ? audienceGroupLabels[input.audienceGroup] : '未说明'}`,
-              `AI 阶段：${input.aiStage ? aiStageLabels[input.aiStage] : '未说明'}`,
-              `本地初筛资料 ID：${input.localResourceIds.join('、')}`,
-              `本地串联语：${input.localBridge}`,
-              '用户对话：',
-              input.messages.map(message => `${message.role}: ${message.content}`).join('\n'),
-            ].join('\n'),
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      console.error(`[match] model error status=${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text;
-    return typeof text === 'string' ? parseModelJson(text) : null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
+  return result.data;
 }
 
 function summarizeNeed(text: string): string {
