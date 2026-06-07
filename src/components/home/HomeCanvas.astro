@@ -1,7 +1,7 @@
 ---
 import GreetingCard from '../GreetingCard.astro';
 import { Icon } from 'astro-icon/components';
-import { CONTENT, ABOUT, POSTS, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/shared/routes';
+import { CONTENT, ABOUT, LEARN, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/shared/routes';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
@@ -52,7 +52,7 @@ const traceLog = featuredLog || recentLogs[0];
         <!-- 快速入口 — 四大板块 -->
         <div class="panel-glass p-3 pop-in draggable-card cursor-grab transition-shadow hover:shadow-xl rounded-[20px] delay-1" style="animation-delay: 0.12s;">
           <div class="quick-grid">
-            <a href={POSTS} class="quick-link group/q">
+            <a href={`${LEARN}?tab=thoughts`} class="quick-link group/q">
               <Icon name="lucide:pen-line" width={15} height={15} />
               <span>文章</span>
             </a>
@@ -76,7 +76,7 @@ const traceLog = featuredLog || recentLogs[0];
           <div class="recent-header">
             <Icon name="lucide:pen-line" width={13} height={13} class="text-brand" />
             <span class="recent-label">最近文章</span>
-            <a href={POSTS} class="recent-more">全部 →</a>
+            <a href={`${LEARN}?tab=thoughts`} class="recent-more">全部 →</a>
           </div>
           <div class="recent-list">
             {recentPosts.map(post => (

@@ -2,7 +2,7 @@
 import SearchModal from './SearchModal.astro';
 import SidebarNav from './nav/SidebarNav.astro';
 import MobileMenu from './nav/MobileMenu.astro';
-import { ABOUT, CONTENT, POSTS, TOOLS, IDEAS, PROJECTS, LEARN, FERRY } from '@/shared/routes';
+import { ABOUT, CONTENT, TOOLS, IDEAS, PROJECTS, LEARN } from '@/shared/routes';
 import type { NavGroup } from '@/types/nav';
 
 const navGroups: NavGroup[] = [
@@ -14,9 +14,8 @@ const navGroups: NavGroup[] = [
     ]
   },
   {
-    title: '内容',
+    title: '空间',
     items: [
-      { label: '思考', href: POSTS, icon: 'lucide:pen-line', hint: 'Posts' },
       { label: '资源', href: TOOLS, icon: 'lucide:bookmark', hint: 'Tools' },
       { label: '点子', href: IDEAS, icon: 'lucide:lightbulb', hint: 'Ideas' },
       { label: '项目', href: PROJECTS, icon: 'lucide:folder-kanban', hint: 'Projects' },

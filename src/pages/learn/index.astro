@@ -1,17 +1,49 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { getPublishedLearningPosts } from '@/knowledge/content';
+import { getPublishedPosts, getFrequentTags } from '@/knowledge/content';
 import { buildLearnGuidePath, buildPostPath } from '@/shared/routes';
+import { formatDateCompact } from '@/shared/format';
 import { Icon } from 'astro-icon/components';
+import {
+  learningTracks,
+  learningLayers,
+  learningLayerMeta,
+  trackStatusMeta,
+  aiPlatformMeta,
+  resourceTypeLabels,
+  getTrackProgress,
+  type LearningLayer,
+  type LearningTrack,
+} from '@/data/learning-tracks';
 import '../../styles/learn.css';
 
 export const prerender = true;
 
-const learnTools = await getCollection('log', ({ data }) => data.published && data.type === 'learn');
-const journalPosts = (await getPublishedLearningPosts()).filter(post => post.data.type !== 'learn');
+// ── Tab 1: 轨道 ──
+const tracksByLayer: Record<LearningLayer, LearningTrack[]> = {
+  cognition: learningTracks.filter(t => t.layer === 'cognition'),
+  craft: learningTracks.filter(t => t.layer === 'craft'),
+  exploration: learningTracks.filter(t => t.layer === 'exploration'),
+};
 
-const currentTab = Astro.url.searchParams.get('tab') || 'guide';
+// ── Tab 2: 思考 ──
+const allLogs = await getPublishedPosts();
+const groupedLogs: Record<number, typeof allLogs> = {};
+allLogs.forEach(log => {
+  const year = log.data.date.getFullYear();
+  if (!groupedLogs[year]) groupedLogs[year] = [];
+  groupedLogs[year].push(log);
+});
+const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
+const frequentTags = getFrequentTags(allLogs, 2);
+
+// ── Tab 3: 帮你学 ──
+const learnTools = await getCollection('log', ({ data }) => data.published && data.type === 'learn');
+
+// ── Tab 路由 ──
+const rawTab = Astro.url.searchParams.get('tab') || 'tracks';
+const currentTab = rawTab === 'journal' ? 'tracks' : rawTab;
 ---
 
 <Base title="学习 — Walker" description="以用促学，学有止，碰到在学。简单一点，学任何领域你所感兴趣的事。">
@@ -23,19 +55,259 @@ const currentTab = Astro.url.searchParams.get('tab') || 'guide';
       <p>简单一点，学任何领域你所感兴趣的事。</p>
     </header>
 
-    <!-- Elegant Tab Switcher (Apple Minimalist Styles) -->
+    <!-- Tab Switcher -->
     <div class="learn-tabs">
+      <button class:list={['learn-tab', { active: currentTab === 'tracks' }]} data-tab="tracks">
+        <Icon name="lucide:route" width={14} height={14} class="inline-block mr-1.5 -mt-0.5" />
+        轨道
+      </button>
+      <button class:list={['learn-tab', { active: currentTab === 'thoughts' }]} data-tab="thoughts">
+        <Icon name="lucide:pen-line" width={14} height={14} class="inline-block mr-1.5 -mt-0.5" />
+        思考
+      </button>
       <button class:list={['learn-tab', { active: currentTab === 'guide' }]} data-tab="guide">
         <Icon name="lucide:rocket" width={14} height={14} class="inline-block mr-1.5 -mt-0.5" />
         帮你学
       </button>
-      <button class:list={['learn-tab', { active: currentTab === 'journal' }]} data-tab="journal">
-        <Icon name="lucide:notebook-pen" width={14} height={14} class="inline-block mr-1.5 -mt-0.5" />
-        我在学
-      </button>
     </div>
 
-    <!-- Tab Content 1: 帮你学 (Structured Guides) -->
+    <!-- ═══════ Tab 1: 轨道 ═══════ -->
+    <div class:list={['learn-tab-content', { active: currentTab === 'tracks' }]} id="tab-tracks">
+      {learningLayers.map(layer => {
+        const meta = learningLayerMeta[layer];
+        const tracks = tracksByLayer[layer];
+        if (tracks.length === 0) return null;
+        return (
+          <section class="track-layer-section reveal">
+            <div class="track-layer-header">
+              <div class="track-layer-icon">
+                <Icon name={meta.icon} width={18} height={18} />
+              </div>
+              <div class="track-layer-text">
+                <h2 class="track-layer-title">{meta.label}</h2>
+                <span class="track-layer-desc">{meta.description}</span>
+              </div>
+            </div>
+            <div class="track-cards">
+              {tracks.map(track => {
+                const progress = getTrackProgress(track);
+                const statusInfo = trackStatusMeta[track.status];
+                const doneMilestones = track.milestones.filter(m => m.done).length;
+                return (
+                  <div class="track-card panel-glass">
+                    {/* 标题行 */}
+                    <div class="track-card-header">
+                      <h3 class="track-card-title">{track.title}</h3>
+                      <span
+                        class="track-status-badge"
+                        style={`--badge-color: ${statusInfo.color}`}
+                      >
+                        <Icon name={statusInfo.icon} width={12} height={12} />
+                        {statusInfo.label}
+                      </span>
+                    </div>
+
+                    {/* 动机 */}
+                    <p class="track-motivation">{track.motivation}</p>
+
+                    {/* 进度条 */}
+                    {track.milestones.length > 0 && (
+                      <div class="track-progress-wrap">
+                        <div class="track-progress-bar">
+                          <div
+                            class="track-progress-fill"
+                            style={`width: ${progress}%; --badge-color: ${statusInfo.color}`}
+                          />
+                        </div>
+                        <span class="track-progress-text">{doneMilestones}/{track.milestones.length}</span>
+                      </div>
+                    )}
+
+                    {/* 里程碑 */}
+                    {track.milestones.length > 0 && (
+                      <div class="track-milestones">
+                        {track.milestones.map(m => (
+                          <span class:list={['track-milestone', { done: m.done }]}>
+                            <Icon name={m.done ? 'lucide:check' : 'lucide:circle'} width={11} height={11} />
+                            {m.title}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 学习笔记 (AI 对话) */}
+                    {track.notes.length > 0 && (
+                      <div class="track-subsection">
+                        <div class="track-subsection-title">
+                          <Icon name="lucide:message-square" width={13} height={13} />
+                          学习笔记
+                        </div>
+                        <div class="track-note-list">
+                          {track.notes.map(note => (
+                            <a
+                              href={note.aiConversation?.url || '#'}
+                              target={note.aiConversation ? '_blank' : undefined}
+                              rel={note.aiConversation ? 'noopener noreferrer' : undefined}
+                              class="track-note-item"
+                            >
+                              <span class="track-note-title">{note.title}</span>
+                              {note.aiConversation && (
+                                <span class="track-note-platform">
+                                  <Icon name={aiPlatformMeta[note.aiConversation.platform].icon} width={11} height={11} />
+                                  {aiPlatformMeta[note.aiConversation.platform].label}
+                                </span>
+                              )}
+                              <span class="track-note-date">{note.date}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 实践反思 (文章) */}
+                    {track.articles.length > 0 && (
+                      <div class="track-subsection">
+                        <div class="track-subsection-title">
+                          <Icon name="lucide:pen-line" width={13} height={13} />
+                          实践反思
+                        </div>
+                        <div class="track-article-list">
+                          {track.articles.map(slug => (
+                            <a href={buildPostPath(slug)} class="track-article-item">
+                              <Icon name="lucide:file-text" width={12} height={12} />
+                              {slug}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 参考资料 */}
+                    {track.resources.length > 0 && (
+                      <div class="track-subsection">
+                        <div class="track-subsection-title">
+                          <Icon name="lucide:book-open" width={13} height={13} />
+                          参考资料
+                        </div>
+                        <div class="track-resource-list">
+                          {track.resources.map(res => (
+                            res.url ? (
+                              <a href={res.url} target="_blank" rel="noopener noreferrer" class="track-resource-item">
+                                <Icon name="lucide:external-link" width={11} height={11} />
+                                {res.name}
+                                <span class="track-resource-type">{resourceTypeLabels[res.type]}</span>
+                              </a>
+                            ) : (
+                              <span class="track-resource-item">
+                                <Icon name="lucide:bookmark" width={11} height={11} />
+                                {res.name}
+                                <span class="track-resource-type">{resourceTypeLabels[res.type]}</span>
+                              </span>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 开始日期 */}
+                    {track.startedDate && (
+                      <div class="track-meta">
+                        <Icon name="lucide:calendar" width={12} height={12} />
+                        <span>{track.startedDate} 开始</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+
+    <!-- ═══════ Tab 2: 思考 ═══════ -->
+    <div class:list={['learn-tab-content', { active: currentTab === 'thoughts' }]} id="tab-thoughts">
+      {/* 哲理引言 */}
+      <div class="reveal panel-glass p-5 rounded-[24px] border border-[var(--color-nav-border)] mb-7 relative overflow-hidden group/quote">
+        <div class="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-amber-400/10 blur-2xl group-hover/quote:bg-amber-400/20 transition-colors duration-500"></div>
+        <div class="absolute -left-16 -bottom-16 w-36 h-36 rounded-full bg-[var(--color-brand-glow)] blur-2xl opacity-60"></div>
+        <div class="relative z-10 flex items-start gap-3.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-500 shrink-0 shadow-sm mt-0.5">
+            <Icon name="lucide:compass" width={16} height={16} class="animate-spin-slow text-amber-500" />
+          </div>
+          <div>
+            <p class="font-serif text-[14px] sm:text-[15px] text-parchment leading-relaxed tracking-wide font-medium italic">
+              " 最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。 "
+            </p>
+            <p class="text-[9px] font-mono tracking-widest text-parchment-dim opacity-50 uppercase mt-1.5">
+              — WALKER'S LIFE PHRASE / 行者宣言
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 标签筛选 */}
+      <div class="thought-tag-bar" id="thought-tag-bar">
+        <button class="filter-pill is-active" data-tag="all">
+          全部<span class="filter-count">{allLogs.length}</span>
+        </button>
+        {frequentTags.map(({ tag, count }) => (
+          <button class="filter-pill" data-tag={tag}>
+            #{tag}<span class="filter-count">{count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 时间线 */}
+      <div id="thought-timeline" class="space-y-12" data-stagger>
+        {years.map(year => (
+          <div class="year-group relative" data-year={year}>
+            <div class="flex items-end gap-3 mb-5">
+              <h2 class="font-heading text-2xl text-parchment">{year}</h2>
+              <span class="text-parchment-dim text-xs font-mono mb-1">{groupedLogs[year].length} 篇</span>
+            </div>
+            <div class="reveal panel-glass rounded-2xl overflow-hidden border border-[var(--color-nav-border)]">
+              <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
+                {groupedLogs[year].map(log => (
+                  <a
+                    href={buildPostPath(log.id)}
+                    class="log-item group flex flex-col gap-1 px-5 py-4 transition-all no-underline"
+                    data-tags={log.data.tags.join(',')}
+                  >
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
+                      <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">
+                        {formatDateCompact(log.data.date)}
+                      </time>
+                      <div class="flex-1 min-w-0">
+                        <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">
+                          {log.data.title}
+                        </h3>
+                      </div>
+                      <div class="flex items-center gap-2 shrink-0">
+                        {log.data.tags.slice(0, 2).map((tag: string) => (
+                          <span class="text-[11px] font-mono text-parchment-dim bg-brand/5 border border-brand/10 px-2 py-0.5 rounded-md opacity-80">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {log.data.summary && (
+                      <p class="log-summary">{log.data.summary}</p>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div id="thought-empty" class="hidden py-20 text-center text-parchment/30 text-sm">
+        未找到匹配的文章
+      </div>
+    </div>
+
+    <!-- ═══════ Tab 3: 帮你学 ═══════ -->
     <div class:list={['learn-tab-content', { active: currentTab === 'guide' }]} id="tab-guide">
       <div class="learn-apple-cards-stack">
         {learnTools.map((tool) => (
@@ -48,59 +320,43 @@ const currentTab = Astro.url.searchParams.get('tab') || 'guide';
               <h3 class="tool-title-clean">{tool.data.title}</h3>
               <p class="tool-desc-clean">{tool.data.description}</p>
             </div>
-            <span class="tool-arrow-chevron">›</span>
+            <span class="tool-arrow-chevron">&#8250;</span>
           </a>
         ))}
       </div>
-    </div>
-
-    <!-- Tab Content 2: 我在学 (Learning Logs & Reflections) -->
-    <div class:list={['learn-tab-content', { active: currentTab === 'journal' }]} id="tab-journal">
-      {journalPosts.length > 0 ? (
-        <div class="learn-journal">
-          {journalPosts.map((post) => (
-            <a href={buildPostPath(post.id)} class="learn-journal-item panel-glass">
-              <span class="learn-journal-date">
-                {post.data.date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-              </span>
-              <div class="learn-journal-content">
-                <h3 class="learn-journal-title">{post.data.title}</h3>
-                {post.data.summary && <p class="learn-journal-summary">{post.data.summary}</p>}
-              </div>
-            </a>
-          ))}
-        </div>
-      ) : (
-        <div class="learn-journal-empty py-16 text-center text-parchment-dim opacity-40">
-          <Icon name="lucide:notebook" width={32} height={32} class="mx-auto mb-2 opacity-50" />
-          <p>暂无日志与感悟发布</p>
+      {learnTools.length === 0 && (
+        <div class="py-16 text-center text-parchment-dim opacity-40">
+          <Icon name="lucide:rocket" width={32} height={32} class="mx-auto mb-2 opacity-50" />
+          <p>教程正在路上</p>
         </div>
       )}
     </div>
   </div>
 
-  <!-- Client-side Tab Switcher Script (Zero Page Reload) -->
+  <!-- Client-side Scripts -->
   <script>
-    function initLearnTabs() {
+    function initLearnPage() {
+      initTabSwitcher();
+      initTagFilter();
+    }
+
+    function initTabSwitcher() {
       const tabs = document.querySelectorAll('.learn-tab');
       const contents = document.querySelectorAll('.learn-tab-content');
-      
+
       tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
           e.preventDefault();
           const target = (tab as HTMLElement).dataset.tab;
-          
-          // Update active tab buttons
+
           tabs.forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          
-          // Update active contents
+
           contents.forEach(c => c.classList.remove('active'));
           document.getElementById(`tab-${target}`)?.classList.add('active');
-          
-          // Update URL query parameters without reloading the page
+
           const url = new URL(window.location.href);
-          if (target === 'guide') {
+          if (target === 'tracks') {
             url.searchParams.delete('tab');
           } else {
             url.searchParams.set('tab', target!);
@@ -110,8 +366,122 @@ const currentTab = Astro.url.searchParams.get('tab') || 'guide';
       });
     }
 
-    initLearnTabs();
-    document.addEventListener('astro:page-load', initLearnTabs);
+    function initTagFilter() {
+      const pills = document.querySelectorAll<HTMLButtonElement>('#thought-tag-bar .filter-pill');
+      const items = document.querySelectorAll<HTMLElement>('#thought-timeline .log-item');
+      const emptyState = document.getElementById('thought-empty');
+      const yearGroups = document.querySelectorAll<HTMLElement>('#thought-timeline .year-group');
+      if (!pills.length || !items.length) return;
+
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pills.forEach(p => p.classList.remove('is-active'));
+          pill.classList.add('is-active');
+
+          const tag = pill.dataset.tag || 'all';
+          let visibleCount = 0;
+
+          items.forEach(item => {
+            const tags = (item.dataset.tags || '').split(',');
+            const show = tag === 'all' || tags.includes(tag);
+            item.classList.toggle('hidden', !show);
+            if (show) visibleCount++;
+          });
+
+          yearGroups.forEach(group => {
+            const visible = group.querySelectorAll<HTMLElement>('.log-item:not(.hidden)');
+            group.classList.toggle('hidden', visible.length === 0);
+          });
+
+          if (emptyState) {
+            emptyState.classList.toggle('hidden', visibleCount > 0);
+          }
+        });
+      });
+    }
+
+    initLearnPage();
+    document.addEventListener('astro:page-load', initLearnPage);
   </script>
 
 </Base>
+
+<style>
+  /* ── 思考 Tab 内嵌样式 ── */
+  .thought-tag-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    background: transparent;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .filter-pill:hover {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+    color: var(--color-brand);
+  }
+
+  .filter-pill.is-active {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
+    color: var(--color-brand);
+  }
+
+  .filter-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    opacity: 0.48;
+    margin-left: 0.25rem;
+  }
+
+  #thought-timeline .panel-glass {
+    border-radius: 20px;
+    box-shadow: 0 18px 48px rgba(25, 38, 40, 0.03) !important;
+  }
+
+  .log-item {
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .log-item:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+    transform: translateX(6px);
+  }
+
+  body.theme-nature .log-item:hover {
+    background: rgba(0, 0, 0, 0.015) !important;
+  }
+
+  .log-summary {
+    font-size: 0.78rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.55;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  @media (min-width: 640px) {
+    .log-summary {
+      padding-left: 4.75rem;
+    }
+  }
+</style>
