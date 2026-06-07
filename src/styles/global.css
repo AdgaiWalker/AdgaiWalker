@@ -795,6 +795,77 @@ body.theme-mint .nav-active-indicator {
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+#main-nav .app-sidebar {
+  background: #f7f7f7;
+  color: #1f2329;
+  backdrop-filter: blur(18px);
+}
+
+#main-nav .app-shell-head {
+  padding: 1.8rem 1.25rem 1.45rem;
+}
+
+#main-nav .app-shell-toolbar {
+  display: grid !important;
+  grid-template-columns: 28px 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.6rem;
+}
+
+#main-nav .app-shell-icon-button,
+#main-nav .app-shell-home {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #646a73;
+}
+
+#main-nav .app-shell-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #1f2329;
+  font-family: 'Inter', 'PingFang SC', system-ui, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#main-nav .app-search-wrap {
+  padding: 0 1.25rem;
+  margin-bottom: 1.05rem;
+}
+
+#main-nav .app-search {
+  display: flex !important;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: #4e5969;
+  font-family: 'Inter', 'PingFang SC', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+#main-nav .app-search-icon {
+  flex-shrink: 0;
+  color: #4e5969;
+}
+
 /* 折叠态导航栏 (仅桌面端生效) */
 @media (min-width: 1024px) {
   .site-main-shell {
@@ -805,49 +876,46 @@ body.theme-mint .nav-active-indicator {
     width: 64px !important;
   }
 
-  html[data-sidebar-collapsed] #main-nav .custom-scrollbar > div:first-child {
-    /* 隐藏桌面端头部的文字和搜索 */
-    padding: 1rem 0.5rem !important;
-  }
-
-  html[data-sidebar-collapsed] #main-nav .custom-scrollbar > div:first-child a {
+  html[data-sidebar-collapsed] #main-nav .app-shell-toolbar {
+    display: flex !important;
     justify-content: center;
-    font-size: 0;
   }
 
-  html[data-sidebar-collapsed] #main-nav .custom-scrollbar > div:first-child a svg {
-    font-size: initial;
+  html[data-sidebar-collapsed] #main-nav .app-shell-home,
+  html[data-sidebar-collapsed] #main-nav .app-shell-title,
+  html[data-sidebar-collapsed] #main-nav .nav-section-title,
+  html[data-sidebar-collapsed] #main-nav .nav-link-main,
+  html[data-sidebar-collapsed] #main-nav .nav-link-hint,
+  html[data-sidebar-collapsed] #main-nav .nav-extension {
+    display: none !important;
   }
 
-  /* 折叠态隐藏文字标签 */
-  html[data-sidebar-collapsed] #main-nav [class*="flex items-center gap-3"][class*="font-heading"] {
+  html[data-sidebar-collapsed] #main-nav .app-shell-head {
+    padding: 1.25rem 0.55rem 1rem !important;
+  }
+
+  html[data-sidebar-collapsed] #main-nav .app-search-wrap {
+    padding: 0 0.55rem;
+  }
+
+  html[data-sidebar-collapsed] #main-nav .app-search {
     justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0.6rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
-  html[data-sidebar-collapsed] #main-nav .flex.items-center.gap-3.font-heading {
-    font-size: 0;
-  }
-
-  /* 折叠态隐藏组标题 */
-  html[data-sidebar-collapsed] #main-nav [class*="text-\\[10px\\]"] {
+  html[data-sidebar-collapsed] #main-nav .app-search span {
     display: none;
   }
 
-  /* 折叠态隐藏底部版权和搜索 */
-  html[data-sidebar-collapsed] #main-nav [class*="mt-auto"] {
-    display: none;
+  html[data-sidebar-collapsed] #main-nav .app-footer-tools {
+    display: none !important;
   }
 
   /* 内容区联动 */
   html[data-sidebar-collapsed] .site-main-shell {
     padding-left: 68px !important;
-  }
-
-  /* 搜索栏在折叠态下隐藏 */
-  html[data-sidebar-collapsed] #main-nav [class*="w-full"]:has(#search-modal-wrapper) {
-    display: none;
   }
 }
 
