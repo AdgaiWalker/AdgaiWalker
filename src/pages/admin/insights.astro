@@ -3,6 +3,7 @@
 import { isAdmin } from '@/lib/admin-auth';
 import { getDemandStats, getTopicCandidates } from '@/conversation/store';
 import { needCategoryLabels } from '@/profiles/resource-index';
+import { readGatewayLogs, type GatewayCallLog } from '@/agent/gateway';
 
 export const prerender = false;
 
@@ -13,6 +14,11 @@ if (!isAdmin(Astro.request)) {
 const stats = await getDemandStats({ days: 30 });
 const allTopics = await getTopicCandidates({ limit: 100 });
 const pendingTopics = allTopics.filter(t => t.status === 'pending');
+const gatewayLogs = await readGatewayLogs(30);
+const gatewayAiCount = gatewayLogs.filter(l => l.mode === 'ai').length;
+const gatewayFallbackCount = gatewayLogs.filter(l => l.mode === 'fallback').length;
+const gatewayAvgLatency = gatewayLogs.length > 0 ? Math.round(gatewayLogs.reduce((s, l) => s + l.latencyMs, 0) / gatewayLogs.length) : 0;
+
 const contentGaps = allTopics.filter(t => t.relatedContentIds.length === 0 && t.status === 'pending');
 
 // 类别排序
@@ -125,6 +131,20 @@ const trendPoints = trend.map((t, i) => {
     .gap-audience { font-size: 0.72rem; color: #78716c; }
     .gap-empty { font-size: 0.85rem; color: #a8a29e; text-align: center; padding: 1.5rem; }
 
+    /* Gateway 日志表格 */
+    .gw-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .gw-table th { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 2px solid rgba(0,0,0,0.06); color: #a8a29e; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+    .gw-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .gw-table tr:hover td { background: rgba(0,0,0,0.015); }
+    .gw-route { font-weight: 600; color: #1c1917; font-family: monospace; font-size: 0.78rem; }
+    .gw-num { font-family: monospace; font-size: 0.78rem; color: #57534e; }
+    .gw-reason { color: #a8a29e; font-size: 0.75rem; }
+    .gw-time { color: #a8a29e; font-family: monospace; font-size: 0.75rem; }
+    .gw-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
+    .gw-badge-ai { background: #ecfdf5; color: #065f46; }
+    .gw-badge-fallback { background: #fef9c3; color: #854d0e; }
+    .gw-badge-blocked { background: #fef2f2; color: #991b1b; }
+
     @media (max-width: 768px) {
       .insights-grid { grid-template-columns: 1fr; }
       .admin-main { padding: 1.25rem 1rem 3rem; }
@@ -174,6 +194,16 @@ const trendPoints = trend.map((t, i) => {
         <div class="kpi-label">内容缺口</div>
         <div class="kpi-value">{contentGaps.length}</div>
         <div class="kpi-sub">无关联资料</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">AI 成功率</div>
+        <div class="kpi-value">{gatewayLogs.length > 0 ? Math.round(gatewayAiCount / gatewayLogs.length * 100) + '%' : '-'}</div>
+        <div class="kpi-sub">最近 {gatewayLogs.length} 次调用</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">AI 平均延迟</div>
+        <div class="kpi-value">{gatewayAvgLatency > 0 ? gatewayAvgLatency + 'ms' : '-'}</div>
+        <div class="kpi-sub">含降级</div>
       </div>
     </div>
 
@@ -284,6 +314,42 @@ const trendPoints = trend.map((t, i) => {
             </div>
           </div>
         )) : <div class="gap-empty">暂无内容缺口</div>}
+      </div>
+
+      <!-- AI Gateway 日志 -->
+      <div class="panel insights-full">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
+          AI Gateway 最近调用
+        </div>
+        {gatewayLogs.length > 0 ? (
+          <table class="gw-table">
+            <thead>
+              <tr>
+                <th>路由</th>
+                <th>模式</th>
+                <th>延迟</th>
+                <th>降级原因</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gatewayLogs.slice(0, 15).map(log => (
+                <tr>
+                  <td class="gw-route">{log.route}</td>
+                  <td>
+                    <span class={"gw-badge gw-badge-" + log.mode}>
+                      {log.mode === 'ai' ? 'AI' : log.mode === 'fallback' ? '降级' : '拦截'}
+                    </span>
+                  </td>
+                  <td class="gw-num">{log.latencyMs}ms</td>
+                  <td class="gw-reason">{log.fallbackReason || '-'}</td>
+                  <td class="gw-time">{new Date((log as any).timestamp || '').toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <div class="gap-empty">暂无 AI 调用记录</div>}
       </div>
     </div>
   </div>
