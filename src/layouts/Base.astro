@@ -14,7 +14,10 @@ interface Props {
   canonicalUrl?: string;
   themeColor?: string;
   pureMode?: boolean;
-  fullscreen?: boolean;
+  /** 隐藏导航（全屏页使用） */
+  hideNav?: boolean;
+  /** 隐藏页脚（全屏页使用） */
+  hideFooter?: boolean;
 }
 
 const {
@@ -26,7 +29,8 @@ const {
   canonicalUrl,
   themeColor,
   pureMode = false,
-  fullscreen = false,
+  hideNav = false,
+  hideFooter = false,
 } = Astro.props;
 
 const isHome = Astro.url.pathname === '/';
@@ -47,7 +51,7 @@ const isHome = Astro.url.pathname === '/';
     />
     
     <!-- JSON-LD 结构化数据 -->
-    {!fullscreen && <script is:inline type="application/ld+json" set:html={JSON.stringify({
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Walker 知识空间",
@@ -60,12 +64,12 @@ const isHome = Astro.url.pathname === '/';
         "url": Astro.site?.toString() || "https://iwalk.pro"
       },
       "inLanguage": "zh-CN"
-    })} />}
+    })} />
     
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
   </head>
-  <body class:list={["min-h-screen flex flex-col", pureMode ? "reading-mode" : "", fullscreen ? "fullscreen-layout" : ""]}>
+  <body class:list={["min-h-screen flex flex-col", pureMode ? "reading-mode" : "", hideNav ? "fullscreen-layout" : ""]}>
     {/* 全局环境背景层：自适应晶莹底色，搭载细微噪声格网纹理与光晕 */}
     <div class="fixed inset-0 -z-20 overflow-hidden bg-transparent" aria-hidden="true">
       {/* 极弱极细格线网纹 */}
@@ -88,14 +92,14 @@ const isHome = Astro.url.pathname === '/';
     {/* 噪点纹理叠加 */}
     <div class="grain-overlay" aria-hidden="true"></div>
 
-    {!fullscreen && <Navigation transition:persist>
+    {!hideNav && <Navigation>
       <slot name="nav-extension" />
     </Navigation>}
-    <div class:list={["flex flex-col flex-1 w-full", !isHome && !fullscreen && "site-main-shell"]}>
+    <div class:list={["flex flex-col flex-1 w-full", !isHome && !hideNav && "site-main-shell"]}>
       <main class="flex-1 relative z-10 w-full">
         <slot />
       </main>
-      {!isHome && !fullscreen && <Footer />}
+      {!isHome && !hideFooter && <Footer />}
     </div>
 
     {/* 全局返回顶部按钮 */}
