@@ -24,13 +24,16 @@
             <p class="chat-subtitle">描述需求，我帮你匹配工具和站内资料</p>
           </div>
         </div>
+        <button class="chat-history-btn" id="match-history-toggle" type="button" title="对话历史">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        </button>
         <button class="chat-close" id="match-close" type="button" aria-label="关闭">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
       </div>
 
       <!-- Chat Messages -->
-      <div class="chat-messages" id="chat-messages">
+      <div class="chat-messages" id="chat-messages" style="display:flex">
         <!-- Agent greeting -->
         <div class="chat-msg chat-msg-agent">
           <div class="chat-bubble chat-bubble-agent">
@@ -40,7 +43,7 @@
         </div>
 
         <!-- Quick Suggestions -->
-        <div class="chat-suggestions" id="chat-suggestions">
+        <div class="chat-suggestions" id="chat-suggestions" style="display:flex">
           <button type="button" data-text="我想改已有项目代码，有几个页面和接口需要调整">改已有项目</button>
           <button type="button" data-text="我想写一篇公众号，但不知道该用聊天 AI 还是别的工具">写公众号</button>
           <button type="button" data-text="我想做一个网站，但还没有现成代码">做网站</button>
@@ -212,6 +215,78 @@
     border-radius: 16px;
     background: color-mix(in srgb, var(--color-surface, #fff) 96%, transparent);
     overflow: hidden;
+  }
+
+
+  /* ── History Panel ── */
+  .chat-history-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border: 0; border-radius: 8px;
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .chat-history-btn:hover {
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.12);
+  }
+
+  .chat-history-panel {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .chat-history-panel.visible {
+    display: flex;
+  }
+
+  .history-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    font-size: 0.88rem; font-weight: 700;
+    color: var(--color-heading, var(--color-text, #3f3027));
+  }
+  .history-close {
+    padding: 0.2rem 0.55rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    font-size: 0.75rem; font-weight: 600;
+    cursor: pointer;
+  }
+  .history-close:hover { background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06); }
+
+  .history-list {
+    flex: 1; overflow-y: auto; padding: 0.75rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+
+  .history-item {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .history-item:hover { background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.04); }
+  .history-item-date {
+    font-size: 0.7rem; color: var(--color-text-muted, rgba(63, 48, 39, 0.45));
+    margin-bottom: 0.25rem;
+  }
+  .history-item-text {
+    font-size: 0.82rem; color: var(--color-text, #3f3027);
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-empty {
+    text-align: center; padding: 2rem 1rem;
+    font-size: 0.85rem; color: var(--color-text-muted, rgba(63, 48, 39, 0.45));
   }
 
   /* ── Chat Header ── */
@@ -646,6 +721,47 @@
       if (e.target === dialog) dialog.close();
     }, { signal });
 
+
+    // History panel
+    const historyToggle = document.getElementById('match-history-toggle') as HTMLButtonElement;
+    const historyPanel = document.getElementById('chat-history-panel') as HTMLDivElement;
+    const historyList = document.getElementById('history-list') as HTMLDivElement;
+    const historyClose = document.getElementById('history-close') as HTMLButtonElement;
+
+    historyToggle?.addEventListener('click', async () => {
+      const sessionIds = JSON.parse(localStorage.getItem('match-session-ids') || '[]') as string[];
+      if (sessionIds.length === 0) {
+        historyList.innerHTML = '<div class="history-empty">暂无历史对话</div>';
+      } else {
+        historyList.innerHTML = '<div class="history-empty">加载中...</div>';
+        try {
+          const res = await fetch('/api/match-history?sessionIds=' + encodeURIComponent(sessionIds.join(',')));
+          const data = await res.json();
+          const convs = data.conversations as Array<{ sessionId: string; messages: Array<{role: string; content: string}>; startedAt?: string }>;
+          if (convs.length === 0 || convs.every(c => c.messages.length === 0)) {
+            historyList.innerHTML = '<div class="history-empty">暂无历史对话</div>';
+          } else {
+            historyList.innerHTML = convs
+              .filter(c => c.messages.length > 0)
+              .map(c => {
+                const userMsg = c.messages.find(m => m.role === 'user');
+                const date = c.startedAt ? new Date(c.startedAt).toLocaleDateString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+                return '<div class="history-item" data-sid="' + c.sessionId + '"><div class="history-item-date">' + date + '</div><div class="history-item-text">' + escapeHtml(userMsg?.content || '(空)') + '</div></div>';
+              }).join('');
+          }
+        } catch {
+          historyList.innerHTML = '<div class="history-empty">加载失败</div>';
+        }
+      }
+      messages.classList.add('hidden');
+      historyPanel.classList.add('visible');
+    }, { signal });
+
+    historyClose?.addEventListener('click', () => {
+      historyPanel.classList.remove('visible');
+      messages.classList.remove('hidden');
+    }, { signal });
+
     // Context toggle
     contextToggle?.addEventListener('click', () => {
       contextPanel?.classList.toggle('hidden');
@@ -821,6 +937,11 @@
         }
 
         sessionId = data.sessionId ?? sessionId;
+        // 记录 sessionId 到历史
+        if (sessionId) try {
+          const ids: string[] = JSON.parse(localStorage.getItem("match-session-ids") || "[]");
+          if (!ids.includes(sessionId)) { ids.unshift(sessionId); localStorage.setItem("match-session-ids", JSON.stringify(ids.slice(0, 10))); }
+        } catch {}
 
         // Store assistant response in history
         const agentText = data.bridge || data.toolDirection || '已为你匹配结果。';

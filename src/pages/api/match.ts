@@ -22,6 +22,8 @@ import {
   incrementMatchStats,
   saveDemandEvent,
   upsertMatchSession,
+  saveConversationMessages,
+  type ConversationMessage,
   type DemandEvent,
   type MatchSession,
 } from '@/conversation/store';
@@ -48,6 +50,8 @@ interface ModelChoice {
   fitVerdict?: FitVerdict;
   toolDirection?: string;
   reason?: string;
+  inferredAudience?: AudienceGroup;
+  inferredAiStage?: AiStage;
 }
 
 const PROMPT_VERSION = 'tool-match-v2';
@@ -458,6 +462,24 @@ export const POST: APIRoute = async ({ request }) => {
 
   // 公开统计计数（不阻塞响应）
   incrementMatchStats(categories).catch(() => {});
+
+  // 对话消息持久化（脱敏后）
+  const now = new Date().toISOString();
+  const conversationMsgs: ConversationMessage[] = clean.map(m => ({
+    role: m.role,
+    content: m.content,
+    timestamp: now,
+  }));
+  conversationMsgs.push({ role: 'assistant', content: bridge || needSummary, timestamp: now });
+  saveConversationMessages(session.sessionId, conversationMsgs).catch(() => {});
+
+  // 用推断画像填充（用户未手动选时）
+  if (!session.audienceGroup && modelChoice?.inferredAudience) {
+    session.audienceGroup = modelChoice.inferredAudience;
+  }
+  if (!session.aiStage && modelChoice?.inferredAiStage) {
+    session.aiStage = modelChoice.inferredAiStage;
+  }
 
   if (session.consentForTopic) {
     await saveDemandEvent(buildDemandEvent({
