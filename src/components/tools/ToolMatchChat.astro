@@ -8,6 +8,7 @@
       <span>我帮你匹配最合适的工具和站内资料。</span>
     </span>
     <span class="signal-note">匿名</span>
+    <span class="signal-stat" id="match-stat"></span>
   </button>
 
   <dialog class="match-dialog" id="match-dialog" aria-labelledby="tool-match-title">
@@ -478,6 +479,18 @@
   }
 
   /* ── Context Panel (audience/stage) ── */
+  .signal-stat {
+    grid-column: 2;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.45));
+    white-space: nowrap;
+  }
+  .signal-stat:not(:empty)::before {
+    content: "· ";
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.3));
+  }
+
   .chat-context-bar {
     padding: 0 0.85rem 0.65rem;
     flex-shrink: 0;

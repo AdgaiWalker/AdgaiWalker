@@ -19,6 +19,7 @@ import { matchSiteResources } from '@/agent/match';
 import {
   createSessionId,
   getMatchSession,
+  incrementMatchStats,
   saveDemandEvent,
   upsertMatchSession,
   type DemandEvent,
@@ -454,6 +455,9 @@ export const POST: APIRoute = async ({ request }) => {
   const session = await buildSession(body, isMinorContext);
 
   await upsertMatchSession(session);
+
+  // 公开统计计数（不阻塞响应）
+  incrementMatchStats(categories).catch(() => {});
 
   if (session.consentForTopic) {
     await saveDemandEvent(buildDemandEvent({

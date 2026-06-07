@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { isAdmin } from '@/lib/admin-auth';
 import { getDemandStats, getTopicCandidates } from '@/conversation/store';
 import type { TopicCandidate } from '@/conversation/store';
 
@@ -10,6 +11,10 @@ function jsonResponse(data: unknown, status = 200): Response {
 }
 
 function isAuthorized(request: Request): boolean {
+  // 管理员 cookie 优先
+  if (isAdmin(request)) return true;
+
+  // 定时任务 header
   const secrets = [
     import.meta.env.MATCH_PROCESS_SECRET,
     import.meta.env.CRON_SECRET,
@@ -63,7 +68,7 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: `status 只能是 ${validStatuses.join('/')}` }, 400);
   }
 
-  // 更新内存和 Redis
+  // 更新 Redis 和内存
   const { Redis } = await import('@upstash/redis');
   const env = import.meta.env as Record<string, string | undefined>;
   const redisUrl = env.UPSTASH_REDIS_REST_URL ?? env.KV_REST_API_URL;

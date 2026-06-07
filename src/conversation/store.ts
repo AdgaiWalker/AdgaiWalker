@@ -51,9 +51,18 @@ export interface TopicCandidate {
   status: 'pending' | 'accepted' | 'deferred' | 'ignored';
 }
 
+export interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
 const memorySessions = new Map<string, MatchSession>();
 const memoryEvents = new Map<string, DemandEvent>();
 const memoryTopicCandidates = new Map<string, TopicCandidate>();
+const memoryMessages = new Map<string, ConversationMessage[]>();
+let memoryMatchCount = 0;
+const memoryCategoryCounts = new Map<string, number>();
 
 let cachedRedis: Redis | null | undefined;
 
@@ -86,9 +95,17 @@ function topicKey(topicId: string): string {
   return `match:topic:${topicId}`;
 }
 
+function messagesKey(sessionId: string): string {
+  return `match:messages:${sessionId}`;
+}
+
 export function createSessionId(): string {
   return randomUUID();
 }
+
+// ---------------------------------------------------------------------------
+// 会话
+// ---------------------------------------------------------------------------
 
 export async function upsertMatchSession(session: MatchSession): Promise<void> {
   const redis = getRedis();
@@ -110,14 +127,14 @@ export async function endMatchSession(sessionId: string, endedAt = new Date().to
   const session = await getMatchSession(sessionId);
   if (!session) return null;
 
-  const endedSession = {
-    ...session,
-    endedAt,
-    lastActiveAt: endedAt,
-  };
+  const endedSession = { ...session, endedAt, lastActiveAt: endedAt };
   await upsertMatchSession(endedSession);
   return endedSession;
 }
+
+// ---------------------------------------------------------------------------
+// 需求事件
+// ---------------------------------------------------------------------------
 
 export async function saveDemandEvent(event: DemandEvent): Promise<void> {
   const redis = getRedis();
@@ -153,6 +170,67 @@ export async function markDemandEventsProcessed(eventIds: string[]): Promise<voi
       await redis.lrem('match:events:pending', 0, eventId);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// 对话消息存储
+// ---------------------------------------------------------------------------
+
+export async function saveConversationMessages(sessionId: string, messages: ConversationMessage[]): Promise<void> {
+  if (messages.length === 0) return;
+  const redis = getRedis();
+  memoryMessages.set(sessionId, messages);
+  if (!redis) return;
+
+  const key = messagesKey(sessionId);
+  // 删除旧消息再写入（避免重复追加）
+  await redis.del(key);
+  for (const msg of messages) {
+    await redis.rpush(key, msg);
+  }
+  // 30 天过期
+  await redis.expire(key, 30 * 86_400);
+}
+
+export async function getConversationMessages(sessionId: string): Promise<ConversationMessage[]> {
+  const redis = getRedis();
+  if (!redis) return memoryMessages.get(sessionId) ?? [];
+
+  const messages = await redis.lrange<ConversationMessage>(messagesKey(sessionId), 0, -1);
+  return messages.length > 0 ? messages : memoryMessages.get(sessionId) ?? [];
+}
+
+export async function getMultipleConversations(sessionIds: string[]): Promise<Array<{ sessionId: string; messages: ConversationMessage[] }>> {
+  return Promise.all(
+    sessionIds.map(async id => ({
+      sessionId: id,
+      messages: await getConversationMessages(id),
+    }))
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 公开统计计数
+// ---------------------------------------------------------------------------
+
+export async function incrementMatchStats(categories: NeedCategory[]): Promise<void> {
+  const redis = getRedis();
+  memoryMatchCount++;
+  for (const cat of categories) {
+    memoryCategoryCounts.set(cat, (memoryCategoryCounts.get(cat) ?? 0) + 1);
+  }
+  if (!redis) return;
+
+  await redis.incr('match:stats:total');
+  for (const cat of categories) {
+    await redis.incr(`match:stats:category:${cat}`);
+  }
+}
+
+export interface PublicStats {
+  matchCount: number;
+  contentCount: number;
+  topCategories: Array<{ id: string; label: string; count: number }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -203,10 +281,8 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
   const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
   const redis = getRedis();
 
-  // 收集所有事件
   let events: DemandEvent[];
   if (redis) {
-    // 扫描所有事件键
     const keys = await redis.keys('match:event:*');
     const items = await Promise.all(keys.map(key => redis!.get<DemandEvent>(key)));
     events = items.filter((e): e is DemandEvent => e !== null && e.createdAt >= cutoff);
@@ -214,7 +290,6 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
     events = [...memoryEvents.values()].filter(e => e.createdAt >= cutoff);
   }
 
-  // 聚合
   const byCategory: Record<string, number> = {};
   const byFitVerdict: Record<string, number> = {};
   let codexMisuseCount = 0;
@@ -222,20 +297,15 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
   const dailyCounts = new Map<string, number>();
 
   for (const event of events) {
-    // 分类计数
     for (const cat of event.needCategories) {
       byCategory[cat] = (byCategory[cat] ?? 0) + 1;
     }
-    // 判断计数
     if (event.fitVerdict) {
       byFitVerdict[event.fitVerdict] = (byFitVerdict[event.fitVerdict] ?? 0) + 1;
     }
-    // Codex 误用
     if (event.codexMisuseLikely) codexMisuseCount++;
-    // 热门需求
     const summary = event.needSummary || '未分类需求';
     needCounts.set(summary, (needCounts.get(summary) ?? 0) + 1);
-    // 日趋势
     const day = event.createdAt.slice(0, 10);
     dailyCounts.set(day, (dailyCounts.get(day) ?? 0) + 1);
   }
@@ -249,7 +319,6 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, count]) => ({ date, count }));
 
-  // 会话数
   let totalSessions: number;
   if (redis) {
     const sessionIds = await redis.smembers('match:sessions');
