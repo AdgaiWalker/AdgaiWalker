@@ -44,11 +44,14 @@ function getRelatedContentIds(events: DemandEvent[]): string[] {
 
 function createTopicTitle(category: NeedCategory, representativeNeed: string): string {
   const label = needCategoryLabels[category] ?? 'AI 工具选择';
-  if (representativeNeed.includes('Codex') || representativeNeed.includes('codex')) {
-    return '别急着用 Codex，先判断你真正要做什么';
-  }
   if (representativeNeed.includes('怎么开始') || representativeNeed.includes('从哪开始')) {
     return `${label}：新手第一步到底该做什么`;
+  }
+  if (representativeNeed.includes('做网站') || representativeNeed.includes('做网页')) {
+    return `${label}：零基础做网站的第一步`;
+  }
+  if (representativeNeed.includes('报名表') || representativeNeed.includes('收集信息')) {
+    return `${label}：信息收集与整理的快速方案`;
   }
   return `${label}：${representativeNeed.slice(0, 24)}`;
 }

@@ -49,7 +49,7 @@ interface ModelChoice {
   reason?: string;
 }
 
-const PROMPT_VERSION = 'codex-triage-v1';
+const PROMPT_VERSION = 'tool-match-v2';
 const MODEL_VERSION = 'claude-sonnet-4-6';
 const DAILY_LIMIT = Number(import.meta.env.MATCH_DAILY_LIMIT ?? 20);
 const MINUTE_LIMIT = Number(import.meta.env.MATCH_MINUTE_LIMIT ?? 5);
@@ -70,41 +70,38 @@ let cachedRedis: Redis | null | undefined;
 
 const FIT_VERDICTS: FitVerdict[] = ['codex-fit', 'codex-not-needed', 'codex-maybe', 'not-enough-info'];
 
-const SYSTEM_PROMPT = `你是 iwalk.pro 的 Codex 使用前需求分诊器。
+const SYSTEM_PROMPT = `你是 iwalk.pro 的需求匹配助手。
 
-核心心智：
-别急着用 Codex。
-先判断用户到底要完成什么。
-
-只允许做这件事：先判断这个需求是否适合 Codex，再从站内资料索引中选择最有帮助的 2-4 条资料，并写一句串联语。
+核心任务：
+用户来描述一个需求，你帮他们判断该用什么工具，并从站内资料中推荐最有帮助的 2-4 条。
 
 硬性规则：
-1. 不外部搜索。
-2. 不编造工具。
+1. 不外部搜索。只使用站内资料索引。
+2. 不编造工具。只推荐索引中存在的资料。
 3. 不重写文章。
 4. 不输出未在索引里的资料。
-5. 不收集身份，只处理需求。
-6. 如果看不懂资料，提示用户把原文丢给 AI，让它用生活里的例子讲一遍。
-7. 只返回 JSON，不要返回 Markdown。
-8. 优先判断“是否需要 Codex”，不要先推荐资料。
-9. resourceIds 只能使用站内资料索引里的 ID。
+5. 不收集身份信息，只处理需求。
+6. 只返回 JSON，不要返回 Markdown。
+7. resourceIds 只能使用站内资料索引里的 ID。
+8. 优先判断需求类型，再推荐资料。
+9. 如果用户信息不够，返回 not-enough-info 并在 reason 中说明需要补充什么。
 
 返回 JSON 格式：
 {
-  "fitVerdict": "codex-fit",
-  "toolDirection": "更适合代码 Agent：让 Codex / Claude Code 进入项目上下文处理代码。",
-  "reason": "因为你描述的是代码、项目或执行层问题，需要工具进入代码上下文。",
-  "bridge": "一句话串联语",
-  "needSummary": "一句话需求摘要",
-  "categories": ["coding"],
-  "resourceIds": ["learn-ai-life", "tools-ai-tools"]
+  “fitVerdict”: “codex-fit”,
+  “toolDirection”: “推荐工具方向和理由”,
+  “reason”: “为什么这样判断”,
+  “bridge”: “一句话串联语”,
+  “needSummary”: “一句话需求摘要”,
+  “categories”: [“coding”],
+  “resourceIds”: [“learn-ai-life”, “tools-ai-tools”]
 }
 
-fitVerdict 只能是：
-- codex-fit：已有代码、仓库、报错、重构、脚本执行、部署等，适合 Codex。
-- codex-not-needed：写作、总结、翻译、解释、学习、普通内容整理、表格/PPT/报名表等，不必先用 Codex。
-- codex-maybe：可能要做网站/应用/项目，但还不确定是否已有代码。
-- not-enough-info：信息太少，需要用户补充“场景 + 目标 + 卡点”。
+fitVerdict 判断标准：
+- codex-fit：涉及代码、仓库、报错、重构、脚本执行、部署、API 对接等，适合代码 Agent。
+- codex-not-needed：写作、总结、翻译、解释、学习、内容整理、表格/PPT/报名表、数据分析等，用聊天 AI 或办公工具更合适。
+- codex-maybe：要做网站/应用/项目，但不确定是否已有代码，需要更多信息。
+- not-enough-info：信息太少，需要用户补充”场景 + 目标 + 卡点”。
 
 站内资料索引：
 ${matchResources.map(resource => [

@@ -117,30 +117,30 @@ function inferFitVerdict(need: string, toolFits: ToolFit[]): FitVerdict {
 }
 
 function createDirection(verdict: FitVerdict, toolFits: ToolFit[]): string {
-  if (verdict === 'codex-fit') return '更适合代码 Agent：让 Codex / Claude Code 进入项目上下文处理代码。';
-  if (verdict === 'codex-maybe') return '先分清是否有现成代码：有代码再用 Codex，没有代码先走建站/产品路径。';
-  if (verdict === 'not-enough-info') return '先补充场景、目标和卡点，再判断工具。';
+  if (verdict === 'codex-fit') return '适合代码 Agent：用 Claude Code / Cursor 等工具进入项目上下文处理代码。';
+  if (verdict === 'codex-maybe') return '需要更多信息：先确认是否有现成代码，再决定走代码 Agent 还是建站路线。';
+  if (verdict === 'not-enough-info') return '先补充场景、目标和卡点，再判断工具方向。';
 
   const firstFit = toolFits[0];
-  if (firstFit === 'chat-ai') return '更适合聊天 AI：先把内容、思路或解释理顺。';
-  if (firstFit === 'office') return '更适合办公或自动化工具：先把表格、文档、流程跑通。';
-  if (firstFit === 'design') return '更适合设计或图像工具：先处理页面、原型或视觉结果。';
-  if (firstFit === 'learning') return '更适合学习路线：先知道从哪开始，再选具体工具。';
-  if (firstFit === 'automation') return '更适合自动化工作流：先拆流程，再决定是否需要代码 Agent。';
-  return '更适合内容工具或站内资料路线：先把需求拆清楚。';
+  if (firstFit === 'chat-ai') return '适合聊天 AI：先把内容、思路或解释理顺。';
+  if (firstFit === 'office') return '适合办公或自动化工具：先把表格、文档、流程跑通。';
+  if (firstFit === 'design') return '适合设计或图像工具：先处理页面、原型或视觉。';
+  if (firstFit === 'learning') return '适合学习路线：先知道从哪开始，再选具体工具。';
+  if (firstFit === 'automation') return '适合自动化工作流：先拆流程，再决定是否需要代码 Agent。';
+  return '适合站内资料路线：先把需求拆清楚，再找对应的工具。';
 }
 
 function createReason(verdict: FitVerdict, toolFits: ToolFit[]): string {
-  if (verdict === 'codex-fit') return '因为你描述的是代码、项目或执行层问题，需要工具进入代码上下文。';
-  if (verdict === 'codex-maybe') return '因为它可能涉及项目搭建，但还不确定是否已有代码需要修改。';
-  if (verdict === 'not-enough-info') return '因为当前描述还缺少场景、交付物或卡点，直接选工具容易选偏。';
+  if (verdict === 'codex-fit') return '因为描述的是代码、项目或执行层问题，需要工具进入代码上下文。';
+  if (verdict === 'codex-maybe') return '因为可能涉及项目搭建，但不确定是否已有代码。';
+  if (verdict === 'not-enough-info') return '描述还缺少场景、交付物或卡点，直接选工具容易选偏。';
 
   const firstFit = toolFits[0];
-  if (firstFit === 'chat-ai') return '因为你的目标更像写作、总结、解释或思路整理，不需要先动代码。';
-  if (firstFit === 'office') return '因为你的目标更像表格、文档或流程交付，Codex 不是第一选择。';
-  if (firstFit === 'design') return '因为你的目标更像视觉或产品表达，先用设计工具更直接。';
-  if (firstFit === 'learning') return '因为你现在更需要学习路径，而不是直接进入代码执行。';
-  return '因为这个需求先要拆目标和流程，再决定是否需要代码工具。';
+  if (firstFit === 'chat-ai') return '因为目标更像写作、总结、解释或思路整理，不需要动代码。';
+  if (firstFit === 'office') return '因为目标更像表格、文档或流程交付，代码 Agent 不是第一选择。';
+  if (firstFit === 'design') return '因为目标更像视觉或产品表达，先用设计工具更直接。';
+  if (firstFit === 'learning') return '因为现在更需要学习路径，而不是直接进入工具使用。';
+  return '因为这个需求先要拆目标和流程，再决定用什么工具。';
 }
 
 function scoreResource(resource: MatchResource, context: MatchContext, categories: NeedCategory[], toolFits: ToolFit[]): number {
