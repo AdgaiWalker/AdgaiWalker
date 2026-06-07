@@ -1,0 +1,298 @@
+---
+// /admin/insights — 数据看板（服务端渲染，需认证）
+import { isAdmin } from '@/lib/admin-auth';
+import { getDemandStats, getTopicCandidates } from '@/conversation/store';
+import { needCategoryLabels } from '@/profiles/resource-index';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const stats = await getDemandStats({ days: 30 });
+const allTopics = await getTopicCandidates({ limit: 100 });
+const pendingTopics = allTopics.filter(t => t.status === 'pending');
+const contentGaps = allTopics.filter(t => t.relatedContentIds.length === 0 && t.status === 'pending');
+
+// 类别排序
+const sortedCategories = Object.entries(stats.byCategory)
+  .sort((a, b) => b[1] - a[1])
+  .map(([id, count]) => ({ id, label: needCategoryLabels[id as keyof typeof needCategoryLabels] ?? id, count }));
+const categoryMax = Math.max(1, ...sortedCategories.map(c => c.count));
+
+// 判断分布
+const verdictLabels: Record<string, string> = {
+  'codex-fit': '适合代码 Agent',
+  'codex-not-needed': '不需要代码',
+  'codex-maybe': '可能适合',
+  'not-enough-info': '信息不足',
+};
+const sortedVerdicts = Object.entries(stats.byFitVerdict)
+  .sort((a, b) => b[1] - a[1])
+  .map(([id, count]) => ({ id, label: verdictLabels[id] ?? id, count }));
+const verdictMax = Math.max(1, ...sortedVerdicts.map(v => v.count));
+
+// 趋势数据（SVG）
+const trend = stats.dailyTrend.slice(-30);
+const trendMax = Math.max(1, ...trend.map(t => t.count));
+const trendWidth = 600;
+const trendHeight = 120;
+const trendPadding = 30;
+const trendPoints = trend.map((t, i) => {
+  const x = trendPadding + (i / Math.max(1, trend.length - 1)) * (trendWidth - trendPadding * 2);
+  const y = trendHeight - trendPadding - (t.count / trendMax) * (trendHeight - trendPadding * 2);
+  return `${x},${y}`;
+}).join(' ');
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数据看板 — Walker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
+
+    /* Top Bar */
+    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
+    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
+    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
+    .admin-bar-right { display: flex; align-items: center; gap: 1rem; }
+    .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
+    .admin-bar-link:hover { color: #c4704a; }
+    .admin-bar-link.active { color: #1c1917; }
+    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+    .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,0.2); }
+
+    .admin-main { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .admin-welcome { margin-bottom: 2rem; }
+    .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .admin-welcome p { font-size: 0.88rem; color: #78716c; }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .kpi-card { padding: 1.25rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; }
+    .kpi-label { font-size: 0.72rem; font-weight: 700; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
+    .kpi-value { font-size: 1.75rem; font-weight: 800; color: #1c1917; }
+    .kpi-sub { font-size: 0.72rem; color: #a8a29e; margin-top: 0.2rem; }
+
+    /* 双栏布局 */
+    .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .insights-full { grid-column: 1 / -1; }
+
+    .panel { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1.25rem; }
+    .panel-title { font-size: 0.88rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .panel-title svg { color: #c4704a; }
+
+    /* SVG 趋势图 */
+    .trend-svg { width: 100%; height: auto; }
+    .trend-line { fill: none; stroke: #3b82f6; stroke-width: 2; stroke-linejoin: round; }
+    .trend-area { fill: rgba(59,130,246,0.08); }
+    .trend-axis { font-size: 9px; fill: #a8a29e; }
+    .trend-grid { stroke: rgba(0,0,0,0.04); stroke-width: 1; }
+
+    /* 条形图 */
+    .bar-row { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.55rem; }
+    .bar-label { width: 5rem; font-size: 0.78rem; font-weight: 600; color: #57534e; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { flex: 1; height: 1.4rem; background: rgba(0,0,0,0.04); border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
+    .bar-fill-blue { background: #3b82f6; }
+    .bar-fill-amber { background: #f59e0b; }
+    .bar-count { font-size: 0.72rem; font-weight: 700; color: #78716c; width: 2.5rem; flex-shrink: 0; }
+
+    /* 排行 */
+    .rank-list { list-style: none; }
+    .rank-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-idx { width: 1.5rem; height: 1.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0; }
+    .rank-idx-1 { background: #fef3c7; color: #92400e; }
+    .rank-idx-2 { background: #f1f5f9; color: #475569; }
+    .rank-idx-3 { background: #fef2f2; color: #991b1b; }
+    .rank-idx-other { background: #f5f5f4; color: #78716c; }
+    .rank-text { flex: 1; font-size: 0.82rem; color: #1c1917; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-count { font-size: 0.75rem; font-weight: 700; color: #78716c; flex-shrink: 0; }
+
+    /* 内容缺口 */
+    .gap-item { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.65rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .gap-item:last-child { border-bottom: none; }
+    .gap-warn { width: 20px; height: 20px; border-radius: 999px; background: #fef3c7; color: #92400e; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+    .gap-info { flex: 1; }
+    .gap-title { font-size: 0.82rem; font-weight: 700; color: #1c1917; }
+    .gap-audience { font-size: 0.72rem; color: #78716c; }
+    .gap-empty { font-size: 0.85rem; color: #a8a29e; text-align: center; padding: 1.5rem; }
+
+    @media (max-width: 768px) {
+      .insights-grid { grid-template-columns: 1fr; }
+      .admin-main { padding: 1.25rem 1rem 3rem; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-bar">
+    <div class="admin-bar-left">
+      <span class="admin-bar-logo">Walker</span>
+      <span class="admin-bar-badge">Admin</span>
+    </div>
+    <div class="admin-bar-right">
+      <a href="/admin" class="admin-bar-link">仪表盘</a>
+      <a href="/admin/insights" class="admin-bar-link active">洞察</a>
+      <a href="/admin/topics" class="admin-bar-link">选题库</a>
+      <a href="/" class="admin-bar-link">查看站点</a>
+      <button class="logout-btn" id="logout-btn">登出</button>
+    </div>
+  </div>
+
+  <div class="admin-main">
+    <div class="admin-welcome">
+      <h1>数据看板</h1>
+      <p>最近 30 天匹配数据 · {new Date().toLocaleDateString('zh-CN')}</p>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">匹配总数</div>
+        <div class="kpi-value">{stats.totalEvents}</div>
+        <div class="kpi-sub">30 天内</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">会话数</div>
+        <div class="kpi-value">{stats.totalSessions}</div>
+        <div class="kpi-sub">累计</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">待处理选题</div>
+        <div class="kpi-value">{pendingTopics.length}</div>
+        <div class="kpi-sub">待审核</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">内容缺口</div>
+        <div class="kpi-value">{contentGaps.length}</div>
+        <div class="kpi-sub">无关联资料</div>
+      </div>
+    </div>
+
+    <div class="insights-grid">
+      <!-- 趋势折线图 -->
+      <div class="panel insights-full">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          匹配趋势
+        </div>
+        {trend.length > 0 ? (
+          <svg class="trend-svg" viewBox={`0 0 ${trendWidth} ${trendHeight}`} preserveAspectRatio="xMidYMid meet">
+            {/* 水平网格线 */}
+            {[0, 0.25, 0.5, 0.75, 1].map(pct => (
+              <line class="trend-grid" x1={trendPadding} y1={trendHeight - trendPadding - pct * (trendHeight - trendPadding * 2)} x2={trendWidth - trendPadding} y2={trendHeight - trendPadding - pct * (trendHeight - trendPadding * 2)} />
+            ))}
+            {/* 面积 */}
+            {trend.length > 1 && (
+              <polygon class="trend-area" points={`${trendPadding},${trendHeight - trendPadding} ${trendPoints} ${trendWidth - trendPadding},${trendHeight - trendPadding}`} />
+            )}
+            {/* 折线 */}
+            {trend.length > 1 && <polyline class="trend-line" points={trendPoints} />}
+            {/* 数据点 */}
+            {trend.map((t, i) => {
+              const x = trendPadding + (i / Math.max(1, trend.length - 1)) * (trendWidth - trendPadding * 2);
+              const y = trendHeight - trendPadding - (t.count / trendMax) * (trendHeight - trendPadding * 2);
+              return <circle cx={x} cy={y} r="3" fill="#3b82f6" />;
+            })}
+            {/* X 轴标签（只标首尾和中间） */}
+            {trend.length > 0 && (
+              <>
+                <text class="trend-axis" x={trendPadding} y={trendHeight - 8}>{trend[0].date.slice(5)}</text>
+                {trend.length > 2 && <text class="trend-axis" x={trendWidth / 2} y={trendHeight - 8} text-anchor="middle">{trend[Math.floor(trend.length / 2)].date.slice(5)}</text>}
+                <text class="trend-axis" x={trendWidth - trendPadding} y={trendHeight - 8} text-anchor="end">{trend[trend.length - 1].date.slice(5)}</text>
+              </>
+            )}
+          </svg>
+        ) : (
+          <div class="gap-empty">暂无趋势数据</div>
+        )}
+      </div>
+
+      <!-- 类别分布 -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg>
+          需求类别分布
+        </div>
+        {sortedCategories.length > 0 ? sortedCategories.map(cat => (
+          <div class="bar-row">
+            <span class="bar-label">{cat.label}</span>
+            <div class="bar-track">
+              <div class="bar-fill bar-fill-blue" style={`width: ${(cat.count / categoryMax) * 100}%`} />
+            </div>
+            <span class="bar-count">{cat.count}</span>
+          </div>
+        )) : <div class="gap-empty">暂无数据</div>}
+      </div>
+
+      <!-- 判断分布 -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+          判断分布
+        </div>
+        {sortedVerdicts.length > 0 ? sortedVerdicts.map(v => (
+          <div class="bar-row">
+            <span class="bar-label">{v.label}</span>
+            <div class="bar-track">
+              <div class="bar-fill bar-fill-amber" style={`width: ${(v.count / verdictMax) * 100}%`} />
+            </div>
+            <span class="bar-count">{v.count}</span>
+          </div>
+        )) : <div class="gap-empty">暂无数据</div>}
+      </div>
+
+      <!-- 热门需求 -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          热门需求 Top 10
+        </div>
+        {stats.topNeeds.length > 0 ? (
+          <ol class="rank-list">
+            {stats.topNeeds.map((need, i) => (
+              <li class="rank-item">
+                <span class={`rank-idx ${i === 0 ? 'rank-idx-1' : i === 1 ? 'rank-idx-2' : i === 2 ? 'rank-idx-3' : 'rank-idx-other'}`}>{i + 1}</span>
+                <span class="rank-text">{need.summary}</span>
+                <span class="rank-count">{need.count}</span>
+              </li>
+            ))}
+          </ol>
+        ) : <div class="gap-empty">暂无数据</div>}
+      </div>
+
+      <!-- 内容缺口 -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          内容缺口
+        </div>
+        {contentGaps.length > 0 ? contentGaps.slice(0, 8).map(gap => (
+          <div class="gap-item">
+            <span class="gap-warn">!</span>
+            <div class="gap-info">
+              <div class="gap-title">{gap.title}</div>
+              <div class="gap-audience">{gap.audience} · {gap.sourceNeedCount} 条需求 · {gap.priority}优先级</div>
+            </div>
+          </div>
+        )) : <div class="gap-empty">暂无内容缺口</div>}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      window.location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>
