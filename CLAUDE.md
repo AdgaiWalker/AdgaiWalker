@@ -64,10 +64,28 @@ npx astro check    # Astro 类型检查
 | `/content` | 内容宇宙（多维度内容聚合） | Base |
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
+| `/admin/insights` | 数据看板（管理员专属） | Admin（独立样式） |
+| `/admin/topics` | 选题库（管理员专属） | Admin（独立样式） |
+| `/admin/content/edit` | 内容编辑器（管理员专属） | Admin（独立样式） |
 | `/404` | 404 页面 | Base |
 | `/rss.xml` | RSS 订阅源 | 无布局 |
 | `/llms.txt` | AI 可读站点地图 | 无布局（静态文本） |
 | `/walker-style.md` | AI 可读风格指南 | 无布局（静态文本） |
+
+### API 路由
+
+| 路径 | 功能 | 认证 |
+|------|------|------|
+| `/api/match` | 工具匹配（隐私脱敏 + 本地匹配 + Claude API） | 无 |
+| `/api/match-end` | 结束匹配会话 | 无（sessionId） |
+| `/api/match-process` | 批处理需求聚类（Cron 触发） | CRON_SECRET |
+| `/api/match-history` | 用户对话历史（按 sessionId 列表） | 无（sessionId） |
+| `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
+| `/api/insights` | 洞察数据 + 选题操作 | admin cookie / CRON_SECRET |
+| `/api/like` | 文章点赞（Upstash Redis） | 无（IP 限流） |
+| `/api/admin/auth` | 管理员登录/登出/状态检测 | admin cookie（GET） |
+| `/api/admin/conversations` | 管理员查看所有对话 | admin cookie |
+| `/api/admin/content/[slug]` | 内容 CRUD（GitHub API 回写） | admin cookie |
 | `/index.json` | AI 可读内容索引 JSON | 无布局（静态 JSON） |
 
 以下旧路由保留为 301 重定向（定义在 `astro.config.mjs`）：
