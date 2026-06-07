@@ -12,60 +12,77 @@
 
   <dialog class="match-dialog" id="match-dialog" aria-labelledby="tool-match-title">
     <div class="match-dialog-panel">
-      <div class="match-head">
-        <div class="match-title-block">
-          <p class="match-kicker">AI 帮你选</p>
-          <h2 id="tool-match-title">说说你要做什么，我帮你匹配工具。</h2>
-          <p class="match-intro">描述你的需求，我帮你判断该用什么工具，并推荐站内相关资料。</p>
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+          </div>
+          <div>
+            <h2 id="tool-match-title" class="chat-title">AI 帮你选</h2>
+            <p class="chat-subtitle">描述需求，我帮你匹配工具和站内资料</p>
+          </div>
         </div>
-        <div class="match-head-actions">
-          <button class="match-clear" id="match-clear" type="button">清空</button>
-          <button class="match-close" id="match-close" type="button">关闭</button>
+        <button class="chat-close" id="match-close" type="button" aria-label="关闭">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Chat Messages -->
+      <div class="chat-messages" id="chat-messages">
+        <!-- Agent greeting -->
+        <div class="chat-msg chat-msg-agent">
+          <div class="chat-bubble chat-bubble-agent">
+            <p>说说你要做什么，我帮你找到最合适的工具。</p>
+            <p class="chat-hint">可以直接点下面的场景快速开始。</p>
+          </div>
+        </div>
+
+        <!-- Quick Suggestions -->
+        <div class="chat-suggestions" id="chat-suggestions">
+          <button type="button" data-text="我想改已有项目代码，有几个页面和接口需要调整">改已有项目</button>
+          <button type="button" data-text="我想写一篇公众号，但不知道该用聊天 AI 还是别的工具">写公众号</button>
+          <button type="button" data-text="我想做一个网站，但还没有现成代码">做网站</button>
+          <button type="button" data-text="我想做一个报名表，能收集信息并自动整理">做报名表</button>
+          <button type="button" data-text="我想学 AI，但不知道第一步做什么">学 AI</button>
+          <button type="button" data-text="我想用 AI 提高工作效率，但不知道从哪开始">提效</button>
+          <button type="button" data-text="我想做数据分析，但不会编程">数据分析</button>
         </div>
       </div>
 
-      <div class="match-privacy">
-        <span>只收集匿名需求。不要输入姓名、联系方式、API Key、公司机密。</span>
+      <!-- Status -->
+      <div class="chat-status" id="chat-status" aria-live="polite"></div>
+
+      <!-- Input Bar -->
+      <div class="chat-input-bar">
+        <div class="chat-input-wrap">
+          <textarea
+            id="chat-input"
+            class="chat-input"
+            rows="1"
+            maxlength="500"
+            placeholder="描述你的需求..."
+          ></textarea>
+          <button class="chat-send" id="chat-send" type="button" aria-label="发送">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+          </button>
+        </div>
+        <div class="chat-meta-bar">
+          <label class="chat-consent">
+            <input id="chat-consent" type="checkbox" checked />
+            <span>匿名加入选题库</span>
+          </label>
+          <span class="chat-anon">不收集个人信息</span>
+        </div>
       </div>
 
-      <div class="match-workbench">
-        <div class="match-panel match-panel-primary">
-          <div class="panel-label">
-            <span>需求判断</span>
-          </div>
-          <div class="match-suggestions" aria-label="常见需求">
-            <button type="button" data-text="我想改已有项目代码，有几个页面和接口需要调整">改已有项目</button>
-            <button type="button" data-text="我想写一篇公众号，但不知道该用聊天 AI 还是别的工具">写公众号</button>
-            <button type="button" data-text="我想做一个网站，但还没有现成代码">做网站</button>
-            <button type="button" data-text="我想做一个报名表，能收集信息并自动整理">做报名表</button>
-            <button type="button" data-text="我想学 AI，但不知道第一步做什么">学 AI</button>
-            <button type="button" data-text="我想用 AI 提高工作效率，但不知道从哪开始">提效</button>
-            <button type="button" data-text="我想做数据分析，但不会编程">数据分析</button>
-          </div>
-
-          <form class="match-form" id="match-form">
-            <label class="match-input-wrap" for="match-input">
-              <span>你现在想完成哪件事？</span>
-              <textarea
-                id="match-input"
-                class="match-input"
-                rows="4"
-                maxlength="500"
-                placeholder="例如：我想改项目 / 写文章 / 做网站 / 做表格 / 学 AI / 提效。补一句你在哪里、要交付什么、卡在哪一步。"
-                required
-              ></textarea>
-            </label>
-            <div class="match-actions">
-              <label class="match-consent">
-                <input id="match-consent" type="checkbox" checked />
-                <span>匿名加入选题库</span>
-              </label>
-              <button class="match-submit" id="match-submit" type="submit">匹配工具</button>
-            </div>
-          </form>
-        </div>
-
-        <aside class="match-panel match-panel-side" aria-label="需求背景">
+      <!-- Side panel toggle (audience/stage) -->
+      <div class="chat-context-bar" id="chat-context-bar">
+        <button class="context-toggle" id="context-toggle" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          补充背景（可选）
+        </button>
+        <div class="context-panel hidden" id="context-panel">
           <label>
             <span>使用场景</span>
             <select id="match-audience">
@@ -92,42 +109,15 @@
               <option value="builder">能做完整项目</option>
             </select>
           </label>
-          <div class="match-microcopy">
-            <span>选不准就留空，真实问题比标签更重要。</span>
-          </div>
-        </aside>
-      </div>
-
-      <div class="match-status" id="match-status" aria-live="polite"></div>
-
-      <div class="match-result" id="match-result" hidden>
-        <div class="result-head">
-          <div>
-            <p class="result-label">判断结果</p>
-            <p class="result-verdict" id="match-verdict"></p>
-            <p class="result-bridge" id="match-reason"></p>
-          </div>
-          <div class="result-meta" id="match-meta"></div>
         </div>
-        <div class="result-section">
-          <p class="result-label">该用什么</p>
-          <p class="result-bridge" id="match-tool-direction"></p>
-        </div>
-        <div class="result-section">
-          <p class="result-label">看这些资料</p>
-          <p class="result-bridge" id="match-bridge"></p>
-        </div>
-        <div class="resource-pack" id="match-resources"></div>
-        <p class="understand-note" id="match-understand"></p>
       </div>
     </div>
   </dialog>
 </section>
 
 <style>
-  .tool-match-shell {
-    display: block;
-  }
+  /* ── Signal Button ── */
+  .tool-match-shell { display: block; }
 
   .match-signal {
     position: relative;
@@ -166,483 +156,387 @@
   }
 
   .signal-light {
-    position: relative;
-    z-index: 1;
-    width: 0.64rem;
-    height: 0.64rem;
+    position: relative; z-index: 1;
+    width: 0.64rem; height: 0.64rem;
     border-radius: 999px;
     background: var(--color-brand, #c4704a);
     box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.22);
     animation: matchLight 3.8s ease-in-out infinite;
   }
 
-  .signal-copy,
-  .signal-note {
-    position: relative;
-    z-index: 1;
-  }
-
-  .signal-copy {
-    display: grid;
-    gap: 0.15rem;
-    min-width: 0;
-  }
-
+  .signal-copy, .signal-note { position: relative; z-index: 1; }
+  .signal-copy { display: grid; gap: 0.15rem; min-width: 0; }
   .signal-kicker {
     color: var(--color-brand, #c4704a);
     font-family: var(--font-mono, monospace);
-    font-size: 0.68rem;
-    font-weight: 850;
+    font-size: 0.68rem; font-weight: 850;
   }
-
   .signal-copy strong {
     color: var(--color-heading, var(--color-text, #3f3027));
-    font-size: 0.9rem;
-    font-weight: 850;
-    line-height: 1.25;
+    font-size: 0.9rem; font-weight: 850; line-height: 1.25;
   }
-
   .signal-copy span:not(.signal-kicker) {
     color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
-    font-size: 0.76rem;
-    line-height: 1.45;
+    font-size: 0.76rem; line-height: 1.45;
   }
-
   .signal-note {
-    padding: 0.2rem 0.45rem;
-    border-radius: 999px;
+    padding: 0.2rem 0.45rem; border-radius: 999px;
     background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
     color: var(--color-brand, #c4704a);
-    font-size: 0.68rem;
-    font-weight: 800;
-    white-space: nowrap;
+    font-size: 0.68rem; font-weight: 800; white-space: nowrap;
   }
 
+  /* ── Dialog ── */
   .match-dialog {
-    width: min(46rem, calc(100vw - 2rem));
-    max-height: min(48rem, calc(100vh - 2rem));
-    padding: 0;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: inherit;
+    width: min(42rem, calc(100vw - 2rem));
+    max-height: min(44rem, calc(100vh - 2rem));
+    padding: 0; border: 0; border-radius: 16px;
+    background: transparent; color: inherit;
   }
-
   .match-dialog::backdrop {
-    background: rgba(34, 28, 24, 0.32);
-    backdrop-filter: blur(10px);
+    background: rgba(34, 28, 24, 0.36);
+    backdrop-filter: blur(12px);
   }
 
   .match-dialog-panel {
-    display: grid;
-    gap: 1rem;
-    max-height: min(48rem, calc(100vh - 2rem));
-    padding: 1rem;
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    height: min(44rem, calc(100vh - 2rem));
     border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--color-surface, #fff) 94%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface, #fff) 96%, transparent);
+    overflow: hidden;
   }
 
-  .match-head {
+  /* ── Chat Header ── */
+  .chat-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .match-title-block {
-    min-width: 0;
-  }
-
-  .match-kicker {
-    margin: 0 0 0.2rem;
-    color: var(--color-brand, #c4704a);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    font-weight: 800;
-  }
-
-  .match-title-block h2 {
-    margin: 0;
-    color: var(--color-heading, var(--color-text, #3f3027));
-    font-size: 1.18rem;
-    font-weight: 850;
-    line-height: 1.28;
-  }
-
-  .match-intro {
-    max-width: 38rem;
-    margin: 0.45rem 0 0;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
-    font-size: 0.84rem;
-    line-height: 1.7;
-  }
-
-  .match-head-actions {
-    display: flex;
-    gap: 0.45rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
     flex-shrink: 0;
   }
-
-  .match-clear,
-  .match-close,
-  .match-submit {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 760;
+  .chat-header-info {
+    display: flex; align-items: center; gap: 0.65rem;
   }
-
-  .match-clear,
-  .match-close {
-    min-height: 2rem;
-    padding: 0.35rem 0.62rem;
+  .chat-header-icon {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a);
+  }
+  .chat-title {
+    margin: 0;
+    font-size: 0.95rem; font-weight: 800;
+    color: var(--color-heading, var(--color-text, #3f3027));
+  }
+  .chat-subtitle {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+  }
+  .chat-close {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border: 0; border-radius: 8px;
     background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06);
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
-    font-size: 0.76rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .chat-close:hover {
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.12);
   }
 
-  .match-privacy {
-    padding: 0.65rem 0.75rem;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
-    border-radius: 8px;
-    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.46);
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.64));
-    font-size: 0.8rem;
-    line-height: 1.55;
-  }
-
-  .match-workbench {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.34fr);
-    gap: 0.85rem;
-  }
-
-  .match-panel {
-    display: grid;
-    gap: 0.75rem;
-    min-width: 0;
-  }
-
-  .panel-label,
-  .match-input-wrap > span,
-  .match-panel-side label > span {
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
-    font-size: 0.74rem;
-    font-weight: 800;
-  }
-
-  .match-suggestions {
+  /* ── Chat Messages Area ── */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
-  .match-suggestions button {
-    min-height: 2rem;
-    padding: 0.35rem 0.68rem;
+  .chat-msg {
+    display: flex;
+    max-width: 88%;
+  }
+  .chat-msg-user {
+    align-self: flex-end;
+  }
+  .chat-msg-agent {
+    align-self: flex-start;
+  }
+
+  .chat-bubble {
+    padding: 0.65rem 0.85rem;
+    border-radius: 14px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    word-break: break-word;
+  }
+  .chat-bubble p { margin: 0; }
+  .chat-bubble p + p { margin-top: 0.35rem; }
+
+  .chat-bubble-agent {
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06);
+    color: var(--color-text, #3f3027);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-bubble-user {
+    background: var(--color-brand, #c4704a);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .chat-hint {
+    font-size: 0.78rem !important;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.5)) !important;
+  }
+
+  /* Agent typing indicator */
+  .chat-typing {
+    display: flex; gap: 4px; padding: 0.65rem 0.85rem;
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06);
+    border-radius: 14px; border-bottom-left-radius: 4px;
+    align-self: flex-start;
+  }
+  .chat-typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--color-text-muted, rgba(63, 48, 39, 0.35));
+    animation: typingBounce 1.4s ease-in-out infinite;
+  }
+  .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+  }
+
+  /* ── Quick Suggestions ── */
+  .chat-suggestions {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    max-width: 88%;
+  }
+  .chat-suggestions button {
+    padding: 0.3rem 0.65rem;
     border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
     border-radius: 999px;
     background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.55);
     color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
+    font-size: 0.78rem; font-weight: 600;
     cursor: pointer;
-    font-size: 0.78rem;
-    font-weight: 760;
+    transition: all 0.18s ease;
   }
-
-  .match-suggestions button:hover,
-  .match-suggestions button.is-active {
-    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.32);
+  .chat-suggestions button:hover {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.3);
     background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
     color: var(--color-brand, #c4704a);
   }
 
-  .match-form,
-  .match-input-wrap,
-  .match-panel-side label {
-    display: grid;
-    gap: 0.45rem;
+  /* ── Match Result Card (inline in chat) ── */
+  .chat-result-card {
+    padding: 0.85rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 12px;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.5);
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .result-verdict {
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--color-heading, var(--color-text, #3f3027));
+  }
+  .result-reason {
+    font-size: 0.82rem; line-height: 1.6;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.65));
+  }
+  .result-direction {
+    font-size: 0.82rem; font-weight: 600;
+    color: var(--color-brand, #c4704a);
+  }
+  .result-resources {
+    display: flex; flex-direction: column; gap: 0;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+    border-radius: 8px; overflow: hidden;
+  }
+  .result-resource-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.42);
+    color: inherit; text-decoration: none;
+    transition: background 0.15s ease;
+  }
+  .result-resource-row + .result-resource-row {
+    border-top: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.06);
+  }
+  .result-resource-row:hover {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+  }
+  .result-resource-idx {
+    width: 1.35rem; height: 1.35rem;
+    border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a);
+    font-size: 0.68rem; font-weight: 800; flex-shrink: 0;
+  }
+  .result-resource-info { flex: 1; min-width: 0; }
+  .result-resource-title {
+    font-size: 0.82rem; font-weight: 700;
+    color: var(--color-heading, var(--color-text, #3f3027));
+  }
+  .result-resource-use {
+    font-size: 0.72rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+  }
+  .result-chips {
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+  }
+  .result-chip {
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand, #c4704a);
+    font-size: 0.65rem; font-weight: 700;
   }
 
-  .match-input,
-  .match-panel-side select {
-    width: 100%;
+  /* ── Status ── */
+  .chat-status {
+    min-height: 0;
+    padding: 0 1rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.5));
+  }
+
+  /* ── Input Bar ── */
+  .chat-input-bar {
+    padding: 0.65rem 0.85rem 0.5rem;
+    border-top: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    flex-shrink: 0;
+  }
+  .chat-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
     border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    border-radius: 8px;
+    border-radius: 12px;
+    padding: 0.35rem 0.5rem;
     background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.72);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .chat-input-wrap:focus-within {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.35);
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+  }
+  .chat-input {
+    flex: 1;
+    border: 0; background: transparent;
+    font: inherit; font-size: 0.88rem; line-height: 1.5;
+    resize: none; outline: none;
+    max-height: 6rem;
     color: var(--color-text, #3f3027);
-    font: inherit;
+  }
+  .chat-input::placeholder {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.4));
+  }
+  .chat-send {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border: 0; border-radius: 8px;
+    background: var(--color-brand, #c4704a);
+    color: #fff; cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+  }
+  .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chat-send:not(:disabled):hover { filter: brightness(1.08); }
+
+  .chat-meta-bar {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-top: 0.35rem;
+    padding: 0 0.15rem;
+  }
+  .chat-consent {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.72rem; font-weight: 600;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.5));
+    cursor: pointer;
+  }
+  .chat-anon {
+    font-size: 0.68rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.4));
+  }
+
+  /* ── Context Panel (audience/stage) ── */
+  .chat-context-bar {
+    padding: 0 0.85rem 0.65rem;
+    flex-shrink: 0;
+  }
+  .context-toggle {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.5));
+    font-size: 0.72rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .context-toggle:hover {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
+    color: var(--color-brand, #c4704a);
+  }
+  .context-panel {
+    display: flex; gap: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.65rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 10px;
+    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.36);
+  }
+  .context-panel.hidden { display: none; }
+  .context-panel label {
+    display: flex; flex-direction: column; gap: 0.3rem; flex: 1;
+  }
+  .context-panel span {
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+  }
+  .context-panel select {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 6px;
+    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.72);
+    font: inherit; font-size: 0.8rem;
+    color: var(--color-text, #3f3027);
     outline: none;
   }
 
-  .match-input {
-    min-height: 6.25rem;
-    resize: vertical;
-    padding: 0.8rem 0.85rem;
-    font-size: 0.9rem;
-    line-height: 1.65;
-  }
-
-  .match-panel-side select {
-    min-height: 2.45rem;
-    padding: 0 0.7rem;
-    font-size: 0.84rem;
-  }
-
-  .match-input:focus,
-  .match-panel-side select:focus {
-    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.38);
-    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
-  }
-
-  .match-panel-side {
-    align-content: start;
-    padding: 0.8rem;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
-    border-radius: 8px;
-    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.36);
-  }
-
-  .match-microcopy {
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.56));
-    font-size: 0.76rem;
-    line-height: 1.55;
-  }
-
-  .match-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .match-consent {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.42rem;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
-    font-size: 0.78rem;
-    font-weight: 760;
-  }
-
-  .match-submit {
-    min-height: 2.45rem;
-    padding: 0.52rem 0.95rem;
-    background: var(--color-brand, #c4704a);
-    color: #fff;
-    font-size: 0.84rem;
-  }
-
-  .match-submit:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-
-  .match-status {
-    min-height: 1.15rem;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.58));
-    font-size: 0.78rem;
-    line-height: 1.5;
-  }
-
-  .match-result {
-    display: grid;
-    gap: 0.9rem;
-    padding-top: 0.25rem;
-    border-top: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
-  }
-
-  .result-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.85rem;
-    align-items: start;
-  }
-
-  .result-label {
-    margin: 0 0 0.3rem;
-    color: var(--color-brand, #c4704a);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    font-weight: 800;
-  }
-
-  .result-bridge {
-    margin: 0;
-    color: var(--color-heading, var(--color-text, #3f3027));
-    font-size: 0.95rem;
-    font-weight: 760;
-    line-height: 1.65;
-  }
-
-  .result-verdict {
-    margin: 0 0 0.25rem;
-    color: var(--color-heading, var(--color-text, #3f3027));
-    font-size: 1rem;
-    font-weight: 850;
-    line-height: 1.45;
-  }
-
-  .result-section {
-    display: grid;
-    gap: 0.25rem;
-  }
-
-  .result-meta {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.4rem;
-    max-width: 18rem;
-  }
-
-  .result-chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 1.6rem;
-    padding: 0.22rem 0.5rem;
-    border-radius: 999px;
-    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
-    color: var(--color-brand, #c4704a);
-    font-size: 0.7rem;
-    font-weight: 760;
-  }
-
-  .resource-pack {
-    display: grid;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .resource-row {
-    display: grid;
-    grid-template-columns: 1.7rem minmax(0, 1fr) auto;
-    gap: 0.75rem;
-    align-items: center;
-    padding: 0.75rem 0.8rem;
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.42);
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .resource-row + .resource-row {
-    border-top: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
-  }
-
-  .resource-row:hover {
-    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
-  }
-
-  .resource-index {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.55rem;
-    height: 1.55rem;
-    border-radius: 999px;
-    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
-    color: var(--color-brand, #c4704a);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    font-weight: 800;
-  }
-
-  .resource-title {
-    display: block;
-    color: var(--color-heading, var(--color-text, #3f3027));
-    font-size: 0.9rem;
-    font-weight: 820;
-    line-height: 1.35;
-  }
-
-  .resource-use {
-    display: block;
-    margin-top: 0.18rem;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.64));
-    font-size: 0.78rem;
-    line-height: 1.55;
-  }
-
-  .resource-kind {
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.48));
-    font-size: 0.68rem;
-    font-weight: 760;
-    white-space: nowrap;
-  }
-
-  .understand-note {
-    margin: 0;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
-    font-size: 0.8rem;
-    line-height: 1.65;
-  }
-
+  /* ── Animations ── */
   @keyframes matchBreath {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
-    }
-    50% {
-      box-shadow: 0 0 0 5px rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
-    }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.08); }
+    50% { box-shadow: 0 0 0 5px rgba(var(--color-brand-rgb, 196, 112, 74), 0.06); }
   }
-
   @keyframes matchScan {
-    0%, 68% {
-      opacity: 0;
-      transform: translateX(-100%);
-    }
-    74% {
-      opacity: 0.55;
-    }
-    88% {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-    100% {
-      opacity: 0;
-      transform: translateX(100%);
-    }
+    0%, 68% { opacity: 0; transform: translateX(-100%); }
+    74% { opacity: 0.55; }
+    88% { opacity: 0; transform: translateX(100%); }
+    100% { opacity: 0; transform: translateX(100%); }
   }
-
   @keyframes matchLight {
-    0%, 100% {
-      transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
-    }
-    50% {
-      transform: scale(1.08);
-      box-shadow: 0 0 0 7px rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
-    }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.2); }
+    50% { transform: scale(1.08); box-shadow: 0 0 0 7px rgba(var(--color-brand-rgb, 196, 112, 74), 0.06); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .match-signal,
-    .match-signal::before,
-    .signal-light {
-      animation: none;
-    }
-  }
-
-  @media (max-width: 760px) {
-    .match-dialog {
-      width: calc(100vw - 1rem);
-    }
-
-    .match-workbench,
-    .result-head {
-      grid-template-columns: 1fr;
-    }
-
-    .result-meta {
-      justify-content: flex-start;
-      max-width: none;
-    }
+    .match-signal, .match-signal::before, .signal-light, .chat-typing span { animation: none; }
   }
 
   @media (max-width: 640px) {
@@ -650,54 +544,24 @@
       width: 100%;
       grid-template-columns: 0.72rem minmax(0, 1fr);
     }
-
-    .signal-note {
-      grid-column: 2;
-      justify-self: start;
-    }
-
-    .match-dialog-panel {
-      padding: 0.9rem;
-    }
-
-    .match-head,
-    .match-actions {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .match-head-actions {
-      justify-content: flex-end;
-    }
-
-    .match-submit {
-      width: 100%;
-    }
-
-    .resource-row {
-      grid-template-columns: 1.7rem minmax(0, 1fr);
-    }
-
-    .resource-kind {
-      grid-column: 2;
-      justify-self: start;
-    }
+    .signal-note { grid-column: 2; justify-self: start; }
+    .match-dialog { width: calc(100vw - 1rem); }
+    .match-dialog-panel { height: calc(100vh - 1rem); }
+    .chat-msg { max-width: 95%; }
+    .chat-suggestions { max-width: 95%; }
+    .context-panel { flex-direction: column; }
   }
 </style>
 
 <script>
   interface MatchResourceResult {
-    id: string;
-    title: string;
-    href: string;
-    kind: string;
-    useFor: string;
-    summary: string;
+    id: string; title: string; href: string; kind: string;
+    useFor: string; summary: string;
   }
 
   interface MatchResponse {
     sessionId?: string;
-    fitVerdict?: 'codex-fit' | 'codex-not-needed' | 'codex-maybe' | 'not-enough-info';
+    fitVerdict?: string;
     toolDirection?: string;
     reason?: string;
     bridge?: string;
@@ -715,194 +579,195 @@
     };
   }
 
-  let matchAbort: AbortController | null = null;
-  let matchSessionId: string | null = null;
+  interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+  }
+
+  let abort: AbortController | null = null;
+  let sessionId: string | null = null;
   let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+  const conversationHistory: ChatMessage[] = [];
 
   function initToolMatch() {
-    matchAbort?.abort();
-    matchAbort = new AbortController();
-    const { signal } = matchAbort;
+    abort?.abort();
+    abort = new AbortController();
+    const { signal } = abort;
 
-    const open = document.getElementById('match-open') as HTMLButtonElement | null;
-    const dialog = document.getElementById('match-dialog') as HTMLDialogElement | null;
-    const close = document.getElementById('match-close') as HTMLButtonElement | null;
-    const form = document.getElementById('match-form') as HTMLFormElement | null;
-    const input = document.getElementById('match-input') as HTMLTextAreaElement | null;
-    const submit = document.getElementById('match-submit') as HTMLButtonElement | null;
-    const clear = document.getElementById('match-clear') as HTMLButtonElement | null;
-    const audience = document.getElementById('match-audience') as HTMLSelectElement | null;
-    const stage = document.getElementById('match-stage') as HTMLSelectElement | null;
-    const consent = document.getElementById('match-consent') as HTMLInputElement | null;
-    const status = document.getElementById('match-status');
-    const result = document.getElementById('match-result');
-    const verdict = document.getElementById('match-verdict');
-    const reason = document.getElementById('match-reason');
-    const toolDirection = document.getElementById('match-tool-direction');
-    const bridge = document.getElementById('match-bridge');
-    const meta = document.getElementById('match-meta');
-    const resources = document.getElementById('match-resources');
-    const understand = document.getElementById('match-understand');
+    const open = document.getElementById('match-open') as HTMLButtonElement;
+    const dialog = document.getElementById('match-dialog') as HTMLDialogElement;
+    const close = document.getElementById('match-close') as HTMLButtonElement;
+    const messages = document.getElementById('chat-messages') as HTMLDivElement;
+    const input = document.getElementById('chat-input') as HTMLTextAreaElement;
+    const sendBtn = document.getElementById('chat-send') as HTMLButtonElement;
+    const status = document.getElementById('chat-status') as HTMLDivElement;
+    const consent = document.getElementById('chat-consent') as HTMLInputElement;
+    const audience = document.getElementById('match-audience') as HTMLSelectElement;
+    const stage = document.getElementById('match-stage') as HTMLSelectElement;
+    const contextToggle = document.getElementById('context-toggle') as HTMLButtonElement;
+    const contextPanel = document.getElementById('context-panel') as HTMLDivElement;
+    const suggestions = document.getElementById('chat-suggestions') as HTMLDivElement;
 
-    if (!open || !dialog || !close || !form || !input || !submit || !clear || !audience || !stage || !consent || !status || !result || !verdict || !reason || !toolDirection || !bridge || !meta || !resources || !understand) return;
+    if (!open || !dialog || !close || !messages || !input || !sendBtn) return;
 
-    const openEl = open;
-    const dialogEl = dialog;
-    const closeEl = close;
-    const formEl = form;
-    const inputEl = input;
-    const submitEl = submit;
-    const clearEl = clear;
-    const audienceEl = audience;
-    const stageEl = stage;
-    const consentEl = consent;
-    const statusEl = status;
-    const resultEl = result;
-    const verdictEl = verdict;
-    const reasonEl = reason;
-    const toolDirectionEl = toolDirection;
-    const bridgeEl = bridge;
-    const metaEl = meta;
-    const resourcesEl = resources;
-    const understandEl = understand;
-    const suggestionButtons = document.querySelectorAll<HTMLButtonElement>('.match-suggestions button');
+    // Auto-resize textarea
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+    }, { signal });
 
-    function setStatus(text: string) {
-      statusEl.textContent = text;
-    }
+    // Open/close dialog
+    open.addEventListener('click', () => {
+      if (!dialog.open) dialog.showModal();
+      setTimeout(() => input.focus(), 60);
+    }, { signal });
 
-    function openDialog() {
-      if (!dialogEl.open) dialogEl.showModal();
-      window.setTimeout(() => inputEl.focus(), 60);
-    }
+    close.addEventListener('click', () => dialog.close(), { signal });
 
-    function closeDialog() {
-      dialogEl.close();
-    }
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    }, { signal });
 
-    function resetInactivityTimer() {
-      if (inactivityTimer) clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => {
-        void endSession();
-      }, 10 * 60 * 1000);
-    }
+    // Context toggle
+    contextToggle?.addEventListener('click', () => {
+      contextPanel?.classList.toggle('hidden');
+    }, { signal });
 
-    async function endSession() {
-      if (!matchSessionId) return;
-      const sessionId = matchSessionId;
-      matchSessionId = null;
-      try {
-        await fetch('/api/match-end', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-          keepalive: true,
-        });
-      } catch {
-        // 会话结束记录失败不影响用户使用。
+    // Quick suggestions
+    const suggestionBtns = suggestions?.querySelectorAll<HTMLButtonElement>('button');
+    suggestionBtns?.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.dataset.text ?? '';
+        input.value = text;
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+        sendMessage(text);
+      }, { signal });
+    });
+
+    // Send on Enter (Shift+Enter for newline)
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (text) sendMessage(text);
       }
-    }
+    }, { signal });
 
-    function clearResult() {
-      resultEl.hidden = true;
-      verdictEl.textContent = '';
-      reasonEl.textContent = '';
-      toolDirectionEl.textContent = '';
-      bridgeEl.textContent = '';
-      metaEl.replaceChildren();
-      resourcesEl.replaceChildren();
-      understandEl.textContent = '';
-      setStatus('');
-      suggestionButtons.forEach(button => button.classList.remove('is-active'));
-    }
+    // Send button
+    sendBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (text) sendMessage(text);
+    }, { signal });
 
-    function renderChip(text: string) {
-      const chip = document.createElement('span');
-      chip.className = 'result-chip';
-      chip.textContent = text;
-      return chip;
-    }
+    // Inactivity timer
+    window.addEventListener('beforeunload', () => endSession(), { signal });
 
-    function getVerdictText(verdictValue?: MatchResponse['fitVerdict']) {
-      if (verdictValue === 'codex-fit') return '这个需求适合用代码 Agent。';
-      if (verdictValue === 'codex-not-needed') return '这个需求不一定要用代码 Agent。';
-      if (verdictValue === 'codex-maybe') return '这个需求可能适合代码 Agent，但要看具体情况。';
-      if (verdictValue === 'not-enough-info') return '信息还不够，再补充一些细节？';
-      return '先分析需求，再推荐工具。';
-    }
-
-    function renderResourceRow(resource: MatchResourceResult, index: number) {
-      const link = document.createElement('a');
-      link.className = 'resource-row';
-      link.href = resource.href;
-
-      const order = document.createElement('span');
-      order.className = 'resource-index';
-      order.textContent = String(index + 1);
-
-      const main = document.createElement('span');
-      const title = document.createElement('span');
-      title.className = 'resource-title';
-      title.textContent = resource.title;
-
-      const useFor = document.createElement('span');
-      useFor.className = 'resource-use';
-      useFor.textContent = resource.useFor;
-
-      const kind = document.createElement('span');
-      kind.className = 'resource-kind';
-      kind.textContent = resource.kind;
-
-      main.append(title, useFor);
-      link.append(order, main, kind);
-      return link;
-    }
-
-    function renderResult(data: MatchResponse) {
-      resultEl.hidden = false;
-      verdictEl.textContent = getVerdictText(data.fitVerdict);
-      reasonEl.textContent = data.reason || data.bridge || '补一句：你现在在哪里、要交付什么、卡在哪一步。';
-      toolDirectionEl.textContent = data.toolDirection || '先把目标和卡点说清楚，再判断该用什么工具。';
-      bridgeEl.textContent = data.bridge || '按下面资料顺序看，先判断需求，再选择对应资料和工具。';
-      metaEl.replaceChildren();
-      resourcesEl.replaceChildren();
-
-      for (const category of data.categories ?? []) {
-        metaEl.appendChild(renderChip(category.label));
-      }
-      if (typeof data.remaining === 'number') {
-        metaEl.appendChild(renderChip(`今日剩余 ${data.remaining} 次`));
-      }
-      if (data.safety?.piiDetected) {
-        metaEl.appendChild(renderChip('已隐藏敏感信息'));
-      }
-      if (data.safety?.isMinorContext) {
-        metaEl.appendChild(renderChip('青少年保护模式'));
-      }
-
-      (data.resources ?? []).forEach((resource, index) => {
-        resourcesEl.appendChild(renderResourceRow(resource, index));
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        messages.scrollTop = messages.scrollHeight;
       });
-
-      understandEl.textContent = data.understandNote || '如果看不懂，把推荐资料原文丢给 AI，让它用生活里的例子讲一遍。';
     }
 
-    async function submitNeed(text: string) {
-      const need = text.trim();
-      if (!need) return;
+    function addUserBubble(text: string) {
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-user';
+      msg.innerHTML = `<div class="chat-bubble chat-bubble-user"><p>${escapeHtml(text)}</p></div>`;
+      messages.appendChild(msg);
+      scrollToBottom();
+    }
 
-      submitEl.disabled = true;
-      setStatus('正在匹配工具和资料...');
+    function addAgentBubble(html: string) {
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-agent';
+      msg.innerHTML = `<div class="chat-bubble chat-bubble-agent">${html}</div>`;
+      messages.appendChild(msg);
+      scrollToBottom();
+    }
+
+    function addTypingIndicator(): HTMLElement {
+      const el = document.createElement('div');
+      el.className = 'chat-typing';
+      el.id = 'typing-indicator';
+      el.innerHTML = '<span></span><span></span><span></span>';
+      messages.appendChild(el);
+      scrollToBottom();
+      return el;
+    }
+
+    function removeTypingIndicator() {
+      document.getElementById('typing-indicator')?.remove();
+    }
+
+    function renderResultCard(data: MatchResponse): string {
+      const verdictMap: Record<string, string> = {
+        'codex-fit': '这个需求适合用代码 Agent',
+        'codex-not-needed': '这个需求不一定需要代码 Agent',
+        'codex-maybe': '可能适合代码 Agent，要看具体情况',
+        'not-enough-info': '信息还不够，再补充一些？',
+      };
+      const verdict = verdictMap[data.fitVerdict ?? ''] ?? '先分析需求，再推荐工具';
+
+      let html = `<div class="chat-result-card">`;
+      html += `<div class="result-verdict">${escapeHtml(verdict)}</div>`;
+      if (data.reason) html += `<div class="result-reason">${escapeHtml(data.reason)}</div>`;
+      if (data.toolDirection) html += `<div class="result-direction">${escapeHtml(data.toolDirection)}</div>`;
+
+      if (data.categories?.length) {
+        html += `<div class="result-chips">`;
+        for (const cat of data.categories) {
+          html += `<span class="result-chip">${escapeHtml(cat.label)}</span>`;
+        }
+        html += `</div>`;
+      }
+
+      if (data.resources?.length) {
+        html += `<div class="result-resources">`;
+        data.resources.forEach((res, i) => {
+          html += `<a href="${escapeHtml(res.href)}" target="_blank" rel="noopener noreferrer" class="result-resource-row">
+            <span class="result-resource-idx">${i + 1}</span>
+            <div class="result-resource-info">
+              <div class="result-resource-title">${escapeHtml(res.title)}</div>
+              <div class="result-resource-use">${escapeHtml(res.useFor)}</div>
+            </div>
+          </a>`;
+        });
+        html += `</div>`;
+      }
+
+      if (data.understandNote) {
+        html += `<div class="result-reason">${escapeHtml(data.understandNote)}</div>`;
+      }
+      html += `</div>`;
+      return html;
+    }
+
+    async function sendMessage(text: string) {
+      if (!text.trim()) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      sendBtn.disabled = true;
+
+      // Hide suggestions after first message
+      if (suggestions && !suggestions.classList.contains('hidden')) {
+        suggestions.classList.add('hidden');
+      }
+
+      addUserBubble(text);
+      conversationHistory.push({ role: 'user', content: text });
+
+      const typing = addTypingIndicator();
       resetInactivityTimer();
 
       try {
         const payload = {
-          ...(matchSessionId ? { sessionId: matchSessionId } : {}),
+          ...(sessionId ? { sessionId } : {}),
           sourcePage: '/tools',
-          audienceGroup: audienceEl.value,
-          aiStage: stageEl.value,
-          consentForTopic: consentEl.checked,
-          messages: [{ role: 'user', content: need }],
+          audienceGroup: audience?.value,
+          aiStage: stage?.value,
+          consentForTopic: consent?.checked ?? true,
+          messages: conversationHistory.slice(-8),
         };
 
         const response = await fetch('/api/match', {
@@ -910,61 +775,71 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+
         const data = await response.json() as MatchResponse;
+        typing.remove();
 
         if (!response.ok || data.error) {
-          setStatus(data.error || '匹配失败，请稍后再试。');
+          addAgentBubble(`<p>${escapeHtml(data.error || '匹配失败，请稍后再试。')}</p>`);
+          conversationHistory.push({ role: 'assistant', content: data.error || '匹配失败' });
           return;
         }
 
-        matchSessionId = data.sessionId ?? matchSessionId;
-        inputEl.value = '';
-        renderResult(data);
-        setStatus(data.safety?.consentForTopic === false ? '本次问题不会进入选题库。' : '判断完成，匿名需求会进入选题分析。');
+        sessionId = data.sessionId ?? sessionId;
+
+        // Store assistant response in history
+        const agentText = data.bridge || data.toolDirection || '已为你匹配结果。';
+        conversationHistory.push({ role: 'assistant', content: agentText });
+
+        // Render result card as agent message
+        addAgentBubble(renderResultCard(data));
+
+        if (data.safety?.piiDetected) {
+          status.textContent = '已隐藏敏感信息。';
+        } else if (data.safety?.consentForTopic === false) {
+          status.textContent = '本次问题不会进入选题库。';
+        } else {
+          status.textContent = '';
+        }
       } catch {
-        setStatus('网络异常，请稍后再试。');
+        typing.remove();
+        addAgentBubble(`<p>网络异常，请稍后再试。</p>`);
       } finally {
-        submitEl.disabled = false;
-        inputEl.focus();
+        sendBtn.disabled = false;
+        input.focus();
       }
     }
 
-    openEl.addEventListener('click', openDialog, { signal });
-    closeEl.addEventListener('click', closeDialog, { signal });
-    dialogEl.addEventListener('click', (event) => {
-      if (event.target === dialogEl) closeDialog();
-    }, { signal });
+    async function endSession() {
+      if (!sessionId) return;
+      const id = sessionId;
+      sessionId = null;
+      try {
+        await fetch('/api/match-end', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: id }),
+          keepalive: true,
+        });
+      } catch { /* ignore */ }
+    }
 
-    formEl.addEventListener('submit', (event) => {
-      event.preventDefault();
-      void submitNeed(inputEl.value);
-    }, { signal });
+    function resetInactivityTimer() {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => endSession(), 10 * 60 * 1000);
+    }
+  }
 
-    clearEl.addEventListener('click', () => {
-      void endSession();
-      inputEl.value = '';
-      clearResult();
-      setStatus('已清空本次需求。');
-    }, { signal });
-
-    suggestionButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        suggestionButtons.forEach(item => item.classList.remove('is-active'));
-        button.classList.add('is-active');
-        inputEl.value = button.dataset.text ?? '';
-        inputEl.focus();
-      }, { signal });
-    });
-
-    window.addEventListener('beforeunload', () => {
-      void endSession();
-    }, { signal });
+  function escapeHtml(text: string): string {
+    const el = document.createElement('span');
+    el.textContent = text;
+    return el.innerHTML;
   }
 
   initToolMatch();
   document.addEventListener('astro:page-load', initToolMatch);
   document.addEventListener('astro:before-swap', () => {
-    matchAbort?.abort();
-    matchAbort = null;
+    abort?.abort();
+    abort = null;
   });
 </script>
