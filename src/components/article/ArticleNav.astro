@@ -1,18 +1,7 @@
 ---
 import { Icon } from 'astro-icon/components';
-import { formatDateCompact } from '@/lib/format';
-/**
- * ArticleNav — 文章导航组件
- * 展示同分类下的文章列表，支持文字/卡片两种视图。
- * 可用于 Navigation slot、独立侧栏面板等任意容器。
- */
-interface ArticleEntry {
-  id: string;
-  title: string;
-  date: Date;
-  tags?: string[];
-  summary?: string;
-}
+import { formatDateCompact } from '@/shared/format';
+import type { ArticleEntry } from '@/types/article';
 
 interface Props {
   articles: ArticleEntry[];

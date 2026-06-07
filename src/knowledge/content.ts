@@ -1,6 +1,6 @@
 import { getCollection } from 'astro:content';
 
-import { toContentItem } from '@/lib/content-model';
+import { toContentItem } from '@/knowledge/content-model';
 
 function sortByDateDescending<T extends { data: { date: Date } }>(entries: T[]) {
   return entries.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
@@ -105,6 +105,23 @@ export function getVersionChain<T extends { id: string; data: { version?: number
   }
 
   return chain;
+}
+
+/** 统计标签频率，仅返回出现次数 ≥ minCount 的标签，按频率降序排列 */
+export function getFrequentTags<T extends { data: { tags: string[] } }>(
+  entries: T[],
+  minCount = 2,
+): { tag: string; count: number }[] {
+  const counts: Record<string, number> = {};
+  for (const e of entries) {
+    for (const t of e.data.tags) {
+      counts[t] = (counts[t] ?? 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .filter(([, c]) => c >= minCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tag, count]) => ({ tag, count }));
 }
 
 /**

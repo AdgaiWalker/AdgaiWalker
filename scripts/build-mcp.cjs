@@ -19,12 +19,12 @@ function compile(filePath) {
   }).outputText;
 }
 
-const queryJS = compile('src/lib/content-query.ts');
+const queryJS = compile('src/knowledge/content-query.ts');
 const mcpJS = compile('src/mcp/index.ts');
 
 // 去掉 MCP 里的 content-query import（已内联）
 const mcpClean = mcpJS.replace(
-  /import\s*\{[^}]*\}\s*from\s*['"]\.\.\/lib\/content-query(\.js)?['"];?\s*/g,
+  /import\s*\{[^}]*\}\s*from\s*['"]\.\.\/knowledge\/content-query(\.js)?['"];?\s*/g,
 );
 
 const outDir = path.join(ROOT, 'dist', 'mcp');

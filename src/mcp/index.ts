@@ -19,7 +19,7 @@ import {
   countByType,
   invalidateCache,
   type QueryFilter,
-} from '../lib/content-query';
+} from '../knowledge/content-query';
 
 // ---------------------------------------------------------------------------
 // Helpers

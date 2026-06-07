@@ -1,17 +1,17 @@
 ---
 import GreetingCard from '../GreetingCard.astro';
 import { Icon } from 'astro-icon/components';
-import { CONTENT, ABOUT, POSTS, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/lib/routes';
+import { CONTENT, ABOUT, POSTS, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/shared/routes';
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
   recentLogs: CollectionEntry<'log'>[];
   featuredLog?: CollectionEntry<'log'>;
   recentPosts: CollectionEntry<'log'>[];
-  ideasCount: number;
+  recentIdeas: { title: string; slug: string | null; isReal: boolean }[];
 }
 
-const { recentLogs, featuredLog, recentPosts } = Astro.props;
+const { recentLogs, featuredLog, recentPosts, recentIdeas } = Astro.props;
 const traceLog = featuredLog || recentLogs[0];
 ---
 
@@ -93,7 +93,7 @@ const traceLog = featuredLog || recentLogs[0];
       <!-- 右栏：头像卡 -->
       <div class="flex flex-col items-center gap-5 -mt-3">
         <div class="pop-in delay-1 w-full draggable-card cursor-grab rounded-[40px] relative">
-          <GreetingCard />
+          <GreetingCard sparks={recentIdeas} />
         </div>
       </div>
     </div>
@@ -102,12 +102,14 @@ const traceLog = featuredLog || recentLogs[0];
 </div>
 
 <style>
-  :global(body:not(.theme-aurora):not(.theme-sunset):not(.theme-mint) .panel-glass) {
-    background: rgba(255, 255, 255, 0.65) !important;
-    backdrop-filter: blur(32px) !important;
-    border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
-    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  /* 画布内 panel-glass 亮色主题 */
+  :global(body:not(.theme-aurora):not(.theme-sunset):not(.theme-mint)) #canvas-container :global(.panel-glass) {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(32px);
+    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
 
   .pop-in {
     will-change: transform, opacity;
@@ -404,14 +406,4 @@ const traceLog = featuredLog || recentLogs[0];
     letter-spacing: 0.04em;
   }
 
-  /* ===== 首次导航引导脉冲 ===== */
-  @keyframes directory-hint-breathe {
-    0% { box-shadow: 0 0 0 0 rgba(53, 191, 171, 0); }
-    50% { box-shadow: 0 0 0 3px rgba(53, 191, 171, 0.15); }
-    100% { box-shadow: 0 0 0 0 rgba(53, 191, 171, 0); }
-  }
-
-  .directory-card.is-hinting {
-    animation: directory-hint-breathe 0.6s ease-out;
-  }
 </style>
