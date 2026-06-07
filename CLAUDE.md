@@ -11,7 +11,7 @@ Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 As
 ```bash
 npm run dev        # 启动开发服务器
 npm run build      # 生产构建 + Pagefind 索引生成
-npm run build:mcp  # 编译 MCP server（src/mcp/ + src/lib/content-query.ts → dist/mcp/index.mjs）
+npm run build:mcp  # 编译 MCP server（src/mcp/ + src/knowledge/content-query.ts → dist/mcp/index.mjs）
 npm run preview    # 本地预览生产构建
 npx astro check    # Astro 类型检查
 ```
@@ -152,7 +152,7 @@ npx astro check    # Astro 类型检查
 
 独立于 Astro 构建管道的内容查询和 Agent 接口层，用于让 LLM / Agent 结构化地读写 Obsidian markdown 内容。
 
-- **`src/lib/content-query.ts`**：独立查询引擎。直接读文件系统，用 `gray-matter` 解析 frontmatter + body，提供 `getAll()`、`findBySlug()`、`query(filter)`、`search(text)`、`countByType()` 查询函数。带内存缓存，`invalidateCache()` 清空。不依赖 Astro 构建上下文。
+- **`src/knowledge/content-query.ts`**：独立查询引擎。直接读文件系统，用 `gray-matter` 解析 frontmatter + body，提供 `getAll()`、`findBySlug()`、`query(filter)`、`search(text)`、`countByType()` 查询函数。带内存缓存，`invalidateCache()` 清空。不依赖 Astro 构建上下文。
 - **`src/mcp/index.ts`**：基于 `@modelcontextprotocol/sdk` 的 MCP server（stdio transport），注册 4 个工具：`walker_query`（多条件过滤）、`walker_search`（全文搜索）、`walker_get`（按 slug 取完整内容）、`walker_stats`（统计概览）。封装 `content-query.ts` 的查询能力为 MCP 协议。
 - **`scripts/build-mcp.cjs`**：将 TypeScript 源码（content-query + MCP server）编译打包为单个 `dist/mcp/index.mjs`。`npm run build:mcp` 一键构建。`dist/` 在 `.gitignore` 中，不进 git。
 
@@ -162,13 +162,39 @@ npx astro check    # Astro 类型检查
 - **`src/data/site-data.ts`**：关于站页面派生数据，导出 `articles`、`pillars`、`aiTools`、`totalCost`、`costByCategory`。被 `AboutSiteTab.astro` 引用。
 - **`src/data/learn-data.ts`**：学习指南数据层，定义 `LearnLevel`（入门/学徒/专家阶段）和 `LearnTool`（工具指南）接口与常量。被 `/learn` 页面和指南详情页引用。
 
-### 辅助模块
+### 模块架构
 
-- **`src/lib/routes.ts`**：路由常量（`HOME`、`POSTS`、`TOOLS`、`IDEAS`、`PROJECTS`、`CONTENT`、`ABOUT`、`LEARN`、`buildPostPath`、`buildContentSpacePath`、`buildLearnGuidePath`），被 Navigation、RSS、内容宇宙、学习页等模块引用。
-- **`src/lib/content.ts`**：Astro 构建时内容查询函数（`getPublishedContentItems`、`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`、`getPublishedLearningPosts`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。仅在 Astro 渲染上下文中可用。
-- **`src/lib/content-model.ts`**：内容模型核心。定义 `ContentSpace`（`all`/`progress`/`life`/`learning`/`tools`/`works`/`ideas`）、`ContentItem` 接口、`toContentItem()` 适配器（将 Astro log 条目投影为多维度内容项）、`itemBelongsToSpace()` 空间分配逻辑、`contentSpaces` 元数据数组。推断函数 `inferForm()`、`inferDomain()`、`inferIntent()`、`inferValueMode()` 从内容属性派生维度。还导出 `formLabels`、`domainLabels`、`intentLabels`、`valueModeLabels` 等显示映射。
-- **`src/lib/format.ts`**：日期格式化（`formatDateCompact` → `MM/DD`、`formatDateLocale` → zh-CN 本地化、`formatDateNumeric` → `YYYY/MM/DD`）。
-- **`src/lib/constants.ts`**：共享常量：`PLATFORM_ICON_MAP`（平台图标映射）、`STATUS_LABELS`（状态中文标签）、`STATUS_WEIGHT`（状态排序权重）、`SITE_EMAIL`（站点邮箱）、`CHARS_PER_MINUTE_ZH`（中文阅读速度）、`MS_PER_*` 时间常量。
+业务逻辑按职责组织在 5 个模块目录中（参见 `docs/adr/ADR-0001`）。Astro 展示层文件（pages/、layouts/、components/、scripts/、styles/）保持原位不动。
+
+#### knowledge/（知识库）
+
+- **`content.ts`**：Astro 构建时内容查询函数（`getPublishedContentItems`、`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`、`getPublishedLearningPosts`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。仅在 Astro 渲染上下文中可用。
+- **`content-query.ts`**：独立查询引擎（见上文 Agent 化基础设施）。
+- **`content-model.ts`**：内容模型核心。定义 `ContentSpace`（`all`/`progress`/`life`/`learning`/`tools`/`works`/`ideas`）、`ContentItem` 接口、`toContentItem()` 适配器（将 Astro log 条目投影为多维度内容项）、`itemBelongsToSpace()` 空间分配逻辑、`contentSpaces` 元数据数组。推断函数 `inferForm()`、`inferDomain()`、`inferIntent()`、`inferValueMode()` 从内容属性派生维度。还导出 `formLabels`、`domainLabels`、`intentLabels`、`valueModeLabels` 等显示映射。
+
+#### profiles/（画像系统）
+
+- **`tool-profiles.ts`**：工具画像数据。每个工具的结构化画像（`ToolProfile` 接口），含 `bestFor`、`avoidWhen`、`strengths`、`limitations`、`requires`、`alternatives`、`nextSteps`。供 Agent 匹配时引用。
+- **`resource-index.ts`**：站内资源索引（`MatchResource` 接口），供匹配 Agent 查找推荐内容。定义需求分类（`NeedCategory`）、人群标签（`AudienceGroup`）、AI 阶段（`AiStage`）、工具适配类型（`ToolFit`）、判断结论（`FitVerdict`）等枚举和标签映射。
+
+#### agent/（匹配 Agent）
+
+- **`match.ts`**：匹配核心。接收用户需求，基于关键词评分 + 站内资源索引进行本地初筛，输出 `MatchResult`（分类、资源、串联语、判断结论）。不依赖 AI API，可独立运行。
+- **`insight.ts`**：需求洞察。从对话产生的需求事件中聚类，生成 `TopicCandidate`（选题候选），含优先级、核心问题、内容角度。批处理接口 `processPendingDemandEvents()`。
+- **`privacy.ts`**：隐私护盾。PII 脱敏（邮箱、手机号、密钥、联系方式、身份证）、文本压缩、未成年人判断。被对话 API 调用。
+
+#### conversation/（对话层）
+
+- **`store.ts`**：会话与事件存储。管理 `MatchSession`（对话会话）和 `DemandEvent`（匿名需求事件）的生命周期，支持 `TopicCandidate` 持久化。存储层为 Upstash Redis + 内存降级，通过 Repository 模式隔离。
+
+#### shared/（共享工具）
+
+- **`routes.ts`**：路由常量（`HOME`、`POSTS`、`TOOLS`、`IDEAS`、`PROJECTS`、`CONTENT`、`ABOUT`、`LEARN`、`buildPostPath`、`buildContentSpacePath`、`buildLearnGuidePath`），被 Navigation、RSS、内容宇宙、学习页等模块引用。
+- **`format.ts`**：日期格式化（`formatDateCompact` → `MM/DD`、`formatDateLocale` → zh-CN 本地化、`formatDateNumeric` → `YYYY/MM/DD`）。
+- **`constants.ts`**：共享常量：`PLATFORM_ICON_MAP`（平台图标映射）、`STATUS_LABELS`（状态中文标签）、`STATUS_WEIGHT`（状态排序权重）、`SITE_EMAIL`（站点邮箱）、`CHARS_PER_MINUTE_ZH`（中文阅读速度）、`MS_PER_*` 时间常量。
+
+#### 其他
+
 - **`src/lib/theme.ts`**：多主题循环工具。导出 `THEMES`（`nature`/`aurora`/`sunset`/`mint`）、`ThemeName` 类型、`cycleTheme()` 函数。被 `Navigation.astro`、`home-canvas.ts`、`FullscreenLayout.astro` 引用。
 - **`src/types/nav.ts`**：导航类型定义。`NavItem`（`label`、`href`、`icon`、`hint?`）和 `NavGroup`（`title?`、`items`），被 `Navigation.astro` 和 `SidebarNav.astro` 引用。
 
