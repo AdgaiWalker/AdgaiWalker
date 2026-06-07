@@ -1,0 +1,255 @@
+---
+/**
+ * /projects/ferry — Ferry 计划合集页
+ * 展示 Ferry 生态系统：理论、方法论、技能/产品、经验回流
+ * 数据来自 ferry-ecosystem.ts + content collection (series: Ferry计划)
+ */
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { getCollection } from 'astro:content';
+import { ferryTree, flattenFerryTree, groupByRole } from '@/data/ferry-ecosystem';
+import type { FerryNode } from '@/data/ferry-ecosystem';
+
+export const prerender = true;
+
+// 获取 Ferry 计划系列的内容条目
+const ferryEntries = (await getCollection('log', ({ data }) =>
+  data.published && data.series === 'Ferry计划'
+)).sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0));
+
+const { trunk, branch, fruit } = groupByRole();
+
+// 角色对应的视觉配置
+const roleConfig: Record<string, { label: string; icon: string; color: string; bg: string }> = {
+  root:   { label: '根 · 理论',   icon: 'lucide:sailboat',    color: 'text-blue-500',    bg: 'bg-blue-500/10 border-blue-500/20' },
+  trunk:  { label: '干 · 方法论', icon: 'lucide:tree-pine',   color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  branch: { label: '枝 · 技能',   icon: 'lucide:git-branch',  color: 'text-amber-500',   bg: 'bg-amber-500/10 border-amber-500/20' },
+  fruit:  { label: '果 · 经验',   icon: 'lucide:sparkles',    color: 'text-rose-400',    bg: 'bg-rose-400/10 border-rose-400/20' },
+};
+
+function renderNode(node: FerryNode, depth: number = 0) {
+  const config = roleConfig[node.role] ?? roleConfig.root;
+  const entry = ferryEntries.find(e => e.id === node.contentSlug);
+  const href = entry ? `/posts/${entry.id}` : node.url ?? '#';
+  const isExternal = !entry && Boolean(node.url);
+
+  return { node, config, href, isExternal, entry, depth };
+}
+---
+
+<SidebarLayout
+  title="Ferry 计划 · Walker"
+  description="Ferry 渡轮 — 人机协作世界协议。根(理论)→干(方法论)→枝(技能)→果(经验回流)。"
+  pageTitle="Ferry 计划"
+  pageSubtitle="Ferry Ecosystem"
+  pageIcon="sailboat"
+  itemCount={flattenFerryTree().length}
+  itemUnit="个节点"
+>
+  <div class="ferry-page space-y-10">
+
+    {/* ===== 1. 生态总览 ===== */}
+    <section class="ferry-intro">
+      <p class="text-sm text-parchment-dim leading-relaxed">
+        Ferry 不是一个孤立的项目，它是一棵<strong class="text-parchment">活的树</strong>。
+        有带着目的实践的理论、有理论指导下的方法论、有方法论产出的技能、有技能反哺的经验。
+        经验用具体丰富理论，理论用抽象指导技能——抽象与具体交替上升，每一个新节点都让整棵树更强壮。
+      </p>
+      <div class="ferry-formula mt-4 panel-glass p-4 rounded-xl text-center">
+        <span class="text-xs text-parchment-dim block mb-1">核心公式</span>
+        <code class="text-lg font-mono font-bold text-brand">f(x) = y</code>
+        <p class="text-xs text-parchment-dim mt-1.5">差距驱动行动，行动逼近目标。差距归零，新一轮循环启动。</p>
+      </div>
+    </section>
+
+    {/* ===== 2. 根 — Ferry 理论 ===== */}
+    {(() => {
+      const root = renderNode(ferryTree);
+      return (
+        <section class="ferry-section">
+          <div class="ferry-section-header">
+            <Icon name={root.config.icon} width={16} height={16} class={root.config.color} />
+            <h2 class="ferry-section-title">{root.config.label}</h2>
+          </div>
+          <a
+            href={root.href}
+            target={root.isExternal ? '_blank' : undefined}
+            rel={root.isExternal ? 'noopener noreferrer' : undefined}
+            class="ferry-card ferry-card-root block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline"
+          >
+            <div class="flex items-start gap-4">
+              <div class={`ferry-role-badge shrink-0 flex items-center justify-center w-10 h-10 rounded-xl border ${root.config.bg}`}>
+                <Icon name={root.config.icon} width={20} height={20} class={root.config.color} />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-sm font-bold text-parchment">{root.node.name}</h3>
+                  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                    {root.node.status === 'building' ? '建设中' : '已验证'}
+                  </span>
+                  {root.isExternal && <Icon name="lucide:external-link" width={12} height={12} class="text-parchment-dim/40" />}
+                </div>
+                <p class="text-xs text-parchment-dim leading-relaxed">{root.node.description}</p>
+                {root.entry?.data?.summary && (
+                  <p class="text-xs text-parchment-dim/70 mt-2 leading-relaxed">{root.entry.data.summary}</p>
+                )}
+              </div>
+            </div>
+          </a>
+          {/* 关联文章 */}
+          {(() => {
+            const relatedArticle = ferryEntries.find(e => e.id === '渡论构建');
+            return relatedArticle ? (
+              <a href={`/posts/${relatedArticle.id}`} class="ferry-related-link mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-parchment-dim hover:text-brand transition-colors no-underline">
+                <Icon name="lucide:file-text" width={14} height={14} />
+                <span>相关文章：{relatedArticle.data.title}</span>
+                <Icon name="lucide:chevron-right" width={12} height={12} class="ml-auto opacity-40" />
+              </a>
+            ) : null;
+          })()}
+        </section>
+      );
+    })()}
+
+    {/* ===== 3. 干 — 方法论 ===== */}
+    {trunk.map(node => {
+      const r = renderNode(node);
+      return (
+        <section class="ferry-section">
+          <div class="ferry-section-header">
+            <Icon name={r.config.icon} width={16} height={16} class={r.config.color} />
+            <h2 class="ferry-section-title">{r.config.label}</h2>
+          </div>
+          <a
+            href={r.href}
+            target={r.isExternal ? '_blank' : undefined}
+            rel={r.isExternal ? 'noopener noreferrer' : undefined}
+            class="ferry-card block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline"
+          >
+            <div class="flex items-start gap-4">
+              <div class={`ferry-role-badge shrink-0 flex items-center justify-center w-10 h-10 rounded-xl border ${r.config.bg}`}>
+                <Icon name={r.config.icon} width={20} height={20} class={r.config.color} />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-sm font-bold text-parchment">{r.node.name}</h3>
+                  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">已验证</span>
+                  {r.isExternal && <Icon name="lucide:external-link" width={12} height={12} class="text-parchment-dim/40" />}
+                </div>
+                <p class="text-xs text-parchment-dim leading-relaxed">{r.node.description}</p>
+              </div>
+            </div>
+          </a>
+        </section>
+      );
+    })}
+
+    {/* ===== 4. 枝 — 技能/产品 ===== */}
+    {branch.length > 0 && (
+      <section class="ferry-section">
+        <div class="ferry-section-header">
+          <Icon name="lucide:git-branch" width={16} height={16} class="text-amber-500" />
+          <h2 class="ferry-section-title">枝 · 技能与产品</h2>
+        </div>
+        <div class="space-y-3">
+          {branch.map(node => {
+            const r = renderNode(node);
+            return (
+              <a
+                href={r.href}
+                target={r.isExternal ? '_blank' : undefined}
+                rel={r.isExternal ? 'noopener noreferrer' : undefined}
+                class="ferry-card block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline"
+              >
+                <div class="flex items-start gap-4">
+                  <div class={`ferry-role-badge shrink-0 flex items-center justify-center w-10 h-10 rounded-xl border ${r.config.bg}`}>
+                    <Icon name={r.config.icon} width={20} height={20} class={r.config.color} />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <h3 class="text-sm font-bold text-parchment">{r.node.name}</h3>
+                      <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">已验证</span>
+                      {r.isExternal && <Icon name="lucide:external-link" width={12} height={12} class="text-parchment-dim/40" />}
+                    </div>
+                    <p class="text-xs text-parchment-dim leading-relaxed">{r.node.description}</p>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+    {/* ===== 5. 果 — 经验回流 ===== */}
+    {fruit.length > 0 && (
+      <section class="ferry-section">
+        <div class="ferry-section-header">
+          <Icon name="lucide:sparkles" width={16} height={16} class="text-rose-400" />
+          <h2 class="ferry-section-title">果 · 经验回流</h2>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {fruit.map(node => {
+            const config = roleConfig.fruit;
+            return (
+              <a
+                href={node.url ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="ferry-card block panel-glass p-4 rounded-xl transition-all duration-300 hover:border-brand/30 no-underline"
+              >
+                <div class="flex items-center gap-2 mb-1.5">
+                  <Icon name={config.icon} width={14} height={14} class={config.color} />
+                  <h3 class="text-xs font-bold text-parchment truncate">{node.name}</h3>
+                  <Icon name="lucide:external-link" width={10} height={10} class="text-parchment-dim/40 shrink-0" />
+                </div>
+                <p class="text-[11px] text-parchment-dim leading-relaxed">{node.description}</p>
+              </a>
+            );
+          })}
+        </div>
+        <p class="text-[11px] text-parchment-dim/60 mt-3 italic">
+          经验用具体丰富理论，理论用抽象指导技能。每转一圈，方法论越强，下一个枝越壮。这是 Ferry「否定之否定」的实际运作。
+        </p>
+      </section>
+    )}
+
+  </div>
+</SidebarLayout>
+
+<style>
+  .ferry-intro {
+    margin-bottom: 2rem;
+  }
+
+  .ferry-formula {
+    border: 1px solid var(--color-nav-border);
+  }
+
+  .ferry-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ferry-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+    letter-spacing: 0.02em;
+  }
+
+  .ferry-card {
+    border: 1px solid var(--color-nav-border);
+  }
+
+  .ferry-related-link {
+    border: 1px solid transparent;
+  }
+
+  .ferry-related-link:hover {
+    background: var(--color-brand-glow);
+    border-color: var(--color-nav-border);
+  }
+</style>
