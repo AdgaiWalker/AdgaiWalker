@@ -2,10 +2,10 @@
   <button class="match-signal" id="match-open" type="button" aria-haspopup="dialog" aria-controls="match-dialog">
     <span class="signal-light" aria-hidden="true"></span>
     <span class="signal-copy">
-      <span class="signal-kicker">需求判断</span>
-      <strong id="tool-match-signal-title">别急着用 Codex</strong>
-      <span>先说你要做什么。</span>
-      <span>我帮你判断该用 Codex、聊天 AI，还是别的工具。</span>
+      <span class="signal-kicker">AI 帮你选</span>
+      <strong id="tool-match-signal-title">不确定用什么？</strong>
+      <span>说说你要做什么。</span>
+      <span>我帮你匹配最合适的工具和站内资料。</span>
     </span>
     <span class="signal-note">匿名</span>
   </button>
@@ -14,9 +14,9 @@
     <div class="match-dialog-panel">
       <div class="match-head">
         <div class="match-title-block">
-          <p class="match-kicker">需求判断</p>
-          <h2 id="tool-match-title">先判断这件事该不该用 Codex。</h2>
-          <p class="match-intro">说清楚你要完成的事，我先判断工具方向，再给站内资料路径。</p>
+          <p class="match-kicker">AI 帮你选</p>
+          <h2 id="tool-match-title">说说你要做什么，我帮你匹配工具。</h2>
+          <p class="match-intro">描述你的需求，我帮你判断该用什么工具，并推荐站内相关资料。</p>
         </div>
         <div class="match-head-actions">
           <button class="match-clear" id="match-clear" type="button">清空</button>
@@ -35,11 +35,12 @@
           </div>
           <div class="match-suggestions" aria-label="常见需求">
             <button type="button" data-text="我想改已有项目代码，有几个页面和接口需要调整">改已有项目</button>
-            <button type="button" data-text="我想写一篇公众号，但不知道该用聊天 AI 还是 Codex">写公众号</button>
+            <button type="button" data-text="我想写一篇公众号，但不知道该用聊天 AI 还是别的工具">写公众号</button>
             <button type="button" data-text="我想做一个网站，但还没有现成代码">做网站</button>
             <button type="button" data-text="我想做一个报名表，能收集信息并自动整理">做报名表</button>
-            <button type="button" data-text="我想学 AI，但不知道第一步做什么">AI 入门</button>
-            <button type="button" data-text="我想省钱用 AI，token 和中转该怎么看">省钱用 AI</button>
+            <button type="button" data-text="我想学 AI，但不知道第一步做什么">学 AI</button>
+            <button type="button" data-text="我想用 AI 提高工作效率，但不知道从哪开始">提效</button>
+            <button type="button" data-text="我想做数据分析，但不会编程">数据分析</button>
           </div>
 
           <form class="match-form" id="match-form">
@@ -50,7 +51,7 @@
                 class="match-input"
                 rows="4"
                 maxlength="500"
-                placeholder="例如：我想改项目 / 写文章 / 做网站 / 做表格 / 学 AI / 省钱用 AI。补一句你在哪里、要交付什么、卡在哪一步。"
+                placeholder="例如：我想改项目 / 写文章 / 做网站 / 做表格 / 学 AI / 提效。补一句你在哪里、要交付什么、卡在哪一步。"
                 required
               ></textarea>
             </label>
@@ -59,7 +60,7 @@
                 <input id="match-consent" type="checkbox" checked />
                 <span>匿名加入选题库</span>
               </label>
-              <button class="match-submit" id="match-submit" type="submit">判断工具方向</button>
+              <button class="match-submit" id="match-submit" type="submit">匹配工具</button>
             </div>
           </form>
         </div>
@@ -102,7 +103,7 @@
       <div class="match-result" id="match-result" hidden>
         <div class="result-head">
           <div>
-            <p class="result-label">先判断</p>
+            <p class="result-label">判断结果</p>
             <p class="result-verdict" id="match-verdict"></p>
             <p class="result-bridge" id="match-reason"></p>
           </div>
@@ -823,11 +824,11 @@
     }
 
     function getVerdictText(verdictValue?: MatchResponse['fitVerdict']) {
-      if (verdictValue === 'codex-fit') return '这个需求适合 Codex。';
-      if (verdictValue === 'codex-not-needed') return '这个需求不一定要用 Codex。';
-      if (verdictValue === 'codex-maybe') return '这个需求可能适合 Codex，但要先看有没有现成代码。';
-      if (verdictValue === 'not-enough-info') return '信息还不够。';
-      return '先判断需求，再决定工具。';
+      if (verdictValue === 'codex-fit') return '这个需求适合用代码 Agent。';
+      if (verdictValue === 'codex-not-needed') return '这个需求不一定要用代码 Agent。';
+      if (verdictValue === 'codex-maybe') return '这个需求可能适合代码 Agent，但要看具体情况。';
+      if (verdictValue === 'not-enough-info') return '信息还不够，再补充一些细节？';
+      return '先分析需求，再推荐工具。';
     }
 
     function renderResourceRow(resource: MatchResourceResult, index: number) {
@@ -861,7 +862,7 @@
       resultEl.hidden = false;
       verdictEl.textContent = getVerdictText(data.fitVerdict);
       reasonEl.textContent = data.reason || data.bridge || '补一句：你现在在哪里、要交付什么、卡在哪一步。';
-      toolDirectionEl.textContent = data.toolDirection || '先把目标和卡点说清楚，再判断该用代码 Agent、聊天 AI、办公工具还是资料路线。';
+      toolDirectionEl.textContent = data.toolDirection || '先把目标和卡点说清楚，再判断该用什么工具。';
       bridgeEl.textContent = data.bridge || '按下面资料顺序看，先判断需求，再选择对应资料和工具。';
       metaEl.replaceChildren();
       resourcesEl.replaceChildren();
@@ -891,7 +892,7 @@
       if (!need) return;
 
       submitEl.disabled = true;
-      setStatus('正在判断需求和工具方向...');
+      setStatus('正在匹配工具和资料...');
       resetInactivityTimer();
 
       try {
