@@ -1,0 +1,969 @@
+<section class="tool-match-shell" id="tool-match" aria-labelledby="tool-match-signal-title">
+  <button class="match-signal" id="match-open" type="button" aria-haspopup="dialog" aria-controls="match-dialog">
+    <span class="signal-light" aria-hidden="true"></span>
+    <span class="signal-copy">
+      <span class="signal-kicker">需求判断</span>
+      <strong id="tool-match-signal-title">别急着用 Codex</strong>
+      <span>先说你要做什么。</span>
+      <span>我帮你判断该用 Codex、聊天 AI，还是别的工具。</span>
+    </span>
+    <span class="signal-note">匿名</span>
+  </button>
+
+  <dialog class="match-dialog" id="match-dialog" aria-labelledby="tool-match-title">
+    <div class="match-dialog-panel">
+      <div class="match-head">
+        <div class="match-title-block">
+          <p class="match-kicker">需求判断</p>
+          <h2 id="tool-match-title">先判断这件事该不该用 Codex。</h2>
+          <p class="match-intro">说清楚你要完成的事，我先判断工具方向，再给站内资料路径。</p>
+        </div>
+        <div class="match-head-actions">
+          <button class="match-clear" id="match-clear" type="button">清空</button>
+          <button class="match-close" id="match-close" type="button">关闭</button>
+        </div>
+      </div>
+
+      <div class="match-privacy">
+        <span>只收集匿名需求。不要输入姓名、联系方式、API Key、公司机密。</span>
+      </div>
+
+      <div class="match-workbench">
+        <div class="match-panel match-panel-primary">
+          <div class="panel-label">
+            <span>需求判断</span>
+          </div>
+          <div class="match-suggestions" aria-label="常见需求">
+            <button type="button" data-text="我想改已有项目代码，有几个页面和接口需要调整">改已有项目</button>
+            <button type="button" data-text="我想写一篇公众号，但不知道该用聊天 AI 还是 Codex">写公众号</button>
+            <button type="button" data-text="我想做一个网站，但还没有现成代码">做网站</button>
+            <button type="button" data-text="我想做一个报名表，能收集信息并自动整理">做报名表</button>
+            <button type="button" data-text="我想学 AI，但不知道第一步做什么">AI 入门</button>
+            <button type="button" data-text="我想省钱用 AI，token 和中转该怎么看">省钱用 AI</button>
+          </div>
+
+          <form class="match-form" id="match-form">
+            <label class="match-input-wrap" for="match-input">
+              <span>你现在想完成哪件事？</span>
+              <textarea
+                id="match-input"
+                class="match-input"
+                rows="4"
+                maxlength="500"
+                placeholder="例如：我想改项目 / 写文章 / 做网站 / 做表格 / 学 AI / 省钱用 AI。补一句你在哪里、要交付什么、卡在哪一步。"
+                required
+              ></textarea>
+            </label>
+            <div class="match-actions">
+              <label class="match-consent">
+                <input id="match-consent" type="checkbox" checked />
+                <span>匿名加入选题库</span>
+              </label>
+              <button class="match-submit" id="match-submit" type="submit">判断工具方向</button>
+            </div>
+          </form>
+        </div>
+
+        <aside class="match-panel match-panel-side" aria-label="需求背景">
+          <label>
+            <span>使用场景</span>
+            <select id="match-audience">
+              <option value="prefer-not-say">不想说</option>
+              <option value="student">学生</option>
+              <option value="office-worker">职场办公</option>
+              <option value="creator">内容创作者</option>
+              <option value="developer">开发者 / 技术从业者</option>
+              <option value="freelancer-founder">自由职业 / 创业者</option>
+              <option value="teacher">老师 / 培训者</option>
+              <option value="parent">家长</option>
+              <option value="minor">青少年 / 未成年</option>
+              <option value="other">其他</option>
+            </select>
+          </label>
+          <label>
+            <span>AI 阶段</span>
+            <select id="match-stage">
+              <option value="prefer-not-say">不想说</option>
+              <option value="beginner">刚开始</option>
+              <option value="chat-user">会用聊天 AI</option>
+              <option value="ide-user">会用 IDE</option>
+              <option value="cli-user">会用命令行</option>
+              <option value="builder">能做完整项目</option>
+            </select>
+          </label>
+          <div class="match-microcopy">
+            <span>选不准就留空，真实问题比标签更重要。</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="match-status" id="match-status" aria-live="polite"></div>
+
+      <div class="match-result" id="match-result" hidden>
+        <div class="result-head">
+          <div>
+            <p class="result-label">先判断</p>
+            <p class="result-verdict" id="match-verdict"></p>
+            <p class="result-bridge" id="match-reason"></p>
+          </div>
+          <div class="result-meta" id="match-meta"></div>
+        </div>
+        <div class="result-section">
+          <p class="result-label">该用什么</p>
+          <p class="result-bridge" id="match-tool-direction"></p>
+        </div>
+        <div class="result-section">
+          <p class="result-label">看这些资料</p>
+          <p class="result-bridge" id="match-bridge"></p>
+        </div>
+        <div class="resource-pack" id="match-resources"></div>
+        <p class="understand-note" id="match-understand"></p>
+      </div>
+    </div>
+  </dialog>
+</section>
+
+<style>
+  .tool-match-shell {
+    display: block;
+  }
+
+  .match-signal {
+    position: relative;
+    display: grid;
+    grid-template-columns: 0.72rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.85rem;
+    width: min(100%, 30rem);
+    min-height: 4.1rem;
+    padding: 0.7rem 0.85rem;
+    overflow: hidden;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.13);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--color-surface, #fff) 76%, transparent);
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.13);
+    animation: matchBreath 5.6s ease-in-out infinite;
+  }
+
+  .match-signal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 0%, transparent 36%, rgba(255, 255, 255, 0.62) 48%, transparent 62%, transparent 100%);
+    opacity: 0;
+    transform: translateX(-100%);
+    animation: matchScan 7.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .match-signal:hover {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.28);
+    background: color-mix(in srgb, var(--color-surface, #fff) 86%, transparent);
+  }
+
+  .signal-light {
+    position: relative;
+    z-index: 1;
+    width: 0.64rem;
+    height: 0.64rem;
+    border-radius: 999px;
+    background: var(--color-brand, #c4704a);
+    box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.22);
+    animation: matchLight 3.8s ease-in-out infinite;
+  }
+
+  .signal-copy,
+  .signal-note {
+    position: relative;
+    z-index: 1;
+  }
+
+  .signal-copy {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .signal-kicker {
+    color: var(--color-brand, #c4704a);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.68rem;
+    font-weight: 850;
+  }
+
+  .signal-copy strong {
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 0.9rem;
+    font-weight: 850;
+    line-height: 1.25;
+  }
+
+  .signal-copy span:not(.signal-kicker) {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
+    font-size: 0.76rem;
+    line-height: 1.45;
+  }
+
+  .signal-note {
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand, #c4704a);
+    font-size: 0.68rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .match-dialog {
+    width: min(46rem, calc(100vw - 2rem));
+    max-height: min(48rem, calc(100vh - 2rem));
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+  }
+
+  .match-dialog::backdrop {
+    background: rgba(34, 28, 24, 0.32);
+    backdrop-filter: blur(10px);
+  }
+
+  .match-dialog-panel {
+    display: grid;
+    gap: 1rem;
+    max-height: min(48rem, calc(100vh - 2rem));
+    padding: 1rem;
+    overflow: auto;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--color-surface, #fff) 94%, transparent);
+  }
+
+  .match-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .match-title-block {
+    min-width: 0;
+  }
+
+  .match-kicker {
+    margin: 0 0 0.2rem;
+    color: var(--color-brand, #c4704a);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .match-title-block h2 {
+    margin: 0;
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 1.18rem;
+    font-weight: 850;
+    line-height: 1.28;
+  }
+
+  .match-intro {
+    max-width: 38rem;
+    margin: 0.45rem 0 0;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
+    font-size: 0.84rem;
+    line-height: 1.7;
+  }
+
+  .match-head-actions {
+    display: flex;
+    gap: 0.45rem;
+    flex-shrink: 0;
+  }
+
+  .match-clear,
+  .match-close,
+  .match-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 760;
+  }
+
+  .match-clear,
+  .match-close {
+    min-height: 2rem;
+    padding: 0.35rem 0.62rem;
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
+    font-size: 0.76rem;
+  }
+
+  .match-privacy {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 8px;
+    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.46);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.64));
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  .match-workbench {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.34fr);
+    gap: 0.85rem;
+  }
+
+  .match-panel {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .panel-label,
+  .match-input-wrap > span,
+  .match-panel-side label > span {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
+    font-size: 0.74rem;
+    font-weight: 800;
+  }
+
+  .match-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .match-suggestions button {
+    min-height: 2rem;
+    padding: 0.35rem 0.68rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 999px;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.55);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 760;
+  }
+
+  .match-suggestions button:hover,
+  .match-suggestions button.is-active {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.32);
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand, #c4704a);
+  }
+
+  .match-form,
+  .match-input-wrap,
+  .match-panel-side label {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .match-input,
+  .match-panel-side select {
+    width: 100%;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 8px;
+    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.72);
+    color: var(--color-text, #3f3027);
+    font: inherit;
+    outline: none;
+  }
+
+  .match-input {
+    min-height: 6.25rem;
+    resize: vertical;
+    padding: 0.8rem 0.85rem;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .match-panel-side select {
+    min-height: 2.45rem;
+    padding: 0 0.7rem;
+    font-size: 0.84rem;
+  }
+
+  .match-input:focus,
+  .match-panel-side select:focus {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.38);
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+  }
+
+  .match-panel-side {
+    align-content: start;
+    padding: 0.8rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 8px;
+    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.36);
+  }
+
+  .match-microcopy {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.56));
+    font-size: 0.76rem;
+    line-height: 1.55;
+  }
+
+  .match-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .match-consent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
+    font-size: 0.78rem;
+    font-weight: 760;
+  }
+
+  .match-submit {
+    min-height: 2.45rem;
+    padding: 0.52rem 0.95rem;
+    background: var(--color-brand, #c4704a);
+    color: #fff;
+    font-size: 0.84rem;
+  }
+
+  .match-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .match-status {
+    min-height: 1.15rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.58));
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .match-result {
+    display: grid;
+    gap: 0.9rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+  }
+
+  .result-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.85rem;
+    align-items: start;
+  }
+
+  .result-label {
+    margin: 0 0 0.3rem;
+    color: var(--color-brand, #c4704a);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .result-bridge {
+    margin: 0;
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 0.95rem;
+    font-weight: 760;
+    line-height: 1.65;
+  }
+
+  .result-verdict {
+    margin: 0 0 0.25rem;
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 1rem;
+    font-weight: 850;
+    line-height: 1.45;
+  }
+
+  .result-section {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .result-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    max-width: 18rem;
+  }
+
+  .result-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.6rem;
+    padding: 0.22rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand, #c4704a);
+    font-size: 0.7rem;
+    font-weight: 760;
+  }
+
+  .resource-pack {
+    display: grid;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .resource-row {
+    display: grid;
+    grid-template-columns: 1.7rem minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0.8rem;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.42);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .resource-row + .resource-row {
+    border-top: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.08);
+  }
+
+  .resource-row:hover {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+  }
+
+  .resource-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 999px;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .resource-title {
+    display: block;
+    color: var(--color-heading, var(--color-text, #3f3027));
+    font-size: 0.9rem;
+    font-weight: 820;
+    line-height: 1.35;
+  }
+
+  .resource-use {
+    display: block;
+    margin-top: 0.18rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.64));
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+
+  .resource-kind {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.48));
+    font-size: 0.68rem;
+    font-weight: 760;
+    white-space: nowrap;
+  }
+
+  .understand-note {
+    margin: 0;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
+    font-size: 0.8rem;
+    line-height: 1.65;
+  }
+
+  @keyframes matchBreath {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    }
+    50% {
+      box-shadow: 0 0 0 5px rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+    }
+  }
+
+  @keyframes matchScan {
+    0%, 68% {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    74% {
+      opacity: 0.55;
+    }
+    88% {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes matchLight {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(var(--color-brand-rgb, 196, 112, 74), 0.2);
+    }
+    50% {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 7px rgba(var(--color-brand-rgb, 196, 112, 74), 0.06);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .match-signal,
+    .match-signal::before,
+    .signal-light {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .match-dialog {
+      width: calc(100vw - 1rem);
+    }
+
+    .match-workbench,
+    .result-head {
+      grid-template-columns: 1fr;
+    }
+
+    .result-meta {
+      justify-content: flex-start;
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .match-signal {
+      width: 100%;
+      grid-template-columns: 0.72rem minmax(0, 1fr);
+    }
+
+    .signal-note {
+      grid-column: 2;
+      justify-self: start;
+    }
+
+    .match-dialog-panel {
+      padding: 0.9rem;
+    }
+
+    .match-head,
+    .match-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .match-head-actions {
+      justify-content: flex-end;
+    }
+
+    .match-submit {
+      width: 100%;
+    }
+
+    .resource-row {
+      grid-template-columns: 1.7rem minmax(0, 1fr);
+    }
+
+    .resource-kind {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+</style>
+
+<script>
+  interface MatchResourceResult {
+    id: string;
+    title: string;
+    href: string;
+    kind: string;
+    useFor: string;
+    summary: string;
+  }
+
+  interface MatchResponse {
+    sessionId?: string;
+    fitVerdict?: 'codex-fit' | 'codex-not-needed' | 'codex-maybe' | 'not-enough-info';
+    toolDirection?: string;
+    reason?: string;
+    bridge?: string;
+    needSummary?: string;
+    categories?: Array<{ id: string; label: string }>;
+    resources?: MatchResourceResult[];
+    remaining?: number;
+    error?: string;
+    understandNote?: string;
+    safety?: {
+      piiDetected?: boolean;
+      consentForTopic?: boolean;
+      isMinorContext?: boolean;
+      note?: string;
+    };
+  }
+
+  let matchAbort: AbortController | null = null;
+  let matchSessionId: string | null = null;
+  let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function initToolMatch() {
+    matchAbort?.abort();
+    matchAbort = new AbortController();
+    const { signal } = matchAbort;
+
+    const open = document.getElementById('match-open') as HTMLButtonElement | null;
+    const dialog = document.getElementById('match-dialog') as HTMLDialogElement | null;
+    const close = document.getElementById('match-close') as HTMLButtonElement | null;
+    const form = document.getElementById('match-form') as HTMLFormElement | null;
+    const input = document.getElementById('match-input') as HTMLTextAreaElement | null;
+    const submit = document.getElementById('match-submit') as HTMLButtonElement | null;
+    const clear = document.getElementById('match-clear') as HTMLButtonElement | null;
+    const audience = document.getElementById('match-audience') as HTMLSelectElement | null;
+    const stage = document.getElementById('match-stage') as HTMLSelectElement | null;
+    const consent = document.getElementById('match-consent') as HTMLInputElement | null;
+    const status = document.getElementById('match-status');
+    const result = document.getElementById('match-result');
+    const verdict = document.getElementById('match-verdict');
+    const reason = document.getElementById('match-reason');
+    const toolDirection = document.getElementById('match-tool-direction');
+    const bridge = document.getElementById('match-bridge');
+    const meta = document.getElementById('match-meta');
+    const resources = document.getElementById('match-resources');
+    const understand = document.getElementById('match-understand');
+
+    if (!open || !dialog || !close || !form || !input || !submit || !clear || !audience || !stage || !consent || !status || !result || !verdict || !reason || !toolDirection || !bridge || !meta || !resources || !understand) return;
+
+    const openEl = open;
+    const dialogEl = dialog;
+    const closeEl = close;
+    const formEl = form;
+    const inputEl = input;
+    const submitEl = submit;
+    const clearEl = clear;
+    const audienceEl = audience;
+    const stageEl = stage;
+    const consentEl = consent;
+    const statusEl = status;
+    const resultEl = result;
+    const verdictEl = verdict;
+    const reasonEl = reason;
+    const toolDirectionEl = toolDirection;
+    const bridgeEl = bridge;
+    const metaEl = meta;
+    const resourcesEl = resources;
+    const understandEl = understand;
+    const suggestionButtons = document.querySelectorAll<HTMLButtonElement>('.match-suggestions button');
+
+    function setStatus(text: string) {
+      statusEl.textContent = text;
+    }
+
+    function openDialog() {
+      if (!dialogEl.open) dialogEl.showModal();
+      window.setTimeout(() => inputEl.focus(), 60);
+    }
+
+    function closeDialog() {
+      dialogEl.close();
+    }
+
+    function resetInactivityTimer() {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        void endSession();
+      }, 10 * 60 * 1000);
+    }
+
+    async function endSession() {
+      if (!matchSessionId) return;
+      const sessionId = matchSessionId;
+      matchSessionId = null;
+      try {
+        await fetch('/api/match-end', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+          keepalive: true,
+        });
+      } catch {
+        // 会话结束记录失败不影响用户使用。
+      }
+    }
+
+    function clearResult() {
+      resultEl.hidden = true;
+      verdictEl.textContent = '';
+      reasonEl.textContent = '';
+      toolDirectionEl.textContent = '';
+      bridgeEl.textContent = '';
+      metaEl.replaceChildren();
+      resourcesEl.replaceChildren();
+      understandEl.textContent = '';
+      setStatus('');
+      suggestionButtons.forEach(button => button.classList.remove('is-active'));
+    }
+
+    function renderChip(text: string) {
+      const chip = document.createElement('span');
+      chip.className = 'result-chip';
+      chip.textContent = text;
+      return chip;
+    }
+
+    function getVerdictText(verdictValue?: MatchResponse['fitVerdict']) {
+      if (verdictValue === 'codex-fit') return '这个需求适合 Codex。';
+      if (verdictValue === 'codex-not-needed') return '这个需求不一定要用 Codex。';
+      if (verdictValue === 'codex-maybe') return '这个需求可能适合 Codex，但要先看有没有现成代码。';
+      if (verdictValue === 'not-enough-info') return '信息还不够。';
+      return '先判断需求，再决定工具。';
+    }
+
+    function renderResourceRow(resource: MatchResourceResult, index: number) {
+      const link = document.createElement('a');
+      link.className = 'resource-row';
+      link.href = resource.href;
+
+      const order = document.createElement('span');
+      order.className = 'resource-index';
+      order.textContent = String(index + 1);
+
+      const main = document.createElement('span');
+      const title = document.createElement('span');
+      title.className = 'resource-title';
+      title.textContent = resource.title;
+
+      const useFor = document.createElement('span');
+      useFor.className = 'resource-use';
+      useFor.textContent = resource.useFor;
+
+      const kind = document.createElement('span');
+      kind.className = 'resource-kind';
+      kind.textContent = resource.kind;
+
+      main.append(title, useFor);
+      link.append(order, main, kind);
+      return link;
+    }
+
+    function renderResult(data: MatchResponse) {
+      resultEl.hidden = false;
+      verdictEl.textContent = getVerdictText(data.fitVerdict);
+      reasonEl.textContent = data.reason || data.bridge || '补一句：你现在在哪里、要交付什么、卡在哪一步。';
+      toolDirectionEl.textContent = data.toolDirection || '先把目标和卡点说清楚，再判断该用代码 Agent、聊天 AI、办公工具还是资料路线。';
+      bridgeEl.textContent = data.bridge || '按下面资料顺序看，先判断需求，再选择对应资料和工具。';
+      metaEl.replaceChildren();
+      resourcesEl.replaceChildren();
+
+      for (const category of data.categories ?? []) {
+        metaEl.appendChild(renderChip(category.label));
+      }
+      if (typeof data.remaining === 'number') {
+        metaEl.appendChild(renderChip(`今日剩余 ${data.remaining} 次`));
+      }
+      if (data.safety?.piiDetected) {
+        metaEl.appendChild(renderChip('已隐藏敏感信息'));
+      }
+      if (data.safety?.isMinorContext) {
+        metaEl.appendChild(renderChip('青少年保护模式'));
+      }
+
+      (data.resources ?? []).forEach((resource, index) => {
+        resourcesEl.appendChild(renderResourceRow(resource, index));
+      });
+
+      understandEl.textContent = data.understandNote || '如果看不懂，把推荐资料原文丢给 AI，让它用生活里的例子讲一遍。';
+    }
+
+    async function submitNeed(text: string) {
+      const need = text.trim();
+      if (!need) return;
+
+      submitEl.disabled = true;
+      setStatus('正在判断需求和工具方向...');
+      resetInactivityTimer();
+
+      try {
+        const payload = {
+          ...(matchSessionId ? { sessionId: matchSessionId } : {}),
+          sourcePage: '/tools',
+          audienceGroup: audienceEl.value,
+          aiStage: stageEl.value,
+          consentForTopic: consentEl.checked,
+          messages: [{ role: 'user', content: need }],
+        };
+
+        const response = await fetch('/api/match', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json() as MatchResponse;
+
+        if (!response.ok || data.error) {
+          setStatus(data.error || '匹配失败，请稍后再试。');
+          return;
+        }
+
+        matchSessionId = data.sessionId ?? matchSessionId;
+        inputEl.value = '';
+        renderResult(data);
+        setStatus(data.safety?.consentForTopic === false ? '本次问题不会进入选题库。' : '判断完成，匿名需求会进入选题分析。');
+      } catch {
+        setStatus('网络异常，请稍后再试。');
+      } finally {
+        submitEl.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    openEl.addEventListener('click', openDialog, { signal });
+    closeEl.addEventListener('click', closeDialog, { signal });
+    dialogEl.addEventListener('click', (event) => {
+      if (event.target === dialogEl) closeDialog();
+    }, { signal });
+
+    formEl.addEventListener('submit', (event) => {
+      event.preventDefault();
+      void submitNeed(inputEl.value);
+    }, { signal });
+
+    clearEl.addEventListener('click', () => {
+      void endSession();
+      inputEl.value = '';
+      clearResult();
+      setStatus('已清空本次需求。');
+    }, { signal });
+
+    suggestionButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        suggestionButtons.forEach(item => item.classList.remove('is-active'));
+        button.classList.add('is-active');
+        inputEl.value = button.dataset.text ?? '';
+        inputEl.focus();
+      }, { signal });
+    });
+
+    window.addEventListener('beforeunload', () => {
+      void endSession();
+    }, { signal });
+  }
+
+  initToolMatch();
+  document.addEventListener('astro:page-load', initToolMatch);
+  document.addEventListener('astro:before-swap', () => {
+    matchAbort?.abort();
+    matchAbort = null;
+  });
+</script>
