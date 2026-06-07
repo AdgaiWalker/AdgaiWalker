@@ -1,0 +1,392 @@
+---
+// /admin — 管理仪表盘（服务端渲染，需认证）
+import { isAdmin } from '@/lib/admin-auth';
+import { getCollection } from 'astro:content';
+import { Icon } from 'astro-icon/components';
+
+// 不预渲染——每次请求都检查 cookie
+export const prerender = false;
+
+// 认证检查
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+// 数据获取
+const allContent = await getCollection('log', ({ data }) => data.published);
+const byType: Record<string, number> = {};
+for (const entry of allContent) {
+  const t = entry.data.type;
+  byType[t] = (byType[t] ?? 0) + 1;
+}
+const byForm: Record<string, number> = {};
+for (const entry of allContent) {
+  const f = entry.data.form ?? 'article';
+  byForm[f] = (byForm[f] ?? 0) + 1;
+}
+
+const recentContent = allContent
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 8);
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理后台 — Walker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #fafaf9;
+      color: #1c1917;
+    }
+
+    /* Top Bar */
+    .admin-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.5rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .admin-bar-logo {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #c4704a;
+    }
+    .admin-bar-badge {
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(196, 112, 74, 0.1);
+      color: #c4704a;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+    .admin-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .admin-bar-link {
+      font-size: 0.82rem;
+      color: #78716c;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .admin-bar-link:hover { color: #c4704a; }
+    .admin-bar-link.active { color: #1c1917; }
+
+    .logout-btn {
+      padding: 0.35rem 0.75rem;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 8px;
+      background: transparent;
+      color: #78716c;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .logout-btn:hover {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: rgba(220, 38, 38, 0.2);
+    }
+
+    /* Content */
+    .admin-main {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    .admin-welcome {
+      margin-bottom: 2rem;
+    }
+    .admin-welcome h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+    }
+    .admin-welcome p {
+      font-size: 0.88rem;
+      color: #78716c;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-card {
+      padding: 1.25rem;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #a8a29e;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+    }
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #1c1917;
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: #a8a29e;
+      margin-top: 0.25rem;
+    }
+
+    /* Section */
+    .admin-section {
+      margin-bottom: 2rem;
+    }
+    .admin-section h2 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .admin-section h2 svg {
+      color: #c4704a;
+    }
+
+    /* Content List */
+    .content-list {
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .content-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      transition: background 0.15s ease;
+    }
+    .content-row:last-child { border-bottom: none; }
+    .content-row:hover { background: #fafaf9; }
+    .content-type {
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      background: rgba(196, 112, 74, 0.08);
+      color: #c4704a;
+      font-size: 0.68rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      min-width: 3.5rem;
+      text-align: center;
+    }
+    .content-title {
+      flex: 1;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1c1917;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .content-date {
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #a8a29e;
+      flex-shrink: 0;
+    }
+    .content-actions {
+      display: flex;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+    .content-actions a, .content-actions button {
+      padding: 0.25rem 0.55rem;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 6px;
+      background: transparent;
+      color: #78716c;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .content-actions a:hover, .content-actions button:hover {
+      background: rgba(196, 112, 74, 0.06);
+      color: #c4704a;
+      border-color: rgba(196, 112, 74, 0.2);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .quick-action {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 12px;
+      background: #fff;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.18s ease;
+    }
+    .quick-action:hover {
+      border-color: rgba(196, 112, 74, 0.2);
+      transform: translateY(-1px);
+    }
+    .quick-action-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .quick-action-text {
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .quick-action-desc {
+      font-size: 0.75rem;
+      color: #a8a29e;
+    }
+
+    @media (max-width: 640px) {
+      .admin-main { padding: 1.25rem 1rem 3rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-row { flex-wrap: wrap; }
+      .content-actions { width: 100%; justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Bar -->
+  <div class="admin-bar">
+    <div class="admin-bar-left">
+      <span class="admin-bar-logo">Walker</span>
+      <span class="admin-bar-badge">Admin</span>
+    </div>
+    <div class="admin-bar-right">
+      <a href="/admin" class="admin-bar-link active">仪表盘</a>
+      <a href="/" class="admin-bar-link">查看站点</a>
+      <button class="logout-btn" id="logout-btn">登出</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="admin-main">
+    <div class="admin-welcome">
+      <h1>管理后台</h1>
+      <p>站点内容管理和数据洞察</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">内容总数</div>
+        <div class="stat-value">{allContent.length}</div>
+        <div class="stat-sub">已发布</div>
+      </div>
+      {Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([type, count]) => (
+        <div class="stat-card">
+          <div class="stat-label">{type}</div>
+          <div class="stat-value">{count}</div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="admin-section">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+        快捷操作
+      </h2>
+      <div class="quick-actions">
+        <a href="/admin/content" class="quick-action">
+          <div class="quick-action-icon" style="background:rgba(59,130,246,0.1);color:#3b82f6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">管理内容</div>
+            <div class="quick-action-desc">增删改查所有文章</div>
+          </div>
+        </a>
+        <a href="/admin/insights" class="quick-action">
+          <div class="quick-action-icon" style="background:rgba(34,197,94,0.1);color:#22c55e;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">需求洞察</div>
+            <div class="quick-action-desc">用户需求数据分析</div>
+          </div>
+        </a>
+        <a href="/admin/learning" class="quick-action">
+          <div class="quick-action-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">学习轨道</div>
+            <div class="quick-action-desc">管理学习进度</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Content -->
+    <div class="admin-section">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        最近内容
+      </h2>
+      <div class="content-list">
+        {recentContent.map(entry => (
+          <div class="content-row">
+            <span class="content-type">{entry.data.type}</span>
+            <span class="content-title">{entry.data.title}</span>
+            <span class="content-date">
+              {entry.data.date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}
+            </span>
+            <div class="content-actions">
+              <a href={`/posts/${entry.id}`} target="_blank">查看</a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      window.location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>

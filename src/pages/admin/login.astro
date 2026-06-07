@@ -1,0 +1,165 @@
+---
+// /admin/login — 管理员登录页
+export const prerender = true;
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理登录 — Walker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #fafaf9;
+      color: #1c1917;
+    }
+    .login-card {
+      width: min(24rem, calc(100vw - 2rem));
+      padding: 2.5rem 2rem;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    }
+    .login-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(196, 112, 74, 0.1);
+      color: #c4704a;
+      margin-bottom: 1.25rem;
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+    }
+    .login-desc {
+      font-size: 0.85rem;
+      color: #78716c;
+      margin-bottom: 1.75rem;
+      line-height: 1.5;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #57534e;
+      margin-bottom: 0.4rem;
+    }
+    input[type="password"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      margin-bottom: 1.25rem;
+    }
+    input[type="password"]:focus {
+      border-color: rgba(196, 112, 74, 0.4);
+      box-shadow: 0 0 0 3px rgba(196, 112, 74, 0.1);
+    }
+    button {
+      width: 100%;
+      padding: 0.7rem;
+      border: 0;
+      border-radius: 10px;
+      background: #c4704a;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .login-error {
+      margin-top: 1rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      background: #fef2f2;
+      color: #dc2626;
+      font-size: 0.82rem;
+      display: none;
+    }
+    .login-error.visible { display: block; }
+    .login-back {
+      display: block;
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: #a8a29e;
+      text-decoration: none;
+    }
+    .login-back:hover { color: #c4704a; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <h1>管理登录</h1>
+    <p class="login-desc">输入管理员密码以访问后台。</p>
+    <form id="login-form">
+      <label for="password">密码</label>
+      <input type="password" id="password" placeholder="输入管理员密码" autocomplete="current-password" required autofocus />
+      <button type="submit" id="login-btn">登录</button>
+    </form>
+    <div class="login-error" id="login-error"></div>
+    <a href="/" class="login-back">返回首页</a>
+  </div>
+
+  <script>
+    const form = document.getElementById('login-form') as HTMLFormElement;
+    const input = document.getElementById('password') as HTMLInputElement;
+    const btn = document.getElementById('login-btn') as HTMLButtonElement;
+    const error = document.getElementById('login-error') as HTMLDivElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = input.value;
+      if (!password) return;
+
+      btn.disabled = true;
+      btn.textContent = '验证中...';
+      error.classList.remove('visible');
+
+      try {
+        const res = await fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          window.location.href = '/admin';
+        } else {
+          error.textContent = data.error || '登录失败';
+          error.classList.add('visible');
+          input.value = '';
+          input.focus();
+        }
+      } catch {
+        error.textContent = '网络错误，请重试';
+        error.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登录';
+      }
+    });
+  </script>
+</body>
+</html>
