@@ -45,3 +45,6 @@ wiki-auth-qr.png
 
 # Skills lock file (managed by superpowers)
 skills-lock.json
+public/pagefind/
+
+.vercel

@@ -1,4 +1,10 @@
 {
   "framework": "astro",
-  "buildCommand": "npm run build"
+  "buildCommand": "npm run build",
+  "crons": [
+    {
+      "path": "/api/match-process?limit=50",
+      "schedule": "0 18 * * *"
+    }
+  ]
 }
