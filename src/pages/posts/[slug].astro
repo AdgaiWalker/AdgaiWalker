@@ -8,6 +8,7 @@ import PromptBlock from '../../components/content/PromptBlock.astro';
 import DialogueBubble from '../../components/content/DialogueBubble.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
 import GiscusWidget from '../../components/GiscusWidget.astro';
+import AdminEditBar from '../../components/admin/AdminEditBar.astro';
 import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, buildPostPath } from '@/shared/routes';
@@ -292,6 +293,7 @@ const relatedPosts = allEntries
       </div>
     </footer>
   </article>
+  <AdminEditBar slug={entry.id} />
 </ArticleLayout>
 
 <style>

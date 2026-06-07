@@ -1,0 +1,120 @@
+---
+// AdminEditBar — 管理员浮动编辑栏（自检测模式）
+// 适用于预渲染页面：渲染但隐藏，客户端检测 admin 状态后显示
+// Props: slug (当前页面内容 slug)
+interface Props {
+  slug?: string;
+}
+
+const { slug } = Astro.props;
+---
+
+{slug && (
+  <div class="admin-edit-bar" id="admin-edit-bar" data-slug={slug} style="display:none">
+    <div class="aeb-inner">
+      <a class="aeb-btn" href={`/admin/content/edit?slug=${encodeURIComponent(slug)}`} title="编辑此文">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        <span>编辑</span>
+      </a>
+      <button class="aeb-btn aeb-btn-danger" id="admin-delete-btn" type="button" title="删除此文">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        <span>删除</span>
+      </button>
+    </div>
+    <div class="aeb-status" id="admin-status"></div>
+  </div>
+)}
+
+<style>
+  .admin-edit-bar {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+  .aeb-inner {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.45rem;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  .aeb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #57534e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .aeb-btn:hover { background: #f5f5f4; border-color: rgba(0,0,0,0.06); }
+  .aeb-btn-danger:hover { background: #fef2f2; color: #dc2626; }
+  .aeb-status {
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: none;
+  }
+  .aeb-status.visible { display: block; }
+  .aeb-status.error { color: #dc2626; }
+  .aeb-status.success { color: #16a34a; }
+
+  @media (max-width: 640px) {
+    .admin-edit-bar { bottom: 1rem; right: 1rem; }
+  }
+</style>
+
+<script>
+  const bar = document.getElementById('admin-edit-bar');
+  if (bar) {
+    // 客户端检测管理员身份
+    fetch('/api/admin/auth').then(r => r.json()).then(data => {
+      if (data.admin) bar.style.display = 'flex';
+    }).catch(() => {});
+
+    const deleteBtn = document.getElementById('admin-delete-btn');
+    const status = document.getElementById('admin-status');
+    const slug = bar.dataset.slug;
+
+    if (deleteBtn && status && slug) {
+    const btn = deleteBtn as HTMLButtonElement;
+      deleteBtn.addEventListener('click', async () => {
+        if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            status.textContent = '已删除，正在跳转...';
+            status.className = 'aeb-status visible success';
+            setTimeout(() => { window.location.href = '/posts'; }, 1000);
+          } else {
+            status.textContent = data.error || '删除失败';
+            status.className = 'aeb-status visible error';
+          }
+        } catch {
+          status.textContent = '网络错误';
+          status.className = 'aeb-status visible error';
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+  }
+</script>

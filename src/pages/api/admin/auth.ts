@@ -1,5 +1,22 @@
 import type { APIRoute } from 'astro';
-import { signToken, authCookie, clearCookie } from '@/lib/admin-auth';
+import { signToken, authCookie, clearCookie, verifyToken } from '@/lib/admin-auth';
+
+const COOKIE_NAME = 'walker-admin';
+
+/**
+ * GET /api/admin/auth — 检查当前是否管理员（前端 UI 用）
+ */
+export const GET: APIRoute = async ({ request }) => {
+  const cookie = request.headers.get('cookie') ?? '';
+  const match = cookie.split(';').find(c => c.trim().startsWith(`${COOKIE_NAME}=`));
+  const token = match?.split('=')[1]?.trim();
+  const admin = Boolean(token && verifyToken(token));
+
+  return new Response(JSON.stringify({ admin }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  });
+};
 
 /**
  * POST /api/admin/auth
