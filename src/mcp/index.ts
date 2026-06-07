@@ -2,10 +2,11 @@
  * walker MCP Server — 让 Claude Code / Claude Desktop 直接查询内容库
  *
  * 工具列表：
- *   walker_query   — 多条件过滤查询
- *   walker_search  — 全文搜索
- *   walker_get     — 按_slug_取完整内容（含正文）
- *   walker_stats   — 内容统计概览
+ *   walker_query    — 多条件过滤查询
+ *   walker_search   — 全文搜索
+ *   walker_get      — 按 slug 取完整内容（含正文）
+ *   walker_stats    — 内容统计概览
+ *   walker_insights — 需求洞察统计
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -177,6 +178,32 @@ server.tool(
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
+
+// --- walker_insights -----------------------------------------------------
+
+server.tool(
+  'walker_insights',
+  '查询需求洞察统计数据：需求分类分布、热门需求、Codex 误用率、日趋势。数据来自站内匹配器收集的匿名用户需求。',
+  {
+    days: z.number().optional().describe('统计最近 N 天的数据，默认 30'),
+  },
+  async ({ days }) => {
+    // MCP server 运行在独立进程，store.ts 的 Redis 连接需要环境变量
+    // 如果 Redis 不可用，getDemandStats 会返回零值
+    try {
+      const { getDemandStats } = await import('../conversation/store');
+      const stats = await getDemandStats({ days: days ?? 30 });
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(stats, null, 2) }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: `洞察查询失败: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  },
+);
 
 async function main() {
   const transport = new StdioServerTransport();

@@ -155,6 +155,120 @@ export async function markDemandEventsProcessed(eventIds: string[]): Promise<voi
   }
 }
 
+// ---------------------------------------------------------------------------
+// 洞察读取
+// ---------------------------------------------------------------------------
+
+export interface DemandStats {
+  totalEvents: number;
+  totalSessions: number;
+  byCategory: Record<string, number>;
+  byFitVerdict: Record<string, number>;
+  codexMisuseRate: number;
+  topNeeds: Array<{ summary: string; count: number }>;
+  dailyTrend: Array<{ date: string; count: number }>;
+}
+
+/** 获取所有 TopicCandidate（按 priority 排序） */
+export async function getTopicCandidates(options?: {
+  status?: TopicCandidate['status'];
+  limit?: number;
+}): Promise<TopicCandidate[]> {
+  const limit = options?.limit ?? 50;
+  const redis = getRedis();
+
+  let candidates: TopicCandidate[];
+
+  if (redis) {
+    const ids = await redis.lrange<string>('match:topics', 0, Math.max(0, limit - 1));
+    const items = await Promise.all(ids.map(id => redis!.get<TopicCandidate>(topicKey(id))));
+    candidates = items.filter((c): c is TopicCandidate => c !== null);
+  } else {
+    candidates = [...memoryTopicCandidates.values()];
+  }
+
+  if (options?.status) {
+    candidates = candidates.filter(c => c.status === options.status);
+  }
+
+  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  candidates.sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3));
+
+  return candidates.slice(0, limit);
+}
+
+/** 需求统计聚合 */
+export async function getDemandStats(options?: { days?: number }): Promise<DemandStats> {
+  const days = options?.days ?? 30;
+  const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
+  const redis = getRedis();
+
+  // 收集所有事件
+  let events: DemandEvent[];
+  if (redis) {
+    // 扫描所有事件键
+    const keys = await redis.keys('match:event:*');
+    const items = await Promise.all(keys.map(key => redis!.get<DemandEvent>(key)));
+    events = items.filter((e): e is DemandEvent => e !== null && e.createdAt >= cutoff);
+  } else {
+    events = [...memoryEvents.values()].filter(e => e.createdAt >= cutoff);
+  }
+
+  // 聚合
+  const byCategory: Record<string, number> = {};
+  const byFitVerdict: Record<string, number> = {};
+  let codexMisuseCount = 0;
+  const needCounts = new Map<string, number>();
+  const dailyCounts = new Map<string, number>();
+
+  for (const event of events) {
+    // 分类计数
+    for (const cat of event.needCategories) {
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+    }
+    // 判断计数
+    if (event.fitVerdict) {
+      byFitVerdict[event.fitVerdict] = (byFitVerdict[event.fitVerdict] ?? 0) + 1;
+    }
+    // Codex 误用
+    if (event.codexMisuseLikely) codexMisuseCount++;
+    // 热门需求
+    const summary = event.needSummary || '未分类需求';
+    needCounts.set(summary, (needCounts.get(summary) ?? 0) + 1);
+    // 日趋势
+    const day = event.createdAt.slice(0, 10);
+    dailyCounts.set(day, (dailyCounts.get(day) ?? 0) + 1);
+  }
+
+  const topNeeds = [...needCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([summary, count]) => ({ summary, count }));
+
+  const dailyTrend = [...dailyCounts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, count]) => ({ date, count }));
+
+  // 会话数
+  let totalSessions: number;
+  if (redis) {
+    const sessionIds = await redis.smembers('match:sessions');
+    totalSessions = sessionIds.length;
+  } else {
+    totalSessions = memorySessions.size;
+  }
+
+  return {
+    totalEvents: events.length,
+    totalSessions,
+    byCategory,
+    byFitVerdict,
+    codexMisuseRate: events.length > 0 ? codexMisuseCount / events.length : 0,
+    topNeeds,
+    dailyTrend,
+  };
+}
+
 export async function saveTopicCandidates(candidates: TopicCandidate[]): Promise<void> {
   const redis = getRedis();
   for (const candidate of candidates) {

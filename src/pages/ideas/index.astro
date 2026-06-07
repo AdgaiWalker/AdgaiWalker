@@ -5,10 +5,33 @@ import { STATUS_LABELS, STATUS_WEIGHT, SITE_EMAIL } from '@/shared/constants';
 import { Icon } from 'astro-icon/components';
 import { render } from 'astro:content';
 import { formatDateCompact } from '@/shared/format';
+import { getDemandStats, type DemandStats } from '@/conversation/store';
 
 export const prerender = true;
 
 const ideas = await getPublishedIdeas();
+
+// 需求洞察（构建时读取）
+const demandStats = await getDemandStats({ days: 30 });
+
+/** 计算 idea 的需求信号分数 */
+function getDemandSignal(entry: { data: { tags?: string[]; summary?: string; title: string } }, stats: DemandStats): number {
+  const texts = [entry.data.title, entry.data.summary ?? '', ...(entry.data.tags ?? [])].join(' ').toLowerCase();
+  let total = 0;
+  for (const need of stats.topNeeds) {
+    if (!need.summary) continue;
+    const ns = need.summary.toLowerCase();
+    // idea 文本包含需求摘要中的关键词
+    for (const word of ns.split(/\s+/).filter(w => w.length >= 2)) {
+      if (texts.includes(word)) total += need.count;
+    }
+    // 需求摘要包含 idea 的 tag
+    for (const tag of (entry.data.tags ?? [])) {
+      if (ns.includes(tag.toLowerCase())) total += need.count;
+    }
+  }
+  return total;
+}
 
 // 自定义排序权重：活跃状态靠前，已完成/已归档靠后
 ideas.sort((a, b) => {
@@ -27,7 +50,8 @@ const statusLabel = STATUS_LABELS;
 const renderedIdeas = await Promise.all(
   ideas.map(async (entry) => {
     const { Content } = await render(entry);
-    return { entry, Content };
+    const demandSignal = getDemandSignal(entry, demandStats);
+    return { entry, Content, demandSignal };
   })
 );
 ---
@@ -83,7 +107,7 @@ const renderedIdeas = await Promise.all(
       <div class="tabletop-ambient-glow"></div>
       
       <div class="card-grid" id="ideas-grid">
-        {renderedIdeas.map(({ entry, Content }) => {
+        {renderedIdeas.map(({ entry, Content, demandSignal }) => {
           const status = entry.data.status || 'thinking';
           const isThinking = status === 'thinking';
 
@@ -118,10 +142,18 @@ const renderedIdeas = await Promise.all(
                     <!-- 顶部元信息 -->
                     <div class="card-header-meta">
                       <span class="card-date">{formatDateCompact(entry.data.date)}</span>
-                      <span class={`status-badge badge-${status}`}>
-                        <span class="status-indicator"></span>
-                        {statusLabel[status] ?? status}
-                      </span>
+                      <div class="card-header-badges">
+                        <span class={`status-badge badge-${status}`}>
+                          <span class="status-indicator"></span>
+                          {statusLabel[status] ?? status}
+                        </span>
+                        {demandSignal > 0 && (
+                          <span class="demand-signal-badge">
+                            <Icon name="lucide:activity" width={10} height={10} />
+                            {demandSignal} 次需求提及
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <!-- 标题 -->
@@ -359,6 +391,14 @@ const renderedIdeas = await Promise.all(
     margin-bottom: 0.85rem;
   }
 
+  .card-header-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .card-date {
     font-family: var(--font-mono, monospace);
     font-size: 0.72rem;
@@ -418,6 +458,19 @@ const renderedIdeas = await Promise.all(
     border-color: color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
   }
   .badge-archived .status-indicator { background: var(--color-parchment-dim); opacity: 0.5; }
+
+  .demand-signal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.62rem;
+    font-weight: 750;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(56, 189, 248, 0.1);
+    color: rgb(56, 189, 248);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+  }
 
   .card-title {
     margin: 0 0 0.65rem;
