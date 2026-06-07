@@ -1,10 +1,10 @@
 ---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
-import { getPublishedIdeas } from '@/lib/content';
-import { STATUS_LABELS, STATUS_WEIGHT, SITE_EMAIL } from '@/lib/constants';
+import { getPublishedIdeas } from '@/knowledge/content';
+import { STATUS_LABELS, STATUS_WEIGHT, SITE_EMAIL } from '@/shared/constants';
 import { Icon } from 'astro-icon/components';
 import { render } from 'astro:content';
-import { formatDateCompact } from '@/lib/format';
+import { formatDateCompact } from '@/shared/format';
 
 export const prerender = true;
 

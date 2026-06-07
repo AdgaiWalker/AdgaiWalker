@@ -1,13 +1,13 @@
-﻿---
+---
 import ContentFilterTabs from '@/components/content-universe/ContentFilterTabs.astro';
 import ContentUniverseCard from '@/components/content-universe/ContentUniverseCard.astro';
 import Base from '@/layouts/Base.astro';
-import { getPublishedContentItems } from '@/lib/content';
+import { getPublishedContentItems } from '@/knowledge/content';
 import {
   contentSpaces,
   itemBelongsToSpace,
   type ContentSpace,
-} from '@/lib/content-model';
+} from '@/knowledge/content-model';
 
 export const prerender = true;
 

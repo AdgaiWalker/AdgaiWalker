@@ -1,6 +1,6 @@
-﻿import type { APIRoute } from 'astro';
+import type { APIRoute } from 'astro';
 
-import { getPublishedContentItems } from '@/lib/content';
+import { getPublishedContentItems } from '@/knowledge/content';
 
 export const prerender = true;
 

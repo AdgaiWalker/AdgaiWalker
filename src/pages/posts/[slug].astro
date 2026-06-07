@@ -10,10 +10,10 @@ import LikeCounter from '../../components/LikeCounter.astro';
 import GiscusWidget from '../../components/GiscusWidget.astro';
 import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
-import { POSTS, buildPostPath } from '@/lib/routes';
-import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/lib/content';
-import { PLATFORM_ICON_MAP, CHARS_PER_MINUTE_ZH } from '@/lib/constants';
-import { formatDateLocale } from '@/lib/format';
+import { POSTS, buildPostPath } from '@/shared/routes';
+import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/knowledge/content';
+import { PLATFORM_ICON_MAP, CHARS_PER_MINUTE_ZH } from '@/shared/constants';
+import { formatDateLocale } from '@/shared/format';
 
 import { render } from 'astro:content';
 import { Image } from 'astro:assets';

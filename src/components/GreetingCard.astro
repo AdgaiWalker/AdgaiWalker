@@ -7,35 +7,21 @@
  */
 import { Image } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
-import { SITE_EMAIL } from '@/lib/constants';
-import { IDEAS } from '@/lib/routes';
-import { getPublishedIdeas } from '@/lib/content';
+import { SITE_EMAIL } from '@/shared/constants';
+import { IDEAS } from '@/shared/routes';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 
-// 临时 AI 生成点子（纯趣味梗，无跳转）
-const TEMP_SPARKS = [
-  "🐾 开发一个可以将猫咪喵喵声自动翻译成拍立得卡通日记的 APP！",
-  "🎷 做一款 VSCode 插件：当你的代码写出 Bug 时，自动播放悲伤的萨克斯风！",
-  "💆‍♂️ 构建一个 AI 虚拟老板：每天早晨用极其温柔的声线催你写代码，并提供心理按摩！",
-  "☕ 设计一款智能水杯：AI 会根据你今天敲键盘的次数和写 Bug 的频率，强行提醒你喝咖啡！",
-  "🌙 打造一款 AI 梦境发生器：晚上输入你想梦到的场景，AI 自动为你脑补一段催眠故事！",
-  "🍳 做个 AI 厨艺拯救者：拍一下冰箱里剩下的烂西红柿和半盒豆腐，AI 自动生成一道米其林级别的黑暗料理菜谱！",
-  "🐾 开发一款 AI 宠物社交机器人：让你的猫在网上和隔壁的狗通过 GPT 聊天，甚至能网恋！",
-  "🌸 做一款'键盘侠净化器'：用 AI 自动把你写在终端里的脏话脏代码注释重写成高雅的古典诗词！",
-  "🛹 开发一款'滑板AI跟拍仪'：用 AI 动作捕捉算法，自动在滑板腾空那一瞬间抓拍出最帅的侧脸！",
-  "💤 做一款'睡眠AI监控器'：通过 AI 分析你晚上的呼噜声，自动编排出一首舒缓的白噪音钢琴曲！",
-];
+interface Props {
+  sparks: { title: string; slug: string | null; isReal: boolean }[];
+}
 
-// 合并池：真实点子带 slug 可跳转，临时点子纯展示
-const allSparks = [
-  ...(await getPublishedIdeas()).map(idea => ({
-    title: idea.data.title,
-    slug: idea.id,
-    isReal: true,
-  })),
-  ...TEMP_SPARKS.map(t => ({ title: t, slug: null, isReal: false })),
-];
+const { sparks } = Astro.props;
+const sparksJson = JSON.stringify(sparks);
 ---
+
+<!-- 服务端数据传递给客户端脚本 -->
+<meta name="greeting-sparks" content={sparksJson} />
+<meta name="greeting-ideas-route" content={IDEAS} />
 
 <!-- 流星容器（全屏） -->
 <div id="spark-meteor-container" class="fixed inset-0 z-40 overflow-hidden pointer-events-none"></div>
@@ -348,9 +334,9 @@ const allSparks = [
   .social-icon-btn:hover .social-label { opacity: 0.8; }
 </style>
 
-<script define:vars={{ sparks: allSparks, ideasRoute: IDEAS }}>
-  const ALL_SPARKS = sparks;
-  const IDEAS_ROUTE = ideasRoute;
+<script>
+  const ALL_SPARKS: { title: string; slug: string | null; isReal: boolean }[] = JSON.parse(document.querySelector('meta[name=greeting-sparks]')?.getAttribute('content') ?? '[]');
+  const IDEAS_ROUTE = document.querySelector('meta[name=greeting-ideas-route]')?.getAttribute('content') ?? '/ideas';
 
   // === 问候语 ===
   const WALKER_STATES = ['探索中', '思考中', '创造中'];
@@ -384,7 +370,7 @@ const allSparks = [
   }
 
   // === 粒子爆发 ===
-  function burstParticles(container) {
+  function burstParticles(container: HTMLElement) {
     const colors = ['#35bfab', '#f59e0b', '#fb7299', '#a78bfa', '#34d399', '#fbbf24'];
     const count = 14;
     for (let i = 0; i < count; i++) {
@@ -422,7 +408,7 @@ const allSparks = [
 
   // === 悬停序列 ===
   let inSequence = false;
-  let sequenceTimers = [];
+  let sequenceTimers: ReturnType<typeof setTimeout>[] = [];
 
   function clearSequenceTimers() {
     sequenceTimers.forEach(t => clearTimeout(t));
@@ -506,7 +492,7 @@ const allSparks = [
     const popup = document.getElementById('idea-popup');
     const textEl = document.getElementById('idea-popup-text');
     const againBtn = document.getElementById('idea-popup-again');
-    const detailBtn = document.getElementById('idea-popup-detail');
+    const detailBtn = document.getElementById('idea-popup-detail') as HTMLAnchorElement | null;
     if (!popup || !textEl) return;
 
     // 随机选一个点子
@@ -543,9 +529,10 @@ const allSparks = [
   }
 
   // === 点击卡片：抽点子 ===
-  function onCardClick(e) {
+  function onCardClick(e: MouseEvent | KeyboardEvent) {
     // 忽略社交链接和「看看方案」按钮点击
-    if (e.target.closest('a, button')) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('a, button')) return;
 
     const avatarRing = document.getElementById('avatar-ring');
     const particleContainer = document.getElementById('particle-container');
@@ -562,7 +549,7 @@ const allSparks = [
     fireMeteor();
 
     // 如果悬浮卡已显示 → 滑走再滑入新点子
-    if (popup.classList.contains('visible')) {
+    if (popup?.classList.contains('visible')) {
       hideIdeaPopup();
       setTimeout(() => showIdeaPopup(), 350);
     } else {

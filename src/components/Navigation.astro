@@ -2,13 +2,12 @@
 import SearchModal from './SearchModal.astro';
 import SidebarNav from './nav/SidebarNav.astro';
 import MobileMenu from './nav/MobileMenu.astro';
-import { ABOUT, CONTENT, HOME, POSTS, TOOLS, IDEAS, PROJECTS, LEARN } from '@/lib/routes';
+import { ABOUT, CONTENT, POSTS, TOOLS, IDEAS, PROJECTS, LEARN, FERRY } from '@/shared/routes';
 import type { NavGroup } from '@/types/nav';
 
 const navGroups: NavGroup[] = [
   {
     items: [
-      { label: '首页', href: HOME, icon: 'lucide:home', hint: 'Home' },
       { label: '学习', href: LEARN, icon: 'lucide:rocket', hint: 'Learn' },
       { label: '内容', href: CONTENT, icon: 'lucide:layout-grid', hint: 'Content' },
       { label: '关于', href: ABOUT, icon: 'lucide:user', hint: 'About' },
@@ -30,9 +29,7 @@ const isHome = currentPath === '/';
 const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 ---
 
-<div class="hidden">
-  <SearchModal />
-</div>
+<SearchModal />
 
 {isHome ? null : (
   <nav class="fixed top-0 left-0 z-50 transition-all duration-300 w-full lg:w-[260px] lg:bottom-0 lg:border-r lg:border-b-0 border-b border-[var(--color-nav-border)] bg-[var(--color-nav-bg)] backdrop-blur-md flex flex-col" id="main-nav">
@@ -76,7 +73,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     const mobileSearchBtn = document.getElementById('mobile-search-btn');
 
     const triggerSearch = () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true, key: 'k' }));
+      document.dispatchEvent(new CustomEvent("walker:open-search"));
     };
 
     desktopSearchBtn?.addEventListener('click', triggerSearch, { signal });

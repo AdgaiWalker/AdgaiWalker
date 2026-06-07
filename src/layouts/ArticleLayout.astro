@@ -1,5 +1,5 @@
 ---
-import { POSTS } from '@/lib/routes';
+import { POSTS } from '@/shared/routes';
 /**
  * ArticleLayout — 沉浸式阅读布局
  * 内容直接浮在空间里，没有盒子。工具是幽灵，需要时才出现。
@@ -11,18 +11,12 @@ import TableOfContents from '../components/article/TableOfContents.astro';
 import ArticleNav from '../components/article/ArticleNav.astro';
 import { Icon } from 'astro-icon/components';
 
+import type { ArticleEntry } from '@/types/article';
+
 interface Heading {
   depth: number;
   slug: string;
   text: string;
-}
-
-interface ArticleEntry {
-  id: string;
-  title: string;
-  date: Date;
-  tags?: string[];
-  summary?: string;
 }
 
 interface Props {
