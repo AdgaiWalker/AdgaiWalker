@@ -22,7 +22,7 @@ const MAX_COUNT = 999_999;
 const FALLBACK = 17_861;
 
 /** 合法路径前缀 */
-const ALLOWED_PREFIXES = ['/posts/', '/ideas/', '/projects/', '/tools/'];
+const ALLOWED_PREFIXES = ['/posts/', '/ideas/', '/projects/', '/tools/', '/about'];
 
 function isValidPath(p: unknown): p is string {
   return typeof p === 'string' && ALLOWED_PREFIXES.some((pre) => p.startsWith(pre));
