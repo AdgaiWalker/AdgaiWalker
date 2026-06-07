@@ -180,4 +180,14 @@ export const skills: SkillEntry[] = [
     desc: '从屎山代码到大师级应用。海哥出品，非专业 vibe 人都应该下载。',
     url: 'https://github.com/hylarucoder/hai-stack',
   },
+  {
+    name: 'Skill-Craft',
+    desc: '我做的健壮技能制作方法论。6 阶段流程：问题建模 → 草稿 → 真实测试 → 审计分级 → 做减法 → 通用化。第一版必然是错的，真实测试才能暴露问题。',
+    url: 'https://github.com/AdgaiWalker/Walkcraft-Skill-Craft',
+  },
+  {
+    name: '副业蓝图',
+    desc: '我做的副业规划 AI 技能。从零到一规划服务型副业：平台选择、定价策略、上架文案、客户筛选。8 阶段流程，历经 8 次迭代。',
+    url: 'https://github.com/AdgaiWalker/Walker-skills-test/tree/main/side-hustle-blueprint',
+  },
 ];
