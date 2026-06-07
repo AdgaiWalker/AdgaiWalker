@@ -66,7 +66,7 @@ const memoryCategoryCounts = new Map<string, number>();
 
 let cachedRedis: Redis | null | undefined;
 
-function getRedis(): Redis | null {
+export function getRedis(): Redis | null {
   if (cachedRedis !== undefined) return cachedRedis;
   const env = import.meta.env as Record<string, string | undefined>;
   const url = env.UPSTASH_REDIS_REST_URL ?? env.KV_REST_API_URL;
