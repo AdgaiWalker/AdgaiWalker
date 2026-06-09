@@ -1,8 +1,13 @@
 ---
 title: AI 实用资源群
-date: 2026-05-01
-updated: 2026-05-31
-tags: [AI, 工具, 资源, 省钱, 社群]
+date: 2026-05-01T00:00:00.000Z
+updated: 2026-05-31T00:00:00.000Z
+tags:
+  - AI
+  - 工具
+  - 资源
+  - 省钱
+  - 社群
 type: tool
 published: true
 summary: 我常用的低价 AI 资源群。Token、会员、中转——让我用很便宜的 AI 干活。全部免费加入，只为更好的未来。
@@ -10,7 +15,8 @@ form: resource
 domain: ai
 intent: share
 valueMode: utility
-related: [点子共促]
+related:
+  - 点子共促
 aiUsePolicy:
   level: AI-2
   readable: true
@@ -21,22 +27,23 @@ communities:
     description: 切号插件官方群，解决多账号切换。
     qrCode: /images/qr/1025957317.png
     badge: 切号工具
-    tag: "1025957317"
+    tag: '1025957317'
   - name: 廉价 AI 探索群 (644241363)
     description: 极致挖掘最高性价比 AI 方案，群友探索到好渠道就分享。
     qrCode: /images/qr/644241363.png
     badge: 极客探索
-    tag: "644241363"
+    tag: '644241363'
   - name: Codex 中转群 (874615899)
     description: API 中转服务，我目前稳定在用的一家。
     qrCode: /images/qr/874615899.png
     badge: API中转
-    tag: "874615899"
+    tag: '874615899'
   - name: Cockpit 插件交流群 (921917596)
     description: 用 Cockpit 买 Gemini token，低价 Gemini 额度。
     qrCode: /images/qr/921917596.png
     badge: Gemini Token
-    tag: "921917596"
+    tag: '921917596'
+visibility: public
 ---
 
 ## 我在每个群干什么

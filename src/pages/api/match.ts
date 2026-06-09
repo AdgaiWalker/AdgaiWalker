@@ -4,19 +4,29 @@ import type { APIRoute } from 'astro';
 import { Redis } from '@upstash/redis';
 
 import {
+  abilityTypeLabels,
   aiStageLabels,
   audienceGroupLabels,
+  frictionLayerLabels,
   matchResources,
   needCategoryLabels,
+  type AbilityType,
   type AiStage,
   type AudienceGroup,
-  type FitVerdict,
+  type FrictionLayer,
   type MatchResource,
   type NeedCategory,
 } from '@/profiles/resource-index';
 import { compactText, isMinorAudience, redactSensitiveText } from '@/agent/privacy';
 import { callGateway } from '@/agent/gateway';
-import { matchSiteResources } from '@/agent/match';
+import {
+  matchSiteResources,
+  type ActionPlan,
+  type DiagnosisOption,
+  type NeedFrame,
+  type RecommendedTool,
+  type ResponseMode,
+} from '@/agent/match';
 import {
   createSessionId,
   getMatchSession,
@@ -48,25 +58,85 @@ interface ModelChoice {
   resourceIds?: string[];
   needSummary?: string;
   categories?: NeedCategory[];
-  fitVerdict?: FitVerdict;
+  frictionLayer?: FrictionLayer;
+  recommendedAbilityType?: AbilityType;
   toolDirection?: string;
   reason?: string;
   inferredAudience?: AudienceGroup;
   inferredAiStage?: AiStage;
 }
 
+interface MatchResponsePayload {
+  eventId?: string;
+  sessionId: string;
+  remaining: number;
+  responseMode: ResponseMode;
+  frictionLayer: FrictionLayer;
+  frictionLayerLabel: string;
+  recommendedAbilityType: AbilityType;
+  recommendedAbilityLabel: string;
+  toolDirection: string;
+  reason: string;
+  bridge: string;
+  needSummary: string;
+  categories: Array<{ id: NeedCategory; label: string }>;
+  resources: Array<{
+    id: string;
+    title: string;
+    href: string;
+    kind: MatchResource['kind'];
+    useFor: string;
+    summary: string;
+  }>;
+  recommendedTools: Array<{
+    id: string;
+    name: string;
+    tagline: string;
+    useFor: string;
+    nextStep: string;
+    fit: RecommendedTool['fit'];
+  }>;
+  needFrame: NeedFrame;
+  diagnosisOptions: DiagnosisOption[];
+  actionPlan?: {
+    primaryTool?: {
+      id: string;
+      name: string;
+      tagline: string;
+      useFor: string;
+      nextStep: string;
+      fit: RecommendedTool['fit'];
+    };
+    backupTools: Array<{
+      id: string;
+      name: string;
+      tagline: string;
+      useFor: string;
+      nextStep: string;
+      fit: RecommendedTool['fit'];
+    }>;
+    prompt: string;
+    nextStep: string;
+  };
+  safety: {
+    piiDetected: boolean;
+    consentForTopic: boolean;
+    isMinorContext: boolean;
+    complianceRedirected: boolean;
+    note: string;
+  };
+  understandNote?: string;
+}
+
 const PROMPT_VERSION = 'tool-match-v2';
-const MODEL_VERSION = 'claude-sonnet-4-6';
 const DAILY_LIMIT = Number(import.meta.env.MATCH_DAILY_LIMIT ?? 20);
 const MINUTE_LIMIT = Number(import.meta.env.MATCH_MINUTE_LIMIT ?? 5);
 const FALLBACK_DAILY_LIMIT = 5;
 const MAX_BODY_BYTES = 8_192;
-const MAX_MESSAGES = 8;
+const MAX_MESSAGES = 16;
 const MAX_MESSAGE_LENGTH = 500;
-const MAX_TOTAL_CHARS = 2_400;
+const MAX_TOTAL_CHARS = 4_800;
 const MAX_SOURCE_PAGE_LENGTH = 120;
-const MAX_MODEL_TOKENS = 700;
-const MODEL_TIMEOUT_MS = 10_000;
 const GLOBAL_DAILY_LIMIT = Number(import.meta.env.MATCH_GLOBAL_DAILY_LIMIT ?? 1_000);
 const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -74,50 +144,51 @@ const memoryLimiter = new Map<string, { dailyCount: number; minuteCount: number;
 const memoryGlobalLimiter = { dailyCount: 0, dayResetAt: 0 };
 let cachedRedis: Redis | null | undefined;
 
-const FIT_VERDICTS: FitVerdict[] = ['codex-fit', 'codex-not-needed', 'codex-maybe', 'not-enough-info'];
+const FRICTION_LAYERS: FrictionLayer[] = [
+  'compliance-entry',
+  'account-config',
+  'tool-understanding',
+  'scenario-match',
+  'value-understanding',
+  'practice-deepening',
+  'unclear',
+];
 
-const SYSTEM_PROMPT = `你是 iwalk.pro 的需求匹配助手。
+const ABILITY_TYPES: AbilityType[] = [
+  'compliance-path',
+  'chat-ai',
+  'code-agent',
+  'office',
+  'design',
+  'automation',
+  'learning-path',
+  'content-navigation',
+  'clarify',
+];
 
-核心任务：
-用户来描述一个需求，你帮他们判断该用什么工具，并从站内资料中推荐最有帮助的 2-4 条。
+const SYSTEM_PROMPT = `你是小秋，iwalk.pro 的 AI 实践导航助手。
 
-硬性规则：
-1. 不外部搜索。只使用站内资料索引。
-2. 不编造工具。只推荐索引中存在的资料。
-3. 不重写文章。
-4. 不输出未在索引里的资料。
-5. 不收集身份信息，只处理需求。
-6. 只返回 JSON，不要返回 Markdown。
-7. resourceIds 只能使用站内资料索引里的 ID。
-8. 优先判断需求类型，再推荐资料。
-9. 如果用户信息不够，返回 not-enough-info 并在 reason 中说明需要补充什么。
+用户可以只说目的，不一定知道要做成 PPT、视频、文章、海报还是网站。
+你的任务是先理解目的，再把它变成一个可验证的小行动。
 
-返回 JSON 格式：
+本地规则已经决定 responseMode、能力方向、合规边界和工具列表，不能覆盖。
+
+规则：
+1. 不要解释分类、层级、系统判断。
+2. 目的模糊时，先给 2-4 个可能成品方向，再问 1 个关键问题。
+3. 目标明确时，只给 1 个主工具、最多 2 个备选工具。
+4. 每次都给一个可直接复制的下一步提示词或操作。
+5. 不要默认推荐站内资料；用户问教程时再给。
+6. 遇到账号绕过、验证码绕过、灰色渠道、违规访问，只做合规转向。
+
+只返回 JSON：
 {
-  “fitVerdict”: “codex-fit”,
-  “toolDirection”: “推荐工具方向和理由”,
-  “reason”: “为什么这样判断”,
-  “bridge”: “一句话串联语”,
-  “needSummary”: “一句话需求摘要”,
-  “categories”: [“coding”],
-  “resourceIds”: [“learn-ai-life”, “tools-ai-tools”]
-}
-
-fitVerdict 判断标准：
-- codex-fit：涉及代码、仓库、报错、重构、脚本执行、部署、API 对接等，适合代码 Agent。
-- codex-not-needed：写作、总结、翻译、解释、学习、内容整理、表格/PPT/报名表、数据分析等，用聊天 AI 或办公工具更合适。
-- codex-maybe：要做网站/应用/项目，但不确定是否已有代码，需要更多信息。
-- not-enough-info：信息太少，需要用户补充”场景 + 目标 + 卡点”。
-
-站内资料索引：
-${matchResources.map(resource => [
-  `ID: ${resource.id}`,
-  `标题: ${resource.title}`,
-  `用途: ${resource.useFor}`,
-  `分类: ${resource.categories.map(category => needCategoryLabels[category]).join('、')}`,
-  `工具适配: ${resource.toolFit?.join('、') ?? '未标注'}`,
-  `关键词: ${resource.keywords.join('、')}`,
-].join('\n')).join('\n\n')}`;
+  "bridge": "自然、简短、可行动的一句话",
+  "toolDirection": "可选，工具方向一句话",
+  "reason": "可选，简短理由",
+  "needSummary": "一句话需求摘要",
+  "resourceIds": []
+}`;
 
 function getRedis(): Redis | null {
   if (cachedRedis !== undefined) return cachedRedis;
@@ -200,6 +271,43 @@ function getLatestUserNeed(messages: ChatMessage[]): string {
   return [...messages].reverse().find(message => message.role === 'user')?.content ?? '';
 }
 
+function normalizeUserText(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function isDirectToolFollowUp(text: string): boolean {
+  const normalized = normalizeUserText(text);
+  return [
+    '直接一点',
+    '直接点',
+    '本地有的工具',
+    '推本地',
+    '直接推',
+    '给我工具',
+    '推荐工具',
+    '别讲资料',
+    '不要资料',
+  ].some(keyword => normalized.includes(keyword));
+}
+
+function isThinSocialTurn(text: string): boolean {
+  const compacted = normalizeUserText(text).replace(/[，。！？、；：,.!?;:\s]/g, '');
+  return ['你好', '您好', '嗨', '哈喽', 'hello', 'hi', '在吗', '在不在', '你是谁', '你是什么', '你是什么模型'].includes(compacted);
+}
+
+function getMatchingNeed(messages: ChatMessage[]): string {
+  const latest = getLatestUserNeed(messages);
+  if (!isDirectToolFollowUp(latest)) return latest;
+
+  const previous = [...messages]
+    .reverse()
+    .filter(message => message.role === 'user')
+    .map(message => message.content)
+    .find(content => content !== latest && !isThinSocialTurn(content));
+
+  return previous ? `${previous}\n${latest}` : latest;
+}
+
 async function checkRateLimit(subject: string): Promise<{ allowed: boolean; remaining: number }> {
   const now = Date.now();
   const redis = getRedis();
@@ -271,9 +379,15 @@ function pickResources(ids: string[] | undefined, fallback: MatchResource[]): Ma
   return picked.length > 0 ? picked.slice(0, 4) : fallback;
 }
 
-function pickFitVerdict(value: unknown, fallback: FitVerdict): FitVerdict {
-  return typeof value === 'string' && FIT_VERDICTS.includes(value as FitVerdict)
-    ? value as FitVerdict
+function pickFrictionLayer(value: unknown, fallback: FrictionLayer): FrictionLayer {
+  return typeof value === 'string' && FRICTION_LAYERS.includes(value as FrictionLayer)
+    ? value as FrictionLayer
+    : fallback;
+}
+
+function pickAbilityType(value: unknown, fallback: AbilityType): AbilityType {
+  return typeof value === 'string' && ABILITY_TYPES.includes(value as AbilityType)
+    ? value as AbilityType
     : fallback;
 }
 
@@ -295,6 +409,16 @@ function parseModelJson(text: string): ModelChoice | null {
   }
 }
 
+async function getCurrentModelLabel(): Promise<string> {
+  const { getGatewayConfig } = await import('@/agent/gateway-config');
+  const gwConfig = await getGatewayConfig();
+  const providerLabel = gwConfig.provider === 'deepseek' ? 'DeepSeek'
+    : gwConfig.provider === 'anthropic' ? 'Claude'
+    : gwConfig.provider === 'openai' ? 'OpenAI'
+    : gwConfig.model;
+  return `${providerLabel}（${gwConfig.model}）`;
+}
+
 // 替换后的 askModel 函数
 async function askModel(input: {
   messages: ChatMessage[];
@@ -303,7 +427,11 @@ async function askModel(input: {
   audienceGroup?: AudienceGroup;
   aiStage?: AiStage;
 }): Promise<ModelChoice | null> {
+  // 获取当前模型名，注入到 prompt 让 AI 能回答"你是什么模型"
+  const currentModelLabel = await getCurrentModelLabel();
+
   const userPrompt = [
+    `当前模型：${currentModelLabel}`,
     `用户人群：${input.audienceGroup ? audienceGroupLabels[input.audienceGroup] : '未说明'}`,
     `AI 阶段：${input.aiStage ? aiStageLabels[input.aiStage] : '未说明'}`,
     `本地初筛资料 ID：${input.localResourceIds.join('、')}`,
@@ -317,9 +445,7 @@ async function askModel(input: {
       route: 'match.askModel',
       systemPrompt: SYSTEM_PROMPT,
       userPrompt,
-      model: MODEL_VERSION,
-      maxTokens: MAX_MODEL_TOKENS,
-      timeoutMs: MODEL_TIMEOUT_MS,
+      // 不传 model/maxTokens/timeoutMs → 由 Gateway 运行时配置决定
     },
     null,
     (text) => parseModelJson(text),
@@ -330,6 +456,107 @@ async function askModel(input: {
 
 function summarizeNeed(text: string): string {
   return compactText(text, 80) || '用户想找到合适的 AI 工具和站内资料';
+}
+
+function isModelIdentityQuestion(text: string): boolean {
+  return /模型|model/i.test(text);
+}
+
+async function createIdentityBridge(text: string): Promise<string> {
+  if (!isModelIdentityQuestion(text)) {
+    return '我是 iwalk.pro 的 AI 实践导航助手小秋，主要帮你把真实任务拆清楚，再匹配合适的 AI 工具和站内资料。你现在想解决什么事？';
+  }
+  const modelLabel = await getCurrentModelLabel();
+  return `我是 iwalk.pro 的 AI 实践导航助手小秋，这一轮背后调用的是 ${modelLabel}。你可以直接说想用 AI 做什么，我帮你判断该用什么工具和路径。`;
+}
+
+function shouldRecordDemand(responseMode: ResponseMode): boolean {
+  return responseMode === 'recommendation' || responseMode === 'compliance';
+}
+
+function createMatchResponse(input: {
+  eventId?: string;
+  session: MatchSession;
+  remaining: number;
+  responseMode: ResponseMode;
+  frictionLayer: FrictionLayer;
+  recommendedAbilityType: AbilityType;
+  toolDirection: string;
+  reason: string;
+  bridge: string;
+  needSummary: string;
+  categories: NeedCategory[];
+  resources: MatchResource[];
+  recommendedTools: RecommendedTool[];
+  needFrame: NeedFrame;
+  diagnosisOptions: DiagnosisOption[];
+  actionPlan?: ActionPlan;
+  piiDetected: boolean;
+  isMinorContext: boolean;
+  complianceRedirected: boolean;
+}): MatchResponsePayload {
+  const includeRecommendationDetails = input.responseMode === 'recommendation';
+  const includeDiagnosisDetails = input.responseMode === 'diagnosis';
+  const serializeTool = (tool: RecommendedTool) => ({
+    id: tool.id,
+    name: tool.name,
+    tagline: tool.tagline,
+    useFor: tool.useFor,
+    nextStep: tool.nextStep,
+    fit: tool.fit,
+  });
+  return {
+    ...(input.eventId ? { eventId: input.eventId } : {}),
+    sessionId: input.session.sessionId,
+    remaining: input.remaining,
+    responseMode: input.responseMode,
+    frictionLayer: input.frictionLayer,
+    frictionLayerLabel: frictionLayerLabels[input.frictionLayer],
+    recommendedAbilityType: input.recommendedAbilityType,
+    recommendedAbilityLabel: abilityTypeLabels[input.recommendedAbilityType],
+    toolDirection: includeRecommendationDetails ? input.toolDirection : '',
+    reason: includeRecommendationDetails ? input.reason : '',
+    bridge: input.bridge,
+    needSummary: input.needSummary,
+    categories: includeRecommendationDetails
+      ? input.categories.map(category => ({
+        id: category,
+        label: needCategoryLabels[category],
+      }))
+      : [],
+    resources: includeRecommendationDetails
+      ? input.resources.map(resource => ({
+        id: resource.id,
+        title: resource.title,
+        href: resource.href,
+        kind: resource.kind,
+        useFor: resource.useFor,
+        summary: resource.summary,
+      }))
+      : [],
+    recommendedTools: includeRecommendationDetails
+      ? input.recommendedTools.map(serializeTool)
+      : [],
+    needFrame: input.needFrame,
+    diagnosisOptions: includeDiagnosisDetails ? input.diagnosisOptions : [],
+    ...((includeRecommendationDetails || includeDiagnosisDetails) && input.actionPlan
+      ? {
+        actionPlan: {
+          ...(input.actionPlan.primaryTool ? { primaryTool: serializeTool(input.actionPlan.primaryTool) } : {}),
+          backupTools: input.actionPlan.backupTools.map(serializeTool),
+          prompt: input.actionPlan.prompt,
+          nextStep: input.actionPlan.nextStep,
+        },
+      }
+      : {}),
+    safety: {
+      piiDetected: input.piiDetected,
+      consentForTopic: input.session.consentForTopic,
+      isMinorContext: input.isMinorContext,
+      complianceRedirected: input.complianceRedirected,
+      note: '请不要输入姓名、联系方式、API Key、公司机密等敏感信息。',
+    },
+  };
 }
 
 async function buildSession(body: MatchRequestBody, isMinorContext: boolean): Promise<MatchSession> {
@@ -349,7 +576,7 @@ async function buildSession(body: MatchRequestBody, isMinorContext: boolean): Pr
     aiStage: body.aiStage ?? existing?.aiStage,
     isMinorContext: isMinorContext || Boolean(existing?.isMinorContext),
     promptVersion: PROMPT_VERSION,
-    modelVersion: MODEL_VERSION,
+    modelVersion: 'gateway-managed',
   };
 }
 
@@ -360,9 +587,11 @@ function buildDemandEvent(input: {
   categories: NeedCategory[];
   resourceIds: string[];
   piiDetected: boolean;
-  fitVerdict: FitVerdict;
+  frictionLayer: FrictionLayer;
+  recommendedAbilityType: AbilityType;
   toolDirection: string;
-  codexMisuseLikely: boolean;
+  complianceRedirected: boolean;
+  codeAgentMisuseLikely: boolean;
 }): DemandEvent {
   return {
     eventId: randomUUID(),
@@ -371,9 +600,11 @@ function buildDemandEvent(input: {
     rawNeedRedacted: input.session.isMinorContext ? '[青少年/未成年场景不保存原始问题]' : input.redactedNeed,
     needSummary: input.needSummary,
     needCategories: input.categories,
-    fitVerdict: input.fitVerdict,
+    frictionLayer: input.frictionLayer,
+    recommendedAbilityType: input.recommendedAbilityType,
     toolDirection: input.toolDirection,
-    codexMisuseLikely: input.codexMisuseLikely,
+    complianceRedirected: input.complianceRedirected,
+    codeAgentMisuseLikely: input.codeAgentMisuseLikely,
     audienceGroup: input.session.audienceGroup,
     aiStage: input.session.aiStage,
     isMinorContext: input.session.isMinorContext,
@@ -411,34 +642,54 @@ export const POST: APIRoute = async ({ request }) => {
   const isMinorContext = isMinorAudience(body.audienceGroup);
   const clean = cleanMessages(body.messages);
   const latestNeed = getLatestUserNeed(body.messages);
-  const redacted = redactSensitiveText(compactText(latestNeed, MAX_MESSAGE_LENGTH));
+  const matchingNeed = getMatchingNeed(body.messages);
+  const redactedLatest = redactSensitiveText(compactText(latestNeed, MAX_MESSAGE_LENGTH));
+  const redacted = redactSensitiveText(compactText(matchingNeed, MAX_MESSAGE_LENGTH));
   const localMatch = matchSiteResources({
     need: redacted.text,
     audienceGroup: body.audienceGroup,
     aiStage: body.aiStage,
   });
 
-  const modelChoice = await askModel({
-    messages: clean,
-    localBridge: localMatch.bridge,
-    localResourceIds: localMatch.resources.map(resource => resource.id),
-    audienceGroup: body.audienceGroup,
-    aiStage: body.aiStage,
-  });
+  const modelChoice = localMatch.responseMode === 'recommendation' && localMatch.recommendedTools.length === 0
+    ? await askModel({
+      messages: clean,
+      localBridge: localMatch.bridge,
+      localResourceIds: localMatch.resources.map(resource => resource.id),
+      audienceGroup: body.audienceGroup,
+      aiStage: body.aiStage,
+    })
+    : null;
 
-  const resources = pickResources(modelChoice?.resourceIds, localMatch.resources);
-  const categories = pickCategories(modelChoice?.categories, localMatch.categories);
-  const fitVerdict = pickFitVerdict(modelChoice?.fitVerdict, localMatch.fitVerdict);
-  const toolDirection = compactText(modelChoice?.toolDirection || localMatch.toolDirection, 140);
-  const reason = compactText(modelChoice?.reason || localMatch.reason, 140);
-  const bridge = compactText(modelChoice?.bridge || localMatch.bridge, 180);
-  const needSummary = compactText(modelChoice?.needSummary || summarizeNeed(redacted.text), 100);
+  const resources = localMatch.responseMode === 'recommendation' && localMatch.resources.length > 0
+    ? (localMatch.recommendedTools.length > 0
+      ? localMatch.resources
+      : pickResources(modelChoice?.resourceIds, localMatch.resources))
+    : [];
+  const categories = pickCategories(localMatch.categories, localMatch.categories);
+  const frictionLayer = pickFrictionLayer(localMatch.frictionLayer, localMatch.frictionLayer);
+  const recommendedAbilityType = pickAbilityType(localMatch.recommendedAbilityType, localMatch.recommendedAbilityType);
+  const toolDirection = localMatch.responseMode === 'recommendation'
+    ? compactText(localMatch.toolDirection, 140)
+    : '';
+  const reason = localMatch.responseMode === 'recommendation'
+    ? compactText(localMatch.reason, 140)
+    : '';
+  const bridge = compactText(
+    localMatch.responseMode === 'identity'
+      ? await createIdentityBridge(redactedLatest.text)
+      : localMatch.bridge,
+    220,
+  );
+  const needSummary = compactText(summarizeNeed(redacted.text), 100);
   const session = await buildSession(body, isMinorContext);
 
   await upsertMatchSession(session);
 
-  // 公开统计计数（不阻塞响应）
-  incrementMatchStats(categories).catch(() => {});
+  if (shouldRecordDemand(localMatch.responseMode)) {
+    // 公开统计计数（不阻塞响应）
+    incrementMatchStats(categories).catch(() => {});
+  }
 
   // 对话消息持久化（脱敏后）
   const now = new Date().toISOString();
@@ -458,46 +709,62 @@ export const POST: APIRoute = async ({ request }) => {
     session.aiStage = modelChoice.inferredAiStage;
   }
 
-  if (session.consentForTopic) {
-    await saveDemandEvent(buildDemandEvent({
+  if (session.consentForTopic && shouldRecordDemand(localMatch.responseMode)) {
+    const demandEvent = buildDemandEvent({
       session,
       redactedNeed: redacted.text,
       needSummary,
       categories,
       resourceIds: resources.map(resource => resource.id),
       piiDetected: redacted.piiDetected,
-      fitVerdict,
+      frictionLayer,
+      recommendedAbilityType,
       toolDirection,
-      codexMisuseLikely: localMatch.codexMisuseLikely,
+      complianceRedirected: localMatch.complianceRedirected || frictionLayer === 'compliance-entry',
+      codeAgentMisuseLikely: localMatch.codeAgentMisuseLikely,
+    });
+    await saveDemandEvent(demandEvent);
+    return jsonResponse(createMatchResponse({
+      eventId: demandEvent.eventId,
+      remaining: rateLimit.remaining,
+      session,
+      responseMode: localMatch.responseMode,
+      frictionLayer,
+      recommendedAbilityType,
+      toolDirection,
+      reason,
+      bridge,
+      needSummary,
+      categories,
+      resources,
+      recommendedTools: localMatch.recommendedTools,
+      needFrame: localMatch.needFrame,
+      diagnosisOptions: localMatch.diagnosisOptions,
+      actionPlan: localMatch.actionPlan,
+      piiDetected: redacted.piiDetected,
+      isMinorContext,
+      complianceRedirected: Boolean(demandEvent.complianceRedirected),
     }));
   }
 
-  return jsonResponse({
-    sessionId: session.sessionId,
+  return jsonResponse(createMatchResponse({
+    session,
     remaining: rateLimit.remaining,
-    fitVerdict,
+    responseMode: localMatch.responseMode,
+    frictionLayer,
+    recommendedAbilityType,
     toolDirection,
     reason,
     bridge,
     needSummary,
-    categories: categories.map(category => ({
-      id: category,
-      label: needCategoryLabels[category],
-    })),
-    resources: resources.map(resource => ({
-      id: resource.id,
-      title: resource.title,
-      href: resource.href,
-      kind: resource.kind,
-      useFor: resource.useFor,
-      summary: resource.summary,
-    })),
-    safety: {
-      piiDetected: redacted.piiDetected,
-      consentForTopic: session.consentForTopic,
-      isMinorContext,
-      note: '请不要输入姓名、联系方式、API Key、公司机密等敏感信息。',
-    },
-    understandNote: '如果看不懂，把推荐资料原文丢给 AI，让它用生活里的例子讲一遍。',
-  });
+    categories,
+    resources,
+    recommendedTools: localMatch.recommendedTools,
+    needFrame: localMatch.needFrame,
+    diagnosisOptions: localMatch.diagnosisOptions,
+    actionPlan: localMatch.actionPlan,
+    piiDetected: redacted.piiDetected,
+    isMinorContext,
+    complianceRedirected: localMatch.complianceRedirected || frictionLayer === 'compliance-entry',
+  }));
 };

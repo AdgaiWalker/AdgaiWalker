@@ -19,6 +19,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# gateway local config (contains API key)
+.gateway-config.json
+
 # macOS
 .DS_Store
 

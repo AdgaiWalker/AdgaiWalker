@@ -369,6 +369,42 @@ const sparksJson = JSON.stringify(sparks);
     tagEl.textContent = g.text;
   }
 
+  let greetingAbort: AbortController | null = null;
+  let inSequence = false;
+  let sequenceTimers: ReturnType<typeof setTimeout>[] = [];
+  let greetingTimers: ReturnType<typeof setTimeout>[] = [];
+  let greetingRafs: number[] = [];
+
+  function scheduleTimer(
+    callback: () => void,
+    delay: number,
+    bucket: ReturnType<typeof setTimeout>[] = greetingTimers,
+  ): ReturnType<typeof setTimeout> {
+    let timer: ReturnType<typeof setTimeout>;
+    timer = setTimeout(() => {
+      const index = bucket.indexOf(timer);
+      if (index >= 0) bucket.splice(index, 1);
+      callback();
+    }, delay);
+    bucket.push(timer);
+    return timer;
+  }
+
+  function scheduleRaf(callback: FrameRequestCallback): number {
+    let rafId = 0;
+    rafId = requestAnimationFrame((time) => {
+      greetingRafs = greetingRafs.filter((item) => item !== rafId);
+      callback(time);
+    });
+    greetingRafs.push(rafId);
+    return rafId;
+  }
+
+  function clearTimers(timers: ReturnType<typeof setTimeout>[]) {
+    timers.forEach((timer) => clearTimeout(timer));
+    timers.length = 0;
+  }
+
   // === 粒子爆发 ===
   function burstParticles(container: HTMLElement) {
     const colors = ['#35bfab', '#f59e0b', '#fb7299', '#a78bfa', '#34d399', '#fbbf24'];
@@ -390,7 +426,7 @@ const sparksJson = JSON.stringify(sparks);
         --px: ${px}px; --py: ${py}px; --duration: ${duration}s;
       `;
       container.appendChild(p);
-      setTimeout(() => p.remove(), duration * 1000 + 50);
+      scheduleTimer(() => p.remove(), duration * 1000 + 50);
     }
   }
 
@@ -403,16 +439,12 @@ const sparksJson = JSON.stringify(sparks);
     meteor.style.top = '-100px';
     meteor.style.right = `${10 + Math.random() * 30}%`;
     container.appendChild(meteor);
-    setTimeout(() => meteor.remove(), 1000);
+    scheduleTimer(() => meteor.remove(), 1000);
   }
 
   // === 悬停序列 ===
-  let inSequence = false;
-  let sequenceTimers: ReturnType<typeof setTimeout>[] = [];
-
   function clearSequenceTimers() {
-    sequenceTimers.forEach(t => clearTimeout(t));
-    sequenceTimers = [];
+    clearTimers(sequenceTimers);
   }
 
   function resetCard() {
@@ -442,27 +474,26 @@ const sparksJson = JSON.stringify(sparks);
     const particleContainer = document.getElementById('particle-container');
     const card = document.getElementById('greeting-card');
 
-    const t1 = setTimeout(() => {
+    scheduleTimer(() => {
       if (!inSequence) return;
       if (text) { text.textContent = '! ! !'; text.style.color = '#f59e0b'; text.style.animation = 'none'; }
       if (bubble) bubble.style.borderColor = '#f59e0b';
       if (arrow) arrow.style.borderColor = '#f59e0b';
       if (avatarRing) {
         avatarRing.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        setTimeout(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650);
+        scheduleTimer(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650, sequenceTimers);
       }
       if (particleContainer) burstParticles(particleContainer);
       if (card) {
         const flash = document.createElement('div');
         flash.id = 'card-flash-overlay';
         card.appendChild(flash);
-        requestAnimationFrame(() => flash.classList.add('active'));
-        setTimeout(() => flash.remove(), 700);
+        scheduleRaf(() => flash.classList.add('active'));
+        scheduleTimer(() => flash.remove(), 700, sequenceTimers);
       }
-    }, 800);
-    sequenceTimers.push(t1);
+    }, 800, sequenceTimers);
 
-    const t2 = setTimeout(() => {
+    scheduleTimer(() => {
       if (!inSequence) return;
       const quote = SURPRISE_QUOTES[Math.floor(Math.random() * SURPRISE_QUOTES.length)];
       if (text) {
@@ -483,8 +514,7 @@ const sparksJson = JSON.stringify(sparks);
         ], { duration: 450, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
       }
       if (arrow) arrow.style.borderColor = 'var(--color-brand, #35bfab)';
-    }, 1100);
-    sequenceTimers.push(t2);
+    }, 1100, sequenceTimers);
   }
 
   // === 悬浮点子卡 ===
@@ -512,7 +542,7 @@ const sparksJson = JSON.stringify(sparks);
     textEl.classList.add('pop-in');
 
     // 弹出完成后显示按钮
-    setTimeout(() => {
+    scheduleTimer(() => {
       againBtn?.classList.add('visible');
       // 真实点子：显示「看看方案」按钮
       if (idea.isReal && idea.slug && detailBtn) {
@@ -541,7 +571,7 @@ const sparksJson = JSON.stringify(sparks);
     // 头像弹跳
     if (avatarRing) {
       avatarRing.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-      setTimeout(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650);
+      scheduleTimer(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650);
     }
 
     // 粒子 + 流星
@@ -551,47 +581,66 @@ const sparksJson = JSON.stringify(sparks);
     // 如果悬浮卡已显示 → 滑走再滑入新点子
     if (popup?.classList.contains('visible')) {
       hideIdeaPopup();
-      setTimeout(() => showIdeaPopup(), 350);
+      scheduleTimer(() => showIdeaPopup(), 350);
     } else {
       showIdeaPopup();
     }
   }
 
   // === 初始化 ===
-  function bindInteractions() {
-    const card = document.getElementById('greeting-card');
+  function bindInteractions(card: HTMLElement, signal: AbortSignal) {
     const againBtn = document.getElementById('idea-popup-again');
-    if (!card) return;
 
     // 悬停序列
-    card.addEventListener('mouseenter', () => startSequence());
-    card.addEventListener('mouseleave', () => resetCard());
+    card.addEventListener('mouseenter', () => startSequence(), { signal });
+    card.addEventListener('mouseleave', () => resetCard(), { signal });
 
     // 点击卡片：抽点子
-    card.addEventListener('click', (e) => onCardClick(e));
+    card.addEventListener('click', (e) => onCardClick(e), { signal });
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(e); }
-    });
+    }, { signal });
 
     // "再点一个"按钮
     againBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       hideIdeaPopup();
-      setTimeout(() => {
+      scheduleTimer(() => {
         fireMeteor();
         showIdeaPopup();
       }, 350);
-    });
+    }, { signal });
   }
 
-  document.addEventListener('astro:page-load', () => {
+  function clearGreetingAsyncWork() {
+    clearSequenceTimers();
+    clearTimers(greetingTimers);
+    greetingRafs.forEach((rafId) => cancelAnimationFrame(rafId));
+    greetingRafs = [];
+    inSequence = false;
+  }
+
+  function cleanupGreetingCard() {
+    greetingAbort?.abort();
+    greetingAbort = null;
+    clearGreetingAsyncWork();
+    document.querySelectorAll('.surprise-particle, .spark-meteor').forEach((el) => el.remove());
+    document.getElementById('card-flash-overlay')?.remove();
+  }
+
+  function initGreetingCard() {
+    cleanupGreetingCard();
+    const card = document.getElementById('greeting-card');
+    if (!card) return;
+
+    greetingAbort = new AbortController();
     updateGreeting();
     const text = document.getElementById('reaction-text');
     if (text) text.textContent = WALKER_STATES[stateIndex];
-    bindInteractions();
-  });
+    bindInteractions(card, greetingAbort.signal);
+  }
 
-  document.addEventListener('astro:before-swap', () => {
-    clearSequenceTimers();
-  });
+  initGreetingCard();
+  document.addEventListener('astro:page-load', initGreetingCard);
+  document.addEventListener('astro:before-swap', cleanupGreetingCard);
 </script>

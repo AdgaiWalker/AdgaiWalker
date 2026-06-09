@@ -16,11 +16,13 @@ import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/knowledg
 import { PLATFORM_ICON_MAP, CHARS_PER_MINUTE_ZH } from '@/shared/constants';
 import { formatDateLocale } from '@/shared/format';
 
-import { render } from 'astro:content';
+import { render, type CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
+
+type ArticleResource = CollectionEntry<'log'>['data']['resources'][number];
 
 export async function getStaticPaths() {
   const entries = await getPublishedPosts();
@@ -191,7 +193,7 @@ const relatedPosts = allEntries
           相关资源
         </h2>
         <div class="resource-list">
-          {resources.map((res: any) => (
+          {resources.map((res: ArticleResource) => (
             <ResourceCard
               type={res.type}
               url={res.url}

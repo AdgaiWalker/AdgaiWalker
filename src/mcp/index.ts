@@ -135,7 +135,6 @@ server.tool(
           text: JSON.stringify(
             {
               slug: item.slug,
-              filePath: item.filePath,
               frontmatter: item.frontmatter,
               body: item.body,
             },
@@ -183,11 +182,18 @@ server.tool(
 
 server.tool(
   'walker_insights',
-  '查询需求洞察统计数据：需求分类分布、热门需求、Codex 误用率、日趋势。数据来自站内匹配器收集的匿名用户需求。',
+  '查询需求洞察统计数据：需求分类、卡点层级、能力方向、反馈分布、合规转向率、代码 Agent 误用率和日趋势。数据来自站内匹配器收集的匿名用户需求。',
   {
     days: z.number().optional().describe('统计最近 N 天的数据，默认 30'),
   },
   async ({ days }) => {
+    if (process.env.MCP_ENABLE_PRIVATE_INSIGHTS !== 'true') {
+      return {
+        content: [{ type: 'text' as const, text: '需求洞察属于站主私有数据，默认不通过 MCP 暴露。' }],
+        isError: true,
+      };
+    }
+
     // MCP server 运行在独立进程，store.ts 的 Redis 连接需要环境变量
     // 如果 Redis 不可用，getDemandStats 会返回零值
     try {

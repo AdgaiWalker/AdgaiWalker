@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { Redis } from '@upstash/redis';
+import { isPublicContentData } from '@/knowledge/content';
 import { needCategoryLabels } from '@/profiles/resource-index';
 
 export const GET: APIRoute = async () => {
@@ -21,7 +22,7 @@ export const GET: APIRoute = async () => {
     }
   }
 
-  const content = await getCollection('log', ({ data }) => data.published);
+  const content = await getCollection('log', ({ data }) => isPublicContentData(data));
   const contentCount = content.length;
 
   const topCategories = categoryCounts

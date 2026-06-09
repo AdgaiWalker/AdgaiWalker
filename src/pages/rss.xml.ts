@@ -1,10 +1,11 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
+import { isPublicContentData } from '@/knowledge/content';
 import { buildPostPath } from '@/shared/routes';
 
 export async function GET(context: APIContext) {
-  const logs = await getCollection('log', ({ data }) => data.published);
+  const logs = await getCollection('log', ({ data }) => isPublicContentData(data));
   
   return rss({
     title: 'Walker 的个人博客',

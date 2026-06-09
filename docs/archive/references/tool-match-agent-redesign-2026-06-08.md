@@ -1,3 +1,5 @@
+> Archived: This early execution plan has been superseded by `references/iwalk-agent-system-plan.md` and `references/tool-match-agent-to-do-list.md`. It is kept only for historical context.
+
 # 需求匹配 Agent 重设计 — 执行方案
 
 > 创建时间：2026-06-08
@@ -114,8 +116,8 @@
 
 **影响范围**：
 - `src/pages/api/match.ts`
-- `src/lib/match.ts`
-- `src/lib/match-recommend.ts`
+- `src/agent/match.ts`
+- `src/agent/match.ts`（匹配核心，已合并原 match-recommend 逻辑）
 
 **风险**：中高，后端逻辑变更
 
@@ -128,7 +130,7 @@
 ### 任务
 
 - [ ] 3.1 需求聚类增强
-  - `src/lib/insight.ts` 改造
+  - `src/agent/insight.ts` 改造
   - 多轮对话产生更丰富的需求信号
   - 验收：聚类结果更有意义
 
@@ -143,7 +145,7 @@
   - 验收：Walker 可在站内查看选题建议
 
 **影响范围**：
-- `src/lib/insight.ts`
+- `src/agent/insight.ts`
 - `src/conversation/store.ts`
 - `/about` 或 `/learn` 页面
 

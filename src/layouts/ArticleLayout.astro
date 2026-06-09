@@ -79,7 +79,7 @@ const hasToc = tocItems.length > 0;
         <div class="mobile-toc-content">
           <div class="mobile-toc-handle"></div>
           <div class="mobile-toc-header">目录</div>
-          <TableOfContents headings={headings} />
+          <TableOfContents headings={headings} instanceId="mobile" />
         </div>
       </div>
     )}
@@ -88,7 +88,7 @@ const hasToc = tocItems.length > 0;
     {hasToc && (
       <aside class="ghost-toc" id="ghost-toc" aria-label="文章目录">
         <div class="ghost-toc-inner">
-          <TableOfContents headings={headings} />
+          <TableOfContents headings={headings} instanceId="ghost" />
         </div>
       </aside>
     )}

@@ -1,9 +1,9 @@
-> Archived: This document has been superseded by `docs/README.md`. It is kept only for historical context.
+> Reference only: This historical architecture draft is kept for its top-level diagram, language, and conceptual framing. It is not the current implementation plan. Current decisions live in `references/project-docs-index.md`.
 
 # AI 时代点子共创系统架构设计
 
 日期：2026-05-30
-状态：待用户审阅
+状态：历史参考 / 架构表达参考
 范围：iwalk.pro、FerrySpec、NorthStar / PanGen AI Compass 的产品关系与长期架构
 
 ---

@@ -40,22 +40,42 @@ const { title, tags = [] } = Astro.props;
 </div>
 
 <script>
-  document.querySelectorAll('.copy-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const block = btn.closest('.prompt-block');
-      const content = block?.querySelector('.prompt-content')?.textContent?.trim();
-      if (!content) return;
+  let promptAbort: AbortController | null = null;
+  let promptTimers: ReturnType<typeof setTimeout>[] = [];
 
-      try {
-        await navigator.clipboard.writeText(content);
-        const original = btn.textContent;
-        btn.textContent = '已复制';
-        setTimeout(() => { btn.textContent = original; }, 2000);
-      } catch {
-        btn.textContent = '失败';
-      }
+  function cleanupPromptBlocks() {
+    promptAbort?.abort();
+    promptAbort = null;
+    promptTimers.forEach((timer) => clearTimeout(timer));
+    promptTimers = [];
+  }
+
+  function initPromptBlocks() {
+    cleanupPromptBlocks();
+    promptAbort = new AbortController();
+    const { signal } = promptAbort;
+
+    document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const block = btn.closest('.prompt-block');
+        const content = block?.querySelector('.prompt-content')?.textContent?.trim();
+        if (!content) return;
+
+        try {
+          await navigator.clipboard.writeText(content);
+          const original = btn.textContent ?? '复制';
+          btn.textContent = '已复制';
+          const timer = setTimeout(() => { btn.textContent = original; }, 2000);
+          promptTimers.push(timer);
+        } catch {
+          btn.textContent = '失败';
+        }
+      }, { signal });
     });
-  });
+  }
+
+  document.addEventListener('astro:page-load', initPromptBlocks);
+  document.addEventListener('astro:before-swap', cleanupPromptBlocks);
 </script>
 
 <style>

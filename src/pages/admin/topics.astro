@@ -2,7 +2,6 @@
 // /admin/topics — 选题库（服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
 import { getTopicCandidates } from '@/conversation/store';
-import { needCategoryLabels } from '@/profiles/resource-index';
 
 export const prerender = false;
 
@@ -23,6 +22,26 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
   medium: { label: '中优先', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
   low: { label: '低优先', color: '#78716c', bg: 'rgba(120,113,108,0.08)' },
 };
+
+function getContradictionLabel(topic: (typeof allTopics)[number]): string {
+  if (topic.relatedContentIds.length === 0) return '有需求，无内容';
+  if (topic.sourceNeedCount >= 3 && topic.priority !== 'high') return '多人在问，但优先级偏低';
+  if (topic.sourceNeedCount <= 1 && topic.priority === 'high') return '单点强需求，需要验证';
+  return '已有答案，但表达不够直接';
+}
+
+function getCreationAction(topic: (typeof allTopics)[number]): string {
+  if (topic.relatedContentIds.length === 0) return '先写最小教程或工具清单';
+  if (topic.sourceNeedCount >= 3) return '整理成方法论入口';
+  if (topic.priority === 'high') return '做成可复用指南';
+  return '保留样本，等待更多需求';
+}
+
+function getPriorityReason(topic: (typeof allTopics)[number]): string {
+  if (topic.priority === 'high') return '优先处理：需求强或内容缺口明显';
+  if (topic.priority === 'medium') return '观察处理：有重复信号但还需收敛';
+  return '低优先：样本少或已有内容覆盖';
+}
 ---
 
 <!DOCTYPE html>
@@ -51,6 +70,12 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
     .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; }
     .admin-welcome p { font-size: 0.88rem; color: #78716c; }
 
+    .ops-model { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+    .ops-step { padding: 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; }
+    .ops-step span { display: block; margin-bottom: 0.28rem; color: #c4704a; font-size: 0.68rem; font-weight: 850; }
+    .ops-step strong { display: block; margin-bottom: 0.25rem; color: #1c1917; font-size: 0.86rem; }
+    .ops-step p { color: #78716c; font-size: 0.74rem; line-height: 1.45; }
+
     /* Tab */
     .tab-bar { display: flex; gap: 0.35rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 0; }
     .tab-btn { padding: 0.55rem 0.85rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #78716c; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
@@ -78,6 +103,10 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
     .topic-meta-item { font-size: 0.75rem; color: #78716c; }
     .topic-meta-label { font-weight: 700; color: #57534e; }
     .topic-angle { font-size: 0.82rem; color: #57534e; line-height: 1.55; margin-bottom: 0.75rem; }
+    .topic-analysis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 0.85rem; }
+    .analysis-cell { padding: 0.65rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 9px; background: #fafaf9; }
+    .analysis-label { display: block; margin-bottom: 0.25rem; color: #a8a29e; font-size: 0.66rem; font-weight: 850; }
+    .analysis-value { color: #1c1917; font-size: 0.78rem; font-weight: 750; line-height: 1.45; }
 
     .topic-actions { display: flex; gap: 0.45rem; }
     .topic-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
@@ -96,7 +125,9 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
 
     @media (max-width: 640px) {
       .admin-main { padding: 1.25rem 1rem 3rem; }
+      .ops-model { grid-template-columns: 1fr; }
       .topic-card { padding: 0.85rem 0.95rem; }
+      .topic-analysis { grid-template-columns: 1fr; }
       .topic-actions { flex-wrap: wrap; }
     }
   </style>
@@ -110,6 +141,7 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
     <div class="admin-bar-right">
       <a href="/admin" class="admin-bar-link">仪表盘</a>
       <a href="/admin/insights" class="admin-bar-link">洞察</a>
+      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
       <a href="/admin/topics" class="admin-bar-link active">选题库</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
@@ -119,7 +151,30 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
   <div class="admin-main">
     <div class="admin-welcome">
       <h1>选题库</h1>
-      <p>Agent 从用户需求中生成的选题候选 · 共 {allTopics.length} 条</p>
+      <p>把用户问题转成创作任务：先看矛盾，再决定采纳、暂缓或忽略 · 共 {allTopics.length} 条</p>
+    </div>
+
+    <div class="ops-model" aria-label="选题处理流程">
+      <div class="ops-step">
+        <span>01</span>
+        <strong>需求信号</strong>
+        <p>来自用户连续提问和反馈，不把单句当结论。</p>
+      </div>
+      <div class="ops-step">
+        <span>02</span>
+        <strong>矛盾识别</strong>
+        <p>看用户想做什么、卡在哪里、站内是否已有答案。</p>
+      </div>
+      <div class="ops-step">
+        <span>03</span>
+        <strong>选题排序</strong>
+        <p>优先处理高频、高卡点、内容缺口明显的问题。</p>
+      </div>
+      <div class="ops-step">
+        <span>04</span>
+        <strong>创作动作</strong>
+        <p>把矛盾变成教程、工具清单、方法论或入口页。</p>
+      </div>
     </div>
 
     <!-- Tab Bar -->
@@ -140,6 +195,9 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
           ) : topics.map(topic => {
             const pc = priorityConfig[topic.priority] ?? priorityConfig.low;
             const isGap = topic.relatedContentIds.length === 0;
+            const contradiction = getContradictionLabel(topic);
+            const creationAction = getCreationAction(topic);
+            const priorityReason = getPriorityReason(topic);
             return (
               <div class={`topic-card ${status}`} data-topic-id={topic.topicId}>
                 <div class="topic-header">
@@ -158,6 +216,20 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
                   <span class="topic-meta-item"><span class="topic-meta-label">核心问题：</span>{topic.coreQuestion}</span>
                 </div>
                 <div class="topic-angle">{topic.contentAngle}</div>
+                <div class="topic-analysis">
+                  <div class="analysis-cell">
+                    <span class="analysis-label">矛盾判断</span>
+                    <div class="analysis-value">{contradiction}</div>
+                  </div>
+                  <div class="analysis-cell">
+                    <span class="analysis-label">创作动作</span>
+                    <div class="analysis-value">{creationAction}</div>
+                  </div>
+                  <div class="analysis-cell">
+                    <span class="analysis-label">排序理由</span>
+                    <div class="analysis-value">{priorityReason}</div>
+                  </div>
+                </div>
                 {status === 'pending' && (
                   <div class="topic-actions">
                     <button class="topic-btn btn-accept" data-action="accepted" data-id={topic.topicId}>采纳</button>
@@ -209,8 +281,6 @@ const priorityConfig: Record<string, { label: string; color: string; bg: string 
             const countEls = document.querySelectorAll('.tab-count');
             const tabMap = ['pending', 'accepted', 'deferred', 'ignored'] as const;
             tabMap.forEach((tab, i) => {
-              const panel = document.querySelector(`[data-panel="${tab}"]`) as HTMLElement;
-              const count = panel?.querySelectorAll('.topic-card:not(.accepted):not(.deferred):not(.ignored)').length ?? 0;
               if (countEls[i]) countEls[i].textContent = tab === status ? String(Number(countEls[i].textContent || 0) + 1) : String(Math.max(0, Number(countEls[i].textContent || 0) - 1));
             });
             // 隐藏按钮

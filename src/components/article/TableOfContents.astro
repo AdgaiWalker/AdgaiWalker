@@ -12,32 +12,35 @@ interface Heading {
 
 interface Props {
   headings: Heading[];
+  instanceId: string;
 }
 
-const { headings } = Astro.props;
+const { headings, instanceId } = Astro.props;
 
 // 仅显示 h2 和 h3
 const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
 ---
 
-<nav class="toc-nav" aria-label="文章目录">
+<nav class="toc-nav" aria-label="文章目录" data-toc-instance={instanceId}>
   <div class="toc-title">ON THIS PAGE</div>
   {tocItems.length > 0 ? (
-    <ul class="toc-list">
-      <div class="toc-active-indicator" id="toc-indicator" style="opacity: 0;"></div>
-      {tocItems.map((heading) => (
-        <li class:list={['toc-item', heading.depth === 3 && 'toc-item-indent']}>
-          <a
-            href={`#${heading.slug}`}
-            class="toc-link"
-            data-toc-slug={heading.slug}
-            title={heading.text}
-          >
-            {heading.text}
-          </a>
-        </li>
-      ))}
-    </ul>
+    <div class="toc-list-wrap">
+      <div class="toc-active-indicator" data-toc-indicator style="opacity: 0;"></div>
+      <ul class="toc-list">
+        {tocItems.map((heading) => (
+          <li class:list={['toc-item', heading.depth === 3 && 'toc-item-indent']}>
+            <a
+              href={`#${heading.slug}`}
+              class="toc-link"
+              data-toc-slug={heading.slug}
+              title={heading.text}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   ) : (
     <p class="toc-empty">暂无目录</p>
   )}
@@ -60,15 +63,17 @@ const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
     margin-bottom: 1rem;
   }
 
+  .toc-list-wrap {
+    position: relative;
+    border-left: 1px solid rgba(42, 59, 62, 0.08);
+  }
+
   .toc-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    position: relative;
-    /* 飞书风格的连续左侧线条 */
-    border-left: 1px solid rgba(42, 59, 62, 0.08);
   }
 
   .toc-item {

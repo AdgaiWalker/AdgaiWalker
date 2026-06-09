@@ -33,6 +33,7 @@ const log = defineCollection({
     }).optional(),
     related: z.array(z.string()).default([]),
     published: z.boolean().default(true),
+    visibility: z.enum(['public', 'draft', 'private']).optional(),
     featured: z.boolean().optional(),
     summary: z.string().optional(),
     description: z.string().optional(),

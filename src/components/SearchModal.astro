@@ -1,6 +1,7 @@
 ---
 import { Icon } from 'astro-icon/components';
 import { getCollection } from 'astro:content';
+import { isPublicContentData } from '@/knowledge/content';
 import { POSTS, TOOLS, IDEAS, PROJECTS, LEARN, CONTENT, ABOUT, HOME, buildPostPath } from '@/shared/routes';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -14,7 +15,7 @@ const TYPE_LABEL: Record<string, string> = {
 
 const TYPE_ORDER = ['思考', '资源', '点子', '项目', '学习'];
 
-const navItems = (await getCollection('log', ({ data }) => data.published !== false))
+const navItems = (await getCollection('log', ({ data }) => isPublicContentData(data)))
   .map(e => {
     const type = TYPE_LABEL[e.data.type] || '其他';
     const href =
@@ -38,10 +39,12 @@ const pages = [
   { label: '内容', href: CONTENT },
   { label: '关于', href: ABOUT },
 ];
+
+const navPanelData = JSON.stringify({ items: navItems, pages }).replace(/</g, '\\u003c');
 ---
 
 <!-- 构建时注入全站导航数据 -->
-<script type="application/json" id="nav-panel-data" set:html={JSON.stringify({ items: navItems, pages })} />
+<script is:inline type="application/json" id="nav-panel-data" set:html={navPanelData} />
 
 <!-- 快速导航面板 -->
 <div id="search-modal" hidden aria-hidden="true">
@@ -321,6 +324,63 @@ const pages = [
 <script>
   let abort: AbortController | null = null;
 
+  interface NavPanelItem {
+    title: string;
+    tags: string[];
+    href: string;
+    type: string;
+  }
+
+  interface NavPanelPage {
+    label: string;
+    href: string;
+  }
+
+  function parseNavPanelData(dataEl: HTMLElement): { items: NavPanelItem[]; pages: NavPanelPage[] } {
+    const data = JSON.parse(dataEl.textContent || '{}') as Partial<{
+      items: NavPanelItem[];
+      pages: NavPanelPage[];
+    }>;
+
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      pages: Array.isArray(data.pages) ? data.pages : [],
+    };
+  }
+
+  function createTextElement(tagName: string, className: string, text: string): HTMLElement {
+    const el = document.createElement(tagName);
+    el.className = className;
+    el.textContent = text;
+    return el;
+  }
+
+  function createResultItem(item: NavPanelItem): HTMLAnchorElement {
+    const link = document.createElement('a');
+    link.href = item.href;
+    link.className = 'np-item';
+
+    const badge = createTextElement('span', `np-badge np-badge--${item.type}`, item.type);
+    const title = createTextElement('span', 'np-title', item.title);
+    const tags = document.createElement('span');
+    tags.className = 'np-tags';
+    item.tags.slice(0, 2).forEach((tag) => {
+      tags.appendChild(createTextElement('span', 'np-tag', `#${tag}`));
+    });
+    const arrow = createTextElement('span', 'np-arrow', '→');
+
+    link.append(badge, title, tags, arrow);
+    return link;
+  }
+
+  function createQuickLink(page: NavPanelPage): HTMLAnchorElement {
+    const link = document.createElement('a');
+    link.href = page.href;
+    link.className = 'np-quick-link';
+    link.textContent = page.label;
+    return link;
+  }
+
   function init() {
     abort?.abort();
     abort = new AbortController();
@@ -328,7 +388,7 @@ const pages = [
 
     const dataEl = document.getElementById('nav-panel-data');
     if (!dataEl) return;
-    const { items, pages } = JSON.parse(dataEl.textContent || '{}');
+    const { items, pages } = parseNavPanelData(dataEl);
 
     const modal = document.getElementById('search-modal');
     const input = document.getElementById('np-input') as HTMLInputElement;
@@ -337,6 +397,15 @@ const pages = [
 
     let activeIdx = -1;
     let flatLinks: HTMLElement[] = [];
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    signal.addEventListener('abort', () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      document.body.style.overflow = '';
+    }, { once: true });
 
     // ===== Open / Close =====
     function open() {
@@ -392,58 +461,52 @@ const pages = [
     }
 
     // ===== Render =====
-    function render(list: typeof items) {
+    function render(list: NavPanelItem[]) {
       if (!results) return;
 
-      let html = '';
+      const fragment = document.createDocumentFragment();
 
       if (list.length === 0) {
-        html = `<div class="np-empty">没有找到「${input?.value.trim()}」相关的记录</div>`;
+        fragment.appendChild(createTextElement('div', 'np-empty', `没有找到「${input?.value.trim() ?? ''}」相关的记录`));
       } else {
         // 按类型分组
-        const groups: Record<string, typeof items> = {};
+        const groups: Record<string, NavPanelItem[]> = {};
         for (const item of list) {
           (groups[item.type] ??= []).push(item);
         }
         for (const [type, group] of Object.entries(groups)) {
-          html += `<div class="np-group">${type}</div>`;
+          fragment.appendChild(createTextElement('div', 'np-group', type));
           for (const item of group) {
-            const tags = item.tags.slice(0, 2).map((t: string) => `<span class="np-tag">#${t}</span>`).join('');
-            html += `<a href="${item.href}" class="np-item">
-              <span class="np-badge np-badge--${type}">${type}</span>
-              <span class="np-title">${item.title}</span>
-              <span class="np-tags">${tags}</span>
-              <span class="np-arrow">→</span>
-            </a>`;
+            fragment.appendChild(createResultItem(item));
           }
         }
       }
 
       // 快捷跳转
-      html += `<div class="np-quick">
-        <div class="np-quick-label">快捷跳转</div>
-        <div class="np-quick-links">
-          ${pages.map((p: { label: string; href: string }) =>
-            `<a href="${p.href}" class="np-quick-link">${p.label}</a>`
-          ).join('')}
-        </div>
-      </div>`;
+      const quick = document.createElement('div');
+      quick.className = 'np-quick';
+      quick.appendChild(createTextElement('div', 'np-quick-label', '快捷跳转'));
 
-      results.innerHTML = html;
+      const quickLinks = document.createElement('div');
+      quickLinks.className = 'np-quick-links';
+      pages.forEach((page) => quickLinks.appendChild(createQuickLink(page)));
+      quick.appendChild(quickLinks);
+      fragment.appendChild(quick);
+
+      results.replaceChildren(fragment);
       activeIdx = -1;
       flatLinks = Array.from(results.querySelectorAll<HTMLElement>('.np-item, .np-quick-link'));
     }
 
     // ===== Filter =====
-    let timer: ReturnType<typeof setTimeout>;
     input?.addEventListener('input', () => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         const q = input.value.trim().toLowerCase();
         if (!q) { render(items); return; }
-        render(items.filter((it: any) =>
+        render(items.filter((it) =>
           it.title.toLowerCase().includes(q) ||
-          it.tags.some((t: string) => t.toLowerCase().includes(q))
+          it.tags.some((t) => t.toLowerCase().includes(q))
         ));
       }, 80);
     }, { signal });

@@ -2,12 +2,23 @@
 interface Props {
   bvid: string;
   page?: number;
+  title?: string;
 }
-const { bvid, page = 1 } = Astro.props;
+
+const { bvid, page = 1, title = 'Bilibili 视频播放器' } = Astro.props;
+const params = new URLSearchParams({
+  bvid,
+  page: String(page),
+  high_quality: '1',
+  as_wide: '1',
+  allowfullscreen: 'true',
+});
+const src = `https://player.bilibili.com/player.html?${params.toString()}`;
 ---
 <div class="my-8 aspect-video w-full rounded-2xl overflow-hidden shadow-xl border border-white/[0.08] bg-abyss/50 relative">
   <iframe
-    src={`//player.bilibili.com/player.html?bvid=${bvid}&page=${page}&high_quality=1&as_wide=1&allowfullscreen=true`}
+    src={src}
+    title={title}
     allowfullscreen
     loading="lazy"
     class="absolute inset-0 w-full h-full"

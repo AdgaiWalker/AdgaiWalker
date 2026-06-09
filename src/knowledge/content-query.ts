@@ -10,6 +10,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname, basename } from 'node:path';
 import matter from 'gray-matter';
+import { isPublicVisibility, resolveContentVisibility, type ContentVisibility } from './visibility';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -100,6 +101,7 @@ export function invalidateCache(): void {
 
 function matches(item: ParsedContent, filter: QueryFilter): boolean {
   const fm = item.frontmatter;
+  if (!isPublicParsedContent(item)) return false;
   if (filter.type !== undefined && fm.type !== filter.type) return false;
   if (filter.status !== undefined && fm.status !== filter.status) return false;
   if (filter.domain !== undefined && fm.domain !== filter.domain) return false;
@@ -113,6 +115,14 @@ function matches(item: ParsedContent, filter: QueryFilter): boolean {
     if (!filter.tags.some(t => itemTags.includes(t))) return false;
   }
   return true;
+}
+
+export function getParsedVisibility(item: ParsedContent): ContentVisibility {
+  return resolveContentVisibility(item.frontmatter);
+}
+
+export function isPublicParsedContent(item: ParsedContent): boolean {
+  return isPublicVisibility(item.frontmatter);
 }
 
 /** 按 frontmatter.date 降序排列 */
@@ -130,12 +140,12 @@ function sortByDate(items: ParsedContent[]): ParsedContent[] {
 
 /** 获取全部内容（按日期降序） */
 export function getAll(contentDir?: string): ParsedContent[] {
-  return sortByDate([...loadAll(contentDir)]);
+  return sortByDate(loadAll(contentDir).filter(isPublicParsedContent));
 }
 
 /** 按 slug 查找单条内容 */
 export function findBySlug(slug: string, contentDir?: string): ParsedContent | undefined {
-  return loadAll(contentDir).find(item => item.slug === slug);
+  return loadAll(contentDir).find(item => item.slug === slug && isPublicParsedContent(item));
 }
 
 /** 多条件过滤查询 */
@@ -148,6 +158,7 @@ export function search(text: string, contentDir?: string): ParsedContent[] {
   const lower = text.toLowerCase();
   return sortByDate(
     loadAll(contentDir).filter(item => {
+      if (!isPublicParsedContent(item)) return false;
       const title = String(item.frontmatter.title ?? '').toLowerCase();
       const summary = String(item.frontmatter.summary ?? '').toLowerCase();
       return (
@@ -162,7 +173,7 @@ export function search(text: string, contentDir?: string): ParsedContent[] {
 /** 统计各 type 的数量 */
 export function countByType(contentDir?: string): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const item of loadAll(contentDir)) {
+  for (const item of loadAll(contentDir).filter(isPublicParsedContent)) {
     const type = String(item.frontmatter.type ?? 'unknown');
     counts[type] = (counts[type] ?? 0) + 1;
   }

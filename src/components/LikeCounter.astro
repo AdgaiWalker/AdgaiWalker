@@ -63,9 +63,18 @@ const FALLBACK_COUNT = 0;
 <script>
   import { gsap } from 'gsap';
 
-  async function fetchCount(pagePath: string, fallbackCount: number): Promise<number> {
+  let likesAbort: AbortController | null = null;
+
+  function cleanupLikes() {
+    likesAbort?.abort();
+    likesAbort = null;
+    gsap.killTweensOf('.like-particle');
+    document.querySelectorAll('.like-particle').forEach((particle) => particle.remove());
+  }
+
+  async function fetchCount(pagePath: string, fallbackCount: number, signal: AbortSignal): Promise<number> {
     try {
-      const res = await fetch(`/api/like?path=${encodeURIComponent(pagePath)}`);
+      const res = await fetch(`/api/like?path=${encodeURIComponent(pagePath)}`, { signal });
       if (!res.ok) return fallbackCount;
       const data = await res.json();
       return data.count ?? fallbackCount;
@@ -74,12 +83,13 @@ const FALLBACK_COUNT = 0;
     }
   }
 
-  async function incrementCount(pagePath: string, fallbackCount: number): Promise<number> {
+  async function incrementCount(pagePath: string, fallbackCount: number, signal: AbortSignal): Promise<number> {
     try {
       const res = await fetch('/api/like', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: pagePath }),
+        signal,
       });
       if (!res.ok) return fallbackCount + 1;
       const data = await res.json();
@@ -130,12 +140,13 @@ const FALLBACK_COUNT = 0;
     button: HTMLButtonElement,
     pagePath: string,
     fallbackCount: number,
+    signal: AbortSignal,
   ) {
     const countEl = button.querySelector<HTMLElement>('[data-like-count]');
     const setCount = (count: number) => {
-      if (countEl) countEl.textContent = String(count);
+      if (!signal.aborted && countEl) countEl.textContent = String(count);
     };
-    fetchCount(pagePath, fallbackCount).then(setCount).catch(() => setCount(fallbackCount));
+    fetchCount(pagePath, fallbackCount, signal).then(setCount).catch(() => setCount(fallbackCount));
   }
 
   function markAsLiked(
@@ -154,12 +165,12 @@ const FALLBACK_COUNT = 0;
   }
 
   const setupLikes = async () => {
+    cleanupLikes();
+    likesAbort = new AbortController();
+    const { signal } = likesAbort;
     const buttons = document.querySelectorAll<HTMLButtonElement>('[data-like-counter]');
 
     buttons.forEach(async (button) => {
-      if (button.dataset.ready === 'true') return;
-      button.dataset.ready = 'true';
-
       const pagePath = button.dataset.pagePath ?? '/';
       const fallbackCount = Number(button.dataset.fallbackCount ?? '0');
       const outlineIcon = button.querySelector<HTMLElement>('.heart-outline');
@@ -171,7 +182,7 @@ const FALLBACK_COUNT = 0;
       }
 
       // 从 KV 拉取真实计数
-      fetchAndDisplayCount(button, pagePath, fallbackCount);
+      fetchAndDisplayCount(button, pagePath, fallbackCount, signal);
 
       button.addEventListener('click', async (e) => {
         if (localStorage.getItem(storageKey) === 'true') {
@@ -184,7 +195,8 @@ const FALLBACK_COUNT = 0;
 
         button.disabled = true;
         try {
-          const finalCount = await incrementCount(pagePath, fallbackCount);
+          const finalCount = await incrementCount(pagePath, fallbackCount, signal);
+          if (signal.aborted) return;
           const countEl = button.querySelector<HTMLElement>('[data-like-count]');
           if (countEl) countEl.textContent = String(finalCount);
           localStorage.setItem(storageKey, 'true');
@@ -193,13 +205,14 @@ const FALLBACK_COUNT = 0;
           button.classList.add('like-bounce');
           button.addEventListener('animationend', () => {
             button.classList.remove('like-bounce');
-          }, { once: true });
+          }, { once: true, signal });
         } catch {
-          button.disabled = false;
+          if (!signal.aborted) button.disabled = false;
         }
-      });
+      }, { signal });
     });
   };
 
   document.addEventListener('astro:page-load', setupLikes);
+  document.addEventListener('astro:before-swap', cleanupLikes);
 </script>

@@ -2,7 +2,7 @@
 // /admin/insights — 数据看板（服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
 import { getDemandStats, getTopicCandidates } from '@/conversation/store';
-import { needCategoryLabels } from '@/profiles/resource-index';
+import { abilityTypeLabels, frictionLayerLabels, needCategoryLabels } from '@/profiles/resource-index';
 import { readGatewayLogs, type GatewayCallLog } from '@/agent/gateway';
 
 export const prerender = false;
@@ -27,17 +27,27 @@ const sortedCategories = Object.entries(stats.byCategory)
   .map(([id, count]) => ({ id, label: needCategoryLabels[id as keyof typeof needCategoryLabels] ?? id, count }));
 const categoryMax = Math.max(1, ...sortedCategories.map(c => c.count));
 
-// 判断分布
-const verdictLabels: Record<string, string> = {
-  'codex-fit': '适合代码 Agent',
-  'codex-not-needed': '不需要代码',
-  'codex-maybe': '可能适合',
-  'not-enough-info': '信息不足',
-};
-const sortedVerdicts = Object.entries(stats.byFitVerdict)
+// 卡点与能力分布
+const sortedFrictionLayers = Object.entries(stats.byFrictionLayer)
   .sort((a, b) => b[1] - a[1])
-  .map(([id, count]) => ({ id, label: verdictLabels[id] ?? id, count }));
-const verdictMax = Math.max(1, ...sortedVerdicts.map(v => v.count));
+  .map(([id, count]) => ({ id, label: frictionLayerLabels[id as keyof typeof frictionLayerLabels] ?? id, count }));
+const frictionLayerMax = Math.max(1, ...sortedFrictionLayers.map(v => v.count));
+
+const sortedAbilityTypes = Object.entries(stats.byAbilityType)
+  .sort((a, b) => b[1] - a[1])
+  .map(([id, count]) => ({ id, label: abilityTypeLabels[id as keyof typeof abilityTypeLabels] ?? id, count }));
+const abilityTypeMax = Math.max(1, ...sortedAbilityTypes.map(v => v.count));
+
+const feedbackLabels: Record<string, string> = {
+  resolved: '解决了',
+  stuck: '还卡着',
+  'not-fit': '不适合',
+  'want-tutorial': '想看教程',
+};
+const sortedFeedback = Object.entries(stats.byFeedbackType)
+  .sort((a, b) => b[1] - a[1])
+  .map(([id, count]) => ({ id, label: feedbackLabels[id] ?? id, count }));
+const feedbackMax = Math.max(1, ...sortedFeedback.map(v => v.count));
 
 // 趋势数据（SVG）
 const trend = stats.dailyTrend.slice(-30);
@@ -161,6 +171,7 @@ const trendPoints = trend.map((t, i) => {
     <div class="admin-bar-right">
       <a href="/admin" class="admin-bar-link">仪表盘</a>
       <a href="/admin/insights" class="admin-bar-link active">洞察</a>
+      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
       <a href="/admin/topics" class="admin-bar-link">选题库</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
@@ -194,6 +205,16 @@ const trendPoints = trend.map((t, i) => {
         <div class="kpi-label">内容缺口</div>
         <div class="kpi-value">{contentGaps.length}</div>
         <div class="kpi-sub">无关联资料</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">合规转向率</div>
+        <div class="kpi-value">{Math.round(stats.complianceRedirectRate * 100)}%</div>
+        <div class="kpi-sub">入口边界问题</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">代码 Agent 误用率</div>
+        <div class="kpi-value">{Math.round(stats.codeAgentMisuseRate * 100)}%</div>
+        <div class="kpi-sub">提到 Codex 但不适合代码 Agent</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">AI 成功率</div>
@@ -263,17 +284,51 @@ const trendPoints = trend.map((t, i) => {
         )) : <div class="gap-empty">暂无数据</div>}
       </div>
 
-      <!-- 判断分布 -->
+      <!-- 卡点层级分布 -->
       <div class="panel">
         <div class="panel-title">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
-          判断分布
+          卡点层级分布
         </div>
-        {sortedVerdicts.length > 0 ? sortedVerdicts.map(v => (
+        {sortedFrictionLayers.length > 0 ? sortedFrictionLayers.map(v => (
           <div class="bar-row">
             <span class="bar-label">{v.label}</span>
             <div class="bar-track">
-              <div class="bar-fill bar-fill-amber" style={`width: ${(v.count / verdictMax) * 100}%`} />
+              <div class="bar-fill bar-fill-amber" style={`width: ${(v.count / frictionLayerMax) * 100}%`} />
+            </div>
+            <span class="bar-count">{v.count}</span>
+          </div>
+        )) : <div class="gap-empty">暂无数据</div>}
+      </div>
+
+      <!-- 能力方向分布 -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"/><path d="M4 5h11l-1 4 1 4H4"/><path d="M4 13h13"/></svg>
+          能力方向分布
+        </div>
+        {sortedAbilityTypes.length > 0 ? sortedAbilityTypes.map(v => (
+          <div class="bar-row">
+            <span class="bar-label">{v.label}</span>
+            <div class="bar-track">
+              <div class="bar-fill bar-fill-blue" style={`width: ${(v.count / abilityTypeMax) * 100}%`} />
+            </div>
+            <span class="bar-count">{v.count}</span>
+          </div>
+        )) : <div class="gap-empty">暂无数据</div>}
+      </div>
+
+      <!-- 反馈分布 -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+          反馈分布
+        </div>
+        {sortedFeedback.length > 0 ? sortedFeedback.map(v => (
+          <div class="bar-row">
+            <span class="bar-label">{v.label}</span>
+            <div class="bar-track">
+              <div class="bar-fill bar-fill-amber" style={`width: ${(v.count / feedbackMax) * 100}%`} />
             </div>
             <span class="bar-count">{v.count}</span>
           </div>

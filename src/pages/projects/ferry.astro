@@ -8,13 +8,14 @@ import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection } from 'astro:content';
 import { ferryTree, flattenFerryTree, groupByRole } from '@/data/ferry-ecosystem';
+import { isPublicContentData } from '@/knowledge/content';
 import type { FerryNode } from '@/data/ferry-ecosystem';
 
 export const prerender = true;
 
 // 获取 Ferry 计划系列的内容条目
 const ferryEntries = (await getCollection('log', ({ data }) =>
-  data.published && data.series === 'Ferry计划'
+  isPublicContentData(data) && data.series === 'Ferry计划'
 )).sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0));
 
 const { trunk, branch, fruit } = groupByRole();

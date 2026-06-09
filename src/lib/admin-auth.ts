@@ -52,10 +52,12 @@ export function isAdmin(request: Request): boolean {
 
 /** 创建登录成功后的 Set-Cookie header */
 export function authCookie(token: string): string {
-  return `${COOKIE_NAME}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${TOKEN_MAX_AGE}`;
+  const secure = import.meta.env.PROD ? '; Secure' : '';
+  return `${COOKIE_NAME}=${token}; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=${TOKEN_MAX_AGE}`;
 }
 
 /** 创建登出的 Set-Cookie header（立即过期） */
 export function clearCookie(): string {
-  return `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`;
+  const secure = import.meta.env.PROD ? '; Secure' : '';
+  return `${COOKIE_NAME}=; HttpOnly${secure}; SameSite=Strict; Path=/; Max-Age=0`;
 }

@@ -10,6 +10,7 @@ import { getDemandStats, type DemandStats } from '@/conversation/store';
 export const prerender = true;
 
 const ideas = await getPublishedIdeas();
+const PUBLIC_DEMAND_SIGNAL_MIN = 5;
 
 // 需求洞察（构建时读取）
 const demandStats = await getDemandStats({ days: 30 });
@@ -147,10 +148,10 @@ const renderedIdeas = await Promise.all(
                           <span class="status-indicator"></span>
                           {statusLabel[status] ?? status}
                         </span>
-                        {demandSignal > 0 && (
+                        {demandSignal >= PUBLIC_DEMAND_SIGNAL_MIN && (
                           <span class="demand-signal-badge">
                             <Icon name="lucide:activity" width={10} height={10} />
-                            {demandSignal} 次需求提及
+                            有需求信号
                           </span>
                         )}
                       </div>

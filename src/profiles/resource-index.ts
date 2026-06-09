@@ -33,8 +33,17 @@ export type AiStage =
   | 'builder'
   | 'prefer-not-say';
 
+export type FrictionLayer =
+  | 'compliance-entry'
+  | 'account-config'
+  | 'tool-understanding'
+  | 'scenario-match'
+  | 'value-understanding'
+  | 'practice-deepening'
+  | 'unclear';
+
 export type ToolFit =
-  | 'codex'
+  | 'code-agent'
   | 'chat-ai'
   | 'office'
   | 'design'
@@ -42,11 +51,16 @@ export type ToolFit =
   | 'content'
   | 'automation';
 
-export type FitVerdict =
-  | 'codex-fit'
-  | 'codex-not-needed'
-  | 'codex-maybe'
-  | 'not-enough-info';
+export type AbilityType =
+  | 'compliance-path'
+  | 'chat-ai'
+  | 'code-agent'
+  | 'office'
+  | 'design'
+  | 'automation'
+  | 'learning-path'
+  | 'content-navigation'
+  | 'clarify';
 
 export interface MatchResource {
   id: string;
@@ -98,6 +112,28 @@ export const needCategoryLabels: Record<NeedCategory, string> = {
   'content-navigation': '站内内容导航',
 };
 
+export const frictionLayerLabels: Record<FrictionLayer, string> = {
+  'compliance-entry': '合规入口层',
+  'account-config': '账号与配置层',
+  'tool-understanding': '工具认知层',
+  'scenario-match': '场景匹配层',
+  'value-understanding': '价值理解层',
+  'practice-deepening': '实践深化层',
+  unclear: '还不清楚',
+};
+
+export const abilityTypeLabels: Record<AbilityType, string> = {
+  'compliance-path': '合规路径优先',
+  'chat-ai': '聊天 AI 优先',
+  'code-agent': '代码 Agent 优先',
+  office: '办公工具优先',
+  design: '设计工具优先',
+  automation: '自动化流程优先',
+  'learning-path': '学习路径优先',
+  'content-navigation': '站内导航优先',
+  clarify: '继续澄清',
+};
+
 export const matchResources: MatchResource[] = [
   {
     id: 'learn-ai-life',
@@ -119,10 +155,10 @@ export const matchResources: MatchResource[] = [
     kind: 'tool-section',
     useFor: '快速查看我按场景实际在用的 AI 工具。',
     summary: '按通用编程、Agent 开发、写文章、做图、做视频、学习等场景列工具。',
-    keywords: ['工具', '用什么', '推荐', 'codex', 'claude', 'gemini', '写文章', '做视频', '做图'],
-    categories: ['coding', 'writing', 'image-video', 'learn-ai', 'content-navigation'],
+    keywords: ['工具', '用什么', '推荐', 'codex', 'claude', 'gemini', 'ppt', '表格', '办公', '教案', '写文章', '做视频', '做图'],
+    categories: ['coding', 'writing', 'image-video', 'office', 'learn-ai', 'content-navigation'],
     aiStages: ['beginner', 'chat-user', 'ide-user', 'cli-user'],
-    toolFit: ['codex', 'chat-ai', 'content', 'design'],
+    toolFit: ['code-agent', 'chat-ai', 'office', 'content', 'design'],
   },
   {
     id: 'tools-low-cost-ai',
@@ -148,7 +184,7 @@ export const matchResources: MatchResource[] = [
     categories: ['automation', 'coding', 'idea'],
     audienceGroups: ['developer', 'freelancer-founder', 'creator'],
     aiStages: ['cli-user', 'builder'],
-    toolFit: ['codex', 'automation'],
+    toolFit: ['code-agent', 'automation'],
   },
   {
     id: 'article-cli-panel',
@@ -161,7 +197,7 @@ export const matchResources: MatchResource[] = [
     categories: ['automation', 'design', 'coding', 'idea'],
     audienceGroups: ['developer', 'freelancer-founder', 'office-worker'],
     aiStages: ['cli-user', 'builder'],
-    toolFit: ['codex', 'automation'],
+    toolFit: ['code-agent', 'automation'],
   },
   {
     id: 'article-design-bridge',
@@ -264,6 +300,6 @@ export const matchResources: MatchResource[] = [
     categories: ['coding', 'idea', 'design'],
     audienceGroups: ['developer', 'creator', 'freelancer-founder'],
     aiStages: ['ide-user', 'cli-user', 'builder'],
-    toolFit: ['codex', 'design'],
+    toolFit: ['code-agent', 'design'],
   },
 ];

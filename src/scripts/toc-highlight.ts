@@ -6,9 +6,9 @@ import { gsap } from 'gsap';
  * 高亮对应的 TOC 链接
  */
 
-function initTocHighlight(): void {
-  const tocLinks = document.querySelectorAll<HTMLAnchorElement>('[data-toc-slug]');
-  if (tocLinks.length === 0) return;
+function initTocInstance(toc: HTMLElement): (() => void) | null {
+  const tocLinks = toc.querySelectorAll<HTMLAnchorElement>('[data-toc-slug]');
+  if (tocLinks.length === 0) return null;
 
   // 收集所有锚点对应的标题元素
   const headingMap = new Map<string, HTMLElement>();
@@ -19,10 +19,11 @@ function initTocHighlight(): void {
     if (heading) headingMap.set(slug, heading);
   });
 
-  if (headingMap.size === 0) return;
+  if (headingMap.size === 0) return null;
 
-  const indicator = document.getElementById('toc-indicator') as HTMLElement | null;
+  const indicator = toc.querySelector<HTMLElement>('[data-toc-indicator]');
   let activeSlug = '';
+  let initTimer: ReturnType<typeof setTimeout> | null = null;
 
   const setActive = (slug: string): void => {
     if (slug === activeSlug) return;
@@ -78,8 +79,8 @@ function initTocHighlight(): void {
 
   // 1. 初始化高亮位置
   if (indicator) {
-    setTimeout(() => {
-      const activeLink = document.querySelector('[data-toc-slug].active') as HTMLElement | null;
+    initTimer = setTimeout(() => {
+      const activeLink = toc.querySelector<HTMLElement>('[data-toc-slug].active');
       if (activeLink && indicator) {
         gsap.set(indicator, {
           top: activeLink.offsetTop,
@@ -125,9 +126,26 @@ function initTocHighlight(): void {
   window.addEventListener('scroll', handleScroll, { passive: true });
 
   // 清理
-  const cleanup = () => {
+  return () => {
+    if (initTimer) {
+      clearTimeout(initTimer);
+      initTimer = null;
+    }
     observer.disconnect();
     window.removeEventListener('scroll', handleScroll);
+    if (indicator) gsap.killTweensOf(indicator);
+  };
+}
+
+function initTocHighlight(): void {
+  const cleanups = Array.from(document.querySelectorAll<HTMLElement>('[data-toc-instance]'))
+    .map(initTocInstance)
+    .filter((cleanup): cleanup is () => void => Boolean(cleanup));
+
+  if (cleanups.length === 0) return;
+
+  const cleanup = () => {
+    cleanups.forEach((fn) => fn());
     document.removeEventListener('astro:before-swap', cleanup);
   };
   document.addEventListener('astro:before-swap', cleanup);

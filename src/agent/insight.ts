@@ -24,9 +24,11 @@ function normalizeNeed(text: string): string {
 
 function makeClusterKey(event: DemandEvent): string {
   const category = event.needCategories[0] ?? 'content-navigation';
+  const layer = event.frictionLayer ?? 'unclear';
+  const ability = event.recommendedAbilityType ?? 'clarify';
   const normalized = normalizeNeed(event.needSummary || event.rawNeedRedacted);
   const head = normalized.slice(0, 18);
-  return `${category}:${head}`;
+  return `${layer}:${ability}:${category}:${head}`;
 }
 
 function getRelatedContentIds(events: DemandEvent[]): string[] {
@@ -44,6 +46,9 @@ function getRelatedContentIds(events: DemandEvent[]): string[] {
 
 function createTopicTitle(category: NeedCategory, representativeNeed: string): string {
   const label = needCategoryLabels[category] ?? 'AI 工具选择';
+  if (representativeNeed.includes('合规') || representativeNeed.includes('灰色') || representativeNeed.includes('绕过')) {
+    return 'AI 合规入门：普通人如何选择可正常使用的工具路径';
+  }
   if (representativeNeed.includes('怎么开始') || representativeNeed.includes('从哪开始')) {
     return `${label}：新手第一步到底该做什么`;
   }
@@ -72,6 +77,7 @@ function summarizeAudience(events: DemandEvent[]): string {
 function createCandidate(events: DemandEvent[]): TopicCandidate {
   const category = events[0]?.needCategories[0] ?? 'content-navigation';
   const representativeNeed = events[0]?.needSummary || events[0]?.rawNeedRedacted || '用户想找到合适的 AI 工具';
+  const hasComplianceRedirect = events.some(event => event.complianceRedirected);
   const relatedContentIds = getRelatedContentIds(events);
   const relatedTitles = relatedContentIds
     .map(id => matchResources.find(resource => resource.id === id)?.title)
@@ -81,10 +87,16 @@ function createCandidate(events: DemandEvent[]): TopicCandidate {
   return {
     topicId: randomUUID(),
     createdAt: new Date().toISOString(),
-    title: createTopicTitle(category, representativeNeed),
+    title: hasComplianceRedirect
+      ? 'AI 合规入门：普通人如何选择可正常使用的工具路径'
+      : createTopicTitle(category, representativeNeed),
     audience: summarizeAudience(events),
-    coreQuestion: representativeNeed,
-    contentAngle: relatedTitles
+    coreQuestion: hasComplianceRedirect
+      ? '用户卡在账号、入口或访问边界，需要被转回可正常完成的 AI 实践路径。'
+      : representativeNeed,
+    contentAngle: hasComplianceRedirect
+      ? '只做合规普及：解释官方入口、账号配置、中文学习路径和可正常使用工具，不提供绕过限制或灰色渠道。'
+      : relatedTitles
       ? `围绕这个问题，用 ${relatedTitles} 串成一条低认知成本路径。`
       : '围绕这个问题补一条更清晰的站内资料路径。',
     sourceNeedCount: events.length,
@@ -151,6 +163,9 @@ async function processWithModel(events: DemandEvent[]) {
     count: evts.length,
     needs: evts.slice(0, 3).map(e => e.needSummary || e.rawNeedRedacted),
     categories: [...new Set(evts.flatMap(e => e.needCategories))],
+    frictionLayers: [...new Set(evts.map(e => e.frictionLayer).filter(Boolean))],
+    abilityTypes: [...new Set(evts.map(e => e.recommendedAbilityType).filter(Boolean))],
+    complianceRedirected: evts.some(e => e.complianceRedirected),
     relatedContent: [...new Set(evts.flatMap(e => e.recommendedContentIds))],
   }));
 
@@ -159,7 +174,7 @@ async function processWithModel(events: DemandEvent[]) {
   const prompt = `你是内容选题分析师。以下是用户需求聚类摘要，请做语义再聚类和内容缺口分析。
 
 需求聚类：
-${clusterSummaries.map((c, i) => `[${i}] (${c.count}条) ${c.needs.join(' / ')} | 类别:${c.categories.join(',')} | 关联:${c.relatedContent.join(',') || '无'}`).join('\n')}
+${clusterSummaries.map((c, i) => `[${i}] (${c.count}条) ${c.needs.join(' / ')} | 层级:${c.frictionLayers.join(',') || '无'} | 能力:${c.abilityTypes.join(',') || '无'} | 合规转向:${c.complianceRedirected ? '是' : '否'} | 类别:${c.categories.join(',')} | 关联:${c.relatedContent.join(',') || '无'}`).join('\n')}
 
 站内已有内容：
 ${siteContent}
@@ -168,6 +183,7 @@ ${siteContent}
 1. 将语义相似的聚类合并
 2. 判断站内内容是否已覆盖（内容缺口）
 3. 为每个最终聚类生成一个选题候选
+4. 如果来源包含合规转向，只能生成合规普及选题，不能生成绕过限制、灰色账号、代注册、代验证、非官方渠道教程
 
 返回 JSON 数组，每项：
 {

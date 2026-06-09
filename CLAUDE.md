@@ -64,7 +64,10 @@ npx astro check    # Astro 类型检查
 | `/content` | 内容宇宙（多维度内容聚合） | Base |
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
+| `/admin` | 管理仪表盘（内容统计 + 快捷入口） | Admin（独立样式） |
+| `/admin/login` | 管理员登录 | Admin（独立样式） |
 | `/admin/insights` | 数据看板（管理员专属） | Admin（独立样式） |
+| `/admin/ai-gateway` | AI Gateway 配置与监控（服务商/模型/日志） | Admin（独立样式） |
 | `/admin/topics` | 选题库（管理员专属） | Admin（独立样式） |
 | `/admin/content/edit` | 内容编辑器（管理员专属） | Admin（独立样式） |
 | `/404` | 404 页面 | Base |
@@ -78,6 +81,7 @@ npx astro check    # Astro 类型检查
 |------|------|------|
 | `/api/match` | 工具匹配（隐私脱敏 + 本地匹配 + Claude API） | 无 |
 | `/api/match-end` | 结束匹配会话 | 无（sessionId） |
+| `/api/match-feedback` | 推荐结果反馈（解决了/还卡着/不适合/想看教程） | 无 |
 | `/api/match-process` | 批处理需求聚类（Cron 触发） | CRON_SECRET |
 | `/api/match-history` | 用户对话历史（按 sessionId 列表） | 无（sessionId） |
 | `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
@@ -86,6 +90,7 @@ npx astro check    # Astro 类型检查
 | `/api/admin/auth` | 管理员登录/登出/状态检测 | admin cookie（GET） |
 | `/api/admin/conversations` | 管理员查看所有对话 | admin cookie |
 | `/api/admin/content/[slug]` | 内容 CRUD（GitHub API 回写） | admin cookie |
+| `/api/admin/gateway` | AI Gateway 配置 CRUD + 测试连接 + 撤销/重置 | admin cookie |
 | `/index.json` | AI 可读内容索引 JSON | 无布局（静态 JSON） |
 
 以下旧路由保留为 301 重定向（定义在 `astro.config.mjs`）：
@@ -127,8 +132,9 @@ npx astro check    # Astro 类型检查
 - **`GiscusWidget.astro`**（根级）：基于 GitHub Discussions 的评论组件，配置通过 `PUBLIC_GISCUS_*` 环境变量注入，主题跟随 `walker-theme-change` 事件自动切换。在 `[slug].astro` 中使用。
 - **`Footer.astro`**（根级）：全局页脚，被 `Base.astro` 使用。
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
-- **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。服务端 API 路由 `src/pages/api/like.ts` 使用 Upstash Redis（Vercel Marketplace）存储计数，同 IP 每路径 60s 冷却。Redis 不可用时降级为 `FALLBACK_COUNT` 常量。环境变量 `KV_REST_API_URL` / `KV_REST_API_TOKEN` / `REDIS_URL` 由 Vercel 自动注入。
+- **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。服务端 API 路由 `src/pages/api/like.ts` 使用 Upstash Redis（Vercel Marketplace）存储计数，同 IP 每路径 60s 冷却。Redis 不可用时降级为 `FALLBACK_COUNT` 常量。环境变量 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选）由 Vercel 自动注入。
 - **About 页面组件**（`about/`）：`AboutSiteTab.astro`（关于站 Tab 内容，被 `about/index.astro` 引用）、`SectionHeader.astro`（通用 section 标题组件）。
+- **AdminEditBar.astro**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入，提供编辑/新建/删除入口。
 
 ### 图标与样式
 
@@ -171,7 +177,7 @@ npx astro check    # Astro 类型检查
 独立于 Astro 构建管道的内容查询和 Agent 接口层，用于让 LLM / Agent 结构化地读写 Obsidian markdown 内容。
 
 - **`src/knowledge/content-query.ts`**：独立查询引擎。直接读文件系统，用 `gray-matter` 解析 frontmatter + body，提供 `getAll()`、`findBySlug()`、`query(filter)`、`search(text)`、`countByType()` 查询函数。带内存缓存，`invalidateCache()` 清空。不依赖 Astro 构建上下文。
-- **`src/mcp/index.ts`**：基于 `@modelcontextprotocol/sdk` 的 MCP server（stdio transport），注册 4 个工具：`walker_query`（多条件过滤）、`walker_search`（全文搜索）、`walker_get`（按 slug 取完整内容）、`walker_stats`（统计概览）。封装 `content-query.ts` 的查询能力为 MCP 协议。
+- **`src/mcp/index.ts`**：基于 `@modelcontextprotocol/sdk` 的 MCP server（stdio transport），注册 5 个工具：`walker_query`（多条件过滤）、`walker_search`（全文搜索）、`walker_get`（按 slug 取完整内容）、`walker_stats`（内容统计概览）、`walker_insights`（需求洞察统计）。封装 `content-query.ts` 的查询能力为 MCP 协议。
 - **`scripts/build-mcp.cjs`**：将 TypeScript 源码（content-query + MCP server）编译打包为单个 `dist/mcp/index.mjs`。`npm run build:mcp` 一键构建。`dist/` 在 `.gitignore` 中，不进 git。
 
 ### 数据文件
@@ -198,6 +204,11 @@ npx astro check    # Astro 类型检查
 #### agent/（匹配 Agent）
 
 - **`match.ts`**：匹配核心。接收用户需求，基于关键词评分 + 站内资源索引进行本地初筛，输出 `MatchResult`（分类、资源、串联语、判断结论）。不依赖 AI API，可独立运行。
+- **`gateway.ts`**：统一 AI 调用网关。流程：Pretext → 敏感词检测 → API key 检查 → AI 调用 → 输出检测 → 日志。支持 OpenAI 兼容格式（DeepSeek / OpenAI / 中转站）和 Anthropic 原生格式。所有 AI 调用通过 `callGateway()` 统一入口，带超时控制、降级回退和 Redis 日志。导出 `readGatewayLogs()` 供管理页查询。
+- **`gateway-config.ts`**：网关配置管理。预设 4 个服务商（DeepSeek / OpenAI / Anthropic / 自定义），配置存 Redis（hash `ai-gateway:config`），无 Redis 时降级到内存 + 本地文件 `.gateway-config.json`。支持配置更新（带历史记录）、撤销、重置、测试连接（`testGatewayConnection`）、调用统计（`getGatewayStats`）。
+- **`pretext.ts`**：AI Pretext 系统。根据调用路由和内容推断场景（`match_search` / `match_chat` / `insight` / `content_gen` / `general`），为每个场景生成专属系统提示，附加全局行为规则。
+- **`sensitive.ts`**：敏感词管控。六类分治词库（色情/暴力/赌博/违禁/辱骂/自伤），输入拦截 + 输出过滤，命中时降级为 fallback。
+- **`ai-utils.ts`**：AI 响应解析工具。从容错文本中提取 JSON（`extractLikelyJson`、`safeParseJsonObject`），类型守卫和数组规范化。
 - **`insight.ts`**：需求洞察。从对话产生的需求事件中聚类，生成 `TopicCandidate`（选题候选），含优先级、核心问题、内容角度。批处理接口 `processPendingDemandEvents()`。
 - **`privacy.ts`**：隐私护盾。PII 脱敏（邮箱、手机号、密钥、联系方式、身份证）、文本压缩、未成年人判断。被对话 API 调用。
 
@@ -213,6 +224,7 @@ npx astro check    # Astro 类型检查
 
 #### 其他
 
+- **`src/lib/admin-auth.ts`**：管理员认证。Cookie HMAC 签名（7 天有效），导出 `isAdmin()`（请求检查）、`signToken()`、`verifyToken()`、`authCookie()`、`clearCookie()`。被所有 admin 页面和 `/api/insights`、`/api/admin/*` 路由引用。
 - **`src/lib/theme.ts`**：多主题循环工具。导出 `THEMES`（`nature`/`aurora`/`sunset`/`mint`）、`ThemeName` 类型、`cycleTheme()` 函数。被 `Navigation.astro`、`home-canvas.ts`、`FullscreenLayout.astro` 引用。
 - **`src/types/nav.ts`**：导航类型定义。`NavItem`（`label`、`href`、`icon`、`hint?`）和 `NavGroup`（`title?`、`items`），被 `Navigation.astro` 和 `SidebarNav.astro` 引用。
 

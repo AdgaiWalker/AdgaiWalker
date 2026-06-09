@@ -1,7 +1,7 @@
 ---
 // /admin — 管理仪表盘（服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
-import { getCollection } from 'astro:content';
+import { getAllContentEntries } from '@/knowledge/content';
 import { Icon } from 'astro-icon/components';
 
 // 不预渲染——每次请求都检查 cookie
@@ -13,7 +13,7 @@ if (!isAdmin(Astro.request)) {
 }
 
 // 数据获取
-const allContent = await getCollection('log', ({ data }) => data.published);
+const allContent = await getAllContentEntries();
 const byType: Record<string, number> = {};
 for (const entry of allContent) {
   const t = entry.data.type;
@@ -296,6 +296,7 @@ const recentContent = allContent
     <div class="admin-bar-right">
       <a href="/admin" class="admin-bar-link active">仪表盘</a>
       <a href="/admin/insights" class="admin-bar-link">洞察</a>
+      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
       <a href="/admin/topics" class="admin-bar-link">选题库</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
@@ -349,7 +350,7 @@ const recentContent = allContent
             <div class="quick-action-desc">用户需求数据分析</div>
           </div>
         </a>
-        <a href="/admin/learning" class="quick-action">
+        <a href="/learn" class="quick-action">
           <div class="quick-action-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </div>

@@ -81,40 +81,72 @@ const { slug } = Astro.props;
 </style>
 
 <script>
-  const bar = document.getElementById('admin-edit-bar');
-  if (bar) {
-    // 客户端检测管理员身份
-    fetch('/api/admin/auth').then(r => r.json()).then(data => {
-      if (data.admin) bar.style.display = 'flex';
-    }).catch(() => {});
+  let adminAbort: AbortController | null = null;
+  let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const deleteBtn = document.getElementById('admin-delete-btn');
+  function cleanupAdminEditBar() {
+    adminAbort?.abort();
+    adminAbort = null;
+    if (redirectTimer) {
+      clearTimeout(redirectTimer);
+      redirectTimer = null;
+    }
+  }
+
+  async function showBarIfAdmin(bar: HTMLElement, signal: AbortSignal) {
+    try {
+      const res = await fetch('/api/admin/auth', { signal });
+      const data = await res.json();
+      if (!signal.aborted && data.admin) bar.style.display = 'flex';
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function initAdminEditBar() {
+    cleanupAdminEditBar();
+    const bar = document.getElementById('admin-edit-bar');
+    if (!bar) return;
+
+    adminAbort = new AbortController();
+    const { signal } = adminAbort;
+
+    showBarIfAdmin(bar, signal);
+
+    const deleteBtn = document.getElementById('admin-delete-btn') as HTMLButtonElement | null;
     const status = document.getElementById('admin-status');
     const slug = bar.dataset.slug;
 
-    if (deleteBtn && status && slug) {
-    const btn = deleteBtn as HTMLButtonElement;
-      deleteBtn.addEventListener('click', async () => {
-        if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
-        btn.disabled = true;
-        try {
-          const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, { method: 'DELETE' });
-          const data = await res.json();
-          if (res.ok && data.ok) {
-            status.textContent = '已删除，正在跳转...';
-            status.className = 'aeb-status visible success';
-            setTimeout(() => { window.location.href = '/posts'; }, 1000);
-          } else {
-            status.textContent = data.error || '删除失败';
-            status.className = 'aeb-status visible error';
-          }
-        } catch {
-          status.textContent = '网络错误';
+    if (!deleteBtn || !status || !slug) return;
+
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
+      deleteBtn.disabled = true;
+      try {
+        const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, {
+          method: 'DELETE',
+          signal,
+        });
+        const data = await res.json();
+        if (signal.aborted) return;
+        if (res.ok && data.ok) {
+          status.textContent = '已删除，正在跳转...';
+          status.className = 'aeb-status visible success';
+          redirectTimer = setTimeout(() => { window.location.href = '/posts'; }, 1000);
+        } else {
+          status.textContent = data.error || '删除失败';
           status.className = 'aeb-status visible error';
-        } finally {
-          btn.disabled = false;
         }
-      });
-    }
+      } catch {
+        if (signal.aborted) return;
+        status.textContent = '网络错误';
+        status.className = 'aeb-status visible error';
+      } finally {
+        if (!signal.aborted) deleteBtn.disabled = false;
+      }
+    }, { signal });
   }
+
+  document.addEventListener('astro:page-load', initAdminEditBar);
+  document.addEventListener('astro:before-swap', cleanupAdminEditBar);
 </script>

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { isAdmin } from '@/lib/admin-auth';
 import { getMultipleConversations, getMatchSession } from '@/conversation/store';
 
 const MAX_SESSION_IDS = 10;
@@ -11,7 +12,11 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ request, url }) => {
+  if (!isAdmin(request)) {
+    return jsonResponse({ conversations: [] });
+  }
+
   const raw = url.searchParams.get('sessionIds') ?? '';
   const ids = raw.split(',').map(s => s.trim()).filter(Boolean).slice(0, MAX_SESSION_IDS);
 

@@ -89,6 +89,10 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
     // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
     const containers = document.querySelectorAll('.nav-links-container');
+    const navTimers: ReturnType<typeof setTimeout>[] = [];
+    signal.addEventListener('abort', () => {
+      navTimers.forEach((timer) => clearTimeout(timer));
+    }, { once: true });
 
     containers.forEach(container => {
       const indicator = container.querySelector('.nav-indicator') as HTMLElement | null;
@@ -109,9 +113,10 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
       const activeLink = container.querySelector('.nav-link-active') as HTMLElement | null;
       if (activeLink) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           if (activeLink) updateIndicator(activeLink, false);
         }, 30);
+        navTimers.push(timer);
       }
 
       const links = container.querySelectorAll('.nav-link');

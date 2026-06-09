@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Redis } from '@upstash/redis';
 
-import type { AiStage, AudienceGroup, FitVerdict, NeedCategory } from '@/profiles/resource-index';
+import type { AbilityType, AiStage, AudienceGroup, FrictionLayer, NeedCategory } from '@/profiles/resource-index';
 
 export interface MatchSession {
   sessionId: string;
@@ -26,9 +26,11 @@ export interface DemandEvent {
   rawNeedRedacted: string;
   needSummary: string;
   needCategories: NeedCategory[];
-  fitVerdict?: FitVerdict;
+  frictionLayer?: FrictionLayer;
+  recommendedAbilityType?: AbilityType;
   toolDirection?: string;
-  codexMisuseLikely?: boolean;
+  complianceRedirected?: boolean;
+  codeAgentMisuseLikely?: boolean;
   audienceGroup?: AudienceGroup;
   aiStage?: AiStage;
   isMinorContext: boolean;
@@ -36,6 +38,25 @@ export interface DemandEvent {
   piiDetected: boolean;
   piiRemoved: boolean;
   status: 'pending' | 'processed' | 'ignored';
+}
+
+export type MatchFeedbackType =
+  | 'resolved'
+  | 'stuck'
+  | 'not-fit'
+  | 'want-tutorial'
+  | 'first-draft'
+  | 'next-step-clear'
+  | 'wrong-direction'
+  | 'need-tutorial';
+
+export interface MatchFeedbackEvent {
+  feedbackId: string;
+  sessionId: string;
+  eventId?: string;
+  createdAt: string;
+  feedbackType: MatchFeedbackType;
+  feedbackText?: string;
 }
 
 export interface TopicCandidate {
@@ -59,6 +80,7 @@ export interface ConversationMessage {
 
 const memorySessions = new Map<string, MatchSession>();
 const memoryEvents = new Map<string, DemandEvent>();
+const memoryFeedbackEvents = new Map<string, MatchFeedbackEvent>();
 const memoryTopicCandidates = new Map<string, TopicCandidate>();
 const memoryMessages = new Map<string, ConversationMessage[]>();
 let memoryMatchCount = 0;
@@ -89,6 +111,10 @@ function sessionKey(sessionId: string): string {
 
 function eventKey(eventId: string): string {
   return `match:event:${eventId}`;
+}
+
+function feedbackKey(feedbackId: string): string {
+  return `match:feedback:${feedbackId}`;
 }
 
 function topicKey(topicId: string): string {
@@ -173,6 +199,36 @@ export async function markDemandEventsProcessed(eventIds: string[]): Promise<voi
 }
 
 // ---------------------------------------------------------------------------
+// 匹配反馈
+// ---------------------------------------------------------------------------
+
+export async function saveMatchFeedback(event: MatchFeedbackEvent): Promise<void> {
+  const redis = getRedis();
+  memoryFeedbackEvents.set(event.feedbackId, event);
+  if (!redis) return;
+
+  await redis.set(feedbackKey(event.feedbackId), event);
+  await redis.lpush('match:feedback', event.feedbackId);
+}
+
+export async function getMatchFeedbackEvents(options?: { days?: number; limit?: number }): Promise<MatchFeedbackEvent[]> {
+  const days = options?.days ?? 30;
+  const limit = options?.limit ?? 500;
+  const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
+  const redis = getRedis();
+
+  if (!redis) {
+    return [...memoryFeedbackEvents.values()]
+      .filter(event => event.createdAt >= cutoff)
+      .slice(0, limit);
+  }
+
+  const ids = await redis.lrange<string>('match:feedback', 0, Math.max(0, limit - 1));
+  const items = await Promise.all(ids.map(id => redis.get<MatchFeedbackEvent>(feedbackKey(id))));
+  return items.filter((event): event is MatchFeedbackEvent => event !== null && event.createdAt >= cutoff);
+}
+
+// ---------------------------------------------------------------------------
 // 对话消息存储
 // ---------------------------------------------------------------------------
 
@@ -241,8 +297,11 @@ export interface DemandStats {
   totalEvents: number;
   totalSessions: number;
   byCategory: Record<string, number>;
-  byFitVerdict: Record<string, number>;
-  codexMisuseRate: number;
+  byFrictionLayer: Record<string, number>;
+  byAbilityType: Record<string, number>;
+  byFeedbackType: Record<string, number>;
+  complianceRedirectRate: number;
+  codeAgentMisuseRate: number;
   topNeeds: Array<{ summary: string; count: number }>;
   dailyTrend: Array<{ date: string; count: number }>;
 }
@@ -291,8 +350,11 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
   }
 
   const byCategory: Record<string, number> = {};
-  const byFitVerdict: Record<string, number> = {};
-  let codexMisuseCount = 0;
+  const byFrictionLayer: Record<string, number> = {};
+  const byAbilityType: Record<string, number> = {};
+  const byFeedbackType: Record<string, number> = {};
+  let complianceRedirectCount = 0;
+  let codeAgentMisuseCount = 0;
   const needCounts = new Map<string, number>();
   const dailyCounts = new Map<string, number>();
 
@@ -300,14 +362,23 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
     for (const cat of event.needCategories) {
       byCategory[cat] = (byCategory[cat] ?? 0) + 1;
     }
-    if (event.fitVerdict) {
-      byFitVerdict[event.fitVerdict] = (byFitVerdict[event.fitVerdict] ?? 0) + 1;
+    if (event.frictionLayer) {
+      byFrictionLayer[event.frictionLayer] = (byFrictionLayer[event.frictionLayer] ?? 0) + 1;
     }
-    if (event.codexMisuseLikely) codexMisuseCount++;
+    if (event.recommendedAbilityType) {
+      byAbilityType[event.recommendedAbilityType] = (byAbilityType[event.recommendedAbilityType] ?? 0) + 1;
+    }
+    if (event.complianceRedirected) complianceRedirectCount++;
+    if (event.codeAgentMisuseLikely) codeAgentMisuseCount++;
     const summary = event.needSummary || '未分类需求';
     needCounts.set(summary, (needCounts.get(summary) ?? 0) + 1);
     const day = event.createdAt.slice(0, 10);
     dailyCounts.set(day, (dailyCounts.get(day) ?? 0) + 1);
+  }
+
+  const feedbackEvents = await getMatchFeedbackEvents({ days });
+  for (const event of feedbackEvents) {
+    byFeedbackType[event.feedbackType] = (byFeedbackType[event.feedbackType] ?? 0) + 1;
   }
 
   const topNeeds = [...needCounts.entries()]
@@ -331,8 +402,11 @@ export async function getDemandStats(options?: { days?: number }): Promise<Deman
     totalEvents: events.length,
     totalSessions,
     byCategory,
-    byFitVerdict,
-    codexMisuseRate: events.length > 0 ? codexMisuseCount / events.length : 0,
+    byFrictionLayer,
+    byAbilityType,
+    byFeedbackType,
+    complianceRedirectRate: events.length > 0 ? complianceRedirectCount / events.length : 0,
+    codeAgentMisuseRate: events.length > 0 ? codeAgentMisuseCount / events.length : 0,
     topNeeds,
     dailyTrend,
   };

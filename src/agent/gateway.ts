@@ -1,44 +1,21 @@
 /**
  * Walker AI Gateway — 统一 AI 调用网关
  *
- * 参考 NorthStar 的 ai-gateway 模式：
- * 1. 统一入口：所有 AI 调用走 callGateway()
- * 2. 敏感词检测：输入拦截 + 输出过滤
- * 3. 三层降级：AI 成功 → fallback 关键词匹配 → 静默降级
- * 4. 调用日志：记录 mode/latency/tokens 到 Redis
- * 5. Quota 管理：每日/每分钟限流
+ * 支持多服务商：
+ * - DeepSeek（OpenAI 兼容格式）
+ * - OpenAI
+ * - Anthropic（Claude）
+ * - 任意 OpenAI 兼容中转站
+ *
+ * 流程：Pretext → 敏感词检测 → API key 检查 → AI 调用 → 输出检测 → 日志
  */
 
-// ===== 敏感词管控 =====
+import { checkSensitiveWords } from './sensitive';
+import { buildPretext } from './pretext';
+import { buildGatewayEndpoint } from './gateway-config';
 
-const SENSITIVE_WORDS = [
-  // 色情
-  '色情', '裸体', '裸照', '情色', '成人视频', '淫秽',
-  // 暴力
-  '杀人', '自制武器', '虐待动物', '自残',
-  // 赌博
-  '赌博', '博彩', '彩票预测', '时时彩', '百家乐',
-  // 违法
-  '代开发票', '假钞', '信用卡套现', '洗钱',
-  // 辱骂
-  '傻逼', '操你', '滚蛋',
-];
-
-export interface SensitiveCheckResult {
-  hit: boolean;
-  words: string[];
-}
-
-export function checkSensitiveWords(text: string): SensitiveCheckResult {
-  const lower = text.toLowerCase();
-  const words: string[] = [];
-  for (const word of SENSITIVE_WORDS) {
-    if (word && lower.includes(word.toLowerCase())) {
-      words.push(word);
-    }
-  }
-  return { hit: words.length > 0, words };
-}
+export { checkSensitiveWords } from './sensitive';
+export type { SensitiveCheckResult } from './sensitive';
 
 // ===== Gateway 核心 =====
 
@@ -62,19 +39,17 @@ export interface GatewayResponse<T> {
 
 export interface GatewayInput {
   route: string;
-  systemPrompt: string;
+  systemPrompt?: string;
   userPrompt: string;
   model?: string;
   maxTokens?: number;
   temperature?: number;
   timeoutMs?: number;
+  scenario?: import('./pretext').WalkerScenario;
 }
 
 /**
  * 统一 AI 调用网关
- *
- * 流程：敏感词检测 → quota 检查 → AI 调用 → 输出检测 → 日志记录
- * 任何环节失败都优雅降级到 fallback
  */
 export async function callGateway<T>(
   input: GatewayInput,
@@ -82,42 +57,40 @@ export async function callGateway<T>(
   parseResponse: (text: string) => T | null,
 ): Promise<GatewayResponse<T>> {
   const start = Date.now();
-  const apiKey = import.meta.env.ANTHROPIC_API_KEY;
 
-  // 1. 敏感词检测
+  // 0. 读取运行时配置
+  const config = await getConfig();
+  const apiKey = config.apiKey || import.meta.env.ANTHROPIC_API_KEY || '';
+
+  // 1. Pretext
+  const systemPrompt = input.systemPrompt ?? buildPretext({
+    route: input.route,
+    scenario: input.scenario,
+    userPrompt: input.userPrompt,
+  });
+
+  // 2. 敏感词检测
   const inputCheck = checkSensitiveWords(input.userPrompt);
   if (inputCheck.hit) {
     await logCall({ route: input.route, mode: 'blocked', fallbackReason: 'sensitive_blocked', latencyMs: Date.now() - start });
     return { data: fallback, mode: 'blocked', fallbackReason: 'sensitive_blocked' };
   }
 
-  // 2. API key 检查
+  // 3. API key 检查
   if (!apiKey) {
     await logCall({ route: input.route, mode: 'fallback', fallbackReason: 'missing_key', latencyMs: Date.now() - start });
     return { data: fallback, mode: 'fallback', fallbackReason: 'missing_key' };
   }
 
-  // 3. AI 调用
+  // 4. AI 调用
+  const timeoutMs = input.timeoutMs ?? config.timeoutMs;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), input.timeoutMs ?? 10_000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'x-api-key': apiKey,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: input.model ?? 'claude-sonnet-4-6',
-        max_tokens: input.maxTokens ?? 1000,
-        temperature: input.temperature ?? 0.3,
-        system: input.systemPrompt,
-        messages: [{ role: 'user', content: input.userPrompt }],
-      }),
-    });
+    const response = config.apiFormat === 'anthropic'
+      ? await callAnthropic({ config, apiKey, systemPrompt, input, controller })
+      : await callOpenAICompat({ config, apiKey, systemPrompt, input, controller });
 
     if (!response.ok) {
       await logCall({ route: input.route, mode: 'fallback', fallbackReason: 'network_error', latencyMs: Date.now() - start });
@@ -125,35 +98,40 @@ export async function callGateway<T>(
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text;
-    if (typeof text !== 'string' || !text.trim()) {
+
+    // 提取文本（兼容两种格式）
+    const text = extractText(data, config.apiFormat);
+    if (!text) {
       await logCall({ route: input.route, mode: 'fallback', fallbackReason: 'empty_result', latencyMs: Date.now() - start });
       return { data: fallback, mode: 'fallback', fallbackReason: 'empty_result' };
     }
 
-    // 4. 输出敏感词检测
+    // 5. 输出敏感词检测
     const outputCheck = checkSensitiveWords(text);
     if (outputCheck.hit) {
       await logCall({ route: input.route, mode: 'blocked', fallbackReason: 'sensitive_output', latencyMs: Date.now() - start });
       return { data: fallback, mode: 'blocked', fallbackReason: 'sensitive_output' };
     }
 
-    // 5. 解析
+    // 6. 解析
     const parsed = parseResponse(text);
     if (!parsed) {
       await logCall({ route: input.route, mode: 'fallback', fallbackReason: 'empty_result', latencyMs: Date.now() - start });
       return { data: fallback, mode: 'fallback', fallbackReason: 'empty_result' };
     }
 
-    // 6. 成功
+    // 7. 成功
     const usage = data.usage;
+    const promptTokens = usage?.input_tokens || usage?.prompt_tokens;
+    const completionTokens = usage?.output_tokens || usage?.completion_tokens;
+
     await logCall({
       route: input.route,
       mode: 'ai',
       fallbackReason: '',
       latencyMs: Date.now() - start,
-      promptTokens: usage?.input_tokens,
-      completionTokens: usage?.output_tokens,
+      promptTokens,
+      completionTokens,
     });
 
     return { data: parsed, mode: 'ai', fallbackReason: '' };
@@ -163,6 +141,95 @@ export async function callGateway<T>(
     return { data: fallback, mode: 'fallback', fallbackReason: reason };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+// ===== API 格式适配 =====
+
+interface CallParams {
+  config: import('./gateway-config').GatewayConfig;
+  apiKey: string;
+  systemPrompt: string;
+  input: GatewayInput;
+  controller: AbortController;
+}
+
+/** OpenAI 兼容格式（DeepSeek / 中转站 / OpenAI） */
+async function callOpenAICompat(params: CallParams): Promise<Response> {
+  const { config, apiKey, systemPrompt, input, controller } = params;
+  const endpoint = buildGatewayEndpoint(config.baseUrl || '', 'openai-compat');
+
+  return fetch(endpoint.attemptedUrl, {
+    method: 'POST',
+    signal: controller.signal,
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: input.model ?? config.model,
+      max_tokens: input.maxTokens ?? config.maxTokens,
+      temperature: input.temperature ?? config.temperature,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: input.userPrompt },
+      ],
+    }),
+  });
+}
+
+/** Anthropic 原生格式 */
+async function callAnthropic(params: CallParams): Promise<Response> {
+  const { config, apiKey, systemPrompt, input, controller } = params;
+  const endpoint = buildGatewayEndpoint(config.baseUrl || 'https://api.anthropic.com', 'anthropic');
+
+  return fetch(endpoint.attemptedUrl, {
+    method: 'POST',
+    signal: controller.signal,
+    headers: {
+      'x-api-key': apiKey,
+      'content-type': 'application/json',
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: input.model ?? config.model,
+      max_tokens: input.maxTokens ?? config.maxTokens,
+      temperature: input.temperature ?? config.temperature,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: input.userPrompt }],
+    }),
+  });
+}
+
+/** 从不同格式的响应中提取文本 */
+function extractText(data: any, apiFormat: string): string | null {
+  if (apiFormat === 'anthropic') {
+    // Anthropic: { content: [{ text: "..." }] }
+    const text = data?.content?.[0]?.text;
+    return typeof text === 'string' && text.trim() ? text.trim() : null;
+  }
+  // OpenAI 兼容: { choices: [{ message: { content: "..." } }] }
+  const text = data?.choices?.[0]?.message?.content;
+  return typeof text === 'string' && text.trim() ? text.trim() : null;
+}
+
+// ===== 配置读取 =====
+
+async function getConfig(): Promise<import('./gateway-config').GatewayConfig> {
+  try {
+    const { getGatewayConfig } = await import('./gateway-config');
+    return await getGatewayConfig();
+  } catch {
+    return {
+      provider: 'deepseek',
+      baseUrl: 'https://api.deepseek.com',
+      apiKey: '',
+      model: 'deepseek-chat',
+      apiFormat: 'openai-compat',
+      maxTokens: 700,
+      temperature: 0.3,
+      timeoutMs: 10_000,
+    };
   }
 }
 
@@ -181,9 +248,7 @@ async function logCall(log: GatewayCallLog): Promise<void> {
       ...log,
       timestamp: new Date().toISOString(),
     }));
-    // 保留最近 500 条
     await redis.ltrim(LOG_KEY, 0, 499);
-    // 7 天过期
     await redis.expire(LOG_KEY, 7 * 86_400);
   } catch {
     // 日志写入失败不影响业务

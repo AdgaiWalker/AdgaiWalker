@@ -1,3 +1,5 @@
+> Archived: This execution plan has been superseded by `references/creator-system-current-state.md`. It is kept for historical task detail only.
+
 # Walker 创作者系统 — 全量可执行方案
 
 > 日期：2026-06-08
@@ -57,15 +59,15 @@ TopicCandidate {
 
 ### 关键缺口
 
-| 缺口 | 影响 |
-|------|------|
-| 对话消息不持久 | 用户看不到历史，管理员看不到原文，Agent 无法深度分析 |
-| Insights API 不认 admin cookie | 管理员浏览器访问 401 |
-| 没有公开统计接口 | 无法在 /tools 展示社交证明 |
-| 没有选题库管理页 | 选题候选存在 Redis 但没有 UI |
-| 没有数据看板页 | /admin/insights 链接存在但页面不存在 |
-| 没有内容编辑功能 | 改文章只能改代码 + push |
-| 没有 AdminEditBar | 管理员在页面上看不到编辑入口 |
+| 缺口 | 影响 | 状态 |
+|------|------|------|
+| 对话消息不持久 | 用户看不到历史，管理员看不到原文，Agent 无法深度分析 | ✅ P1 已解决（Redis 持久化 + 历史查看） |
+| Insights API 不认 admin cookie | 管理员浏览器访问 401 | ✅ P0 已解决 |
+| 没有公开统计接口 | 无法在 /tools 展示社交证明 | ✅ P0 已解决（`/api/stats`） |
+| 没有选题库管理页 | 选题候选存在 Redis 但没有 UI | ✅ P3 已解决（`/admin/topics`） |
+| 没有数据看板页 | /admin/insights 链接存在但页面不存在 | ✅ P2 已解决（`/admin/insights`） |
+| 没有内容编辑功能 | 改文章只能改代码 + push | ✅ P4 已解决（AdminEditBar + CRUD API） |
+| 没有 AdminEditBar | 管理员在页面上看不到编辑入口 | ✅ P4 已解决（文章详情页已注入） |
 
 ---
 
@@ -545,10 +547,10 @@ Cron 定时任务 → 带 x-match-process-secret header
 
 **注入方式**：
 
-- `src/layouts/Base.astro`
-  - 检查 `Astro.cookies.get('walker-admin')` 是否存在
-  - 如果是管理员：注入 `<AdminEditBar />` + 标记 `data-admin="true"`
-  - 通过 `data-admin` 属性让客户端脚本知道这是管理员
+- `src/pages/posts/[slug].astro`
+  - 直接 import 并渲染 `<AdminEditBar slug={entry.id} />`
+  - 当前仅在文章详情页可见，未通过 Base.astro 全局注入
+- 后续可扩展到 `src/layouts/Base.astro` 实现全站可见
 
 **影响**：
 - 非管理员完全无感（不渲染、不加载 JS）
@@ -567,7 +569,7 @@ Cron 定时任务 → 带 x-match-process-secret header
 | PUT | 更新内容 | GitHub Contents API `PUT`（需 SHA，自动获取最新） |
 | DELETE | 删除内容 | GitHub Contents API `DELETE`（需 SHA） |
 
-**新建文件**：`src/pages/api/admin/content/index.astro`（POST 新建）
+**新建文件**：`src/pages/api/admin/content/index.astro`（POST 新建）— ⚠️ **未实现**，当前只有 `[slug].ts` 的 GET/PUT/DELETE
 
 **安全**：
 - 所有请求检查 admin cookie
@@ -594,7 +596,7 @@ Cron 定时任务 → 带 x-match-process-secret header
 **方案**：轻量级，不引入重型编辑器库。
 
 - 编辑器：`<textarea>` + 实时预览面板（split view）
-- 预览：调用 `/api/admin/content/preview`，服务端渲染 markdown → HTML
+- 预览：调用 `/api/admin/content/preview`，服务端渲染 markdown → HTML — ⚠️ **未实现**，当前编辑器页使用客户端渲染
 - 工具栏：加粗、标题、列表、链接、代码块（插入 markdown 语法）
 - 快捷键：Ctrl+S 保存
 
@@ -634,7 +636,7 @@ Cron 定时任务 → 带 x-match-process-secret header
 - [ ] `src/layouts/Base.astro`：注入 admin 标记 + AdminEditBar
 - [ ] `src/pages/api/admin/content/[slug].ts`：GET/PUT/DELETE
 - [ ] `src/pages/api/admin/content/index.ts`：POST 新建
-- [ ] `src/pages/api/admin/content/preview.ts`：markdown 预览渲染
+- [ ] `src/pages/api/admin/content/preview.ts`：markdown 预览 — ⚠️ 未实现渲染 — ⚠️ 未实现
 - [ ] 编辑器 UI：textarea + 预览面板 + 工具栏
 - [ ] `src/pages/posts/[slug].astro`：增加管理员编辑入口
 - [ ] `src/pages/posts/index.astro`：增加编辑/删除按钮
@@ -803,7 +805,7 @@ Cron 定时任务 → 带 x-match-process-secret header
 - [ ] `src/layouts/Base.astro`：注入 admin 标记 + AdminEditBar
 - [ ] `src/pages/api/admin/content/[slug].ts`：GET/PUT/DELETE
 - [ ] `src/pages/api/admin/content/index.ts`：POST 新建
-- [ ] `src/pages/api/admin/content/preview.ts`：markdown 预览
+- [ ] `src/pages/api/admin/content/preview.ts`：markdown 预览 — ⚠️ 未实现
 - [ ] 编辑器 UI：textarea + 预览面板 + 工具栏
 - [ ] `src/pages/posts/[slug].astro`：管理员编辑入口
 - [ ] `src/pages/posts/index.astro`：编辑/删除按钮
@@ -817,9 +819,11 @@ Cron 定时任务 → 带 x-match-process-secret header
 | 变量 | 用途 | Phase | 必需 |
 |------|------|-------|------|
 | `ADMIN_PASSWORD` | 管理员登录密码 | 已有 | ✅ |
-| `ANTHROPIC_API_KEY` | Claude API（匹配 + 批处理） | 已有 | ✅ |
-| `UPSTASH_REDIS_REST_URL` | Redis 连接 | 已有 | ✅ |
-| `UPSTASH_REDIS_REST_TOKEN` | Redis 认证 | 已有 | ✅ |
+| `ANTHROPIC_API_KEY` | Claude API（匹配 + 批处理） | 已有 | ✅（AI Gateway 可覆盖） |
+| `UPSTASH_REDIS_REST_URL` | Redis 连接（优先） | 已有 | ✅ |
+| `UPSTASH_REDIS_REST_TOKEN` | Redis 认证（优先） | 已有 | ✅ |
+| `KV_REST_API_URL` | Redis 连接（Vercel Marketplace 旧名，降级备选） | 已有 | ✅ |
+| `KV_REST_API_TOKEN` | Redis 认证（Vercel Marketplace 旧名，降级备选） | 已有 | ✅ |
 | `CRON_SECRET` | Cron 定时任务认证 | 已有 | 推荐 |
 | `GITHUB_TOKEN` | 内容编辑回写 | P4 | P4 必需 |
 | `MATCH_PROCESS_SECRET` | 批处理 API 认证 | 已有 | 可选 |
@@ -839,8 +843,8 @@ Cron 定时任务 → 带 x-match-process-secret header
 | `src/pages/admin/conversations.ts` | P3 |
 | `src/components/admin/AdminEditBar.astro` | P4 |
 | `src/pages/api/admin/content/[slug].ts` | P4 |
-| `src/pages/api/admin/content/index.ts` | P4 |
-| `src/pages/api/admin/content/preview.ts` | P4 |
+| `src/pages/api/admin/content/index.ts` | P4 | ⚠️ 未实现 |
+| `src/pages/api/admin/content/preview.ts` | P4 | ⚠️ 未实现 |
 
 ### 修改文件
 

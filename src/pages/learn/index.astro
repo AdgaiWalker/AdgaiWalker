@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { getPublishedThoughts, getFrequentTags } from '@/knowledge/content';
+import { getPublishedThoughts, getFrequentTags, isPublicContentData } from '@/knowledge/content';
 import { buildLearnGuidePath, buildPostPath } from '@/shared/routes';
 import { formatDateCompact } from '@/shared/format';
 import { Icon } from 'astro-icon/components';
@@ -39,7 +39,7 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 const frequentTags = getFrequentTags(allLogs, 2);
 
 // ── Tab 3: 帮你学 ──
-const learnTools = await getCollection('log', ({ data }) => data.published && data.type === 'learn');
+const learnTools = await getCollection('log', ({ data }) => isPublicContentData(data) && data.type === 'learn');
 
 // ── Tab 路由 ──
 const rawTab = Astro.url.searchParams.get('tab') || 'tracks';

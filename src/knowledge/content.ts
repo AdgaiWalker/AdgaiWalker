@@ -1,44 +1,62 @@
 import { getCollection } from 'astro:content';
 
 import { toContentItem } from '@/knowledge/content-model';
+import { isPublicVisibility, resolveContentVisibility, type ContentVisibility } from '@/knowledge/visibility';
+export type { ContentVisibility } from '@/knowledge/visibility';
 
 function sortByDateDescending<T extends { data: { date: Date } }>(entries: T[]) {
   return entries.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
+export function getContentVisibility(data: { visibility?: ContentVisibility; published?: boolean }): ContentVisibility {
+  return resolveContentVisibility(data);
+}
+
+export function isPublicContentData(data: { visibility?: ContentVisibility; published?: boolean }): boolean {
+  return isPublicVisibility(data);
+}
+
+export function isPublicEntry<T extends { data: { visibility?: ContentVisibility; published?: boolean } }>(entry: T): boolean {
+  return isPublicContentData(entry.data);
+}
+
+export async function getAllContentEntries() {
+  return sortByDateDescending(await getCollection('log'));
+}
+
 export async function getPublishedContentItems() {
-  return sortByDateDescending(await getCollection('log', ({ data }) => data.published))
+  return sortByDateDescending(await getCollection('log', ({ data }) => isPublicContentData(data)))
     .map(toContentItem);
 }
 
 export async function getPublishedPosts() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    data.published && ['knowledge', 'idea', 'project', 'learn', 'learning'].includes(data.type)
+    isPublicContentData(data) && ['knowledge', 'idea', 'project', 'learn', 'learning'].includes(data.type)
   ));
 }
 
 export async function getPublishedResources() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    data.published && data.type === 'tool'
+    isPublicContentData(data) && data.type === 'tool'
   ));
 }
 
 export async function getPublishedIdeas() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    data.published && data.type === 'idea'
+    isPublicContentData(data) && data.type === 'idea'
   ));
 }
 
 export async function getPublishedProjects() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    data.published && data.type === 'project'
+    isPublicContentData(data) && data.type === 'project'
   ));
 }
 
 /** 获取学习感悟类文章（用于 /learn?tab=journal） */
 export async function getPublishedLearningPosts() {
   const all = await getCollection('log', (entry) =>
-    entry.data.published !== false &&
+    isPublicEntry(entry) &&
     (entry.data.type === 'learn' || entry.data.type === 'learning' || entry.data.type === 'knowledge')
   );
   return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
@@ -48,7 +66,7 @@ export async function getPublishedLearningPosts() {
 const THOUGHT_EXCLUDED_FORMS = new Set(['resource', 'project', 'idea', 'lesson']);
 export async function getPublishedThoughts() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    data.published && !THOUGHT_EXCLUDED_FORMS.has(data.form ?? 'article')
+    isPublicContentData(data) && !THOUGHT_EXCLUDED_FORMS.has(data.form ?? 'article')
   ));
 }
 

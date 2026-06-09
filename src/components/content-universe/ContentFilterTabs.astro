@@ -11,7 +11,7 @@ interface Props {
   allowedSpaces?: ContentSpace[];
 }
 
-const { activeSpace, counts, allowedSpaces = ['all', 'progress', 'tools', 'ideas'] as ContentSpace[] } = Astro.props;
+const { activeSpace, counts, allowedSpaces = contentSpaces.map((space) => space.id) } = Astro.props;
 
 function getSpaceHref(space: ContentSpace) {
   return space === 'all' ? CONTENT : buildContentSpacePath(space);
