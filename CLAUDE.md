@@ -16,7 +16,27 @@ npm run preview    # 本地预览生产构建
 npx astro check    # Astro 类型检查
 ```
 
+当前无自动化测试框架。验证依赖 `npm run build`（构建通过）和 `npx astro check`（类型检查）。
+
+## 环境变量
+
+参见 `.env.example` 获取完整配置说明。关键分组：
+
+- **必填（生产）**：`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（点赞、匹配、对话存储）、`ADMIN_PASSWORD`（管理后台）、`CRON_SECRET`（批处理 Cron）。
+- **Giscus 评论**：`PUBLIC_GISCUS_REPO` / `PUBLIC_GISCUS_REPO_ID` / `PUBLIC_GISCUS_CATEGORY` / `PUBLIC_GISCUS_CATEGORY_ID`。未配置时评论组件不渲染。
+- **AI 匹配（可选）**：`ANTHROPIC_API_KEY`。不配置时仅使用本地规则匹配，不调用模型。
+- **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
+- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。
+
 ## 架构
+
+### 关键架构模式
+
+- **双查询系统**：`src/knowledge/content.ts` 依赖 Astro 构建上下文（`getCollection`），仅在 `.astro` 页面中可用；`src/knowledge/content-query.ts` 直接读文件系统（`gray-matter`），独立于 Astro，供 MCP server 和 Agent 使用。两者查询同一内容源但通过不同方式。
+- **Redis 降级模式**：所有 Redis 依赖（点赞、匹配限流、对话存储、网关配置、洞察数据）都实现了 `Upstash Redis → 内存/本地文件` 的降级链。生产环境必须配置 Redis；开发环境无 Redis 仍可运行。
+- **Admin 认证**：基于 Cookie HMAC 签名（7 天有效），密钥为 `ADMIN_PASSWORD` 环境变量。`src/lib/admin-auth.ts` 导出 `isAdmin()` 检查函数，所有 admin 页面和 API 路由统一引用。
+- **内容编辑回写**：Admin 内容编辑器（`/admin/content/edit`）通过 GitHub API（`GITHUB_TOKEN`）回写 markdown 文件，而非直接写文件系统。
+- **AI Gateway 统一入口**：所有 AI 调用通过 `src/agent/gateway.ts` 的 `callGateway()` 统一入口，流程：Pretext → 敏感词检测 → API key 检查 → AI 调用 → 输出检测 → 日志。
 
 ### 渲染与部署
 
@@ -31,7 +51,7 @@ npx astro check    # Astro 类型检查
 在 `src/content.config.ts` 中定义一个集合：
 
 - **`log`**：博客文章、想法、工具、项目和学习指南，来源 `src/content/log/`。支持 `.md` 和 `.mdx`。Schema 包含以下字段：
-  - 基础：`title`、`date`、`updated`（可选）、`tags`、`category`、`published`、`summary`、`description`、`cover`、`rating`（1-5）、`url`、`qrCode`。
+  - 基础：`title`、`date`、`updated`（可选）、`tags`、`category`、`published`、`visibility`（`public`/`draft`/`private`，可选，优先于 `published`）、`summary`、`description`、`cover`、`rating`（1-5）、`url`、`qrCode`。
   - 分类：`type`（枚举：`knowledge`、`tool`、`idea`、`project`、`community`、`learn`、`learning`）、`status`（枚举：`thinking`、`validating`、`building`、`verified`、`archived`）。
   - 内容模型：`form`（`article`/`note`/`diary`/`rant`/`gallery`/`video`/`recipe`/`calligraphy`/`resource`/`project`/`idea`/`lesson`）、`domain`（`ai`/`coding`/`product`/`philosophy`/`life`/`cooking`/`calligraphy`/`reading`/`travel`/`emotion`/`community`）、`intent`（`think`/`record`/`teach`/`share`/`verify`/`showcase`/`reflect`/`connect`/`vent`）、`valueMode`（`utility`/`existence`/`both`）。
   - AI 策略：`aiUsePolicy`（含 `level`：`AI-0`~`AI-4`、`readable`、`citable`、`actionable`、`reason`）。
@@ -134,7 +154,7 @@ npx astro check    # Astro 类型检查
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
 - **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。服务端 API 路由 `src/pages/api/like.ts` 使用 Upstash Redis（Vercel Marketplace）存储计数，同 IP 每路径 60s 冷却。Redis 不可用时降级为 `FALLBACK_COUNT` 常量。环境变量 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选）由 Vercel 自动注入。
 - **About 页面组件**（`about/`）：`AboutSiteTab.astro`（关于站 Tab 内容，被 `about/index.astro` 引用）、`SectionHeader.astro`（通用 section 标题组件）。
-- **AdminEditBar.astro**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入，提供编辑/新建/删除入口。
+- **AdminEditBar.astro`**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入，提供编辑/新建/删除入口。
 
 ### 图标与样式
 
@@ -195,6 +215,7 @@ npx astro check    # Astro 类型检查
 - **`content.ts`**：Astro 构建时内容查询函数（`getPublishedContentItems`、`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`、`getPublishedLearningPosts`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。仅在 Astro 渲染上下文中可用。
 - **`content-query.ts`**：独立查询引擎（见上文 Agent 化基础设施）。
 - **`content-model.ts`**：内容模型核心。定义 `ContentSpace`（`all`/`progress`/`life`/`learning`/`tools`/`works`/`ideas`）、`ContentItem` 接口、`toContentItem()` 适配器（将 Astro log 条目投影为多维度内容项）、`itemBelongsToSpace()` 空间分配逻辑、`contentSpaces` 元数据数组。推断函数 `inferForm()`、`inferDomain()`、`inferIntent()`、`inferValueMode()` 从内容属性派生维度。还导出 `formLabels`、`domainLabels`、`intentLabels`、`valueModeLabels` 等显示映射。
+- **`visibility.ts`**：内容可见性解析。`resolveContentVisibility()` 根据 `visibility` 和 `published` 字段推断内容为 `public`/`draft`/`private`。优先使用显式 `visibility` 字段，降级到 `published` 布尔值。
 
 #### profiles/（画像系统）
 
@@ -221,6 +242,7 @@ npx astro check    # Astro 类型检查
 - **`routes.ts`**：路由常量（`HOME`、`POSTS`、`TOOLS`、`IDEAS`、`PROJECTS`、`CONTENT`、`ABOUT`、`LEARN`、`buildPostPath`、`buildContentSpacePath`、`buildLearnGuidePath`），被 Navigation、RSS、内容宇宙、学习页等模块引用。
 - **`format.ts`**：日期格式化（`formatDateCompact` → `MM/DD`、`formatDateLocale` → zh-CN 本地化、`formatDateNumeric` → `YYYY/MM/DD`）。
 - **`constants.ts`**：共享常量：`PLATFORM_ICON_MAP`（平台图标映射）、`STATUS_LABELS`（状态中文标签）、`STATUS_WEIGHT`（状态排序权重）、`SITE_EMAIL`（站点邮箱）、`CHARS_PER_MINUTE_ZH`（中文阅读速度）、`MS_PER_*` 时间常量。
+- **`workspaces.ts`**：页面工作区映射。`getWorkspaceForPath()` 根据路径返回所属工作区（`content`/`learn`/`tools`/`ideas`/`projects`/`about`），供导航高亮和上下文推断使用。
 
 #### 其他
 
@@ -233,6 +255,10 @@ npx astro check    # Astro 类型检查
 ```json
 "@/*": ["src/*"]
 ```
+
+## 文档治理
+
+`docs/` 不是当前项目工作台。当前有效的 PRD、计划、架构和执行状态统一放在 `.agents/skills/walker-northstar/references/`（walker-northstar skill 仓库）。`docs/` 仅保留三类材料：归档（`docs/archive/`）、架构决策记录（`docs/adr/`）、专题资料（`docs/AI赋能/` 等）。详见 `docs/README.md`。
 
 ## 内容创作
 

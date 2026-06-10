@@ -8,7 +8,6 @@ import type { NavGroup } from '@/types/nav';
 const navGroups: NavGroup[] = [
   {
     items: [
-      { label: '学习', href: LEARN, icon: 'lucide:rocket', hint: 'Learn' },
       { label: '内容', href: CONTENT, icon: 'lucide:layout-grid', hint: 'Content' },
       { label: '关于', href: ABOUT, icon: 'lucide:user', hint: 'About' },
     ]
@@ -16,9 +15,10 @@ const navGroups: NavGroup[] = [
   {
     title: '空间',
     items: [
+      { label: '项目', href: PROJECTS, icon: 'lucide:folder-kanban', hint: 'Projects' },
+      { label: '学习', href: LEARN, icon: 'lucide:rocket', hint: 'Learn' },
       { label: '资源', href: TOOLS, icon: 'lucide:bookmark', hint: 'Tools' },
       { label: '点子', href: IDEAS, icon: 'lucide:lightbulb', hint: 'Ideas' },
-      { label: '项目', href: PROJECTS, icon: 'lucide:folder-kanban', hint: 'Projects' },
     ]
   },
 ];

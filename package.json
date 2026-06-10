@@ -9,6 +9,8 @@
     "build": "astro build && pagefind --site dist/client --output-path .vercel/output/static/pagefind",
     "build:mcp": "node scripts/build-mcp.cjs",
     "preview": "astro preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "astro": "astro"
   },
   "dependencies": {
@@ -34,6 +36,8 @@
   },
   "devDependencies": {
     "@ast-grep/cli": "^0.42.2",
-    "tsx": "^4.22.4"
+    "playwright": "^1.60.0",
+    "tsx": "^4.22.4",
+    "vitest": "^4.1.8"
   }
 }
