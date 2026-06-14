@@ -13,13 +13,13 @@ if (!isAdmin(Astro.request)) {
 
 const stats = await getNeedCaseStats({ days: 30 });
 const allTopics = await getTopicCandidates({ limit: 100 });
-const pendingTopics = allTopics.filter(t => t.status === 'pending');
+const observedTopics = allTopics.filter(t => t.status === 'observed');
 const gatewayLogs = await readGatewayLogs(30);
 const gatewayAiCount = gatewayLogs.filter(l => l.mode === 'ai').length;
 const gatewayFallbackCount = gatewayLogs.filter(l => l.mode === 'fallback').length;
 const gatewayAvgLatency = gatewayLogs.length > 0 ? Math.round(gatewayLogs.reduce((s, l) => s + l.latencyMs, 0) / gatewayLogs.length) : 0;
 
-const contentGaps = allTopics.filter(t => t.relatedContentIds.length === 0 && t.status === 'pending');
+const contentGaps = allTopics.filter(t => t.relatedContentIds.length === 0 && t.status === 'observed');
 
 // 类别排序
 const sortedCategories = Object.entries(stats.byCategory)
@@ -199,7 +199,7 @@ const trendPoints = trend.map((t, i) => {
       </div>
       <div class="kpi-card">
         <div class="kpi-label">待处理选题</div>
-        <div class="kpi-value">{pendingTopics.length}</div>
+        <div class="kpi-value">{observedTopics.length}</div>
         <div class="kpi-sub">待审核</div>
       </div>
       <div class="kpi-card">
@@ -366,7 +366,10 @@ const trendPoints = trend.map((t, i) => {
             <span class="gap-warn">!</span>
             <div class="gap-info">
               <div class="gap-title">{gap.title}</div>
-              <div class="gap-audience">{gap.audience} · {gap.sourceNeedCount} 条需求 · {gap.priority}优先级</div>
+              <div class="gap-audience">
+                {gap.roleDistribution.map(role => `${role.role}×${role.count}`).join(' / ') || '未主动说明的人群'}
+                · {gap.density} 条需求 · {gap.priority}优先级
+              </div>
             </div>
           </div>
         )) : <div class="gap-empty">暂无内容缺口</div>}

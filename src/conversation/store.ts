@@ -22,6 +22,7 @@ export type {
   NeedCase,
   ProfileSnapshot,
   SafetyFlags,
+  TopicCandidate,
   UserProfile,
 } from '@/stores/ports';
 
@@ -588,6 +589,43 @@ export async function getTopicCandidates(options?: {
   return candidates.slice(0, limit);
 }
 
+export async function getTopicCandidateById(topicId: string): Promise<TopicCandidate | null> {
+  const redis = getRedis();
+  const memory = memoryTopicCandidates.get(topicId) ?? null;
+  if (!redis) return memory;
+  return (await redis.get<TopicCandidate>(topicKey(topicId))) ?? memory;
+}
+
+export async function getTopicCandidateByClusterKey(clusterKey: string): Promise<TopicCandidate | null> {
+  const candidates = await getTopicCandidates({ limit: 1000 });
+  return candidates.find(candidate => candidate.clusterKey === clusterKey) ?? null;
+}
+
+export async function updateTopicCandidateStatus(
+  topicId: string,
+  status: TopicCandidate['status'],
+  options?: { producedContentSlug?: string },
+): Promise<TopicCandidate | null> {
+  const current = await getTopicCandidateById(topicId);
+  if (!current) return null;
+
+  const updated: TopicCandidate = {
+    ...current,
+    status,
+    ...(options?.producedContentSlug ? { producedContentSlug: options.producedContentSlug } : {}),
+    updatedAt: new Date().toISOString(),
+  };
+
+  memoryTopicCandidates.set(topicId, updated);
+
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(topicKey(topicId), updated);
+  }
+
+  return updated;
+}
+
 /** Need Case 统计聚合 */
 export async function getNeedCaseStats(options?: { days?: number }): Promise<NeedCaseStats> {
   const days = options?.days ?? 30;
@@ -669,10 +707,14 @@ export async function getNeedCaseStats(options?: { days?: number }): Promise<Nee
 export async function saveTopicCandidates(candidates: TopicCandidate[]): Promise<void> {
   const redis = getRedis();
   for (const candidate of candidates) {
+    const existedInMemory = memoryTopicCandidates.has(candidate.topicId);
     memoryTopicCandidates.set(candidate.topicId, candidate);
     if (redis) {
+      const existedInRedis = Boolean(await redis.get<TopicCandidate>(topicKey(candidate.topicId)));
       await redis.set(topicKey(candidate.topicId), candidate);
-      await redis.lpush('match:topics', candidate.topicId);
+      if (!existedInMemory && !existedInRedis) {
+        await redis.lpush('match:topics', candidate.topicId);
+      }
     }
   }
 }

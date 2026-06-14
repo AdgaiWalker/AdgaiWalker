@@ -144,7 +144,7 @@ const priorityLabel: Record<string, string> = { high: '高优先', medium: '中�
     </div>
 
     <div class="brief-actions">
-      <a href="/admin/content/edit" class="brief-btn brief-btn-primary">
+      <a href={`/admin/content/edit?topicId=${brief.topicId}&prefill=brief`} class="brief-btn brief-btn-primary">
         <Icon name="lucide:pencil" />
         去编辑器创作
       </a>

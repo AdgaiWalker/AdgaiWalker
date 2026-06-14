@@ -44,13 +44,13 @@ export const POST: APIRoute = async ({ request }) => {
     clusterKey: 'inspiration',
     createdAt: now,
     title: text,
-    audience: '站主灵感',
-    coreQuestion: text,
-    contentAngle: '站主主动提出的选题灵感，待与用户需求交叉验证。',
-    sourceNeedCount: 0,
+    density: 0,
+    roleDistribution: [{ role: '站主灵感', count: 1 }],
+    representativeNeed: text,
     relatedContentIds: [],
     priority: 'medium',
-    status: 'pending',
+    status: 'observed',
+    source: 'inspiration',
   };
 
   await saveTopicCandidates([candidate]);

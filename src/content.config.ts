@@ -37,6 +37,7 @@ const log = defineCollection({
     featured: z.boolean().optional(),
     summary: z.string().optional(),
     description: z.string().optional(),
+    sourceTopicId: z.string().optional(),
     cover: z.union([image(), z.url()]).optional(),
     category: z.string().optional(),
     version: z.number().optional(),

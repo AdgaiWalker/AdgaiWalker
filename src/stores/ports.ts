@@ -99,6 +99,8 @@ export interface NeedCase {
   audienceGroup?: AudienceGroup;
   aiStage?: AiStage;
   profileSnapshot?: ProfileSnapshot;
+  /** 本次遭遇切片是否为高置信推断；冗余顶层字段便于后台筛选和聚类。 */
+  sliceInferred?: boolean;
   agentRecommendation: AgentRecommendation;
   feedbackStatus: FeedbackStatus;
   adminReviewStatus: AdminReviewStatus;
@@ -271,21 +273,30 @@ export interface StatsRepositoryPort {
 // 话题候选
 // ---------------------------------------------------------------------------
 
+export type TopicCandidateStatus = 'observed' | 'accepted' | 'deferred' | 'ignored' | 'produced';
+
+export interface TopicRoleDistribution {
+  role: string;
+  count: number;
+}
+
 export interface TopicCandidate {
   topicId: string;
-  /** 聚类键（layer:ability:category:head），同簇需求合并 */
-  clusterKey?: string;
+  /** 聚类键（layer:ability:category:role），同簇需求合并 */
+  clusterKey: string;
   createdAt: string;
+  updatedAt?: string;
   title: string;
-  /** 角色分布（来自遭遇切片 roleInContext + 自报锚点） */
-  audience: string;
-  coreQuestion: string;
-  contentAngle: string;
   /** 需求密度 = 源 Need Case 数 */
-  sourceNeedCount: number;
+  density: number;
+  /** 角色分布（来自遭遇切片 roleInContext + 自报锚点） */
+  roleDistribution: TopicRoleDistribution[];
+  /** 代表性需求摘要 */
+  representativeNeed: string;
   relatedContentIds: string[];
   priority: 'high' | 'medium' | 'low';
-  status: 'pending' | 'accepted' | 'deferred' | 'ignored' | 'produced';
+  status: TopicCandidateStatus;
+  source: 'need-cluster' | 'inspiration';
   /** 已创作内容 slug 回填（status=produced 时） */
   producedContentSlug?: string;
 }

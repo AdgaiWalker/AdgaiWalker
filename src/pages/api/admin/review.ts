@@ -10,6 +10,7 @@
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
+import { getTopicCandidates } from '@/conversation/store';
 import { createAdminReviewService } from '@/services/admin-review.service';
 import { createFeedbackStore } from '@/stores/feedback.store';
 import { createNeedCaseStore } from '@/stores/need-case.store';
@@ -35,7 +36,13 @@ export const GET: APIRoute = async ({ request, url }) => {
   }
 
   const status = url.searchParams.get('status') ?? 'pending';
+  const view = url.searchParams.get('view');
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get('limit')) || 50));
+
+  if (view === 'clusters') {
+    const topics = await getTopicCandidates({ limit });
+    return json({ view: 'clusters', topics, count: topics.length });
+  }
 
   if (status === 'all') {
     const items = await adminReviewService.listAll({ limit });

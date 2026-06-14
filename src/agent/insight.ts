@@ -1,18 +1,17 @@
 import { randomUUID } from 'node:crypto';
 
 import {
-  aiStageLabels,
   audienceGroupLabels,
-  matchResources,
   needCategoryLabels,
   type NeedCategory,
 } from '@/profiles/resource-index';
 import {
+  getTopicCandidateByClusterKey,
   getUnprocessedNeedCases,
   markNeedCasesTopicProcessed,
   saveTopicCandidates,
 } from '@/conversation/store';
-import type { NeedCase, TopicCandidate } from '@/stores/ports';
+import type { NeedCase, TopicCandidate, TopicRoleDistribution } from '@/stores/ports';
 
 function normalizeNeed(text: string): string {
   return text
@@ -25,9 +24,13 @@ function makeClusterKey(needCase: NeedCase): string {
   const category = needCase.needCategories[0] ?? 'content-navigation';
   const layer = needCase.frictionLayer ?? 'unclear';
   const ability = needCase.recommendedAbilityType ?? 'clarify';
-  const normalized = normalizeNeed(needCase.needSummary || needCase.rawNeedRedacted);
-  const head = normalized.slice(0, 18);
-  return `${layer}:${ability}:${category}:${head}`;
+  const role = normalizeNeed(
+    needCase.profileSnapshot?.roleInContext
+      ?? needCase.profileSnapshot?.personaAnchor
+      ?? (needCase.audienceGroup ? audienceGroupLabels[needCase.audienceGroup] : '')
+      ?? 'unknown',
+  ).slice(0, 12) || 'unknown';
+  return `${layer}:${ability}:${category}:${role}`;
 }
 
 function getRelatedContentIds(cases: NeedCase[]): string[] {
@@ -60,30 +63,61 @@ function createTopicTitle(category: NeedCategory, representativeNeed: string): s
   return `${label}：${representativeNeed.slice(0, 24)}`;
 }
 
-function summarizeAudience(cases: NeedCase[]): string {
-  const labels = new Set<string>();
+function buildRoleDistribution(cases: NeedCase[]): TopicRoleDistribution[] {
+  const counts = new Map<string, number>();
   for (const needCase of cases) {
     // 优先用遭遇切片的场景化角色（roleInContext），回退自报锚点
     const slice = needCase.profileSnapshot;
     const role = slice?.roleInContext ?? slice?.personaAnchor;
-    if (role) labels.add(role);
-    // 补充信号：顶层 audienceGroup（兼容无切片的旧 case）
-    if (needCase.audienceGroup && needCase.audienceGroup !== 'prefer-not-say') {
-      labels.add(audienceGroupLabels[needCase.audienceGroup]);
-    }
+    const fallbackRole = needCase.audienceGroup && needCase.audienceGroup !== 'prefer-not-say'
+      ? audienceGroupLabels[needCase.audienceGroup]
+      : '未主动说明的人群';
+    const key = role || fallbackRole;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return labels.size > 0 ? [...labels].join(' / ') : '未主动说明的人群';
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([role, count]) => ({ role, count }));
 }
 
-function createCandidate(cases: NeedCase[], clusterKey: string): TopicCandidate {
+function mergeRoleDistribution(
+  current: TopicRoleDistribution[],
+  next: TopicRoleDistribution[],
+): TopicRoleDistribution[] {
+  const counts = new Map<string, number>();
+  for (const item of [...current, ...next]) {
+    counts.set(item.role, (counts.get(item.role) ?? 0) + item.count);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([role, count]) => ({ role, count }));
+}
+
+function uniqueRelatedContentIds(...groups: string[][]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const group of groups) {
+    for (const id of group) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      result.push(id);
+    }
+  }
+  return result.slice(0, 8);
+}
+
+function priorityFromDensity(density: number): TopicCandidate['priority'] {
+  if (density >= 5) return 'high';
+  if (density >= 2) return 'medium';
+  return 'low';
+}
+
+export function createCandidate(cases: NeedCase[], clusterKey: string): TopicCandidate {
   const category = cases[0]?.needCategories[0] ?? 'content-navigation';
   const representativeNeed = cases[0]?.needSummary || cases[0]?.rawNeedRedacted || '用户想找到合适的 AI 工具';
   const hasComplianceRedirect = cases.some(c => c.safetyFlags.complianceRedirected);
   const relatedContentIds = getRelatedContentIds(cases);
-  const relatedTitles = relatedContentIds
-    .map(id => matchResources.find(resource => resource.id === id)?.title)
-    .filter(Boolean)
-    .join('、');
+  const density = cases.length;
 
   return {
     topicId: randomUUID(),
@@ -92,19 +126,27 @@ function createCandidate(cases: NeedCase[], clusterKey: string): TopicCandidate 
     title: hasComplianceRedirect
       ? 'AI 合规入门：普通人如何选择可正常使用的工具路径'
       : createTopicTitle(category, representativeNeed),
-    audience: summarizeAudience(cases),
-    coreQuestion: hasComplianceRedirect
+    density,
+    roleDistribution: buildRoleDistribution(cases),
+    representativeNeed: hasComplianceRedirect
       ? '用户卡在账号、入口或访问边界，需要被转回可正常完成的 AI 实践路径。'
       : representativeNeed,
-    contentAngle: hasComplianceRedirect
-      ? '只做合规普及：解释官方入口、账号配置、中文学习路径和可正常使用工具，不提供绕过限制或灰色渠道。'
-      : relatedTitles
-      ? `围绕这个问题，用 ${relatedTitles} 串成一条低认知成本路径。`
-      : '围绕这个问题补一条更清晰的站内资料路径。',
-    sourceNeedCount: cases.length,
     relatedContentIds,
-    priority: cases.length >= 5 ? 'high' : cases.length >= 2 ? 'medium' : 'low',
-    status: 'pending',
+    priority: priorityFromDensity(density),
+    status: 'observed',
+    source: 'need-cluster',
+  };
+}
+
+function mergeCandidate(existing: TopicCandidate, incoming: TopicCandidate): TopicCandidate {
+  const density = existing.density + incoming.density;
+  return {
+    ...existing,
+    density,
+    roleDistribution: mergeRoleDistribution(existing.roleDistribution, incoming.roleDistribution),
+    relatedContentIds: uniqueRelatedContentIds(existing.relatedContentIds, incoming.relatedContentIds),
+    priority: priorityFromDensity(density),
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -127,9 +169,19 @@ export async function processPendingNeedCases(limit = 50): Promise<{
     clusters.set(key, list);
   }
 
-  const candidates = [...clusters.entries()].map(([key, cases]) => createCandidate(cases, key));
+  const candidates: TopicCandidate[] = [];
+  for (const [key, cases] of clusters.entries()) {
+    const incoming = createCandidate(cases, key);
+    const existing = await getTopicCandidateByClusterKey(key);
+    const candidate = existing ? mergeCandidate(existing, incoming) : incoming;
+    candidates.push(candidate);
+  }
+
   await saveTopicCandidates(candidates);
-  await markNeedCasesTopicProcessed(cases.map(c => c.needCaseId));
+  for (const candidate of candidates) {
+    const clusteredCases = clusters.get(candidate.clusterKey) ?? [];
+    await markNeedCasesTopicProcessed(clusteredCases.map(c => c.needCaseId), candidate.topicId);
+  }
 
   return { processed: cases.length, createdTopics: candidates.length, candidates };
 }

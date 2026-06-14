@@ -27,16 +27,16 @@ export interface ContentBrief {
 
 function generateAngles(topic: TopicCandidate): string[] {
   const angles: string[] = [];
-  const questionHead = topic.coreQuestion.slice(0, 18);
+  const questionHead = topic.representativeNeed.slice(0, 18);
   if (topic.priority === 'high') angles.push('做成可复用指南：把这个卡点拆成可复制的步骤。');
   if (topic.relatedContentIds.length === 0) angles.push('从零补内容：先写最小教程或工具清单。');
-  if (topic.sourceNeedCount >= 3) angles.push('整理成方法论入口：多人反复问，值得系统化。');
+  if (topic.density >= 3) angles.push('整理成方法论入口：多人反复问，值得系统化。');
   angles.push(`围绕「${questionHead}」给一个可以立刻执行的第一步。`);
   return angles.slice(0, 3);
 }
 
 function generateStructure(topic: TopicCandidate): string[] {
-  const questionHead = topic.coreQuestion.slice(0, 18);
+  const questionHead = topic.representativeNeed.slice(0, 18);
   return [
     '引子：用一个真实场景点出这个卡点',
     `问题：说清用户卡在哪里（${questionHead}）`,
@@ -46,20 +46,44 @@ function generateStructure(topic: TopicCandidate): string[] {
   ];
 }
 
+function summarizeRoles(topic: TopicCandidate): string {
+  if (topic.roleDistribution.length === 0) return '未主动说明的人群';
+  return topic.roleDistribution
+    .slice(0, 3)
+    .map(item => item.count > 1 ? `${item.role}×${item.count}` : item.role)
+    .join(' / ');
+}
+
+function generateContentAngle(topic: TopicCandidate): string {
+  if (topic.source === 'inspiration') {
+    return '站主主动提出的选题灵感，先与真实需求交叉验证，再决定正文角度。';
+  }
+  if (topic.relatedContentIds.length > 0) {
+    const relatedTitles = topic.relatedContentIds
+      .map(id => matchResources.find(r => r.id === id)?.title)
+      .filter(Boolean)
+      .join('、');
+    if (relatedTitles) {
+      return `围绕这个需求簇，用 ${relatedTitles} 串成一条低认知成本路径。`;
+    }
+  }
+  return '围绕这个需求簇补一条更清晰的站内资料路径。';
+}
+
 export function generateBrief(topic: TopicCandidate): ContentBrief {
   return {
     topicId: topic.topicId,
     clusterKey: topic.clusterKey,
     title: topic.title,
-    targetRoles: topic.audience,
-    coreStuckPoint: topic.coreQuestion,
-    contentAngle: topic.contentAngle,
+    targetRoles: summarizeRoles(topic),
+    coreStuckPoint: topic.representativeNeed,
+    contentAngle: generateContentAngle(topic),
     referenceContent: topic.relatedContentIds
       .map(id => matchResources.find(r => r.id === id)?.title)
       .filter((t): t is string => Boolean(t)),
     suggestedAngles: generateAngles(topic),
     suggestedStructure: generateStructure(topic),
-    density: topic.sourceNeedCount,
+    density: topic.density,
     priority: topic.priority,
   };
 }

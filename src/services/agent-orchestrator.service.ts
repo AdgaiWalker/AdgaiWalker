@@ -183,6 +183,17 @@ const FRICTION_TO_STUCK_POINT: Record<FrictionLayer, string> = {
   'unclear': '需求不清',
 };
 
+function inferRoleFromNeedText(text: string): string | undefined {
+  if (/孩子|小孩|娃|儿子|女儿|家长|父母/.test(text)) return '家长';
+  if (/学生|大一|大二|大三|大四|考研|作业|课程|学校/.test(text)) return '学生';
+  if (/老师|教学|课堂|培训|教案/.test(text)) return '老师 / 培训者';
+  if (/老板|领导|同事|汇报|职场|会议|公司|客户/.test(text)) return '职场办公';
+  if (/公众号|视频|粉丝|选题|脚本|内容|自媒体/.test(text)) return '内容创作者';
+  if (/代码|编程|程序|开发|前端|后端|部署|接口/.test(text)) return '开发者 / 技术从业者';
+  if (/副业|创业|自由职业|接单/.test(text)) return '自由职业 / 创业者';
+  return undefined;
+}
+
 /**
  * 遭遇切片推断（A5）：从本次对话 + 锚点推断此刻角色 / 目标 / 卡点。
  * 复用已有信号（audienceGroup / frictionLayer / needFrame / needSummary），不引入复杂推断。
@@ -194,23 +205,25 @@ function inferEncounterSlice(input: {
   frictionLayer: FrictionLayer;
   needFramePurpose?: string;
   needSummary: string;
+  latestNeed: string;
 }): ProfileSnapshot {
-  const { personaAnchor, audienceGroup, frictionLayer, needFramePurpose, needSummary } = input;
+  const { personaAnchor, audienceGroup, frictionLayer, needFramePurpose, needSummary, latestNeed } = input;
   // prefer-not-say 视为无信号，回退锚点（避免 roleInContext 被设成"不想说"）
   const audienceLabel = audienceGroup && audienceGroup !== 'prefer-not-say'
     ? audienceGroupLabels[audienceGroup]
     : undefined;
+  const messageRole = inferRoleFromNeedText(latestNeed);
 
-  // roleInContext：前端显式 audienceGroup 优先，否则锚点，都无则 undefined
-  const roleInContext = audienceLabel ?? personaAnchor;
+  // roleInContext：本次问题角色信号优先，其次显式 audienceGroup，最后才回退锚点
+  const roleInContext = messageRole ?? audienceLabel ?? personaAnchor;
   // goal：原始需求 purpose，否则摘要
   const goal = needFramePurpose || needSummary;
   // stuckPoint：frictionLayer 映射成可读卡点
   const stuckPoint = FRICTION_TO_STUCK_POINT[frictionLayer];
-  // socialContext：audienceGroup 映射（学生/职场/家长/创作者…）
-  const socialContext = audienceLabel;
-  // sliceInferred：有 roleInContext（audience 或 anchor）即 true；都没有 → false（低置信度）
-  const sliceInferred = Boolean(roleInContext);
+  // socialContext：本次角色信号或 audienceGroup 映射（学生/职场/家长/创作者…）
+  const socialContext = messageRole ?? audienceLabel;
+  // sliceInferred：只有本次问题或显式 audience 提供角色信号才算成功；锚点回退是低置信。
+  const sliceInferred = Boolean(messageRole ?? audienceLabel);
 
   return {
     roleInContext,
@@ -359,6 +372,15 @@ export function createAgentOrchestrator(deps: {
 
       if (shouldRecord) {
         needCaseId = randomUUID();
+        const profileSnapshot = inferEncounterSlice({
+          personaAnchor: input.userContext.profile?.personaAnchor,
+          audienceGroup,
+          frictionLayer,
+          needFramePurpose: localMatch.needFrame.purpose,
+          needSummary,
+          latestNeed: redacted.text,
+        });
+
         const needCase: NeedCase = {
           needCaseId,
           sessionId,
@@ -375,13 +397,8 @@ export function createAgentOrchestrator(deps: {
           recommendedToolIds: localMatch.recommendedTools.map(t => t.id),
           audienceGroup,
           aiStage,
-          profileSnapshot: inferEncounterSlice({
-            personaAnchor: input.userContext.profile?.personaAnchor,
-            audienceGroup,
-            frictionLayer,
-            needFramePurpose: localMatch.needFrame.purpose,
-            needSummary,
-          }),
+          profileSnapshot,
+          sliceInferred: profileSnapshot.sliceInferred,
           agentRecommendation,
           feedbackStatus: 'none',
           adminReviewStatus: 'pending',
