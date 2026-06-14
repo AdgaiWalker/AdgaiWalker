@@ -1,7 +1,7 @@
 ---
 // /admin/insights — 数据看板（服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
-import { getDemandStats, getTopicCandidates } from '@/conversation/store';
+import { getNeedCaseStats, getTopicCandidates } from '@/conversation/store';
 import { abilityTypeLabels, frictionLayerLabels, needCategoryLabels } from '@/profiles/resource-index';
 import { readGatewayLogs, type GatewayCallLog } from '@/agent/gateway';
 
@@ -11,7 +11,7 @@ if (!isAdmin(Astro.request)) {
   return Astro.redirect('/admin/login');
 }
 
-const stats = await getDemandStats({ days: 30 });
+const stats = await getNeedCaseStats({ days: 30 });
 const allTopics = await getTopicCandidates({ limit: 100 });
 const pendingTopics = allTopics.filter(t => t.status === 'pending');
 const gatewayLogs = await readGatewayLogs(30);
@@ -173,6 +173,7 @@ const trendPoints = trend.map((t, i) => {
       <a href="/admin/insights" class="admin-bar-link active">洞察</a>
       <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
       <a href="/admin/topics" class="admin-bar-link">选题库</a>
+      <a href="/admin/review" class="admin-bar-link">需求复盘</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
     </div>
@@ -188,7 +189,7 @@ const trendPoints = trend.map((t, i) => {
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-label">匹配总数</div>
-        <div class="kpi-value">{stats.totalEvents}</div>
+        <div class="kpi-value">{stats.totalCases}</div>
         <div class="kpi-sub">30 天内</div>
       </div>
       <div class="kpi-card">

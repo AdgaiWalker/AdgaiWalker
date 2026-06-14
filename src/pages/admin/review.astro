@@ -1,0 +1,373 @@
+---
+// /admin/review — 需求复盘（Need Case 后台，服务端渲染，需认证）
+import { isAdmin } from '@/lib/admin-auth';
+import { Icon } from 'astro-icon/components';
+import { createAdminReviewService } from '@/services/admin-review.service';
+import { createNeedCaseStore } from '@/stores/need-case.store';
+import { createFeedbackStore } from '@/stores/feedback.store';
+import type { NeedCaseReviewItem } from '@/services/interfaces';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const adminReviewService = createAdminReviewService({
+  needCaseStore: createNeedCaseStore(),
+  feedbackStore: createFeedbackStore(),
+});
+
+const pendingItems = await adminReviewService.listPending({ limit: 100 });
+const allItems = await adminReviewService.listAll({ limit: 100 });
+const acceptedItems = allItems.filter(i => i.needCase.adminReviewStatus === 'accepted');
+const deferredItems = allItems.filter(i => i.needCase.adminReviewStatus === 'deferred');
+const ignoredItems = allItems.filter(i => i.needCase.adminReviewStatus === 'ignored');
+
+const reviewStatusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  pending: { label: '待复盘', color: '#b45309', bg: 'rgba(180,83,9,0.08)' },
+  accepted: { label: '已采纳', color: '#065f46', bg: 'rgba(6,95,70,0.08)' },
+  deferred: { label: '已暂缓', color: '#854d0e', bg: 'rgba(133,77,14,0.08)' },
+  ignored: { label: '已忽略', color: '#78716c', bg: 'rgba(120,113,108,0.08)' },
+};
+
+const feedbackLabels: Record<string, string> = {
+  none: '未反馈',
+  resolved: '解决了',
+  stuck: '还卡着',
+  'not-fit': '不适合',
+  'want-tutorial': '想看教程',
+  'first-draft': '做出第一版',
+  'next-step-clear': '知道下一步',
+  'wrong-direction': '方向不对',
+  'need-tutorial': '还缺教程',
+};
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
+
+function profileSummary(item: NeedCaseReviewItem): string {
+  const p = item.needCase.profileSnapshot;
+  if (!p) return '未填写画像';
+  const parts = [p.roleInContext, p.goal, p.stuckPoint].filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : '未填写画像';
+}
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>需求复盘 — Walker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
+
+    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
+    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
+    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
+    .admin-bar-right { display: flex; align-items: center; gap: 1rem; }
+    .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
+    .admin-bar-link:hover { color: #c4704a; }
+    .admin-bar-link.active { color: #1c1917; }
+    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+    .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,0.2); }
+
+    .admin-main { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .admin-welcome { margin-bottom: 1.5rem; }
+    .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; display:flex; align-items:center; gap:0.5rem; }
+    .admin-welcome h1 svg { color: #c4704a; }
+    .admin-welcome p { font-size: 0.88rem; color: #78716c; }
+
+    .tab-bar { display: flex; gap: 0.35rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); }
+    .tab-btn { padding: 0.55rem 0.85rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #78716c; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; display:inline-flex; align-items:center; gap:0.35rem; }
+    .tab-btn:hover { color: #1c1917; }
+    .tab-btn.active { color: #1c1917; border-bottom-color: #c4704a; }
+    .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; border-radius: 999px; background: rgba(0,0,0,0.06); font-size: 0.65rem; font-weight: 800; }
+
+    .case-card { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1.15rem 1.25rem; margin-bottom: 0.75rem; transition: border-color 0.15s ease; }
+    .case-card:hover { border-color: rgba(0,0,0,0.12); }
+    .case-card.accepted { border-left: 3px solid #065f46; }
+    .case-card.deferred { border-left: 3px solid #854d0e; }
+    .case-card.ignored { opacity: 0.55; }
+
+    .case-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem; flex-wrap: wrap; }
+    .case-badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
+    .case-feedback-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(59,130,246,0.08); color: #1d4ed8; font-size: 0.68rem; font-weight: 700; }
+    .case-time { font-size: 0.72rem; color: #a8a29e; margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+
+    .case-summary { font-size: 0.95rem; font-weight: 800; color: #1c1917; margin-bottom: 0.6rem; line-height: 1.45; }
+    .case-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: 0.65rem; }
+    .case-meta-item { font-size: 0.75rem; color: #57534e; display:inline-flex; align-items:center; gap:0.25rem; }
+    .case-meta-item svg { width: 13px; height: 13px; color: #a8a29e; }
+    .case-meta-label { font-weight: 700; color: #78716c; }
+
+    .case-bridge { font-size: 0.84rem; color: #44403c; line-height: 1.6; margin-bottom: 0.6rem; padding: 0.6rem 0.75rem; background: #fafaf9; border-radius: 8px; border-left: 2px solid #c4704a; }
+
+    .case-feedback-list { margin-bottom: 0.65rem; }
+    .case-feedback-list:empty { display: none; }
+    .feedback-row { font-size: 0.76rem; color: #57534e; padding: 0.25rem 0; }
+    .feedback-row + .feedback-row { border-top: 1px dashed rgba(0,0,0,0.05); }
+    .feedback-tag { font-weight: 700; color: #c4704a; }
+
+    .case-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+    .case-btn { display:inline-flex; align-items:center; gap:0.3rem; padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
+    .case-btn svg { width: 14px; height: 14px; }
+    .case-btn:hover { transform: translateY(-1px); }
+    .btn-accept { color: #065f46; border-color: rgba(6,95,70,0.15); }
+    .btn-accept:hover { background: #ecfdf5; }
+    .btn-defer { color: #854d0e; border-color: rgba(133,77,14,0.15); }
+    .btn-defer:hover { background: #fef9c3; }
+    .btn-ignore { color: #78716c; border-color: rgba(120,113,108,0.15); }
+    .btn-ignore:hover { background: #f5f5f4; }
+
+    .note-toggle { margin-left: auto; font-size: 0.74rem; color: #78716c; background: transparent; border: 0; cursor: pointer; font-weight: 600; text-decoration: underline; text-decoration-color: rgba(0,0,0,0.15); }
+    .note-input { display: none; width: 100%; margin-top: 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; font: inherit; font-size: 0.78rem; color: #1c1917; background: #fff; }
+    .note-input.visible { display: block; }
+    .note-text { font-size: 0.75rem; color: #57534e; margin-top: 0.4rem; }
+
+    .case-empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; font-size: 0.9rem; }
+    .case-empty svg { width: 32px; height: 32px; margin-bottom: 0.5rem; color: #d6d3d1; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    @media (max-width: 640px) {
+      .admin-main { padding: 1.25rem 1rem 3rem; }
+      .case-card { padding: 0.85rem 0.95rem; }
+      .case-actions { flex-wrap: wrap; }
+      .note-toggle { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-bar">
+    <div class="admin-bar-left">
+      <span class="admin-bar-logo">Walker</span>
+      <span class="admin-bar-badge">Admin</span>
+    </div>
+    <div class="admin-bar-right">
+      <a href="/admin" class="admin-bar-link">仪表盘</a>
+      <a href="/admin/insights" class="admin-bar-link">洞察</a>
+      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
+      <a href="/admin/topics" class="admin-bar-link">选题库</a>
+      <a href="/admin/review" class="admin-bar-link active">需求复盘</a>
+      <a href="/" class="admin-bar-link">查看站点</a>
+      <button class="logout-btn" id="logout-btn">登出</button>
+    </div>
+  </div>
+
+  <div class="admin-main">
+    <div class="admin-welcome">
+      <h1>
+        <Icon name="lucide:clipboard-list" width={20} height={20} />
+        需求复盘
+      </h1>
+      <p>把用户真实需求变成可复盘、可采纳的材料 · 待复盘 {pendingItems.length} 条</p>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="pending">
+        <Icon name="lucide:inbox" width={14} height={14} />
+        待复盘 <span class="tab-count">{pendingItems.length}</span>
+      </button>
+      <button class="tab-btn" data-tab="accepted">
+        <Icon name="lucide:check-circle-2" width={14} height={14} />
+        已采纳 <span class="tab-count">{acceptedItems.length}</span>
+      </button>
+      <button class="tab-btn" data-tab="deferred">
+        <Icon name="lucide:clock" width={14} height={14} />
+        已暂缓 <span class="tab-count">{deferredItems.length}</span>
+      </button>
+      <button class="tab-btn" data-tab="ignored">
+        <Icon name="lucide:eye-off" width={14} height={14} />
+        已忽略 <span class="tab-count">{ignoredItems.length}</span>
+      </button>
+    </div>
+
+    {(['pending', 'accepted', 'deferred', 'ignored'] as const).map(status => {
+      const items = status === 'pending' ? pendingItems
+        : status === 'accepted' ? acceptedItems
+        : status === 'deferred' ? deferredItems
+        : ignoredItems;
+      return (
+        <div class={`tab-panel ${status === 'pending' ? 'active' : ''}`} data-panel={status}>
+          {items.length === 0 ? (
+            <div class="case-empty">
+              <Icon name="lucide:inbox" />
+              <div>{status === 'pending' ? '暂无待复盘需求' : '暂无记录'}</div>
+            </div>
+          ) : items.map(item => {
+            const nc = item.needCase;
+            const cfg = reviewStatusConfig[nc.adminReviewStatus] ?? reviewStatusConfig.pending;
+            const fbLabel = feedbackLabels[nc.feedbackStatus] ?? '未反馈';
+            const tools = nc.agentRecommendation?.recommendedTools ?? [];
+            const bridge = nc.agentRecommendation?.bridge;
+            return (
+              <div class={`case-card ${nc.adminReviewStatus}`} data-need-case-id={nc.needCaseId}>
+                <div class="case-header">
+                  <span class="case-badge" style={`background: ${cfg.bg}; color: ${cfg.color}`}>{cfg.label}</span>
+                  <span class="case-feedback-badge">{fbLabel}</span>
+                  {nc.safetyFlags?.complianceRedirected && (
+                    <span class="case-badge" style="background: rgba(220,38,38,0.08); color: #dc2626;">合规转向</span>
+                  )}
+                  {nc.safetyFlags?.isMinorContext && (
+                    <span class="case-badge" style="background: rgba(168,85,247,0.08); color: #7e22ce;">未成年场景</span>
+                  )}
+                  <span class="case-time">{formatTime(nc.createdAt)}</span>
+                </div>
+
+                <div class="case-summary">{nc.needSummary}</div>
+
+                <div class="case-meta">
+                  <span class="case-meta-item">
+                    <Icon name="lucide:user" />
+                    <span class="case-meta-label">画像：</span>{profileSummary(item)}
+                  </span>
+                  {nc.frictionLayer && (
+                    <span class="case-meta-item">
+                      <Icon name="lucide:layers" />
+                      <span class="case-meta-label">卡点：</span>{nc.frictionLayer}
+                    </span>
+                  )}
+                  {nc.recommendedAbilityType && (
+                    <span class="case-meta-item">
+                      <Icon name="lucide:compass" />
+                      <span class="case-meta-label">能力方向：</span>{nc.recommendedAbilityType}
+                    </span>
+                  )}
+                  {tools.length > 0 && (
+                    <span class="case-meta-item">
+                      <Icon name="lucide:wrench" />
+                      <span class="case-meta-label">推荐工具：</span>{tools.map(t => t.name).join(' / ')}
+                    </span>
+                  )}
+                </div>
+
+                {bridge && (
+                  <div class="case-bridge">{bridge}</div>
+                )}
+
+                {item.feedbacks.length > 0 && (
+                  <div class="case-feedback-list">
+                    {item.feedbacks.map(fb => (
+                      <div class="feedback-row">
+                        <span class="feedback-tag">[{feedbackLabels[fb.feedbackType] ?? fb.feedbackType}]</span>
+                        {fb.feedbackText ? ' ' + fb.feedbackText : ''}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {nc.adminReviewNote && (
+                  <div class="note-text">备注：{nc.adminReviewNote}</div>
+                )}
+
+                <div class="case-actions">
+                  {status === 'pending' && (
+                    <>
+                      <button class="case-btn btn-accept" data-action="accepted" data-id={nc.needCaseId}>
+                        <Icon name="lucide:check" /> 采纳
+                      </button>
+                      <button class="case-btn btn-defer" data-action="deferred" data-id={nc.needCaseId}>
+                        <Icon name="lucide:clock" /> 暂缓
+                      </button>
+                      <button class="case-btn btn-ignore" data-action="ignored" data-id={nc.needCaseId}>
+                        <Icon name="lucide:eye-off" /> 忽略
+                      </button>
+                      <button class="note-toggle" data-note-toggle={nc.needCaseId}>添加备注</button>
+                      <input class="note-input" data-note-input={nc.needCaseId} placeholder="可选：记录复盘判断依据" />
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    })}
+  </div>
+
+  <script>
+    // Tab 切换
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = (btn as HTMLElement).dataset.tab;
+        document.querySelector(`[data-panel="${tab}"]`)?.classList.add('active');
+      });
+    });
+
+    // 备注切换
+    document.querySelectorAll('.note-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.noteToggle;
+        if (!id) return;
+        const input = document.querySelector(`[data-note-input="${id}"]`) as HTMLInputElement | null;
+        if (input) {
+          input.classList.toggle('visible');
+          if (input.classList.contains('visible')) input.focus();
+        }
+      });
+    });
+
+    // 复盘操作
+    document.querySelectorAll('.case-btn[data-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const el = btn as HTMLElement;
+        const needCaseId = el.dataset.id;
+        const status = el.dataset.action;
+        if (!needCaseId || !status) return;
+
+        const card = el.closest('.case-card') as HTMLElement | null;
+        if (!card) return;
+
+        const noteInput = card.querySelector<HTMLInputElement>('.note-input.visible');
+        const note = noteInput?.value?.trim() || undefined;
+
+        try {
+          const res = await fetch('/api/admin/review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ needCaseId, status, note }),
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            // 操作成功：卡片淡出（数据已更新，下次进入页面自然归类）
+            card.style.transition = 'opacity 0.3s ease';
+            card.style.opacity = '0.3';
+            // 更新 tab 计数
+            const countEls = document.querySelectorAll('.tab-count');
+            const tabMap = ['pending', 'accepted', 'deferred', 'ignored'] as const;
+            tabMap.forEach((tab, i) => {
+              if (!countEls[i]) return;
+              const current = Number(countEls[i].textContent || 0);
+              if (tab === status) countEls[i].textContent = String(current + 1);
+              else if (tab === 'pending') countEls[i].textContent = String(Math.max(0, current - 1));
+            });
+          } else {
+            alert(data.error || '操作失败');
+          }
+        } catch {
+          alert('网络异常，请重试。');
+        }
+      });
+    });
+
+    // 登出
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      window.location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>

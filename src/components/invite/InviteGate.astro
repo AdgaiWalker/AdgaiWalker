@@ -1,0 +1,323 @@
+---
+// InviteGate — 邀请码 + ≤10字锚点准入 dialog
+// 复用 ToolMatchChat 玻璃语言，Lucide 图标，无 Emoji，多主题兼容
+import { Icon } from 'astro-icon/components';
+---
+
+<dialog class="invite-dialog" id="invite-dialog" aria-labelledby="invite-title">
+  <div class="invite-panel">
+    <div class="invite-header">
+      <div class="invite-header-icon"><Icon name="lucide:shield-check" /></div>
+      <div class="invite-header-text">
+        <h2 id="invite-title" class="invite-title">受邀进入 iwalk.pro</h2>
+        <p class="invite-subtitle">输入邀请码，再一句话说说你是谁</p>
+      </div>
+      <button class="invite-close" id="invite-close" type="button" aria-label="关闭">
+        <Icon name="lucide:x" />
+      </button>
+    </div>
+
+    <form class="invite-form" id="invite-form">
+      <label class="invite-field">
+        <span class="invite-label">邀请码</span>
+        <div class="invite-input-wrap">
+          <Icon name="lucide:key-round" class="invite-input-icon" />
+          <input id="invite-code" type="text" placeholder="输入邀请码" autocomplete="off" required />
+        </div>
+      </label>
+
+      <label class="invite-field">
+        <span class="invite-label">你主要是什么人（可选）</span>
+        <div class="invite-input-wrap">
+          <Icon name="lucide:user" class="invite-input-icon" />
+          <input id="invite-anchor" type="text" maxlength="10" placeholder="一句话说说你是谁" />
+          <span class="invite-count" id="invite-count">0/10</span>
+        </div>
+      </label>
+
+      <div class="invite-chips" id="invite-chips" role="group" aria-label="常见身份">
+        <button type="button" data-anchor="学生">学生</button>
+        <button type="button" data-anchor="上班族">上班族</button>
+        <button type="button" data-anchor="自由职业">自由职业</button>
+        <button type="button" data-anchor="想搞副业">想搞副业</button>
+      </div>
+
+      <label class="invite-consent">
+        <input type="checkbox" id="invite-consent-input" checked />
+        <span>同意被 Walker 记住需求，用于选题改进</span>
+      </label>
+
+      <div class="invite-error" id="invite-error" role="alert"></div>
+
+      <button class="invite-submit" id="invite-submit" type="submit">
+        <span class="invite-submit-text">进入</span>
+      </button>
+    </form>
+  </div>
+</dialog>
+
+<style>
+  .invite-dialog {
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: min(36rem, calc(100vh - 2rem));
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: inherit;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+  }
+  .invite-dialog::backdrop {
+    background: rgba(34, 28, 24, 0.4);
+    backdrop-filter: blur(12px);
+  }
+
+  .invite-panel {
+    display: flex;
+    flex-direction: column;
+    max-height: min(36rem, calc(100vh - 2rem));
+    overflow-y: auto;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface, #fff) 96%, transparent);
+    box-shadow: 0 24px 60px rgba(var(--color-shadow-rgb, 75, 54, 42), 0.18);
+  }
+
+  .invite-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
+  }
+  .invite-header-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+    color: var(--color-brand, #c4704a);
+    flex-shrink: 0;
+  }
+  .invite-header-icon :global(svg) { width: 20px; height: 20px; }
+  .invite-header-text { flex: 1; min-width: 0; }
+  .invite-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-heading, var(--color-text, #3f3027));
+  }
+  .invite-subtitle {
+    margin: 0.15rem 0 0;
+    font-size: 0.76rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+  }
+  .invite-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.06);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .invite-close:hover { background: rgba(var(--color-muted-rgb, 63, 48, 39), 0.12); }
+  .invite-close :global(svg) { width: 18px; height: 18px; }
+
+  .invite-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+  .invite-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .invite-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.6));
+  }
+  .invite-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.14);
+    border-radius: 12px;
+    padding: 0.5rem 0.7rem;
+    background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.72);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .invite-input-wrap:focus-within {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.4);
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
+  }
+  .invite-input-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.45));
+  }
+  .invite-input-wrap input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.88rem;
+    color: var(--color-text, #3f3027);
+    outline: none;
+  }
+  .invite-input-wrap input::placeholder {
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.4));
+  }
+  .invite-count {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.4));
+    flex-shrink: 0;
+  }
+
+  .invite-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .invite-chips button {
+    padding: 0.32rem 0.7rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.14);
+    border-radius: 999px;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.55);
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .invite-chips button:hover {
+    border-color: rgba(var(--color-brand-rgb, 196, 112, 74), 0.32);
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.08);
+    color: var(--color-brand, #c4704a);
+  }
+
+  .invite-consent {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.55));
+    cursor: pointer;
+  }
+  .invite-consent input { accent-color: var(--color-brand, #c4704a); }
+
+  .invite-error {
+    min-height: 0;
+    font-size: 0.76rem;
+    color: #dc2626;
+  }
+  .invite-error:empty { display: none; }
+
+  .invite-submit {
+    padding: 0.7rem 1rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--color-brand, #c4704a);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease, filter 0.15s ease;
+  }
+  .invite-submit:hover:not(:disabled) { filter: brightness(1.08); }
+  .invite-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  @media (max-width: 640px) {
+    .invite-dialog { width: calc(100vw - 1rem); }
+    .invite-chips { gap: 0.35rem; }
+  }
+</style>
+
+<script>
+  function initInviteGate() {
+    const dialog = document.getElementById('invite-dialog') as HTMLDialogElement | null;
+    if (!dialog || dialog.dataset.bound === '1') return;
+    dialog.dataset.bound = '1';
+
+    const form = document.getElementById('invite-form') as HTMLFormElement | null;
+    const codeInput = document.getElementById('invite-code') as HTMLInputElement | null;
+    const anchorInput = document.getElementById('invite-anchor') as HTMLInputElement | null;
+    const count = document.getElementById('invite-count');
+    const chips = document.getElementById('invite-chips');
+    const errorEl = document.getElementById('invite-error');
+    const submitBtn = document.getElementById('invite-submit') as HTMLButtonElement | null;
+    const closeBtn = document.getElementById('invite-close');
+
+    if (!form || !codeInput || !submitBtn) return;
+
+    anchorInput?.addEventListener('input', () => {
+      if (count) count.textContent = `${anchorInput.value.length}/10`;
+    });
+
+    chips?.querySelectorAll<HTMLButtonElement>('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.anchor ?? '';
+        if (anchorInput) {
+          anchorInput.value = val;
+          if (count) count.textContent = `${val.length}/10`;
+          anchorInput.focus();
+        }
+      });
+    });
+
+    closeBtn?.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = codeInput.value.trim();
+      const anchor = anchorInput?.value.trim() || undefined;
+      if (!code) return;
+
+      submitBtn.disabled = true;
+      const textEl = submitBtn.querySelector('.invite-submit-text');
+      const originalText = textEl?.textContent ?? '进入';
+      if (textEl) textEl.textContent = '进入中…';
+      if (errorEl) errorEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/invite/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, personaAnchor: anchor }),
+        });
+        const data = await res.json() as { admitted?: boolean; reason?: string };
+        if (data.admitted) {
+          window.location.reload();
+        } else {
+          if (errorEl) errorEl.textContent = data.reason || '邀请码无效。';
+          submitBtn.disabled = false;
+          if (textEl) textEl.textContent = originalText;
+        }
+      } catch {
+        if (errorEl) errorEl.textContent = '网络错误，请重试。';
+        submitBtn.disabled = false;
+        if (textEl) textEl.textContent = originalText;
+      }
+    });
+  }
+
+  initInviteGate();
+  document.addEventListener('astro:page-load', initInviteGate);
+</script>

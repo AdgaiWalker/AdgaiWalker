@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-import { processPendingDemandEvents } from '@/agent/insight';
+import { processPendingNeedCases } from '@/agent/insight';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -48,7 +48,7 @@ async function readLimitFromBody(request: Request): Promise<number> {
 }
 
 async function runProcess(limit: number): Promise<Response> {
-  const result = await processPendingDemandEvents(limit);
+  const result = await processPendingNeedCases(limit);
   return jsonResponse(result);
 }
 

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '@/lib/admin-auth';
-import { getDemandStats, getTopicCandidates } from '@/conversation/store';
-import type { TopicCandidate } from '@/conversation/store';
+import { getNeedCaseStats, getTopicCandidates } from '@/conversation/store';
+import type { TopicCandidate } from '@/stores/ports';
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   // 默认返回统计数据
   const days = Number(url.searchParams.get('days')) || 30;
-  const stats = await getDemandStats({ days });
+  const stats = await getNeedCaseStats({ days });
   return jsonResponse(stats);
 };
 

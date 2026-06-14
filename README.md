@@ -20,11 +20,14 @@ NorthStar = 长期社区网络方向，不直接塞进当前个人站
 - Astro 6
 - TypeScript
 - Tailwind CSS v4
-- Astro Content Collections
-- Pagefind
+- Astro Content Collections + MDX
+- Pagefind（搜索）
 - Upstash Redis
 - Vercel SSR adapter
+- GSAP（动画）
+- astro-icon + Iconify（lucide）
 - MCP server
+- Vitest（单元测试）
 
 ## 本地运行
 
@@ -39,6 +42,7 @@ npm run dev
 npm run build
 npm run preview
 npm run build:mcp
+npm run test
 ```
 
 ## 文档入口

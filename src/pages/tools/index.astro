@@ -3,6 +3,7 @@ import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { Icon } from 'astro-icon/components';
 import { communities, aiResources, aiTools, infra, bloggers, skills } from '@/data/tools-data';
 import ToolMatchChat from '@/components/tools/ToolMatchChat.astro';
+import InviteGate from '@/components/invite/InviteGate.astro';
 
 export const prerender = true;
 ---
@@ -24,6 +25,7 @@ export const prerender = true;
 
     {/* 需求索引匹配器 */}
     <ToolMatchChat />
+    <InviteGate />
 
     {/* 章节快速导航 */}
     <nav class="section-nav" id="section-nav">

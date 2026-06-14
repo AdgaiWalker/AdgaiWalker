@@ -8,12 +8,11 @@ import {
   type NeedCategory,
 } from '@/profiles/resource-index';
 import {
-  getPendingDemandEvents,
-  markDemandEventsProcessed,
+  getUnprocessedNeedCases,
+  markNeedCasesTopicProcessed,
   saveTopicCandidates,
-  type DemandEvent,
-  type TopicCandidate,
 } from '@/conversation/store';
+import type { NeedCase, TopicCandidate } from '@/stores/ports';
 
 function normalizeNeed(text: string): string {
   return text
@@ -22,19 +21,19 @@ function normalizeNeed(text: string): string {
     .trim();
 }
 
-function makeClusterKey(event: DemandEvent): string {
-  const category = event.needCategories[0] ?? 'content-navigation';
-  const layer = event.frictionLayer ?? 'unclear';
-  const ability = event.recommendedAbilityType ?? 'clarify';
-  const normalized = normalizeNeed(event.needSummary || event.rawNeedRedacted);
+function makeClusterKey(needCase: NeedCase): string {
+  const category = needCase.needCategories[0] ?? 'content-navigation';
+  const layer = needCase.frictionLayer ?? 'unclear';
+  const ability = needCase.recommendedAbilityType ?? 'clarify';
+  const normalized = normalizeNeed(needCase.needSummary || needCase.rawNeedRedacted);
   const head = normalized.slice(0, 18);
   return `${layer}:${ability}:${category}:${head}`;
 }
 
-function getRelatedContentIds(events: DemandEvent[]): string[] {
+function getRelatedContentIds(cases: NeedCase[]): string[] {
   const counts = new Map<string, number>();
-  for (const event of events) {
-    for (const id of event.recommendedContentIds) {
+  for (const needCase of cases) {
+    for (const id of needCase.recommendedContentIds) {
       counts.set(id, (counts.get(id) ?? 0) + 1);
     }
   }
@@ -61,24 +60,26 @@ function createTopicTitle(category: NeedCategory, representativeNeed: string): s
   return `${label}：${representativeNeed.slice(0, 24)}`;
 }
 
-function summarizeAudience(events: DemandEvent[]): string {
+function summarizeAudience(cases: NeedCase[]): string {
   const labels = new Set<string>();
-  for (const event of events) {
-    if (event.audienceGroup && event.audienceGroup !== 'prefer-not-say') {
-      labels.add(audienceGroupLabels[event.audienceGroup]);
-    }
-    if (event.aiStage && event.aiStage !== 'prefer-not-say') {
-      labels.add(aiStageLabels[event.aiStage]);
+  for (const needCase of cases) {
+    // 优先用遭遇切片的场景化角色（roleInContext），回退自报锚点
+    const slice = needCase.profileSnapshot;
+    const role = slice?.roleInContext ?? slice?.personaAnchor;
+    if (role) labels.add(role);
+    // 补充信号：顶层 audienceGroup（兼容无切片的旧 case）
+    if (needCase.audienceGroup && needCase.audienceGroup !== 'prefer-not-say') {
+      labels.add(audienceGroupLabels[needCase.audienceGroup]);
     }
   }
   return labels.size > 0 ? [...labels].join(' / ') : '未主动说明的人群';
 }
 
-function createCandidate(events: DemandEvent[]): TopicCandidate {
-  const category = events[0]?.needCategories[0] ?? 'content-navigation';
-  const representativeNeed = events[0]?.needSummary || events[0]?.rawNeedRedacted || '用户想找到合适的 AI 工具';
-  const hasComplianceRedirect = events.some(event => event.complianceRedirected);
-  const relatedContentIds = getRelatedContentIds(events);
+function createCandidate(cases: NeedCase[], clusterKey: string): TopicCandidate {
+  const category = cases[0]?.needCategories[0] ?? 'content-navigation';
+  const representativeNeed = cases[0]?.needSummary || cases[0]?.rawNeedRedacted || '用户想找到合适的 AI 工具';
+  const hasComplianceRedirect = cases.some(c => c.safetyFlags.complianceRedirected);
+  const relatedContentIds = getRelatedContentIds(cases);
   const relatedTitles = relatedContentIds
     .map(id => matchResources.find(resource => resource.id === id)?.title)
     .filter(Boolean)
@@ -86,11 +87,12 @@ function createCandidate(events: DemandEvent[]): TopicCandidate {
 
   return {
     topicId: randomUUID(),
+    clusterKey,
     createdAt: new Date().toISOString(),
     title: hasComplianceRedirect
       ? 'AI 合规入门：普通人如何选择可正常使用的工具路径'
       : createTopicTitle(category, representativeNeed),
-    audience: summarizeAudience(events),
+    audience: summarizeAudience(cases),
     coreQuestion: hasComplianceRedirect
       ? '用户卡在账号、入口或访问边界，需要被转回可正常完成的 AI 实践路径。'
       : representativeNeed,
@@ -99,168 +101,35 @@ function createCandidate(events: DemandEvent[]): TopicCandidate {
       : relatedTitles
       ? `围绕这个问题，用 ${relatedTitles} 串成一条低认知成本路径。`
       : '围绕这个问题补一条更清晰的站内资料路径。',
-    sourceNeedCount: events.length,
+    sourceNeedCount: cases.length,
     relatedContentIds,
-    priority: events.length >= 5 ? 'high' : events.length >= 2 ? 'medium' : 'low',
+    priority: cases.length >= 5 ? 'high' : cases.length >= 2 ? 'medium' : 'low',
     status: 'pending',
   };
 }
 
-/** 规则聚类（默认，无 API 依赖） */
-export async function processPendingDemandEvents(limit = 50): Promise<{
+/** 规则聚类（默认，无外部模型依赖） */
+export async function processPendingNeedCases(limit = 50): Promise<{
   processed: number;
   createdTopics: number;
   candidates: TopicCandidate[];
 }> {
-  const events = await getPendingDemandEvents(limit);
-  if (events.length === 0) {
+  const cases = await getUnprocessedNeedCases(limit);
+  if (cases.length === 0) {
     return { processed: 0, createdTopics: 0, candidates: [] };
   }
 
-  // 如果有 Claude API key，尝试增强分析
-  if (import.meta.env.ANTHROPIC_API_KEY && events.length >= 3) {
-    try {
-      return await processWithModel(events);
-    } catch {
-      // 降级到规则聚类
-    }
-  }
-
-  return processWithRules(events);
-}
-
-/** 规则聚类 */
-async function processWithRules(events: DemandEvent[]) {
-  const clusters = new Map<string, DemandEvent[]>();
-  for (const event of events) {
-    const key = makeClusterKey(event);
+  const clusters = new Map<string, NeedCase[]>();
+  for (const needCase of cases) {
+    const key = makeClusterKey(needCase);
     const list = clusters.get(key) ?? [];
-    list.push(event);
+    list.push(needCase);
     clusters.set(key, list);
   }
 
-  const candidates = [...clusters.values()].map(createCandidate);
+  const candidates = [...clusters.entries()].map(([key, cases]) => createCandidate(cases, key));
   await saveTopicCandidates(candidates);
-  await markDemandEventsProcessed(events.map(event => event.eventId));
+  await markNeedCasesTopicProcessed(cases.map(c => c.needCaseId));
 
-  return { processed: events.length, createdTopics: candidates.length, candidates };
-}
-
-/** Claude API 增强聚类 */
-async function processWithModel(events: DemandEvent[]) {
-  // 先用规则做粗聚类
-  const ruleClusters = new Map<string, DemandEvent[]>();
-  for (const event of events) {
-    const key = makeClusterKey(event);
-    const list = ruleClusters.get(key) ?? [];
-    list.push(event);
-    ruleClusters.set(key, list);
-  }
-
-  // 让 Claude 做语义再聚类 + 内容缺口判断
-  const clusterSummaries = [...ruleClusters.entries()].map(([key, evts]) => ({
-    key,
-    count: evts.length,
-    needs: evts.slice(0, 3).map(e => e.needSummary || e.rawNeedRedacted),
-    categories: [...new Set(evts.flatMap(e => e.needCategories))],
-    frictionLayers: [...new Set(evts.map(e => e.frictionLayer).filter(Boolean))],
-    abilityTypes: [...new Set(evts.map(e => e.recommendedAbilityType).filter(Boolean))],
-    complianceRedirected: evts.some(e => e.complianceRedirected),
-    relatedContent: [...new Set(evts.flatMap(e => e.recommendedContentIds))],
-  }));
-
-  const siteContent = matchResources.map(r => `ID:${r.id} 标题:${r.title}`).join('\n');
-
-  const prompt = `你是内容选题分析师。以下是用户需求聚类摘要，请做语义再聚类和内容缺口分析。
-
-需求聚类：
-${clusterSummaries.map((c, i) => `[${i}] (${c.count}条) ${c.needs.join(' / ')} | 层级:${c.frictionLayers.join(',') || '无'} | 能力:${c.abilityTypes.join(',') || '无'} | 合规转向:${c.complianceRedirected ? '是' : '否'} | 类别:${c.categories.join(',')} | 关联:${c.relatedContent.join(',') || '无'}`).join('\n')}
-
-站内已有内容：
-${siteContent}
-
-任务：
-1. 将语义相似的聚类合并
-2. 判断站内内容是否已覆盖（内容缺口）
-3. 为每个最终聚类生成一个选题候选
-4. 如果来源包含合规转向，只能生成合规普及选题，不能生成绕过限制、灰色账号、代注册、代验证、非官方渠道教程
-
-返回 JSON 数组，每项：
-{
-  "sourceIndices": [0, 2],
-  "title": "选题标题",
-  "coreQuestion": "用户核心问题",
-  "contentAngle": "建议的内容角度和站内资料串联方式",
-  "isContentGap": true,
-  "priority": "high"
-}
-
-priority 标准：需求 ≥5 条 high，≥2 条 medium，其他 low。
-只返回 JSON 数组，不要其他内容。`;
-
-  const apiKey = import.meta.env.ANTHROPIC_API_KEY;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15_000);
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'x-api-key': apiKey,
-        'content-type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!response.ok) throw new Error(`model error: ${response.status}`);
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text;
-    if (typeof text !== 'string') throw new Error('no text');
-
-    const jsonText = text.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
-    const parsed = JSON.parse(jsonText);
-
-    if (!Array.isArray(parsed)) throw new Error('not array');
-
-    // 将模型结果转换为 TopicCandidate
-    const candidates: TopicCandidate[] = parsed.map((item: Record<string, unknown>) => {
-      const indices = Array.isArray(item.sourceIndices) ? item.sourceIndices as number[] : [];
-      const matchedEvents = indices
-        .map((i: number) => clusterSummaries[i])
-        .filter(Boolean)
-        .flatMap(c => ruleClusters.get(c.key) ?? []);
-
-      const allEvents = matchedEvents.length > 0 ? matchedEvents : events.slice(0, 1);
-      const totalCount = matchedEvents.length > 0
-        ? indices.reduce((sum: number, i: number) => sum + (clusterSummaries[i]?.count ?? 0), 0)
-        : 1;
-
-      return {
-        topicId: randomUUID(),
-        createdAt: new Date().toISOString(),
-        title: String(item.title || '未命名选题'),
-        audience: summarizeAudience(allEvents),
-        coreQuestion: String(item.coreQuestion || ''),
-        contentAngle: String(item.contentAngle || ''),
-        sourceNeedCount: totalCount,
-        relatedContentIds: getRelatedContentIds(allEvents),
-        priority: (['high', 'medium', 'low'].includes(item.priority as string) ? item.priority : 'low') as TopicCandidate['priority'],
-        status: 'pending' as const,
-      };
-    });
-
-    await saveTopicCandidates(candidates);
-    await markDemandEventsProcessed(events.map(event => event.eventId));
-
-    return { processed: events.length, createdTopics: candidates.length, candidates };
-  } finally {
-    clearTimeout(timer);
-  }
+  return { processed: cases.length, createdTopics: candidates.length, candidates };
 }

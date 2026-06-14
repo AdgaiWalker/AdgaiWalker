@@ -1,16 +1,17 @@
 /**
- * 提问处理服务 — 用户提问 + 会话关联
+ * Agent 编排服务 — /api/match 的业务核心
  *
- * 将 /api/match.ts 中的业务编排逻辑拆出：
- * 清洗消息 -> 匹配 -> 调用模型 -> 持久化。
- * HTTP 相关逻辑（速率限制、请求解析、响应格式化）留在 API 层。
+ * 取代旧 question.service.ts：
+ * 读取 UserContext → 本地匹配 → 按需调模型 → 生成并保存 Need Case → 返回推荐。
+ * AI 失败降级到本地规则；Need Case 保存失败不阻断用户响应，但记录 Incident。
  */
 
 import { randomUUID } from 'node:crypto';
 
-import { compactText, redactSensitiveText, isMinorAudience } from '@/agent/privacy';
+import { compactText, isMinorAudience, redactSensitiveText } from '@/agent/privacy';
 import { callGateway } from '@/agent/gateway';
 import { matchSiteResources } from '@/agent/match';
+import { matchResources } from '@/profiles/resource-index';
 import {
   abilityTypeLabels,
   aiStageLabels,
@@ -24,10 +25,23 @@ import {
   type MatchResource,
   type NeedCategory,
 } from '@/profiles/resource-index';
-import { createSessionId, saveConversationMessages, incrementMatchStats } from '@/conversation/store';
+import {
+  createSessionId,
+  incrementMatchStats,
+  saveConversationMessages,
+} from '@/conversation/store';
 
-import type { QuestionServicePort, QuestionResult } from './interfaces';
-import type { DemandEventRepositoryPort, MatchSessionRepositoryPort, MatchSession, DemandEvent } from '@/stores/ports';
+import type { AgentOrchestratorPort, NeedCaseHandleResult, UserContext } from './interfaces';
+import type {
+  AgentRecommendation,
+  MatchSessionRepositoryPort,
+  NeedCase,
+  NeedCaseRepositoryPort,
+  ProfileSnapshot,
+  SafetyFlags,
+} from '@/stores/ports';
+import type { MatchSession } from '@/conversation/store';
+import type { SafetyServicePort } from './interfaces';
 
 const PROMPT_VERSION = 'tool-match-v2';
 const MAX_MESSAGES = 16;
@@ -122,10 +136,8 @@ async function askModel(input: {
 
 function pickResources(ids: string[] | undefined, fallback: MatchResource[]): MatchResource[] {
   if (!ids?.length) return fallback;
-  // 从 matchResources 查找
-  const { matchResources } = require('@/profiles/resource-index');
   const picked = ids
-    .map(id => matchResources.find((r: MatchResource) => r.id === id))
+    .map(id => matchResources.find(r => r.id === id))
     .filter((r): r is MatchResource => Boolean(r));
   return picked.length > 0 ? picked.slice(0, 4) : fallback;
 }
@@ -160,33 +172,91 @@ async function createIdentityBridge(text: string): Promise<string> {
   return '我是 iwalk.pro 的 AI 实践导航助手小菁，这一轮背后调用的是 ' + modelLabel + '。你可以直接说想用 AI 做什么，我帮你判断该用什么工具和路径。';
 }
 
-export function createQuestionService(deps: {
-  sessionStore: MatchSessionRepositoryPort;
-  eventStore: DemandEventRepositoryPort;
-}): QuestionServicePort {
+/** frictionLayer → 可读卡点映射（复用 match.ts 已有推断，不引入新规则） */
+const FRICTION_TO_STUCK_POINT: Record<FrictionLayer, string> = {
+  'compliance-entry': '合规边界',
+  'account-config': '账号/API 配置',
+  'tool-understanding': '工具理解',
+  'scenario-match': '场景匹配',
+  'value-understanding': '价值认知',
+  'practice-deepening': '实践深化',
+  'unclear': '需求不清',
+};
+
+/**
+ * 遭遇切片推断（A5）：从本次对话 + 锚点推断此刻角色 / 目标 / 卡点。
+ * 复用已有信号（audienceGroup / frictionLayer / needFrame / needSummary），不引入复杂推断。
+ * 推断失败（无 audience 信号 + 无锚点）静默降级：sliceInferred=false。
+ */
+function inferEncounterSlice(input: {
+  personaAnchor?: string;
+  audienceGroup?: AudienceGroup;
+  frictionLayer: FrictionLayer;
+  needFramePurpose?: string;
+  needSummary: string;
+}): ProfileSnapshot {
+  const { personaAnchor, audienceGroup, frictionLayer, needFramePurpose, needSummary } = input;
+  // prefer-not-say 视为无信号，回退锚点（避免 roleInContext 被设成"不想说"）
+  const audienceLabel = audienceGroup && audienceGroup !== 'prefer-not-say'
+    ? audienceGroupLabels[audienceGroup]
+    : undefined;
+
+  // roleInContext：前端显式 audienceGroup 优先，否则锚点，都无则 undefined
+  const roleInContext = audienceLabel ?? personaAnchor;
+  // goal：原始需求 purpose，否则摘要
+  const goal = needFramePurpose || needSummary;
+  // stuckPoint：frictionLayer 映射成可读卡点
+  const stuckPoint = FRICTION_TO_STUCK_POINT[frictionLayer];
+  // socialContext：audienceGroup 映射（学生/职场/家长/创作者…）
+  const socialContext = audienceLabel;
+  // sliceInferred：有 roleInContext（audience 或 anchor）即 true；都没有 → false（低置信度）
+  const sliceInferred = Boolean(roleInContext);
+
   return {
-    async handleQuestion(input) {
-      const isMinorContext = isMinorAudience(input.audienceGroup);
+    roleInContext,
+    goal,
+    stuckPoint,
+    socialContext,
+    personaAnchor,
+    sliceInferred,
+    capturedAt: new Date().toISOString(),
+  };
+}
+
+export function createAgentOrchestrator(deps: {
+  sessionStore: MatchSessionRepositoryPort;
+  needCaseStore: NeedCaseRepositoryPort;
+  safetyService: SafetyServicePort;
+}): AgentOrchestratorPort {
+  return {
+    async handleNeed(input): Promise<NeedCaseHandleResult> {
+      const audienceGroup = input.audienceGroup as AudienceGroup | undefined;
+      const aiStage = input.aiStage as AiStage | undefined;
+      const isMinorContext = isMinorAudience(audienceGroup);
+
       const clean = cleanMessages(input.messages);
       const latestNeed = [...input.messages].reverse().find(m => m.role === 'user')?.content ?? '';
       const redacted = redactSensitiveText(compactText(latestNeed, MAX_MESSAGE_LENGTH));
 
       const localMatch = matchSiteResources({
         need: redacted.text,
-        audienceGroup: input.audienceGroup as AudienceGroup,
-        aiStage: input.aiStage as AiStage,
+        audienceGroup,
+        aiStage,
       });
 
       let modelChoice: ModelChoice | null = null;
+      let modelCalled = false;
       if (localMatch.responseMode === 'recommendation' && localMatch.recommendedTools.length === 0) {
+        modelCalled = true;
         modelChoice = await askModel({
           messages: clean,
           localBridge: localMatch.bridge,
           localResourceIds: localMatch.resources.map(r => r.id),
-          audienceGroup: input.audienceGroup as AudienceGroup,
-          aiStage: input.aiStage as AiStage,
+          audienceGroup,
+          aiStage,
         });
       }
+      const fallbackUsed = modelCalled && modelChoice === null;
 
       const resources = localMatch.responseMode === 'recommendation' && localMatch.resources.length > 0
         ? (localMatch.recommendedTools.length > 0
@@ -214,8 +284,14 @@ export function createQuestionService(deps: {
         100,
       );
 
+      let modelLabel: string | undefined;
+      if (modelCalled) {
+        try { modelLabel = await getCurrentModelLabel(); } catch { modelLabel = undefined; }
+      }
+
       const now = new Date().toISOString();
-      const sessionId = input.sessionId || createSessionId();
+      const sessionId = input.sessionId || input.userContext.sessionId || createSessionId();
+
       const session: MatchSession = {
         sessionId,
         startedAt: now,
@@ -223,8 +299,8 @@ export function createQuestionService(deps: {
         sourcePage: input.sourcePage ?? '/tools',
         messageCount: input.messages.filter(m => m.role === 'user').length,
         consentForTopic: input.consentForTopic !== false,
-        audienceGroup: input.audienceGroup as AudienceGroup,
-        aiStage: input.aiStage as AiStage,
+        audienceGroup,
+        aiStage,
         isMinorContext,
         promptVersion: PROMPT_VERSION,
         modelVersion: 'gateway-managed',
@@ -244,82 +320,130 @@ export function createQuestionService(deps: {
       conversationMsgs.push({ role: 'assistant', content: bridge || needSummary, timestamp: now });
       saveConversationMessages(sessionId, conversationMsgs).catch(() => {});
 
-      let eventId: string | undefined;
-      if (session.consentForTopic && (localMatch.responseMode === 'recommendation' || localMatch.responseMode === 'compliance')) {
-        const event: DemandEvent = {
-          eventId: randomUUID(),
+      const safetyFlags: SafetyFlags = {
+        piiDetected: redacted.piiDetected,
+        piiRemoved: redacted.piiDetected,
+        isMinorContext,
+        complianceRedirected: localMatch.complianceRedirected || frictionLayer === 'compliance-entry',
+        codeAgentMisuseLikely: localMatch.codeAgentMisuseLikely,
+        consentForTopic: session.consentForTopic,
+      };
+
+      const agentRecommendation: AgentRecommendation = {
+        responseMode: localMatch.responseMode,
+        bridge,
+        toolDirection: toolDirection || undefined,
+        reason: reason || undefined,
+        fallbackUsed,
+        resourceIds: resources.map(r => r.id),
+        recommendedTools: localMatch.recommendedTools.map(t => ({ id: t.id, name: t.name })),
+        actionPlan: (localMatch.responseMode === 'recommendation' || localMatch.responseMode === 'diagnosis') && localMatch.actionPlan
+          ? {
+              ...(localMatch.actionPlan.primaryTool ? { primaryTool: localMatch.actionPlan.primaryTool } : {}),
+              backupTools: localMatch.actionPlan.backupTools.map(t => ({
+                id: t.id, name: t.name, tagline: t.tagline,
+                useFor: t.useFor, nextStep: t.nextStep, fit: t.fit,
+              })),
+              prompt: localMatch.actionPlan.prompt,
+              nextStep: localMatch.actionPlan.nextStep,
+            }
+          : undefined,
+        needFrame: localMatch.needFrame,
+        diagnosisOptions: localMatch.responseMode === 'diagnosis' ? localMatch.diagnosisOptions : [],
+        modelLabel,
+      };
+
+      // 生成 Need Case 并保存（失败不阻断用户响应）
+      let needCaseId: string | undefined;
+      const shouldRecord = session.consentForTopic && (localMatch.responseMode === 'recommendation' || localMatch.responseMode === 'compliance');
+
+      if (shouldRecord) {
+        needCaseId = randomUUID();
+        const needCase: NeedCase = {
+          needCaseId,
           sessionId,
           createdAt: now,
+          updatedAt: now,
+          sourcePage: session.sourcePage,
           rawNeedRedacted: isMinorContext ? '[青少年/未成年场景不保存原始问题]' : redacted.text,
           needSummary,
           needCategories: categories,
           frictionLayer,
           recommendedAbilityType: abilityType,
           toolDirection,
-          complianceRedirected: localMatch.complianceRedirected || frictionLayer === 'compliance-entry',
-          codeAgentMisuseLikely: localMatch.codeAgentMisuseLikely,
-          audienceGroup: input.audienceGroup as AudienceGroup,
-          aiStage: input.aiStage as AiStage,
-          isMinorContext,
           recommendedContentIds: resources.map(r => r.id),
-          piiDetected: redacted.piiDetected,
-          piiRemoved: redacted.piiDetected,
-          status: 'pending',
+          recommendedToolIds: localMatch.recommendedTools.map(t => t.id),
+          audienceGroup,
+          aiStage,
+          profileSnapshot: inferEncounterSlice({
+            personaAnchor: input.userContext.profile?.personaAnchor,
+            audienceGroup,
+            frictionLayer,
+            needFramePurpose: localMatch.needFrame.purpose,
+            needSummary,
+          }),
+          agentRecommendation,
+          feedbackStatus: 'none',
+          adminReviewStatus: 'pending',
+          safetyFlags,
         };
-        await deps.eventStore.save(event);
-        eventId = event.eventId;
+
+        try {
+          await deps.needCaseStore.save(needCase);
+        } catch {
+          await deps.safetyService.recordIncident({
+            scope: 'need-case-save',
+            severity: 'medium',
+            message: 'Need Case 保存失败，用户响应未受影响。',
+            relatedNeedCaseId: needCaseId,
+            relatedSessionId: sessionId,
+          });
+          needCaseId = undefined;
+        }
       }
 
-      return {
-        eventId,
-        sessionId,
-        remaining: 0,
-        responsePayload: {
-          responseMode: localMatch.responseMode,
-          frictionLayer,
-          frictionLayerLabel: frictionLayerLabels[frictionLayer],
-          recommendedAbilityType: abilityType,
-          recommendedAbilityLabel: abilityTypeLabels[abilityType],
-          toolDirection,
-          reason,
-          bridge,
-          needSummary,
-          categories: localMatch.responseMode === 'recommendation'
-            ? categories.map(c => ({ id: c, label: needCategoryLabels[c] }))
-            : [],
-          resources: localMatch.responseMode === 'recommendation'
-            ? resources.map(r => ({
-                id: r.id, title: r.title, href: r.href,
-                kind: r.kind, useFor: r.useFor, summary: r.summary,
-              }))
-            : [],
-          recommendedTools: localMatch.responseMode === 'recommendation'
-            ? localMatch.recommendedTools.map(t => ({
-                id: t.id, name: t.name, tagline: t.tagline,
-                useFor: t.useFor, nextStep: t.nextStep, fit: t.fit,
-              }))
-            : [],
-          needFrame: localMatch.needFrame,
-          diagnosisOptions: localMatch.responseMode === 'diagnosis' ? localMatch.diagnosisOptions : [],
-          actionPlan: (localMatch.responseMode === 'recommendation' || localMatch.responseMode === 'diagnosis') && localMatch.actionPlan
-            ? {
-                ...(localMatch.actionPlan.primaryTool ? { primaryTool: localMatch.actionPlan.primaryTool } : {}),
-                backupTools: localMatch.actionPlan.backupTools.map(t => ({
-                  id: t.id, name: t.name, tagline: t.tagline,
-                  useFor: t.useFor, nextStep: t.nextStep, fit: t.fit,
-                })),
-                prompt: localMatch.actionPlan.prompt,
-                nextStep: localMatch.actionPlan.nextStep,
-              }
-            : undefined,
-          safety: {
-            piiDetected: redacted.piiDetected,
-            consentForTopic: session.consentForTopic,
-            isMinorContext,
-            complianceRedirected: localMatch.complianceRedirected || frictionLayer === 'compliance-entry',
-            note: '请不要输入姓名、联系方式、API Key、公司机密等敏感信息。',
-          },
+      const responsePayload = {
+        responseMode: localMatch.responseMode,
+        frictionLayer,
+        frictionLayerLabel: frictionLayerLabels[frictionLayer],
+        recommendedAbilityType: abilityType,
+        recommendedAbilityLabel: abilityTypeLabels[abilityType],
+        toolDirection,
+        reason,
+        bridge,
+        needSummary,
+        categories: localMatch.responseMode === 'recommendation'
+          ? categories.map(c => ({ id: c, label: needCategoryLabels[c] }))
+          : [],
+        resources: localMatch.responseMode === 'recommendation'
+          ? resources.map(r => ({
+              id: r.id, title: r.title, href: r.href,
+              kind: r.kind, useFor: r.useFor, summary: r.summary,
+            }))
+          : [],
+        recommendedTools: localMatch.responseMode === 'recommendation'
+          ? localMatch.recommendedTools.map(t => ({
+              id: t.id, name: t.name, tagline: t.tagline,
+              useFor: t.useFor, nextStep: t.nextStep, fit: t.fit,
+            }))
+          : [],
+        needFrame: localMatch.needFrame,
+        diagnosisOptions: localMatch.responseMode === 'diagnosis' ? localMatch.diagnosisOptions : [],
+        actionPlan: agentRecommendation.actionPlan,
+        safety: {
+          piiDetected: safetyFlags.piiDetected,
+          consentForTopic: safetyFlags.consentForTopic,
+          isMinorContext,
+          complianceRedirected: safetyFlags.complianceRedirected,
+          note: '请不要输入姓名、联系方式、API Key、公司机密等敏感信息。',
         },
+      };
+
+      return {
+        needCaseId,
+        sessionId,
+        responsePayload,
+        fallbackUsed,
       };
     },
   };

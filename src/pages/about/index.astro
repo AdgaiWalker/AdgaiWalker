@@ -12,7 +12,7 @@ import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
 import stats from '@/data/site-stats.json';
 import { articles, pillars, aiTools, totalCost, costByCategory } from '@/data/site-data';
-import { getDemandStats, getTopicCandidates } from '@/conversation/store';
+import { getNeedCaseStats, getTopicCandidates } from '@/conversation/store';
 import '@/styles/about.css';
 
 export const prerender = true;
@@ -20,7 +20,7 @@ export const prerender = true;
 const { personalTimeline, siteTimeline } = stats;
 
 // 需求洞察数据（构建时读取）
-const demandStats = await getDemandStats({ days: 30 });
+const demandStats = await getNeedCaseStats({ days: 30 });
 const topicCandidates = await getTopicCandidates({ limit: 5 });
 
 const needCategoryLabels: Record<string, string> = {
@@ -448,7 +448,7 @@ const needCategoryLabels: Record<string, string> = {
         <div class="insight-section-line"></div>
       </div>
 
-      {demandStats.totalEvents === 0 ? (
+      {demandStats.totalCases === 0 ? (
         <div class="insight-empty panel-glass">
           <Icon name="lucide:bar-chart-3" width={28} height={28} class="insight-empty-icon" />
           <p>暂无需求数据。匹配器上线后，这里会展示用户需求趋势。</p>
@@ -467,7 +467,7 @@ const needCategoryLabels: Record<string, string> = {
                 <span class="insight-stat-label">会话</span>
               </div>
               <div class="insight-stat">
-                <span class="insight-stat-value">{demandStats.totalEvents}</span>
+                <span class="insight-stat-value">{demandStats.totalCases}</span>
                 <span class="insight-stat-label">需求</span>
               </div>
               <div class="insight-stat">

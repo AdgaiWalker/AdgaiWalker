@@ -1,0 +1,158 @@
+---
+// /admin/brief — 创作简报（从选题簇生成，SSR，需认证）
+import { isAdmin } from '@/lib/admin-auth';
+import { Icon } from 'astro-icon/components';
+import { getTopicCandidates } from '@/conversation/store';
+import { generateBrief } from '@/services/brief.service';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const topicId = Astro.url.searchParams.get('topicId');
+const allTopics = await getTopicCandidates({ limit: 200 });
+const topic = topicId ? allTopics.find(t => t.topicId === topicId) : null;
+if (!topic) {
+  return Astro.redirect('/admin/topics');
+}
+const brief = generateBrief(topic);
+const priorityLabel: Record<string, string> = { high: '高优先', medium: '中优先', low: '低优先' };
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>创作简报 — {brief.title}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
+
+    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
+    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
+    .admin-bar-right { display: flex; align-items: center; gap: 1rem; }
+    .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
+    .admin-bar-link:hover { color: #c4704a; }
+
+    .brief-main { max-width: 44rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    .brief-notice { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; border-radius: 10px; background: rgba(196,112,74,0.08); color: #c4704a; font-size: 0.8rem; font-weight: 600; margin-bottom: 1.5rem; }
+    .brief-notice svg { flex-shrink: 0; }
+
+    .brief-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.4rem; line-height: 1.3; }
+    .brief-meta { display: flex; gap: 0.5rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+    .brief-tag { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+    .brief-tag-density { background: rgba(196,112,74,0.1); color: #c4704a; }
+    .brief-tag-priority-high { background: rgba(220,38,38,0.08); color: #dc2626; }
+    .brief-tag-priority-medium { background: rgba(245,158,11,0.08); color: #f59e0b; }
+    .brief-tag-priority-low { background: rgba(120,113,108,0.08); color: #78716c; }
+
+    .brief-section { margin-bottom: 1.5rem; padding: 1.1rem 1.25rem; border: 1px solid rgba(0,0,0,0.07); border-radius: 12px; background: #fff; }
+    .brief-section-head { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.6rem; }
+    .brief-section-head svg { width: 16px; height: 16px; color: #c4704a; }
+    .brief-section-title { font-size: 0.78rem; font-weight: 800; color: #c4704a; letter-spacing: 0.02em; }
+    .brief-section-body { font-size: 0.9rem; line-height: 1.7; color: #292524; }
+    .brief-section-body ul { padding-left: 1.2rem; }
+    .brief-section-body li { margin-bottom: 0.3rem; }
+    .brief-section-body li:last-child { margin-bottom: 0; }
+    .brief-ref-empty { color: #a8a29e; font-size: 0.82rem; }
+
+    .brief-actions { display: flex; gap: 0.75rem; margin-top: 1.75rem; flex-wrap: wrap; }
+    .brief-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.1rem; border-radius: 10px; font-size: 0.86rem; font-weight: 700; text-decoration: none; cursor: pointer; border: 0; }
+    .brief-btn-primary { background: #c4704a; color: #fff; }
+    .brief-btn-primary:hover { filter: brightness(1.08); }
+    .brief-btn-secondary { background: #fff; color: #78716c; border: 1px solid rgba(0,0,0,0.1); }
+    .brief-btn svg { width: 16px; height: 16px; }
+
+    @media (max-width: 640px) { .brief-main { padding: 1.5rem 1rem 3rem; } .brief-title { font-size: 1.25rem; } }
+  </style>
+</head>
+<body>
+  <div class="admin-bar">
+    <div class="admin-bar-left">
+      <span class="admin-bar-logo">Walker</span>
+    </div>
+    <div class="admin-bar-right">
+      <a href="/admin/topics" class="admin-bar-link">← 返回选题库</a>
+    </div>
+  </div>
+
+  <main class="brief-main">
+    <div class="brief-notice">
+      <Icon name="lucide:info" width={16} height={16} />
+      <span>框架与弹药，正文请自行创作 —— 简报不代写</span>
+    </div>
+
+    <h1 class="brief-title">{brief.title}</h1>
+    <div class="brief-meta">
+      <span class="brief-tag brief-tag-density">需求密度 {brief.density}</span>
+      <span class={`brief-tag brief-tag-priority-${brief.priority}`}>{priorityLabel[brief.priority]}</span>
+    </div>
+
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <Icon name="lucide:users" />
+        <span class="brief-section-title">目标角色</span>
+      </div>
+      <div class="brief-section-body">{brief.targetRoles}</div>
+    </div>
+
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <Icon name="lucide:alert-circle" />
+        <span class="brief-section-title">核心卡点</span>
+      </div>
+      <div class="brief-section-body">{brief.coreStuckPoint}</div>
+    </div>
+
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <Icon name="lucide:lightbulb" />
+        <span class="brief-section-title">建议角度</span>
+      </div>
+      <div class="brief-section-body">
+        <ul>{brief.suggestedAngles.map(angle => <li>{angle}</li>)}</ul>
+      </div>
+    </div>
+
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <Icon name="lucide:list" />
+        <span class="brief-section-title">建议结构</span>
+      </div>
+      <div class="brief-section-body">
+        <ul>{brief.suggestedStructure.map(item => <li>{item}</li>)}</ul>
+      </div>
+    </div>
+
+    <div class="brief-section">
+      <div class="brief-section-head">
+        <Icon name="lucide:link" />
+        <span class="brief-section-title">站内可引用</span>
+      </div>
+      <div class="brief-section-body">
+        {brief.referenceContent.length > 0 ? (
+          <ul>{brief.referenceContent.map(title => <li>{title}</li>)}</ul>
+        ) : (
+          <span class="brief-ref-empty">暂无可引用的站内内容 —— 这是内容缺口，适合从零补。</span>
+        )}
+      </div>
+    </div>
+
+    <div class="brief-actions">
+      <a href="/admin/content/edit" class="brief-btn brief-btn-primary">
+        <Icon name="lucide:pencil" />
+        去编辑器创作
+      </a>
+      <a href="/admin/topics" class="brief-btn brief-btn-secondary">
+        <Icon name="lucide:arrow-left" />
+        返回选题库
+      </a>
+    </div>
+  </main>
+</body>
+</html>

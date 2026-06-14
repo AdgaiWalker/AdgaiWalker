@@ -1,11 +1,11 @@
 /**
  * VisibilityService TDD — 数据边界控制行为
  *
- * RED 阶段：测试约束以下行为：
+ * 测试约束：
  * 1. admin 能看所有可见性级别
  * 2. invited 能看 public + draft，不能看 private / admin-only
  * 3. public 只能看 public，不能看 draft / private / admin-only
- * 4. redactDemandEvent 对非 admin 只返回摘要字段
+ * 4. redactNeedCase 对非 admin 只返回摘要字段
  * 5. filterStats 对非 admin 只返回聚合字段
  */
 
@@ -16,7 +16,6 @@ describe('VisibilityService — 数据边界控制', () => {
   const service = createVisibilityService();
 
   describe('canSee — 可见性规则矩阵', () => {
-    // admin 角色能看一切
     it('admin 能看 public', () => {
       expect(service.canSee({ role: 'admin', contentVisibility: 'public' })).toBe(true);
     });
@@ -30,7 +29,6 @@ describe('VisibilityService — 数据边界控制', () => {
       expect(service.canSee({ role: 'admin', contentVisibility: 'admin-only' })).toBe(true);
     });
 
-    // invited 角色
     it('invited 能看 public', () => {
       expect(service.canSee({ role: 'invited', contentVisibility: 'public' })).toBe(true);
     });
@@ -44,7 +42,6 @@ describe('VisibilityService — 数据边界控制', () => {
       expect(service.canSee({ role: 'invited', contentVisibility: 'admin-only' })).toBe(false);
     });
 
-    // public 角色
     it('public 只能看 public', () => {
       expect(service.canSee({ role: 'public', contentVisibility: 'public' })).toBe(true);
     });
@@ -59,38 +56,37 @@ describe('VisibilityService — 数据边界控制', () => {
     });
   });
 
-  describe('redactDemandEvent — 需求事件脱敏', () => {
-    const fullEvent = {
-      eventId: 'evt-001',
+  describe('redactNeedCase — Need Case 脱敏', () => {
+    const fullNeedCase = {
+      needCaseId: 'nc-001',
       sessionId: 'sess-001',
       rawNeedRedacted: '用户原始问题（已脱敏）',
       needSummary: '想学 AI',
       needCategories: ['learn-ai'],
-      isMinorContext: false,
-      piiDetected: false,
-      piiRemoved: false,
+      frictionLayer: 'tool-understanding',
+      recommendedAbilityType: 'learning-path',
       recommendedContentIds: ['tools-ai-tools'],
-      status: 'pending' as const,
+      adminReviewStatus: 'pending',
       createdAt: '2026-06-10T00:00:00Z',
     };
 
-    it('admin 看到完整事件', () => {
-      const result = service.redactDemandEvent(fullEvent, 'admin') as Record<string, unknown>;
-      expect(result.eventId).toBe('evt-001');
+    it('admin 看到完整 Need Case', () => {
+      const result = service.redactNeedCase(fullNeedCase, 'admin') as Record<string, unknown>;
+      expect(result.needCaseId).toBe('nc-001');
       expect(result.rawNeedRedacted).toBe('用户原始问题（已脱敏）');
     });
 
     it('invited 只看到摘要', () => {
-      const result = service.redactDemandEvent(fullEvent, 'invited') as Record<string, unknown>;
+      const result = service.redactNeedCase(fullNeedCase, 'invited') as Record<string, unknown>;
       expect(result.needSummary).toBe('想学 AI');
-      expect(result).not.toHaveProperty('eventId');
+      expect(result).not.toHaveProperty('needCaseId');
       expect(result).not.toHaveProperty('rawNeedRedacted');
     });
 
     it('public 只看到摘要', () => {
-      const result = service.redactDemandEvent(fullEvent, 'public') as Record<string, unknown>;
+      const result = service.redactNeedCase(fullNeedCase, 'public') as Record<string, unknown>;
       expect(result.needSummary).toBe('想学 AI');
-      expect(result).not.toHaveProperty('eventId');
+      expect(result).not.toHaveProperty('needCaseId');
     });
   });
 
@@ -99,14 +95,14 @@ describe('VisibilityService — 数据边界控制', () => {
       matchCount: 42,
       contentCount: 15,
       topCategories: [{ id: 'learn-ai', label: '学 AI', count: 10 }],
-      totalEvents: 100,
+      totalCases: 100,
       byCategory: { coding: 30, writing: 20 },
       complianceRedirectRate: 0.05,
     };
 
     it('admin 看到完整统计', () => {
       const result = service.filterStats(fullStats, 'admin') as Record<string, unknown>;
-      expect(result.totalEvents).toBe(100);
+      expect(result.totalCases).toBe(100);
       expect(result.complianceRedirectRate).toBe(0.05);
     });
 

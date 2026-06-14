@@ -1,7 +1,7 @@
 ---
 // /admin/topics — 选题库（服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
-import { getTopicCandidates } from '@/conversation/store';
+import { getTopicCandidates, getRecentNeedCases } from '@/conversation/store';
 
 export const prerender = false;
 
@@ -10,6 +10,13 @@ if (!isAdmin(Astro.request)) {
 }
 
 const allTopics = await getTopicCandidates({ limit: 200 });
+const recentCases = await getRecentNeedCases(500);
+function getHitRate(topicId: string): { total: number; feedbackGiven: number; resolved: number; rate: number | null } {
+  const cases = recentCases.filter(c => c.topicCandidateId === topicId);
+  const feedbackGiven = cases.filter(c => c.feedbackStatus !== 'none').length;
+  const resolved = cases.filter(c => c.feedbackStatus === 'resolved').length;
+  return { total: cases.length, feedbackGiven, resolved, rate: feedbackGiven > 0 ? Math.round((resolved / feedbackGiven) * 100) : null };
+}
 const byStatus = {
   pending: allTopics.filter(t => t.status === 'pending'),
   accepted: allTopics.filter(t => t.status === 'accepted'),
@@ -143,6 +150,7 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
       <a href="/admin/insights" class="admin-bar-link">洞察</a>
       <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
       <a href="/admin/topics" class="admin-bar-link active">选题库</a>
+      <a href="/admin/review" class="admin-bar-link">需求复盘</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
     </div>
@@ -177,6 +185,42 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
       </div>
     </div>
 
+    <!-- 灵感入口（B4）：选题池双源，站主主动灵感与用户需求并置 -->
+    <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1.25rem; padding:0.7rem 0.85rem; border:1px solid rgba(196,112,74,0.22); border-radius:10px; background:rgba(196,112,74,0.05); flex-wrap:wrap;">
+      <input id="inspiration-input" type="text" maxlength="200" placeholder="记下一个选题灵感…" style="flex:1; min-width:12rem; border:1px solid rgba(0,0,0,0.1); border-radius:8px; padding:0.5rem 0.75rem; font-size:0.86rem; outline:none;" />
+      <button id="inspiration-submit" type="button" style="padding:0.5rem 1rem; border:0; border-radius:8px; background:#c4704a; color:#fff; font-size:0.82rem; font-weight:700; cursor:pointer;">加入选题池</button>
+      <span id="inspiration-msg" style="font-size:0.76rem; color:#78716c; flex-basis:100%;"></span>
+    </div>
+    <script>
+      function initInspirationInput() {
+        const input = document.getElementById('inspiration-input');
+        const btn = document.getElementById('inspiration-submit');
+        const msg = document.getElementById('inspiration-msg');
+        if (!input || !btn || (btn as HTMLElement).dataset.bound === '1') return;
+        (btn as HTMLElement).dataset.bound = '1';
+        const submit = async () => {
+          const text = (input as HTMLInputElement).value.trim();
+          if (!text) { if (msg) msg.textContent = '灵感不能为空'; return; }
+          (btn as HTMLButtonElement).disabled = true;
+          if (msg) msg.textContent = '提交中…';
+          try {
+            const res = await fetch('/api/admin/inspiration', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text }),
+            });
+            const data = await res.json();
+            if (data.ok) { window.location.reload(); }
+            else { if (msg) msg.textContent = data.error || '提交失败'; (btn as HTMLButtonElement).disabled = false; }
+          } catch { if (msg) msg.textContent = '网络错误'; (btn as HTMLButtonElement).disabled = false; }
+        };
+        btn.addEventListener('click', submit);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+      }
+      initInspirationInput();
+      document.addEventListener('astro:page-load', initInspirationInput);
+    </script>
+
     <!-- Tab Bar -->
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="pending">待处理 <span class="tab-count">{byStatus.pending.length}</span></button>
@@ -195,6 +239,7 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
           ) : topics.map(topic => {
             const pc = priorityConfig[topic.priority] ?? priorityConfig.low;
             const isGap = topic.relatedContentIds.length === 0;
+            const hr = getHitRate(topic.topicId);
             const contradiction = getContradictionLabel(topic);
             const creationAction = getCreationAction(topic);
             const priorityReason = getPriorityReason(topic);
@@ -203,6 +248,9 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
                 <div class="topic-header">
                   <span class="topic-priority" style={`background: ${pc.bg}; color: ${pc.color}`}>{pc.label}</span>
                   <span class="topic-sources">{topic.sourceNeedCount} 条需求</span>
+                  {hr.feedbackGiven > 0 && (
+                    <span style={`padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; background: rgba(${(hr.rate ?? 0) >= 60 ? '6,95,70' : (hr.rate ?? 0) >= 30 ? '245,158,11' : '220,38,38'}, 0.08); color: ${(hr.rate ?? 0) >= 60 ? '#065f46' : (hr.rate ?? 0) >= 30 ? '#f59e0b' : '#dc2626'};`}>命中率 {hr.rate ?? 0}%（{hr.resolved}/{hr.feedbackGiven}）</span>
+                  )}
                   {isGap && <span class="topic-gap">内容缺口</span>}
                   {status !== 'pending' && (
                     <span class={`topic-status-badge topic-status-${status}`}>
@@ -232,6 +280,7 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
                 </div>
                 {status === 'pending' && (
                   <div class="topic-actions">
+                    <a class="topic-btn" style="background: rgba(196,112,74,0.08); color: #c4704a; text-decoration: none;" href={`/admin/brief?topicId=${topic.topicId}`}>生成简报</a>
                     <button class="topic-btn btn-accept" data-action="accepted" data-id={topic.topicId}>采纳</button>
                     <button class="topic-btn btn-defer" data-action="deferred" data-id={topic.topicId}>暂缓</button>
                     <button class="topic-btn btn-ignore" data-action="ignored" data-id={topic.topicId}>忽略</button>

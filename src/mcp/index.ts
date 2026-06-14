@@ -195,10 +195,10 @@ server.tool(
     }
 
     // MCP server 运行在独立进程，store.ts 的 Redis 连接需要环境变量
-    // 如果 Redis 不可用，getDemandStats 会返回零值
+    // 如果 Redis 不可用，getNeedCaseStats 会返回零值
     try {
-      const { getDemandStats } = await import('../conversation/store');
-      const stats = await getDemandStats({ days: days ?? 30 });
+      const { getNeedCaseStats } = await import('../conversation/store');
+      const stats = await getNeedCaseStats({ days: days ?? 30 });
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(stats, null, 2) }],
       };

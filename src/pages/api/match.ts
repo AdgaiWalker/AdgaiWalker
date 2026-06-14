@@ -3,7 +3,10 @@
  *
  * 四层架构重构后的 HTTP 薄层：
  * API route 只负责 HTTP 协议（解析请求、速率限制、格式化响应），
- * 业务逻辑委托给 QuestionService。
+ * 业务编排委托给 AgentOrchestrator.handleNeed()。
+ *
+ * 认证状态由 UserContextService 解析：admin cookie → admin；
+ * invited session cookie → invited；否则 public。
  */
 
 import { createHash } from 'node:crypto';
@@ -11,13 +14,27 @@ import { createHash } from 'node:crypto';
 import type { APIRoute } from 'astro';
 import { Redis } from '@upstash/redis';
 
-import { createQuestionService } from '@/services/question.service';
-import { createDemandEventStore } from '@/stores/demand-event.store';
+import { createAgentOrchestrator } from '@/services/agent-orchestrator.service';
+import { createSafetyService } from '@/services/safety.service';
+import { createUserContextService } from '@/services/user-context.service';
+import { isAdmin } from '@/lib/admin-auth';
+import { readInvitedSessionId } from '@/lib/invited-session-auth';
+import { createIncidentStore } from '@/stores/incident.store';
+import { createInvitedSessionStore } from '@/stores/invited-session.store';
 import { createMatchSessionStore } from '@/stores/match-session.store';
+import { createNeedCaseStore } from '@/stores/need-case.store';
+import { createUserProfileStore } from '@/stores/user-profile.store';
+import { audienceGroupLabels, aiStageLabels } from '@/profiles/resource-index';
 
-const questionService = createQuestionService({
+const userContextService = createUserContextService({
+  sessionStore: createInvitedSessionStore(),
+  profileStore: createUserProfileStore(),
+});
+
+const agentOrchestrator = createAgentOrchestrator({
   sessionStore: createMatchSessionStore(),
-  eventStore: createDemandEventStore(),
+  needCaseStore: createNeedCaseStore(),
+  safetyService: createSafetyService({ incidentStore: createIncidentStore() }),
 });
 
 const DAILY_LIMIT = Number(import.meta.env.MATCH_DAILY_LIMIT ?? 20);
@@ -30,8 +47,6 @@ const MAX_TOTAL_CHARS = 4_800;
 const MAX_SOURCE_PAGE_LENGTH = 120;
 const GLOBAL_DAILY_LIMIT = Number(import.meta.env.MATCH_GLOBAL_DAILY_LIMIT ?? 1_000);
 const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-import { audienceGroupLabels, aiStageLabels } from '@/profiles/resource-index';
 
 const memoryLimiter = new Map<string, { dailyCount: number; minuteCount: number; dayResetAt: number; minuteResetAt: number }>();
 const memoryGlobalLimiter = { dailyCount: 0, dayResetAt: 0 };
@@ -160,17 +175,31 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: '匹配太频繁了，稍后再试。', remaining: rateLimit.remaining }, 429);
   }
 
-  const result = await questionService.handleQuestion({
-    sessionId: body.sessionId,
+  // 后端 gate（A1）：全量交互功能需受邀或管理员，public 返回 401
+  const invitedSessionId = readInvitedSessionId(request);
+  const adminFlag = isAdmin(request);
+  if (!invitedSessionId && !adminFlag) {
+    return jsonResponse({ error: '需要邀请码才能使用匹配功能。' }, 401);
+  }
+
+  // 解析用户上下文：admin cookie / invited session cookie
+  const userContext = await userContextService.resolve({
+    sessionId: invitedSessionId,
+    isAdmin: adminFlag,
+  });
+
+  const result = await agentOrchestrator.handleNeed({
+    userContext,
     messages: body.messages,
     audienceGroup: body.audienceGroup,
     aiStage: body.aiStage,
     consentForTopic: body.consentForTopic,
     sourcePage: body.sourcePage,
+    sessionId: body.sessionId,
   });
 
   return jsonResponse({
-    ...(result.eventId ? { eventId: result.eventId } : {}),
+    ...(result.needCaseId ? { needCaseId: result.needCaseId } : {}),
     sessionId: result.sessionId,
     remaining: rateLimit.remaining,
     ...(result.responsePayload as Record<string, unknown>),
