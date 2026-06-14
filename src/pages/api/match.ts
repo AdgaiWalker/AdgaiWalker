@@ -73,9 +73,9 @@ function getClientIP(request: Request): string {
     || request.headers.get('x-real-ip') || 'unknown';
 }
 
-function hashRateLimitSubject(ip: string): string {
+function hashRateLimitSubject(subject: string): string {
   const salt = import.meta.env.MATCH_RATE_LIMIT_SALT ?? import.meta.env.CRON_SECRET ?? 'match-rate-limit';
-  return createHash('sha256').update(salt + ':' + ip).digest('hex').slice(0, 32);
+  return createHash('sha256').update(salt + ':' + subject).digest('hex').slice(0, 32);
 }
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string; }
@@ -169,24 +169,26 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: '请求格式不正确。' }, 400);
   }
 
-  const rateLimitSubject = hashRateLimitSubject(getClientIP(request));
-  const rateLimit = await checkRateLimit(rateLimitSubject);
-  if (!rateLimit.allowed) {
-    return jsonResponse({ error: '匹配太频繁了，稍后再试。', remaining: rateLimit.remaining }, 429);
-  }
-
   // 后端 gate（A1）：全量交互功能需受邀或管理员，public 返回 401
   const invitedSessionId = readInvitedSessionId(request);
   const adminFlag = isAdmin(request);
-  if (!invitedSessionId && !adminFlag) {
-    return jsonResponse({ error: '需要邀请码才能使用匹配功能。' }, 401);
-  }
-
-  // 解析用户上下文：admin cookie / invited session cookie
   const userContext = await userContextService.resolve({
     sessionId: invitedSessionId,
     isAdmin: adminFlag,
   });
+  if (userContext.authState === 'public') {
+    return jsonResponse({ error: '需要邀请码才能使用匹配功能。' }, 401);
+  }
+
+  const rateLimitSubject = hashRateLimitSubject(
+    userContext.authState === 'invited' && userContext.sessionId
+      ? `invited:${userContext.sessionId}`
+      : `admin:${getClientIP(request)}`,
+  );
+  const rateLimit = await checkRateLimit(rateLimitSubject);
+  if (!rateLimit.allowed) {
+    return jsonResponse({ error: '匹配太频繁了，稍后再试。', remaining: rateLimit.remaining }, 429);
+  }
 
   const result = await agentOrchestrator.handleNeed({
     userContext,

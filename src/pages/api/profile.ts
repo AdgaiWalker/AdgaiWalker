@@ -1,19 +1,26 @@
 /**
  * GET/POST /api/profile — 当前会话画像
  *
- * invited 用户可读写自己的画像；admin cookie 不走画像（直接 401 引导走后台）。
- * 画像字段全部可选，contact 自动脱敏。
+ * invited 用户可读写自己的画像；admin GET 返回 authState 供前端放行。
+ * 画像字段全部可选。
  */
 
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
 import { readInvitedSessionId } from '@/lib/invited-session-auth';
+import { createUserContextService } from '@/services/user-context.service';
 import { createUserProfileService, PersonaAnchorPiiError } from '@/services/profile.service';
 import type { ProfileInput } from '@/services/interfaces';
+import { createInvitedSessionStore } from '@/stores/invited-session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 
-const profileService = createUserProfileService({ profileStore: createUserProfileStore() });
+const profileStore = createUserProfileStore();
+const profileService = createUserProfileService({ profileStore });
+const userContextService = createUserContextService({
+  sessionStore: createInvitedSessionStore(),
+  profileStore,
+});
 
 const PROFILE_STRING_FIELDS: (keyof ProfileInput)[] = [
   'personaAnchor', 'nickname',
@@ -25,11 +32,6 @@ function json(data: unknown, status = 200): Response {
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
-}
-
-function resolveInvitedSessionId(request: Request): string | null {
-  if (isAdmin(request)) return null;
-  return readInvitedSessionId(request);
 }
 
 function validateProfileInput(body: unknown): ProfileInput | null {
@@ -47,17 +49,27 @@ function validateProfileInput(body: unknown): ProfileInput | null {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  const sessionId = resolveInvitedSessionId(request);
-  if (!sessionId) {
+  const userContext = await userContextService.resolve({
+    sessionId: readInvitedSessionId(request),
+    isAdmin: isAdmin(request),
+  });
+
+  if (userContext.authState === 'admin') {
+    return json({ authState: 'admin', profile: null });
+  }
+  if (userContext.authState !== 'invited' || !userContext.sessionId) {
     return json({ error: '请先通过邀请码验证。' }, 401);
   }
-  const profile = await profileService.get(sessionId);
-  return json({ profile });
+  return json({ authState: 'invited', profile: userContext.profile });
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const sessionId = resolveInvitedSessionId(request);
-  if (!sessionId) {
+  const userContext = await userContextService.resolve({
+    sessionId: readInvitedSessionId(request),
+    isAdmin: isAdmin(request),
+  });
+
+  if (userContext.authState !== 'invited' || !userContext.sessionId) {
     return json({ error: '请先通过邀请码验证。' }, 401);
   }
 
@@ -74,7 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const profile = await profileService.upsert(sessionId, input);
+    const profile = await profileService.upsert(userContext.sessionId, input);
     return json({ profile });
   } catch (e) {
     if (e instanceof PersonaAnchorPiiError) {

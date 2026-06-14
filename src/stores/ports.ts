@@ -188,7 +188,7 @@ export interface InviteCode {
 
 export interface InviteCodeRepositoryPort {
   findByCode(code: string): Promise<InviteCode | null>;
-  incrementUsage(code: string): Promise<void>;
+  incrementUsage(code: string): Promise<number>;
   listAll(): Promise<InviteCode[]>;
 }
 

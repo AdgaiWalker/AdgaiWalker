@@ -10,9 +10,16 @@ import type { APIRoute } from 'astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { readInvitedSessionId } from '@/lib/invited-session-auth';
 import { createUserProfileService } from '@/services/profile.service';
+import { createUserContextService } from '@/services/user-context.service';
+import { createInvitedSessionStore } from '@/stores/invited-session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 
-const profileService = createUserProfileService({ profileStore: createUserProfileStore() });
+const profileStore = createUserProfileStore();
+const profileService = createUserProfileService({ profileStore });
+const userContextService = createUserContextService({
+  sessionStore: createInvitedSessionStore(),
+  profileStore,
+});
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -26,13 +33,16 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: '管理员请使用后台管理画像。' }, 400);
   }
 
-  const sessionId = readInvitedSessionId(request);
-  if (!sessionId) {
+  const userContext = await userContextService.resolve({
+    sessionId: readInvitedSessionId(request),
+    isAdmin: false,
+  });
+  if (userContext.authState !== 'invited' || !userContext.sessionId) {
     return json({ error: '请先通过邀请码验证。' }, 401);
   }
 
   try {
-    await profileService.requestDeletion(sessionId);
+    await profileService.requestDeletion(userContext.sessionId);
     return json({ ok: true });
   } catch {
     return json({ error: '删除请求失败，请稍后重试。' }, 500);

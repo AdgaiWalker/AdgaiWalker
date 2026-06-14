@@ -23,6 +23,7 @@ function createFakeInviteCodeStore(codes: Map<string, InviteCode>): InviteCodeRe
     async incrementUsage(code) {
       const existing = codes.get(code);
       if (existing) { existing.usedCount++; codes.set(code, existing); }
+      return existing?.usedCount ?? 0;
     },
     async listAll() { return [...codes.values()]; },
   };
@@ -113,5 +114,34 @@ describe('InviteAccessService — 邀请码验证 + 会话建立', () => {
     const service = await createService(codes, sessions);
     await service.verifyAndAdmit('once');
     expect(codes.get('once')?.usedCount).toBe(1);
+  });
+
+  it('并发边界导致 increment 后超限时不建立会话', async () => {
+    const codes = new Map<string, InviteCode>();
+    const sessions = new Map<string, InvitedSession>();
+    codes.set('race', {
+      code: 'race', createdAt: new Date().toISOString(),
+      maxUses: 1, usedCount: 0,
+    });
+    const { createInviteAccessService } = await import('@/services/invite-access.service');
+    const service = createInviteAccessService({
+      inviteCodeStore: {
+        async findByCode(code) { return codes.get(code) ?? null; },
+        async incrementUsage(code) {
+          const existing = codes.get(code);
+          if (!existing) return 0;
+          existing.usedCount = 2;
+          return existing.usedCount;
+        },
+        async listAll() { return [...codes.values()]; },
+      },
+      sessionStore: createFakeSessionStore(sessions),
+    });
+
+    const result = await service.verifyAndAdmit('race');
+
+    expect(result.admitted).toBe(false);
+    expect(result.reason).toContain('已用完');
+    expect(sessions.size).toBe(0);
   });
 });

@@ -10,7 +10,7 @@ import type { APIRoute } from 'astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { invitedCookie, signInvitedToken } from '@/lib/invited-session-auth';
 import { createInviteAccessService } from '@/services/invite-access.service';
-import { createUserProfileService, PersonaAnchorPiiError } from '@/services/profile.service';
+import { createUserProfileService, PersonaAnchorPiiError, validatePersonaAnchor } from '@/services/profile.service';
 import { createInviteCodeStore } from '@/stores/invite-code.store';
 import { createInvitedSessionStore } from '@/stores/invited-session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
@@ -45,14 +45,22 @@ export const POST: APIRoute = async ({ request }) => {
   if (typeof code !== 'string' || code.length === 0) {
     return json({ admitted: false, reason: '请输入邀请码。' }, 400);
   }
-  const anchor = typeof personaAnchor === 'string' ? personaAnchor.trim() : undefined;
+  let anchor: string | undefined;
+  try {
+    anchor = typeof personaAnchor === 'string' ? validatePersonaAnchor(personaAnchor) : undefined;
+  } catch (e) {
+    if (e instanceof PersonaAnchorPiiError) {
+      return json({ admitted: false, reason: '锚点含敏感信息（手机号/邮箱等），请重新填写。' }, 400);
+    }
+    throw e;
+  }
 
   const result = await inviteAccessService.verifyAndAdmit(code);
   if (!result.admitted || !result.sessionId) {
     return json({ admitted: false, reason: result.reason }, 403);
   }
 
-  // 带锚点则存画像（PII 检测在 service 层，命中返回 400；其他保存失败不阻断准入）
+  // 带锚点则存画像。锚点已在消耗邀请码前校验；保存失败不阻断准入。
   if (anchor) {
     try {
       await profileService.upsert(result.sessionId, { personaAnchor: anchor });

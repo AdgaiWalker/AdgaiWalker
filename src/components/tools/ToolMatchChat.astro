@@ -7,7 +7,7 @@
       <span>带着多个问题也可以。</span>
       <span>我按角色和短期记忆帮你收窄下一步。</span>
     </span>
-    <span class="signal-note">匿名</span>
+    <span class="signal-note">受邀可解锁</span>
     <span class="signal-stat" id="match-stat"></span>
   </button>
 
@@ -1105,6 +1105,7 @@
   let sessionId: string | null = null;
   let isPublic = false;
   let identityProbe: Promise<unknown> = Promise.resolve();
+  let currentAnchor: string | null = null;
   let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
   let toolMatchTimers: ReturnType<typeof setTimeout>[] = [];
   let toolMatchRafs: number[] = [];
@@ -1155,25 +1156,40 @@
     const { signal } = abort;
     isPublic = false;
 
-    // 身份探测（A10）：GET /api/profile，invited 显示锚点，public 标记 gate
-    identityProbe = fetch('/api/profile', { signal }).then(r => {
-      if (signal.aborted) return null;
-      if (r.status === 401) {
-        isPublic = true;
-        const roleLabel = document.getElementById('memory-role-label');
+    // 身份应用：更新 isPublic / currentAnchor / signal-note 徽章 / 记忆条
+    function applyIdentity(state: 'public' | 'invited' | 'admin', anchor?: string) {
+      isPublic = state === 'public';
+      currentAnchor = state === 'invited' ? (anchor ?? null) : null;
+      const signalNote = document.querySelector('.signal-note');
+      const roleLabel = document.getElementById('memory-role-label');
+      if (state === 'public') {
+        if (signalNote) signalNote.textContent = '受邀可解锁';
         if (roleLabel) roleLabel.textContent = '未受邀';
-        return null;
-      }
-      if (!r.ok) return null;
-      return r.json();
-    }).then(data => {
-      if (signal.aborted || !data) return;
-      const anchor = data?.profile?.personaAnchor;
-      if (anchor) {
-        const roleLabel = document.getElementById('memory-role-label');
+      } else if (state === 'admin') {
+        if (signalNote) signalNote.textContent = '管理员';
+        if (roleLabel) roleLabel.textContent = '管理员';
+      } else if (state === 'invited' && !anchor) {
+        if (signalNote) signalNote.textContent = '已解锁';
+        if (roleLabel) roleLabel.textContent = '已受邀';
+      } else if (anchor) {
+        if (signalNote) signalNote.textContent = anchor;
         if (roleLabel) roleLabel.textContent = anchor;
       }
-    }).catch(() => { /* 探测失败不阻断，后端 gate 兜底 */ });
+    }
+    function probeIdentity(sig: AbortSignal): Promise<void> {
+      return fetch('/api/profile', { signal: sig }).then(r => {
+        if (sig.aborted) return;
+        if (r.status === 401) { applyIdentity('public'); return; }
+        if (!r.ok) return;
+        return r.json().then((data: { authState?: string; profile?: { personaAnchor?: string } }) => {
+          if (data?.authState === 'admin') { applyIdentity('admin'); return; }
+          applyIdentity('invited', data?.profile?.personaAnchor);
+        });
+      }).catch(() => { /* 探测失败不阻断，后端 gate 兜底 */ });
+    }
+
+    // 初始身份探测
+    identityProbe = probeIdentity(signal);
 
     const open = document.getElementById('match-open') as HTMLButtonElement;
     const dialog = document.getElementById('match-dialog') as HTMLDialogElement;
@@ -1195,6 +1211,16 @@
 
     if (!open || !dialog || !close || !messages || !input || !sendBtn) return;
 
+    // 邀请成功原地变身（不 reload）：关邀请页 → 重探身份 → 直接开聊天框
+    window.addEventListener('walker:invited', async () => {
+      (document.getElementById('invite-dialog') as HTMLDialogElement | null)?.close();
+      await probeIdentity(signal);
+      if (!isPublic && !dialog.open) {
+        dialog.showModal();
+        scheduleToolMatchTimer(() => input.focus(), 60);
+      }
+    }, { signal });
+
     const audienceLabels: Record<string, string> = {
       'prefer-not-say': '未指定',
       student: '学生',
@@ -1211,7 +1237,7 @@
     function updateMemoryPanel(data?: MatchResponse) {
       const userTurns = conversationHistory.filter((message) => message.role === 'user').length;
       const visibleTurns = Math.min(userTurns, 8);
-      const role = audienceLabels[audience?.value ?? 'prefer-not-say'] ?? '未指定';
+      const role = currentAnchor ?? audienceLabels[audience?.value ?? 'prefer-not-say'] ?? '未指定';
       if (memoryTurnCount) memoryTurnCount.textContent = `${visibleTurns} / 8`;
       if (memoryRoleLabel) memoryRoleLabel.textContent = role;
       if (memoryFrictionLabel && data?.frictionLayerLabel) memoryFrictionLabel.textContent = data.frictionLayerLabel;

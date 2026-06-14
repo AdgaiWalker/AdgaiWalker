@@ -304,7 +304,8 @@ import { Icon } from 'astro-icon/components';
         });
         const data = await res.json() as { admitted?: boolean; reason?: string };
         if (data.admitted) {
-          window.location.reload();
+          dialog.close();
+          window.dispatchEvent(new CustomEvent('walker:invited'));
         } else {
           if (errorEl) errorEl.textContent = data.reason || '邀请码无效。';
           submitBtn.disabled = false;

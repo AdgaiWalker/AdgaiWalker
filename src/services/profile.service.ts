@@ -28,7 +28,7 @@ function computeConfidence(anchor: string | undefined): number {
 }
 
 /** 锚点 PII 检测 + 长度截断：命中手机号/邮箱等抛错（零 PII 红线） */
-function validateAnchor(anchor: string | undefined): string | undefined {
+export function validatePersonaAnchor(anchor: string | undefined): string | undefined {
   if (!anchor) return undefined;
   const trimmed = anchor.trim();
   if (!trimmed) return undefined;
@@ -52,7 +52,7 @@ export function createUserProfileService(deps: {
       const now = new Date().toISOString();
 
       const personaAnchor = input.personaAnchor !== undefined
-        ? validateAnchor(input.personaAnchor)
+        ? validatePersonaAnchor(input.personaAnchor)
         : existing?.personaAnchor;
 
       const profile: UserProfile = {

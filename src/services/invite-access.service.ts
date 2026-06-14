@@ -41,7 +41,10 @@ export function createInviteAccessService(deps: {
         return { admitted: false, reason: '邀请码已用完。' };
       }
 
-      await deps.inviteCodeStore.incrementUsage(trimmed);
+      const usedCount = await deps.inviteCodeStore.incrementUsage(trimmed);
+      if (usedCount > invite.maxUses) {
+        return { admitted: false, reason: '邀请码已用完。' };
+      }
 
       const now = Date.now();
       const sessionId = createInvitedSessionId();
