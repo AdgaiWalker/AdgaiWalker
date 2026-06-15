@@ -23,10 +23,7 @@ describe('PerceptionService', () => {
         { role: 'assistant', content: '好的' },
       ],
     });
-    const userMsg = result.messages[0].content;
-    expect(userMsg).not.toContain('13800138000');
-    expect(userMsg).not.toContain('a@b.com');
-    expect(userMsg).not.toContain('  ');
+    expect(result.messages[0].content).toBe('联系我 [手机号已隐藏] 还有 [邮箱已隐藏]');
   });
 
   it('extracts and redacts the latest user need, flagging PII', () => {

@@ -15,7 +15,7 @@ import { randomUUID } from 'node:crypto';
 
 import { compactText } from '@/agent/privacy';
 import { callGateway } from '@/agent/gateway';
-import { matchSiteResources } from '@/agent/match';
+import { matchSiteResources, type MatchResult } from '@/agent/match';
 import { matchResources } from '@/profiles/resource-index';
 import {
   abilityTypeLabels,
@@ -85,12 +85,9 @@ interface ModelChoice {
   inferredAiStage?: AiStage;
 }
 
-/** 本地匹配引擎的原始返回类型 */
-type LocalMatchResult = ReturnType<typeof matchSiteResources>;
-
 /** Planning 阶段产物：本地匹配结果 + 模型增强后的字段 + 串联语/摘要 */
 interface PlanResult {
-  localMatch: LocalMatchResult;
+  localMatch: MatchResult;
   resources: MatchResource[];
   categories: NeedCategory[];
   frictionLayer: FrictionLayer;
