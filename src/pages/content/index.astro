@@ -50,11 +50,17 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
 
     <ContentFilterTabs activeSpace={activeSpace} counts={counts} />
 
-    <p class="active-space-note" data-active-space-note aria-live="polite">
-      当前显示：全部内容。
-    </p>
+    <div class="content-toolbar">
+      <p class="active-space-note" data-active-space-note aria-live="polite">
+        当前显示：全部内容。
+      </p>
+      <div class="view-toggle" role="group" aria-label="视图切换">
+        <button type="button" class="view-btn is-active" data-view-btn="grid" aria-pressed="true">网格</button>
+        <button type="button" class="view-btn" data-view-btn="list" aria-pressed="false">列表</button>
+      </div>
+    </div>
 
-    <div class="content-grid" aria-label="内容列表">
+    <div class="content-grid" data-view="grid" aria-label="内容列表">
       {contentItems.map((item) => (
         <ContentUniverseCard item={item} spaces={getItemSpaces(item)} />
       ))}
@@ -159,12 +165,47 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
     font-size: 0.9rem;
   }
 
+  .content-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
   .active-space-note {
-    margin: -0.35rem 0 0;
+    margin: 0;
     color: var(--color-text-muted, rgba(63, 48, 39, 0.6));
     font-size: 0.85rem;
     font-weight: 650;
   }
+
+  .view-toggle {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
+    border-radius: 999px;
+    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.55);
+  }
+
+  .view-btn {
+    padding: 0.35rem 0.85rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-muted, rgba(63, 48, 39, 0.6));
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .view-btn.is-active {
+    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.12);
+    color: var(--color-brand, #c4704a);
+  }
+
   .content-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -172,7 +213,7 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
   }
 
   @media (min-width: 768px) {
-    .content-grid {
+    .content-grid[data-view="grid"] {
       grid-template-columns: repeat(2, 1fr);
     }
   }
@@ -273,13 +314,39 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
     }
   }
 
+  function getRequestedView() {
+    return new URLSearchParams(location.search).get('view') === 'list' ? 'list' : 'grid';
+  }
+
+  function applyContentView() {
+    const view = getRequestedView();
+    const grid = document.querySelector('.content-grid');
+    if (grid) grid.setAttribute('data-view', view);
+    document.querySelectorAll('[data-view-btn]').forEach((btn) => {
+      const isActive = btn.getAttribute('data-view-btn') === view;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
   function initContentFilter() {
     contentAbort?.abort();
     contentAbort = new AbortController();
     const { signal } = contentAbort;
 
     updateContentFilter();
-    window.addEventListener('popstate', updateContentFilter, { signal });
+    applyContentView();
+    window.addEventListener('popstate', () => { updateContentFilter(); applyContentView(); }, { signal });
+
+    document.querySelectorAll('[data-view-btn]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.getAttribute('data-view-btn') ?? 'grid';
+        const url = new URL(location.href);
+        url.searchParams.set('view', view);
+        history.pushState({}, '', url);
+        applyContentView();
+      }, { signal });
+    });
   }
 
   initContentFilter();
