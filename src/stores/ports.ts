@@ -351,3 +351,69 @@ export interface ExperienceEventRepositoryPort {
   findById(experienceId: string): Promise<ExperienceEvent | null>;
   markPattern(experienceId: string, patternMarked: boolean): Promise<void>;
 }
+
+// ---------------------------------------------------------------------------
+// 规则候选（U9 规则候选池：observed → candidate → validated → stable → retired）
+// ---------------------------------------------------------------------------
+
+export type RuleStatus = 'observed' | 'candidate' | 'validated' | 'stable' | 'retired';
+
+export interface RuleCandidate {
+  ruleId: string;
+  createdAt: string;
+  updatedAt: string;
+  /** 规则描述（如"提到 PPT 且无受众信号 → diagnosis"） */
+  description: string;
+  status: RuleStatus;
+  /** 正例（命中的样本 needCase/experience ID） */
+  positiveExamples: string[];
+  /** 反例（推翻的样本） */
+  negativeExamples: string[];
+  /** 来源 needCase / experience */
+  sourceIds: string[];
+  /** 准确率（回放评测，0-1） */
+  accuracy?: number;
+  note?: string;
+}
+
+export interface RuleCandidateRepositoryPort {
+  save(rule: RuleCandidate): Promise<void>;
+  findRecent(limit?: number): Promise<RuleCandidate[]>;
+  findByStatus(status: RuleStatus): Promise<RuleCandidate[]>;
+  updateStatus(ruleId: string, status: RuleStatus, note?: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Skill 候选（U11 Skill 准入：候选 → 准入判断 → 注册 / 降级方法卡）
+// ---------------------------------------------------------------------------
+
+export type SkillAdmissionStatus = 'candidate' | 'admitted' | 'demoted-to-method';
+
+export interface SkillCandidate {
+  skillId: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  description: string;
+  /** 准入状态 */
+  admissionStatus: SkillAdmissionStatus;
+  /** 定义域（输入范围） */
+  domain: string;
+  /** 输入条件 */
+  inputConditions: string;
+  /** 输出形态 */
+  outputForm: string;
+  /** 验证标准 */
+  validationCriteria: string;
+  /** 关联经验（ExperienceEvent ID） */
+  sourceExperienceIds: string[];
+  /** 版本 */
+  version: number;
+}
+
+export interface SkillCandidateRepositoryPort {
+  save(skill: SkillCandidate): Promise<void>;
+  findRecent(limit?: number): Promise<SkillCandidate[]>;
+  findByAdmissionStatus(status: SkillAdmissionStatus): Promise<SkillCandidate[]>;
+  updateAdmission(skillId: string, status: SkillAdmissionStatus): Promise<void>;
+}
