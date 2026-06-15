@@ -27,6 +27,7 @@ export type {
 } from '@/stores/ports';
 
 import type {
+  ConversationMessage,
   Incident,
   InvitedSession,
   MatchFeedbackEvent,
@@ -49,12 +50,6 @@ export interface MatchSession {
   isMinorContext: boolean;
   promptVersion: string;
   modelVersion: string;
-}
-
-export interface ConversationMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
 }
 
 // ---------------------------------------------------------------------------

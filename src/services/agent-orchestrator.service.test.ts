@@ -46,6 +46,9 @@ function createSessionStore(): MatchSessionRepositoryPort {
       return ended;
     },
     async count() { return sessions.size; },
+    createSessionId() { return crypto.randomUUID(); },
+    async saveMessages() {},
+    async incrementStats() {},
   };
 }
 

@@ -146,11 +146,23 @@ export interface MatchSession {
   modelVersion: string;
 }
 
+export interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
 export interface MatchSessionRepositoryPort {
   upsert(session: MatchSession): Promise<void>;
   get(sessionId: string): Promise<MatchSession | null>;
   end(sessionId: string, endedAt?: string): Promise<MatchSession | null>;
   count(): Promise<number>;
+  /** 生成新会话 ID（UUID v4） */
+  createSessionId(): string;
+  /** 保存/覆盖某会话的对话消息（fire-and-forget 语义，失败不阻断用户响应） */
+  saveMessages(sessionId: string, messages: ConversationMessage[]): Promise<void>;
+  /** 累加匹配统计（总数 + 各分类计数） */
+  incrementStats(categories: NeedCategory[]): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
