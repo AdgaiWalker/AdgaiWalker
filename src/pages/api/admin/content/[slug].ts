@@ -7,6 +7,8 @@ import {
   type ContentFileStore,
 } from '@/lib/admin-content-store';
 import { isAdmin } from '@/lib/admin-auth';
+import { getTopicCandidateById, updateTopicCandidateStatus } from '@/conversation/store';
+import { resolveContentVisibility } from '@/knowledge/visibility';
 
 const GITHUB_OWNER = 'AdgaiWalker';
 const GITHUB_REPO = 'AdgaiWalker';
@@ -50,6 +52,10 @@ function getPath(slug: string): string {
   return `${CONTENT_PATH_PREFIX}${hasKnownExt ? slug : `${slug}.md`}`;
 }
 
+function getContentId(slug: string): string {
+  return slug.replace(/\.(md|mdx)$/i, '');
+}
+
 function storeErrorResponse(error: unknown, fallback: string): Response {
   if (error instanceof ContentStoreError) {
     return jsonResponse({ error: error.message || fallback }, error.status);
@@ -78,7 +84,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   const slug = params.slug;
   if (!slug || !validateSlug(slug)) return jsonResponse({ error: '无效的 slug。' }, 400);
 
-  let body: { content?: string; sha?: string; message?: string; create?: boolean };
+  let body: { content?: string; sha?: string; message?: string; create?: boolean; topicId?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -90,6 +96,15 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
   if (body.content.length > MAX_CONTENT_BYTES) {
     return jsonResponse({ error: `内容太长，上限 ${MAX_CONTENT_BYTES / 1000}KB。` }, 413);
+  }
+  if (body.topicId !== undefined && typeof body.topicId !== 'string') {
+    return jsonResponse({ error: 'topicId 必须是字符串。' }, 400);
+  }
+
+  const parsedContent = matter(body.content);
+  const sourceTopicId = (body.topicId || parsedContent.data.sourceTopicId || '').toString().trim();
+  if (sourceTopicId && !await getTopicCandidateById(sourceTopicId)) {
+    return jsonResponse({ error: '选题簇不存在。' }, 404);
   }
 
   const path = getPath(slug);
@@ -113,10 +128,17 @@ export const PUT: APIRoute = async ({ params, request }) => {
       sha,
       message: body.message || (body.create ? `content: create ${slug}` : `content: update ${slug}`),
     });
+    if (sourceTopicId) {
+      const status = resolveContentVisibility(parsedContent.data) === 'public' ? 'produced' : 'accepted';
+      await updateTopicCandidateStatus(sourceTopicId, status, {
+        producedContentSlug: getContentId(slug),
+      });
+    }
     return jsonResponse({
       ok: true,
       slug,
       sha: result.sha,
+      topicLinked: Boolean(sourceTopicId),
       message: body.create ? '已创建，约 60s 后自动部署。' : '已提交，约 60s 后自动部署。',
     });
   } catch (error) {
@@ -158,6 +180,11 @@ export const PATCH: APIRoute = async ({ params, request }) => {
       content: nextContent,
       sha: file.sha,
     });
+    if (visibility === 'public' && typeof parsed.data.sourceTopicId === 'string') {
+      await updateTopicCandidateStatus(parsed.data.sourceTopicId, 'produced', {
+        producedContentSlug: getContentId(slug),
+      });
+    }
     return jsonResponse({ ok: true, slug, visibility, sha: result.sha });
   } catch (error) {
     return storeErrorResponse(error, '保存失败。');

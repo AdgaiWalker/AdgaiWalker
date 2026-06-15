@@ -28,6 +28,7 @@ export interface ContentItem {
   isExternal: boolean;
   aiUseLevel: NonNullable<LogEntry['data']['aiUsePolicy']>['level'];
   related: string[];
+  sourceTopicId?: string;
   version?: number;
   previousVersion?: string;
   series?: string;
@@ -213,6 +214,7 @@ export function toContentItem(entry: LogEntry): ContentItem {
     isExternal: Boolean(entry.data.url),
     aiUseLevel: entry.data.aiUsePolicy?.level ?? 'AI-2',
     related: entry.data.related,
+    sourceTopicId: entry.data.sourceTopicId,
     version: entry.data.version,
     previousVersion: entry.data.previousVersion,
     series: entry.data.series,

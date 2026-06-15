@@ -1,13 +1,20 @@
-import { randomUUID } from 'node:crypto';
+/**
+ * POST /api/match-feedback — 用户反馈
+ *
+ * 委托给 FeedbackService：保存 MatchFeedbackEvent 并回写 Need Case 的 feedbackStatus。
+ */
 
 import type { APIRoute } from 'astro';
 
-import { compactText, redactSensitiveText } from '@/agent/privacy';
-import {
-  saveMatchFeedback,
-  type MatchFeedbackEvent,
-  type MatchFeedbackType,
-} from '@/conversation/store';
+import { createFeedbackService } from '@/services/feedback.service';
+import { createFeedbackStore } from '@/stores/feedback.store';
+import { createNeedCaseStore } from '@/stores/need-case.store';
+import type { MatchFeedbackType } from '@/stores/ports';
+
+const feedbackService = createFeedbackService({
+  feedbackStore: createFeedbackStore(),
+  needCaseStore: createNeedCaseStore(),
+});
 
 const FEEDBACK_TYPES: MatchFeedbackType[] = [
   'resolved',
@@ -24,7 +31,7 @@ const MAX_FEEDBACK_TEXT_LENGTH = 240;
 
 interface FeedbackRequestBody {
   sessionId: string;
-  eventId?: string;
+  needCaseId?: string;
   feedbackType: MatchFeedbackType;
   feedbackText?: string;
 }
@@ -43,7 +50,7 @@ function validateBody(body: unknown): body is FeedbackRequestBody {
   if (!body || typeof body !== 'object') return false;
   const data = body as Record<string, unknown>;
   if (typeof data.sessionId !== 'string' || !SESSION_ID_PATTERN.test(data.sessionId)) return false;
-  if (data.eventId !== undefined && (typeof data.eventId !== 'string' || !SESSION_ID_PATTERN.test(data.eventId))) return false;
+  if (data.needCaseId !== undefined && (typeof data.needCaseId !== 'string' || !SESSION_ID_PATTERN.test(data.needCaseId))) return false;
   if (typeof data.feedbackType !== 'string' || !FEEDBACK_TYPES.includes(data.feedbackType as MatchFeedbackType)) return false;
   if (data.feedbackText !== undefined && (typeof data.feedbackText !== 'string' || data.feedbackText.length > MAX_FEEDBACK_TEXT_LENGTH)) return false;
   return true;
@@ -59,23 +66,16 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: '反馈格式不正确。' }, 400);
   }
 
-  const feedbackText = body.feedbackText
-    ? redactSensitiveText(compactText(body.feedbackText, MAX_FEEDBACK_TEXT_LENGTH)).text
-    : undefined;
-
-  const event: MatchFeedbackEvent = {
-    feedbackId: randomUUID(),
+  const result = await feedbackService.submit({
+    needCaseId: body.needCaseId,
     sessionId: body.sessionId,
-    eventId: body.eventId,
-    createdAt: new Date().toISOString(),
     feedbackType: body.feedbackType,
-    feedbackText,
-  };
-
-  await saveMatchFeedback(event);
+    feedbackText: body.feedbackText,
+  });
 
   return jsonResponse({
     ok: true,
-    feedbackId: event.feedbackId,
+    feedbackId: result.feedbackId,
+    needCaseId: result.needCaseId,
   });
 };

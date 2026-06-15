@@ -1,7 +1,9 @@
 ---
-// /admin/topics — 选题库（服务端渲染，需认证）
+// /admin/topics — 选题池（需求簇 + 站主灵感，服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
-import { getTopicCandidates } from '@/conversation/store';
+import { getRecentNeedCases, getTopicCandidates } from '@/conversation/store';
+import { matchResources } from '@/profiles/resource-index';
+import type { TopicCandidate } from '@/stores/ports';
 
 export const prerender = false;
 
@@ -10,37 +12,58 @@ if (!isAdmin(Astro.request)) {
 }
 
 const allTopics = await getTopicCandidates({ limit: 200 });
-const byStatus = {
-  pending: allTopics.filter(t => t.status === 'pending'),
-  accepted: allTopics.filter(t => t.status === 'accepted'),
-  deferred: allTopics.filter(t => t.status === 'deferred'),
-  ignored: allTopics.filter(t => t.status === 'ignored'),
-};
+const recentCases = await getRecentNeedCases(500);
 
-const priorityConfig: Record<string, { label: string; color: string; bg: string }> = {
+const statuses: Array<{ id: TopicCandidate['status']; label: string }> = [
+  { id: 'observed', label: '观察中' },
+  { id: 'accepted', label: '已采纳' },
+  { id: 'deferred', label: '已暂缓' },
+  { id: 'ignored', label: '已忽略' },
+  { id: 'produced', label: '已创作' },
+];
+
+const byStatus = Object.fromEntries(
+  statuses.map(status => [status.id, allTopics.filter(topic => topic.status === status.id)]),
+) as Record<TopicCandidate['status'], TopicCandidate[]>;
+
+const priorityConfig: Record<TopicCandidate['priority'], { label: string; color: string; bg: string }> = {
   high: { label: '高优先', color: '#dc2626', bg: 'rgba(220,38,38,0.08)' },
-  medium: { label: '中优先', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+  medium: { label: '中优先', color: '#b45309', bg: 'rgba(180,83,9,0.08)' },
   low: { label: '低优先', color: '#78716c', bg: 'rgba(120,113,108,0.08)' },
 };
 
-function getContradictionLabel(topic: (typeof allTopics)[number]): string {
-  if (topic.relatedContentIds.length === 0) return '有需求，无内容';
-  if (topic.sourceNeedCount >= 3 && topic.priority !== 'high') return '多人在问，但优先级偏低';
-  if (topic.sourceNeedCount <= 1 && topic.priority === 'high') return '单点强需求，需要验证';
-  return '已有答案，但表达不够直接';
+function roleText(topic: TopicCandidate): string {
+  if (topic.roleDistribution.length === 0) return '未主动说明的人群';
+  return topic.roleDistribution
+    .slice(0, 4)
+    .map(item => `${item.role}×${item.count}`)
+    .join(' ');
 }
 
-function getCreationAction(topic: (typeof allTopics)[number]): string {
-  if (topic.relatedContentIds.length === 0) return '先写最小教程或工具清单';
-  if (topic.sourceNeedCount >= 3) return '整理成方法论入口';
-  if (topic.priority === 'high') return '做成可复用指南';
-  return '保留样本，等待更多需求';
+function relatedTitles(topic: TopicCandidate): string[] {
+  return topic.relatedContentIds
+    .map(id => matchResources.find(resource => resource.id === id)?.title ?? id)
+    .slice(0, 5);
 }
 
-function getPriorityReason(topic: (typeof allTopics)[number]): string {
-  if (topic.priority === 'high') return '优先处理：需求强或内容缺口明显';
-  if (topic.priority === 'medium') return '观察处理：有重复信号但还需收敛';
-  return '低优先：样本少或已有内容覆盖';
+function getHitRate(topicId: string): { feedbackGiven: number; resolved: number; stuck: number; rate: number | null } {
+  const cases = recentCases.filter(item => item.topicCandidateId === topicId);
+  const feedbackCases = cases.filter(item => item.feedbackStatus !== 'none');
+  const resolved = feedbackCases.filter(item => item.feedbackStatus === 'resolved').length;
+  const stuck = feedbackCases.filter(item => item.feedbackStatus === 'stuck').length;
+  return {
+    feedbackGiven: feedbackCases.length,
+    resolved,
+    stuck,
+    rate: feedbackCases.length > 0 ? Math.round((resolved / feedbackCases.length) * 100) : null,
+  };
+}
+
+function creationHint(topic: TopicCandidate): string {
+  if (topic.source === 'inspiration') return '站主灵感：先和真实需求交叉验证';
+  if (topic.relatedContentIds.length === 0) return '内容缺口：适合补最小教程或工具清单';
+  if (topic.density >= 3) return '重复需求：适合整理成方法论入口';
+  return '保留观察：等待更多反馈确认';
 }
 ---
 
@@ -49,86 +72,53 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>选题库 — Walker</title>
+  <title>选题池 — Walker</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
-
     .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
     .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
     .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
     .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
-    .admin-bar-right { display: flex; align-items: center; gap: 1rem; }
+    .admin-bar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
-    .admin-bar-link:hover { color: #c4704a; }
-    .admin-bar-link.active { color: #1c1917; }
+    .admin-bar-link:hover, .admin-bar-link.active { color: #1c1917; }
     .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
     .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,0.2); }
-
-    .admin-main { max-width: 56rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    .admin-welcome { margin-bottom: 1.5rem; }
+    .admin-main { max-width: 62rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .admin-welcome { margin-bottom: 1.25rem; }
     .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; }
-    .admin-welcome p { font-size: 0.88rem; color: #78716c; }
-
-    .ops-model { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
-    .ops-step { padding: 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; }
-    .ops-step span { display: block; margin-bottom: 0.28rem; color: #c4704a; font-size: 0.68rem; font-weight: 850; }
-    .ops-step strong { display: block; margin-bottom: 0.25rem; color: #1c1917; font-size: 0.86rem; }
-    .ops-step p { color: #78716c; font-size: 0.74rem; line-height: 1.45; }
-
-    /* Tab */
-    .tab-bar { display: flex; gap: 0.35rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 0; }
-    .tab-btn { padding: 0.55rem 0.85rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #78716c; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
-    .tab-btn:hover { color: #1c1917; }
+    .admin-welcome p { font-size: 0.88rem; color: #78716c; line-height: 1.6; }
+    .inspiration-box { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem; padding: 0.75rem; border: 1px solid rgba(196,112,74,0.22); border-radius: 10px; background: rgba(196,112,74,0.05); flex-wrap: wrap; }
+    .inspiration-input { flex: 1; min-width: 12rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; padding: 0.55rem 0.75rem; font-size: 0.86rem; outline: none; }
+    .inspiration-btn { padding: 0.55rem 1rem; border: 0; border-radius: 8px; background: #c4704a; color: #fff; font-size: 0.82rem; font-weight: 750; cursor: pointer; }
+    .inspiration-msg { flex-basis: 100%; color: #78716c; font-size: 0.76rem; }
+    .tab-bar { display: flex; gap: 0.35rem; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(0,0,0,0.08); overflow-x: auto; }
+    .tab-btn { padding: 0.55rem 0.85rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #78716c; font-size: 0.82rem; font-weight: 750; cursor: pointer; white-space: nowrap; }
     .tab-btn.active { color: #1c1917; border-bottom-color: #c4704a; }
-    .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; border-radius: 999px; background: rgba(0,0,0,0.06); font-size: 0.65rem; font-weight: 800; margin-left: 0.35rem; }
-
-    /* 选题卡片 */
-    .topic-card { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1.15rem 1.25rem; margin-bottom: 0.75rem; transition: border-color 0.15s ease; }
-    .topic-card:hover { border-color: rgba(0,0,0,0.12); }
-    .topic-card.accepted { opacity: 0.7; }
-    .topic-card.ignored { opacity: 0.4; text-decoration: line-through; }
-
-    .topic-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem; flex-wrap: wrap; }
-    .topic-priority { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
-    .topic-sources { font-size: 0.72rem; color: #a8a29e; }
-    .topic-gap { padding: 0.15rem 0.5rem; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.68rem; font-weight: 700; }
-    .topic-status-badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; margin-left: auto; }
-    .topic-status-accepted { background: #ecfdf5; color: #065f46; }
-    .topic-status-deferred { background: #fef9c3; color: #854d0e; }
-    .topic-status-ignored { background: #f5f5f4; color: #78716c; }
-
-    .topic-title { font-size: 0.95rem; font-weight: 800; color: #1c1917; margin-bottom: 0.5rem; line-height: 1.4; }
-    .topic-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.65rem; }
-    .topic-meta-item { font-size: 0.75rem; color: #78716c; }
-    .topic-meta-label { font-weight: 700; color: #57534e; }
-    .topic-angle { font-size: 0.82rem; color: #57534e; line-height: 1.55; margin-bottom: 0.75rem; }
-    .topic-analysis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 0.85rem; }
-    .analysis-cell { padding: 0.65rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 9px; background: #fafaf9; }
-    .analysis-label { display: block; margin-bottom: 0.25rem; color: #a8a29e; font-size: 0.66rem; font-weight: 850; }
-    .analysis-value { color: #1c1917; font-size: 0.78rem; font-weight: 750; line-height: 1.45; }
-
-    .topic-actions { display: flex; gap: 0.45rem; }
-    .topic-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
-    .topic-btn:hover { transform: translateY(-1px); }
-    .btn-accept { color: #065f46; border-color: rgba(6,95,70,0.15); }
-    .btn-accept:hover { background: #ecfdf5; }
-    .btn-defer { color: #854d0e; border-color: rgba(133,77,14,0.15); }
-    .btn-defer:hover { background: #fef9c3; }
-    .btn-ignore { color: #78716c; border-color: rgba(120,113,108,0.15); }
-    .btn-ignore:hover { background: #f5f5f4; }
-
-    .topic-empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; font-size: 0.9rem; }
-
+    .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; margin-left: 0.3rem; border-radius: 999px; background: rgba(0,0,0,0.06); font-size: 0.65rem; font-weight: 800; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
-
-    @media (max-width: 640px) {
+    .topic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
+    .topic-card { display: flex; flex-direction: column; gap: 0.7rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem; }
+    .topic-card:hover { border-color: rgba(196,112,74,0.28); }
+    .topic-head { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+    .topic-priority, .topic-chip { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
+    .topic-chip { background: #f5f5f4; color: #57534e; }
+    .topic-title { color: #1c1917; font-size: 0.96rem; font-weight: 850; line-height: 1.45; }
+    .topic-meta { display: grid; grid-template-columns: 1fr; gap: 0.45rem; color: #57534e; font-size: 0.78rem; line-height: 1.55; }
+    .topic-label { color: #78716c; font-weight: 800; }
+    .topic-related { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .topic-related span { padding: 0.18rem 0.45rem; border-radius: 7px; background: #fafaf9; color: #57534e; font-size: 0.7rem; border: 1px solid rgba(0,0,0,0.05); }
+    .topic-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: auto; }
+    .topic-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.36rem 0.72rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; color: #57534e; text-decoration: none; font-size: 0.75rem; font-weight: 750; cursor: pointer; }
+    .topic-btn-primary { background: rgba(196,112,74,0.08); border-color: rgba(196,112,74,0.18); color: #c4704a; }
+    .topic-btn:hover { transform: translateY(-1px); }
+    .topic-empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; font-size: 0.9rem; border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
+    @media (max-width: 760px) {
       .admin-main { padding: 1.25rem 1rem 3rem; }
-      .ops-model { grid-template-columns: 1fr; }
-      .topic-card { padding: 0.85rem 0.95rem; }
-      .topic-analysis { grid-template-columns: 1fr; }
-      .topic-actions { flex-wrap: wrap; }
+      .admin-bar { align-items: flex-start; flex-direction: column; }
+      .topic-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -141,133 +131,107 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
     <div class="admin-bar-right">
       <a href="/admin" class="admin-bar-link">仪表盘</a>
       <a href="/admin/insights" class="admin-bar-link">洞察</a>
-      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
-      <a href="/admin/topics" class="admin-bar-link active">选题库</a>
+      <a href="/admin/hit-rate" class="admin-bar-link">命中率</a>
+      <a href="/admin/topics" class="admin-bar-link active">选题池</a>
+      <a href="/admin/review?view=clusters" class="admin-bar-link">需求复盘</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
     </div>
   </div>
 
-  <div class="admin-main">
-    <div class="admin-welcome">
-      <h1>选题库</h1>
-      <p>把用户问题转成创作任务：先看矛盾，再决定采纳、暂缓或忽略 · 共 {allTopics.length} 条</p>
+  <main class="admin-main">
+    <section class="admin-welcome">
+      <h1>选题池</h1>
+      <p>需求簇和站主灵感放在同一个池子里判断。系统提供密度、角色、代表需求和命中反馈，人决定要不要写、怎么写。</p>
+    </section>
+
+    <div class="inspiration-box">
+      <input id="inspiration-input" class="inspiration-input" type="text" maxlength="200" placeholder="记下一个选题灵感" />
+      <button id="inspiration-submit" class="inspiration-btn" type="button">加入选题池</button>
+      <span id="inspiration-msg" class="inspiration-msg"></span>
     </div>
 
-    <div class="ops-model" aria-label="选题处理流程">
-      <div class="ops-step">
-        <span>01</span>
-        <strong>需求信号</strong>
-        <p>来自用户连续提问和反馈，不把单句当结论。</p>
-      </div>
-      <div class="ops-step">
-        <span>02</span>
-        <strong>矛盾识别</strong>
-        <p>看用户想做什么、卡在哪里、站内是否已有答案。</p>
-      </div>
-      <div class="ops-step">
-        <span>03</span>
-        <strong>选题排序</strong>
-        <p>优先处理高频、高卡点、内容缺口明显的问题。</p>
-      </div>
-      <div class="ops-step">
-        <span>04</span>
-        <strong>创作动作</strong>
-        <p>把矛盾变成教程、工具清单、方法论或入口页。</p>
-      </div>
-    </div>
+    <nav class="tab-bar" aria-label="选题状态">
+      {statuses.map((status, index) => (
+        <button class={`tab-btn ${index === 0 ? 'active' : ''}`} data-tab={status.id}>
+          {status.label}<span class="tab-count">{byStatus[status.id].length}</span>
+        </button>
+      ))}
+    </nav>
 
-    <!-- Tab Bar -->
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="pending">待处理 <span class="tab-count">{byStatus.pending.length}</span></button>
-      <button class="tab-btn" data-tab="accepted">已采纳 <span class="tab-count">{byStatus.accepted.length}</span></button>
-      <button class="tab-btn" data-tab="deferred">已暂缓 <span class="tab-count">{byStatus.deferred.length}</span></button>
-      <button class="tab-btn" data-tab="ignored">已忽略 <span class="tab-count">{byStatus.ignored.length}</span></button>
-    </div>
-
-    <!-- Tab Panels -->
-    {(['pending', 'accepted', 'deferred', 'ignored'] as const).map(status => {
-      const topics = byStatus[status];
+    {statuses.map((status, index) => {
+      const topics = byStatus[status.id];
       return (
-        <div class={`tab-panel ${status === 'pending' ? 'active' : ''}`} data-panel={status}>
+        <section class={`tab-panel ${index === 0 ? 'active' : ''}`} data-panel={status.id}>
           {topics.length === 0 ? (
-            <div class="topic-empty">{status === 'pending' ? '暂无待处理选题' : `暂无${status === 'accepted' ? '已采纳' : status === 'deferred' ? '已暂缓' : '已忽略'}选题`}</div>
-          ) : topics.map(topic => {
-            const pc = priorityConfig[topic.priority] ?? priorityConfig.low;
-            const isGap = topic.relatedContentIds.length === 0;
-            const contradiction = getContradictionLabel(topic);
-            const creationAction = getCreationAction(topic);
-            const priorityReason = getPriorityReason(topic);
-            return (
-              <div class={`topic-card ${status}`} data-topic-id={topic.topicId}>
-                <div class="topic-header">
-                  <span class="topic-priority" style={`background: ${pc.bg}; color: ${pc.color}`}>{pc.label}</span>
-                  <span class="topic-sources">{topic.sourceNeedCount} 条需求</span>
-                  {isGap && <span class="topic-gap">内容缺口</span>}
-                  {status !== 'pending' && (
-                    <span class={`topic-status-badge topic-status-${status}`}>
-                      {status === 'accepted' ? '已采纳' : status === 'deferred' ? '已暂缓' : '已忽略'}
-                    </span>
-                  )}
-                </div>
-                <div class="topic-title">{topic.title}</div>
-                <div class="topic-meta">
-                  <span class="topic-meta-item"><span class="topic-meta-label">受众：</span>{topic.audience}</span>
-                  <span class="topic-meta-item"><span class="topic-meta-label">核心问题：</span>{topic.coreQuestion}</span>
-                </div>
-                <div class="topic-angle">{topic.contentAngle}</div>
-                <div class="topic-analysis">
-                  <div class="analysis-cell">
-                    <span class="analysis-label">矛盾判断</span>
-                    <div class="analysis-value">{contradiction}</div>
-                  </div>
-                  <div class="analysis-cell">
-                    <span class="analysis-label">创作动作</span>
-                    <div class="analysis-value">{creationAction}</div>
-                  </div>
-                  <div class="analysis-cell">
-                    <span class="analysis-label">排序理由</span>
-                    <div class="analysis-value">{priorityReason}</div>
-                  </div>
-                </div>
-                {status === 'pending' && (
-                  <div class="topic-actions">
-                    <button class="topic-btn btn-accept" data-action="accepted" data-id={topic.topicId}>采纳</button>
-                    <button class="topic-btn btn-defer" data-action="deferred" data-id={topic.topicId}>暂缓</button>
-                    <button class="topic-btn btn-ignore" data-action="ignored" data-id={topic.topicId}>忽略</button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+            <div class="topic-empty">{status.id === 'observed' ? '还没有观察中的需求簇' : `暂无${status.label}选题`}</div>
+          ) : (
+            <div class="topic-grid">
+              {topics.map(topic => {
+                const priority = priorityConfig[topic.priority];
+                const hit = getHitRate(topic.topicId);
+                const related = relatedTitles(topic);
+                return (
+                  <article class="topic-card" data-topic-id={topic.topicId}>
+                    <div class="topic-head">
+                      <span class="topic-priority" style={`background:${priority.bg};color:${priority.color}`}>{priority.label}</span>
+                      <span class="topic-chip">{topic.source === 'inspiration' ? '站主灵感' : `${topic.density} 条需求`}</span>
+                      {hit.feedbackGiven > 0 && (
+                        <span class="topic-chip">命中 {hit.rate}% · resolved {hit.resolved} / stuck {hit.stuck}</span>
+                      )}
+                    </div>
+                    <h2 class="topic-title">{topic.title}</h2>
+                    <div class="topic-meta">
+                      <div><span class="topic-label">角色分布：</span>{roleText(topic)}</div>
+                      <div><span class="topic-label">代表需求：</span>{topic.representativeNeed}</div>
+                      <div><span class="topic-label">创作判断：</span>{creationHint(topic)}</div>
+                      <div>
+                        <span class="topic-label">已有相关：</span>
+                        {related.length > 0 ? (
+                          <span class="topic-related">{related.map(title => <span>{title}</span>)}</span>
+                        ) : '暂无'}
+                      </div>
+                    </div>
+                    <div class="topic-actions">
+                      {(status.id === 'observed' || status.id === 'accepted') && (
+                        <a class="topic-btn topic-btn-primary" href={`/admin/brief?topicId=${topic.topicId}`}>生成简报</a>
+                      )}
+                      {status.id === 'observed' && (
+                        <>
+                          <button class="topic-btn" data-action="accepted" data-id={topic.topicId}>采纳</button>
+                          <button class="topic-btn" data-action="deferred" data-id={topic.topicId}>暂缓</button>
+                          <button class="topic-btn" data-action="ignored" data-id={topic.topicId}>忽略</button>
+                        </>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
       );
     })}
-  </div>
+  </main>
 
   <script>
-    // Tab 切换
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
         const tab = (btn as HTMLElement).dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(item => item.classList.remove('active'));
+        btn.classList.add('active');
         document.querySelector(`[data-panel="${tab}"]`)?.classList.add('active');
       });
     });
 
-    // 选题操作
-    document.querySelectorAll('.topic-btn').forEach(btn => {
+    document.querySelectorAll('.topic-btn[data-action]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const el = btn as HTMLElement;
         const topicId = el.dataset.id;
         const status = el.dataset.action;
         if (!topicId || !status) return;
-
-        const card = el.closest('.topic-card') as HTMLElement;
-        if (!card) return;
-
+        const card = el.closest('.topic-card') as HTMLElement | null;
         try {
           const res = await fetch('/api/insights', {
             method: 'POST',
@@ -276,22 +240,42 @@ function getPriorityReason(topic: (typeof allTopics)[number]): string {
           });
           const data = await res.json();
           if (res.ok && data.ok) {
-            card.classList.add(status === 'accepted' ? 'accepted' : status === 'ignored' ? 'ignored' : '');
-            // 更新 tab 计数
-            const countEls = document.querySelectorAll('.tab-count');
-            const tabMap = ['pending', 'accepted', 'deferred', 'ignored'] as const;
-            tabMap.forEach((tab, i) => {
-              if (countEls[i]) countEls[i].textContent = tab === status ? String(Number(countEls[i].textContent || 0) + 1) : String(Math.max(0, Number(countEls[i].textContent || 0) - 1));
-            });
-            // 隐藏按钮
-            const actions = card.querySelector('.topic-actions');
-            if (actions) actions.innerHTML = `<span class="topic-status-badge topic-status-${status}">${status === 'accepted' ? '已采纳' : status === 'deferred' ? '已暂缓' : '已忽略'}</span>`;
+            if (card) card.style.opacity = '0.35';
+          } else {
+            alert(data.error || '操作失败');
           }
-        } catch { /* ignore */ }
+        } catch {
+          alert('网络异常，请重试。');
+        }
       });
     });
 
-    // 登出
+    const input = document.getElementById('inspiration-input') as HTMLInputElement | null;
+    const submit = document.getElementById('inspiration-submit') as HTMLButtonElement | null;
+    const msg = document.getElementById('inspiration-msg');
+    async function submitInspiration() {
+      const text = input?.value.trim() ?? '';
+      if (!text) { if (msg) msg.textContent = '灵感不能为空'; return; }
+      if (submit) submit.disabled = true;
+      if (msg) msg.textContent = '提交中...';
+      try {
+        const res = await fetch('/api/admin/inspiration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) window.location.reload();
+        else if (msg) msg.textContent = data.error || '提交失败';
+      } catch {
+        if (msg) msg.textContent = '网络异常，请重试。';
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    }
+    submit?.addEventListener('click', submitInspiration);
+    input?.addEventListener('keydown', event => { if (event.key === 'Enter') submitInspiration(); });
+
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await fetch('/api/admin/auth', { method: 'DELETE' });
       window.location.href = '/admin/login';

@@ -1,11 +1,11 @@
-﻿/**
+/**
  * 可见性服务 — 数据边界控制
  *
  * 决定 public / invited / admin 各角色能看到什么。
  */
 
 import type { VisibilityServicePort } from './interfaces';
-import type { DemandEvent } from '@/stores/ports';
+import type { NeedCase } from '@/stores/ports';
 
 export function createVisibilityService(): VisibilityServicePort {
   return {
@@ -18,17 +18,17 @@ export function createVisibilityService(): VisibilityServicePort {
       return contentVisibility === 'public';
     },
 
-    redactDemandEvent(event: unknown, role) {
-      const e = event as DemandEvent;
-      if (role === 'admin') return e;
+    redactNeedCase(needCase: unknown, role) {
+      const c = needCase as NeedCase;
+      if (role === 'admin') return c;
 
       // invited 和 public 只看聚合摘要
       return {
-        needSummary: e.needSummary,
-        needCategories: e.needCategories,
-        frictionLayer: e.frictionLayer,
-        recommendedAbilityType: e.recommendedAbilityType,
-        createdAt: e.createdAt,
+        needSummary: c.needSummary,
+        needCategories: c.needCategories,
+        frictionLayer: c.frictionLayer,
+        recommendedAbilityType: c.recommendedAbilityType,
+        createdAt: c.createdAt,
       };
     },
 

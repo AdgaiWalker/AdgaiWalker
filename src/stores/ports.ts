@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Port 接口定义 — 四层架构的数据层抽象
  *
  * 所有上层模块（services / API routes / Agent）只依赖这些接口，
@@ -8,35 +8,123 @@
 import type { AbilityType, AiStage, AudienceGroup, FrictionLayer, NeedCategory } from '@/profiles/resource-index';
 
 // ---------------------------------------------------------------------------
-// 需求事件
+// 认证状态与邀请会话
 // ---------------------------------------------------------------------------
 
-export interface DemandEvent {
-  eventId: string;
+export type AuthState = 'public' | 'invited' | 'admin';
+
+export interface InvitedSession {
+  sessionId: string;
+  inviteCodeHash: string;
+  authState: AuthState;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface InvitedSessionRepositoryPort {
+  create(session: InvitedSession): Promise<void>;
+  get(sessionId: string): Promise<InvitedSession | null>;
+  isValid(sessionId: string): Promise<boolean>;
+  revoke(sessionId: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Need Case — 第一轮核心业务对象（取代 DemandEvent 主业务地位）
+// ---------------------------------------------------------------------------
+
+export interface ProfileSnapshot {
+  /** 本次遭遇推断的角色（参考 personaAnchor 作默认底色） */
+  roleInContext?: string;
+  goal?: string;
+  stuckPoint?: string;
+  /** 社会关系线索（学生 / 职场 / 家长 / 创作者 等） */
+  socialContext?: string;
+  /** 引用的自报锚点（来自 UserProfile.personaAnchor） */
+  personaAnchor?: string;
+  /** 切片推断置信度：true=推断成功；false=降级到锚点（低置信度） */
+  sliceInferred: boolean;
+  capturedAt: string;
+}
+
+export interface AgentRecommendation {
+  responseMode: string;
+  bridge: string;
+  toolDirection?: string;
+  reason?: string;
+  fallbackUsed: boolean;
+  resourceIds: string[];
+  recommendedTools: Array<{ id: string; name: string }>;
+  actionPlan?: unknown;
+  needFrame?: unknown;
+  diagnosisOptions?: unknown[];
+  modelLabel?: string;
+}
+
+export type FeedbackStatus =
+  | 'none'
+  | 'resolved'
+  | 'stuck'
+  | 'not-fit'
+  | 'want-tutorial'
+  | 'first-draft'
+  | 'next-step-clear'
+  | 'wrong-direction'
+  | 'need-tutorial';
+
+export type AdminReviewStatus = 'pending' | 'accepted' | 'deferred' | 'ignored';
+
+export interface SafetyFlags {
+  piiDetected: boolean;
+  piiRemoved: boolean;
+  isMinorContext: boolean;
+  complianceRedirected: boolean;
+  codeAgentMisuseLikely?: boolean;
+  consentForTopic: boolean;
+}
+
+export interface NeedCase {
+  needCaseId: string;
   sessionId: string;
   createdAt: string;
+  updatedAt: string;
+  sourcePage: string;
   rawNeedRedacted: string;
   needSummary: string;
   needCategories: NeedCategory[];
   frictionLayer?: FrictionLayer;
   recommendedAbilityType?: AbilityType;
   toolDirection?: string;
-  complianceRedirected?: boolean;
-  codeAgentMisuseLikely?: boolean;
+  recommendedContentIds: string[];
+  recommendedToolIds: string[];
   audienceGroup?: AudienceGroup;
   aiStage?: AiStage;
-  isMinorContext: boolean;
-  recommendedContentIds: string[];
-  piiDetected: boolean;
-  piiRemoved: boolean;
-  status: 'pending' | 'processed' | 'ignored';
+  profileSnapshot?: ProfileSnapshot;
+  /** 本次遭遇切片是否为高置信推断；冗余顶层字段便于后台筛选和聚类。 */
+  sliceInferred?: boolean;
+  agentRecommendation: AgentRecommendation;
+  feedbackStatus: FeedbackStatus;
+  adminReviewStatus: AdminReviewStatus;
+  adminReviewNote?: string;
+  topicCandidateId?: string;
+  /** 聚类处理时间戳：已参与 TopicCandidate 聚类的 Need Case 不再重复处理。 */
+  topicProcessedAt?: string;
+  safetyFlags: SafetyFlags;
 }
 
-export interface DemandEventRepositoryPort {
-  save(event: DemandEvent): Promise<void>;
-  findPending(limit?: number): Promise<DemandEvent[]>;
-  markProcessed(eventIds: string[]): Promise<void>;
-  findRecent(days: number): Promise<DemandEvent[]>;
+export interface NeedCaseRepositoryPort {
+  save(needCase: NeedCase): Promise<void>;
+  findById(needCaseId: string): Promise<NeedCase | null>;
+  findBySessionId(sessionId: string): Promise<NeedCase[]>;
+  findPendingReview(options?: { limit?: number }): Promise<NeedCase[]>;
+  findUnprocessedForTopics(limit?: number): Promise<NeedCase[]>;
+  findRecent(days: number): Promise<NeedCase[]>;
+  updateFeedback(needCaseId: string, feedbackStatus: FeedbackStatus): Promise<void>;
+  updateAdminReview(
+    needCaseId: string,
+    status: AdminReviewStatus,
+    note?: string,
+  ): Promise<void>;
+  markTopicProcessed(needCaseIds: string[], topicCandidateId?: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,8 +163,8 @@ export type MatchFeedbackType =
 
 export interface MatchFeedbackEvent {
   feedbackId: string;
+  needCaseId?: string;
   sessionId: string;
-  eventId?: string;
   createdAt: string;
   feedbackType: MatchFeedbackType;
   feedbackText?: string;
@@ -85,6 +173,7 @@ export interface MatchFeedbackEvent {
 export interface FeedbackRepositoryPort {
   save(event: MatchFeedbackEvent): Promise<void>;
   findRecent(days: number, limit?: number): Promise<MatchFeedbackEvent[]>;
+  findByNeedCase(needCaseId: string): Promise<MatchFeedbackEvent[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,24 +190,25 @@ export interface InviteCode {
 
 export interface InviteCodeRepositoryPort {
   findByCode(code: string): Promise<InviteCode | null>;
-  incrementUsage(code: string): Promise<void>;
+  incrementUsage(code: string): Promise<number>;
   listAll(): Promise<InviteCode[]>;
 }
 
 // ---------------------------------------------------------------------------
-// 用户画像（轻量版）
+// 用户画像
 // ---------------------------------------------------------------------------
 
 export interface UserProfile {
   profileId: string;
   sessionId: string;
-  role?: string;
-  goal?: string;
-  stuckPoint?: string;
-  helpPreference?: string;
-  currentQuestion?: string;
+  inviteCodeHash?: string;
+  /** 自报身份锚点（≤10 字），邀请时填、用户可改。零 PII，写入前过 redactSensitiveText。 */
+  personaAnchor?: string;
   nickname?: string;
-  contact?: string;
+  consentForProfile: boolean;
+  deleteRequestedAt?: string;
+  /** 锚点置信度：填了 personaAnchor=1，没填=0 */
+  confidence: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +217,39 @@ export interface UserProfileRepositoryPort {
   save(profile: UserProfile): Promise<void>;
   findBySessionId(sessionId: string): Promise<UserProfile | null>;
   findAll(): Promise<UserProfile[]>;
+  markDeleteRequested(sessionId: string, requestedAt: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// 安全层
+// ---------------------------------------------------------------------------
+
+export interface SafetyDecision {
+  action: 'allow' | 'fallback' | 'reject' | 'defer-to-human';
+  reason: string;
+  redactedText?: string;
+  piiDetected: boolean;
+  isMinorContext: boolean;
+}
+
+export interface SafetyPolicyPort {
+  assessInput(text: string, audienceGroup?: string): SafetyDecision;
+}
+
+export interface Incident {
+  incidentId: string;
+  createdAt: string;
+  scope: string;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+  relatedNeedCaseId?: string;
+  relatedSessionId?: string;
+  resolved: boolean;
+}
+
+export interface IncidentRepositoryPort {
+  save(incident: Incident): Promise<void>;
+  findUnresolved(limit?: number): Promise<Incident[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,21 +273,30 @@ export interface StatsRepositoryPort {
 // 话题候选
 // ---------------------------------------------------------------------------
 
-export interface TopicCandidate {
-  topicId: string;
-  createdAt: string;
-  title: string;
-  audience: string;
-  coreQuestion: string;
-  contentAngle: string;
-  sourceNeedCount: number;
-  relatedContentIds: string[];
-  priority: 'high' | 'medium' | 'low';
-  status: 'pending' | 'accepted' | 'deferred' | 'ignored';
+export type TopicCandidateStatus = 'observed' | 'accepted' | 'deferred' | 'ignored' | 'produced';
+
+export interface TopicRoleDistribution {
+  role: string;
+  count: number;
 }
 
-export interface TopicRepositoryPort {
-  saveAll(candidates: TopicCandidate[]): Promise<void>;
-  find(options?: { status?: TopicCandidate['status']; limit?: number }): Promise<TopicCandidate[]>;
-  updateStatus(topicId: string, status: TopicCandidate['status']): Promise<boolean>;
+export interface TopicCandidate {
+  topicId: string;
+  /** 聚类键（layer:ability:category:role），同簇需求合并 */
+  clusterKey: string;
+  createdAt: string;
+  updatedAt?: string;
+  title: string;
+  /** 需求密度 = 源 Need Case 数 */
+  density: number;
+  /** 角色分布（来自遭遇切片 roleInContext + 自报锚点） */
+  roleDistribution: TopicRoleDistribution[];
+  /** 代表性需求摘要 */
+  representativeNeed: string;
+  relatedContentIds: string[];
+  priority: 'high' | 'medium' | 'low';
+  status: TopicCandidateStatus;
+  source: 'need-cluster' | 'inspiration';
+  /** 已创作内容 slug 回填（status=produced 时） */
+  producedContentSlug?: string;
 }

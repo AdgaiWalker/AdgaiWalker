@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '@/lib/admin-auth';
-import { getDemandStats, getTopicCandidates } from '@/conversation/store';
-import type { TopicCandidate } from '@/conversation/store';
+import { getNeedCaseStats, getTopicCandidates, updateTopicCandidateStatus } from '@/conversation/store';
+import type { TopicCandidate } from '@/stores/ports';
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   // 默认返回统计数据
   const days = Number(url.searchParams.get('days')) || 30;
-  const stats = await getDemandStats({ days });
+  const stats = await getNeedCaseStats({ days });
   return jsonResponse(stats);
 };
 
@@ -52,7 +52,7 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: '未授权。' }, 401);
   }
 
-  let body: { topicId?: string; status?: string };
+  let body: { topicId?: string; status?: string; producedContentSlug?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -63,28 +63,21 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: '缺少 topicId。' }, 400);
   }
 
-  const validStatuses: TopicCandidate['status'][] = ['accepted', 'deferred', 'ignored'];
+  const validStatuses: TopicCandidate['status'][] = ['accepted', 'deferred', 'ignored', 'produced'];
   if (!body.status || !validStatuses.includes(body.status as TopicCandidate['status'])) {
     return jsonResponse({ error: `status 只能是 ${validStatuses.join('/')}` }, 400);
   }
-
-  // 更新 Redis 和内存
-  const { Redis } = await import('@upstash/redis');
-  const env = import.meta.env as Record<string, string | undefined>;
-  const redisUrl = env.UPSTASH_REDIS_REST_URL ?? env.KV_REST_API_URL;
-  const redisToken = env.UPSTASH_REDIS_REST_TOKEN ?? env.KV_REST_API_TOKEN;
-
-  let updated = false;
-
-  if (redisUrl && redisToken) {
-    const redis = new Redis({ url: redisUrl, token: redisToken });
-    const key = `match:topic:${body.topicId}`;
-    const existing = await redis.get<TopicCandidate>(key);
-    if (existing) {
-      await redis.set(key, { ...existing, status: body.status });
-      updated = true;
-    }
+  if (body.producedContentSlug !== undefined && typeof body.producedContentSlug !== 'string') {
+    return jsonResponse({ error: 'producedContentSlug 必须是字符串。' }, 400);
   }
 
-  return jsonResponse({ ok: updated, topicId: body.topicId, status: body.status });
+  const updated = await updateTopicCandidateStatus(
+    body.topicId,
+    body.status as TopicCandidate['status'],
+    typeof body.producedContentSlug === 'string' && body.producedContentSlug.trim()
+      ? { producedContentSlug: body.producedContentSlug.trim() }
+      : undefined,
+  );
+
+  return jsonResponse({ ok: Boolean(updated), topicId: body.topicId, status: body.status, topic: updated });
 };

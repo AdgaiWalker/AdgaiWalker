@@ -1,6 +1,8 @@
 ---
 // /admin/content/edit - 管理员 Markdown 编辑器
 import { isAdmin } from '@/lib/admin-auth';
+import { getTopicCandidateById } from '@/conversation/store';
+import { generateBrief } from '@/services/brief.service';
 
 export const prerender = false;
 
@@ -9,8 +11,60 @@ if (!isAdmin(Astro.request)) {
 }
 
 const slug = Astro.url.searchParams.get('slug') || '';
+const topicId = Astro.url.searchParams.get('topicId');
+const prefill = Astro.url.searchParams.get('prefill');
 const today = new Date().toISOString().slice(0, 10);
-const draftTemplate = `---
+const topic = !slug && prefill === 'brief' && topicId ? await getTopicCandidateById(topicId) : null;
+const brief = topic ? generateBrief(topic) : null;
+
+function yamlString(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+const draftTemplate = brief ? `---
+title: ${yamlString(brief.title)}
+date: ${today}
+tags:
+  - 需求簇
+  - AI实践
+type: knowledge
+form: article
+domain: ai
+intent: teach
+valueMode: utility
+visibility: draft
+published: false
+sourceTopicId: ${yamlString(topicId ?? '')}
+summary: ${yamlString(brief.coreStuckPoint)}
+related: []
+---
+
+> 写作简报参考，不是正文。请基于你的判断重新组织表达。
+
+## 目标角色
+
+${brief.targetRoles}
+
+## 核心卡点
+
+${brief.coreStuckPoint}
+
+## 建议角度
+
+${brief.suggestedAngles.map(angle => `- ${angle}`).join('\n')}
+
+## 建议结构
+
+${brief.suggestedStructure.map((item, index) => `${index + 1}. ${item}`).join('\n')}
+
+## 站内可引用
+
+${brief.referenceContent.length > 0 ? brief.referenceContent.map(title => `- ${title}`).join('\n') : '- 暂无可引用内容，先补最小路径。'}
+
+## 正文
+
+从这里开始写。
+` : `---
 title: 新文章
 date: ${today}
 tags: []
@@ -103,7 +157,7 @@ published: false
     <div class="status-bar" id="status">就绪</div>
   </div>
 
-  <script define:vars={{ originalSlug: slug, draftTemplate }}>
+  <script define:vars={{ originalSlug: slug, draftTemplate, sourceTopicId: topicId ?? '' }}>
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
     const saveBtn = document.getElementById('save-btn');
@@ -210,6 +264,7 @@ published: false
           content: editor.value,
           sha: sha || undefined,
           create: isCreate,
+          topicId: sourceTopicId || undefined,
         };
         const res = await fetch(`/api/admin/content/${encodeURIComponent(targetSlug)}`, {
           method: 'PUT',

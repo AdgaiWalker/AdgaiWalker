@@ -5,7 +5,7 @@ import { STATUS_LABELS, STATUS_WEIGHT, SITE_EMAIL } from '@/shared/constants';
 import { Icon } from 'astro-icon/components';
 import { render } from 'astro:content';
 import { formatDateCompact } from '@/shared/format';
-import { getDemandStats, type DemandStats } from '@/conversation/store';
+import { getNeedCaseStats, type NeedCaseStats } from '@/conversation/store';
 
 export const prerender = true;
 
@@ -13,10 +13,10 @@ const ideas = await getPublishedIdeas();
 const PUBLIC_DEMAND_SIGNAL_MIN = 5;
 
 // 需求洞察（构建时读取）
-const demandStats = await getDemandStats({ days: 30 });
+const demandStats = await getNeedCaseStats({ days: 30 });
 
 /** 计算 idea 的需求信号分数 */
-function getDemandSignal(entry: { data: { tags?: string[]; summary?: string; title: string } }, stats: DemandStats): number {
+function getDemandSignal(entry: { data: { tags?: string[]; summary?: string; title: string } }, stats: NeedCaseStats): number {
   const texts = [entry.data.title, entry.data.summary ?? '', ...(entry.data.tags ?? [])].join(' ').toLowerCase();
   let total = 0;
   for (const need of stats.topNeeds) {
