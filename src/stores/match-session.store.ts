@@ -1,15 +1,23 @@
-﻿/**
+/**
  * 匹配会话 Store — 实现 MatchSessionRepositoryPort
  *
  * 委托给 conversation/store.ts，保持兼容。
  */
 
-import type { MatchSession, MatchSessionRepositoryPort } from './ports';
+import type {
+  ConversationMessage,
+  MatchSession,
+  MatchSessionRepositoryPort,
+} from './ports';
+import type { NeedCategory } from '@/profiles/resource-index';
 
 import {
-  upsertMatchSession as legacyUpsert,
-  getMatchSession as legacyGet,
+  createSessionId as legacyCreateSessionId,
   endMatchSession as legacyEnd,
+  getMatchSession as legacyGet,
+  incrementMatchStats as legacyIncrementStats,
+  saveConversationMessages as legacySaveMessages,
+  upsertMatchSession as legacyUpsert,
 } from '@/conversation/store';
 
 export function createMatchSessionStore(): MatchSessionRepositoryPort {
@@ -35,6 +43,18 @@ export function createMatchSessionStore(): MatchSessionRepositoryPort {
         return ids.length;
       }
       return 0;
+    },
+
+    createSessionId(): string {
+      return legacyCreateSessionId();
+    },
+
+    async saveMessages(sessionId: string, messages: ConversationMessage[]): Promise<void> {
+      await legacySaveMessages(sessionId, messages);
+    },
+
+    async incrementStats(categories: NeedCategory[]): Promise<void> {
+      await legacyIncrementStats(categories);
     },
   };
 }

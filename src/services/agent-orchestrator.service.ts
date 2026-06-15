@@ -6,7 +6,9 @@
  * AI 失败降级到本地规则；Need Case 保存失败不阻断用户响应，但记录 Incident。
  *
  * 六模块分层：输入清洗/脱敏/未成年判断委托给 PerceptionService（perceive），
- * 本编排层只负责 perceive → plan → execute → persist → respond 的生命周期串联。
+ * 持久化（会话/消息/统计）经 MatchSessionRepositoryPort，
+ * 本编排层只负责 perceive → plan → execute → persist → respond 的生命周期串联，
+ * 不再直接 import conversation/store.ts。
  */
 
 import { randomUUID } from 'node:crypto';
@@ -28,11 +30,6 @@ import {
   type MatchResource,
   type NeedCategory,
 } from '@/profiles/resource-index';
-import {
-  createSessionId,
-  incrementMatchStats,
-  saveConversationMessages,
-} from '@/conversation/store';
 import { createPerceptionService } from './perception.service';
 
 import type { AgentOrchestratorPort, NeedCaseHandleResult, PerceptionServicePort } from './interfaces';
@@ -303,7 +300,7 @@ export function createAgentOrchestrator(deps: {
       }
 
       const now = new Date().toISOString();
-      const sessionId = input.sessionId || input.userContext.sessionId || createSessionId();
+      const sessionId = input.sessionId || input.userContext.sessionId || deps.sessionStore.createSessionId();
 
       const session: MatchSession = {
         sessionId,
@@ -322,7 +319,7 @@ export function createAgentOrchestrator(deps: {
       await deps.sessionStore.upsert(session);
 
       if (localMatch.responseMode === 'recommendation' || localMatch.responseMode === 'compliance') {
-        incrementMatchStats(categories).catch(() => {});
+        deps.sessionStore.incrementStats(categories).catch(() => {});
       }
 
       const conversationMsgs = perceived.messages.map(m => ({
@@ -331,7 +328,7 @@ export function createAgentOrchestrator(deps: {
         timestamp: now,
       }));
       conversationMsgs.push({ role: 'assistant', content: bridge || needSummary, timestamp: now });
-      saveConversationMessages(sessionId, conversationMsgs).catch(() => {});
+      deps.sessionStore.saveMessages(sessionId, conversationMsgs).catch(() => {});
 
       const safetyFlags: SafetyFlags = {
         piiDetected: perceived.latestNeedRedacted.piiDetected,
