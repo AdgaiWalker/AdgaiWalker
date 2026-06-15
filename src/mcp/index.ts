@@ -7,6 +7,10 @@
  *   walker_get      — 按 slug 取完整内容（含正文）
  *   walker_stats    — 内容统计概览
  *   walker_insights — 需求洞察统计
+ *
+ * 公开边界：所有内容工具只返回 public 且非 AI-0 的内容
+ * （与 /index.json、/graph.json 同一套 AI 可读边界）。
+ * draft / private / admin-only / AI-0 内容不通过 MCP 暴露。
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -41,13 +45,20 @@ function summarize(item: { slug: string; frontmatter: Record<string, unknown> })
   };
 }
 
+/** AI 可读判断：AI 使用级别非 AI-0（AI-0 = 明确不希望被 AI 读取）。
+ *  visibility（draft/private）已由 content-query 过滤，这里补 AI-0 边界。 */
+function isAiReadable(item: { frontmatter: Record<string, unknown> }): boolean {
+  const policy = item.frontmatter.aiUsePolicy as { level?: string } | undefined;
+  return policy?.level !== 'AI-0';
+}
+
 // ---------------------------------------------------------------------------
 // Server
 // ---------------------------------------------------------------------------
 
 const server = new McpServer({
   name: 'walker-content',
-  version: '0.1.0',
+  version: '0.2.0',
 });
 
 // --- walker_query --------------------------------------------------------
@@ -82,7 +93,7 @@ server.tool(
     level: z.enum(['入门', '学徒', '专家']).optional().describe('学习阶段'),
   },
   async (params) => {
-    const results = query(params as QueryFilter);
+    const results = query(params as QueryFilter).filter(isAiReadable);
     return {
       content: [
         {
@@ -101,7 +112,7 @@ server.tool(
   '全文搜索：在标题、摘要、正文中搜索关键词（大小写不敏感）',
   { text: z.string().describe('搜索文本') },
   async ({ text }) => {
-    const results = search(text);
+    const results = search(text).filter(isAiReadable);
     return {
       content: [
         {
@@ -125,6 +136,12 @@ server.tool(
     if (!item) {
       return {
         content: [{ type: 'text' as const, text: `未找到内容: ${slug}` }],
+        isError: true,
+      };
+    }
+    if (!isAiReadable(item)) {
+      return {
+        content: [{ type: 'text' as const, text: `该内容标记为 AI-0（AI 不可读），不通过 MCP 暴露: ${slug}` }],
         isError: true,
       };
     }
@@ -154,7 +171,7 @@ server.tool(
   '内容库统计概览（总数、各类型数量、最近内容）',
   {},
   async () => {
-    const all = getAll();
+    const all = getAll().filter(isAiReadable);
     return {
       content: [
         {
@@ -182,7 +199,7 @@ server.tool(
 
 server.tool(
   'walker_insights',
-  '查询需求洞察统计数据：需求分类、卡点层级、能力方向、反馈分布、合规转向率、代码 Agent 误用率和日趋势。数据来自站内匹配器收集的匿名用户需求。',
+  '查询需求洞察统计：需求分类、卡点层级、能力方向、反馈分布、合规转向率、代码 Agent 误用率和日趋势。数据来自站内匹配器收集的匿名用户需求。',
   {
     days: z.number().optional().describe('统计最近 N 天的数据，默认 30'),
   },
@@ -199,8 +216,33 @@ server.tool(
     try {
       const { getNeedCaseStats } = await import('../conversation/store');
       const stats = await getNeedCaseStats({ days: days ?? 30 });
+      // 字段白名单：只返回聚合统计，不含 topNeeds（具体用户需求摘要）
+      const {
+        totalCases,
+        totalSessions,
+        byCategory,
+        byFrictionLayer,
+        byAbilityType,
+        byFeedbackType,
+        byReviewStatus,
+        complianceRedirectRate,
+        codeAgentMisuseRate,
+        dailyTrend,
+      } = stats;
+      const safeStats = {
+        totalCases,
+        totalSessions,
+        byCategory,
+        byFrictionLayer,
+        byAbilityType,
+        byFeedbackType,
+        byReviewStatus,
+        complianceRedirectRate,
+        codeAgentMisuseRate,
+        dailyTrend,
+      };
       return {
-        content: [{ type: 'text' as const, text: JSON.stringify(stats, null, 2) }],
+        content: [{ type: 'text' as const, text: JSON.stringify(safeStats, null, 2) }],
       };
     } catch (err) {
       return {
