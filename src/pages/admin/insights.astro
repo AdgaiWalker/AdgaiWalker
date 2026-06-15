@@ -1,7 +1,7 @@
 ---
 // /admin/insights — 数据看板（服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
-import { getNeedCaseStats, getTopicCandidates } from '@/conversation/store';
+import { getNeedCaseStats, getSearchMisses, getTopicCandidates } from '@/conversation/store';
 import { abilityTypeLabels, frictionLayerLabels, needCategoryLabels } from '@/profiles/resource-index';
 import { readGatewayLogs, type GatewayCallLog } from '@/agent/gateway';
 
@@ -13,6 +13,7 @@ if (!isAdmin(Astro.request)) {
 
 const stats = await getNeedCaseStats({ days: 30 });
 const allTopics = await getTopicCandidates({ limit: 100 });
+const searchMisses = await getSearchMisses(15);
 const observedTopics = allTopics.filter(t => t.status === 'observed');
 const gatewayLogs = await readGatewayLogs(30);
 const gatewayAiCount = gatewayLogs.filter(l => l.mode === 'ai').length;
@@ -373,6 +374,25 @@ const trendPoints = trend.map((t, i) => {
             </div>
           </div>
         )) : <div class="gap-empty">暂无内容缺口</div>}
+      </div>
+
+      <!-- 搜索无结果（内容缺口信号） -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          搜索无结果 Top 15
+        </div>
+        {searchMisses.length > 0 ? (
+          <ol class="rank-list">
+            {searchMisses.map((miss, i) => (
+              <li class="rank-item">
+                <span class={`rank-idx ${i === 0 ? 'rank-idx-1' : i === 1 ? 'rank-idx-2' : i === 2 ? 'rank-idx-3' : 'rank-idx-other'}`}>{i + 1}</span>
+                <span class="rank-text">{miss.query}</span>
+                <span class="rank-count">{miss.count} 次</span>
+              </li>
+            ))}
+          </ol>
+        ) : <div class="gap-empty">暂无搜索无结果记录</div>}
       </div>
 
       <!-- AI Gateway 日志 -->

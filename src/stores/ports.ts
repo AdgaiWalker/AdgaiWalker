@@ -312,3 +312,108 @@ export interface TopicCandidate {
   /** 已创作内容 slug 回填（status=produced 时） */
   producedContentSlug?: string;
 }
+
+// ---------------------------------------------------------------------------
+// 经验事件（U10 经验验证系统：原始事件采集 → 复盘 → 模式 → 方法成熟度）
+// ---------------------------------------------------------------------------
+
+export type ExperienceFeedbackResult = 'success' | 'failure' | 'no-feedback' | 'pending';
+
+export interface ExperienceEvent {
+  experienceId: string;
+  createdAt: string;
+  updatedAt: string;
+  /** 来源：直播 / 对话 / 教程反馈 / 网站 / 其他 */
+  source: string;
+  /** 用户原话（保真，不总结） */
+  rawQuote: string;
+  /** 表层需求 */
+  surfaceNeed?: string;
+  /** 场景标注（身份 / 场景 / 条件） */
+  scenarioNote?: string;
+  /** 当时初步判断（可推翻假设） */
+  initialHypothesis?: string;
+  /** 给出的帮助动作（文章 / 方法 / 工具 / Skill / 教程） */
+  helpAction?: string;
+  /** 反馈结果 */
+  feedbackResult: ExperienceFeedbackResult;
+  /** 复盘修正（对比初始判断与最终结果） */
+  reflection?: string;
+  /** 是否已识别为需求模式 */
+  patternMarked: boolean;
+  /** 方法成熟度阶段：素材 / 方法雏形 / 稳定方法 / Skill 候选 / 正式 Skill */
+  maturity?: 'material' | 'embryo' | 'stable-method' | 'skill-candidate' | 'skill';
+}
+
+export interface ExperienceEventRepositoryPort {
+  save(event: ExperienceEvent): Promise<void>;
+  findRecent(limit?: number): Promise<ExperienceEvent[]>;
+  findById(experienceId: string): Promise<ExperienceEvent | null>;
+  markPattern(experienceId: string, patternMarked: boolean): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// 规则候选（U9 规则候选池：observed → candidate → validated → stable → retired）
+// ---------------------------------------------------------------------------
+
+export type RuleStatus = 'observed' | 'candidate' | 'validated' | 'stable' | 'retired';
+
+export interface RuleCandidate {
+  ruleId: string;
+  createdAt: string;
+  updatedAt: string;
+  /** 规则描述（如"提到 PPT 且无受众信号 → diagnosis"） */
+  description: string;
+  status: RuleStatus;
+  /** 正例（命中的样本 needCase/experience ID） */
+  positiveExamples: string[];
+  /** 反例（推翻的样本） */
+  negativeExamples: string[];
+  /** 来源 needCase / experience */
+  sourceIds: string[];
+  /** 准确率（回放评测，0-1） */
+  accuracy?: number;
+  note?: string;
+}
+
+export interface RuleCandidateRepositoryPort {
+  save(rule: RuleCandidate): Promise<void>;
+  findRecent(limit?: number): Promise<RuleCandidate[]>;
+  findByStatus(status: RuleStatus): Promise<RuleCandidate[]>;
+  updateStatus(ruleId: string, status: RuleStatus, note?: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Skill 候选（U11 Skill 准入：候选 → 准入判断 → 注册 / 降级方法卡）
+// ---------------------------------------------------------------------------
+
+export type SkillAdmissionStatus = 'candidate' | 'admitted' | 'demoted-to-method';
+
+export interface SkillCandidate {
+  skillId: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  description: string;
+  /** 准入状态 */
+  admissionStatus: SkillAdmissionStatus;
+  /** 定义域（输入范围） */
+  domain: string;
+  /** 输入条件 */
+  inputConditions: string;
+  /** 输出形态 */
+  outputForm: string;
+  /** 验证标准 */
+  validationCriteria: string;
+  /** 关联经验（ExperienceEvent ID） */
+  sourceExperienceIds: string[];
+  /** 版本 */
+  version: number;
+}
+
+export interface SkillCandidateRepositoryPort {
+  save(skill: SkillCandidate): Promise<void>;
+  findRecent(limit?: number): Promise<SkillCandidate[]>;
+  findByAdmissionStatus(status: SkillAdmissionStatus): Promise<SkillCandidate[]>;
+  updateAdmission(skillId: string, status: SkillAdmissionStatus): Promise<void>;
+}
