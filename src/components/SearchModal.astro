@@ -461,13 +461,29 @@ const navPanelData = JSON.stringify({ items: navItems, pages }).replace(/</g, '\
     }
 
     // ===== Render =====
+    // 记录无结果搜索（session 级去重，keepalive 发送，失败静默）
+    const recordedMisses = new Set<string>();
+    function recordSearchMiss(rawQuery: string) {
+      const q = rawQuery.trim().slice(0, 50);
+      if (!q || recordedMisses.has(q)) return;
+      recordedMisses.add(q);
+      fetch('/api/search-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+        keepalive: true,
+      }).catch(() => { /* fire-and-forget */ });
+    }
+
     function render(list: NavPanelItem[]) {
       if (!results) return;
 
       const fragment = document.createDocumentFragment();
 
       if (list.length === 0) {
-        fragment.appendChild(createTextElement('div', 'np-empty', `没有找到「${input?.value.trim() ?? ''}」相关的记录`));
+        const currentQuery = input?.value.trim() ?? '';
+        if (currentQuery) recordSearchMiss(currentQuery);
+        fragment.appendChild(createTextElement('div', 'np-empty', `没有找到「${currentQuery}」相关的记录`));
       } else {
         // 按类型分组
         const groups: Record<string, NavPanelItem[]> = {};
