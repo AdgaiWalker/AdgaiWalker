@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-import { getPublishedContentItems } from '@/knowledge/content';
+import { getAiReadableContentItems } from '@/knowledge/content';
 
 export const prerender = true;
 
@@ -16,7 +16,7 @@ function serializeDate(date?: Date) {
 }
 
 export const GET: APIRoute = async () => {
-  const items = await getPublishedContentItems();
+  const items = await getAiReadableContentItems();
 
   const body = {
     generatedAt: GENERATED_AT,

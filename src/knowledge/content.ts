@@ -29,6 +29,12 @@ export async function getPublishedContentItems() {
     .map(toContentItem);
 }
 
+/** AI 可读内容：public 且 AI 使用级别非 AI-0（AI-0 = 明确不希望被 AI 读取） */
+export async function getAiReadableContentItems() {
+  const items = await getPublishedContentItems();
+  return items.filter(item => item.aiUseLevel !== 'AI-0');
+}
+
 export async function getPublishedPosts() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
     isPublicContentData(data) && ['knowledge', 'idea', 'project', 'learn', 'learning'].includes(data.type)
