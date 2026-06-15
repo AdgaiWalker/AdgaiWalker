@@ -297,6 +297,14 @@ async function planRecommendation(input: {
       : pickResources(modelChoice?.resourceIds, localMatch.resources))
     : [];
 
+  // bridge 先于 modelLabel 求值，保持与重构前一致的 await 顺序
+  const bridge = compactText(
+    localMatch.responseMode === 'identity'
+      ? await createIdentityBridge(perceived.latestNeedRedacted.text)
+      : localMatch.bridge,
+    220,
+  );
+
   let modelLabel: string | undefined;
   if (modelCalled) {
     try { modelLabel = await getCurrentModelLabel(); } catch { modelLabel = undefined; }
@@ -310,12 +318,7 @@ async function planRecommendation(input: {
     abilityType: pickAbilityType(localMatch.recommendedAbilityType, localMatch.recommendedAbilityType),
     toolDirection: localMatch.responseMode === 'recommendation' ? compactText(localMatch.toolDirection, 140) : '',
     reason: localMatch.responseMode === 'recommendation' ? compactText(localMatch.reason, 140) : '',
-    bridge: compactText(
-      localMatch.responseMode === 'identity'
-        ? await createIdentityBridge(perceived.latestNeedRedacted.text)
-        : localMatch.bridge,
-      220,
-    ),
+    bridge,
     needSummary: compactText(
       perceived.latestNeedRedacted.text || '用户想找到合适的 AI 工具和站内资料',
       100,
