@@ -28,6 +28,7 @@ export type {
 
 import type {
   ConversationMessage,
+  ExperienceEvent,
   Incident,
   InvitedSession,
   MatchFeedbackEvent,
@@ -64,6 +65,7 @@ const memoryMessages = new Map<string, ConversationMessage[]>();
 const memoryInvitedSessions = new Map<string, InvitedSession>();
 const memoryProfiles = new Map<string, UserProfile>();
 const memoryIncidents = new Map<string, Incident>();
+const memoryExperienceEvents = new Map<string, ExperienceEvent>();
 let memoryMatchCount = 0;
 const memoryCategoryCounts = new Map<string, number>();
 
@@ -570,6 +572,65 @@ export async function getSearchMisses(limit = 20): Promise<SearchMiss[]> {
   } catch {
     return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// 经验事件（U10 经验验证系统：原始事件采集 → 复盘 → 模式 → 方法成熟度）
+// ---------------------------------------------------------------------------
+
+function experienceKey(experienceId: string): string {
+  return `match:experience:${experienceId}`;
+}
+
+export async function saveExperienceEvent(event: ExperienceEvent): Promise<void> {
+  const redis = getRedis();
+  memoryExperienceEvents.set(event.experienceId, event);
+  if (!redis) return;
+  await redis.set(experienceKey(event.experienceId), event);
+  await redis.lpush('match:experiences:recent', event.experienceId);
+  await redis.ltrim('match:experiences:recent', 0, 499);
+}
+
+export async function findRecentExperienceEvents(limit = 50): Promise<ExperienceEvent[]> {
+  const redis = getRedis();
+  if (!redis) {
+    return [...memoryExperienceEvents.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
+  }
+  try {
+    const ids = await redis.lrange<string>('match:experiences:recent', 0, Math.max(0, limit - 1));
+    const items = await Promise.all(ids.map(id => redis.get<ExperienceEvent>(experienceKey(id))));
+    return items.filter((e): e is ExperienceEvent => e !== null);
+  } catch {
+    return [];
+  }
+}
+
+export async function findExperienceEventById(experienceId: string): Promise<ExperienceEvent | null> {
+  const redis = getRedis();
+  const fromMemory = memoryExperienceEvents.get(experienceId);
+  if (!redis) return fromMemory ?? null;
+  try {
+    return (await redis.get<ExperienceEvent>(experienceKey(experienceId))) ?? fromMemory ?? null;
+  } catch {
+    return fromMemory ?? null;
+  }
+}
+
+export async function markExperiencePattern(experienceId: string, patternMarked: boolean): Promise<void> {
+  const redis = getRedis();
+  const existing = memoryExperienceEvents.get(experienceId);
+  if (existing) {
+    memoryExperienceEvents.set(experienceId, { ...existing, patternMarked, updatedAt: new Date().toISOString() });
+  }
+  if (!redis) return;
+  try {
+    const current = await redis.get<ExperienceEvent>(experienceKey(experienceId));
+    if (current) {
+      await redis.set(experienceKey(experienceId), { ...current, patternMarked, updatedAt: new Date().toISOString() });
+    }
+  } catch { /* 静默 */ }
 }
 
 export interface PublicStats {

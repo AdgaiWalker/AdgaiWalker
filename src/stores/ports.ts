@@ -312,3 +312,42 @@ export interface TopicCandidate {
   /** 已创作内容 slug 回填（status=produced 时） */
   producedContentSlug?: string;
 }
+
+// ---------------------------------------------------------------------------
+// 经验事件（U10 经验验证系统：原始事件采集 → 复盘 → 模式 → 方法成熟度）
+// ---------------------------------------------------------------------------
+
+export type ExperienceFeedbackResult = 'success' | 'failure' | 'no-feedback' | 'pending';
+
+export interface ExperienceEvent {
+  experienceId: string;
+  createdAt: string;
+  updatedAt: string;
+  /** 来源：直播 / 对话 / 教程反馈 / 网站 / 其他 */
+  source: string;
+  /** 用户原话（保真，不总结） */
+  rawQuote: string;
+  /** 表层需求 */
+  surfaceNeed?: string;
+  /** 场景标注（身份 / 场景 / 条件） */
+  scenarioNote?: string;
+  /** 当时初步判断（可推翻假设） */
+  initialHypothesis?: string;
+  /** 给出的帮助动作（文章 / 方法 / 工具 / Skill / 教程） */
+  helpAction?: string;
+  /** 反馈结果 */
+  feedbackResult: ExperienceFeedbackResult;
+  /** 复盘修正（对比初始判断与最终结果） */
+  reflection?: string;
+  /** 是否已识别为需求模式 */
+  patternMarked: boolean;
+  /** 方法成熟度阶段：素材 / 方法雏形 / 稳定方法 / Skill 候选 / 正式 Skill */
+  maturity?: 'material' | 'embryo' | 'stable-method' | 'skill-candidate' | 'skill';
+}
+
+export interface ExperienceEventRepositoryPort {
+  save(event: ExperienceEvent): Promise<void>;
+  findRecent(limit?: number): Promise<ExperienceEvent[]>;
+  findById(experienceId: string): Promise<ExperienceEvent | null>;
+  markPattern(experienceId: string, patternMarked: boolean): Promise<void>;
+}
