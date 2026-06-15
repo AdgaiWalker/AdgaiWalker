@@ -312,3 +312,33 @@ export interface TopicCandidate {
   /** 已创作内容 slug 回填（status=produced 时） */
   producedContentSlug?: string;
 }
+
+// ---------------------------------------------------------------------------
+// 发布候选（U16 Publish Interface：个人系统 → 社区选择性发布）
+// ---------------------------------------------------------------------------
+
+export type PublishTargetSpace = 'idea' | 'question' | 'answer' | 'skill' | 'project' | 'tool' | 'case';
+
+export interface PublishCandidate {
+  publishId: string;
+  createdAt: string;
+  updatedAt: string;
+  sourceId: string;
+  sourceType: PublishTargetSpace;
+  title: string;
+  summary: string;
+  visibility: 'public' | 'community' | 'private';
+  intent: string;
+  status: 'pending' | 'published' | 'rejected';
+  targetSpace: PublishTargetSpace;
+  aiUsePolicy: string;
+  backlink?: string;
+  feedbackRefId?: string;
+}
+
+export interface PublishCandidateRepositoryPort {
+  save(candidate: PublishCandidate): Promise<void>;
+  findPending(limit?: number): Promise<PublishCandidate[]>;
+  findByStatus(status: 'pending' | 'published' | 'rejected'): Promise<PublishCandidate[]>;
+  updateStatus(publishId: string, status: 'published' | 'rejected', backlink?: string): Promise<void>;
+}
