@@ -31,6 +31,7 @@ import type {
   ExperienceEvent,
   Incident,
   InvitedSession,
+  RuleCandidate,
   MatchFeedbackEvent,
   MatchFeedbackType,
   NeedCase,
@@ -66,6 +67,7 @@ const memoryInvitedSessions = new Map<string, InvitedSession>();
 const memoryProfiles = new Map<string, UserProfile>();
 const memoryIncidents = new Map<string, Incident>();
 const memoryExperienceEvents = new Map<string, ExperienceEvent>();
+const memoryRuleCandidates = new Map<string, RuleCandidate>();
 let memoryMatchCount = 0;
 const memoryCategoryCounts = new Map<string, number>();
 
@@ -629,6 +631,54 @@ export async function markExperiencePattern(experienceId: string, patternMarked:
     const current = await redis.get<ExperienceEvent>(experienceKey(experienceId));
     if (current) {
       await redis.set(experienceKey(experienceId), { ...current, patternMarked, updatedAt: new Date().toISOString() });
+    }
+  } catch { /* 静默 */ }
+}
+
+// ---------------------------------------------------------------------------
+// 规则候选（U9 规则候选池：observed → candidate → validated → stable → retired）
+// ---------------------------------------------------------------------------
+
+function ruleKey(ruleId: string): string {
+  return `match:rule:${ruleId}`;
+}
+
+export async function saveRuleCandidate(rule: RuleCandidate): Promise<void> {
+  const redis = getRedis();
+  memoryRuleCandidates.set(rule.ruleId, rule);
+  if (!redis) return;
+  await redis.set(ruleKey(rule.ruleId), rule);
+  await redis.lpush('match:rules:recent', rule.ruleId);
+  await redis.ltrim('match:rules:recent', 0, 499);
+}
+
+export async function findRecentRuleCandidates(limit = 50): Promise<RuleCandidate[]> {
+  const redis = getRedis();
+  if (!redis) {
+    return [...memoryRuleCandidates.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
+  }
+  try {
+    const ids = await redis.lrange<string>('match:rules:recent', 0, Math.max(0, limit - 1));
+    const items = await Promise.all(ids.map(id => redis.get<RuleCandidate>(ruleKey(id))));
+    return items.filter((r): r is RuleCandidate => r !== null);
+  } catch {
+    return [];
+  }
+}
+
+export async function updateRuleStatus(ruleId: string, status: RuleCandidate['status'], note?: string): Promise<void> {
+  const redis = getRedis();
+  const existing = memoryRuleCandidates.get(ruleId);
+  if (existing) {
+    memoryRuleCandidates.set(ruleId, { ...existing, status, note: note ?? existing.note, updatedAt: new Date().toISOString() });
+  }
+  if (!redis) return;
+  try {
+    const current = await redis.get<RuleCandidate>(ruleKey(ruleId));
+    if (current) {
+      await redis.set(ruleKey(ruleId), { ...current, status, note: note ?? current.note, updatedAt: new Date().toISOString() });
     }
   } catch { /* 静默 */ }
 }
