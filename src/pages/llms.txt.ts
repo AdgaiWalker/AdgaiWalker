@@ -16,7 +16,7 @@ function formatDate(date?: Date) {
 
 export const GET: APIRoute = async () => {
   const items = await getPublishedContentItems();
-  const recentItems = items.slice(0, 20);
+  const recentItems = items.filter(item => item.aiUseLevel !== 'AI-0').slice(0, 20);
 
   const body = [
     '# Walker / 秋知 / AdgaiWalker',
