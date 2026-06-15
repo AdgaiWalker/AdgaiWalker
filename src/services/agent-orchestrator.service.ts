@@ -4,11 +4,14 @@
  * 取代旧 question.service.ts：
  * 读取 UserContext → 本地匹配 → 按需调模型 → 生成并保存 Need Case → 返回推荐。
  * AI 失败降级到本地规则；Need Case 保存失败不阻断用户响应，但记录 Incident。
+ *
+ * 六模块分层：输入清洗/脱敏/未成年判断委托给 PerceptionService（perceive），
+ * 本编排层只负责 perceive → plan → execute → persist → respond 的生命周期串联。
  */
 
 import { randomUUID } from 'node:crypto';
 
-import { compactText, isMinorAudience, redactSensitiveText } from '@/agent/privacy';
+import { compactText } from '@/agent/privacy';
 import { callGateway } from '@/agent/gateway';
 import { matchSiteResources } from '@/agent/match';
 import { matchResources } from '@/profiles/resource-index';
@@ -30,8 +33,9 @@ import {
   incrementMatchStats,
   saveConversationMessages,
 } from '@/conversation/store';
+import { createPerceptionService } from './perception.service';
 
-import type { AgentOrchestratorPort, NeedCaseHandleResult, UserContext } from './interfaces';
+import type { AgentOrchestratorPort, NeedCaseHandleResult, PerceptionServicePort } from './interfaces';
 import type {
   AgentRecommendation,
   MatchSessionRepositoryPort,
@@ -44,8 +48,6 @@ import type { MatchSession } from '@/conversation/store';
 import type { SafetyServicePort } from './interfaces';
 
 const PROMPT_VERSION = 'tool-match-v2';
-const MAX_MESSAGES = 16;
-const MAX_MESSAGE_LENGTH = 500;
 
 const FRICTION_LAYERS: FrictionLayer[] = [
   'compliance-entry', 'account-config', 'tool-understanding',
@@ -79,13 +81,6 @@ interface ModelChoice {
   reason?: string;
   inferredAudience?: AudienceGroup;
   inferredAiStage?: AiStage;
-}
-
-function cleanMessages(messages: ChatMessage[]): ChatMessage[] {
-  return messages.slice(-MAX_MESSAGES).map(m => ({
-    role: m.role,
-    content: redactSensitiveText(compactText(m.content, MAX_MESSAGE_LENGTH)).text,
-  }));
 }
 
 function parseModelJson(text: string): ModelChoice | null {
@@ -240,19 +235,24 @@ export function createAgentOrchestrator(deps: {
   sessionStore: MatchSessionRepositoryPort;
   needCaseStore: NeedCaseRepositoryPort;
   safetyService: SafetyServicePort;
+  perceptionService?: PerceptionServicePort;
 }): AgentOrchestratorPort {
+  const perceptionService = deps.perceptionService ?? createPerceptionService();
   return {
     async handleNeed(input): Promise<NeedCaseHandleResult> {
       const audienceGroup = input.audienceGroup as AudienceGroup | undefined;
       const aiStage = input.aiStage as AiStage | undefined;
-      const isMinorContext = isMinorAudience(audienceGroup);
 
-      const clean = cleanMessages(input.messages);
-      const latestNeed = [...input.messages].reverse().find(m => m.role === 'user')?.content ?? '';
-      const redacted = redactSensitiveText(compactText(latestNeed, MAX_MESSAGE_LENGTH));
+      // Perception：截断、PII 脱敏、压缩、未成年标记
+      const perceived = perceptionService.perceive({
+        messages: input.messages,
+        audienceGroup,
+      });
+      const { isMinorContext } = perceived;
 
+      // Planning：本地匹配（规则优先，模型补充）
       const localMatch = matchSiteResources({
-        need: redacted.text,
+        need: perceived.latestNeedRedacted.text,
         audienceGroup,
         aiStage,
       });
@@ -262,7 +262,7 @@ export function createAgentOrchestrator(deps: {
       if (localMatch.responseMode === 'recommendation' && localMatch.recommendedTools.length === 0) {
         modelCalled = true;
         modelChoice = await askModel({
-          messages: clean,
+          messages: perceived.messages,
           localBridge: localMatch.bridge,
           localResourceIds: localMatch.resources.map(r => r.id),
           audienceGroup,
@@ -287,13 +287,13 @@ export function createAgentOrchestrator(deps: {
 
       const bridge = compactText(
         localMatch.responseMode === 'identity'
-          ? await createIdentityBridge(redacted.text)
+          ? await createIdentityBridge(perceived.latestNeedRedacted.text)
           : localMatch.bridge,
         220,
       );
 
       const needSummary = compactText(
-        redacted.text || '用户想找到合适的 AI 工具和站内资料',
+        perceived.latestNeedRedacted.text || '用户想找到合适的 AI 工具和站内资料',
         100,
       );
 
@@ -325,7 +325,7 @@ export function createAgentOrchestrator(deps: {
         incrementMatchStats(categories).catch(() => {});
       }
 
-      const conversationMsgs = clean.map(m => ({
+      const conversationMsgs = perceived.messages.map(m => ({
         role: m.role,
         content: m.content,
         timestamp: now,
@@ -334,8 +334,8 @@ export function createAgentOrchestrator(deps: {
       saveConversationMessages(sessionId, conversationMsgs).catch(() => {});
 
       const safetyFlags: SafetyFlags = {
-        piiDetected: redacted.piiDetected,
-        piiRemoved: redacted.piiDetected,
+        piiDetected: perceived.latestNeedRedacted.piiDetected,
+        piiRemoved: perceived.latestNeedRedacted.piiDetected,
         isMinorContext,
         complianceRedirected: localMatch.complianceRedirected || frictionLayer === 'compliance-entry',
         codeAgentMisuseLikely: localMatch.codeAgentMisuseLikely,
@@ -378,7 +378,7 @@ export function createAgentOrchestrator(deps: {
           frictionLayer,
           needFramePurpose: localMatch.needFrame.purpose,
           needSummary,
-          latestNeed: redacted.text,
+          latestNeed: perceived.latestNeedRedacted.text,
         });
 
         const needCase: NeedCase = {
@@ -387,7 +387,7 @@ export function createAgentOrchestrator(deps: {
           createdAt: now,
           updatedAt: now,
           sourcePage: session.sourcePage,
-          rawNeedRedacted: isMinorContext ? '[青少年/未成年场景不保存原始问题]' : redacted.text,
+          rawNeedRedacted: isMinorContext ? '[青少年/未成年场景不保存原始问题]' : perceived.latestNeedRedacted.text,
           needSummary,
           needCategories: categories,
           frictionLayer,

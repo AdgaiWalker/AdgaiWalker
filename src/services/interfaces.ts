@@ -16,6 +16,32 @@ import type {
 import type { MatchFeedbackEvent, MatchFeedbackType } from '@/stores/ports';
 
 // ---------------------------------------------------------------------------
+// 感知层 — 输入清洗、PII 脱敏、未成年人标记（Agent 六模块 - Perception）
+// ---------------------------------------------------------------------------
+
+export interface PerceivedMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface PerceivedInput {
+  /** 截断 + 逐条脱敏压缩后的对话消息 */
+  messages: PerceivedMessage[];
+  /** 最新一条用户问题，脱敏压缩后的文本及 PII 命中标记 */
+  latestNeedRedacted: { text: string; piiDetected: boolean };
+  /** 未成年人场景标记（audienceGroup === 'minor'） */
+  isMinorContext: boolean;
+}
+
+export interface PerceptionServicePort {
+  /** 接收原始对话与人群标签，完成截断、脱敏、压缩和未成年判断 */
+  perceive(input: {
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+    audienceGroup?: string;
+  }): PerceivedInput;
+}
+
+// ---------------------------------------------------------------------------
 // 匹配服务 — 需求分类 + 工具推荐（本地规则）
 // ---------------------------------------------------------------------------
 
