@@ -406,6 +406,8 @@ async function recordNeedCase(input: {
   needCaseStore: NeedCaseRepositoryPort;
   safetyService: SafetyServicePort;
   sessionId: string;
+  /** 归属账号用户名（便于按用户复盘 + 删除按账号级联脱敏） */
+  username?: string;
   sourcePage: string;
   perceived: PerceivedInput;
   plan: PlanResult;
@@ -415,7 +417,7 @@ async function recordNeedCase(input: {
   safetyFlags: SafetyFlags;
   agentRecommendation: AgentRecommendation;
 }): Promise<string | undefined> {
-  const { needCaseStore, safetyService, sessionId, sourcePage, perceived, plan, audienceGroup, aiStage, personaAnchor, safetyFlags, agentRecommendation } = input;
+  const { needCaseStore, safetyService, sessionId, username, sourcePage, perceived, plan, audienceGroup, aiStage, personaAnchor, safetyFlags, agentRecommendation } = input;
   const now = new Date().toISOString();
   const isMinorContext = perceived.isMinorContext;
 
@@ -432,6 +434,7 @@ async function recordNeedCase(input: {
   const needCase: NeedCase = {
     needCaseId,
     sessionId,
+    username: username ?? undefined,
     createdAt: now,
     updatedAt: now,
     sourcePage,
@@ -567,6 +570,7 @@ export function createAgentOrchestrator(deps: OrchestratorDeps): AgentOrchestrat
           needCaseStore: deps.needCaseStore,
           safetyService: deps.safetyService,
           sessionId,
+          username: input.userContext.username ?? undefined,
           sourcePage: session.sourcePage,
           perceived,
           plan,

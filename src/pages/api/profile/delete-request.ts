@@ -1,23 +1,25 @@
 /**
- * POST /api/profile/delete-request — 用户请求删除画像
+ * POST /api/profile/delete-request — 用户请求删除画像（账号级）
  *
- * 标记当前会话画像为待删除（deleteRequestedAt），供管理员后续清理。
- * 第一版不做即时物理删除，只做软删除标记 + 关联需求事件脱敏由管理员处理。
+ * 标记当前账号画像为待删除（deleteRequestedAt），并级联脱敏该用户所有 NeedCase。
+ * 第一版不做即时物理删除，只做软删除标记 + 关联脱敏，供管理员后续清理。
  */
 
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
-import { readInvitedSessionId } from '@/lib/invited-session-auth';
+import { readSessionId } from '@/lib/account-auth';
 import { createUserProfileService } from '@/services/profile.service';
 import { createUserContextService } from '@/services/user-context.service';
-import { createInvitedSessionStore } from '@/stores/invited-session.store';
+import { createAccountStore } from '@/stores/account.store';
+import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 
 const profileStore = createUserProfileStore();
 const profileService = createUserProfileService({ profileStore });
 const userContextService = createUserContextService({
-  sessionStore: createInvitedSessionStore(),
+  sessionStore: createSessionStore(),
+  accountStore: createAccountStore(),
   profileStore,
 });
 
@@ -34,15 +36,15 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const userContext = await userContextService.resolve({
-    sessionId: readInvitedSessionId(request),
+    sessionId: readSessionId(request),
     isAdmin: false,
   });
-  if (userContext.authState !== 'invited' || !userContext.sessionId) {
-    return json({ error: '请先通过邀请码验证。' }, 401);
+  if (userContext.authState !== 'user' || !userContext.username) {
+    return json({ error: '请先登录。' }, 401);
   }
 
   try {
-    await profileService.requestDeletion(userContext.sessionId);
+    await profileService.requestDeletion(userContext.username);
     return json({ ok: true });
   } catch {
     return json({ error: '删除请求失败，请稍后重试。' }, 500);

@@ -6,11 +6,13 @@
  */
 
 import type {
+  AccountStatus,
   AdminReviewStatus,
   AuthState,
   Incident,
   NeedCase,
   SafetyDecision,
+  UserAccount,
   UserProfile,
 } from '@/stores/ports';
 import type { MatchFeedbackEvent, MatchFeedbackType } from '@/stores/ports';
@@ -78,7 +80,7 @@ export interface MatchResult {
 export interface VisibilityServicePort {
   /** 判断内容是否对当前角色可见 */
   canSee(params: {
-    role: 'public' | 'invited' | 'admin';
+    role: 'public' | 'user' | 'admin';
     contentVisibility: 'public' | 'draft' | 'private' | 'admin-only';
   }): boolean;
 
@@ -96,6 +98,7 @@ export interface VisibilityServicePort {
 export interface UserContext {
   authState: AuthState;
   sessionId: string | null;
+  username: string | null;
   profile: UserProfile | null;
 }
 
@@ -104,23 +107,48 @@ export interface UserContextServicePort {
 }
 
 // ---------------------------------------------------------------------------
-// 邀请准入 — 验证邀请码 + 建立 invited 会话
+// 账号 — 注册 / 登录 / 登出 / 改密 / 重置 / 封禁 / owner bootstrap
 // ---------------------------------------------------------------------------
 
-export interface InviteAdmitResult {
-  admitted: boolean;
+export interface RegisterInput {
+  inviteCode: string;
+  username: string;
+  password: string;
+  personaAnchor?: string;
+}
+
+export interface AuthResult {
+  ok: boolean;
   reason?: string;
-  /** 新建的 invited session ID（仅准入成功时返回） */
+  /** 新建会话 ID（成功时） */
   sessionId?: string;
-  inviteCodeHash?: string;
+  username?: string;
 }
 
-export interface InviteAccessServicePort {
-  verifyAndAdmit(code: string): Promise<InviteAdmitResult>;
+export interface AccountServicePort {
+  /** 邀请码门控注册：校验邀请码 → 占用户名 → scrypt 哈希 → 建账号 → 消费邀请 → 建会话 */
+  register(input: RegisterInput): Promise<AuthResult>;
+  /** 用户名密码登录；失败统一 reason（不区分用户名是否存在，防枚举） */
+  login(username: string, password: string): Promise<AuthResult>;
+  /** 登出当前会话 */
+  logout(sessionId: string): Promise<void>;
+  /** 用户自助改密（需当前密码） */
+  changePassword(
+    username: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ ok: boolean; reason?: string }>;
+  /** 站主重置某用户密码（忘密唯一通道），返回新临时密码明文（仅显示一次） */
+  resetPassword(username: string): Promise<{ ok: boolean; newPassword?: string; reason?: string }>;
+  /** 封禁 / 解封 */
+  setStatus(username: string, status: AccountStatus): Promise<{ ok: boolean; reason?: string }>;
+  listAccounts(): Promise<UserAccount[]>;
+  /** owner 一次性 bootstrap：仅当系统无账号时凭 ADMIN_PASSWORD 建 owner 账号 */
+  bootstrapOwner(adminPassword: string, ownerUsername: string, ownerPassword: string): Promise<AuthResult>;
 }
 
 // ---------------------------------------------------------------------------
-// 用户画像 — 读取 / 保存 / 删除请求
+// 用户画像 — 读取 / 保存 / 删除请求（按账号 username）
 // ---------------------------------------------------------------------------
 
 export interface ProfileInput {
@@ -130,9 +158,9 @@ export interface ProfileInput {
 }
 
 export interface UserProfileServicePort {
-  get(sessionId: string): Promise<UserProfile | null>;
-  upsert(sessionId: string, input: ProfileInput): Promise<UserProfile>;
-  requestDeletion(sessionId: string): Promise<void>;
+  get(username: string): Promise<UserProfile | null>;
+  upsert(username: string, input: ProfileInput): Promise<UserProfile>;
+  requestDeletion(username: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------

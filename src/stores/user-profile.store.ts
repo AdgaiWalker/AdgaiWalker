@@ -2,13 +2,14 @@
  * User Profile Store — 实现 UserProfileRepositoryPort
  *
  * 委托给 conversation/store.ts 的画像存储（Redis + 内存降级）。
+ * 按账号 username 索引。
  */
 
 import type { UserProfile, UserProfileRepositoryPort } from './ports';
 
 import {
   getAllUserProfiles,
-  getUserProfileBySession,
+  getUserProfileByUsername,
   markUserProfileDeleteRequested,
   saveUserProfile,
 } from '@/conversation/store';
@@ -19,16 +20,16 @@ export function createUserProfileStore(): UserProfileRepositoryPort {
       await saveUserProfile(profile);
     },
 
-    async findBySessionId(sessionId: string): Promise<UserProfile | null> {
-      return getUserProfileBySession(sessionId);
+    async findByUsername(username: string): Promise<UserProfile | null> {
+      return getUserProfileByUsername(username);
     },
 
     async findAll(): Promise<UserProfile[]> {
       return getAllUserProfiles();
     },
 
-    async markDeleteRequested(sessionId: string, requestedAt: string): Promise<void> {
-      await markUserProfileDeleteRequested(sessionId, requestedAt);
+    async markDeleteRequested(username: string, requestedAt: string): Promise<void> {
+      await markUserProfileDeleteRequested(username, requestedAt);
     },
   };
 }

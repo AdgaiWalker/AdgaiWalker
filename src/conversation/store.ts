@@ -17,7 +17,6 @@ export type {
   AuthState,
   FeedbackStatus,
   Incident,
-  InvitedSession,
   MatchFeedbackType,
   NeedCase,
   ProfileSnapshot,
@@ -30,7 +29,6 @@ import type {
   ConversationMessage,
   ExperienceEvent,
   Incident,
-  InvitedSession,
   RuleCandidate,
   SkillCandidate,
   SkillAdmissionStatus,
@@ -65,7 +63,6 @@ const memoryNeedCases = new Map<string, NeedCase>();
 const memoryFeedbackEvents = new Map<string, MatchFeedbackEvent>();
 const memoryTopicCandidates = new Map<string, TopicCandidate>();
 const memoryMessages = new Map<string, ConversationMessage[]>();
-const memoryInvitedSessions = new Map<string, InvitedSession>();
 const memoryProfiles = new Map<string, UserProfile>();
 const memoryIncidents = new Map<string, Incident>();
 const memoryExperienceEvents = new Map<string, ExperienceEvent>();
@@ -121,16 +118,13 @@ function messagesKey(sessionId: string): string {
   return `match:messages:${sessionId}`;
 }
 
-function invitedSessionKey(sessionId: string): string {
-  return `match:invited-session:${sessionId}`;
-}
-
 function profileKey(profileId: string): string {
   return `match:profile:${profileId}`;
 }
 
-function profileBySessionKey(sessionId: string): string {
-  return `match:profile-by-session:${sessionId}`;
+/** 按 username 索引画像，账号认证后用 username 取代旧 sessionId */
+function profileByUsernameKey(username: string): string {
+  return `match:profile-by-username:${username}`;
 }
 
 function incidentKey(incidentId: string): string {
@@ -208,11 +202,12 @@ export async function getNeedCasesBySession(sessionId: string): Promise<NeedCase
   return bySession.length > 0 ? bySession : fromMemory;
 }
 
-/** 用户请求删除画像时，关联脱敏该 session 的所有 NeedCase（清空原始需求 + 切片，保留聚合匿名） */
-export async function redactNeedCasesBySession(sessionId: string): Promise<void> {
-  const cases = await getNeedCasesBySession(sessionId);
+/** 账号级联删除：按 username 脱敏关联的所有 NeedCase（清空原始需求 + 切片，保留聚合匿名） */
+export async function redactNeedCasesByUsername(username: string): Promise<void> {
+  const cases = await getRecentNeedCases(2000);
   const now = new Date().toISOString();
   for (const c of cases) {
+    if (c.username !== username) continue;
     await saveNeedCase({
       ...c,
       rawNeedRedacted: '',
@@ -341,39 +336,7 @@ export async function markNeedCasesTopicProcessed(needCaseIds: string[], topicCa
 }
 
 // ---------------------------------------------------------------------------
-// 邀请会话
-// ---------------------------------------------------------------------------
-
-export async function saveInvitedSession(session: InvitedSession): Promise<void> {
-  const redis = getRedis();
-  memoryInvitedSessions.set(session.sessionId, session);
-  if (!redis) return;
-  const ttlSeconds = Math.max(60, Math.floor((new Date(session.expiresAt).getTime() - Date.now()) / 1000));
-  await redis.set(invitedSessionKey(session.sessionId), session, { ex: ttlSeconds });
-}
-
-export async function getInvitedSession(sessionId: string): Promise<InvitedSession | null> {
-  const redis = getRedis();
-  if (!redis) return memoryInvitedSessions.get(sessionId) ?? null;
-  return (await redis.get<InvitedSession>(invitedSessionKey(sessionId))) ?? memoryInvitedSessions.get(sessionId) ?? null;
-}
-
-export async function isInvitedSessionValid(sessionId: string): Promise<boolean> {
-  const session = await getInvitedSession(sessionId);
-  if (!session) return false;
-  if (session.authState !== 'invited') return false;
-  return new Date(session.expiresAt).getTime() > Date.now();
-}
-
-export async function revokeInvitedSession(sessionId: string): Promise<void> {
-  const redis = getRedis();
-  memoryInvitedSessions.delete(sessionId);
-  if (!redis) return;
-  await redis.del(invitedSessionKey(sessionId));
-}
-
-// ---------------------------------------------------------------------------
-// 用户画像
+// 用户画像（按 username 索引）
 // ---------------------------------------------------------------------------
 
 export async function saveUserProfile(profile: UserProfile): Promise<void> {
@@ -381,36 +344,36 @@ export async function saveUserProfile(profile: UserProfile): Promise<void> {
   memoryProfiles.set(profile.profileId, profile);
   if (!redis) return;
   await redis.set(profileKey(profile.profileId), profile);
-  await redis.set(profileBySessionKey(profile.sessionId), profile);
+  await redis.set(profileByUsernameKey(profile.username), profile);
 }
 
-export async function getUserProfileBySession(sessionId: string): Promise<UserProfile | null> {
+export async function getUserProfileByUsername(username: string): Promise<UserProfile | null> {
   const redis = getRedis();
-  const fromMemory = [...memoryProfiles.values()].find(p => p.sessionId === sessionId) ?? null;
+  const fromMemory = [...memoryProfiles.values()].find(p => p.username === username) ?? null;
   if (!redis) return fromMemory;
-  return (await redis.get<UserProfile>(profileBySessionKey(sessionId))) ?? fromMemory;
+  return (await redis.get<UserProfile>(profileByUsernameKey(username))) ?? fromMemory;
 }
 
 export async function getAllUserProfiles(): Promise<UserProfile[]> {
   const redis = getRedis();
   if (!redis) return [...memoryProfiles.values()];
-  const keys = await redis.keys('match:profile-by-session:*');
+  const keys = await redis.keys('match:profile-by-username:*');
   const items = await Promise.all(keys.map(k => redis.get<UserProfile>(k)));
   return items.filter((p): p is UserProfile => p !== null);
 }
 
-export async function markUserProfileDeleteRequested(sessionId: string, requestedAt: string): Promise<void> {
+export async function markUserProfileDeleteRequested(username: string, requestedAt: string): Promise<void> {
   const redis = getRedis();
-  const memory = [...memoryProfiles.values()].find(p => p.sessionId === sessionId);
+  const memory = [...memoryProfiles.values()].find(p => p.username === username);
   if (memory) {
     memoryProfiles.set(memory.profileId, { ...memory, deleteRequestedAt: requestedAt, updatedAt: requestedAt });
   }
   if (!redis) return;
-  const current = await redis.get<UserProfile>(profileBySessionKey(sessionId));
+  const current = await redis.get<UserProfile>(profileByUsernameKey(username));
   if (!current) return;
   const updated = { ...current, deleteRequestedAt: requestedAt, updatedAt: requestedAt };
   await redis.set(profileKey(current.profileId), updated);
-  await redis.set(profileBySessionKey(sessionId), updated);
+  await redis.set(profileByUsernameKey(username), updated);
 }
 
 // ---------------------------------------------------------------------------

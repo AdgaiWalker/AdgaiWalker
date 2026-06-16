@@ -1,24 +1,26 @@
 /**
- * GET/POST /api/profile — 当前会话画像
+ * GET/POST /api/profile — 当前账号画像
  *
- * invited 用户可读写自己的画像；admin GET 返回 authState 供前端放行。
- * 画像字段全部可选。
+ * 登录用户可读写自己的画像；admin GET 返回 authState 供前端放行。
+ * 画像字段全部可选，按账号 username 存取。
  */
 
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
-import { readInvitedSessionId } from '@/lib/invited-session-auth';
+import { readSessionId } from '@/lib/account-auth';
 import { createUserContextService } from '@/services/user-context.service';
 import { createUserProfileService, PersonaAnchorPiiError } from '@/services/profile.service';
 import type { ProfileInput } from '@/services/interfaces';
-import { createInvitedSessionStore } from '@/stores/invited-session.store';
+import { createAccountStore } from '@/stores/account.store';
+import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 
 const profileStore = createUserProfileStore();
 const profileService = createUserProfileService({ profileStore });
 const userContextService = createUserContextService({
-  sessionStore: createInvitedSessionStore(),
+  sessionStore: createSessionStore(),
+  accountStore: createAccountStore(),
   profileStore,
 });
 
@@ -50,27 +52,27 @@ function validateProfileInput(body: unknown): ProfileInput | null {
 
 export const GET: APIRoute = async ({ request }) => {
   const userContext = await userContextService.resolve({
-    sessionId: readInvitedSessionId(request),
+    sessionId: readSessionId(request),
     isAdmin: isAdmin(request),
   });
 
   if (userContext.authState === 'admin') {
     return json({ authState: 'admin', profile: null });
   }
-  if (userContext.authState !== 'invited' || !userContext.sessionId) {
-    return json({ error: '请先通过邀请码验证。' }, 401);
+  if (userContext.authState !== 'user' || !userContext.username) {
+    return json({ error: '请先登录。' }, 401);
   }
-  return json({ authState: 'invited', profile: userContext.profile });
+  return json({ authState: 'user', profile: userContext.profile });
 };
 
 export const POST: APIRoute = async ({ request }) => {
   const userContext = await userContextService.resolve({
-    sessionId: readInvitedSessionId(request),
+    sessionId: readSessionId(request),
     isAdmin: isAdmin(request),
   });
 
-  if (userContext.authState !== 'invited' || !userContext.sessionId) {
-    return json({ error: '请先通过邀请码验证。' }, 401);
+  if (userContext.authState !== 'user' || !userContext.username) {
+    return json({ error: '请先登录。' }, 401);
   }
 
   let body: unknown;
@@ -86,7 +88,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const profile = await profileService.upsert(userContext.sessionId, input);
+    const profile = await profileService.upsert(userContext.username, input);
     return json({ profile });
   } catch (e) {
     if (e instanceof PersonaAnchorPiiError) {

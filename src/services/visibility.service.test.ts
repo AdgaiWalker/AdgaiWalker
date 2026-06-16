@@ -30,16 +30,16 @@ describe('VisibilityService — 数据边界控制', () => {
     });
 
     it('invited 能看 public', () => {
-      expect(service.canSee({ role: 'invited', contentVisibility: 'public' })).toBe(true);
+      expect(service.canSee({ role: 'user', contentVisibility: 'public' })).toBe(true);
     });
     it('invited 能看 draft', () => {
-      expect(service.canSee({ role: 'invited', contentVisibility: 'draft' })).toBe(true);
+      expect(service.canSee({ role: 'user', contentVisibility: 'draft' })).toBe(true);
     });
     it('invited 不能看 private', () => {
-      expect(service.canSee({ role: 'invited', contentVisibility: 'private' })).toBe(false);
+      expect(service.canSee({ role: 'user', contentVisibility: 'private' })).toBe(false);
     });
     it('invited 不能看 admin-only', () => {
-      expect(service.canSee({ role: 'invited', contentVisibility: 'admin-only' })).toBe(false);
+      expect(service.canSee({ role: 'user', contentVisibility: 'admin-only' })).toBe(false);
     });
 
     it('public 只能看 public', () => {
@@ -77,7 +77,7 @@ describe('VisibilityService — 数据边界控制', () => {
     });
 
     it('invited 只看到摘要', () => {
-      const result = service.redactNeedCase(fullNeedCase, 'invited') as Record<string, unknown>;
+      const result = service.redactNeedCase(fullNeedCase, 'user') as Record<string, unknown>;
       expect(result.needSummary).toBe('想学 AI');
       expect(result).not.toHaveProperty('needCaseId');
       expect(result).not.toHaveProperty('rawNeedRedacted');
@@ -107,7 +107,7 @@ describe('VisibilityService — 数据边界控制', () => {
     });
 
     it('invited 只看聚合字段', () => {
-      const result = service.filterStats(fullStats, 'invited') as Record<string, unknown>;
+      const result = service.filterStats(fullStats, 'user') as Record<string, unknown>;
       expect(result.matchCount).toBe(42);
       expect(result).not.toHaveProperty('complianceRedirectRate');
     });

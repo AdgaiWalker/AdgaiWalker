@@ -5,8 +5,8 @@
  * API route 只负责 HTTP 协议（解析请求、速率限制、格式化响应），
  * 业务编排委托给 AgentOrchestrator.handleNeed()。
  *
- * 认证状态由 UserContextService 解析：admin cookie → admin；
- * invited session cookie → invited；否则 public。
+ * 认证状态由 UserContextService 解析：admin cookie(role=admin) → admin；
+ * 账号会话 cookie → user；否则 public（401）。
  */
 
 import { createHash } from 'node:crypto';
@@ -18,16 +18,18 @@ import { createAgentOrchestrator } from '@/services/agent-orchestrator.service';
 import { createSafetyService } from '@/services/safety.service';
 import { createUserContextService } from '@/services/user-context.service';
 import { isAdmin } from '@/lib/admin-auth';
-import { readInvitedSessionId } from '@/lib/invited-session-auth';
+import { readSessionId } from '@/lib/account-auth';
+import { createAccountStore } from '@/stores/account.store';
 import { createIncidentStore } from '@/stores/incident.store';
-import { createInvitedSessionStore } from '@/stores/invited-session.store';
 import { createMatchSessionStore } from '@/stores/match-session.store';
 import { createNeedCaseStore } from '@/stores/need-case.store';
+import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 import { audienceGroupLabels, aiStageLabels } from '@/profiles/resource-index';
 
 const userContextService = createUserContextService({
-  sessionStore: createInvitedSessionStore(),
+  sessionStore: createSessionStore(),
+  accountStore: createAccountStore(),
   profileStore: createUserProfileStore(),
 });
 
@@ -169,20 +171,20 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ error: '请求格式不正确。' }, 400);
   }
 
-  // 后端 gate（A1）：全量交互功能需受邀或管理员，public 返回 401
-  const invitedSessionId = readInvitedSessionId(request);
+  // 后端 gate：全量交互功能需登录用户或管理员，public 返回 401
+  const sessionId = readSessionId(request);
   const adminFlag = isAdmin(request);
   const userContext = await userContextService.resolve({
-    sessionId: invitedSessionId,
+    sessionId,
     isAdmin: adminFlag,
   });
   if (userContext.authState === 'public') {
-    return jsonResponse({ error: '需要邀请码才能使用匹配功能。' }, 401);
+    return jsonResponse({ error: '请先登录后再使用匹配功能。' }, 401);
   }
 
   const rateLimitSubject = hashRateLimitSubject(
-    userContext.authState === 'invited' && userContext.sessionId
-      ? `invited:${userContext.sessionId}`
+    userContext.authState === 'user' && userContext.sessionId
+      ? `user:${userContext.sessionId}`
       : `admin:${getClientIP(request)}`,
   );
   const rateLimit = await checkRateLimit(rateLimitSubject);

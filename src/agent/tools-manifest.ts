@@ -8,7 +8,7 @@
  * 权限边界由各 API 路由的 `isAdmin` / 受邀会话检查实际执行；本清单是契约文档与回归基线。
  */
 
-export type ToolPermission = 'public' | 'invited' | 'admin' | 'system' | 'server-only';
+export type ToolPermission = 'public' | 'user' | 'admin' | 'system' | 'server-only';
 
 export interface ToolDeclaration {
   /** 工具名 / 入口标识 */
@@ -199,7 +199,7 @@ export const TOOL_MANIFEST: readonly ToolDeclaration[] = [
     description: '用户需求匹配（本地 + Gateway 增强）',
     input: '用户消息 + sessionId',
     output: '推荐资源 + 串联语 + 判断结论',
-    permission: 'invited',
+    permission: 'user',
     failureReturn: '模型失败 → 本地规则；超限 → 429',
     retryable: false,
     writesData: true,

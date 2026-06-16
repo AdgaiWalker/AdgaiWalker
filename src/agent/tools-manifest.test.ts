@@ -6,7 +6,7 @@ import {
   type ToolPermission,
 } from './tools-manifest';
 
-const VALID_PERMISSIONS: ToolPermission[] = ['public', 'invited', 'admin', 'system', 'server-only'];
+const VALID_PERMISSIONS: ToolPermission[] = ['public', 'user', 'admin', 'system', 'server-only'];
 const REQUIRED_FIELDS = ['name', 'endpoint', 'description', 'input', 'output', 'failureReturn'] as const;
 
 describe('tools-manifest (U8 工具契约清单)', () => {
@@ -61,7 +61,7 @@ describe('tools-manifest (U8 工具契约清单)', () => {
 
   it('match 工具需受邀会话且写会话数据', () => {
     const match = TOOL_MANIFEST.find(t => t.name === 'match');
-    expect(match?.permission).toBe('invited');
+    expect(match?.permission).toBe('user');
     expect(match?.writesData).toBe(true);
   });
 

@@ -1,5 +1,5 @@
 /**
- * ProfileService — persona anchor validation
+ * ProfileService — persona anchor validation + username-based profile CRUD
  */
 
 import { describe, expect, it } from 'vitest';
@@ -14,7 +14,7 @@ describe('validatePersonaAnchor', () => {
     expect(validatePersonaAnchor('  自由职业者正在学习AI  ')).toBe('自由职业者正在学习A');
   });
 
-  it('rejects PII before invite admission consumes quota', () => {
+  it('rejects PII before any persistence', () => {
     expect(() => validatePersonaAnchor('13800138000')).toThrow(PersonaAnchorPiiError);
   });
 });
@@ -22,12 +22,12 @@ describe('validatePersonaAnchor', () => {
 function createFakeProfileStore(): UserProfileRepositoryPort {
   const profiles = new Map<string, UserProfile>();
   return {
-    async save(profile) { profiles.set(profile.sessionId, profile); },
-    async findBySessionId(sessionId) { return profiles.get(sessionId) ?? null; },
+    async save(profile) { profiles.set(profile.username, profile); },
+    async findByUsername(username) { return profiles.get(username) ?? null; },
     async findAll() { return [...profiles.values()]; },
-    async markDeleteRequested(sessionId, requestedAt) {
-      const existing = profiles.get(sessionId);
-      if (existing) profiles.set(sessionId, { ...existing, deleteRequestedAt: requestedAt, updatedAt: requestedAt });
+    async markDeleteRequested(username, requestedAt) {
+      const existing = profiles.get(username);
+      if (existing) profiles.set(username, { ...existing, deleteRequestedAt: requestedAt, updatedAt: requestedAt });
     },
   };
 }
@@ -37,6 +37,7 @@ function createNeedCase(overrides: Partial<NeedCase>): NeedCase {
   return {
     needCaseId: overrides.needCaseId ?? crypto.randomUUID(),
     sessionId: overrides.sessionId ?? crypto.randomUUID(),
+    username: overrides.username,
     createdAt: now,
     updatedAt: now,
     sourcePage: '/tools',
@@ -78,23 +79,25 @@ describe('UserProfileService', () => {
   it('computes confidence from personaAnchor only', async () => {
     const service = createUserProfileService({ profileStore: createFakeProfileStore() });
 
-    const empty = await service.upsert('session-profile-confidence-empty', {});
+    const empty = await service.upsert('alice', {});
     expect(empty.confidence).toBe(0);
     expect(empty.personaAnchor).toBeUndefined();
+    expect(empty.username).toBe('alice');
+    expect(empty.profileId).toBe('alice');
 
-    const anchored = await service.upsert('session-profile-confidence-anchor', { personaAnchor: '学生' });
+    const anchored = await service.upsert('bob', { personaAnchor: '学生' });
     expect(anchored.confidence).toBe(1);
     expect(anchored.personaAnchor).toBe('学生');
   });
 
-  it('redacts related NeedCases when deletion is requested', async () => {
-    const sessionId = `session-delete-${crypto.randomUUID()}`;
-    const needCase = createNeedCase({ sessionId });
+  it('redacts related NeedCases by username when deletion is requested', async () => {
+    const username = `user-delete-${crypto.randomUUID().slice(0, 8)}`;
+    const needCase = createNeedCase({ username });
     await saveNeedCase(needCase);
 
     const service = createUserProfileService({ profileStore: createFakeProfileStore() });
-    await service.upsert(sessionId, { personaAnchor: '学生' });
-    await service.requestDeletion(sessionId);
+    await service.upsert(username, { personaAnchor: '学生' });
+    await service.requestDeletion(username);
 
     const redacted = await getNeedCaseById(needCase.needCaseId);
     expect(redacted?.rawNeedRedacted).toBe('');

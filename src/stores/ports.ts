@@ -8,22 +8,50 @@
 import type { AbilityType, AiStage, AudienceGroup, FrictionLayer, NeedCategory } from '@/profiles/resource-index';
 
 // ---------------------------------------------------------------------------
-// 认证状态与邀请会话
+// 认证状态、账号、会话
 // ---------------------------------------------------------------------------
 
-export type AuthState = 'public' | 'invited' | 'admin';
+export type AuthState = 'public' | 'user' | 'admin';
 
-export interface InvitedSession {
+export type AccountRole = 'user' | 'admin';
+export type AccountStatus = 'active' | 'banned' | 'deleteRequested';
+
+/** 注册账号：用户名 + scrypt 密码哈希，零 PII（不收邮箱/手机）。 */
+export interface UserAccount {
+  username: string;
+  passwordHash: string;
+  role: AccountRole;
+  status: AccountStatus;
+  /** 注册时消费的邀请码 hash（溯源，可选） */
+  inviteCodeHash?: string;
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
+export interface AccountRepositoryPort {
+  findByUsername(username: string): Promise<UserAccount | null>;
+  /** 创建账号（用户名唯一，已存在抛错；调用方负责占位校验） */
+  create(account: UserAccount): Promise<void>;
+  updateStatus(username: string, status: AccountStatus): Promise<void>;
+  updatePasswordHash(username: string, passwordHash: string): Promise<void>;
+  updateLastLogin(username: string, at: string): Promise<void>;
+  listAll(): Promise<UserAccount[]>;
+  /** 是否存在任意账号（owner bootstrap 判定用） */
+  exists(): Promise<boolean>;
+}
+
+/** 登录会话：cookie 装签名 sessionId，真会话有效性查 SessionRepositoryPort。 */
+export interface UserSession {
   sessionId: string;
-  inviteCodeHash: string;
-  authState: AuthState;
+  username: string;
+  role: AccountRole;
   createdAt: string;
   expiresAt: string;
 }
 
-export interface InvitedSessionRepositoryPort {
-  create(session: InvitedSession): Promise<void>;
-  get(sessionId: string): Promise<InvitedSession | null>;
+export interface SessionRepositoryPort {
+  create(session: UserSession): Promise<void>;
+  get(sessionId: string): Promise<UserSession | null>;
   isValid(sessionId: string): Promise<boolean>;
   revoke(sessionId: string): Promise<void>;
 }
@@ -85,6 +113,8 @@ export interface SafetyFlags {
 export interface NeedCase {
   needCaseId: string;
   sessionId: string;
+  /** 归属账号用户名（便于按用户复盘 + 删除按账号级联脱敏） */
+  username?: string;
   createdAt: string;
   updatedAt: string;
   sourcePage: string;
@@ -189,7 +219,7 @@ export interface FeedbackRepositoryPort {
 }
 
 // ---------------------------------------------------------------------------
-// 邀请码
+// 邀请码（注册门票：消费一次，不再建会话）
 // ---------------------------------------------------------------------------
 
 export interface InviteCode {
@@ -207,14 +237,14 @@ export interface InviteCodeRepositoryPort {
 }
 
 // ---------------------------------------------------------------------------
-// 用户画像
+// 用户画像（按账号 username 存）
 // ---------------------------------------------------------------------------
 
 export interface UserProfile {
   profileId: string;
-  sessionId: string;
+  username: string;
   inviteCodeHash?: string;
-  /** 自报身份锚点（≤10 字），邀请时填、用户可改。零 PII，写入前过 redactSensitiveText。 */
+  /** 自报身份锚点（≤10 字），注册时填、用户可改。零 PII，写入前过 redactSensitiveText。 */
   personaAnchor?: string;
   nickname?: string;
   consentForProfile: boolean;
@@ -227,9 +257,9 @@ export interface UserProfile {
 
 export interface UserProfileRepositoryPort {
   save(profile: UserProfile): Promise<void>;
-  findBySessionId(sessionId: string): Promise<UserProfile | null>;
+  findByUsername(username: string): Promise<UserProfile | null>;
   findAll(): Promise<UserProfile[]>;
-  markDeleteRequested(sessionId: string, requestedAt: string): Promise<void>;
+  markDeleteRequested(username: string, requestedAt: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,15 +1,17 @@
 /**
- * 用户画像服务 — 自报锚点的读取 / 保存 / 删除请求
+ * 用户画像服务 — 自报锚点的读取 / 保存 / 删除请求（按账号 username）
  *
  * 画像模型：自报锚点（personaAnchor，≤10 字）+ 遭遇切片（在 AgentOrchestrator 推断）。
  * 零 PII：锚点写入前过 redactSensitiveText，命中手机号/邮箱等抛 PersonaAnchorPiiError。
  * confidence：锚点填了=1，没填=0。
+ *
+ * 画像以 username 为主键（profileId = username）。删除请求：
+ * - markDeleteRequested(username) 标记软删除
+ * - redactNeedCasesByUsername(username) 级联脱敏该用户全部 NeedCase（清空原始需求 + 切片）
  */
 
-import { randomUUID } from 'node:crypto';
-
 import { redactSensitiveText } from '@/agent/privacy';
-import { redactNeedCasesBySession } from '@/conversation/store';
+import { redactNeedCasesByUsername } from '@/conversation/store';
 import type { ProfileInput, UserProfileServicePort } from './interfaces';
 import type { UserProfile, UserProfileRepositoryPort } from '@/stores/ports';
 
@@ -43,21 +45,22 @@ export function createUserProfileService(deps: {
   profileStore: UserProfileRepositoryPort;
 }): UserProfileServicePort {
   return {
-    async get(sessionId: string): Promise<UserProfile | null> {
-      return deps.profileStore.findBySessionId(sessionId);
+    async get(username: string): Promise<UserProfile | null> {
+      return deps.profileStore.findByUsername(username);
     },
 
-    async upsert(sessionId: string, input: ProfileInput): Promise<UserProfile> {
-      const existing = await deps.profileStore.findBySessionId(sessionId);
+    async upsert(username: string, input: ProfileInput): Promise<UserProfile> {
+      const existing = await deps.profileStore.findByUsername(username);
       const now = new Date().toISOString();
 
       const personaAnchor = input.personaAnchor !== undefined
         ? validatePersonaAnchor(input.personaAnchor)
         : existing?.personaAnchor;
 
+      // profileId 与 username 一致（账号级唯一）
       const profile: UserProfile = {
-        profileId: existing?.profileId ?? randomUUID(),
-        sessionId,
+        profileId: username,
+        username,
         inviteCodeHash: existing?.inviteCodeHash,
         personaAnchor,
         nickname: input.nickname ?? existing?.nickname,
@@ -72,11 +75,11 @@ export function createUserProfileService(deps: {
       return profile;
     },
 
-    async requestDeletion(sessionId: string): Promise<void> {
-      await deps.profileStore.markDeleteRequested(sessionId, new Date().toISOString());
-      // 关联脱敏（A8）：清空该 session 所有 NeedCase 的 rawNeedRedacted / profileSnapshot
+    async requestDeletion(username: string): Promise<void> {
+      await deps.profileStore.markDeleteRequested(username, new Date().toISOString());
+      // 关联脱敏：清空该用户所有 NeedCase 的 rawNeedRedacted / profileSnapshot
       try {
-        await redactNeedCasesBySession(sessionId);
+        await redactNeedCasesByUsername(username);
       } catch {
         // 脱敏失败不阻断删除请求（deleteRequestedAt 已标记）
       }

@@ -20,11 +20,11 @@ vi.mock('@/agent/gateway-config', () => ({
   getGatewayConfig: vi.fn(async () => ({ provider: 'openai', model: 'test-model' })),
 }));
 
-function createProfile(sessionId: string, personaAnchor: string): UserProfile {
+function createProfile(username: string, personaAnchor: string): UserProfile {
   const now = new Date().toISOString();
   return {
-    profileId: `profile-${sessionId}`,
-    sessionId,
+    profileId: username,
+    username,
     personaAnchor,
     consentForProfile: true,
     confidence: 1,
@@ -103,9 +103,10 @@ describe('AgentOrchestrator encounter slice', () => {
 
     await orchestrator.handleNeed({
       userContext: {
-        authState: 'invited',
+        authState: 'user',
         sessionId: 'session-parent-slice',
-        profile: createProfile('session-parent-slice', '学生'),
+        username: 'parent-user',
+        profile: createProfile('parent-user', '学生'),
       },
       messages: [{ role: 'user', content: '我想给孩子做一个 AI 编程学习计划' }],
       consentForTopic: true,
@@ -130,9 +131,10 @@ describe('AgentOrchestrator encounter slice', () => {
 
     await orchestrator.handleNeed({
       userContext: {
-        authState: 'invited',
+        authState: 'user',
         sessionId: 'session-anchor-fallback',
-        profile: createProfile('session-anchor-fallback', '学生'),
+        username: 'anchor-user',
+        profile: createProfile('anchor-user', '学生'),
       },
       messages: [{ role: 'user', content: '怎么绕过验证码' }],
       consentForTopic: true,
@@ -156,9 +158,10 @@ describe('AgentOrchestrator encounter slice', () => {
 
     const result = await orchestrator.handleNeed({
       userContext: {
-        authState: 'invited',
+        authState: 'user',
         sessionId: 'session-save-failure',
-        profile: createProfile('session-save-failure', '学生'),
+        username: 'savefail-user',
+        profile: createProfile('savefail-user', '学生'),
       },
       messages: [{ role: 'user', content: '怎么绕过验证码注册 AI 工具' }],
       consentForTopic: true,
