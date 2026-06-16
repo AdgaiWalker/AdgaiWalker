@@ -12,10 +12,14 @@ const { slug } = Astro.props;
 {slug && (
   <div class="admin-edit-bar" id="admin-edit-bar" data-slug={slug} style="display:none">
     <div class="aeb-inner">
-      <a class="aeb-btn" href={`/admin/content/edit?slug=${encodeURIComponent(slug)}`} title="编辑此文">
+      <button class="aeb-btn" id="admin-edit-btn" type="button" title="就地编辑此文">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         <span>编辑</span>
-      </a>
+      </button>
+      <button class="aeb-btn" id="admin-history-btn" type="button" title="版本历史">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <span>历史</span>
+      </button>
       <button class="aeb-btn aeb-btn-danger" id="admin-delete-btn" type="button" title="删除此文">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         <span>删除</span>
@@ -81,16 +85,16 @@ const { slug } = Astro.props;
 </style>
 
 <script>
+  import { enterInlineEditor } from '@/scripts/inline-editor';
+  import { initVersionHistory } from '@/scripts/version-history';
+
   let adminAbort: AbortController | null = null;
   let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
   function cleanupAdminEditBar() {
     adminAbort?.abort();
     adminAbort = null;
-    if (redirectTimer) {
-      clearTimeout(redirectTimer);
-      redirectTimer = null;
-    }
+    if (redirectTimer) { clearTimeout(redirectTimer); redirectTimer = null; }
   }
 
   async function showBarIfAdmin(bar: HTMLElement, signal: AbortSignal) {
@@ -98,9 +102,7 @@ const { slug } = Astro.props;
       const res = await fetch('/api/admin/auth', { signal });
       const data = await res.json();
       if (!signal.aborted && data.admin) bar.style.display = 'flex';
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }
 
   function initAdminEditBar() {
@@ -110,23 +112,26 @@ const { slug } = Astro.props;
 
     adminAbort = new AbortController();
     const { signal } = adminAbort;
-
     showBarIfAdmin(bar, signal);
 
+    const slug = bar.dataset.slug;
+    const editBtn = document.getElementById('admin-edit-btn');
+    const historyBtn = document.getElementById('admin-history-btn');
     const deleteBtn = document.getElementById('admin-delete-btn') as HTMLButtonElement | null;
     const status = document.getElementById('admin-status');
-    const slug = bar.dataset.slug;
+    if (!slug) return;
 
-    if (!deleteBtn || !status || !slug) return;
+    editBtn?.addEventListener('click', () => enterInlineEditor(slug), { signal });
+    historyBtn?.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('version-history:open', { detail: { slug } }));
+    }, { signal });
 
+    if (!deleteBtn || !status) return;
     deleteBtn.addEventListener('click', async () => {
       if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
       deleteBtn.disabled = true;
       try {
-        const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, {
-          method: 'DELETE',
-          signal,
-        });
+        const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, { method: 'DELETE', signal });
         const data = await res.json();
         if (signal.aborted) return;
         if (res.ok && data.ok) {
@@ -147,6 +152,7 @@ const { slug } = Astro.props;
     }, { signal });
   }
 
+  initVersionHistory();
   document.addEventListener('astro:page-load', initAdminEditBar);
   document.addEventListener('astro:before-swap', cleanupAdminEditBar);
 </script>
