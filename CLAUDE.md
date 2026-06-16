@@ -164,7 +164,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`TableOfContents.astro`**（`article/`）：文章页粘性目录，通过 `toc-highlight.ts` 高亮当前标题。
 - **首页组件**（`home/`）：`HomeCanvas.astro`（Bento 画布 — 身份条、最近文章、快速入口、Spark 抽点子盲盒）。盲盒弹窗逻辑内联在 `home-canvas.ts` 的 `initSparkBox`（流星粒子 + 随机脑洞），无独立 `SparkBoxModal.astro` 组件。
 - **首页卡片**（根级）：`GreetingCard.astro`（头像交互卡，含社交链接）。
-- **内容宇宙组件**（`content-universe/`）：`ContentFilterTabs.astro`（空间筛选 Tab）、`ContentUniverseCard.astro`（统一内容卡片），用于 `/content` 页面。
+- **内容宇宙组件**（`content-universe/`）：`ContentFilterTabs.astro`（空间筛选文字链接）、`ContentStreamItem.astro`（内容流扁平列表项：色点 + 标题 + 时间锚点 + 预告 + 形态），用于 `/content` 页面。
 - **`ToolMatchChat.astro`**（`tools/`）：工具匹配对话组件，提供 `/api/match` 匹配会话的前端 UI；含邀请 gate（GET `/api/profile` 身份探测，public 时弹邀请码弹窗）。
 - **`InviteGate.astro`**（`tools/`）：邀请码弹窗组件（≤10 字锚点输入 + 示例 chip + consent，PII 命中拦截）。
 - **`ResourceCard.astro`**（根级）：资源链接卡片，在文章详情页 `posts/[slug].astro` 中使用。

@@ -52,3 +52,6 @@ public/pagefind/
 
 .vercel
 .idea/
+
+# dev server 日志
+.astro-dev.log
