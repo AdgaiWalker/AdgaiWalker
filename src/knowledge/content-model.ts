@@ -240,3 +240,22 @@ export function itemBelongsToSpace(item: ContentItem, space: ContentSpace): bool
       return item.type === 'idea';
   }
 }
+
+/** 6 个具体空间配色（色点 + 图例共用，单一真相源） */
+export const SPACE_COLOR: Record<Exclude<ContentSpace, 'all'>, string> = {
+  progress: '#7c3aed',
+  life: '#16a34a',
+  learning: '#2563eb',
+  tools: '#d97706',
+  works: '#0891b2',
+  ideas: '#f59e0b',
+};
+
+/** 取内容的主空间（第一个匹配的具体空间，按 contentSpaces 顺序）；无具体空间返回 null */
+export function getMainSpace(item: ContentItem): Exclude<ContentSpace, 'all'> | null {
+  for (const space of contentSpaces) {
+    if (space.id === 'all') continue;
+    if (itemBelongsToSpace(item, space.id)) return space.id;
+  }
+  return null;
+}
