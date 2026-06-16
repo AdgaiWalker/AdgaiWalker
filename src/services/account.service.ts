@@ -139,7 +139,7 @@ export function createAccountService(): AccountServicePort {
         }
       }
       const sessionId = await issueSession(username, 'user');
-      return { ok: true, sessionId, username };
+      return { ok: true, sessionId, username, role: 'user' };
     },
 
     async login(username: string, password: string): Promise<AuthResult> {
@@ -152,7 +152,7 @@ export function createAccountService(): AccountServicePort {
       if (account.status === 'deleteRequested') return { ok: false, reason: '账号已申请删除' };
       await accountStore.updateLastLogin(account.username, new Date().toISOString());
       const sessionId = await issueSession(account.username, account.role);
-      return { ok: true, sessionId, username: account.username };
+      return { ok: true, sessionId, username: account.username, role: account.role };
     },
 
     async logout(sessionId: string): Promise<void> {
@@ -214,7 +214,7 @@ export function createAccountService(): AccountServicePort {
         return { ok: false, reason: '用户名已存在' };
       }
       const sessionId = await issueSession(ownerUsername, 'admin');
-      return { ok: true, sessionId, username: ownerUsername };
+      return { ok: true, sessionId, username: ownerUsername, role: 'admin' };
     },
   };
 }

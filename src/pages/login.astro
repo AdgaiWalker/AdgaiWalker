@@ -1,0 +1,160 @@
+---
+/**
+ * /login — 统一登录 / 注册页（用户 + owner 同入口）
+ *
+ * 服务端渲染：用 readSessionPayload 探测当前会话，已登录则显示状态条 + 登出。
+ * 注册需邀请码；零 PII（不收邮箱/手机）。
+ */
+import Base from '@/layouts/Base.astro';
+import { readSessionPayload } from '@/lib/account-auth';
+
+const session = readSessionPayload(Astro.request);
+---
+
+<Base title="登录 / 注册 — iwalk.pro">
+  <main class="auth-wrap">
+    <section class="panel-glass auth-card">
+      {session ? (
+        <div class="auth-logged">
+          <p>已登录：<strong>{session.role === 'admin' ? '站主' : '用户'}</strong></p>
+          <div class="auth-actions">
+            <a class="btn ghost" href={session.role === 'admin' ? '/admin' : '/tools'}>进入</a>
+            <button class="btn danger" id="logout-btn">登出</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div class="auth-tabs" role="tablist">
+            <button class="auth-tab active" data-tab="login" role="tab" aria-selected="true">登录</button>
+            <button class="auth-tab" data-tab="register" role="tab" aria-selected="false">注册</button>
+          </div>
+
+          <form class="auth-form" data-form="login" autocomplete="on">
+            <label class="field">
+              <span class="field-label">用户名</span>
+              <input type="text" name="username" required autocomplete="username" placeholder="用户名" />
+            </label>
+            <label class="field">
+              <span class="field-label">密码</span>
+              <input type="password" name="password" required autocomplete="current-password" placeholder="密码" />
+            </label>
+            <p class="auth-error" data-error="login" hidden></p>
+            <button class="btn primary" type="submit">登录</button>
+            <p class="auth-hint">站主与用户在同一处登录。忘密请联系站主重置。</p>
+          </form>
+
+          <form class="auth-form" data-form="register" hidden autocomplete="on">
+            <label class="field">
+              <span class="field-label">邀请码</span>
+              <input type="text" name="inviteCode" required placeholder="输入邀请码" />
+            </label>
+            <label class="field">
+              <span class="field-label">用户名</span>
+              <input type="text" name="username" required placeholder="2-20 位中英文/数字/下划线" />
+            </label>
+            <label class="field">
+              <span class="field-label">密码</span>
+              <input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="至少 8 位" />
+            </label>
+            <label class="field">
+              <span class="field-label">一句话说说你是谁（可选）</span>
+              <input type="text" name="personaAnchor" maxlength="10" placeholder="≤10 字，如：大三学生" />
+              <div class="anchor-chips">
+                <button type="button" class="chip" data-anchor="学生">学生</button>
+                <button type="button" class="chip" data-anchor="上班族">上班族</button>
+                <button type="button" class="chip" data-anchor="自由职业">自由职业</button>
+                <button type="button" class="chip" data-anchor="想搞副业">想搞副业</button>
+              </div>
+            </label>
+            <label class="consent">
+              <input type="checkbox" name="consent" required />
+              <span>同意被 Walker 记住需求，用于改进选题</span>
+            </label>
+            <p class="auth-error" data-error="register" hidden></p>
+            <button class="btn primary" type="submit">注册并进入</button>
+            <p class="auth-hint">注册即获得匹配、画像等受邀功能。忘密找站主。</p>
+          </form>
+        </>
+      )}
+    </section>
+  </main>
+</Base>
+
+<style>
+  .auth-wrap { min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .auth-card { width: 100%; max-width: 420px; padding: 2rem; border-radius: 16px; }
+  .auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border, #333); }
+  .auth-tab { background: none; border: none; padding: 0.6rem 1rem; color: var(--color-text-muted, #888); font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent; }
+  .auth-tab.active { color: var(--color-brand, #4f8cff); border-bottom-color: var(--color-brand, #4f8cff); }
+  .auth-form { display: flex; flex-direction: column; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .field-label { font-size: 0.85rem; color: var(--color-text-muted, #888); }
+  .field input { padding: 0.6rem 0.7rem; border-radius: 8px; border: 1px solid var(--color-border, #444); background: var(--color-surface, #1e1e1e); color: var(--color-text, #eee); font-size: 0.95rem; }
+  .anchor-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.35rem; }
+  .chip { padding: 0.25rem 0.6rem; border-radius: 999px; border: 1px solid var(--color-border, #444); background: transparent; color: var(--color-text-muted, #888); font-size: 0.8rem; cursor: pointer; }
+  .chip:hover { color: var(--color-brand, #4f8cff); border-color: var(--color-brand, #4f8cff); }
+  .consent { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--color-text-muted, #888); }
+  .auth-error { color: #ff6b6b; font-size: 0.85rem; margin: 0; }
+  .btn { padding: 0.65rem 1rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.95rem; }
+  .btn.primary { background: var(--color-brand, #4f8cff); color: #fff; }
+  .btn.ghost { background: transparent; color: var(--color-text, #eee); border: 1px solid var(--color-border, #444); }
+  .btn.danger { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-hint { font-size: 0.78rem; color: var(--color-text-muted, #888); margin: 0; }
+  .auth-logged { text-align: center; }
+  .auth-actions { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem; }
+</style>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.auth-tab');
+  const forms = document.querySelectorAll<HTMLFormElement>('.auth-form');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => { t.classList.toggle('active', t === tab); t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
+      forms.forEach(f => { f.hidden = f.dataset.form !== tab.dataset.tab; });
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const input = chip.closest('.field')?.querySelector('input') as HTMLInputElement | null;
+      if (input) { input.value = chip.dataset.anchor ?? ''; input.focus(); }
+    });
+  });
+
+  async function submitForm(form: HTMLFormElement, url: string, errorEl: HTMLElement) {
+    const data = Object.fromEntries(new FormData(form).entries());
+    delete (data as Record<string, unknown>).consent;
+    errorEl.hidden = true;
+    const btn = form.querySelector<HTMLButtonElement>('button[type=submit]');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        window.location.href = '/';
+      } else {
+        errorEl.textContent = json.reason || '操作失败，请重试。';
+        errorEl.hidden = false;
+      }
+    } catch {
+      errorEl.textContent = '网络错误，请重试。';
+      errorEl.hidden = false;
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  const loginForm = document.querySelector<HTMLFormElement>('[data-form=login]');
+  const loginErr = document.querySelector<HTMLElement>('[data-error=login]');
+  loginForm?.addEventListener('submit', (e) => { e.preventDefault(); if (loginErr) submitForm(loginForm, '/api/auth/login', loginErr); });
+
+  const regForm = document.querySelector<HTMLFormElement>('[data-form=register]');
+  const regErr = document.querySelector<HTMLElement>('[data-error=register]');
+  regForm?.addEventListener('submit', (e) => { e.preventDefault(); if (regErr) submitForm(regForm, '/api/auth/register', regErr); });
+
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.reload();
+  });
+</script>

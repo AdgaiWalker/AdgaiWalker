@@ -123,6 +123,8 @@ export interface AuthResult {
   /** 新建会话 ID（成功时） */
   sessionId?: string;
   username?: string;
+  /** 账号角色（成功时，用于签发带 role 的会话 cookie） */
+  role?: 'user' | 'admin';
 }
 
 export interface AccountServicePort {

@@ -1,0 +1,180 @@
+---
+/**
+ * /admin/accounts — 账号管理后台（站主）
+ *
+ * 列表 + 重置密码 + 封禁/解封。SSR，isAdmin gate。
+ */
+import Base from '@/layouts/Base.astro';
+import { isAdmin } from '@/lib/admin-auth';
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/login');
+}
+
+interface AccountView {
+  username: string;
+  role: 'user' | 'admin';
+  status: 'active' | 'banned' | 'deleteRequested';
+  createdAt: string;
+  lastLoginAt?: string;
+  inviteCodeHash?: string;
+}
+
+const origin = Astro.url.origin;
+let accounts: AccountView[] = [];
+try {
+  const res = await fetch(`${origin}/api/admin/accounts`, {
+    headers: { cookie: Astro.request.headers.get('cookie') ?? '' },
+  });
+  if (res.ok) {
+    const data = await res.json() as { accounts: AccountView[] };
+    accounts = data.accounts;
+  }
+} catch {
+  /* 降级空列表 */
+}
+---
+
+<Base title="账号管理 — iwalk.pro">
+  <main class="accounts-wrap">
+    <header class="accounts-head">
+      <h1>账号管理</h1>
+      <a class="back" href="/admin">← 返回后台</a>
+    </header>
+
+    <section class="panel-glass">
+      {accounts.length === 0 ? (
+        <p class="empty">还没有注册账号。</p>
+      ) : (
+        <div class="table-scroll">
+          <table class="accounts-table">
+            <thead>
+              <tr>
+                <th>用户名</th>
+                <th>角色</th>
+                <th>状态</th>
+                <th>注册时间</th>
+                <th>最后登录</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map(a => (
+                <tr data-username={a.username}>
+                  <td class="mono">{a.username}</td>
+                  <td><span class={`badge role-${a.role}`}>{a.role === 'admin' ? '站主' : '用户'}</span></td>
+                  <td><span class={`badge status-${a.status}`}>{a.status}</span></td>
+                  <td class="muted">{a.createdAt?.slice(0, 10) ?? '-'}</td>
+                  <td class="muted">{a.lastLoginAt?.slice(0, 10) ?? '-'}</td>
+                  <td class="actions">
+                    {a.role !== 'admin' && (
+                      <>
+                        <button class="mini" data-action="reset">重置密码</button>
+                        <button class="mini" data-action="toggle-status" data-status={a.status}>
+                          {a.status === 'banned' ? '解封' : '封禁'}
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+
+    <dialog id="reset-dialog" aria-labelledby="reset-title">
+      <form method="dialog">
+        <h3 id="reset-title">重置密码</h3>
+        <p>已为 <strong id="reset-username"></strong> 生成新临时密码（仅显示一次）：</p>
+        <code id="reset-password" class="reset-code"></code>
+        <div class="dialog-actions">
+          <button type="button" id="copy-btn">复制</button>
+          <button type="submit" class="primary">关闭</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+</Base>
+
+<style>
+  .accounts-wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+  .accounts-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .accounts-head h1 { font-size: 1.4rem; margin: 0; }
+  .back { color: var(--color-text-muted, #888); text-decoration: none; font-size: 0.9rem; }
+  .panel-glass { padding: 1.25rem; border-radius: 12px; }
+  .empty { color: var(--color-text-muted, #888); }
+  .table-scroll { overflow-x: auto; }
+  .accounts-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .accounts-table th, .accounts-table td { padding: 0.6rem 0.7rem; text-align: left; border-bottom: 1px solid var(--color-border, #333); white-space: nowrap; }
+  .accounts-table th { color: var(--color-text-muted, #888); font-weight: 500; }
+  .mono { font-family: var(--font-mono, monospace); }
+  .muted { color: var(--color-text-muted, #888); }
+  .badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; }
+  .role-admin { background: rgba(79,140,255,0.18); color: #4f8cff; }
+  .role-user { background: rgba(255,255,255,0.08); color: var(--color-text-muted, #888); }
+  .status-active { background: rgba(72,199,116,0.18); color: #48c774; }
+  .status-banned { background: rgba(255,107,107,0.18); color: #ff6b6b; }
+  .status-deleteRequested { background: rgba(255,165,2,0.18); color: #ffa502; }
+  .actions { display: flex; gap: 0.4rem; }
+  .mini { padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--color-border, #444); background: transparent; color: var(--color-text, #eee); cursor: pointer; font-size: 0.8rem; }
+  .mini:hover { border-color: var(--color-brand, #4f8cff); color: var(--color-brand, #4f8cff); }
+  dialog { border-radius: 12px; border: 1px solid var(--color-border, #444); background: var(--color-surface, #1e1e1e); color: var(--color-text, #eee); padding: 1.5rem; max-width: 90vw; }
+  dialog::backdrop { background: rgba(0,0,0,0.5); }
+  .reset-code { display: block; margin: 0.75rem 0; padding: 0.6rem; background: rgba(255,255,255,0.06); border-radius: 6px; font-family: var(--font-mono, monospace); font-size: 1.05rem; user-select: all; }
+  .dialog-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
+  .dialog-actions button { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--color-border, #444); background: transparent; color: var(--color-text, #eee); cursor: pointer; }
+  .dialog-actions button.primary { background: var(--color-brand, #4f8cff); color: #fff; border-color: transparent; }
+</style>
+
+<script>
+  const dialog = document.getElementById('reset-dialog') as HTMLDialogElement | null;
+  const resetUsername = document.getElementById('reset-username');
+  const resetPassword = document.getElementById('reset-password');
+  const copyBtn = document.getElementById('copy-btn');
+
+  document.querySelectorAll<HTMLTableSectionElement>('tbody').forEach(tbody => {
+    tbody.addEventListener('click', async (e) => {
+      const target = e.target as HTMLButtonElement;
+      if (target.tagName !== 'BUTTON') return;
+      const row = target.closest('tr');
+      if (!row) return;
+      const username = row.dataset.username ?? '';
+      const action = target.dataset.action;
+
+      if (action === 'reset') {
+        if (!confirm(`确定重置 ${username} 的密码？`)) return;
+        const res = await fetch('/api/admin/accounts/reset', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }),
+        });
+        const json = await res.json();
+        if (res.ok && json.ok && resetUsername && resetPassword && dialog) {
+          resetUsername.textContent = username;
+          resetPassword.textContent = json.newPassword ?? '';
+          dialog.showModal();
+        } else {
+          alert(json.reason || '重置失败。');
+        }
+      } else if (action === 'toggle-status') {
+        const current = target.dataset.status;
+        const next = current === 'banned' ? 'active' : 'banned';
+        if (!confirm(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？`)) return;
+        const res = await fetch('/api/admin/accounts/status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, status: next }),
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          const json = await res.json();
+          alert(json.reason || '操作失败。');
+        }
+      }
+    });
+  });
+
+  copyBtn?.addEventListener('click', async () => {
+    const text = resetPassword?.textContent ?? '';
+    try { await navigator.clipboard.writeText(text); copyBtn.textContent = '已复制'; } catch { /* ignore */ }
+  });
+</script>
