@@ -117,7 +117,11 @@ function applyFormToDoc(): void {
   const aiLevel = getVal(SELECTORS.aiLevel);
   if (aiLevel) {
     fm.aiUsePolicy = { ...(fm.aiUsePolicy as object | undefined ?? {}), level: aiLevel };
+  } else if (fm.aiUsePolicy && typeof fm.aiUsePolicy === 'object') {
+    delete (fm.aiUsePolicy as { level?: unknown }).level;
   }
+  // 同步回正文 textarea，避免后续正文输入 parseDoc 旧值覆盖元数据改动
+  state.editor.value = serializeDoc(state.doc);
 }
 
 /** raw YAML 编辑 → 解析回填 frontmatter + 表单（双向）。 */
@@ -127,6 +131,7 @@ function applyRawYamlToDoc(): void {
     const parsed = parseDoc(`---\n${state.rawYaml.value}\n---\n`);
     state.doc.frontmatter = parsed.frontmatter;
     fillFormFromDoc();
+    state.editor.value = serializeDoc(state.doc);
   } catch {
     /* 损坏 YAML 静默 */
   }
@@ -161,6 +166,7 @@ async function loadContent(): Promise<void> {
   if (!state) return;
   if (state.slug) {
     const res = await fetch(`/api/admin/content/${encodeURIComponent(state.slug)}`);
+    if (res.status === 401) { window.location.href = '/admin/login'; return; }
     const data = await res.json();
     if (data.error) { setStatus(`加载失败: ${data.error}`, 'error'); return; }
     state.editor.value = data.content;
@@ -249,6 +255,7 @@ function exitInlineMode(): void {
   state.root.hidden = true;
   const articleBody = document.getElementById('article-body');
   if (articleBody) (articleBody as HTMLElement).hidden = false;
+  delete document.documentElement.dataset.inlineEditing;
   document.dispatchEvent(new CustomEvent('inline-edit:exit'));
   state = null;
 }
@@ -292,6 +299,7 @@ export function enterInlineEditor(slug: string): void {
   if (!root) return;
   const articleBody = document.getElementById('article-body');
   if (articleBody) (articleBody as HTMLElement).hidden = true;
+  document.documentElement.dataset.inlineEditing = 'true';
   root.hidden = false;
   root.dataset.slug = slug;
   root.dataset.mode = 'inline';

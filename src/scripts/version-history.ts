@@ -30,6 +30,7 @@ async function loadHistory(): Promise<void> {
   list.innerHTML = '<div class="vh-loading">加载历史...</div>';
   try {
     const res = await fetch(`/api/admin/content/${encodeURIComponent(currentSlug)}/history?perPage=30`);
+    if (res.status === 401) { window.location.href = '/admin/login'; return; }
     const data = await res.json();
     if (data.error) { list.innerHTML = `<div class="vh-error">${escapeHtml(data.error)}</div>`; return; }
     const commits = data.commits as Array<{ sha: string; date: string; message: string; author: string }>;
@@ -56,6 +57,7 @@ async function showVersion(sha: string): Promise<void> {
   diffPane.innerHTML = '<div class="vh-loading">加载版本...</div>';
   try {
     const res = await fetch(`/api/admin/content/${encodeURIComponent(currentSlug)}/version?ref=${encodeURIComponent(sha)}`);
+    if (res.status === 401) { window.location.href = '/admin/login'; return; }
     const data = await res.json();
     if (data.error) { diffPane.innerHTML = `<div class="vh-error">${escapeHtml(data.error)}</div>`; return; }
     const oldBody = parseDoc(data.content as string).body;
