@@ -1,257 +1,104 @@
 ---
 import ContentFilterTabs from '@/components/content-universe/ContentFilterTabs.astro';
-import ContentUniverseCard from '@/components/content-universe/ContentUniverseCard.astro';
+import ContentStreamItem from '@/components/content-universe/ContentStreamItem.astro';
 import Base from '@/layouts/Base.astro';
 import { getPublishedContentItems } from '@/knowledge/content';
 import {
   contentSpaces,
   itemBelongsToSpace,
+  SPACE_COLOR,
   type ContentSpace,
 } from '@/knowledge/content-model';
 
 export const prerender = true;
 
-const contentItems = await getPublishedContentItems();
+const allItems = (await getPublishedContentItems())
+  .slice()
+  .sort((a, b) => b.date.getTime() - a.date.getTime());
+
 const activeSpace: ContentSpace = 'all';
 
 const counts = Object.fromEntries(
   contentSpaces.map((space) => [
     space.id,
-    contentItems.filter((item) => itemBelongsToSpace(item, space.id)).length,
-  ])
+    allItems.filter((item) => itemBelongsToSpace(item, space.id)).length,
+  ]),
 ) as Record<ContentSpace, number>;
 
-function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
+function getItemSpaces(item: (typeof allItems)[number]): ContentSpace[] {
   return contentSpaces
-    .filter((space) => itemBelongsToSpace(item, space.id))
+    .filter((space) => space.id !== 'all' && itemBelongsToSpace(item, space.id))
     .map((space) => space.id);
 }
+
+const legendSpaces = contentSpaces.filter((s) => s.id !== 'all');
 ---
 
 <Base
   title="内容宇宙 · Walker"
-  description="Walker 的内容宇宙：点子是驱动力，生活是土壤，所有公开内容在这里按空间重新组织。"
-  ogDescription="Walker 的内容宇宙：点子是驱动力，生活是土壤，所有公开内容在这里按空间重新组织。"
+  description="Walker 的内容宇宙：所有公开内容按时间倒序汇集，最新在上，持续生长。"
+  ogDescription="Walker 的内容宇宙：所有公开内容按时间倒序汇集，最新在上，持续生长。"
 >
-
-  <section class="content-universe-shell" aria-labelledby="content-universe-title" style="max-width: 1100px; margin: 0 auto; padding: 2rem 2rem 4rem;">
-    <div class="content-hero panel-glass">
-      <div class="hero-kicker">CONTENT UNIVERSE</div>
-      <h2 id="content-universe-title">点子是驱动力，生活是土壤。</h2>
-      <p>
-        这里把文章、工具、项目、点子与生活记录放回同一个系统里：点子负责推动下一步行动，生活负责提供真实的感受、材料与边界。内容不是孤立条目，而是一张持续生长的个人前进地图。
-      </p>
-      <div class="hero-stats" aria-label="内容宇宙概览">
-        <span><strong>{counts.all}</strong> 条公开内容</span>
-        <span><strong>{counts.ideas}</strong> 个点子火花</span>
-        <span><strong>{counts.life}</strong> 条生活现场</span>
-      </div>
-    </div>
+  <section class="stream-shell">
+    <header class="stream-hero">
+      <p class="stream-kicker">内容宇宙</p>
+      <h1 class="stream-tagline">点子是<em>驱动力</em>，生活是<em>土壤</em>。</h1>
+      <p class="stream-count">持续更新 · <strong>{counts.all}</strong> 篇</p>
+    </header>
 
     <ContentFilterTabs activeSpace={activeSpace} counts={counts} />
 
-    <div class="content-toolbar">
-      <p class="active-space-note" data-active-space-note aria-live="polite">
-        当前显示：全部内容。
-      </p>
-      <div class="view-toggle" role="group" aria-label="视图切换">
-        <button type="button" class="view-btn is-active" data-view-btn="grid" aria-pressed="true">网格</button>
-        <button type="button" class="view-btn" data-view-btn="list" aria-pressed="false">列表</button>
-      </div>
-    </div>
+    <p class="active-space-note" data-active-space-note aria-live="polite">
+      当前显示：全部内容。
+    </p>
 
-    <div class="content-grid" data-view="grid" aria-label="内容列表">
-      {contentItems.map((item) => (
-        <ContentUniverseCard item={item} spaces={getItemSpaces(item)} />
+    <div class="stream-list" aria-label="内容流">
+      {allItems.map((item) => (
+        <ContentStreamItem item={item} spaces={getItemSpaces(item)} />
       ))}
     </div>
 
-    <div class="empty-state panel-glass" data-empty-state hidden>
-      <p class="empty-title">这个内容空间暂时还没有公开内容。</p>
-      <p class="empty-copy">等下一条记录长出来，它会出现在这里。</p>
+    <div class="empty-state" data-empty-state hidden>
+      <p>这个内容空间暂时还没有公开内容。</p>
     </div>
+
+    <footer class="stream-legend" aria-label="空间配色图例">
+      {legendSpaces.map((s) => (
+        <span class="legend-item">
+          <i class="legend-dot" style={`background:${SPACE_COLOR[s.id as keyof typeof SPACE_COLOR]}`}></i>
+          {s.label}
+        </span>
+      ))}
+    </footer>
   </section>
 </Base>
 
 <style>
-  .content-universe-shell {
-    display: grid;
-    gap: 1.5rem;
-  }
+  .stream-shell { max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
 
-  .content-hero {
-    position: relative;
-    overflow: hidden;
-    padding: clamp(1.35rem, 3vw, 2.2rem);
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    border-radius: 1.75rem;
-    background:
-      radial-gradient(circle at 12% 18%, rgba(var(--color-brand-rgb, 196, 112, 74), 0.18), transparent 32%),
-      radial-gradient(circle at 86% 8%, rgba(var(--color-accent-rgb, 91, 141, 115), 0.12), transparent 30%),
-      rgba(var(--color-surface-rgb, 255, 255, 255), 0.58);
-  }
+  .stream-hero { margin-bottom: 1.5rem; }
+  .stream-kicker { margin: 0; color: var(--color-muted, #a8a29e); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; }
+  .stream-tagline { margin: 0.6rem 0 0; font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.4; color: var(--color-heading, #2a2522); font-weight: 600; }
+  .stream-tagline em { font-style: normal; color: var(--color-brand, #c4704a); }
+  .stream-count { margin: 0.7rem 0 0; font-size: 0.78rem; color: var(--color-muted, #a8a29e); }
+  .stream-count strong { color: var(--color-text-muted, #78716c); font-weight: 700; }
 
-  .content-hero::after {
-    content: '';
-    position: absolute;
-    right: -4rem;
-    bottom: -5rem;
-    width: 15rem;
-    height: 15rem;
-    border-radius: 999px;
-    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.1);
-    filter: blur(2px);
-    pointer-events: none;
-  }
+  .active-space-note { margin: 0.5rem 0 1rem; color: var(--color-muted, #a8a29e); font-size: 0.78rem; }
 
-  .hero-kicker {
-    position: relative;
-    z-index: 1;
-    color: var(--color-brand, #c4704a);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-  }
+  .stream-list { margin-top: 0.5rem; }
 
-  .content-hero h2 {
-    position: relative;
-    z-index: 1;
-    max-width: 13em;
-    margin: 0.7rem 0 0;
-    color: var(--color-heading, var(--color-text, #3f3027));
-    font-family: var(--font-heading, inherit);
-    font-size: clamp(1.7rem, 4vw, 3rem);
-    font-weight: 850;
-    line-height: 1.08;
-    letter-spacing: -0.04em;
-  }
+  .empty-state { padding: 3rem 1rem; text-align: center; color: var(--color-muted, #a8a29e); font-size: 0.9rem; }
 
-  .content-hero p {
-    position: relative;
-    z-index: 1;
-    max-width: 48rem;
-    margin: 1rem 0 0;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.66));
-    font-size: 0.98rem;
-    line-height: 1.9;
-  }
+  .stream-legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid rgba(0,0,0,0.06); }
+  .legend-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--color-muted, #a8a29e); }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 
-  .hero-stats {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin-top: 1.35rem;
-  }
-
-  .hero-stats span {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.35rem;
-    padding: 0.5rem 0.7rem;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.1);
-    border-radius: 999px;
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.55);
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.62));
-    font-size: 0.78rem;
-    font-weight: 700;
-  }
-
-  .hero-stats strong {
-    color: var(--color-brand, #c4704a);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.9rem;
-  }
-
-  .content-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .active-space-note {
-    margin: 0;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.6));
-    font-size: 0.85rem;
-    font-weight: 650;
-  }
-
-  .view-toggle {
-    display: inline-flex;
-    gap: 0.25rem;
-    padding: 0.2rem;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    border-radius: 999px;
-    background: rgba(var(--color-surface-rgb, 255, 255, 255), 0.55);
-  }
-
-  .view-btn {
-    padding: 0.35rem 0.85rem;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.6));
-    font-size: 0.78rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.12s ease;
-  }
-
-  .view-btn.is-active {
-    background: rgba(var(--color-brand-rgb, 196, 112, 74), 0.12);
-    color: var(--color-brand, #c4704a);
-  }
-
-  .content-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  @media (min-width: 768px) {
-    .content-grid[data-view="grid"] {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .empty-state {
-    padding: 3rem 1.5rem;
-    border: 1px solid rgba(var(--color-border-rgb, 121, 85, 72), 0.12);
-    border-radius: 1.5rem;
-    text-align: center;
-  }
-
-  .empty-title {
-    margin: 0;
-    color: var(--color-heading, var(--color-text, #3f3027));
-    font-family: var(--font-heading, inherit);
-    font-size: 1.1rem;
-    font-weight: 800;
-  }
-
-  .empty-copy {
-    margin: 0.45rem 0 0;
-    color: var(--color-text-muted, rgba(63, 48, 39, 0.58));
-    font-size: 0.9rem;
-  }
+  body.theme-aurora .stream-tagline,
+  body.theme-sunset .stream-tagline,
+  body.theme-mint .stream-tagline { color: var(--color-heading, #f5f5f4); }
 
   @media (max-width: 640px) {
-    .content-universe-shell {
-      gap: 1rem;
-    }
-
-    .hero-stats {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .hero-stats span {
-      justify-content: space-between;
-    }
+    .stream-shell { padding: 2rem 1.25rem 3rem; }
   }
 </style>
 
@@ -283,7 +130,7 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
 
     for (const card of cards) {
       const spaces = new Set((card.getAttribute('data-spaces') ?? '').split(' ').filter(Boolean));
-      const isVisible = spaces.has(activeSpace);
+      const isVisible = activeSpace === 'all' || spaces.has(activeSpace);
       card.toggleAttribute('hidden', !isVisible);
       if (isVisible) visibleCount += 1;
     }
@@ -291,42 +138,15 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
     for (const tab of tabs) {
       const isActive = tab.getAttribute('data-space') === activeSpace;
       tab.classList.toggle('is-active', isActive);
-      if (isActive) {
-        tab.setAttribute('aria-current', 'page');
-      } else {
-        tab.removeAttribute('aria-current');
-      }
+      if (isActive) tab.setAttribute('aria-current', 'page');
+      else tab.removeAttribute('aria-current');
     }
 
     const note = document.querySelector('[data-active-space-note]');
-    if (note) {
-      note.textContent = `当前显示：${activeLabel}，共 ${visibleCount} 条。`;
-    }
-
-    const count = document.querySelector('#log-count');
-    if (count) {
-      count.textContent = `${visibleCount} 条`;
-    }
+    if (note) note.textContent = `当前显示：${activeLabel}，共 ${visibleCount} 条。`;
 
     const emptyState = document.querySelector('[data-empty-state]');
-    if (emptyState) {
-      emptyState.toggleAttribute('hidden', visibleCount > 0);
-    }
-  }
-
-  function getRequestedView() {
-    return new URLSearchParams(location.search).get('view') === 'list' ? 'list' : 'grid';
-  }
-
-  function applyContentView() {
-    const view = getRequestedView();
-    const grid = document.querySelector('.content-grid');
-    if (grid) grid.setAttribute('data-view', view);
-    document.querySelectorAll('[data-view-btn]').forEach((btn) => {
-      const isActive = btn.getAttribute('data-view-btn') === view;
-      btn.classList.toggle('is-active', isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
-    });
+    if (emptyState) emptyState.toggleAttribute('hidden', visibleCount > 0);
   }
 
   function initContentFilter() {
@@ -335,18 +155,7 @@ function getItemSpaces(item: (typeof contentItems)[number]): ContentSpace[] {
     const { signal } = contentAbort;
 
     updateContentFilter();
-    applyContentView();
-    window.addEventListener('popstate', () => { updateContentFilter(); applyContentView(); }, { signal });
-
-    document.querySelectorAll('[data-view-btn]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const view = btn.getAttribute('data-view-btn') ?? 'grid';
-        const url = new URL(location.href);
-        url.searchParams.set('view', view);
-        history.pushState({}, '', url);
-        applyContentView();
-      }, { signal });
-    });
+    window.addEventListener('popstate', () => { updateContentFilter(); }, { signal });
   }
 
   initContentFilter();
