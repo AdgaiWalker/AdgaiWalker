@@ -1,76 +1,80 @@
 ---
-import { SPACE_COLOR, getMainSpace, formLabels, type ContentItem, type ContentSpace } from '@/knowledge/content-model';
+import { SPACE_COLOR, formLabels, type ContentItem, type ContentSpace } from '@/knowledge/content-model';
+import { MS_PER_DAY } from '@/shared/constants';
 
 interface Props {
   item: ContentItem;
-  spaces: ContentSpace[];
+  spaces: Exclude<ContentSpace, 'all'>[];
 }
 const { item, spaces } = Astro.props;
 
 const FRESH_DAYS = 7;
-const mainSpace = getMainSpace(item);
+const mainSpace = spaces[0] ?? null;
 const dotColor = mainSpace ? SPACE_COLOR[mainSpace] : '#a8a29e';
-const isFresh = (Date.now() - item.date.getTime()) < FRESH_DAYS * 86_400_000;
-const mm = String(item.date.getMonth() + 1).padStart(2, '0');
-const dd = String(item.date.getDate()).padStart(2, '0');
-const dateLabel = `${mm}.${dd}`;
+const isFresh = (Date.now() - item.date.getTime()) < FRESH_DAYS * MS_PER_DAY;
+const month = String(item.date.getMonth() + 1).padStart(2, '0');
+const day = String(item.date.getDate()).padStart(2, '0');
+const dateLabel = `${month}.${day}`;
 const summary = item.summary ?? '';
 ---
 
-<article class:list={["stream-item", { fresh: isFresh }]} data-spaces={spaces.join(' ')}>
+<article class="stream-item" data-spaces={spaces.join(' ')}>
   <a class="stream-link" href={item.href} target={item.isExternal ? '_blank' : undefined} rel={item.isExternal ? 'noopener noreferrer' : undefined}>
     <span class="stream-dot" style={`background:${dotColor}`} aria-hidden="true"></span>
     <div class="stream-body">
-      <div class="stream-row">
-        <h2 class="stream-title">{item.title}</h2>
-        <span class:list={["stream-date", { fresh: isFresh }]}>{dateLabel}{isFresh && <span class="fresh-tag">新</span>}</span>
+      <h2 class="stream-title">{item.title}</h2>
+      <div class:list={["stream-meta", { fresh: isFresh }]}>
+        <span class="stream-date">{dateLabel}{isFresh && <span class="fresh-tag">新</span>}</span>
+        <span class="stream-form">{formLabels[item.form]}</span>
       </div>
       {summary && <p class="stream-blurb">{summary}</p>}
-      <span class="stream-form">{formLabels[item.form]}</span>
     </div>
   </a>
 </article>
 
 <style>
   .stream-item { border-bottom: 1px solid rgba(0,0,0,0.06); }
-  .stream-link { display: flex; gap: 0.9rem; padding: 1.05rem 0; color: inherit; text-decoration: none; }
-  .stream-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 0.7rem; }
+  .stream-link { display: flex; gap: 0.65rem; padding: 0.95rem 0; color: inherit; text-decoration: none; }
+  .stream-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 0.55rem; }
   .stream-body { flex: 1; min-width: 0; }
-  .stream-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.9rem; }
+
   .stream-title {
     margin: 0;
-    font-family: var(--font-heading, Georgia, serif);
-    font-size: 1.3rem;
-    line-height: 1.3;
+    font-family: var(--font-cjk, 'Noto Sans SC'), -apple-system, 'PingFang SC', sans-serif;
+    font-size: 1.08rem;
+    line-height: 1.4;
     color: var(--color-heading, #2a2522);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: 0.005em;
     transition: color 0.15s;
   }
   .stream-link:hover .stream-title { color: var(--color-brand, #c4704a); }
+
+  .stream-meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
   .stream-date {
     font-family: var(--font-mono, monospace);
-    font-size: 0.82rem;
-    color: rgba(120,113,108,0.7);
-    white-space: nowrap;
-    flex-shrink: 0;
+    font-size: 0.74rem;
+    color: rgba(120,113,108,0.65);
+    letter-spacing: 0.02em;
   }
-  .stream-date.fresh { color: var(--color-brand, #c4704a); font-weight: 700; }
+  .stream-meta.fresh .stream-date { color: var(--color-brand, #c4704a); font-weight: 700; }
   .fresh-tag {
-    display: inline-block; margin-left: 0.4rem;
-    font-family: var(--font-body, sans-serif);
-    font-size: 0.62rem; font-weight: 800; color: #fff;
+    display: inline-block; margin-left: 0.35rem;
+    font-family: var(--font-cjk, 'Noto Sans SC'), sans-serif;
+    font-size: 0.6rem; font-weight: 800; color: #fff;
     background: var(--color-brand, #c4704a);
-    padding: 0.06rem 0.32rem; border-radius: 3px;
+    padding: 0.05rem 0.3rem; border-radius: 3px;
     vertical-align: middle;
   }
-  .stream-blurb { margin: 0.35rem 0 0; font-size: 0.86rem; line-height: 1.55; color: rgba(120,113,108,0.85); }
-  .stream-form { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: rgba(168,162,158,0.9); }
+  .stream-form { font-size: 0.74rem; color: rgba(168,162,158,0.95); }
+  .stream-form::before { content: '·'; margin-right: 0.5rem; color: rgba(168,162,158,0.6); }
+
+  .stream-blurb { margin: 0.4rem 0 0; font-size: 0.85rem; line-height: 1.6; color: rgba(120,113,108,0.8); }
 
   body.theme-aurora .stream-title,
   body.theme-sunset .stream-title,
   body.theme-mint .stream-title { color: var(--color-heading, #f5f5f4); }
   body.theme-aurora .stream-blurb,
   body.theme-sunset .stream-blurb,
-  body.theme-mint .stream-blurb { color: rgba(231,229,228,0.7); }
+  body.theme-mint .stream-blurb { color: rgba(231,229,228,0.72); }
 </style>

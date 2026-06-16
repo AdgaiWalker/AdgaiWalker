@@ -5,11 +5,9 @@ import { buildContentSpacePath, CONTENT } from '@/shared/routes';
 interface Props {
   activeSpace: ContentSpace;
   counts: Record<ContentSpace, number>;
-  /** 筛选显示的 space ID 列表，默认显示全部 */
-  allowedSpaces?: ContentSpace[];
 }
 
-const { activeSpace, counts, allowedSpaces = contentSpaces.map((space) => space.id) } = Astro.props;
+const { activeSpace, counts } = Astro.props;
 
 function getSpaceHref(space: ContentSpace) {
   return space === 'all' ? CONTENT : buildContentSpacePath(space);
@@ -17,7 +15,7 @@ function getSpaceHref(space: ContentSpace) {
 ---
 
 <nav class="content-filter-tabs" aria-label="内容宇宙筛选">
-  {contentSpaces.filter(s => allowedSpaces.includes(s.id)).map((space) => {
+  {contentSpaces.map((space) => {
     const isActive = space.id === activeSpace;
     const count = counts[space.id] ?? 0;
 

@@ -8,30 +8,33 @@ import {
   itemBelongsToSpace,
   SPACE_COLOR,
   type ContentSpace,
+  type ContentSpaceMeta,
 } from '@/knowledge/content-model';
 
 export const prerender = true;
 
-const allItems = (await getPublishedContentItems())
-  .slice()
-  .sort((a, b) => b.date.getTime() - a.date.getTime());
+const allItems = await getPublishedContentItems();
 
 const activeSpace: ContentSpace = 'all';
 
-const counts = Object.fromEntries(
-  contentSpaces.map((space) => [
-    space.id,
-    allItems.filter((item) => itemBelongsToSpace(item, space.id)).length,
+/** 排除 'all' 的具体空间（图例 + 归属计算共用） */
+const concreteSpaces = contentSpaces.filter(
+  (s): s is ContentSpaceMeta & { id: Exclude<ContentSpace, 'all'> } => s.id !== 'all',
+);
+
+/** 每项内容所属的具体空间（按 contentSpaces 顺序）——一次遍历算出，供筛选 data-spaces + 色点共用 */
+const itemSpaces = new Map<string, Exclude<ContentSpace, 'all'>[]>(
+  allItems.map((item) => [
+    item.id,
+    concreteSpaces.filter((s) => itemBelongsToSpace(item, s.id)).map((s) => s.id),
   ]),
-) as Record<ContentSpace, number>;
+);
 
-function getItemSpaces(item: (typeof allItems)[number]): ContentSpace[] {
-  return contentSpaces
-    .filter((space) => space.id !== 'all' && itemBelongsToSpace(item, space.id))
-    .map((space) => space.id);
+const counts = Object.fromEntries(contentSpaces.map((s) => [s.id, 0])) as Record<ContentSpace, number>;
+counts.all = allItems.length;
+for (const spaces of itemSpaces.values()) {
+  for (const s of spaces) counts[s] += 1;
 }
-
-const legendSpaces = contentSpaces.filter((s) => s.id !== 'all');
 ---
 
 <Base
@@ -54,7 +57,7 @@ const legendSpaces = contentSpaces.filter((s) => s.id !== 'all');
 
     <div class="stream-list" aria-label="内容流">
       {allItems.map((item) => (
-        <ContentStreamItem item={item} spaces={getItemSpaces(item)} />
+        <ContentStreamItem item={item} spaces={itemSpaces.get(item.id) ?? []} />
       ))}
     </div>
 
@@ -63,9 +66,9 @@ const legendSpaces = contentSpaces.filter((s) => s.id !== 'all');
     </div>
 
     <footer class="stream-legend" aria-label="空间配色图例">
-      {legendSpaces.map((s) => (
+      {concreteSpaces.map((s) => (
         <span class="legend-item">
-          <i class="legend-dot" style={`background:${SPACE_COLOR[s.id as keyof typeof SPACE_COLOR]}`}></i>
+          <i class="legend-dot" style={`background:${SPACE_COLOR[s.id]}`}></i>
           {s.label}
         </span>
       ))}
@@ -103,18 +106,12 @@ const legendSpaces = contentSpaces.filter((s) => s.id !== 'all');
 </style>
 
 <script>
+  import { contentSpaces } from '@/knowledge/content-model';
+
   let contentAbort: AbortController | null = null;
 
-  const validSpaces = new Set(['all', 'progress', 'life', 'learning', 'tools', 'works', 'ideas']);
-  const spaceLabels = new Map([
-    ['all', '全部内容'],
-    ['progress', '前进系统'],
-    ['life', '生活现场'],
-    ['learning', '学习笔记'],
-    ['tools', '工具资源'],
-    ['works', '作品项目'],
-    ['ideas', '点子火花'],
-  ]);
+  const validSpaces = new Set<string>(contentSpaces.map((space) => space.id));
+  const spaceLabels = new Map<string, string>(contentSpaces.map((space) => [space.id, space.label]));
 
   function getRequestedSpace() {
     const requestedSpace = new URLSearchParams(location.search).get('space');
