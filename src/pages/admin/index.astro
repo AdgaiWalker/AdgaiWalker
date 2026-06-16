@@ -296,9 +296,13 @@ const recentContent = allContent
     <div class="admin-bar-right">
       <a href="/admin" class="admin-bar-link active">仪表盘</a>
       <a href="/admin/insights" class="admin-bar-link">洞察</a>
-      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
+      <a href="/admin/hit-rate" class="admin-bar-link">命中率</a>
       <a href="/admin/topics" class="admin-bar-link">选题库</a>
       <a href="/admin/review" class="admin-bar-link">需求复盘</a>
+      <a href="/admin/rules" class="admin-bar-link">规则池</a>
+      <a href="/admin/experiences" class="admin-bar-link">经验</a>
+      <a href="/admin/skills" class="admin-bar-link">Skill</a>
+      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
       <a href="/" class="admin-bar-link">查看站点</a>
       <button class="logout-btn" id="logout-btn">登出</button>
     </div>
@@ -358,6 +362,33 @@ const recentContent = allContent
           <div>
             <div class="quick-action-text">学习轨道</div>
             <div class="quick-action-desc">管理学习进度</div>
+          </div>
+        </a>
+        <a href="/admin/rules" class="quick-action">
+          <div class="quick-action-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-2 2-4 2-6 0"/><path d="m2 16 3-8 3 8c-2 2-4 2-6 0"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">规则池</div>
+            <div class="quick-action-desc">匹配规则候选与评测</div>
+          </div>
+        </a>
+        <a href="/admin/experiences" class="quick-action">
+          <div class="quick-action-icon" style="background:rgba(124,58,237,0.1);color:#7c3aed;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">经验验证</div>
+            <div class="quick-action-desc">事件复盘与模式识别</div>
+          </div>
+        </a>
+        <a href="/admin/skills" class="quick-action">
+          <div class="quick-action-icon" style="background:rgba(20,184,166,0.1);color:#14b8a6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">Skill 候选</div>
+            <div class="quick-action-desc">准入判断与方法卡</div>
           </div>
         </a>
       </div>

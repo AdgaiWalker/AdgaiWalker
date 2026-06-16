@@ -29,8 +29,8 @@ retro.md     — 复盘（做成了什么 / 偏差 / 下次要改的规则）
 
 ## 验收（U17 §22.5）
 
-- [ ] 一条真实需求能完整走完 prd → architecture → plan → todo → implement → log
-- [ ] 每个阶段都有输出物
-- [ ] 每次实现能回到对应 prd / plan / todo
-- [ ] 每轮结束能更新 execution log 和 cycle ledger
-- [ ] 可重复经验能进入 skill 候选，而非无限留在临时文档
+- [x] 一条真实需求能完整走完 prd → architecture → plan → todo → implement → log（2026-06-16 admin 工作台补全 cycle，见 `implement.md` / `retro.md`）
+- [x] 每个阶段都有输出物（prd / plan / todo 在 skill `working/`，implement.md / retro.md 在本目录）
+- [x] 每次实现能回到对应 prd / plan / todo（implement.md 每项标注上游 U 编号）
+- [ ] 每轮结束能更新 execution log 和 cycle ledger（execution log 在 skill `references/`，待同步）
+- [x] 可重复经验能进入 skill 候选（retro.md 已标注 admin SSR / Redis store 模板为 skill 候选）

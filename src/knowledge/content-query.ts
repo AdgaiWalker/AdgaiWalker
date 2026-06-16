@@ -125,6 +125,14 @@ export function isPublicParsedContent(item: ParsedContent): boolean {
   return isPublicVisibility(item.frontmatter);
 }
 
+/** AI 可读判断：AI 使用级别非 AI-0（AI-0 = 明确不希望被 AI 读取）。
+ *  visibility（draft/private）已由 isPublicParsedContent 过滤，这里补 AI-0 边界。
+ *  MCP / index.json / graph.json 共用同一套 AI 可读边界。 */
+export function isAiReadableParsed(item: ParsedContent): boolean {
+  const policy = item.frontmatter.aiUsePolicy as { level?: string } | undefined;
+  return policy?.level !== 'AI-0';
+}
+
 /** 按 frontmatter.date 降序排列 */
 function sortByDate(items: ParsedContent[]): ParsedContent[] {
   return items.sort((a, b) => {

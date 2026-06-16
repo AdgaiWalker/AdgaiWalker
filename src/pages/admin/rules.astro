@@ -1,0 +1,269 @@
+---
+// /admin/rules — 规则候选池（U9）：observed → candidate → validated → stable → retired
+// 服务端渲染，需认证。规则由 NeedCase / Experience 复盘沉淀，回放评测后推进状态。
+import { isAdmin } from '@/lib/admin-auth';
+import { findRecentRuleCandidates } from '@/conversation/store';
+import type { RuleStatus } from '@/stores/ports';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const rules = await findRecentRuleCandidates(500);
+
+const STATUS_FLOW: RuleStatus[] = ['observed', 'candidate', 'validated', 'stable', 'retired'];
+const NEXT_STATUS: Partial<Record<RuleStatus, RuleStatus>> = {
+  observed: 'candidate',
+  candidate: 'validated',
+  validated: 'stable',
+  stable: 'retired',
+};
+const STATUS_LABEL: Record<RuleStatus, string> = {
+  observed: '观察中',
+  candidate: '候选',
+  validated: '已验证',
+  stable: '稳定',
+  retired: '已退役',
+};
+const STATUS_COLOR: Record<RuleStatus, { color: string; bg: string }> = {
+  observed: { color: '#78716c', bg: 'rgba(120,113,108,0.1)' },
+  candidate: { color: '#1d4ed8', bg: 'rgba(29,78,216,0.1)' },
+  validated: { color: '#047857', bg: 'rgba(4,120,87,0.1)' },
+  stable: { color: '#065f46', bg: 'rgba(6,95,70,0.16)' },
+  retired: { color: '#a8a29e', bg: 'rgba(168,162,158,0.12)' },
+};
+
+const byStatus = (s: RuleStatus) => rules.filter(r => r.status === s);
+const counts = STATUS_FLOW.map(s => ({ status: s, count: byStatus(s).length }));
+
+const viewParam = Astro.url.searchParams.get('view');
+const view: RuleStatus | 'all' = viewParam && STATUS_FLOW.includes(viewParam as RuleStatus) ? (viewParam as RuleStatus) : 'all';
+const visibleRules = view === 'all' ? rules : byStatus(view);
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
+
+const NAV = [
+  { href: '/admin', label: '仪表盘' },
+  { href: '/admin/insights', label: '洞察' },
+  { href: '/admin/hit-rate', label: '命中率' },
+  { href: '/admin/topics', label: '选题池' },
+  { href: '/admin/review', label: '需求复盘' },
+  { href: '/admin/rules', label: '规则池' },
+  { href: '/admin/experiences', label: '经验复盘' },
+  { href: '/admin/skills', label: 'Skill' },
+  { href: '/', label: '站点' },
+];
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>规则候选池 — Walker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
+    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
+    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
+    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
+    .admin-bar-right { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+    .admin-bar-link { color: #78716c; text-decoration: none; font-size: 0.82rem; font-weight: 650; }
+    .admin-bar-link:hover, .admin-bar-link.active { color: #1c1917; }
+    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 650; cursor: pointer; }
+    .admin-main { max-width: 62rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .admin-welcome { margin-bottom: 1.25rem; }
+    .admin-welcome h1 { font-size: 1.5rem; font-weight: 850; margin-bottom: 0.35rem; }
+    .admin-welcome p { color: #78716c; font-size: 0.88rem; line-height: 1.6; }
+
+    .stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .stat-chip { padding: 0.55rem 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; min-width: 5.5rem; }
+    .stat-chip-label { font-size: 0.7rem; color: #78716c; font-weight: 700; margin-bottom: 0.15rem; }
+    .stat-chip-value { font-size: 1.25rem; font-weight: 850; }
+
+    .panel { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+    .panel h2 { font-size: 0.92rem; font-weight: 850; margin-bottom: 0.75rem; color: #44403c; }
+    .form-row { display: grid; gap: 0.5rem; }
+    textarea, input[type=text], input[type=number] { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.85rem; font-family: inherit; background: #fff; color: #1c1917; resize: vertical; }
+    textarea:focus, input:focus { outline: 2px solid rgba(196,112,74,0.25); border-color: rgba(196,112,74,0.4); }
+    .form-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.4rem 0.8rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; color: #57534e; text-decoration: none; font-size: 0.78rem; font-weight: 750; cursor: pointer; }
+    .btn:hover { background: #fafaf9; }
+    .btn-primary { background: rgba(196,112,74,0.1); border-color: rgba(196,112,74,0.22); color: #c4704a; }
+    .btn-primary:hover { background: rgba(196,112,74,0.16); }
+    .btn-danger { color: #b91c1c; border-color: rgba(185,28,28,0.18); }
+
+    .view-switch { display: inline-flex; gap: 0.3rem; padding: 0.25rem; margin-bottom: 1.25rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #fff; flex-wrap: wrap; }
+    .view-switch a { padding: 0.4rem 0.7rem; border-radius: 8px; color: #78716c; text-decoration: none; font-size: 0.78rem; font-weight: 750; }
+    .view-switch a.active { background: rgba(196,112,74,0.1); color: #c4704a; }
+
+    .rule-list { display: grid; gap: 0.8rem; }
+    .rule-card { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem 1.1rem; }
+    .rule-head { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
+    .rule-desc { color: #1c1917; font-size: 0.95rem; font-weight: 800; line-height: 1.5; margin-bottom: 0.6rem; }
+    .rule-meta { display: grid; gap: 0.35rem; color: #57534e; font-size: 0.78rem; line-height: 1.55; }
+    .meta-label { color: #a8a29e; font-weight: 800; }
+    .rule-time { margin-left: auto; color: #a8a29e; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+    .rule-foot { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; margin-top: 0.85rem; }
+    .accuracy-edit { display: none; align-items: center; gap: 0.4rem; }
+    .accuracy-edit.visible { display: inline-flex; }
+    .accuracy-edit input { width: 5rem; padding: 0.3rem 0.5rem; }
+    .empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
+    @media (max-width: 760px) {
+      .admin-bar { flex-direction: column; align-items: flex-start; }
+      .admin-main { padding: 1.25rem 1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-bar">
+    <div class="admin-bar-left">
+      <span class="admin-bar-logo">Walker</span>
+      <span class="admin-bar-badge">Admin</span>
+    </div>
+    <div class="admin-bar-right">
+      {NAV.map(item => (
+        <a href={item.href} class={`admin-bar-link ${item.href === '/admin/rules' ? 'active' : ''}`}>{item.label}</a>
+      ))}
+      <button class="logout-btn" id="logout-btn">登出</button>
+    </div>
+  </div>
+
+  <main class="admin-main">
+    <section class="admin-welcome">
+      <h1>规则候选池</h1>
+      <p>从 NeedCase / 经验复盘沉淀出的匹配规则。回放评测后推进状态：观察 → 候选 → 验证 → 稳定，不再适用则退役。</p>
+    </section>
+
+    <div class="stat-row">
+      <div class="stat-chip"><div class="stat-chip-label">总数</div><div class="stat-chip-value">{rules.length}</div></div>
+      {counts.map(c => (
+        <div class="stat-chip">
+          <div class="stat-chip-label">{STATUS_LABEL[c.status]}</div>
+          <div class="stat-chip-value">{c.count}</div>
+        </div>
+      ))}
+    </div>
+
+    <div class="panel">
+      <h2>新建规则</h2>
+      <form id="new-rule-form" class="form-row">
+        <textarea name="description" rows="2" placeholder='规则描述，如"提到 PPT 且无受众信号 → diagnosis（诊断而非直接生成）"' required></textarea>
+        <input type="text" name="note" placeholder="可选：来源 / 判断依据" />
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">加入规则池</button>
+        </div>
+      </form>
+    </div>
+
+    <nav class="view-switch" aria-label="状态筛选">
+      <a href="/admin/rules?view=all" class={view === 'all' ? 'active' : ''}>全部（{rules.length}）</a>
+      {STATUS_FLOW.map(s => (
+        <a href={`/admin/rules?view=${s}`} class={view === s ? 'active' : ''}>{STATUS_LABEL[s]}（{byStatus(s).length}）</a>
+      ))}
+    </nav>
+
+    {visibleRules.length === 0 ? (
+      <div class="empty">还没有规则。从需求复盘或经验复盘里发现可复用的判断，沉淀到这里。</div>
+    ) : (
+      <section class="rule-list">
+        {visibleRules.map(rule => {
+          const cfg = STATUS_COLOR[rule.status];
+          const next = NEXT_STATUS[rule.status];
+          return (
+            <article class="rule-card" data-rule-id={rule.ruleId} data-status={rule.status}>
+              <div class="rule-head">
+                <span class="badge" style={`background:${cfg.bg};color:${cfg.color}`}>{STATUS_LABEL[rule.status]}</span>
+                {typeof rule.accuracy === 'number' && <span class="badge" style="background:rgba(4,120,87,0.1);color:#047857">准确率 {Math.round(rule.accuracy * 100)}%</span>}
+                <span class="rule-time">{formatTime(rule.updatedAt)}</span>
+              </div>
+              <div class="rule-desc">{rule.description}</div>
+              <div class="rule-meta">
+                <div><span class="meta-label">正例：</span>{rule.positiveExamples.length > 0 ? rule.positiveExamples.join('、') : '—'}</div>
+                <div><span class="meta-label">反例：</span>{rule.negativeExamples.length > 0 ? rule.negativeExamples.join('、') : '—'}</div>
+                <div><span class="meta-label">来源：</span>{rule.sourceIds.length > 0 ? rule.sourceIds.join('、') : '手动新建'}</div>
+                {rule.note && <div><span class="meta-label">备注：</span>{rule.note}</div>}
+              </div>
+              <div class="rule-foot">
+                {next && rule.status !== 'retired' && (
+                  <button class="btn btn-primary" data-action="advance" data-next={next}>推进为「{STATUS_LABEL[next]}」</button>
+                )}
+                {rule.status !== 'retired' && (
+                  <button class="btn btn-danger" data-action="retire">退役</button>
+                )}
+                <button class="btn" data-toggle="accuracy">回填准确率</button>
+                <span class="accuracy-edit" data-accuracy-edit={rule.ruleId}>
+                  <input type="number" min="0" max="100" step="1" placeholder="%" data-accuracy-input={rule.ruleId} />
+                  <button class="btn btn-primary" data-action="accuracy" data-id={rule.ruleId}>保存</button>
+                </span>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+    )}
+  </main>
+
+  <script is:inline>
+    const post = (url, body) => fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
+
+    document.getElementById('new-rule-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const description = (fd.get('description') || '').toString().trim();
+      if (!description) return;
+      const { ok, data } = await post('/api/admin/rules', { description, note: (fd.get('note') || '').toString().trim() || undefined });
+      if (ok && data.ok) { window.location.reload(); } else { alert(data.error || '保存失败'); }
+    });
+
+    document.querySelectorAll('[data-toggle="accuracy"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.rule-card');
+        card?.querySelector('.accuracy-edit')?.classList.toggle('visible');
+      });
+    });
+
+    document.querySelectorAll('.btn[data-action]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.rule-card');
+        const ruleId = card?.dataset.ruleId;
+        const action = btn.dataset.action;
+        if (!ruleId || !action) return;
+        if (action === 'advance') {
+          const next = btn.dataset.next;
+          const { ok, data } = await post('/api/admin/rules?action=status', { ruleId, status: next });
+          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+        } else if (action === 'retire') {
+          const { ok, data } = await post('/api/admin/rules?action=status', { ruleId, status: 'retired' });
+          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+        } else if (action === 'accuracy') {
+          const input = document.querySelector(`[data-accuracy-input="${ruleId}"]`);
+          const pct = Number(input?.value);
+          if (Number.isNaN(pct) || pct < 0 || pct > 100) { alert('请输入 0-100 的百分比'); return; }
+          const { ok, data } = await post('/api/admin/rules', { ruleId, accuracy: pct / 100 });
+          if (ok && data.ok) window.location.reload(); else alert(data.error || '保存失败');
+        }
+      });
+    });
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      window.location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>
