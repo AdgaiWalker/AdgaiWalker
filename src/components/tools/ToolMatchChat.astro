@@ -1157,20 +1157,20 @@
     isPublic = false;
 
     // 身份应用：更新 isPublic / currentAnchor / signal-note 徽章 / 记忆条
-    function applyIdentity(state: 'public' | 'invited' | 'admin', anchor?: string) {
+    function applyIdentity(state: 'public' | 'user' | 'admin', anchor?: string) {
       isPublic = state === 'public';
-      currentAnchor = state === 'invited' ? (anchor ?? null) : null;
+      currentAnchor = state === 'user' ? (anchor ?? null) : null;
       const signalNote = document.querySelector('.signal-note');
       const roleLabel = document.getElementById('memory-role-label');
       if (state === 'public') {
-        if (signalNote) signalNote.textContent = '受邀可解锁';
-        if (roleLabel) roleLabel.textContent = '未受邀';
+        if (signalNote) signalNote.textContent = '登录可解锁';
+        if (roleLabel) roleLabel.textContent = '未登录';
       } else if (state === 'admin') {
         if (signalNote) signalNote.textContent = '管理员';
         if (roleLabel) roleLabel.textContent = '管理员';
-      } else if (state === 'invited' && !anchor) {
-        if (signalNote) signalNote.textContent = '已解锁';
-        if (roleLabel) roleLabel.textContent = '已受邀';
+      } else if (state === 'user' && !anchor) {
+        if (signalNote) signalNote.textContent = '已登录';
+        if (roleLabel) roleLabel.textContent = '已登录';
       } else if (anchor) {
         if (signalNote) signalNote.textContent = anchor;
         if (roleLabel) roleLabel.textContent = anchor;
@@ -1183,7 +1183,7 @@
         if (!r.ok) return;
         return r.json().then((data: { authState?: string; profile?: { personaAnchor?: string } }) => {
           if (data?.authState === 'admin') { applyIdentity('admin'); return; }
-          applyIdentity('invited', data?.profile?.personaAnchor);
+          applyIdentity('user', data?.profile?.personaAnchor);
         });
       }).catch(() => { /* 探测失败不阻断，后端 gate 兜底 */ });
     }
@@ -1211,15 +1211,7 @@
 
     if (!open || !dialog || !close || !messages || !input || !sendBtn) return;
 
-    // 邀请成功原地变身（不 reload）：关邀请页 → 重探身份 → 直接开聊天框
-    window.addEventListener('walker:invited', async () => {
-      (document.getElementById('invite-dialog') as HTMLDialogElement | null)?.close();
-      await probeIdentity(signal);
-      if (!isPublic && !dialog.open) {
-        dialog.showModal();
-        scheduleToolMatchTimer(() => input.focus(), 60);
-      }
-    }, { signal });
+    // 注册流程已移至 /login（账号系统）；public 用户点提问会被引导去 /login。
 
     const audienceLabels: Record<string, string> = {
       'prefer-not-say': '未指定',
@@ -1254,7 +1246,7 @@
     open.addEventListener('click', async () => {
       await identityProbe;
       if (isPublic) {
-        (document.getElementById('invite-dialog') as HTMLDialogElement | null)?.showModal();
+        window.location.href = '/login';
         return;
       }
       if (!dialog.open) dialog.showModal();
@@ -1574,11 +1566,11 @@
           body: JSON.stringify(payload),
         });
 
-        // 后端 gate 401（A1）：未受邀，引导邀请
+        // 后端 gate 401：未登录，引导去 /login
         if (response.status === 401) {
           typing.remove();
           isPublic = true;
-          (document.getElementById('invite-dialog') as HTMLDialogElement | null)?.showModal();
+          window.location.href = '/login';
           return;
         }
 
