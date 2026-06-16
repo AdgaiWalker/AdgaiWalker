@@ -29,9 +29,10 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 - **必填（生产）**：`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（点赞、匹配、对话存储）、`ADMIN_PASSWORD`（管理后台）、`CRON_SECRET`（批处理 Cron）。
 - **Giscus 评论**：`PUBLIC_GISCUS_REPO` / `PUBLIC_GISCUS_REPO_ID` / `PUBLIC_GISCUS_CATEGORY` / `PUBLIC_GISCUS_CATEGORY_ID`。未配置时评论组件不渲染。
-- **AI 匹配（可选）**：通过 AI Gateway 配置（服务商 API key、`baseUrl`、`model`），配置存 Redis hash `ai-gateway:config`，在 `/admin/ai-gateway` 管理页维护（预设 DeepSeek / OpenAI / Anthropic / 自定义）。未配置时仅使用本地规则匹配，不调用模型、不产生费用。`ANTHROPIC_API_KEY` 已不再被代码直接读取。
+- **AI 匹配（可选）**：通过 AI Gateway 配置（服务商 API key、`baseUrl`、`model`），配置存 Redis hash `ai-gateway:config`，在 `/admin/ai-gateway` 管理页维护（预设 DeepSeek / OpenAI / Anthropic / 自定义）。未配置时仅使用本地规则匹配，不调用模型、不产生费用。`ANTHROPIC_API_KEY` 仍作为 `src/agent/gateway.ts` 的运行时 fallback 被读取（`config.apiKey || import.meta.env.ANTHROPIC_API_KEY`）；建议只在 `/admin/ai-gateway` 配置 key，不依赖环境变量。
 - **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
 - **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。
+- **邀请准入**：`INVITE_CODES`（可选，格式 `code:label:maxUses`，逗号分隔多组，被 `stores/invite-code.store.ts` 读取用于 `/api/invite/verify` 准入）。
 
 ## 架构
 
@@ -47,7 +48,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 ### 渲染与部署
 
 - **输出模式**：`output: 'server'`，通过 `@astrojs/vercel` 适配器部署。
-- **预渲染**：启用 `prerender = true` 的页面包括：首页、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/projects/ferry`、`/content`、`/learn`、`/learn/guide/[level]/[tool]`、`/about`、`/404`、`/index.json`、`/llms.txt`、`/walker-style.md`，以及全部 `/admin/*` 页面；其余（如 `/api/*`、`/rss.xml`）为服务端动态渲染。旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
+- **预渲染**：启用 `prerender = true` 的页面包括：首页、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/projects/ferry`、`/content`、`/learn`、`/learn/guide/[level]/[tool]`、`/about`、`/404`、`/index.json`、`/graph.json`、`/llms.txt`、`/walker-style.md`、`/admin/login`；其余（如 `/api/*`、`/rss.xml`）及除登录外的全部 `/admin/*` 页面为服务端动态渲染（请求期 `isAdmin()` 鉴权）。旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
 - **图片服务**：Vercel Image Optimization 已启用，`@astrojs/vercel` adapter 配置了 `imageService` 和图片尺寸。
 - **性能配置**：Astro `prefetch.defaultStrategy = 'hover'`，并启用 `experimental.svgo`。
 - **构建流程**：`astro build` → `pagefind --site dist/client --output-path .vercel/output/static/pagefind`。
@@ -61,7 +62,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
   - 分类：`type`（枚举：`knowledge`、`tool`、`idea`、`project`、`community`、`learn`、`learning`）、`status`（枚举：`thinking`、`validating`、`building`、`verified`、`archived`）。
   - 内容模型：`form`（`article`/`note`/`diary`/`rant`/`gallery`/`video`/`recipe`/`calligraphy`/`resource`/`project`/`idea`/`lesson`）、`domain`（`ai`/`coding`/`product`/`philosophy`/`life`/`cooking`/`calligraphy`/`reading`/`travel`/`emotion`/`community`）、`intent`（`think`/`record`/`teach`/`share`/`verify`/`showcase`/`reflect`/`connect`/`vent`）、`valueMode`（`utility`/`existence`/`both`）。
   - AI 策略：`aiUsePolicy`（含 `level`：`AI-0`~`AI-4`、`readable`、`citable`、`actionable`、`reason`）。
-  - 关联：`related`（ID 数组）、`featured`（布尔）。
+  - 关联：`related`（ID 数组）、`featured`（布尔）、`sourceTopicId`（关联选题 ID，可选）。
   - 版本与系列：`version`（版本号，数字）、`previousVersion`（上一版 slug）、`series`（系列名，自由文本）、`seriesOrder`（系列内序号）。版本迭代用 `version` + `previousVersion` 串联同一篇文章的不同版本（独立文件、独立 URL）。系列连载用 `series` + `seriesOrder` 串联同一主题的多篇文章。
   - 学习指南专属：`level`（`入门`/`学徒`/`专家`）、`emoji`、`subtitle`、`yValue`（效果范围描述）、`graduation`（毕业项目）、`safetyNote`（安全提醒）、`shareAction`（分享建议）。这些字段仅在 `type: learn` 时使用。
   - 媒体与资源：`communities`（对象数组）、`videos`（`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`）、`resources`（`resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`）。
@@ -101,10 +102,16 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/admin/brief` | 创作简报（选题 → 简报 → 编辑器） | Admin（独立样式） |
 | `/admin/content` | 内容列表管理（管理员专属） | Admin（独立样式） |
 | `/admin/content/edit` | 内容编辑器（管理员专属） | Admin（独立样式） |
+| `/admin/incidents` | 安全事件/失败降级待复盘（Incident） | Admin（独立样式） |
+| `/admin/rules` | 规则候选池（observed → candidate → validated → stable → retired） | Admin（独立样式） |
+| `/admin/experiences` | 经验验证系统（事件采集 → 复盘 → 模式 → Skill 候选） | Admin（独立样式） |
+| `/admin/skills` | Skill 准入与 Agent 路由（候选 → 准入 → 注册/降级为方法卡） | Admin（独立样式） |
 | `/404` | 404 页面 | Base |
 | `/rss.xml` | RSS 订阅源 | 无布局 |
 | `/llms.txt` | AI 可读站点地图 | 无布局（静态文本） |
 | `/walker-style.md` | AI 可读风格指南 | 无布局（静态文本） |
+| `/index.json` | AI 可读内容索引 JSON（预渲染静态产物） | 无布局（静态 JSON） |
+| `/graph.json` | AI 可读内容关系图谱 JSON（预渲染静态产物） | 无布局（静态 JSON） |
 
 ### API 路由
 
@@ -116,7 +123,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/match-process` | 批处理需求聚类生成 TopicCandidate（Cron 触发） | CRON_SECRET |
 | `/api/match-history` | 用户对话历史（按 sessionId 列表） | 无（sessionId） |
 | `/api/invite/verify` | 邀请码验证准入（签名 Cookie 建立 invited 会话 + 建 UserProfile） | 无（邀请码） |
-| `/api/profile` | 用户画像读写（personaAnchor 锚点）+ 删除请求 | invited 会话 |
+| `/api/profile` | 用户画像读写（personaAnchor 锚点） | invited 会话 |
 | `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
 | `/api/insights` | 洞察数据 + 选题操作 | admin cookie / CRON_SECRET |
 | `/api/like` | 文章点赞（Upstash Redis） | 无（IP 限流） |
@@ -128,7 +135,12 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/admin/inspiration` | 站主灵感选题入口（双源选题池） | admin cookie |
 | `/api/admin/content/[slug]` | 内容 CRUD（GitHub API 回写） | admin cookie |
 | `/api/admin/gateway` | AI Gateway 配置 CRUD + 测试连接 + 撤销/重置 | admin cookie |
-| `/index.json` | AI 可读内容索引 JSON | 无布局（静态 JSON） |
+| `/api/admin/incidents` | 未解决的安全事件/失败降级记录（Incident）供复盘 | admin cookie |
+| `/api/admin/rules` | 规则候选池 CRUD（observed → candidate → validated → stable → retired） | admin cookie |
+| `/api/admin/skills` | Skill 候选 CRUD（candidate → admitted → demoted-to-method） | admin cookie |
+| `/api/admin/experience-events` | 经验事件采集与查询（U10） | admin cookie |
+| `/api/profile/delete-request` | 用户画像删除请求（标记 `deleteRequestedAt` 软删除） | invited 会话 |
+| `/api/search-events` | 记录搜索无结果查询（内容缺口信号，fire-and-forget） | 无 |
 
 以下旧路由保留为 301 重定向（定义在 `astro.config.mjs`）：
 
@@ -162,11 +174,11 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`SearchModal.astro`**：基于 Pagefind 的搜索，通过 `⌘K` 或搜索按钮触发。
 - **`ArticleNav.astro`**（`article/`）：文章详情页导航列表，支持文字/卡片视图。
 - **`TableOfContents.astro`**（`article/`）：文章页粘性目录，通过 `toc-highlight.ts` 高亮当前标题。
-- **首页组件**（`home/`）：`HomeCanvas.astro`（Bento 画布 — 身份条、最近文章、快速入口、Spark 抽点子盲盒）。盲盒弹窗逻辑内联在 `home-canvas.ts` 的 `initSparkBox`（流星粒子 + 随机脑洞），无独立 `SparkBoxModal.astro` 组件。
+- **首页组件**（`home/`）：`HomeCanvas.astro`（Bento 画布 — 身份条、最近文章、快速入口、Spark 抽点子盲盒）。盲盒弹窗逻辑内联在 `GreetingCard.astro`（流星粒子 + 随机脑洞），无独立 `SparkBoxModal.astro` 组件。
 - **首页卡片**（根级）：`GreetingCard.astro`（头像交互卡，含社交链接）。
 - **内容宇宙组件**（`content-universe/`）：`ContentFilterTabs.astro`（空间筛选文字链接）、`ContentStreamItem.astro`（内容流扁平列表项：色点 + 标题 + 时间锚点 + 预告 + 形态），用于 `/content` 页面。
 - **`ToolMatchChat.astro`**（`tools/`）：工具匹配对话组件，提供 `/api/match` 匹配会话的前端 UI；含邀请 gate（GET `/api/profile` 身份探测，public 时弹邀请码弹窗）。
-- **`InviteGate.astro`**（`tools/`）：邀请码弹窗组件（≤10 字锚点输入 + 示例 chip + consent，PII 命中拦截）。
+- **`InviteGate.astro`**（`invite/`）：邀请码弹窗组件（≤10 字锚点输入 + 示例 chip + consent，PII 命中拦截）。
 - **`ResourceCard.astro`**（根级）：资源链接卡片，在文章详情页 `posts/[slug].astro` 中使用。
 - **`GiscusWidget.astro`**（根级）：基于 GitHub Discussions 的评论组件，配置通过 `PUBLIC_GISCUS_*` 环境变量注入，主题跟随 `walker-theme-change` 事件自动切换。在 `[slug].astro` 中使用。
 - **`Footer.astro`**（根级）：全局页脚，被 `Base.astro` 使用。
@@ -196,7 +208,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`sidebar-state.ts`**：侧边栏折叠/展开，通过 `data-sidebar-collapsed` 属性控制，使用 `localStorage` 持久化。
 - **`toc-highlight.ts`**：文章目录当前标题高亮，通过 IntersectionObserver 追踪。
 - **`justify-tags.ts`**：文章列表标签两端对齐排版，导出 `justifyTags()` 和 `watchJustifyTags()`，含 resize 和 View Transition 生命周期支持，依赖 `@chenglou/pretext`。
-- **`home-canvas.ts`**：首页 Bento 画布拖拽、主题切换、Spark 抽点子盲盒（`initSparkBox`）、状态栏反应和点击水波纹逻辑。
+- **`home-canvas.ts`**：首页 Bento 画布拖拽、主题切换、状态栏反应和点击水波纹逻辑（Spark 抽点子盲盒已迁移至 `GreetingCard.astro`）。
 - **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
 - **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。
 
@@ -242,7 +254,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 #### profiles/（画像系统）
 
 - **`tool-profiles.ts`**：工具画像数据。每个工具的结构化画像（`ToolProfile` 接口），含 `bestFor`、`avoidWhen`、`strengths`、`limitations`、`requires`、`alternatives`、`nextSteps`。供 Agent 匹配时引用。
-- **`resource-index.ts`**：站内资源索引（`MatchResource` 接口），供匹配 Agent 查找推荐内容。定义需求分类（`NeedCategory`）、人群标签（`AudienceGroup`）、AI 阶段（`AiStage`）、工具适配类型（`ToolFit`）、判断结论（`FitVerdict`）等枚举和标签映射。
+- **`resource-index.ts`**：站内资源索引（`MatchResource` 接口），供匹配 Agent 查找推荐内容。定义需求分类（`NeedCategory`）、人群标签（`AudienceGroup`）、AI 阶段（`AiStage`）、工具适配类型（`ToolFit`）等枚举和标签映射。
 
 #### agent/（匹配 Agent — Planning 层）
 
