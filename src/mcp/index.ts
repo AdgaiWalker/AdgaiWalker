@@ -23,6 +23,7 @@ import {
   search,
   countByType,
   invalidateCache,
+  isAiReadableParsed,
   type QueryFilter,
 } from '../knowledge/content-query';
 
@@ -43,13 +44,6 @@ function summarize(item: { slug: string; frontmatter: Record<string, unknown> })
     summary: fm.summary,
     tags: fm.tags,
   };
-}
-
-/** AI 可读判断：AI 使用级别非 AI-0（AI-0 = 明确不希望被 AI 读取）。
- *  visibility（draft/private）已由 content-query 过滤，这里补 AI-0 边界。 */
-function isAiReadable(item: { frontmatter: Record<string, unknown> }): boolean {
-  const policy = item.frontmatter.aiUsePolicy as { level?: string } | undefined;
-  return policy?.level !== 'AI-0';
 }
 
 // ---------------------------------------------------------------------------
@@ -93,7 +87,7 @@ server.tool(
     level: z.enum(['入门', '学徒', '专家']).optional().describe('学习阶段'),
   },
   async (params) => {
-    const results = query(params as QueryFilter).filter(isAiReadable);
+    const results = query(params as QueryFilter).filter(isAiReadableParsed);
     return {
       content: [
         {
@@ -112,7 +106,7 @@ server.tool(
   '全文搜索：在标题、摘要、正文中搜索关键词（大小写不敏感）',
   { text: z.string().describe('搜索文本') },
   async ({ text }) => {
-    const results = search(text).filter(isAiReadable);
+    const results = search(text).filter(isAiReadableParsed);
     return {
       content: [
         {
@@ -139,7 +133,7 @@ server.tool(
         isError: true,
       };
     }
-    if (!isAiReadable(item)) {
+    if (!isAiReadableParsed(item)) {
       return {
         content: [{ type: 'text' as const, text: `该内容标记为 AI-0（AI 不可读），不通过 MCP 暴露: ${slug}` }],
         isError: true,
@@ -171,7 +165,7 @@ server.tool(
   '内容库统计概览（总数、各类型数量、最近内容）',
   {},
   async () => {
-    const all = getAll().filter(isAiReadable);
+    const all = getAll().filter(isAiReadableParsed);
     return {
       content: [
         {

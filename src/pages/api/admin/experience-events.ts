@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { randomUUID } from 'node:crypto';
 
 import { isAdmin } from '@/lib/admin-auth';
-import { saveExperienceEvent, findRecentExperienceEvents } from '@/conversation/store';
+import { saveExperienceEvent, findRecentExperienceEvents, updateExperienceEvent } from '@/conversation/store';
 import type { ExperienceEvent, ExperienceFeedbackResult } from '@/stores/ports';
 
 export const prerender = false;
@@ -21,8 +21,25 @@ function json(data: unknown, status = 200): Response {
  * 保存用户原话（保真）+ 场景标注 + 初步判断 + 帮助动作 + 反馈结果。
  * admin only。
  */
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, url }) => {
   if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+
+  // ?action=update — 复盘 / 模式标记 / 成熟度 / 反馈结果更新
+  if (url.searchParams.get('action') === 'update') {
+    let body: { experienceId?: string; reflection?: string; patternMarked?: boolean; maturity?: string; feedbackResult?: string };
+    try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+    if (!body.experienceId) return json({ error: 'experienceId 必填' }, 400);
+    const patch: { reflection?: string; patternMarked?: boolean; maturity?: ExperienceEvent['maturity']; feedbackResult?: ExperienceFeedbackResult } = {};
+    if (typeof body.reflection === 'string') patch.reflection = body.reflection.slice(0, 2000);
+    if (typeof body.patternMarked === 'boolean') patch.patternMarked = body.patternMarked;
+    if (body.maturity) patch.maturity = body.maturity as ExperienceEvent['maturity'];
+    if (body.feedbackResult && VALID_RESULTS.has(body.feedbackResult as ExperienceFeedbackResult)) {
+      patch.feedbackResult = body.feedbackResult as ExperienceFeedbackResult;
+    }
+    if (Object.keys(patch).length === 0) return json({ error: '无可更新字段' }, 400);
+    await updateExperienceEvent(body.experienceId, patch);
+    return json({ ok: true });
+  }
 
   let body: {
     source?: string;

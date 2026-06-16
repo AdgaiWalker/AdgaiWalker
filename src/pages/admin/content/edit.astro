@@ -35,6 +35,11 @@ valueMode: utility
 visibility: draft
 published: false
 sourceTopicId: ${yamlString(topicId ?? '')}
+aiUsePolicy:
+  level: AI-2
+  readable: true
+  citable: true
+  actionable: false
 summary: ${yamlString(brief.coreStuckPoint)}
 related: []
 ---
@@ -71,6 +76,11 @@ tags: []
 type: knowledge
 visibility: draft
 published: false
+aiUsePolicy:
+  level: AI-2
+  readable: true
+  citable: true
+  actionable: false
 ---
 
 正文内容...
@@ -266,6 +276,7 @@ published: false
       if (!fm.date) missing.push('date');
       if (!fm.type) missing.push('type');
       if (!fm.visibility && fm.published === undefined) missing.push('visibility/published（可见性）');
+      if (!/^[ \t]*aiUsePolicy[ \t]*:/m.test(raw)) missing.push('aiUsePolicy（AI 边界：声明能否被 AI 读/引/用）');
       return missing;
     }
 

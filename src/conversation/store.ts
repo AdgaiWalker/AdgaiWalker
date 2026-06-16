@@ -32,6 +32,8 @@ import type {
   Incident,
   InvitedSession,
   RuleCandidate,
+  SkillCandidate,
+  SkillAdmissionStatus,
   MatchFeedbackEvent,
   MatchFeedbackType,
   NeedCase,
@@ -68,6 +70,7 @@ const memoryProfiles = new Map<string, UserProfile>();
 const memoryIncidents = new Map<string, Incident>();
 const memoryExperienceEvents = new Map<string, ExperienceEvent>();
 const memoryRuleCandidates = new Map<string, RuleCandidate>();
+const memorySkillCandidates = new Map<string, SkillCandidate>();
 let memoryMatchCount = 0;
 const memoryCategoryCounts = new Map<string, number>();
 
@@ -635,6 +638,25 @@ export async function markExperiencePattern(experienceId: string, patternMarked:
   } catch { /* 静默 */ }
 }
 
+/** 更新经验事件的复盘 / 模式标记 / 成熟度 / 反馈结果（admin 复盘用） */
+export async function updateExperienceEvent(
+  experienceId: string,
+  patch: Partial<Pick<ExperienceEvent, 'reflection' | 'patternMarked' | 'maturity' | 'feedbackResult'>>,
+): Promise<void> {
+  const redis = getRedis();
+  const existing = memoryExperienceEvents.get(experienceId);
+  if (existing) {
+    memoryExperienceEvents.set(experienceId, { ...existing, ...patch, updatedAt: new Date().toISOString() });
+  }
+  if (!redis) return;
+  try {
+    const current = await redis.get<ExperienceEvent>(experienceKey(experienceId));
+    if (current) {
+      await redis.set(experienceKey(experienceId), { ...current, ...patch, updatedAt: new Date().toISOString() });
+    }
+  } catch { /* 静默 */ }
+}
+
 // ---------------------------------------------------------------------------
 // 规则候选（U9 规则候选池：observed → candidate → validated → stable → retired）
 // ---------------------------------------------------------------------------
@@ -679,6 +701,59 @@ export async function updateRuleStatus(ruleId: string, status: RuleCandidate['st
     const current = await redis.get<RuleCandidate>(ruleKey(ruleId));
     if (current) {
       await redis.set(ruleKey(ruleId), { ...current, status, note: note ?? current.note, updatedAt: new Date().toISOString() });
+    }
+  } catch { /* 静默 */ }
+}
+
+// ---------------------------------------------------------------------------
+// Skill 候选（U11 Skill 准入：candidate → admitted / demoted-to-method）
+// ---------------------------------------------------------------------------
+
+function skillKey(skillId: string): string {
+  return `match:skill:${skillId}`;
+}
+
+export async function saveSkillCandidate(skill: SkillCandidate): Promise<void> {
+  const redis = getRedis();
+  memorySkillCandidates.set(skill.skillId, skill);
+  if (!redis) return;
+  await redis.set(skillKey(skill.skillId), skill);
+  await redis.lpush('match:skills:recent', skill.skillId);
+  await redis.ltrim('match:skills:recent', 0, 499);
+}
+
+export async function findRecentSkillCandidates(limit = 50): Promise<SkillCandidate[]> {
+  const redis = getRedis();
+  if (!redis) {
+    return [...memorySkillCandidates.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
+  }
+  try {
+    const ids = await redis.lrange<string>('match:skills:recent', 0, Math.max(0, limit - 1));
+    const items = await Promise.all(ids.map(id => redis.get<SkillCandidate>(skillKey(id))));
+    return items.filter((s): s is SkillCandidate => s !== null);
+  } catch {
+    return [];
+  }
+}
+
+export async function findSkillCandidatesByAdmission(status: SkillAdmissionStatus): Promise<SkillCandidate[]> {
+  const all = await findRecentSkillCandidates(500);
+  return all.filter(skill => skill.admissionStatus === status);
+}
+
+export async function updateSkillAdmission(skillId: string, admissionStatus: SkillAdmissionStatus): Promise<void> {
+  const redis = getRedis();
+  const existing = memorySkillCandidates.get(skillId);
+  if (existing) {
+    memorySkillCandidates.set(skillId, { ...existing, admissionStatus, updatedAt: new Date().toISOString() });
+  }
+  if (!redis) return;
+  try {
+    const current = await redis.get<SkillCandidate>(skillKey(skillId));
+    if (current) {
+      await redis.set(skillKey(skillId), { ...current, admissionStatus, updatedAt: new Date().toISOString() });
     }
   } catch { /* 静默 */ }
 }

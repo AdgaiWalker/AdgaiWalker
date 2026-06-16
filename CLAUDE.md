@@ -10,16 +10,18 @@ Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 As
 
 ```bash
 npm run dev        # 启动开发服务器
-npm run build      # 生产构建 + Pagefind 索引生成
-npm run build:mcp  # 编译 MCP server（src/mcp/ + src/knowledge/content-query.ts → dist/mcp/index.mjs）
+npm run build      # 生产构建 + Pagefind 索引生成（esbuild 转译，不做类型检查）
+npm run build:mcp  # 编译 MCP server（src/mcp/ + src/knowledge/content-query.ts → dist/mcp/index.mjs；esbuild 转译，不做类型检查）
 npm run preview    # 本地预览生产构建
 npm run test       # 运行 Vitest 单元测试（npm run test:watch 为 watch 模式）
-npx astro check    # Astro 类型检查
+npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:mcp/test 全过也不代表类型对）
 ```
 
 跑单个测试文件：`npx vitest run src/services/perception.service.test.ts`。
 
-测试基于 Vitest（`vitest.config.ts`），测试文件位于 `src/services/*.test.ts` 和 `src/stores/*.test.ts`（含 `agent-orchestrator`、`perception`、`matching`、`visibility`、`invite-access`、`profile`、`brief`、`hit-rate`、`match-session.store` 等）。补充验证依赖 `npm run build`（构建通过）和 `npx astro check`（类型检查）。
+测试基于 Vitest（`vitest.config.ts`），测试文件位于 `src/services/*.test.ts` 和 `src/stores/*.test.ts`（含 `agent-orchestrator`、`perception`、`matching`、`visibility`、`invite-access`、`profile`、`brief`、`hit-rate`、`match-session.store` 等）。
+
+**验证三件套（改代码后都要跑，缺一不可）**：`npx astro check`（类型，tsc 严格检查）→ `npm run test`（单元逻辑）→ `npm run build`（构建 + SSR 渲染）。注意 `build` / `build:mcp` 走 esbuild **只转译、不做类型检查**——未定义引用、类型不匹配不会被报，运行时才 ReferenceError；只有 `astro check` 抓类型错。所以改任何 `.ts` 后必须先跑 `astro check`，不能只靠 build / test 判定通过。
 
 ## 环境变量
 

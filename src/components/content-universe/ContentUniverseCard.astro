@@ -38,6 +38,9 @@ const cardFormClass = `form-${item.form}`;
       )}
       <span class="date">{formatDateCompact(item.date)}</span>
       <span class="meta-pill">{formLabels[item.form]}</span>
+      {item.form === 'idea' && item.status && (
+        <span class="idea-status-badge" data-status={item.status}>{statusLabel}</span>
+      )}
       {item.isExternal && (
         <span class="external-indicator" aria-label="外部链接">
           <Icon name="lucide:external-link" width={15} height={15} />
@@ -49,7 +52,7 @@ const cardFormClass = `form-${item.form}`;
     <p class="card-summary">{summary}</p>
 
     <div class="card-details" aria-label="内容属性">
-      <span class="detail-chip">{domainLabels[item.domain]}</span>
+      <span class="detail-chip domain-chip" data-domain={item.domain}>{domainLabels[item.domain]}</span>
       <span class="detail-chip">{intentLabels[item.intent]}</span>
       <span class="detail-chip value-mode">{valueModeLabels[item.valueMode]}</span>
       <span class="detail-chip">{statusLabel}</span>
@@ -158,6 +161,40 @@ const cardFormClass = `form-${item.form}`;
     border-color: var(--color-border) !important;
     box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.05) !important;
   }
+
+  /* 4. 领域配色 (Domain Colors) —— 不同领域用专属色相，一眼分区 */
+  .domain-chip[data-domain="ai"] { background: rgba(124,58,237,0.1) !important; color:#7c3aed !important; border-color: rgba(124,58,237,0.22) !important; }
+  .domain-chip[data-domain="coding"] { background: rgba(37,99,235,0.1) !important; color:#2563eb !important; border-color: rgba(37,99,235,0.22) !important; }
+  .domain-chip[data-domain="product"] { background: rgba(8,145,178,0.1) !important; color:#0891b2 !important; border-color: rgba(8,145,178,0.22) !important; }
+  .domain-chip[data-domain="philosophy"] { background: rgba(76,81,191,0.1) !important; color:#4c51bf !important; border-color: rgba(76,81,191,0.22) !important; }
+  .domain-chip[data-domain="life"] { background: rgba(22,163,74,0.1) !important; color:#16a34a !important; border-color: rgba(22,163,74,0.22) !important; }
+  .domain-chip[data-domain="cooking"] { background: rgba(234,88,12,0.1) !important; color:#ea580c !important; border-color: rgba(234,88,12,0.22) !important; }
+  .domain-chip[data-domain="calligraphy"] { background: rgba(120,53,15,0.12) !important; color:#92400e !important; border-color: rgba(120,53,15,0.22) !important; }
+  .domain-chip[data-domain="reading"] { background: rgba(217,119,6,0.1) !important; color:#d97706 !important; border-color: rgba(217,119,6,0.22) !important; }
+  .domain-chip[data-domain="travel"] { background: rgba(14,165,233,0.1) !important; color:#0ea5e9 !important; border-color: rgba(14,165,233,0.22) !important; }
+  .domain-chip[data-domain="emotion"] { background: rgba(219,39,119,0.1) !important; color:#db2777 !important; border-color: rgba(219,39,119,0.22) !important; }
+  .domain-chip[data-domain="community"] { background: rgba(5,150,105,0.1) !important; color:#059669 !important; border-color: rgba(5,150,105,0.22) !important; }
+  body.theme-aurora .domain-chip,
+  body.theme-sunset .domain-chip,
+  body.theme-mint .domain-chip { opacity: 0.9; }
+
+  /* 5. 点子状态徽章 (Idea Status) —— 点子卡片常驻显示成熟阶段 */
+  .idea-status-badge {
+    padding: 0.22rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 750;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .idea-status-badge[data-status="thinking"] { background: rgba(245,158,11,0.14); color:#b45309; }
+  .idea-status-badge[data-status="validating"] { background: rgba(59,130,246,0.14); color:#2563eb; }
+  .idea-status-badge[data-status="building"] { background: rgba(124,58,237,0.14); color:#7c3aed; }
+  .idea-status-badge[data-status="verified"] { background: rgba(16,185,129,0.14); color:#059669; }
+  .idea-status-badge[data-status="archived"] { background: rgba(120,113,108,0.16); color:#57534e; }
+  body.theme-aurora .idea-status-badge,
+  body.theme-sunset .idea-status-badge,
+  body.theme-mint .idea-status-badge { opacity: 0.92; }
 
   .card-link {
     display: flex;
