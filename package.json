@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "node scripts/clear-likes-build.mjs && astro build && pagefind --site dist/client --output-path .vercel/output/static/pagefind",
+    "build": "astro build && pagefind --site dist/client --output-path .vercel/output/static/pagefind",
     "build:mcp": "node scripts/build-mcp.cjs",
     "preview": "astro preview",
     "test": "vitest run",
