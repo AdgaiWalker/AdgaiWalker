@@ -41,7 +41,6 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
 <script>
   import '../scripts/sidebar-state';
-  import { applyTheme, cycleTheme } from '../lib/theme';
 
   let navAbort: AbortController | null = null;
 
@@ -78,16 +77,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     desktopSearchBtn?.addEventListener('click', triggerSearch, { signal });
     mobileSearchBtn?.addEventListener('click', triggerSearch, { signal });
 
-    // --- (c) 全站多主题自适应换肤控制 ---
-    const themeBtn = document.getElementById('nav-theme-toggle');
-    const mobileThemeBtn = document.getElementById('mobile-theme-toggle');
-
-    applyTheme();
-
-    themeBtn?.addEventListener('click', () => cycleTheme(), { signal });
-    mobileThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });
-
-    // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
+    // --- (c) Liquid Sliding Indicator 液态滑动高亮指示器 ---
     const containers = document.querySelectorAll('.nav-links-container');
     const navTimers: ReturnType<typeof setTimeout>[] = [];
     signal.addEventListener('abort', () => {
@@ -175,17 +165,13 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     justify-content: center;
   }
 
-  :global(body.theme-aurora) .home-nav-pill,
-  :global(body.theme-sunset) .home-nav-pill,
-  :global(body.theme-mint) .home-nav-pill {
+  :global(:root[data-ambient="night"]) .home-nav-pill {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.75);
   }
 
-  :global(body.theme-aurora) .home-nav-pill:hover,
-  :global(body.theme-sunset) .home-nav-pill:hover,
-  :global(body.theme-mint) .home-nav-pill:hover {
+  :global(:root[data-ambient="night"]) .home-nav-pill:hover {
     background: rgba(255, 255, 255, 0.2);
     color: rgba(255, 255, 255, 0.95);
   }

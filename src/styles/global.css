@@ -38,8 +38,8 @@
 /* ========== 统一自适应多主题变量系统 (亮色/暗色自适应) ========== */
 /* ========================================================== */
 
-/* 1. 默认流光霜雾 (Nature Light - 柔和白玉) */
-body, body.theme-nature {
+/* 默认（白天 / 无 JS）配色基线 —— 活体引擎以 inline style 覆盖 documentElement */
+:root {
   --color-brand: #35bfab; /* 翡翠青 */
   --color-brand-glow: rgba(53, 191, 171, 0.15);
   --color-brand-secondary: #1fc9e7;
@@ -69,98 +69,6 @@ body, body.theme-nature {
   --color-player-btn-border: rgba(0, 0, 0, 0.04);
 }
 
-/* 2. 极光霓虹 (Aurora Dark - 极光黑曜石) */
-body.theme-aurora {
-  --color-brand: #d946ef; /* 霓虹玫红 */
-  --color-brand-glow: rgba(217, 70, 239, 0.15);
-  --color-brand-secondary: #06b6d4; /* 霓虹青 */
-  --color-parchment: #f3f4f6;
-  --color-parchment-dim: #9ca3af;
-  --color-card: rgba(18, 14, 38, 0.45);
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-bg: #070614;
-  
-  --orb-color-1: #ec4899;
-  --orb-color-2: #06b6d4;
-  --orb-color-3: #6366f1;
-  --orb-color-4: #a855f7;
-
-  /* 内嵌框样式变量 */
-  --color-inner-bg: rgba(0, 0, 0, 0.25);
-  --color-inner-border: rgba(255, 255, 255, 0.06);
-  --color-inner-shadow: rgba(0, 0, 0, 0.3);
-  --color-nav-bg: rgba(18, 14, 38, 0.82);
-  --color-nav-border: rgba(255, 255, 255, 0.06);
-
-  /* 音乐播放器变量 */
-  --color-player-icon-bg: rgba(217, 70, 239, 0.15);
-  --color-player-icon-text: #06b6d4;
-  --color-player-btn-bg: rgba(255, 255, 255, 0.9);
-  --color-player-btn-text: #d946ef;
-  --color-player-btn-border: rgba(255, 255, 255, 0.2);
-}
-
-/* 3. 落日余晖 (Sunset Dark - 暖铜黑曜石) */
-body.theme-sunset {
-  --color-brand: #f97316; /* 橙红 */
-  --color-brand-glow: rgba(249, 115, 22, 0.15);
-  --color-brand-secondary: #fbbf24; /* 暖金 */
-  --color-parchment: #fffbeb;
-  --color-parchment-dim: #fbbf24;
-  --color-card: rgba(28, 16, 12, 0.45);
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-bg: #120906;
-  
-  --orb-color-1: #f97316;
-  --orb-color-2: #f43f5e;
-  --orb-color-3: #f59e0b;
-  --orb-color-4: #fecdd3;
-
-  /* 内嵌框样式变量 */
-  --color-inner-bg: rgba(0, 0, 0, 0.25);
-  --color-inner-border: rgba(255, 255, 255, 0.06);
-  --color-inner-shadow: rgba(0, 0, 0, 0.3);
-  --color-nav-bg: rgba(28, 16, 12, 0.82);
-  --color-nav-border: rgba(255, 255, 255, 0.06);
-
-  /* 音乐播放器变量 */
-  --color-player-icon-bg: rgba(249, 115, 22, 0.15);
-  --color-player-icon-text: #fbbf24;
-  --color-player-btn-bg: rgba(255, 255, 255, 0.9);
-  --color-player-btn-text: #f97316;
-  --color-player-btn-border: rgba(255, 255, 255, 0.2);
-}
-
-/* 4. 数码薄荷 (Mint Dark - 翡翠黑曜石) */
-body.theme-mint {
-  --color-brand: #10b981; /* 活力绿 */
-  --color-brand-glow: rgba(16, 185, 129, 0.15);
-  --color-brand-secondary: #34d399; /* 薄荷绿 */
-  --color-parchment: #f0fdf4;
-  --color-parchment-dim: #34d399;
-  --color-card: rgba(10, 24, 20, 0.45);
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-bg: #040f0c;
-  
-  --orb-color-1: #10b981;
-  --orb-color-2: #14b8a6;
-  --orb-color-3: #84cc16;
-  --orb-color-4: #06b6d4;
-
-  /* 内嵌框样式变量 */
-  --color-inner-bg: rgba(0, 0, 0, 0.25);
-  --color-inner-border: rgba(255, 255, 255, 0.06);
-  --color-inner-shadow: rgba(0, 0, 0, 0.3);
-  --color-nav-bg: rgba(10, 24, 20, 0.82);
-  --color-nav-border: rgba(255, 255, 255, 0.06);
-
-  /* 音乐播放器变量 */
-  --color-player-icon-bg: rgba(16, 185, 129, 0.15);
-  --color-player-icon-text: #34d399;
-  --color-player-btn-bg: rgba(255, 255, 255, 0.9);
-  --color-player-btn-text: #10b981;
-  --color-player-btn-border: rgba(255, 255, 255, 0.2);
-}
 
 /* ========== 全局基础样式 ========== */
 
@@ -339,8 +247,8 @@ body.theme-mint {
   will-change: transform, box-shadow;
 }
 
-/* 亮色阴影配置 (Nature Light - 柔和白玉底座) */
-body.theme-nature .panel-glass {
+/* 亮色阴影配置（白天默认底座） */
+.panel-glass {
   box-shadow: 
     inset 0 1px 1.5px rgba(255, 255, 255, 0.95),
     inset 0 -1px 1px rgba(0, 0, 0, 0.01),
@@ -349,7 +257,7 @@ body.theme-nature .panel-glass {
     0 20px 40px -12px rgba(42, 59, 62, 0.06) !important;
 }
 
-body.theme-nature .panel-glass:hover {
+.panel-glass:hover {
   background: rgba(255, 255, 255, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.98) !important;
   box-shadow: 
@@ -360,10 +268,8 @@ body.theme-nature .panel-glass:hover {
     0 32px 64px -16px rgba(42, 59, 62, 0.12) !important;
 }
 
-/* 暗色主题阴影配置 (Aurora, Sunset, Mint) */
-body.theme-aurora .panel-glass,
-body.theme-sunset .panel-glass,
-body.theme-mint .panel-glass {
+/* 暗色阴影配置（夜间） */
+:root[data-ambient="night"] .panel-glass {
   box-shadow: 
     inset 0 1px 1px rgba(255, 255, 255, 0.08),
     inset 0 -1px 1px rgba(0, 0, 0, 0.15),
@@ -372,9 +278,7 @@ body.theme-mint .panel-glass {
     0 24px 60px -15px rgba(0, 0, 0, 0.65) !important;
 }
 
-body.theme-aurora .panel-glass:hover,
-body.theme-sunset .panel-glass:hover,
-body.theme-mint .panel-glass:hover {
+:root[data-ambient="night"] .panel-glass:hover {
   background: rgba(255, 255, 255, 0.04) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   box-shadow: 
@@ -400,9 +304,7 @@ body.theme-mint .panel-glass:hover {
     opacity 0.25s ease;
 }
 
-body.theme-aurora .nav-active-indicator,
-body.theme-sunset .nav-active-indicator,
-body.theme-mint .nav-active-indicator {
+:root[data-ambient="night"] .nav-active-indicator {
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
 }
@@ -1235,9 +1137,7 @@ body.theme-mint .nav-active-indicator {
   color: var(--color-brand) !important;
 }
 
-body.theme-aurora .prose-walker :not(pre) > code,
-body.theme-sunset .prose-walker :not(pre) > code,
-body.theme-mint .prose-walker :not(pre) > code {
+:root[data-ambient="night"] .prose-walker :not(pre) > code {
   border-color: rgba(255, 255, 255, 0.12) !important;
   background: rgba(255, 255, 255, 0.05) !important;
   color: var(--color-brand-secondary) !important;
@@ -1381,20 +1281,8 @@ body.theme-mint .prose-walker :not(pre) > code {
   background: rgba(251, 251, 248, 0.45);
 }
 
-body.theme-aurora #mist-overlay {
-  background: rgba(7, 6, 20, 0.5) !important;
-}
-
-body.theme-sunset #mist-overlay {
-  background: rgba(18, 9, 6, 0.5) !important;
-}
-
-body.theme-mint #mist-overlay {
+:root[data-ambient="night"] #mist-overlay {
   background: rgba(4, 15, 12, 0.5) !important;
-}
-
-body.theme-custom #mist-overlay {
-  background: rgba(251, 251, 248, 0.45) !important;
 }
 
 @keyframes subtle-drift-1 {
