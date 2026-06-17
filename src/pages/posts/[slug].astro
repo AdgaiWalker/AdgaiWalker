@@ -300,7 +300,7 @@ const relatedPosts = allEntries
       </div>
     </footer>
   </article>
-  <AdminEditBar slug={entry.id} />
+  <AdminEditBar slug={entry.id} visibility={entry.data.visibility ?? (entry.data.published ? 'public' : 'draft')} />
   <VersionHistory />
 </ArticleLayout>
 
