@@ -1,7 +1,7 @@
 # 客户端就地编辑 + 版本历史
 
 - 日期：2026-06-16
-- 状态：已设计，待评审
+- 状态：已实现（2026-06-17，PR #22）
 - 作者：Walker（秋知）
 - 范围：管理员在文章详情页就地编辑正文与 frontmatter；每次保存自动留痕，可查修改日期 / 切换版本 / 看 diff / 回退
 
@@ -153,7 +153,7 @@ git commits on `src/content/log/<slug>.md`。生产走 GitHub Commits API（`GET
 ### 修改
 
 - `src/components/admin/AdminEditBar.astro` — 「编辑」改为触发就地编辑态（不跳转）；加「历史」按钮
-- `src/lib/admin-content-store.ts` — `ContentFileStore` 接口扩展 `listHistory(path, opts)` / `readAtRef(path, sha)`，GitHub + Local 两实现
+- `src/lib/admin-content-store.ts` — `ContentFileStore` 接口扩展 `listHistory(path, opts)` / `read(path, { ref })`（支持读历史版本），GitHub + Local 两实现
 - `src/pages/posts/[slug].astro` — 注入 InlineEditor（预渲染隐藏）
 - `src/pages/admin/content/edit.astro` — 替换简陋 textarea + 正则预览为 InlineEditor 组件（独立模式，复用）
 
@@ -229,7 +229,7 @@ git commits on `src/content/log/<slug>.md`。生产走 GitHub Commits API（`GET
 
 ## 11. 实现顺序建议（供 writing-plans 参考）
 
-1. `admin-content-store` 扩展 `listHistory` / `readAtRef` + 两个新 API（history / version）
+1. `admin-content-store` 扩展 `listHistory` / `read(ref)` + 两个新 API（history / version）
 2. InlineEditor 组件 + 客户端脚本（正文 / 预览 / 保存 / 草稿 / 冲突）
 3. MetadataForm（表单 + raw YAML 同步）
 4. 就地模式接入 `posts/[slug]` + AdminEditBar 改造

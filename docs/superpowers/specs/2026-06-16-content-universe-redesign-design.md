@@ -2,7 +2,7 @@
 
 - 日期：2026-06-16
 - 范围：`/content` 页面重设计（U6 内容宇宙 UI 收尾）
-- 状态：设计定稿，待实现
+- 状态：已实现（2026-06-16，commit 3d91935）
 - Mockup：`C:\Users\26296\AppData\Local\Temp\content-redesign-mockup.html`（左右对比，现状 vs 内容流）
 
 ## 背景

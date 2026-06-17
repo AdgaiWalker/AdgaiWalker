@@ -19,7 +19,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 跑单个测试文件：`npx vitest run src/services/perception.service.test.ts`。
 
-测试基于 Vitest（`vitest.config.ts`），测试文件位于 `src/services/*.test.ts` 和 `src/stores/*.test.ts`（含 `agent-orchestrator`、`perception`、`matching`、`visibility`、`invite-access`、`profile`、`brief`、`hit-rate`、`match-session.store` 等）。
+测试基于 Vitest（`vitest.config.ts`），测试文件分布在 `src/{services,stores,agent,knowledge,lib}/*.test.ts`（含 `agent-orchestrator`、`perception`、`matching`、`visibility`、`account`、`profile`、`brief`、`hit-rate`、`match-session.store`、`content-query`、`tools-manifest`、`frontmatter-editor`、`content-draft` 等）。
 
 **验证三件套（改代码后都要跑，缺一不可）**：`npx astro check`（类型，tsc 严格检查）→ `npm run test`（单元逻辑）→ `npm run build`（构建 + SSR 渲染）。注意 `build` / `build:mcp` 走 esbuild **只转译、不做类型检查**——未定义引用、类型不匹配不会被报，运行时才 ReferenceError；只有 `astro check` 抓类型错。所以改任何 `.ts` 后必须先跑 `astro check`，不能只靠 build / test 判定通过。
 
@@ -31,7 +31,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **Giscus 评论**：`PUBLIC_GISCUS_REPO` / `PUBLIC_GISCUS_REPO_ID` / `PUBLIC_GISCUS_CATEGORY` / `PUBLIC_GISCUS_CATEGORY_ID`。未配置时评论组件不渲染。
 - **AI 匹配（可选）**：通过 AI Gateway 配置（服务商 API key、`baseUrl`、`model`），配置存 Redis hash `ai-gateway:config`，在 `/admin/ai-gateway` 管理页维护（预设 DeepSeek / OpenAI / Anthropic / 自定义）。未配置时仅使用本地规则匹配，不调用模型、不产生费用。`ANTHROPIC_API_KEY` 仍作为 `src/agent/gateway.ts` 的运行时 fallback 被读取（`config.apiKey || import.meta.env.ANTHROPIC_API_KEY`）；建议只在 `/admin/ai-gateway` 配置 key，不依赖环境变量。
 - **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
-- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。
+- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）、`MATCH_RATE_LIMIT_SALT`（限流键加盐，防碰撞）。
+- **批处理 / MCP（可选）**：`MATCH_PROCESS_SECRET`（手动触发选题批处理的请求头，与 `CRON_SECRET` 二选一）、`MCP_ENABLE_PRIVATE_INSIGHTS`（默认 false，开启后 MCP `walker_insights` 返回需求洞察）。
 - **注册门票**：`INVITE_CODES`（可选，格式 `code:label:maxUses`，逗号分隔多组，被 `stores/invite-code.store.ts` 读取；邀请码降级为账号注册的一次性门票，`/api/auth/register` 校验并消费）。
 
 ## 架构
@@ -48,7 +49,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 ### 渲染与部署
 
 - **输出模式**：`output: 'server'`，通过 `@astrojs/vercel` 适配器部署。
-- **预渲染**：启用 `prerender = true` 的页面包括：首页、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/projects/ferry`、`/content`、`/learn`、`/learn/guide/[level]/[tool]`、`/about`、`/404`、`/index.json`、`/graph.json`、`/llms.txt`、`/walker-style.md`、`/admin/login`；其余（如 `/api/*`、`/rss.xml`）及除登录外的全部 `/admin/*` 页面为服务端动态渲染（请求期 `isAdmin()` 鉴权）。旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
+- **预渲染**：启用 `prerender = true` 的页面包括：首页、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/projects/ferry`、`/content`、`/learn`、`/learn/guide/[level]/[tool]`、`/about`、`/404`、`/index.json`、`/graph.json`、`/llms.txt`、`/walker-style.md`；其余（如 `/api/*`、`/rss.xml`、`/admin/login`（仅重定向到 `/login`））及全部 `/admin/*` 页面为服务端动态渲染（请求期 `isAdmin()` 鉴权）。旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
 - **图片服务**：Vercel Image Optimization 已启用，`@astrojs/vercel` adapter 配置了 `imageService` 和图片尺寸。
 - **性能配置**：Astro `prefetch.defaultStrategy = 'hover'`，并启用 `experimental.svgo`。
 - **构建流程**：`astro build` → `pagefind --site dist/client --output-path .vercel/output/static/pagefind`。
@@ -65,7 +66,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
   - 关联：`related`（ID 数组）、`featured`（布尔）、`sourceTopicId`（关联选题 ID，可选）。
   - 版本与系列：`version`（版本号，数字）、`previousVersion`（上一版 slug）、`series`（系列名，自由文本）、`seriesOrder`（系列内序号）。版本迭代用 `version` + `previousVersion` 串联同一篇文章的不同版本（独立文件、独立 URL）。系列连载用 `series` + `seriesOrder` 串联同一主题的多篇文章。
   - 学习指南专属：`level`（`入门`/`学徒`/`专家`）、`emoji`、`subtitle`、`yValue`（效果范围描述）、`graduation`（毕业项目）、`safetyNote`（安全提醒）、`shareAction`（分享建议）。这些字段仅在 `type: learn` 时使用。
-  - 媒体与资源：`communities`（对象数组）、`videos`（`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`）、`resources`（`resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`）。
+  - 媒体与资源：`communities`（对象数组，子字段 `name`/`description`/`qrCode`/`badge`/`tag` 全必填）、`videos`（`videos.platform` 支持 `bilibili`、`douyin`、`xiaohongshu`、`youtube`、`github`、`zhihu`）、`resources`（`resources.type` 支持 `tool`、`feishu`、`github`、`website`、`download`）。
 
 ### 布局系统
 
@@ -74,7 +75,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 1. **`Base.astro`**：根外壳。处理共享 head、JSON-LD、导航、页脚、格线纹理背景、鼠标光晕和阅读模式。共享 head 由 `src/components/shared/HeadCommon.astro` 提供。
 2. **`SidebarLayout.astro`**：通用内页布局，带页面头部、图标和计数。用于 `/posts`、`/tools`、`/ideas`、`/projects` 等列表型页面。
 3. **`ArticleLayout.astro`**：两栏布局（TOC 目录 + 文章正文），`ArticleNav` 由 `ArticleLayout` import 并通过 `nav-extension` slot 注入 Navigation → SidebarNav，内容区使用 `pureMode=true` 的阅读模式。文章页侧边栏初始折叠隐藏，鼠标悬停左边缘或按 `[` 键展开。移动端有浮动导航 FAB。
-4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about`。
+4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about` 和 `/login`。
 
 ### 路由结构
 
@@ -93,7 +94,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
 | `/admin` | 管理仪表盘（内容统计 + 快捷入口） | Admin（独立样式） |
-| `/login` | 统一登录/注册（用户 + owner 同入口） | Base |
+| `/login` | 统一登录/注册（用户 + owner 同入口） | FullscreenLayout |
+| `/account` | 我的账号（改密 / 锚点 / 删除申请） | Base |
 | `/admin/login` | 重定向到 /login（owner 账号登录入口） | Admin（独立样式） |
 | `/admin/accounts` | 账号管理（列表/重置密码/封禁） | Admin（独立样式） |
 | `/admin/insights` | 数据看板（管理员专属） | Admin（独立样式） |
@@ -119,7 +121,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 | 路径 | 功能 | 认证 |
 |------|------|------|
-| `/api/match` | 用户需求匹配（HTTP 薄层 → `agentOrchestrator.handleNeed` → 本地匹配 + AI Gateway）。后端 gate：public 返回 401，需受邀或管理员。 | 无（IP/会话限流） |
+| `/api/match` | 用户需求匹配（HTTP 薄层 → `agentOrchestrator.handleNeed` → 本地匹配 + AI Gateway）。后端 gate：public 返回 401，需登录（user/admin）。 | 无（IP/会话限流） |
 | `/api/match-end` | 结束匹配会话 | 无（sessionId） |
 | `/api/match-feedback` | 推荐结果反馈（`resolved`/`stuck`/`not-fit`/`want-tutorial`/`first-draft`/`next-step-clear`/`wrong-direction`/`need-tutorial`），回写 NeedCase feedbackStatus | 无 |
 | `/api/match-process` | 批处理需求聚类生成 TopicCandidate（Cron 触发） | CRON_SECRET |
@@ -132,7 +134,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/admin/accounts` | 账号列表（admin） | admin |
 | `/api/admin/accounts/reset` | 站主重置某用户密码（返回临时密码） | admin |
 | `/api/admin/accounts/status` | 站主封禁/解封 | admin |
-| `/api/profile` | 用户画像读写（personaAnchor 锚点） | invited 会话 |
+| `/api/profile` | 用户画像读写（personaAnchor 锚点） | user 会话 |
 | `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
 | `/api/insights` | 洞察数据 + 选题操作 | admin cookie / CRON_SECRET |
 | `/api/like` | 文章点赞（Upstash Redis） | 无（IP 限流） |
@@ -150,7 +152,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/admin/rules` | 规则候选池 CRUD（observed → candidate → validated → stable → retired） | admin cookie |
 | `/api/admin/skills` | Skill 候选 CRUD（candidate → admitted → demoted-to-method） | admin cookie |
 | `/api/admin/experience-events` | 经验事件采集与查询（U10） | admin cookie |
-| `/api/profile/delete-request` | 用户画像删除请求（标记 `deleteRequestedAt` 软删除） | invited 会话 |
+| `/api/profile/delete-request` | 用户画像删除请求（标记 `deleteRequestedAt` 软删除） | user 会话 |
 | `/api/search-events` | 记录搜索无结果查询（内容缺口信号，fire-and-forget） | 无 |
 
 以下旧路由保留为 301 重定向（定义在 `astro.config.mjs`）：
@@ -220,7 +222,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`toc-highlight.ts`**：文章目录当前标题高亮，通过 IntersectionObserver 追踪。
 - **`justify-tags.ts`**：文章列表标签两端对齐排版，导出 `justifyTags()` 和 `watchJustifyTags()`，含 resize 和 View Transition 生命周期支持，依赖 `@chenglou/pretext`。
 - **`home-canvas.ts`**：首页 Bento 画布拖拽、主题切换、状态栏反应和点击水波纹逻辑（Spark 抽点子盲盒已迁移至 `GreetingCard.astro`）。
-- **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
+- **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 使用。
 - **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。
 - **`inline-editor.ts`**：就地/独立编辑器逻辑（`InlineEditor.astro` 配套）。导出 `enterInlineEditor(slug)`（就地模式入口）、`initStandaloneEditor(slug, draftTemplate)`（独立模式）。含 marked 客户端预览、frontmatter ↔ YAML 双向同步、localStorage 草稿、sha 乐观锁冲突、Ctrl+S 保存、`data-inline-editing` 钩子。
 - **`version-history.ts`**：版本历史逻辑（`VersionHistory.astro` 配套）。导出 `initVersionHistory()`，监听 `version-history:open` 事件。含 git 历史拉取、jsdiff 渲染、回退（复用 PUT 新提交）。
@@ -255,7 +257,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 ### 模块架构
 
-业务逻辑采用四层架构：API 路由（HTTP 薄层）→ `services/`（应用服务 / 业务编排）→ `stores/` + `services/interfaces.ts`（端口抽象）→ `conversation/store.ts`（存储实现）。`/api/match` 的 Agent 编排按**六模块边界**分层（Perception / Memory / Planning / Tools / Orchestration / Observability，定义见 `.agents/skills/walker-northstar/references/planning/agent-six-modules-architecture.md`），`NeedCase` 是核心业务对象（取代旧 DemandEvent）。`docs/adr/ADR-0001` 记录了从 `src/lib` + `src/data` 按职责拆分为 knowledge/profiles/agent/conversation/shared 的历史起点；此后新增 `services/`（应用服务层）和 `stores/`（数据仓储端口层）。Astro 展示层文件（pages/、layouts/、components/、scripts/、styles/）保持原位不动。
+业务逻辑采用四层架构：API 路由（HTTP 薄层）→ `services/`（应用服务 / 业务编排）→ `stores/` + `services/interfaces.ts`（端口抽象）→ `conversation/store.ts`（存储实现）。`/api/match` 的 Agent 编排按**六模块边界**分层（Perception / Memory / Planning / Tools / Orchestration / Observability，定义见 `.agents/skills/walker-northstar/references/planning/agent-six-modules-architecture.md`），`NeedCase` 是核心业务对象（取代旧 DemandEvent）。历史起点：从 `src/lib` + `src/data` 按职责拆分为 knowledge/profiles/agent/conversation/shared；此后新增 `services/`（应用服务层）和 `stores/`（数据仓储端口层）。Astro 展示层文件（pages/、layouts/、components/、scripts/、styles/）保持原位不动。
 
 #### knowledge/（知识库）
 
@@ -287,8 +289,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`interfaces.ts`**：业务层端口。定义 `MatchingServicePort`、`VisibilityServicePort`（角色 `public`/`user`/`admin` × 可见性 `public`/`draft`/`private`/`admin-only`）、`UserContextServicePort`、`AccountServicePort`（注册/登录/登出/改密/重置/封禁/owner bootstrap）、`UserProfileServicePort`（按 username）、`AgentOrchestratorPort`、`PerceptionServicePort`、`FeedbackServicePort`、`AdminReviewServicePort`、`SafetyServicePort`。
 - **`agent-orchestrator.service.ts`**：`/api/match` 的业务核心（取代旧 `question.service.ts`）。按六模块生命周期编排 `handleNeed`：`perceive`（PerceptionService）→ `planRecommendation`（本地匹配 + 模型增强 + 字段挑选）→ `persistSession`（会话/统计/消息）→ `buildAgentRecommendation` + `safetyFlags` → `recordNeedCase`（生成 + 保存 NeedCase，失败降级记 Incident）→ `buildResponsePayload`。AI 失败降级本地规则；NeedCase 保存失败不阻断用户响应。对外 `handleNeed` 签名稳定，内部拆为命名步骤函数。
 - **`perception.service.ts`**：六模块之 Perception。消息截断、逐条 PII 脱敏 + 压缩、最新需求提取、未成年标记，经 `PerceptionServicePort` 暴露。
-- **`user-context.service.ts`**：汇总身份（`admin`/`invited`/`public`）+ invited 会话 + 画像为 `UserContext`。
-- **`invite-access.service.ts`**：邀请码验证准入（`verifyAndAdmit`）。
+- **`user-context.service.ts`**：汇总身份（`admin`/`user`/`public`）+ 账号会话 + 画像为 `UserContext`。
+- **`account.service.ts`**：账号系统核心（注册/登录/登出/改密/重置/封禁/owner bootstrap），被 `/api/auth/*` + `/api/admin/accounts/*` 引用；邀请码在 `register()` 校验消费。
 - **`profile.service.ts`**：用户画像读写删除（`personaAnchor` 锚点，零 PII，写入前过 `redactSensitiveText`）。
 - **`safety.service.ts`**：输入评估 + Incident 事件记录。
 - **`feedback.service.ts`**：反馈保存并回写 NeedCase 的 `feedbackStatus`。
@@ -304,7 +306,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 #### conversation/（存储实现层）
 
-- **`store.ts`**：Redis + 内存降级的存储实现。管理 `MatchSession`、`NeedCase`（取代旧 DemandEvent）、`TopicCandidate`、`MatchFeedbackEvent`、`ConversationMessage`、`InvitedSession`、`UserProfile`、`Incident` 生命周期，导出 `getRedis()`、`createSessionId()`、`saveConversationMessages()`、`getNeedCaseStats()`（取代旧 `getDemandStats`）、`getTopicCandidates()`、`saveNeedCase()`、`redactNeedCasesBySession()` 等。被 `stores/` 仓储委托调用，也被 MCP server 和 `/api/match-feedback`（`saveMatchFeedback`）直接引用。
+- **`store.ts`**：Redis + 内存降级的存储实现。管理 `MatchSession`、`NeedCase`（取代旧 DemandEvent）、`TopicCandidate`、`MatchFeedbackEvent`、`ConversationMessage`、`UserProfile`、`Incident` 生命周期，导出 `getRedis()`、`createSessionId()`、`saveConversationMessages()`、`getNeedCaseStats()`（取代旧 `getDemandStats`）、`getTopicCandidates()`、`saveNeedCase()`、`redactNeedCasesByUsername(username)` 等。被 `stores/` 仓储委托调用，也被 MCP server 和 `/api/match-feedback`（`saveMatchFeedback`）直接引用。
 
 #### shared/（共享工具）
 
@@ -332,7 +334,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 ## 文档治理
 
-`docs/` 不是当前项目工作台。当前有效的 PRD、计划、架构和执行状态统一放在 `.agents/skills/walker-northstar/references/`（walker-northstar skill 仓库，独立 git）。`docs/` 仅保留三类材料：归档（`docs/archive/`）、架构决策记录（`docs/adr/`）、专题资料（`docs/AI赋能/` 等）。详见 `docs/README.md`。
+`docs/` 不是当前项目工作台。当前有效的 PRD、计划、架构和执行状态统一放在 `.agents/skills/walker-northstar/references/`（walker-northstar skill 仓库，独立 git）。`docs/` 仅保留两类材料：归档（`docs/archive/`）、专题资料（`docs/AI赋能/` 等）。详见 `docs/README.md`。
 
 ## 内容创作
 
