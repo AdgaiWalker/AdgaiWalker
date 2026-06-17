@@ -110,3 +110,78 @@ export function applyDaylight(input: ComposeInput): ResolvedPalette {
     orb4,
   };
 }
+
+// 天气情绪修饰参数（PRD §3.6 中度 / §7.2 Layer 3）
+interface WeatherMod {
+  chromaMul: number; // 彩度倍率
+  bgLDelta: number; // 背景明度偏移（+提亮 / -压暗）
+  contrastMul: number; // textDim 相对 text 的明度间距倍率（<1 压缩=朦胧）
+  hueShift: number; // 背景色相微移（度）
+}
+
+const WEATHER_MODS: Record<WeatherCondition, WeatherMod> = {
+  clear: { chromaMul: 1.15, bgLDelta: 0.01, contrastMul: 1.0, hueShift: 0 },
+  partlycloudy: { chromaMul: 1.0, bgLDelta: 0, contrastMul: 1.0, hueShift: 0 },
+  overcast: { chromaMul: 0.8, bgLDelta: -0.01, contrastMul: 0.9, hueShift: -8 },
+  fog: { chromaMul: 0.6, bgLDelta: 0, contrastMul: 0.55, hueShift: -5 },
+  lightrain: { chromaMul: 0.75, bgLDelta: -0.02, contrastMul: 0.9, hueShift: -15 },
+  heavyrain: { chromaMul: 0.65, bgLDelta: -0.05, contrastMul: 0.85, hueShift: -20 },
+  snow: { chromaMul: 0.55, bgLDelta: 0.03, contrastMul: 0.7, hueShift: -10 },
+  thunder: { chromaMul: 0.6, bgLDelta: -0.06, contrastMul: 0.8, hueShift: 25 }, // 偏紫
+};
+
+const clampL = (l: number): number => Math.max(0.05, Math.min(0.98, l));
+
+// 天气情绪层：只动彩度/明度微调/对比压缩，不动 text 明度 → 不破坏可读性
+export function applyWeather(p: ResolvedPalette, condition: WeatherCondition): ResolvedPalette {
+  const m = WEATHER_MODS[condition];
+  const scale = (c: Oklch): Oklch => ({ l: c.l, c: Math.max(0, c.c * m.chromaMul), h: c.h });
+  // textDim 向 text 收拢（对比压缩）
+  const dimL = lerp(p.text.l, p.textDim.l, m.contrastMul);
+  return {
+    ...p,
+    bg: {
+      l: clampL(p.bg.l + m.bgLDelta),
+      c: Math.max(0, p.bg.c * m.chromaMul),
+      h: lerpHue(p.bg.h, p.bg.h + m.hueShift, 1),
+    },
+    brand: scale(p.brand),
+    secondary: scale(p.secondary),
+    orb1: scale(p.orb1),
+    orb2: scale(p.orb2),
+    orb3: scale(p.orb3),
+    orb4: scale(p.orb4),
+    textDim: { ...p.textDim, l: clampL(dimL) },
+  };
+}
+
+// 三层合成：季节(插值) → 时刻(明暗+暖) → 天气(浓度)
+export function composePalette(input: ComposeInput): ResolvedPalette {
+  return applyWeather(applyDaylight(input), input.condition);
+}
+
+function oklchStr(c: Oklch, alpha?: number): string {
+  const core = `${c.l.toFixed(4)} ${c.c.toFixed(4)} ${c.h.toFixed(1)}`;
+  return alpha === undefined ? `oklch(${core})` : `oklch(${core} / ${alpha})`;
+}
+
+// ResolvedPalette → CSS 变量字典。card/border/orbs 用 alpha 派生。
+export function toCssVars(p: ResolvedPalette): Record<string, string> {
+  const night = p.isNight;
+  return {
+    '--color-bg': oklchStr(p.bg),
+    '--color-parchment': oklchStr(p.text),
+    '--color-parchment-dim': oklchStr(p.textDim),
+    '--color-brand': oklchStr(p.brand),
+    '--color-brand-secondary': oklchStr(p.secondary),
+    '--color-brand-glow': oklchStr(p.brand, night ? 0.18 : 0.15),
+    '--color-card': oklchStr(p.bg, night ? 0.45 : 0.65),
+    '--color-border': oklchStr(p.text, night ? 0.07 : 0.9),
+    '--color-inner-bg': oklchStr(p.bg, night ? 0.25 : 0.45),
+    '--color-nav-bg': oklchStr(p.bg, 0.85),
+    '--orb-color-1': oklchStr(p.orb1),
+    '--orb-color-2': oklchStr(p.orb2),
+    '--orb-color-3': oklchStr(p.orb3),
+    '--orb-color-4': oklchStr(p.orb4),
+  };
+}

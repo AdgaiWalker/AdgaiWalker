@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { daylightFactors, applyDaylight, type ComposeInput } from './compose';
+import {
+  daylightFactors,
+  applyDaylight,
+  applyWeather,
+  composePalette,
+  toCssVars,
+  type ComposeInput,
+} from './compose';
+import type { WeatherCondition } from './wmo';
 
 // 构造一天：sunrise 06:00, solarNoon 12:00, sunset 18:00（某天 UTC）
 const DAY = Date.UTC(2026, 5, 21); // 2026-06-21 00:00 UTC
@@ -53,5 +61,79 @@ describe('applyDaylight 可读性铁律', () => {
     const noon = applyDaylight(inputAt(12));
     const dusk = applyDaylight(inputAt(18));
     expect(dusk.brand.c).toBeGreaterThan(noon.brand.c);
+  });
+});
+
+describe('applyWeather（中度）', () => {
+  it('晴 → 彩度提升', () => {
+    const base = applyDaylight(inputAt(12, 'clear'));
+    const sunny = applyWeather(base, 'clear');
+    expect(sunny.brand.c).toBeGreaterThanOrEqual(base.brand.c);
+  });
+  it('阴/雾 → 彩度降低', () => {
+    const base = applyDaylight(inputAt(12, 'clear'));
+    expect(applyWeather(base, 'overcast').brand.c).toBeLessThan(base.brand.c);
+    expect(applyWeather(base, 'fog').brand.c).toBeLessThan(base.brand.c);
+  });
+  it('雨/雷 → 偏暗', () => {
+    const base = applyDaylight(inputAt(12, 'clear'));
+    expect(applyWeather(base, 'heavyrain').bg.l).toBeLessThan(base.bg.l);
+    expect(applyWeather(base, 'thunder').bg.l).toBeLessThan(base.bg.l);
+  });
+  it('雪 → 偏白提亮', () => {
+    const base = applyDaylight(inputAt(12, 'clear'));
+    expect(applyWeather(base, 'snow').bg.l).toBeGreaterThan(base.bg.l);
+  });
+  it('雾 → 对比压缩（textDim 更靠近 text）', () => {
+    const base = applyDaylight(inputAt(12, 'clear'));
+    const fog = applyWeather(base, 'fog');
+    const baseSpread = Math.abs(base.textDim.l - base.text.l);
+    const fogSpread = Math.abs(fog.textDim.l - fog.text.l);
+    expect(fogSpread).toBeLessThan(baseSpread);
+  });
+  it('天气不破坏可读性：任意天气下明度差仍 ≥0.6', () => {
+    const conds: WeatherCondition[] = [
+      'clear', 'partlycloudy', 'overcast', 'fog', 'lightrain', 'heavyrain', 'snow', 'thunder',
+    ];
+    for (const c of conds) {
+      for (let hh = 0; hh < 24; hh += 3) {
+        const p = applyWeather(applyDaylight(inputAt(hh, c)), c);
+        expect(Math.abs(p.text.l - p.bg.l), `${c} h${hh}`).toBeGreaterThanOrEqual(0.6);
+      }
+    }
+  });
+});
+
+describe('composePalette 皇冠矩阵', () => {
+  const conds: WeatherCondition[] = [
+    'clear', 'partlycloudy', 'overcast', 'fog', 'lightrain', 'heavyrain', 'snow', 'thunder',
+  ];
+  const seasonDays = [35, 80, 125, 172, 218, 266, 311, 355];
+  const keys = ['bg', 'text', 'textDim', 'brand', 'secondary', 'orb1', 'orb2', 'orb3', 'orb4'] as const;
+
+  it('8 季 × 24 时刻 × 8 天气 全组合：可读性 + 合法性', () => {
+    for (const d of seasonDays) {
+      for (let hh = 0; hh < 24; hh++) {
+        for (const c of conds) {
+          const p = composePalette(inputAt(hh, c, d));
+          const gap = Math.abs(p.text.l - p.bg.l);
+          expect(gap, `day${d} h${hh} ${c} gap=${gap.toFixed(3)}`).toBeGreaterThanOrEqual(0.6);
+          for (const k of keys) {
+            expect(Number.isFinite(p[k].l), `${k}.l finite`).toBe(true);
+            expect(p[k].l, `${k}.l in [0,1]`).toBeGreaterThanOrEqual(0);
+            expect(p[k].l, `${k}.l in [0,1]`).toBeLessThanOrEqual(1);
+          }
+        }
+      }
+    }
+  });
+
+  it('toCssVars 产出合法 oklch() 字符串且含核心变量', () => {
+    const vars = toCssVars(composePalette(inputAt(12)));
+    expect(vars['--color-bg']).toMatch(/^oklch\(/);
+    expect(vars['--color-parchment']).toMatch(/^oklch\(/);
+    expect(vars['--color-brand']).toMatch(/^oklch\(/);
+    expect(vars['--color-card']).toMatch(/oklch\(.*\/\s*[\d.]+\)/); // 带 alpha
+    expect(vars['--orb-color-1']).toBeDefined();
   });
 });
