@@ -116,126 +116,86 @@ const needsBootstrap = !(await createAccountStore().exists());
 </FullscreenLayout>
 
 <style>
-  .auth-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem;
-  }
-  .auth-shell {
-    width: 100%;
-    max-width: 380px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-  }
+  .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .auth-shell { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
   .auth-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--color-text, #eee);
-    font-family: var(--font-heading);
-    font-size: 1.15rem;
-    font-weight: 700;
-    text-decoration: none;
-    opacity: 0.8;
-    transition: opacity 0.2s;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    color: var(--color-parchment, #1a2325);
+    font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700;
+    text-decoration: none; opacity: 0.85; transition: opacity 0.2s;
   }
   .auth-brand:hover { opacity: 1; }
 
   .auth-card {
-    width: 100%;
-    padding: 2rem;
-    border-radius: 18px;
-    background: var(--color-surface, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+    width: 100%; padding: 2rem; border-radius: 18px;
+    background: var(--color-card, rgba(255, 255, 255, 0.94));
+    border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 14%, transparent);
     backdrop-filter: blur(20px);
-    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 18px 54px color-mix(in srgb, var(--color-parchment, #1a2325) 20%, transparent);
   }
-  .auth-card h1 { margin: 0 0 0.25rem; font-size: 1.3rem; color: var(--color-text, #eee); }
-  .auth-sub { margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--color-text-muted, #888); }
+  .auth-card h1 { margin: 0 0 0.25rem; font-size: 1.3rem; color: var(--color-parchment, #1a2325); }
+  .auth-sub { margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--color-parchment-dim, #64748b); line-height: 1.6; }
 
   .auth-seg {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.25rem;
-    padding: 0.25rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; padding: 0.25rem;
     margin-bottom: 1.5rem;
-    background: rgba(127, 127, 127, 0.14);
+    background: color-mix(in srgb, var(--color-parchment, #1a2325) 8%, transparent);
     border-radius: 999px;
   }
   .seg-btn {
-    padding: 0.55rem;
-    border: none;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-text-muted, #999);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    padding: 0.6rem; border: none; border-radius: 999px; background: transparent;
+    color: var(--color-parchment-dim, #64748b); font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
   }
-  .seg-btn.active { background: var(--color-brand, #4f8cff); color: #fff; }
+  .seg-btn.active { background: var(--color-brand, #35bfab); color: #fff; }
 
   .auth-form { display: flex; flex-direction: column; gap: 0.9rem; }
   .field { display: flex; flex-direction: column; gap: 0.3rem; }
-  .field > span { font-size: 0.78rem; color: var(--color-text-muted, #999); font-weight: 500; }
+  .field > span { font-size: 0.78rem; color: var(--color-parchment-dim, #64748b); font-weight: 600; }
   .field input {
-    padding: 0.65rem 0.8rem;
-    border-radius: 10px;
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14));
-    background: rgba(0, 0, 0, 0.16);
-    color: var(--color-text, #eee);
+    padding: 0.7rem 0.85rem; border-radius: 10px;
+    border: 1.5px solid color-mix(in srgb, var(--color-parchment, #1a2325) 16%, transparent);
+    background: color-mix(in srgb, var(--color-parchment, #1a2325) 4%, transparent);
+    color: var(--color-parchment, #1a2325);
     font-size: 0.95rem;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
+  .field input::placeholder { color: var(--color-parchment-dim, #9ca3af); opacity: 0.7; }
   .field input:focus {
     outline: none;
-    border-color: var(--color-brand, #4f8cff);
-    box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
+    border-color: var(--color-brand, #35bfab);
+    box-shadow: 0 0 0 3px var(--color-brand-glow, rgba(53, 191, 171, 0.2));
   }
-  .field input::placeholder { color: var(--color-text-muted, #666); opacity: 0.7; }
 
   .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
   .chip {
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14));
-    background: transparent;
-    color: var(--color-text-muted, #999);
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: all 0.18s;
+    padding: 0.2rem 0.6rem; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 16%, transparent);
+    background: transparent; color: var(--color-parchment-dim, #64748b);
+    font-size: 0.78rem; cursor: pointer; transition: all 0.18s;
   }
-  .chip:hover { color: var(--color-brand, #4f8cff); border-color: var(--color-brand, #4f8cff); }
+  .chip:hover { color: var(--color-brand, #35bfab); border-color: var(--color-brand, #35bfab); }
 
-  .consent { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted, #999); }
+  .consent { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--color-parchment-dim, #64748b); }
 
-  .auth-error { color: #ff6b6b; font-size: 0.82rem; margin: 0; }
+  .auth-error { color: #ef4444; font-size: 0.82rem; margin: 0; font-weight: 500; }
 
   .btn {
-    padding: 0.7rem 1rem;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    font-size: 0.95rem;
-    font-weight: 600;
-    transition: opacity 0.2s, transform 0.05s;
+    padding: 0.78rem 1rem; border-radius: 10px; border: none; cursor: pointer;
+    font-size: 0.95rem; font-weight: 700; transition: opacity 0.2s, transform 0.05s;
   }
-  .btn.primary { background: var(--color-brand, #4f8cff); color: #fff; }
-  .btn.ghost { background: transparent; color: var(--color-text, #eee); border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14)); }
+  .btn.primary { background: var(--color-brand, #35bfab); color: #fff; }
+  .btn.ghost { background: transparent; color: var(--color-parchment, #1a2325); border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 16%, transparent); }
   .btn:active { transform: translateY(1px); }
   .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
   .auth-actions { display: flex; gap: 0.6rem; }
   .auth-actions .btn { flex: 1; }
 
-  .auth-foot { margin: 1.25rem 0 0; text-align: center; font-size: 0.76rem; color: var(--color-text-muted, #777); }
-  .bootstrap-card { border-color: var(--color-brand, #4f8cff); box-shadow: 0 12px 48px rgba(79,140,255,0.18); }
-  .bootstrap-tag { display: inline-block; margin-bottom: 0.6rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: rgba(79,140,255,0.16); color: var(--color-brand, #4f8cff); font-size: 0.72rem; font-weight: 700; }
-  .bootstrap-card code { font-family: var(--font-mono, monospace); font-size: 0.82em; color: var(--color-text, #eee); }
+  .auth-foot { margin: 1.25rem 0 0; text-align: center; font-size: 0.76rem; color: var(--color-parchment-dim, #9ca3af); }
+  .bootstrap-card { border-color: var(--color-brand, #35bfab); box-shadow: 0 18px 54px var(--color-brand-glow, rgba(53, 191, 171, 0.24)); }
+  .bootstrap-tag { display: inline-block; margin-bottom: 0.6rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--color-brand-glow, rgba(53, 191, 171, 0.16)); color: var(--color-brand, #35bfab); font-size: 0.72rem; font-weight: 700; }
+  .bootstrap-card code { font-family: var(--font-mono, monospace); font-size: 0.82em; color: var(--color-parchment, #1a2325); }
 </style>
 
 <script>
