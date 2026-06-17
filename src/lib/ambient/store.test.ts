@@ -18,6 +18,7 @@ describe('ambient store', () => {
       nextSunRecalc: 4000,
       weather: { code: 1, condition: 'partlycloudy' as const, temp: 22 },
       forecast24h: [],
+      dayOfYear: 172,
       seasonIndex: 3,
       seasonName: '夏至',
       updatedAt: 5000,

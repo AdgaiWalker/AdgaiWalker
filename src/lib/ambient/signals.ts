@@ -23,6 +23,7 @@ export interface AmbientState {
   nextSunRecalc: number;
   weather: CurrentWeather;
   forecast24h: unknown[];
+  dayOfYear: number;
   seasonIndex: number;
   seasonName: string;
   updatedAt: number;
@@ -33,6 +34,7 @@ export interface SignalBundle {
   sunrise: number;
   sunset: number;
   solarNoon: number;
+  dayOfYear: number;
   condition: WeatherCondition;
   temp: number;
   seasonIndex: number;
@@ -76,6 +78,7 @@ export function toSignalBundle(s: AmbientState): SignalBundle {
     sunrise: s.sunrise,
     sunset: s.sunset,
     solarNoon: s.solarNoon,
+    dayOfYear: s.dayOfYear,
     condition: s.weather.condition,
     temp: s.weather.temp,
     seasonIndex: s.seasonIndex,

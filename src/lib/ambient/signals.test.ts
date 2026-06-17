@@ -38,6 +38,7 @@ describe('toSignalBundle', () => {
       nextSunRecalc: 4,
       weather: { code: 0, condition: 'clear', temp: 25 },
       forecast24h: [],
+      dayOfYear: 172,
       seasonIndex: 3,
       seasonName: '夏至',
       updatedAt: 5,
@@ -47,5 +48,6 @@ describe('toSignalBundle', () => {
     expect(bundle).toHaveProperty('sunrise');
     expect(bundle).toHaveProperty('condition', 'clear');
     expect(bundle).toHaveProperty('seasonName', '夏至');
+    expect(bundle).toHaveProperty('dayOfYear', 172);
   });
 });
