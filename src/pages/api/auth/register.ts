@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 
 import { createAccountService } from '@/services/account.service';
 import { sessionCookie, signSessionToken } from '@/lib/account-auth';
+import { getClientIP, rateLimit } from '@/lib/rate-limit';
 import type { RegisterInput } from '@/services/interfaces';
 
 const accountService = createAccountService();
@@ -21,6 +22,10 @@ function json(data: unknown, status = 200, headers?: HeadersInit): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  // 限流：每 IP 每分钟 5 次，防邀请码暴力枚举
+  const ipRL = await rateLimit(`auth:register:${getClientIP(request)}`, { windowMs: 60_000, max: 5 });
+  if (!ipRL.allowed) return json({ ok: false, reason: '尝试太频繁，请稍后再试。' }, 429);
+
   let body: unknown;
   try {
     body = await request.json();

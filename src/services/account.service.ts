@@ -37,6 +37,9 @@ function verifyPassword(password: string, stored: string): boolean {
   return timingSafeEqual(derived, expected);
 }
 
+/** 固定 dummy 哈希：用户不存在时也对它跑一次 scrypt，拉平时延防用户名枚举（时序侧信道） */
+const DUMMY_HASH = hashPassword('dummy-password-do-not-use');
+
 function constantTimeEqualString(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
@@ -144,8 +147,12 @@ export function createAccountService(): AccountServicePort {
 
     async login(username: string, password: string): Promise<AuthResult> {
       const account = await accountStore.findByUsername(username.trim());
-      // 防枚举：用户不存在 / 密码错 统一报错
-      if (!account || !verifyPassword(password, account.passwordHash)) {
+      // 防时序侧信道：用户不存在时也对 dummy hash 跑一次 scrypt 拉平时延；文案统一防枚举
+      if (!account) {
+        verifyPassword(password, DUMMY_HASH);
+        return { ok: false, reason: '用户名或密码错误' };
+      }
+      if (!verifyPassword(password, account.passwordHash)) {
         return { ok: false, reason: '用户名或密码错误' };
       }
       if (account.status === 'banned') return { ok: false, reason: '账号已封禁，联系站主' };
