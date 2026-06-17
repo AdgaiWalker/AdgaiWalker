@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { getPublishedThoughts, getFrequentTags, isPublicContentData } from '@/knowledge/content';
-import { buildLearnGuidePath, buildPostPath } from '@/shared/routes';
+import { buildLearnGuidePath, buildLearnTrackPath, buildPostPath } from '@/shared/routes';
 import { formatDateCompact } from '@/shared/format';
 import { Icon } from 'astro-icon/components';
 import {
@@ -10,9 +10,6 @@ import {
   learningLayers,
   learningLayerMeta,
   trackStatusMeta,
-  aiPlatformMeta,
-  resourceTypeLabels,
-  getTrackProgress,
   type LearningLayer,
   type LearningTrack,
 } from '@/data/learning-tracks';
@@ -81,142 +78,30 @@ const currentTab = rawTab === 'journal' ? 'tracks' : rawTab;
           <section class="track-layer-section reveal">
             <div class="track-layer-header">
               <div class="track-layer-icon">
-                <Icon name={meta.icon} width={18} height={18} />
+                <Icon name={meta.icon} width={16} height={16} />
               </div>
               <div class="track-layer-text">
                 <h2 class="track-layer-title">{meta.label}</h2>
                 <span class="track-layer-desc">{meta.description}</span>
               </div>
             </div>
-            <div class="track-cards">
+            <div class="track-entry-list">
               {tracks.map(track => {
-                const progress = getTrackProgress(track);
                 const statusInfo = trackStatusMeta[track.status];
                 const doneMilestones = track.milestones.filter(m => m.done).length;
+                const hasMilestones = track.milestones.length > 0;
                 return (
-                  <div class="track-card panel-glass">
-                    {/* 标题行 */}
-                    <div class="track-card-header">
-                      <h3 class="track-card-title">{track.title}</h3>
-                      <span
-                        class="track-status-badge"
-                        style={`--badge-color: ${statusInfo.color}`}
-                      >
-                        <Icon name={statusInfo.icon} width={12} height={12} />
-                        {statusInfo.label}
-                      </span>
+                  <a class="track-entry" href={buildLearnTrackPath(track.id)}>
+                    <span class="track-entry-dot" style={`--badge-color: ${statusInfo.color}`} />
+                    <div class="track-entry-main">
+                      <span class="track-entry-title">{track.title}</span>
+                      <span class="track-entry-motivation">{track.motivation}</span>
                     </div>
-
-                    {/* 动机 */}
-                    <p class="track-motivation">{track.motivation}</p>
-
-                    {/* 进度条 */}
-                    {track.milestones.length > 0 && (
-                      <div class="track-progress-wrap">
-                        <div class="track-progress-bar">
-                          <div
-                            class="track-progress-fill"
-                            style={`width: ${progress}%; --badge-color: ${statusInfo.color}`}
-                          />
-                        </div>
-                        <span class="track-progress-text">{doneMilestones}/{track.milestones.length}</span>
-                      </div>
-                    )}
-
-                    {/* 里程碑 */}
-                    {track.milestones.length > 0 && (
-                      <div class="track-milestones">
-                        {track.milestones.map(m => (
-                          <span class:list={['track-milestone', { done: m.done }]}>
-                            <Icon name={m.done ? 'lucide:check' : 'lucide:circle'} width={11} height={11} />
-                            {m.title}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* 学习笔记 (AI 对话) */}
-                    {track.notes.length > 0 && (
-                      <div class="track-subsection">
-                        <div class="track-subsection-title">
-                          <Icon name="lucide:message-square" width={13} height={13} />
-                          学习笔记
-                        </div>
-                        <div class="track-note-list">
-                          {track.notes.map(note => (
-                            <a
-                              href={note.aiConversation?.url || '#'}
-                              target={note.aiConversation ? '_blank' : undefined}
-                              rel={note.aiConversation ? 'noopener noreferrer' : undefined}
-                              class="track-note-item"
-                            >
-                              <span class="track-note-title">{note.title}</span>
-                              {note.aiConversation && (
-                                <span class="track-note-platform">
-                                  <Icon name={aiPlatformMeta[note.aiConversation.platform].icon} width={11} height={11} />
-                                  {aiPlatformMeta[note.aiConversation.platform].label}
-                                </span>
-                              )}
-                              <span class="track-note-date">{note.date}</span>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 实践反思 (文章) */}
-                    {track.articles.length > 0 && (
-                      <div class="track-subsection">
-                        <div class="track-subsection-title">
-                          <Icon name="lucide:pen-line" width={13} height={13} />
-                          实践反思
-                        </div>
-                        <div class="track-article-list">
-                          {track.articles.map(slug => (
-                            <a href={buildPostPath(slug)} class="track-article-item">
-                              <Icon name="lucide:file-text" width={12} height={12} />
-                              {slug}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 参考资料 */}
-                    {track.resources.length > 0 && (
-                      <div class="track-subsection">
-                        <div class="track-subsection-title">
-                          <Icon name="lucide:book-open" width={13} height={13} />
-                          参考资料
-                        </div>
-                        <div class="track-resource-list">
-                          {track.resources.map(res => (
-                            res.url ? (
-                              <a href={res.url} target="_blank" rel="noopener noreferrer" class="track-resource-item">
-                                <Icon name="lucide:external-link" width={11} height={11} />
-                                {res.name}
-                                <span class="track-resource-type">{resourceTypeLabels[res.type]}</span>
-                              </a>
-                            ) : (
-                              <span class="track-resource-item">
-                                <Icon name="lucide:bookmark" width={11} height={11} />
-                                {res.name}
-                                <span class="track-resource-type">{resourceTypeLabels[res.type]}</span>
-                              </span>
-                            )
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 开始日期 */}
-                    {track.startedDate && (
-                      <div class="track-meta">
-                        <Icon name="lucide:calendar" width={12} height={12} />
-                        <span>{track.startedDate} 开始</span>
-                      </div>
-                    )}
-                  </div>
+                    <span class="track-entry-progress">
+                      {hasMilestones ? `${doneMilestones}/${track.milestones.length}` : statusInfo.label}
+                    </span>
+                    <Icon name="lucide:chevron-right" width={16} height={16} class="track-entry-arrow" />
+                  </a>
                 );
               })}
             </div>

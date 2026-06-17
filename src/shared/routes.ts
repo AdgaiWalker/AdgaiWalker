@@ -15,3 +15,4 @@ export const FERRY = '/projects/ferry' as const;
 export const buildPostPath = (id: string) => `${POSTS}/${id}` as const;
 export const buildContentSpacePath = (space: string) => `${CONTENT}?space=${space}` as const;
 export const buildLearnGuidePath = (level: string, tool: string) => `${LEARN}/guide/${level}/${tool}` as const;
+export const buildLearnTrackPath = (id: string) => `${LEARN}/track/${id}` as const;
