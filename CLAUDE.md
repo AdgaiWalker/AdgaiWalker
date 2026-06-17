@@ -27,12 +27,12 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 参见 `.env.example` 获取完整配置说明。关键分组：
 
-- **必填（生产）**：`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（点赞、匹配、对话存储）、`ADMIN_PASSWORD`（管理后台）、`CRON_SECRET`（批处理 Cron）。
+- **必填（生产）**：`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（点赞、匹配、对话存储）、`COOKIE_SECRET`（会话 cookie 签名密钥，独立于登录密码）、`CRON_SECRET`（批处理 Cron）。`ADMIN_PASSWORD` 降级为 owner 账号一次性 bootstrap 密钥（建 owner 后可退役）。
 - **Giscus 评论**：`PUBLIC_GISCUS_REPO` / `PUBLIC_GISCUS_REPO_ID` / `PUBLIC_GISCUS_CATEGORY` / `PUBLIC_GISCUS_CATEGORY_ID`。未配置时评论组件不渲染。
 - **AI 匹配（可选）**：通过 AI Gateway 配置（服务商 API key、`baseUrl`、`model`），配置存 Redis hash `ai-gateway:config`，在 `/admin/ai-gateway` 管理页维护（预设 DeepSeek / OpenAI / Anthropic / 自定义）。未配置时仅使用本地规则匹配，不调用模型、不产生费用。`ANTHROPIC_API_KEY` 仍作为 `src/agent/gateway.ts` 的运行时 fallback 被读取（`config.apiKey || import.meta.env.ANTHROPIC_API_KEY`）；建议只在 `/admin/ai-gateway` 配置 key，不依赖环境变量。
 - **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
 - **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。
-- **邀请准入**：`INVITE_CODES`（可选，格式 `code:label:maxUses`，逗号分隔多组，被 `stores/invite-code.store.ts` 读取用于 `/api/invite/verify` 准入）。
+- **注册门票**：`INVITE_CODES`（可选，格式 `code:label:maxUses`，逗号分隔多组，被 `stores/invite-code.store.ts` 读取；邀请码降级为账号注册的一次性门票，`/api/auth/register` 校验并消费）。
 
 ## 架构
 
@@ -40,7 +40,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 - **双查询系统**：`src/knowledge/content.ts` 依赖 Astro 构建上下文（`getCollection`），仅在 `.astro` 页面中可用；`src/knowledge/content-query.ts` 直接读文件系统（`gray-matter`），独立于 Astro，供 MCP server 和 Agent 使用。两者查询同一内容源但通过不同方式。
 - **Redis 降级模式**：所有 Redis 依赖（点赞、匹配限流、对话存储、网关配置、洞察数据）都实现了 `Upstash Redis → 内存/本地文件` 的降级链。生产环境必须配置 Redis；开发环境无 Redis 仍可运行。
-- **Admin 认证**：基于 Cookie HMAC 签名（7 天有效），密钥为 `ADMIN_PASSWORD` 环境变量。`src/lib/admin-auth.ts` 导出 `isAdmin()` 检查函数，所有 admin 页面和 API 路由统一引用。
+- **账号认证**：身份模型 `public / user / admin`（站主 = `role: admin` 的账号，与用户同走 `/login`）。会话统一 `walker-session` cookie（HMAC 签名，密钥 `COOKIE_SECRET`，30 天，payload 带 `{sid, role}`）。`src/lib/admin-auth.ts` 导出 `isAdmin()`（纯 cookie 同步判定 role=admin）；`src/lib/account-auth.ts` 签发/校验会话 token。注册 = 邀请码门票 + 用户名 + scrypt 密码（零 PII）；忘密走站主 `/admin/accounts` 重置。
 - **内容编辑回写**：Admin 内容编辑器（`/admin/content/edit`）通过 GitHub API（`GITHUB_TOKEN`）回写 markdown 文件，而非直接写文件系统。
 - **AI Gateway 统一入口**：所有 AI 调用通过 `src/agent/gateway.ts` 的 `callGateway()` 统一入口，流程：Pretext → 敏感词检测 → API key 检查 → AI 调用 → 输出检测 → 日志。
 - **双 Git 边界**：产品仓库（本仓库 AdgaiWalker，保护 `reality`）与 skill 仓库（`.agents/skills/walker-northstar`，独立 git，保护 `blueprint` + references）分开管理。`.agents/` 在产品仓库 `.gitignore` 中。
@@ -93,7 +93,9 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
 | `/admin` | 管理仪表盘（内容统计 + 快捷入口） | Admin（独立样式） |
-| `/admin/login` | 管理员登录 | Admin（独立样式） |
+| `/login` | 统一登录/注册（用户 + owner 同入口） | Base |
+| `/admin/login` | 重定向到 /login（owner 账号登录入口） | Admin（独立样式） |
+| `/admin/accounts` | 账号管理（列表/重置密码/封禁） | Admin（独立样式） |
 | `/admin/insights` | 数据看板（管理员专属） | Admin（独立样式） |
 | `/admin/ai-gateway` | AI Gateway 配置与监控（服务商/模型/日志） | Admin（独立样式） |
 | `/admin/topics` | 选题库（管理员专属） | Admin（独立样式） |
@@ -122,7 +124,14 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/match-feedback` | 推荐结果反馈（`resolved`/`stuck`/`not-fit`/`want-tutorial`/`first-draft`/`next-step-clear`/`wrong-direction`/`need-tutorial`），回写 NeedCase feedbackStatus | 无 |
 | `/api/match-process` | 批处理需求聚类生成 TopicCandidate（Cron 触发） | CRON_SECRET |
 | `/api/match-history` | 用户对话历史（按 sessionId 列表） | 无（sessionId） |
-| `/api/invite/verify` | 邀请码验证准入（签名 Cookie 建立 invited 会话 + 建 UserProfile） | 无（邀请码） |
+| `/api/auth/register` | 邀请码门控注册（用户名+密码+锚点，建账号+消费邀请+建会话） | 无 |
+| `/api/auth/login` | 用户名密码登录（用户/owner 同入口，防枚举） | 无 |
+| `/api/auth/logout` | 登出（撤销会话+清 cookie） | 会话 |
+| `/api/auth/setup` | owner 账号一次性 bootstrap（凭 ADMIN_PASSWORD，建后自锁） | 无 |
+| `/api/auth/change-password` | 用户自助改密（需当前密码） | user 会话 |
+| `/api/admin/accounts` | 账号列表（admin） | admin |
+| `/api/admin/accounts/reset` | 站主重置某用户密码（返回临时密码） | admin |
+| `/api/admin/accounts/status` | 站主封禁/解封 | admin |
 | `/api/profile` | 用户画像读写（personaAnchor 锚点） | invited 会话 |
 | `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
 | `/api/insights` | 洞察数据 + 选题操作 | admin cookie / CRON_SECRET |
@@ -177,8 +186,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **首页组件**（`home/`）：`HomeCanvas.astro`（Bento 画布 — 身份条、最近文章、快速入口、Spark 抽点子盲盒）。盲盒弹窗逻辑内联在 `GreetingCard.astro`（流星粒子 + 随机脑洞），无独立 `SparkBoxModal.astro` 组件。
 - **首页卡片**（根级）：`GreetingCard.astro`（头像交互卡，含社交链接）。
 - **内容宇宙组件**（`content-universe/`）：`ContentFilterTabs.astro`（空间筛选文字链接）、`ContentStreamItem.astro`（内容流扁平列表项：色点 + 标题 + 时间锚点 + 预告 + 形态），用于 `/content` 页面。
-- **`ToolMatchChat.astro`**（`tools/`）：工具匹配对话组件，提供 `/api/match` 匹配会话的前端 UI；含邀请 gate（GET `/api/profile` 身份探测，public 时弹邀请码弹窗）。
-- **`InviteGate.astro`**（`invite/`）：邀请码弹窗组件（≤10 字锚点输入 + 示例 chip + consent，PII 命中拦截）。
+- **`ToolMatchChat.astro`**（`tools/`）：工具匹配对话组件，提供 `/api/match` 匹配会话的前端 UI；身份探测（GET `/api/profile`：200=user/admin、401=public），public 用户点提问或后端 401 时跳 `/login` 注册。
 - **`ResourceCard.astro`**（根级）：资源链接卡片，在文章详情页 `posts/[slug].astro` 中使用。
 - **`GiscusWidget.astro`**（根级）：基于 GitHub Discussions 的评论组件，配置通过 `PUBLIC_GISCUS_*` 环境变量注入，主题跟随 `walker-theme-change` 事件自动切换。在 `[slug].astro` 中使用。
 - **`Footer.astro`**（根级）：全局页脚，被 `Base.astro` 使用。
@@ -271,7 +279,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 业务编排层，API 路由只做协议层（解析、限流、响应），业务委托给 service。`agent-orchestrator.service.ts` 是 `/api/match` 的业务核心。
 
-- **`interfaces.ts`**：业务层端口。定义 `MatchingServicePort`、`VisibilityServicePort`（角色 `public`/`invited`/`admin` × 可见性 `public`/`draft`/`private`/`admin-only`）、`UserContextServicePort`、`InviteAccessServicePort`、`UserProfileServicePort`、`AgentOrchestratorPort`、`PerceptionServicePort`、`FeedbackServicePort`、`AdminReviewServicePort`、`SafetyServicePort`。
+- **`interfaces.ts`**：业务层端口。定义 `MatchingServicePort`、`VisibilityServicePort`（角色 `public`/`user`/`admin` × 可见性 `public`/`draft`/`private`/`admin-only`）、`UserContextServicePort`、`AccountServicePort`（注册/登录/登出/改密/重置/封禁/owner bootstrap）、`UserProfileServicePort`（按 username）、`AgentOrchestratorPort`、`PerceptionServicePort`、`FeedbackServicePort`、`AdminReviewServicePort`、`SafetyServicePort`。
 - **`agent-orchestrator.service.ts`**：`/api/match` 的业务核心（取代旧 `question.service.ts`）。按六模块生命周期编排 `handleNeed`：`perceive`（PerceptionService）→ `planRecommendation`（本地匹配 + 模型增强 + 字段挑选）→ `persistSession`（会话/统计/消息）→ `buildAgentRecommendation` + `safetyFlags` → `recordNeedCase`（生成 + 保存 NeedCase，失败降级记 Incident）→ `buildResponsePayload`。AI 失败降级本地规则；NeedCase 保存失败不阻断用户响应。对外 `handleNeed` 签名稳定，内部拆为命名步骤函数。
 - **`perception.service.ts`**：六模块之 Perception。消息截断、逐条 PII 脱敏 + 压缩、最新需求提取、未成年标记，经 `PerceptionServicePort` 暴露。
 - **`user-context.service.ts`**：汇总身份（`admin`/`invited`/`public`）+ invited 会话 + 画像为 `UserContext`。
@@ -286,8 +294,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 #### stores/（数据仓储端口层）
 
-- **`ports.ts`**：数据层端口。定义 `NeedCase`（核心业务对象）、`MatchSession`、`ConversationMessage`、`MatchFeedbackType`（8 种）、`TopicCandidate`、`InviteCode`、`InvitedSession`、`UserProfile`、`Incident`、`PublicStats` 等接口及对应 RepositoryPort；`MatchSessionRepositoryPort` 含 `createSessionId`/`saveMessages`/`incrementStats`（会话生命周期收口）。上层只依赖这些接口。
-- **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`** / **`invited-session.store.ts`** / **`user-profile.store.ts`** / **`incident.store.ts`**：各仓储的工厂实现，**委托给 `conversation/store.ts`**。
+- **`ports.ts`**：数据层端口。定义 `AuthState`（`public`/`user`/`admin`）、`UserAccount`（用户名+scrypt 密码哈希，零 PII）/`AccountRepositoryPort`、`UserSession`/`SessionRepositoryPort`、`NeedCase`（核心业务对象，带 `username` 归属）、`MatchSession`、`ConversationMessage`、`MatchFeedbackType`（8 种）、`TopicCandidate`、`InviteCode`、`UserProfile`（按 username）、`Incident`、`PublicStats` 等接口及对应 RepositoryPort；`MatchSessionRepositoryPort` 含 `createSessionId`/`saveMessages`/`incrementStats`（会话生命周期收口）。上层只依赖这些接口。
+- **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`** / **`account.store.ts`**（UserAccount，Redis `auth:account:*` + SETNX 占名）/ **`session.store.ts`**（UserSession，Redis `auth:session:*`）/ **`user-profile.store.ts`** / **`incident.store.ts`**：各仓储的工厂实现（account/session 自包含 Redis+内存，其余委托 `conversation/store.ts`）。
 
 #### conversation/（存储实现层）
 
@@ -302,8 +310,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 #### 其他
 
-- **`src/lib/admin-auth.ts`**：管理员认证。Cookie HMAC 签名（7 天有效），导出 `isAdmin()`（请求检查）、`signToken()`、`verifyToken()`、`authCookie()`、`clearCookie()`。被所有 admin 页面和 `/api/insights`、`/api/admin/*` 路由引用。
-- **`src/lib/invited-session-auth.ts`**：受邀会话认证。HMAC 签名 Cookie（复用 `ADMIN_PASSWORD` 密钥），导出 `readInvitedSessionId()`。被 `/api/match` gate、`/api/profile` 引用。
+- **`src/lib/admin-auth.ts`**：站主身份判定。仅导出 `isAdmin(request)`（纯 cookie 同步：读 `walker-session` + 校验 role=admin，无需 Redis）。被所有 admin 页面和 `/api/insights`、`/api/admin/*` 路由引用。旧的 `signToken/authCookie` 等已退役（owner 走账号系统）。
+- **`src/lib/account-auth.ts`**：统一会话 cookie。`signSessionToken`/`verifySessionToken`（payload `{sid, role, iat}`，密钥 `COOKIE_SECRET`）、`readSessionId`/`readSessionPayload`、`sessionCookie`/`clearSessionCookie`、`createSessionId`。被 `/api/auth/*`、`/api/match`、`/api/profile` 等引用。
 - **`src/lib/theme.ts`**：多主题循环工具。导出 `THEMES`（`nature`/`aurora`/`sunset`/`mint`）、`ThemeName` 类型、`cycleTheme()` 函数。被 `Navigation.astro`、`home-canvas.ts`、`FullscreenLayout.astro` 引用。
 - **`src/lib/admin-content-store.ts`**：Admin 内容存储适配。通过 GitHub API（`GITHUB_TOKEN`）读写 `src/content/log/` 下的 markdown 文件，`GITHUB_TOKEN` 未配置时抛 503。被 `/api/admin/content/[slug]` 引用。
 - **`src/types/nav.ts`**：导航类型定义。`NavItem`（`label`、`href`、`icon`、`hint?`）和 `NavGroup`（`title?`、`items`），被 `Navigation.astro` 和 `SidebarNav.astro` 引用。
