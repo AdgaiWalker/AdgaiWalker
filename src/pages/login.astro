@@ -48,7 +48,7 @@ const needsBootstrap = !(await createAccountStore().exists());
         </section>
       )}
 
-      {session ? (
+      {!needsBootstrap && (session ? (
         <section class="auth-card">
           <h1>已登录</h1>
           <p class="auth-sub">身份：{session.role === 'admin' ? '站主' : '用户'}</p>
@@ -110,7 +110,7 @@ const needsBootstrap = !(await createAccountStore().exists());
 
           <p class="auth-foot">站主与用户同一入口 · 忘密联系站主</p>
         </section>
-      )}
+      ))}
     </div>
   </main>
 </FullscreenLayout>

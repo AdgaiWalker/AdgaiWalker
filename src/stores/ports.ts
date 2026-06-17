@@ -13,7 +13,7 @@ import type { AbilityType, AiStage, AudienceGroup, FrictionLayer, NeedCategory }
 
 export type AuthState = 'public' | 'user' | 'admin';
 
-export type AccountRole = 'user' | 'admin';
+export type AccountRole = 'user' | 'admin' | 'owner';
 export type AccountStatus = 'active' | 'banned' | 'deleteRequested';
 
 /** 注册账号：用户名 + scrypt 密码哈希，零 PII（不收邮箱/手机）。 */
@@ -33,6 +33,7 @@ export interface AccountRepositoryPort {
   /** 创建账号（用户名唯一，已存在抛错；调用方负责占位校验） */
   create(account: UserAccount): Promise<void>;
   updateStatus(username: string, status: AccountStatus): Promise<void>;
+  updateRole(username: string, role: AccountRole): Promise<void>;
   updatePasswordHash(username: string, passwordHash: string): Promise<void>;
   updateLastLogin(username: string, at: string): Promise<void>;
   listAll(): Promise<UserAccount[]>;

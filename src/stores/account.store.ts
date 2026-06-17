@@ -5,7 +5,7 @@
  * 维护一个集合 key `auth:accounts`（sadd username）便于 listAll / exists。
  */
 
-import type { AccountRepositoryPort, AccountStatus, UserAccount } from './ports';
+import type { AccountRepositoryPort, AccountRole, AccountStatus, UserAccount } from './ports';
 import { getRedis } from '@/conversation/store';
 
 // 内存降级存储（按 username 索引）
@@ -69,6 +69,10 @@ export function createAccountStore(): AccountRepositoryPort {
 
     async updateStatus(username: string, status: AccountStatus): Promise<void> {
       await mergeWrite(username, { status });
+    },
+
+    async updateRole(username: string, role: AccountRole): Promise<void> {
+      await mergeWrite(username, { role });
     },
 
     async updatePasswordHash(username: string, passwordHash: string): Promise<void> {
