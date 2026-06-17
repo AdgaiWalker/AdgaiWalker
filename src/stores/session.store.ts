@@ -89,5 +89,24 @@ export function createSessionStore(): SessionRepositoryPort {
         await redis.sadd(sessionsByUserKey(username), exceptSessionId);
       }
     },
+
+    async listByUsername(username: string): Promise<UserSession[]> {
+      const out: UserSession[] = [];
+      const memIds = memorySessionsByUser.get(username);
+      if (memIds) memIds.forEach((sid) => {
+        const s = memorySessions.get(sid);
+        if (s) out.push(s);
+      });
+      const redis = getRedis();
+      if (!redis) return out;
+      const ids = await redis.smembers<string>(sessionsByUserKey(username));
+      await Promise.all(ids.map(async (sid) => {
+        if (!out.some((s) => s.sessionId === sid)) {
+          const s = await this.get(sid);
+          if (s) out.push(s);
+        }
+      }));
+      return out;
+    },
   };
 }

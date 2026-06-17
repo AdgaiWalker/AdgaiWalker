@@ -97,5 +97,13 @@ export function createAccountStore(): AccountRepositoryPort {
       const count = await redis.scard(ACCOUNTS_SET);
       return count > 0;
     },
+
+    async delete(username: string): Promise<void> {
+      memoryAccounts.delete(username);
+      const redis = getRedis();
+      if (!redis) return;
+      await redis.del(accountKey(username));
+      await redis.srem(ACCOUNTS_SET, username);
+    },
   };
 }

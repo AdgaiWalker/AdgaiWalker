@@ -17,6 +17,7 @@ import { createUserProfileStore } from '@/stores/user-profile.store';
 import { createInviteCodeStore } from '@/stores/invite-code.store';
 import { createSessionId } from '@/lib/account-auth';
 import { validatePersonaAnchor } from './profile.service';
+import { redactNeedCasesByUsername } from '@/conversation/store';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 const PASSWORD_MIN = 8;
@@ -208,6 +209,17 @@ export function createAccountService(): AccountServicePort {
       await accountStore.updateRole(username, role);
       // 角色写在 cookie 里，变更后撤销该用户旧会话，下次登录才带新角色
       await sessionStore.killAllByUsername(username);
+      return { ok: true };
+    },
+
+    async deleteAccount(username: string) {
+      const account = await accountStore.findByUsername(username);
+      if (!account) return { ok: false, reason: '用户不存在' };
+      // 级联：撤销会话 + 删画像 + 需求脱敏 + 删账号
+      await sessionStore.killAllByUsername(username);
+      await profileStore.deleteByUsername(username);
+      try { await redactNeedCasesByUsername(username); } catch { /* 脱敏失败不阻断删除 */ }
+      await accountStore.delete(username);
       return { ok: true };
     },
 

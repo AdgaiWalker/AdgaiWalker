@@ -203,6 +203,12 @@ export async function getNeedCasesBySession(sessionId: string): Promise<NeedCase
 }
 
 /** 账号级联删除：按 username 脱敏关联的所有 NeedCase（清空原始需求 + 切片，保留聚合匿名） */
+/** 列出某用户的 NeedCase（admin 详情页用，扫最近 2000 条过滤 username） */
+export async function getNeedCasesByUsername(username: string): Promise<NeedCase[]> {
+  const all = await getRecentNeedCases(2000);
+  return all.filter((c) => c.username === username);
+}
+
 export async function redactNeedCasesByUsername(username: string): Promise<void> {
   const cases = await getRecentNeedCases(2000);
   const now = new Date().toISOString();
@@ -352,6 +358,17 @@ export async function getUserProfileByUsername(username: string): Promise<UserPr
   const fromMemory = [...memoryProfiles.values()].find(p => p.username === username) ?? null;
   if (!redis) return fromMemory;
   return (await redis.get<UserProfile>(profileByUsernameKey(username))) ?? fromMemory;
+}
+
+/** 物理删画像（删账号级联用） */
+export async function deleteUserProfileByUsername(username: string): Promise<void> {
+  for (const [pid, p] of memoryProfiles) {
+    if (p.username === username) memoryProfiles.delete(pid);
+  }
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.del(profileKey(username));
+  await redis.del(profileByUsernameKey(username));
 }
 
 export async function getAllUserProfiles(): Promise<UserProfile[]> {

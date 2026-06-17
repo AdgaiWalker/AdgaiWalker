@@ -39,6 +39,8 @@ export interface AccountRepositoryPort {
   listAll(): Promise<UserAccount[]>;
   /** 是否存在任意账号（owner bootstrap 判定用） */
   exists(): Promise<boolean>;
+  /** 删除账号（DEL 账号 key + 从 auth:accounts 集合移除） */
+  delete(username: string): Promise<void>;
 }
 
 /** 登录会话：cookie 装签名 sessionId，真会话有效性查 SessionRepositoryPort。 */
@@ -57,6 +59,8 @@ export interface SessionRepositoryPort {
   revoke(sessionId: string): Promise<void>;
   /** 踢掉某账号全部会话（改密/重置/封禁即时生效）；exceptSessionId 保留当前会话 */
   killAllByUsername(username: string, exceptSessionId?: string): Promise<void>;
+  /** 列出某账号的会话（详情页/会话管理用） */
+  listByUsername(username: string): Promise<UserSession[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -263,6 +267,8 @@ export interface UserProfileRepositoryPort {
   findByUsername(username: string): Promise<UserProfile | null>;
   findAll(): Promise<UserProfile[]>;
   markDeleteRequested(username: string, requestedAt: string): Promise<void>;
+  /** 物理删画像（删账号级联用） */
+  deleteByUsername(username: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------

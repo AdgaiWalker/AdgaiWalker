@@ -177,4 +177,17 @@ describe('AccountService 封禁 / 重置 / 改密', () => {
     const login = await svc.login(username, 'valid-pass-1');
     expect(login.role).toBe('admin');
   });
+
+  it('deleteAccount 级联删除：账号不再存在、登录失败、需求脱敏', async () => {
+    const username = `del${crypto.randomUUID().slice(0, 8)}`;
+    await svc.register({ inviteCode: 'test-invite', username, password: 'valid-pass-1', personaAnchor: '学生' });
+    expect((await svc.listAccounts()).some((a) => a.username === username)).toBe(true);
+
+    const r = await svc.deleteAccount(username);
+    expect(r.ok).toBe(true);
+
+    expect((await svc.listAccounts()).some((a) => a.username === username)).toBe(false);
+    const login = await svc.login(username, 'valid-pass-1');
+    expect(login.ok).toBe(false);
+  });
 });
