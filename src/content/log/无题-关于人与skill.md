@@ -12,7 +12,7 @@ form: diary
 domain: philosophy
 intent: reflect
 valueMode: both
-published: false
+published: true
 summary: >-
   Skill
   不是把经验写进去，而是把已经能稳定复现的经验封装成一个有边界、可调用、可验证的判断函数，并且连接着工具、知识。站在错误的位置，实践→结果→永远够不着标准——不是标准的问题，不是努力的问题，是位置的问题。
@@ -26,7 +26,7 @@ related:
   - walkcraft-skill-craft
   - 减法对话
   - 渡论构建
-visibility: private
+visibility: public
 ---
 
 这两天为做内容做准备，网站功能、直播、某鱼、skill 测试、写教程，尤其是直播接触了人，原来不懂得，懂了挺多。在某一领域中，双方需求即存在——买卖、架构、光色，终归于人。但不止这些，还藏在矛盾主次中。但也有不懂的，这几天下来直播有了起色，也出现了买卖问题，这件事要去做，有人需要这些，同时我在思考如何定一个原则引导大方向。
