@@ -1,0 +1,196 @@
+---
+// /admin/ambient — 活体环境主题控制台（服务端渲染，需管理员认证）
+import { isAdmin } from '@/lib/admin-auth';
+import { readAmbientState } from '@/lib/ambient/store';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const state = await readAmbientState();
+const fmt = (ms: number | undefined): string =>
+  ms ? new Date(ms).toLocaleString('zh-CN', { hour12: false }) : '—';
+const navItems = [
+  ['仪表盘', '/admin'],
+  ['洞察', '/admin/insights'],
+  ['命中率', '/admin/hit-rate'],
+  ['选题库', '/admin/topics'],
+  ['需求复盘', '/admin/review'],
+  ['规则池', '/admin/rules'],
+  ['经验', '/admin/experiences'],
+  ['Skill', '/admin/skills'],
+  ['AI Gateway', '/admin/ai-gateway'],
+];
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>活体主题 · 管理</title>
+  <style is:global>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: #0b0f14; color: #e5e7eb;
+      font-family: 'Inter', 'PingFang SC', system-ui, sans-serif;
+      padding: 4rem 1.5rem 4rem;
+    }
+    .admin-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; gap: 0.25rem; flex-wrap: wrap;
+      padding: 0.75rem 1.5rem;
+      background: rgba(11,15,20,0.92); backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .admin-bar-link {
+      padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.82rem;
+      color: #9ca3af; text-decoration: none; transition: all 0.15s;
+    }
+    .admin-bar-link:hover { background: rgba(255,255,255,0.06); color: #e5e7eb; }
+    .admin-bar-link.active { background: rgba(53,191,171,0.16); color: #35bfab; }
+    main { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 1.6rem; margin: 0 0 0.4rem; }
+    .lead { color: #9ca3af; font-size: 0.92rem; margin: 0 0 2rem; line-height: 1.6; }
+    .card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .card h2 { font-size: 1.05rem; margin: 0 0 1rem; color: #f3f4f6; }
+    button {
+      background: #35bfab; color: #04140f; border: none; border-radius: 10px;
+      padding: 0.6rem 1.1rem; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.88; }
+    button.ghost { background: rgba(255,255,255,0.08); color: #e5e7eb; }
+    input {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; padding: 0.5rem 0.7rem; color: #e5e7eb; font-size: 0.85rem;
+      width: 100%; margin: 0.3rem 0;
+    }
+    .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-top: 0.8rem; }
+    .row input { width: auto; }
+    .msg { font-size: 0.82rem; color: #35bfab; margin-top: 0.8rem; min-height: 1.2em; }
+    dl { margin: 0; display: grid; grid-template-columns: 9rem 1fr; gap: 0.55rem 1rem; }
+    dt { color: #9ca3af; font-size: 0.82rem; align-self: center; }
+    dd { margin: 0; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <nav class="admin-bar">
+    {navItems.map(([label, href]) => (
+      <a href={href} class="admin-bar-link">{label}</a>
+    ))}
+    <a href="/admin/ambient" class="admin-bar-link active">活体主题</a>
+  </nav>
+
+  <main>
+    <h1>活体环境主题</h1>
+    <p class="lead">站点皮肤跟着你的真实位置 / 天气 / 节气 / 时刻自动呼吸。访客看到的是你此刻所在城市的天空。坐标只在服务端保存，<code>/api/ambient</code> 永不返回坐标。</p>
+
+    <section class="card">
+      <h2>定位我的位置</h2>
+      <button id="locate-btn">📍 实时定位我</button>
+      <p style="color:#9ca3af;font-size:0.8rem;margin:0.8rem 0 0.2rem;">定位被拒？手动输入坐标：</p>
+      <div class="row">
+        <input id="lat" placeholder="纬度（如 30.67）" style="width:8rem" />
+        <input id="lng" placeholder="经度（如 104.07）" style="width:8rem" />
+        <input id="city" placeholder="城市名（可选）" style="width:9rem" />
+        <button id="set-btn" class="ghost">设置</button>
+      </div>
+      <p class="msg" id="locate-msg"></p>
+    </section>
+
+    <section class="card">
+      <h2>当前信号状态</h2>
+      <button id="refresh-btn" class="ghost">🔄 立刻刷新天气</button>
+      <dl style="margin-top:1rem;">
+        <dt>城市</dt><dd id="s-city">{state?.cityLabel ?? '未设置（访客侧用成都兜底）'}</dd>
+        <dt>坐标</dt><dd id="s-coord">{state ? `${state.lat}, ${state.lng}` : '—'}</dd>
+        <dt>今日日出</dt><dd id="s-sunrise">{fmt(state?.sunrise)}</dd>
+        <dt>今日日落</dt><dd id="s-sunset">{fmt(state?.sunset)}</dd>
+        <dt>节气</dt><dd id="s-season">{state?.seasonName ?? '—'}</dd>
+        <dt>天气</dt><dd id="s-weather">{state ? `${state.weather.condition} · ${state.weather.temp}°C（WMO ${state.weather.code}）` : '—'}</dd>
+        <dt>最后更新</dt><dd id="s-updated">{fmt(state?.updatedAt)}</dd>
+      </dl>
+    </section>
+  </main>
+
+  <script>
+    const msg = document.getElementById('locate-msg') as HTMLElement;
+    const fmt = (ms: number): string => (ms ? new Date(ms).toLocaleString('zh-CN', { hour12: false }) : '—');
+
+    interface StateView {
+      cityLabel: string;
+      lat: number;
+      lng: number;
+      sunrise: number;
+      sunset: number;
+      seasonName: string;
+      weather: { condition: string; temp: number; code: number };
+      updatedAt: number;
+    }
+
+    function renderState(s: StateView): void {
+      document.getElementById('s-city')!.textContent = s.cityLabel;
+      document.getElementById('s-coord')!.textContent = `${s.lat}, ${s.lng}`;
+      document.getElementById('s-sunrise')!.textContent = fmt(s.sunrise);
+      document.getElementById('s-sunset')!.textContent = fmt(s.sunset);
+      document.getElementById('s-season')!.textContent = s.seasonName;
+      document.getElementById('s-weather')!.textContent = `${s.weather.condition} · ${s.weather.temp}°C（WMO ${s.weather.code}）`;
+      document.getElementById('s-updated')!.textContent = fmt(s.updatedAt);
+    }
+
+    async function postJSON(
+      url: string,
+      body: Record<string, unknown>,
+    ): Promise<{ ok?: boolean; error?: string; state?: StateView }> {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return res.json();
+    }
+
+    document.getElementById('locate-btn')!.addEventListener('click', () => {
+      msg.textContent = '定位中…';
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const data = await postJSON('/api/admin/ambient', {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          if (data.ok && data.state) { renderState(data.state); msg.textContent = '✓ 已定位并更新'; }
+          else msg.textContent = '✗ ' + (data.error || '失败');
+        },
+        (err) => { msg.textContent = '✗ 定位失败：' + err.message + '（可手动输入坐标）'; },
+      );
+    });
+
+    document.getElementById('set-btn')!.addEventListener('click', async () => {
+      const lat = parseFloat((document.getElementById('lat') as HTMLInputElement).value);
+      const lng = parseFloat((document.getElementById('lng') as HTMLInputElement).value);
+      const city = (document.getElementById('city') as HTMLInputElement).value.trim();
+      if (Number.isNaN(lat) || Number.isNaN(lng)) { msg.textContent = '✗ 请填有效经纬度'; return; }
+      msg.textContent = '设置中…';
+      const data = await postJSON('/api/admin/ambient', { lat, lng, cityLabel: city || undefined });
+      if (data.ok && data.state) { renderState(data.state); msg.textContent = '✓ 已设置'; }
+      else msg.textContent = '✗ ' + (data.error || '失败');
+    });
+
+    document.getElementById('refresh-btn')!.addEventListener('click', async () => {
+      msg.textContent = '刷新中…';
+      const res = await fetch('/api/admin/ambient/refresh', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok && data.state) { renderState(data.state); msg.textContent = '✓ 天气已刷新'; }
+      else msg.textContent = '✗ ' + (data.error || '失败');
+    });
+  </script>
+</body>
+</html>

@@ -72,6 +72,65 @@ export function seasonNameOf(dayOfYear: number): string {
   return SEASON_NAMES[seasonIndexOf(dayOfYear)];
 }
 
+// 坐标 + 时刻 → 日出/正午/日落 + 节气（纯计算）
+function computeSunAndSeason(now: Date, lat: number, lng: number) {
+  const sun = getSunEvents(lat, lng, now);
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86_400_000);
+  return {
+    sunrise: sun.sunrise,
+    solarNoon: sun.solarNoon,
+    sunset: sun.sunset,
+    dayOfYear,
+    seasonIndex: seasonIndexOf(dayOfYear),
+    seasonName: seasonNameOf(dayOfYear),
+  };
+}
+
+// 由坐标 + 天气构造完整 state（纯计算，不发网络）
+export function buildAmbientState(
+  now: Date,
+  lat: number,
+  lng: number,
+  cityLabel: string,
+  tz: string,
+  weather: CurrentWeather,
+): AmbientState {
+  const s = computeSunAndSeason(now, lat, lng);
+  return {
+    lat,
+    lng,
+    cityLabel,
+    tz,
+    sunrise: s.sunrise,
+    solarNoon: s.solarNoon,
+    sunset: s.sunset,
+    nextSunRecalc: new Date(now).setHours(24, 0, 0, 0), // 次日 0 点重算
+    weather,
+    forecast24h: [],
+    dayOfYear: s.dayOfYear,
+    seasonIndex: s.seasonIndex,
+    seasonName: s.seasonName,
+    updatedAt: now.getTime(),
+  };
+}
+
+// 抓实时天气后构造 state（服务端调用）。天气失败降级默认晴。
+export async function buildFreshState(
+  lat: number,
+  lng: number,
+  cityLabel: string,
+  tz: string,
+): Promise<AmbientState> {
+  let weather: CurrentWeather;
+  try {
+    weather = await fetchWeather(lat, lng);
+  } catch {
+    weather = { code: 0, condition: 'clear', temp: 20 };
+  }
+  return buildAmbientState(new Date(), lat, lng, cityLabel, tz, weather);
+}
+
 // 从完整 state 抽出不含坐标的公开信号包
 export function toSignalBundle(s: AmbientState): SignalBundle {
   return {
