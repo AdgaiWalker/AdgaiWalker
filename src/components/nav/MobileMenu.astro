@@ -18,6 +18,14 @@ import { Icon } from 'astro-icon/components';
       <span class="mobile-search-label font-body text-xs">搜索</span>
       <kbd class="mobile-search-kbd text-[10px] font-mono px-1 py-0.5 rounded bg-black/5 border border-[var(--color-nav-border)] font-medium ml-0.5">⌘K</kbd>
     </button>
+    {/* 登录 / 注册 */}
+    <a
+      href="/login"
+      class="text-parchment-dim hover:text-parchment p-1.5 transition-colors"
+      aria-label="登录 / 注册"
+    >
+      <Icon name="lucide:log-in" width={20} height={20} />
+    </a>
     {/* 汉堡菜单 */}
     <button
       class="text-parchment-dim hover:text-parchment p-1.5 transition-colors bg-transparent border-none cursor-pointer"

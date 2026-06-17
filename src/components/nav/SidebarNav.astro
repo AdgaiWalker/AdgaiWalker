@@ -2,6 +2,7 @@
 import { Icon } from 'astro-icon/components';
 import type { NavGroup } from '@/types/nav';
 import { getWorkspaceForPath } from '@/shared/workspaces';
+import AuthChip from '../auth/AuthChip.astro';
 
 interface Props {
   navGroups: NavGroup[];
@@ -92,6 +93,7 @@ const isActiveHref = (href: string) => {
       <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="hover:text-brand transition-colors" aria-label="Github"><Icon name="lucide:github" width={18} height={18} /></a>
       <a href="mailto:praxiswalker@gmail.com" class="hover:text-brand transition-colors" aria-label="Email"><Icon name="lucide:mail" width={18} height={18} /></a>
       <a href="/rss.xml" class="hover:text-brand transition-colors" aria-label="RSS"><Icon name="lucide:rss" width={16} height={16} /></a>
+      <AuthChip variant="icon" />
     </div>
   </div>
 </div>

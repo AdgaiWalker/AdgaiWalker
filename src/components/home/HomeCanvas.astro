@@ -1,5 +1,6 @@
 ---
 import GreetingCard from '../GreetingCard.astro';
+import AuthChip from '../auth/AuthChip.astro';
 import { Icon } from 'astro-icon/components';
 import { CONTENT, ABOUT, LEARN, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/shared/routes';
 import type { CollectionEntry } from 'astro:content';
@@ -45,6 +46,7 @@ const traceLog = featuredLog || recentLogs[0];
           <div class="directory-ghost-nav">
             <a href={CONTENT}>内容</a>
             <a href={ABOUT}>关于</a>
+            <AuthChip variant="text" />
           </div>
         </div>
 
