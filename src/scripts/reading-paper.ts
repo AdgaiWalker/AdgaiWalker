@@ -1,7 +1,7 @@
 // 阅读层：读字页面手动选纸色（白 / 米黄），与活体天空解耦。
 // reading-mode 页面才会出现切换按钮；纸色存 localStorage，跨页跨会话记住。
 const PAPER_KEY = 'walker-reading-paper';
-const PAPERS: Record<'white' | 'cream', string> = { white: '#ffffff', cream: '#f2eedf' };
+const PAPERS: Record<'white' | 'cream', string> = { white: '#f7f2e6', cream: '#ece1c8' };
 type Paper = keyof typeof PAPERS;
 
 let toggleBtn: HTMLButtonElement | null = null;

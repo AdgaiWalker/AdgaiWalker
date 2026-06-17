@@ -568,11 +568,11 @@
 
 /* ========== 护眼阅读模式 (羊皮纸质感) ========== */
 .reading-mode {
-  --reading-bg: #ffffff;
+  --reading-bg: #f7f2e6;
   /* 经典古籍暖白玉色 */
-  --reading-text: #2a2a2a;
+  --reading-text: #3a3a3a;
   /* 柔和的烟墨色 */
-  --reading-secondary: #555555;
+  --reading-secondary: #6a6a6a;
   --reading-accent: #8b5e3c;
   /* 暖棕色点缀 */
 
@@ -593,7 +593,7 @@
 .reading-mode .prose h1,
 .reading-mode .prose h2,
 .reading-mode .prose h3 {
-  color: #111111 !important;
+  color: #262626 !important;
   font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
   font-weight: 700;
   margin-top: 2.2em;
@@ -603,7 +603,7 @@
 
 .reading-mode .prose p {
   margin-bottom: 1.6em;
-  color: #2b2b2b !important;
+  color: #333333 !important;
 }
 
 .reading-mode .panel-glass {
@@ -1038,6 +1038,7 @@
 
 .reading-mode #ambient-particles,
 .reading-mode .mouse-glow,
+  .reading-mode #dynamic-bg-glows,
 .reading-mode .grain-overlay {
   display: none !important;
 }
@@ -1333,3 +1334,40 @@ body.fullscreen-layout {
   --color-nav-border: rgba(255, 255, 255, 0.08) !important;
 }
 
+
+/* ===== 阅读页 prose 强调色统一钉到阅读暖棕，脱离活体琥珀/teal 残留（微信阅读观感）===== */
+.reading-mode .prose-walker strong { color: #262626 !important; }
+.reading-mode .prose-walker a { color: var(--reading-accent) !important; text-decoration: none; border-bottom: 1px solid rgba(139, 94, 60, 0.3); }
+.reading-mode .prose-walker a:hover { color: #6b4a2e !important; border-bottom-color: var(--reading-accent); }
+.reading-mode .prose-walker blockquote {
+  border-left: 4px solid var(--reading-accent) !important;
+  background: rgba(139, 94, 60, 0.06) !important;
+  color: var(--reading-text) !important;
+  box-shadow: none !important;
+}
+.reading-mode .prose-walker blockquote p { color: var(--reading-text) !important; opacity: 0.92 !important; }
+.reading-mode .prose-walker :not(pre) > code {
+  background: rgba(139, 94, 60, 0.08) !important;
+  border: 1.2px solid rgba(139, 94, 60, 0.2) !important;
+  color: var(--reading-accent) !important;
+}
+.reading-mode .prose-walker ul li::before { background: var(--reading-accent) !important; }
+
+/* 阅读页进度条也钉到暖棕，杜绝活体琥珀泄漏 */
+.reading-mode .reading-progress-bar { background: var(--reading-accent) !important; }
+.reading-mode .reading-progress-pct { color: var(--reading-accent) !important; }
+
+/* 阅读页：活体变量整体钉到阅读暖棕/中性，让标签/卡片/评论等所有消费方自动脱离活体琥珀/teal */
+.reading-mode {
+  --color-bg: var(--reading-bg);
+  --color-parchment: #3a3a3a;
+  --color-parchment-dim: #6a6a6a;
+  --color-brand: #8b5e3c;
+  --color-brand-secondary: #6b4a2e;
+  --color-brand-glow: rgba(139, 94, 60, 0.08);
+  --color-card: rgba(139, 94, 60, 0.04);
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-inner-bg: rgba(139, 94, 60, 0.03);
+  --color-nav-bg: var(--reading-bg);
+  --color-nav-border: rgba(0, 0, 0, 0.08);
+}
