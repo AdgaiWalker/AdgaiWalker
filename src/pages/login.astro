@@ -116,7 +116,18 @@ const needsBootstrap = !(await createAccountStore().exists());
 </FullscreenLayout>
 
 <style>
-  .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; background: var(--color-bg, #fbfbf8); }
+  /* FullscreenLayout(hideNav) 会给 body 加 fullscreen-layout 类，global.css 用 !important
+     把它强制成深色 hero（/about 用）。登录页要跟站点亮色一致，在 .auth-page 上把主题变量
+     改回 nature 亮色——选择器 body.fullscreen-layout .auth-page 优先级高于 body.fullscreen-layout，能压过其 !important。 */
+  body.fullscreen-layout .auth-page {
+    --color-bg: #fbfbf8 !important;
+    --color-parchment: #1a2325 !important;
+    --color-parchment-dim: #64748b !important;
+    --color-card: rgba(255, 255, 255, 0.82) !important;
+    --color-border: rgba(26, 35, 37, 0.12) !important;
+    background: #fbfbf8 !important;
+  }
   .auth-shell { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
   .auth-brand {
     display: inline-flex; align-items: center; gap: 0.5rem;
@@ -200,8 +211,11 @@ const needsBootstrap = !(await createAccountStore().exists());
 
 <script>
   import { registerLifecycle } from '@/scripts/with-lifecycle';
+  import { applyTheme } from '@/lib/theme';
 
   registerLifecycle(() => {
+  // hideNav 页面 Navigation 不渲染 → applyTheme 不会自动跑，这里补上，避免掉到深色默认
+  applyTheme();
   const tabs = document.querySelectorAll<HTMLButtonElement>('.seg-btn');
   const forms = document.querySelectorAll<HTMLFormElement>('.auth-form');
   tabs.forEach(tab => {
