@@ -9,8 +9,11 @@
 import FullscreenLayout from '@/layouts/FullscreenLayout.astro';
 import { Icon } from 'astro-icon/components';
 import { readSessionPayload } from '@/lib/account-auth';
+import { createAccountStore } from '@/stores/account.store';
 
 const session = readSessionPayload(Astro.request);
+// 首次部署无账号时，显示站主初始化面板（凭 ADMIN_PASSWORD 一次性建 owner）
+const needsBootstrap = !(await createAccountStore().exists());
 ---
 
 <FullscreenLayout title="登录 / 注册 — iwalk.pro">
@@ -20,6 +23,30 @@ const session = readSessionPayload(Astro.request);
         <Icon name="lucide:compass" width={22} height={22} />
         <span>Walker</span>
       </a>
+
+      {needsBootstrap && (
+        <section class="auth-card bootstrap-card">
+          <span class="bootstrap-tag">首次部署 · 站主初始化</span>
+          <h1>创建站主账号</h1>
+          <p class="auth-sub">系统还没有账号。用 <code>ADMIN_PASSWORD</code> 一次性建 owner 账号；之后此面板自动隐藏。</p>
+          <form class="auth-form" data-form="setup" autocomplete="off">
+            <label class="field">
+              <span>bootstrap 密钥（ADMIN_PASSWORD）</span>
+              <input type="password" name="adminPassword" required placeholder="部署时配置的 ADMIN_PASSWORD" />
+            </label>
+            <label class="field">
+              <span>站主用户名</span>
+              <input type="text" name="ownerUsername" required placeholder="如 owner" />
+            </label>
+            <label class="field">
+              <span>站主密码（≥8 位）</span>
+              <input type="password" name="ownerPassword" required minlength="8" placeholder="至少 8 位" />
+            </label>
+            <p class="auth-error" data-error="setup" hidden></p>
+            <button class="btn primary" type="submit">创建并登录</button>
+          </form>
+        </section>
+      )}
 
       {session ? (
         <section class="auth-card">
@@ -206,6 +233,9 @@ const session = readSessionPayload(Astro.request);
   .auth-actions .btn { flex: 1; }
 
   .auth-foot { margin: 1.25rem 0 0; text-align: center; font-size: 0.76rem; color: var(--color-text-muted, #777); }
+  .bootstrap-card { border-color: var(--color-brand, #4f8cff); box-shadow: 0 12px 48px rgba(79,140,255,0.18); }
+  .bootstrap-tag { display: inline-block; margin-bottom: 0.6rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: rgba(79,140,255,0.16); color: var(--color-brand, #4f8cff); font-size: 0.72rem; font-weight: 700; }
+  .bootstrap-card code { font-family: var(--font-mono, monospace); font-size: 0.82em; color: var(--color-text, #eee); }
 </style>
 
 <script>
@@ -255,6 +285,10 @@ const session = readSessionPayload(Astro.request);
   const regForm = document.querySelector<HTMLFormElement>('[data-form=register]');
   const regErr = document.querySelector<HTMLElement>('[data-error=register]');
   regForm?.addEventListener('submit', (e) => { e.preventDefault(); if (regErr) submitForm(regForm, '/api/auth/register', regErr); });
+
+  const setupForm = document.querySelector<HTMLFormElement>('[data-form=setup]');
+  const setupErr = document.querySelector<HTMLElement>('[data-error=setup]');
+  setupForm?.addEventListener('submit', (e) => { e.preventDefault(); if (setupErr) submitForm(setupForm, '/api/auth/setup', setupErr); });
 
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });

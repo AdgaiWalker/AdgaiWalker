@@ -1,0 +1,161 @@
+---
+/**
+ * /account — 我的账号（登录用户自助）
+ *
+ * 改密码 + 编辑锚点/昵称 + 申请删除。SSR，未登录跳 /login。
+ */
+import Base from '@/layouts/Base.astro';
+import { readSessionId } from '@/lib/account-auth';
+import { isAdmin } from '@/lib/admin-auth';
+import { createUserContextService } from '@/services/user-context.service';
+import { createAccountStore } from '@/stores/account.store';
+import { createSessionStore } from '@/stores/session.store';
+import { createUserProfileStore } from '@/stores/user-profile.store';
+
+const userContextService = createUserContextService({
+  sessionStore: createSessionStore(),
+  accountStore: createAccountStore(),
+  profileStore: createUserProfileStore(),
+});
+
+const userContext = await userContextService.resolve({
+  sessionId: readSessionId(Astro.request),
+  isAdmin: isAdmin(Astro.request),
+});
+
+if (userContext.authState === 'public') {
+  return Astro.redirect('/login');
+}
+
+const username = userContext.username ?? '';
+const role = userContext.authState; // 'user' | 'admin'
+const anchor = userContext.profile?.personaAnchor ?? '';
+const nickname = userContext.profile?.nickname ?? '';
+---
+
+<Base title="我的账号 — iwalk.pro">
+  <main class="account-wrap">
+    <header class="account-head">
+      <h1>我的账号</h1>
+      <p class="account-meta"><span class="mono">{username}</span> · {role === 'admin' ? '站主' : '用户'}</p>
+    </header>
+
+    <section class="panel-glass account-card">
+      <h2>身份锚点</h2>
+      <p class="muted">一句话说说你是谁（≤10 字），帮 Walker 更懂你。零 PII，不收手机/邮箱。</p>
+      <form class="account-form" data-form="profile">
+        <label class="field">
+          <span>锚点</span>
+          <input name="personaAnchor" maxlength="10" value={anchor} placeholder="如：大三学生" />
+        </label>
+        <label class="field">
+          <span>昵称（可选）</span>
+          <input name="nickname" value={nickname} placeholder="昵称" />
+        </label>
+        <p class="form-msg" data-msg="profile" hidden></p>
+        <button class="btn primary" type="submit">保存</button>
+      </form>
+    </section>
+
+    <section class="panel-glass account-card">
+      <h2>修改密码</h2>
+      <form class="account-form" data-form="password">
+        <label class="field">
+          <span>当前密码</span>
+          <input type="password" name="currentPassword" required autocomplete="current-password" />
+        </label>
+        <label class="field">
+          <span>新密码（≥8 位）</span>
+          <input type="password" name="newPassword" required minlength="8" autocomplete="new-password" />
+        </label>
+        <p class="form-msg" data-msg="password" hidden></p>
+        <button class="btn primary" type="submit">改密码</button>
+      </form>
+    </section>
+
+    {role === 'user' && (
+      <section class="panel-glass account-card danger-card">
+        <h2>删除账号</h2>
+        <p class="muted">标记账号待删除并脱敏你的需求记录，由站主最终处理。</p>
+        <button class="btn danger" id="delete-btn">申请删除账号</button>
+      </section>
+    )}
+  </main>
+</Base>
+
+<style>
+  .account-wrap { max-width: 560px; margin: 0 auto; padding: 3rem 1rem 5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .account-head h1 { margin: 0; font-size: 1.6rem; color: var(--color-text, #eee); }
+  .account-meta { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--color-text-muted, #999); }
+  .mono { font-family: var(--font-mono, monospace); }
+  .account-card { padding: 1.4rem 1.5rem; border-radius: 14px; }
+  .account-card h2 { margin: 0 0 0.4rem; font-size: 1.05rem; color: var(--color-text, #eee); }
+  .muted { margin: 0 0 1rem; font-size: 0.8rem; color: var(--color-text-muted, #888); line-height: 1.6; }
+  .account-form { display: flex; flex-direction: column; gap: 0.85rem; }
+  .field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .field > span { font-size: 0.78rem; color: var(--color-text-muted, #999); font-weight: 500; }
+  .field input { padding: 0.6rem 0.75rem; border-radius: 9px; border: 1px solid var(--color-border, rgba(255,255,255,0.14)); background: rgba(0,0,0,0.14); color: var(--color-text, #eee); font-size: 0.92rem; }
+  .field input:focus { outline: none; border-color: var(--color-brand, #4f8cff); }
+  .form-msg { margin: 0; font-size: 0.82rem; }
+  .form-msg.ok { color: #48c774; }
+  .form-msg.err { color: #ff6b6b; }
+  .btn { padding: 0.6rem 1rem; border-radius: 9px; border: none; cursor: pointer; font-size: 0.92rem; font-weight: 600; }
+  .btn.primary { background: var(--color-brand, #4f8cff); color: #fff; }
+  .btn.danger { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+</style>
+
+<script>
+  function msg(el: HTMLElement, text: string, ok: boolean) {
+    el.textContent = text;
+    el.classList.toggle('ok', ok);
+    el.classList.toggle('err', !ok);
+    el.hidden = false;
+  }
+
+  // 锚点 / 昵称
+  const profileForm = document.querySelector<HTMLFormElement>('[data-form=profile]');
+  const profileMsg = document.querySelector<HTMLElement>('[data-msg=profile]');
+  profileForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!profileMsg) return;
+    const data = Object.fromEntries(new FormData(profileForm).entries());
+    const btn = profileForm.querySelector<HTMLButtonElement>('button[type=submit]');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch('/api/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const json = await res.json();
+      if (res.ok) { msg(profileMsg, '已保存', true); }
+      else { msg(profileMsg, json.error || '保存失败', false); }
+    } catch { msg(profileMsg, '网络错误', false); }
+    finally { if (btn) btn.disabled = false; }
+  });
+
+  // 改密
+  const pwForm = document.querySelector<HTMLFormElement>('[data-form=password]');
+  const pwMsg = document.querySelector<HTMLElement>('[data-msg=password]');
+  pwForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!pwMsg) return;
+    const data = Object.fromEntries(new FormData(pwForm).entries());
+    const btn = pwForm.querySelector<HTMLButtonElement>('button[type=submit]');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch('/api/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const json = await res.json();
+      if (res.ok && json.ok) { msg(pwMsg, '密码已更新', true); pwForm.reset(); }
+      else { msg(pwMsg, json.reason || '改密失败', false); }
+    } catch { msg(pwMsg, '网络错误', false); }
+    finally { if (btn) btn.disabled = false; }
+  });
+
+  // 删除
+  document.getElementById('delete-btn')?.addEventListener('click', async () => {
+    if (!confirm('确定申请删除账号？你的需求记录会被脱敏，站主将最终处理。')) return;
+    try {
+      const res = await fetch('/api/profile/delete-request', { method: 'POST' });
+      if (res.ok) { alert('已提交删除请求，站主会处理。'); window.location.href = '/login'; }
+      else { const j = await res.json(); alert(j.error || '请求失败'); }
+    } catch { alert('网络错误'); }
+  });
+</script>
