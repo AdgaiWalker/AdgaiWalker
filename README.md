@@ -27,6 +27,8 @@ NorthStar = 长期社区网络方向，不直接塞进当前个人站
 - GSAP（动画）
 - astro-icon + Iconify（lucide）
 - MCP server
+- 账号认证系统（用户名 + scrypt 密码 + `walker-session` cookie；邀请码 = 注册门票）
+- marked / js-yaml / diff（客户端 markdown 预览 / frontmatter 序列化 / 版本 diff）
 - Vitest（单元测试）
 
 ## 本地运行
@@ -66,10 +68,12 @@ npm run test
 
 公开内容、私密内容、管理员内容必须分层：
 
-- `public`：普通用户可见
+- `public`：普通访客可见
 - `draft`：未发布草稿
 - `private`：站主私密内容
 - admin-only 数据：只给管理员复盘，不进入公开接口
+
+访问身份三层（`walker-session` cookie + role）：`public`（未登录）/ `user`（账号登录）/ `admin`（站主）。登录注册走 `/login`（邀请码作注册门票），账号自助 `/account`，站主账号管理 `/admin/accounts`；匹配 / 画像等接口需 `user` 起。
 
 公开统计可以展示聚合结果，例如内容数量、功能使用次数、公开趋势；原始对话、用户画像、后台洞察和私密内容不应公开。
 
