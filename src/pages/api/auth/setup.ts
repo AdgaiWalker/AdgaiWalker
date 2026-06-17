@@ -35,11 +35,16 @@ export const POST: APIRoute = async ({ request }) => {
 
   const result = await accountService.bootstrapOwner(adminPassword, ownerUsername, ownerPassword);
   if (!result.ok || !result.sessionId || !result.role) {
-    // 系统已有账号 → 410（自锁）；其它失败 → 400/403
-    const status = result.reason === '系统已有账号，bootstrap 已关闭' ? 410 : 400;
+    // 系统已有账号 → 410（自锁）；其它失败 → 400
+    const status = result.code === 'bootstrap-locked' ? 410 : 400;
     return json({ ok: false, reason: result.reason ?? 'bootstrap 失败。' }, status);
   }
 
-  const token = signSessionToken({ sid: result.sessionId, role: result.role, iat: Math.floor(Date.now() / 1000) });
+  let token: string;
+  try {
+    token = signSessionToken({ sid: result.sessionId, role: result.role, iat: Math.floor(Date.now() / 1000) });
+  } catch {
+    return json({ ok: false, reason: '服务端会话签名未配置（COOKIE_SECRET）' }, 500);
+  }
   return json({ ok: true, username: result.username }, 200, { 'Set-Cookie': sessionCookie(token) });
 };

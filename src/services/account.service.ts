@@ -21,6 +21,8 @@ import { validatePersonaAnchor } from './profile.service';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 const PASSWORD_MIN = 8;
 const USERNAME_RE = /^[A-Za-z0-9_一-龥]{2,20}$/;
+/** 保留用户名，普通注册禁用（防冒充站主/系统） */
+const RESERVED_USERNAMES = new Set(['admin', 'owner', 'root', 'administrator', 'system', 'walker', 'iwalk', '站长', '站主', '系统', '管理员']);
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16);
@@ -85,6 +87,9 @@ export function createAccountService(): AccountServicePort {
       const inviteCode = input.inviteCode.trim();
       if (!USERNAME_RE.test(username)) {
         return { ok: false, reason: '用户名需 2-20 位（中英文/数字/下划线）' };
+      }
+      if (RESERVED_USERNAMES.has(username.toLowerCase())) {
+        return { ok: false, reason: '该用户名被保留，请换一个' };
       }
       if (input.password.length < PASSWORD_MIN) {
         return { ok: false, reason: `密码至少 ${PASSWORD_MIN} 位` };
@@ -166,13 +171,15 @@ export function createAccountService(): AccountServicePort {
       await sessionStore.revoke(sessionId);
     },
 
-    async changePassword(username: string, currentPassword: string, newPassword: string) {
+    async changePassword(username: string, currentPassword: string, newPassword: string, currentSessionId?: string) {
       const account = await accountStore.findByUsername(username);
       if (!account || !verifyPassword(currentPassword, account.passwordHash)) {
         return { ok: false, reason: '当前密码错误' };
       }
       if (newPassword.length < PASSWORD_MIN) return { ok: false, reason: `密码至少 ${PASSWORD_MIN} 位` };
       await accountStore.updatePasswordHash(username, hashPassword(newPassword));
+      // 改密后踢掉其它设备会话，保留当前
+      await sessionStore.killAllByUsername(username, currentSessionId);
       return { ok: true };
     },
 
@@ -181,6 +188,8 @@ export function createAccountService(): AccountServicePort {
       if (!account) return { ok: false, reason: '用户不存在' };
       const temp = randomTempPassword();
       await accountStore.updatePasswordHash(username, hashPassword(temp));
+      // 重置后该用户全部会话失效，需用新临时密码重新登录
+      await sessionStore.killAllByUsername(username);
       return { ok: true, newPassword: temp };
     },
 
@@ -188,6 +197,8 @@ export function createAccountService(): AccountServicePort {
       const account = await accountStore.findByUsername(username);
       if (!account) return { ok: false, reason: '用户不存在' };
       await accountStore.updateStatus(username, status);
+      // 封禁即时踢掉全部会话
+      if (status === 'banned') await sessionStore.killAllByUsername(username);
       return { ok: true };
     },
 
@@ -197,7 +208,7 @@ export function createAccountService(): AccountServicePort {
 
     async bootstrapOwner(adminPassword: string, ownerUsername: string, ownerPassword: string): Promise<AuthResult> {
       if (await accountStore.exists()) {
-        return { ok: false, reason: '系统已有账号，bootstrap 已关闭' };
+        return { ok: false, code: 'bootstrap-locked', reason: '系统已有账号，bootstrap 已关闭' };
       }
       const expected = import.meta.env.ADMIN_PASSWORD;
       if (!expected) return { ok: false, reason: 'ADMIN_PASSWORD 未配置' };

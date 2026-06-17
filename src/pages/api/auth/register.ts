@@ -48,6 +48,11 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ ok: false, reason: result.reason ?? '注册失败。' }, 400);
   }
 
-  const token = signSessionToken({ sid: result.sessionId, role: result.role, iat: Math.floor(Date.now() / 1000) });
+  let token: string;
+  try {
+    token = signSessionToken({ sid: result.sessionId, role: result.role, iat: Math.floor(Date.now() / 1000) });
+  } catch {
+    return json({ ok: false, reason: '服务端会话签名未配置（COOKIE_SECRET）' }, 500);
+  }
   return json({ ok: true, username: result.username }, 200, { 'Set-Cookie': sessionCookie(token) });
 };

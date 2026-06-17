@@ -120,6 +120,8 @@ export interface RegisterInput {
 export interface AuthResult {
   ok: boolean;
   reason?: string;
+  /** 机器可读状态码（如 'bootstrap-locked'），供 API 层判 HTTP 状态，避免靠文案 */
+  code?: string;
   /** 新建会话 ID（成功时） */
   sessionId?: string;
   username?: string;
@@ -134,11 +136,12 @@ export interface AccountServicePort {
   login(username: string, password: string): Promise<AuthResult>;
   /** 登出当前会话 */
   logout(sessionId: string): Promise<void>;
-  /** 用户自助改密（需当前密码） */
+  /** 用户自助改密（需当前密码）；currentSessionId 用于改密后保留当前会话、踢掉其它设备 */
   changePassword(
     username: string,
     currentPassword: string,
     newPassword: string,
+    currentSessionId?: string,
   ): Promise<{ ok: boolean; reason?: string }>;
   /** 站主重置某用户密码（忘密唯一通道），返回新临时密码明文（仅显示一次） */
   resetPassword(username: string): Promise<{ ok: boolean; newPassword?: string; reason?: string }>;

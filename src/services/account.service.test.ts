@@ -80,14 +80,23 @@ describe('AccountService.register（邀请码门控）', () => {
     expect(r.reason).toContain('邀请码');
   });
 
-  it('用户名已存在拒绝', async () => {
+  it('用户名已存在拒绝（同名二次注册）', async () => {
+    const username = `dup${crypto.randomUUID().slice(0, 8)}`;
+    const first = await svc.register({ inviteCode: 'test-invite', username, password: 'valid-pass-1' });
+    expect(first.ok).toBe(true);
+    const r = await svc.register({ inviteCode: 'test-invite', username, password: 'valid-pass-1' });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain('已存在');
+  });
+
+  it('保留用户名拒绝（admin/owner 等不可注册）', async () => {
     const r = await svc.register({
       inviteCode: 'test-invite',
-      username: 'owner', // bootstrap 已建
+      username: 'admin',
       password: 'valid-pass-1',
     });
     expect(r.ok).toBe(false);
-    expect(r.reason).toContain('已存在');
+    expect(r.reason).toContain('保留');
   });
 
   it('密码过短 / 用户名非法拒绝', async () => {
