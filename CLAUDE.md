@@ -135,7 +135,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/profile` | 用户画像读写（personaAnchor 锚点） | invited 会话 |
 | `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
 | `/api/insights` | 洞察数据 + 选题操作 | admin cookie / CRON_SECRET |
-| `/api/like` | 文章点赞（Upstash Redis） | 无（IP 限流） |
+| `/api/like` | 文章点赞（Redis→内存降级，0 起步真实计数） | 无（IP 限流） |
 | `/api/admin/auth` | 管理员登录/登出/状态检测 | admin cookie（GET） |
 | `/api/admin/conversations` | 管理员查看所有对话 | admin cookie |
 | `/api/admin/review` | NeedCase 复盘列表 + review 状态更新 | admin cookie |
@@ -193,7 +193,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`GiscusWidget.astro`**（根级）：基于 GitHub Discussions 的评论组件，配置通过 `PUBLIC_GISCUS_*` 环境变量注入，主题跟随 `walker-theme-change` 事件自动切换。在 `[slug].astro` 中使用。
 - **`Footer.astro`**（根级）：全局页脚，被 `Base.astro` 使用。
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
-- **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。服务端 API 路由 `src/pages/api/like.ts` 使用 Upstash Redis（Vercel Marketplace）存储计数，同 IP 每路径 60s 冷却。Redis 不可用时降级为 `FALLBACK` 常量（基线计数 17861）。环境变量 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选）由 Vercel 自动注入。
+- **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。计数与降级逻辑在 `src/stores/like.store.ts`（`LikeStore` 接口 + 内存/Upstash 实现 + `createLikeStore()` 工厂）：有 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选，Vercel 自动注入）时用 Redis `incr` 原子自增（修旧 read-then-write 并发丢赞）；否则或 Redis 运行时异常走内存降级（dev 无 Redis 也能真点真涨，重启丢失）。**0 起步真实计数，不再有写死的假基数**。`/api/like` 是 HTTP 薄层（路径白名单 + 每 IP 每路径 60s 冷却 + 单页 999999 上限）。
 - **About 页面组件**（`about/`）：`SectionHeader.astro`（通用 section 标题组件）。关于我 / 关于站两个 Tab 的内容直接内联在 `about/index.astro`，无独立 `AboutSiteTab.astro` 组件。
 - **`AdminEditBar.astro`**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入。「编辑」按钮触发就地编辑态（不跳页），「历史」按钮打开版本历史 modal，「删除」直调 DELETE API。脚本内 import `inline-editor.ts` + 初始化 `version-history.ts`。
 - **就地编辑组件**（`admin/`）：`InlineEditor.astro`（编辑器骨架：正文/预览/元数据三 tab + 工具栏，预渲染隐藏 admin 激活）、`MetadataForm.astro`（frontmatter 结构化表单 + raw YAML 兜底，`data-field` 控件）、`VersionHistory.astro`（版本时间线 modal + jsdiff）。就地模式挂 `/posts/[slug]`（接管 `#article-body`），独立模式挂 `/admin/content/edit`（新建/brief）。
