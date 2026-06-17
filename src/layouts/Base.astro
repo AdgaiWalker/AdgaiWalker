@@ -112,6 +112,7 @@ const isHome = Astro.url.pathname === '/';
       import '../scripts/page-transitions';
       import { setupTilt } from '../scripts/tilt-effect';
       import { initAmbientTheme } from '../scripts/ambient-theme';
+      import { initReadingPaper } from '../scripts/reading-paper';
 
       // --- 鼠标跟随光晕 ---
       let glowAbort: AbortController | null = null;
@@ -173,6 +174,7 @@ const isHome = Astro.url.pathname === '/';
         setupPanelTilt();
         setupBackToTop();
         initAmbientTheme();
+        initReadingPaper();
       };
 
       const cleanupAll = () => {

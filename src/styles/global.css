@@ -568,7 +568,7 @@
 
 /* ========== 护眼阅读模式 (羊皮纸质感) ========== */
 .reading-mode {
-  --reading-bg: #f2eedf;
+  --reading-bg: #ffffff;
   /* 经典古籍暖白玉色 */
   --reading-text: #2a2a2a;
   /* 柔和的烟墨色 */
