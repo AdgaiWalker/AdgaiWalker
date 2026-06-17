@@ -106,6 +106,9 @@ const nickname = userContext.profile?.nickname ?? '';
 </style>
 
 <script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  registerLifecycle(() => {
   function msg(el: HTMLElement, text: string, ok: boolean) {
     el.textContent = text;
     el.classList.toggle('ok', ok);
@@ -157,5 +160,6 @@ const nickname = userContext.profile?.nickname ?? '';
       if (res.ok) { alert('已提交删除请求，站主会处理。'); window.location.href = '/login'; }
       else { const j = await res.json(); alert(j.error || '请求失败'); }
     } catch { alert('网络错误'); }
+  });
   });
 </script>

@@ -239,6 +239,9 @@ const needsBootstrap = !(await createAccountStore().exists());
 </style>
 
 <script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  registerLifecycle(() => {
   const tabs = document.querySelectorAll<HTMLButtonElement>('.seg-btn');
   const forms = document.querySelectorAll<HTMLFormElement>('.auth-form');
   tabs.forEach(tab => {
@@ -293,5 +296,6 @@ const needsBootstrap = !(await createAccountStore().exists());
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.reload();
+  });
   });
 </script>
