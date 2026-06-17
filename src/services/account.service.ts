@@ -15,6 +15,7 @@ import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 import { createInviteCodeStore } from '@/stores/invite-code.store';
+import { createManagedInviteCodeStore } from '@/stores/managed-invite-code.store';
 import { createSessionId } from '@/lib/account-auth';
 import { validatePersonaAnchor } from './profile.service';
 import { redactNeedCasesByUsername } from '@/conversation/store';
@@ -68,6 +69,7 @@ export function createAccountService(): AccountServicePort {
   const sessionStore = createSessionStore();
   const profileStore = createUserProfileStore();
   const inviteCodeStore = createInviteCodeStore();
+  const managedInviteStore = createManagedInviteCodeStore();
 
   async function issueSession(username: string, role: UserAccount['role']): Promise<string> {
     const now = Date.now();
@@ -104,9 +106,12 @@ export function createAccountService(): AccountServicePort {
           return { ok: false, reason: '锚点含敏感信息，请重填' };
         }
       }
-      // 邀请码校验
-      const invite = await inviteCodeStore.findByCode(inviteCode);
+      // 邀请码校验：env 码 + 后台 managed 码都认
+      const envInvite = await inviteCodeStore.findByCode(inviteCode);
+      const managedInvite = envInvite ? null : await managedInviteStore.findByCode(inviteCode);
+      const invite = envInvite ?? managedInvite;
       if (!invite) return { ok: false, reason: '邀请码无效' };
+      if (managedInvite && managedInvite.status === 'disabled') return { ok: false, reason: '邀请码已失效' };
       if (invite.usedCount >= invite.maxUses) return { ok: false, reason: '邀请码已用完' };
 
       // 占用户名 + 建账号
@@ -129,6 +134,10 @@ export function createAccountService(): AccountServicePort {
         await inviteCodeStore.incrementUsage(inviteCode);
       } catch {
         /* 邀请计数失败不影响注册 */
+      }
+      // managed 码记录谁用了（usedBy 追踪）
+      if (managedInvite) {
+        try { await managedInviteStore.recordUsedBy(inviteCode, username); } catch { /* ignore */ }
       }
       // 画像（锚点）
       if (anchor) {
