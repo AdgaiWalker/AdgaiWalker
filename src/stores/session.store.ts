@@ -79,7 +79,7 @@ export function createSessionStore(): SessionRepositoryPort {
       }
       const redis = getRedis();
       if (!redis) return;
-      const ids = await redis.smembers<string>(sessionsByUserKey(username));
+      const ids = await redis.smembers(sessionsByUserKey(username));
       const toKill = ids.filter((sid) => sid !== exceptSessionId);
       if (toKill.length === 0) return;
       await Promise.all(toKill.map((sid) => redis.del(sessionKey(sid))));
