@@ -1,0 +1,34 @@
+
+> walker-blog@0.0.1 dev
+> astro dev --port 4399
+
+[vite] connected.
+[2m10:15:13[22m [34m[types][39m Generated [2m2ms[22m
+[vite] connected.
+[2m10:15:13[22m [34m[content][39m Syncing content
+[2m10:15:13[22m [34m[content][39m Synced content
+[42m[1m astro [22m[49m [32mv6.1.10[39m [2mready in[22m 3304 [2mms[22m
+[2m┃[22m Local    [36mhttp://localhost:4399/[39m
+[2m┃[22m Network  [2muse --host to expose[22m
+[2m10:15:14[22m [32mwatching for file changes...[39m
+[2m10:15:15[22m [34m[200][39m /login [2m151ms[22m
+[2m10:15:15[22m [34m[200][39m /login [2m11ms[22m
+[2m10:15:16[22m [34m[200][39m /tools [2m65ms[22m
+[2m10:17:38[22m [34m[200][39m /login [2m12ms[22m
+[2m10:17:39[22m [34m[vite][39m [32m✨ new dependencies optimized: [33mastro/virtual-modules/transitions-router.js, astro/virtual-modules/transitions-types.js, astro/virtual-modules/transitions-events.js, astro/virtual-modules/transitions-swap-functions.js, gsap, gsap/ScrollTrigger[32m[39m
+[2m10:17:39[22m [34m[vite][39m [32m✨ optimized dependencies changed. reloading[39m
+[2m10:17:52[22m [34m[200][39m / [2m63ms[22m
+[2m10:17:52[22m [34m[200][39m / [2m10ms[22m
+[2m10:17:52[22m [34m[200][39m /_image [2m422ms[22m
+[2m10:17:53[22m [34m[200][39m /posts/未来已经在来了 [2m82ms[22m
+[2m10:17:53[22m [34m[200][39m /posts/无题-关于人与skill [2m13ms[22m
+[2m10:17:54[22m [34m[200][39m /tools [2m16ms[22m
+[2m10:17:54[22m [34m[200][39m /learn [2m67ms[22m
+[2m10:17:54[22m [34m[200][39m /learn [2m17ms[22m
+[2m10:17:56[22m [34m[200][39m /login [2m11ms[22m
+[2m10:17:57[22m [34m[200][39m /login [2m10ms[22m
+[2m10:17:58[22m [34m[200][39m /login [2m9ms[22m
+[2m10:17:58[22m [34m[200][39m /login [2m9ms[22m
+[2m10:18:07[22m [34m[200][39m /content [2m48ms[22m
+[2m10:23:39[22m [34m[watch][39m src/pages/login.astro
+[2m10:24:02[22m [34m[200][39m /login [2m68ms[22m

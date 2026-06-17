@@ -1,65 +1,72 @@
 ---
 /**
- * /login — 统一登录 / 注册页（用户 + owner 同入口）
+ * /login — 统一登录 / 注册页（专注版）
  *
- * 服务端渲染：用 readSessionPayload 探测当前会话，已登录则显示状态条 + 登出。
+ * 用 FullscreenLayout 剥离侧栏/页脚/背景特效，只剩居中卡片。
+ * 服务端渲染：readSessionPayload 探测会话，已登录显示状态 + 登出。
  * 注册需邀请码；零 PII（不收邮箱/手机）。
  */
-import Base from '@/layouts/Base.astro';
+import FullscreenLayout from '@/layouts/FullscreenLayout.astro';
+import { Icon } from 'astro-icon/components';
 import { readSessionPayload } from '@/lib/account-auth';
 
 const session = readSessionPayload(Astro.request);
 ---
 
-<Base title="登录 / 注册 — iwalk.pro">
-  <main class="auth-wrap">
-    <section class="panel-glass auth-card">
+<FullscreenLayout title="登录 / 注册 — iwalk.pro">
+  <main class="auth-page">
+    <div class="auth-shell">
+      <a href="/" class="auth-brand" aria-label="返回首页">
+        <Icon name="lucide:compass" width={22} height={22} />
+        <span>Walker</span>
+      </a>
+
       {session ? (
-        <div class="auth-logged">
-          <p>已登录：<strong>{session.role === 'admin' ? '站主' : '用户'}</strong></p>
+        <section class="auth-card">
+          <h1>已登录</h1>
+          <p class="auth-sub">身份：{session.role === 'admin' ? '站主' : '用户'}</p>
           <div class="auth-actions">
-            <a class="btn ghost" href={session.role === 'admin' ? '/admin' : '/tools'}>进入</a>
-            <button class="btn danger" id="logout-btn">登出</button>
+            <a class="btn primary" href={session.role === 'admin' ? '/admin' : '/tools'}>进入</a>
+            <button class="btn ghost" id="logout-btn">登出</button>
           </div>
-        </div>
+        </section>
       ) : (
-        <>
-          <div class="auth-tabs" role="tablist">
-            <button class="auth-tab active" data-tab="login" role="tab" aria-selected="true">登录</button>
-            <button class="auth-tab" data-tab="register" role="tab" aria-selected="false">注册</button>
+        <section class="auth-card">
+          <div class="auth-seg" role="tablist" aria-label="登录或注册">
+            <button class="seg-btn active" data-tab="login" role="tab" aria-selected="true">登录</button>
+            <button class="seg-btn" data-tab="register" role="tab" aria-selected="false">注册</button>
           </div>
 
           <form class="auth-form" data-form="login" autocomplete="on">
             <label class="field">
-              <span class="field-label">用户名</span>
+              <span>用户名</span>
               <input type="text" name="username" required autocomplete="username" placeholder="用户名" />
             </label>
             <label class="field">
-              <span class="field-label">密码</span>
+              <span>密码</span>
               <input type="password" name="password" required autocomplete="current-password" placeholder="密码" />
             </label>
             <p class="auth-error" data-error="login" hidden></p>
             <button class="btn primary" type="submit">登录</button>
-            <p class="auth-hint">站主与用户在同一处登录。忘密请联系站主重置。</p>
           </form>
 
           <form class="auth-form" data-form="register" hidden autocomplete="on">
             <label class="field">
-              <span class="field-label">邀请码</span>
+              <span>邀请码</span>
               <input type="text" name="inviteCode" required placeholder="输入邀请码" />
             </label>
             <label class="field">
-              <span class="field-label">用户名</span>
+              <span>用户名</span>
               <input type="text" name="username" required placeholder="2-20 位中英文/数字/下划线" />
             </label>
             <label class="field">
-              <span class="field-label">密码</span>
+              <span>密码</span>
               <input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="至少 8 位" />
             </label>
             <label class="field">
-              <span class="field-label">一句话说说你是谁（可选）</span>
-              <input type="text" name="personaAnchor" maxlength="10" placeholder="≤10 字，如：大三学生" />
-              <div class="anchor-chips">
+              <span>一句话说说你是谁（可选）</span>
+              <input type="text" name="personaAnchor" maxlength="10" placeholder="≤10 字" />
+              <div class="chips">
                 <button type="button" class="chip" data-anchor="学生">学生</button>
                 <button type="button" class="chip" data-anchor="上班族">上班族</button>
                 <button type="button" class="chip" data-anchor="自由职业">自由职业</button>
@@ -72,41 +79,137 @@ const session = readSessionPayload(Astro.request);
             </label>
             <p class="auth-error" data-error="register" hidden></p>
             <button class="btn primary" type="submit">注册并进入</button>
-            <p class="auth-hint">注册即获得匹配、画像等受邀功能。忘密找站主。</p>
           </form>
-        </>
+
+          <p class="auth-foot">站主与用户同一入口 · 忘密联系站主</p>
+        </section>
       )}
-    </section>
+    </div>
   </main>
-</Base>
+</FullscreenLayout>
 
 <style>
-  .auth-wrap { min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
-  .auth-card { width: 100%; max-width: 420px; padding: 2rem; border-radius: 16px; }
-  .auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border, #333); }
-  .auth-tab { background: none; border: none; padding: 0.6rem 1rem; color: var(--color-text-muted, #888); font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent; }
-  .auth-tab.active { color: var(--color-brand, #4f8cff); border-bottom-color: var(--color-brand, #4f8cff); }
-  .auth-form { display: flex; flex-direction: column; gap: 1rem; }
-  .field { display: flex; flex-direction: column; gap: 0.35rem; }
-  .field-label { font-size: 0.85rem; color: var(--color-text-muted, #888); }
-  .field input { padding: 0.6rem 0.7rem; border-radius: 8px; border: 1px solid var(--color-border, #444); background: var(--color-surface, #1e1e1e); color: var(--color-text, #eee); font-size: 0.95rem; }
-  .anchor-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.35rem; }
-  .chip { padding: 0.25rem 0.6rem; border-radius: 999px; border: 1px solid var(--color-border, #444); background: transparent; color: var(--color-text-muted, #888); font-size: 0.8rem; cursor: pointer; }
+  .auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .auth-shell {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .auth-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text, #eee);
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+  .auth-brand:hover { opacity: 1; }
+
+  .auth-card {
+    width: 100%;
+    padding: 2rem;
+    border-radius: 18px;
+    background: var(--color-surface, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+    backdrop-filter: blur(20px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22);
+  }
+  .auth-card h1 { margin: 0 0 0.25rem; font-size: 1.3rem; color: var(--color-text, #eee); }
+  .auth-sub { margin: 0 0 1.25rem; font-size: 0.85rem; color: var(--color-text-muted, #888); }
+
+  .auth-seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    margin-bottom: 1.5rem;
+    background: rgba(127, 127, 127, 0.14);
+    border-radius: 999px;
+  }
+  .seg-btn {
+    padding: 0.55rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-text-muted, #999);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .seg-btn.active { background: var(--color-brand, #4f8cff); color: #fff; }
+
+  .auth-form { display: flex; flex-direction: column; gap: 0.9rem; }
+  .field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .field > span { font-size: 0.78rem; color: var(--color-text-muted, #999); font-weight: 500; }
+  .field input {
+    padding: 0.65rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14));
+    background: rgba(0, 0, 0, 0.16);
+    color: var(--color-text, #eee);
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--color-brand, #4f8cff);
+    box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
+  }
+  .field input::placeholder { color: var(--color-text-muted, #666); opacity: 0.7; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
+  .chip {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14));
+    background: transparent;
+    color: var(--color-text-muted, #999);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
   .chip:hover { color: var(--color-brand, #4f8cff); border-color: var(--color-brand, #4f8cff); }
-  .consent { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--color-text-muted, #888); }
-  .auth-error { color: #ff6b6b; font-size: 0.85rem; margin: 0; }
-  .btn { padding: 0.65rem 1rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.95rem; }
+
+  .consent { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--color-text-muted, #999); }
+
+  .auth-error { color: #ff6b6b; font-size: 0.82rem; margin: 0; }
+
+  .btn {
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.05s;
+  }
   .btn.primary { background: var(--color-brand, #4f8cff); color: #fff; }
-  .btn.ghost { background: transparent; color: var(--color-text, #eee); border: 1px solid var(--color-border, #444); }
-  .btn.danger { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b; }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .auth-hint { font-size: 0.78rem; color: var(--color-text-muted, #888); margin: 0; }
-  .auth-logged { text-align: center; }
-  .auth-actions { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem; }
+  .btn.ghost { background: transparent; color: var(--color-text, #eee); border: 1px solid var(--color-border, rgba(255, 255, 255, 0.14)); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .auth-actions { display: flex; gap: 0.6rem; }
+  .auth-actions .btn { flex: 1; }
+
+  .auth-foot { margin: 1.25rem 0 0; text-align: center; font-size: 0.76rem; color: var(--color-text-muted, #777); }
 </style>
 
 <script>
-  const tabs = document.querySelectorAll<HTMLButtonElement>('.auth-tab');
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.seg-btn');
   const forms = document.querySelectorAll<HTMLFormElement>('.auth-form');
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
