@@ -20,7 +20,7 @@ describe('AccountService.bootstrapOwner', () => {
   it('首次凭 ADMIN_PASSWORD 建 owner 账号，之后自锁', async () => {
     const ok = await svc.bootstrapOwner('owner-bootstrap-secret', 'owner', 'owner-pass-1');
     expect(ok.ok).toBe(true);
-    expect(ok.role).toBe('admin');
+    expect(ok.role).toBe('owner');
     expect(ok.username).toBe('owner');
     expect(ok.sessionId).toBeTruthy();
 
@@ -39,7 +39,7 @@ describe('AccountService.login', () => {
   it('owner 用正确密码登录', async () => {
     const r = await svc.login('owner', 'owner-pass-1');
     expect(r.ok).toBe(true);
-    expect(r.role).toBe('admin');
+    expect(r.role).toBe('owner');
   });
 
   it('密码错误统一报错（防枚举：不区分用户不存在与密码错）', async () => {
@@ -167,5 +167,14 @@ describe('AccountService 封禁 / 重置 / 改密', () => {
     const all = await svc.listAccounts();
     expect(all.length).toBeGreaterThan(0);
     expect(all.some(a => a.username === 'owner')).toBe(true);
+  });
+
+  it('setRole 改角色，新登录带新角色（旧会话被撤销）', async () => {
+    const username = `rol${crypto.randomUUID().slice(0, 8)}`;
+    await svc.register({ inviteCode: 'test-invite', username, password: 'valid-pass-1' });
+    const r = await svc.setRole(username, 'admin');
+    expect(r.ok).toBe(true);
+    const login = await svc.login(username, 'valid-pass-1');
+    expect(login.role).toBe('admin');
   });
 });

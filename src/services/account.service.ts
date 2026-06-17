@@ -10,7 +10,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 import type { AccountServicePort, AuthResult, RegisterInput } from './interfaces';
-import type { AccountStatus, UserAccount, UserSession } from '@/stores/ports';
+import type { AccountRole, AccountStatus, UserAccount, UserSession } from '@/stores/ports';
 import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
@@ -202,6 +202,15 @@ export function createAccountService(): AccountServicePort {
       return { ok: true };
     },
 
+    async setRole(username: string, role: AccountRole) {
+      const account = await accountStore.findByUsername(username);
+      if (!account) return { ok: false, reason: '用户不存在' };
+      await accountStore.updateRole(username, role);
+      // 角色写在 cookie 里，变更后撤销该用户旧会话，下次登录才带新角色
+      await sessionStore.killAllByUsername(username);
+      return { ok: true };
+    },
+
     async listAccounts() {
       return accountStore.listAll();
     },
@@ -222,7 +231,7 @@ export function createAccountService(): AccountServicePort {
       const account: UserAccount = {
         username: ownerUsername,
         passwordHash: hashPassword(ownerPassword),
-        role: 'admin',
+        role: 'owner',
         status: 'active',
         createdAt: now,
       };
@@ -231,8 +240,8 @@ export function createAccountService(): AccountServicePort {
       } catch {
         return { ok: false, reason: '用户名已存在' };
       }
-      const sessionId = await issueSession(ownerUsername, 'admin');
-      return { ok: true, sessionId, username: ownerUsername, role: 'admin' };
+      const sessionId = await issueSession(ownerUsername, 'owner');
+      return { ok: true, sessionId, username: ownerUsername, role: 'owner' };
     },
   };
 }

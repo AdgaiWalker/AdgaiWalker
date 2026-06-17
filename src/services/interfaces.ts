@@ -6,6 +6,7 @@
  */
 
 import type {
+  AccountRole,
   AccountStatus,
   AdminReviewStatus,
   AuthState,
@@ -147,6 +148,8 @@ export interface AccountServicePort {
   resetPassword(username: string): Promise<{ ok: boolean; newPassword?: string; reason?: string }>;
   /** 封禁 / 解封 */
   setStatus(username: string, status: AccountStatus): Promise<{ ok: boolean; reason?: string }>;
+  /** 指派角色（仅 owner 可用；改后撤销该用户旧会话，下次登录新角色生效） */
+  setRole(username: string, role: AccountRole): Promise<{ ok: boolean; reason?: string }>;
   listAccounts(): Promise<UserAccount[]>;
   /** owner 一次性 bootstrap：仅当系统无账号时凭 ADMIN_PASSWORD 建 owner 账号 */
   bootstrapOwner(adminPassword: string, ownerUsername: string, ownerPassword: string): Promise<AuthResult>;

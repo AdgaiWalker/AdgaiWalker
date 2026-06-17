@@ -15,7 +15,7 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 const COOKIE_NAME = 'walker-session';
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 天
 
-export type SessionRole = 'user' | 'admin';
+export type SessionRole = 'user' | 'admin' | 'owner';
 
 function getSecret(): string {
   return import.meta.env.COOKIE_SECRET ?? '';

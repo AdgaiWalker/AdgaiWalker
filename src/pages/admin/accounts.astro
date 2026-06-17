@@ -1,24 +1,45 @@
 ---
 /**
- * /admin/accounts — 账号管理后台（站主）
+ * /admin/accounts — 账号管理后台
  *
- * 列表 + 重置密码 + 封禁/解封。SSR，isAdmin gate。
+ * 列表 + 重置密码 + 封禁/解封 +（仅 owner）指派角色。SSR，isAdmin gate（admin+owner 可进）。
+ * 角色指派 + 不能改自己（防站主自降级后无人能指派）。
  */
 import Base from '@/layouts/Base.astro';
 import { isAdmin } from '@/lib/admin-auth';
+import { readSessionPayload } from '@/lib/account-auth';
+import { createUserContextService } from '@/services/user-context.service';
+import { createAccountStore } from '@/stores/account.store';
+import { createSessionStore } from '@/stores/session.store';
+import { createUserProfileStore } from '@/stores/user-profile.store';
 
 if (!isAdmin(Astro.request)) {
   return Astro.redirect('/login');
 }
 
+// 是否站主（唯一可指派角色）+ 当前用户名（防自改）
+const sessionPayload = readSessionPayload(Astro.request);
+const canAssignRoles = sessionPayload?.role === 'owner';
+let myUsername: string | null = null;
+if (canAssignRoles && sessionPayload?.sid) {
+  const ucs = createUserContextService({
+    sessionStore: createSessionStore(),
+    accountStore: createAccountStore(),
+    profileStore: createUserProfileStore(),
+  });
+  const me = await ucs.resolve({ sessionId: sessionPayload.sid, isAdmin: false });
+  myUsername = me.username;
+}
+
 interface AccountView {
   username: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'owner';
   status: 'active' | 'banned' | 'deleteRequested';
   createdAt: string;
   lastLoginAt?: string;
   inviteCodeHash?: string;
 }
+const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
 
 const origin = Astro.url.origin;
 let accounts: AccountView[] = [];
@@ -59,21 +80,28 @@ try {
               </tr>
             </thead>
             <tbody>
-              {accounts.map(a => (
+              {accounts.map((a) => (
                 <tr data-username={a.username}>
-                  <td class="mono">{a.username}</td>
-                  <td><span class={`badge role-${a.role}`}>{a.role === 'admin' ? '站主' : '用户'}</span></td>
+                  <td class="mono">{a.username}{a.username === myUsername && <span class="me">（你）</span>}</td>
+                  <td><span class={`badge role-${a.role}`}>{roleLabel(a.role)}</span></td>
                   <td><span class={`badge status-${a.status}`}>{a.status}</span></td>
                   <td class="muted">{a.createdAt?.slice(0, 10) ?? '-'}</td>
                   <td class="muted">{a.lastLoginAt?.slice(0, 10) ?? '-'}</td>
                   <td class="actions">
-                    {a.role !== 'admin' && (
+                    {a.role !== 'owner' && (
                       <>
                         <button class="mini" data-action="reset">重置密码</button>
                         <button class="mini" data-action="toggle-status" data-status={a.status}>
                           {a.status === 'banned' ? '解封' : '封禁'}
                         </button>
                       </>
+                    )}
+                    {canAssignRoles && a.username !== myUsername && (
+                      <span class="role-set">
+                        {a.role !== 'user' && <button class="mini" data-action="set-role" data-role="user">设为用户</button>}
+                        {a.role !== 'admin' && <button class="mini" data-action="set-role" data-role="admin">设为管理员</button>}
+                        {a.role !== 'owner' && <button class="mini" data-action="set-role" data-role="owner">设为站主</button>}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -82,6 +110,7 @@ try {
           </table>
         </div>
       )}
+      {canAssignRoles && <p class="hint">你是站主，可指派角色。改角色后该用户需重新登录才生效。</p>}
     </section>
 
     <dialog id="reset-dialog" aria-labelledby="reset-title">
@@ -101,80 +130,93 @@ try {
 <style>
   .accounts-wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
   .accounts-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-  .accounts-head h1 { font-size: 1.4rem; margin: 0; }
-  .back { color: var(--color-text-muted, #888); text-decoration: none; font-size: 0.9rem; }
+  .accounts-head h1 { font-size: 1.4rem; margin: 0; color: var(--color-parchment, #1a2325); }
+  .back { color: var(--color-parchment-dim, #64748b); text-decoration: none; font-size: 0.9rem; }
   .panel-glass { padding: 1.25rem; border-radius: 12px; }
-  .empty { color: var(--color-text-muted, #888); }
+  .empty { color: var(--color-parchment-dim, #888); }
+  .hint { margin: 1rem 0 0; font-size: 0.78rem; color: var(--color-parchment-dim, #888); }
   .table-scroll { overflow-x: auto; }
   .accounts-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-  .accounts-table th, .accounts-table td { padding: 0.6rem 0.7rem; text-align: left; border-bottom: 1px solid var(--color-border, #333); white-space: nowrap; }
-  .accounts-table th { color: var(--color-text-muted, #888); font-weight: 500; }
-  .mono { font-family: var(--font-mono, monospace); }
-  .muted { color: var(--color-text-muted, #888); }
-  .badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; }
+  .accounts-table th, .accounts-table td { padding: 0.6rem 0.7rem; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 12%, transparent); white-space: nowrap; }
+  .accounts-table th { color: var(--color-parchment-dim, #64748b); font-weight: 500; }
+  .mono { font-family: var(--font-mono, monospace); color: var(--color-parchment, #1a2325); }
+  .me { color: var(--color-parchment-dim, #888); font-size: 0.75rem; }
+  .muted { color: var(--color-parchment-dim, #888); }
+  .badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .role-owner { background: var(--color-brand-glow, rgba(53,191,171,0.18)); color: var(--color-brand, #35bfab); }
   .role-admin { background: rgba(79,140,255,0.18); color: #4f8cff; }
-  .role-user { background: rgba(255,255,255,0.08); color: var(--color-text-muted, #888); }
+  .role-user { background: color-mix(in srgb, var(--color-parchment, #1a2325) 10%, transparent); color: var(--color-parchment-dim, #888); }
   .status-active { background: rgba(72,199,116,0.18); color: #48c774; }
   .status-banned { background: rgba(255,107,107,0.18); color: #ff6b6b; }
   .status-deleteRequested { background: rgba(255,165,2,0.18); color: #ffa502; }
-  .actions { display: flex; gap: 0.4rem; }
-  .mini { padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--color-border, #444); background: transparent; color: var(--color-text, #eee); cursor: pointer; font-size: 0.8rem; }
-  .mini:hover { border-color: var(--color-brand, #4f8cff); color: var(--color-brand, #4f8cff); }
-  dialog { border-radius: 12px; border: 1px solid var(--color-border, #444); background: var(--color-surface, #1e1e1e); color: var(--color-text, #eee); padding: 1.5rem; max-width: 90vw; }
+  .actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .role-set { display: inline-flex; gap: 0.3rem; }
+  .mini { padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 16%, transparent); background: transparent; color: var(--color-parchment, #1a2325); cursor: pointer; font-size: 0.8rem; }
+  .mini:hover { border-color: var(--color-brand, #35bfab); color: var(--color-brand, #35bfab); }
+  dialog { border-radius: 12px; border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 14%, transparent); background: var(--color-card, #fff); color: var(--color-parchment, #1a2325); padding: 1.5rem; max-width: 90vw; }
   dialog::backdrop { background: rgba(0,0,0,0.5); }
-  .reset-code { display: block; margin: 0.75rem 0; padding: 0.6rem; background: rgba(255,255,255,0.06); border-radius: 6px; font-family: var(--font-mono, monospace); font-size: 1.05rem; user-select: all; }
+  .reset-code { display: block; margin: 0.75rem 0; padding: 0.6rem; background: color-mix(in srgb, var(--color-parchment, #1a2325) 6%, transparent); border-radius: 6px; font-family: var(--font-mono, monospace); font-size: 1.05rem; user-select: all; }
   .dialog-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
-  .dialog-actions button { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--color-border, #444); background: transparent; color: var(--color-text, #eee); cursor: pointer; }
-  .dialog-actions button.primary { background: var(--color-brand, #4f8cff); color: #fff; border-color: transparent; }
+  .dialog-actions button { padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 16%, transparent); background: transparent; color: var(--color-parchment, #1a2325); cursor: pointer; }
+  .dialog-actions button.primary { background: var(--color-brand, #35bfab); color: #fff; border-color: transparent; }
 </style>
 
 <script>
-  const dialog = document.getElementById('reset-dialog') as HTMLDialogElement | null;
-  const resetUsername = document.getElementById('reset-username');
-  const resetPassword = document.getElementById('reset-password');
-  const copyBtn = document.getElementById('copy-btn');
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
 
-  document.querySelectorAll<HTMLTableSectionElement>('tbody').forEach(tbody => {
-    tbody.addEventListener('click', async (e) => {
-      const target = e.target as HTMLButtonElement;
-      if (target.tagName !== 'BUTTON') return;
-      const row = target.closest('tr');
-      if (!row) return;
-      const username = row.dataset.username ?? '';
-      const action = target.dataset.action;
+  registerLifecycle(() => {
+    const dialog = document.getElementById('reset-dialog') as HTMLDialogElement | null;
+    const resetUsername = document.getElementById('reset-username');
+    const resetPassword = document.getElementById('reset-password');
+    const copyBtn = document.getElementById('copy-btn');
+    const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
 
-      if (action === 'reset') {
-        if (!confirm(`确定重置 ${username} 的密码？`)) return;
-        const res = await fetch('/api/admin/accounts/reset', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }),
-        });
-        const json = await res.json();
-        if (res.ok && json.ok && resetUsername && resetPassword && dialog) {
-          resetUsername.textContent = username;
-          resetPassword.textContent = json.newPassword ?? '';
-          dialog.showModal();
-        } else {
-          alert(json.reason || '重置失败。');
-        }
-      } else if (action === 'toggle-status') {
-        const current = target.dataset.status;
-        const next = current === 'banned' ? 'active' : 'banned';
-        if (!confirm(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？`)) return;
-        const res = await fetch('/api/admin/accounts/status', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, status: next }),
-        });
-        if (res.ok) {
-          window.location.reload();
-        } else {
+    document.querySelectorAll<HTMLTableSectionElement>('tbody').forEach((tbody) => {
+      tbody.addEventListener('click', async (e) => {
+        const target = e.target as HTMLButtonElement;
+        if (target.tagName !== 'BUTTON') return;
+        const row = target.closest('tr');
+        if (!row) return;
+        const username = row.dataset.username ?? '';
+        const action = target.dataset.action;
+
+        if (action === 'reset') {
+          if (!confirm(`确定重置 ${username} 的密码？`)) return;
+          const res = await fetch('/api/admin/accounts/reset', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }),
+          });
           const json = await res.json();
-          alert(json.reason || '操作失败。');
+          if (res.ok && json.ok && resetUsername && resetPassword && dialog) {
+            resetUsername.textContent = username;
+            resetPassword.textContent = json.newPassword ?? '';
+            dialog.showModal();
+          } else {
+            alert(json.reason || '重置失败。');
+          }
+        } else if (action === 'toggle-status') {
+          const current = target.dataset.status;
+          const next = current === 'banned' ? 'active' : 'banned';
+          if (!confirm(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？`)) return;
+          const res = await fetch('/api/admin/accounts/status', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, status: next }),
+          });
+          if (res.ok) window.location.reload();
+          else { const j = await res.json(); alert(j.reason || '操作失败。'); }
+        } else if (action === 'set-role') {
+          const role = target.dataset.role ?? '';
+          if (!confirm(`确定将 ${username} 设为「${roleLabel(role)}」？该用户需重新登录才生效。`)) return;
+          const res = await fetch('/api/admin/accounts/role', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, role }),
+          });
+          if (res.ok) window.location.reload();
+          else { const j = await res.json(); alert(j.reason || '操作失败。'); }
         }
-      }
+      });
     });
-  });
 
-  copyBtn?.addEventListener('click', async () => {
-    const text = resetPassword?.textContent ?? '';
-    try { await navigator.clipboard.writeText(text); copyBtn.textContent = '已复制'; } catch { /* ignore */ }
+    copyBtn?.addEventListener('click', async () => {
+      const text = resetPassword?.textContent ?? '';
+      try { await navigator.clipboard.writeText(text); copyBtn.textContent = '已复制'; } catch { /* ignore */ }
+    });
   });
 </script>
