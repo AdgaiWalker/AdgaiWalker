@@ -18,6 +18,9 @@ const traceLog = featuredLog || recentLogs[0];
 
 <div id="canvas-container" class="fixed inset-0 overflow-hidden select-none pointer-events-auto z-0 flex items-center justify-center">
 
+  {/* 右上角常驻身份胶囊（登录 / 账号 · 登出） */}
+  <AuthChip variant="pill" />
+
 
   <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex justify-center items-center">
     <div class="grid grid-cols-[280px_400px] justify-center gap-6 items-start w-full relative pb-4 pointer-events-auto px-4">
@@ -46,7 +49,6 @@ const traceLog = featuredLog || recentLogs[0];
           <div class="directory-ghost-nav">
             <a href={CONTENT}>内容</a>
             <a href={ABOUT}>关于</a>
-            <AuthChip variant="text" />
             <button id="canvas-theme-toggle" aria-label="切换主题" title="切换主题">主题</button>
           </div>
         </div>
