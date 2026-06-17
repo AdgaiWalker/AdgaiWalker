@@ -67,6 +67,9 @@ try {
       {accounts.length === 0 ? (
         <p class="empty">还没有注册账号。</p>
       ) : (
+        <div class="accounts-toolbar">
+          <input type="search" id="accounts-search" placeholder="搜索用户名…" class="search-input" />
+        </div>
         <div class="table-scroll">
           <table class="accounts-table">
             <thead>
@@ -82,7 +85,7 @@ try {
             <tbody>
               {accounts.map((a) => (
                 <tr data-username={a.username}>
-                  <td class="mono">{a.username}{a.username === myUsername && <span class="me">（你）</span>}</td>
+                  <td class="mono"><a href={`/admin/accounts/${a.username}`} class="user-link">{a.username}</a>{a.username === myUsername && <span class="me">（你）</span>}</td>
                   <td><span class={`badge role-${a.role}`}>{roleLabel(a.role)}</span></td>
                   <td><span class={`badge status-${a.status}`}>{a.status}</span></td>
                   <td class="muted">{a.createdAt?.slice(0, 10) ?? '-'}</td>
@@ -135,6 +138,10 @@ try {
   .panel-glass { padding: 1.25rem; border-radius: 12px; }
   .empty { color: var(--color-parchment-dim, #888); }
   .hint { margin: 1rem 0 0; font-size: 0.78rem; color: var(--color-parchment-dim, #888); }
+  .accounts-toolbar { margin-bottom: 0.75rem; }
+  .search-input { padding: 0.45rem 0.7rem; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 16%, transparent); background: color-mix(in srgb, var(--color-parchment, #1a2325) 4%, transparent); color: var(--color-parchment, #1a2325); font-size: 0.85rem; width: 100%; max-width: 240px; }
+  .user-link { color: var(--color-brand, #35bfab); text-decoration: none; font-family: var(--font-mono, monospace); }
+  .user-link:hover { text-decoration: underline; }
   .table-scroll { overflow-x: auto; }
   .accounts-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .accounts-table th, .accounts-table td { padding: 0.6rem 0.7rem; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--color-parchment, #1a2325) 12%, transparent); white-space: nowrap; }
@@ -217,6 +224,15 @@ try {
     copyBtn?.addEventListener('click', async () => {
       const text = resetPassword?.textContent ?? '';
       try { await navigator.clipboard.writeText(text); copyBtn.textContent = '已复制'; } catch { /* ignore */ }
+    });
+
+    const search = document.getElementById('accounts-search') as HTMLInputElement | null;
+    search?.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      document.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((row) => {
+        const name = (row.dataset.username ?? '').toLowerCase();
+        row.style.display = (!q || name.includes(q)) ? '' : 'none';
+      });
     });
   });
 </script>

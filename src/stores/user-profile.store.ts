@@ -8,6 +8,7 @@
 import type { UserProfile, UserProfileRepositoryPort } from './ports';
 
 import {
+  deleteUserProfileByUsername,
   getAllUserProfiles,
   getUserProfileByUsername,
   markUserProfileDeleteRequested,
@@ -30,6 +31,10 @@ export function createUserProfileStore(): UserProfileRepositoryPort {
 
     async markDeleteRequested(username: string, requestedAt: string): Promise<void> {
       await markUserProfileDeleteRequested(username, requestedAt);
+    },
+
+    async deleteByUsername(username: string): Promise<void> {
+      await deleteUserProfileByUsername(username);
     },
   };
 }
