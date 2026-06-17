@@ -1,0 +1,54 @@
+---
+// VersionHistory — 版本时间线 modal（预渲染隐藏，admin 触发）
+---
+
+<div class="vh-modal" id="version-history-modal" hidden>
+  <div class="vh-dialog">
+    <div class="vh-header">
+      <span class="vh-title">版本历史</span>
+      <button class="vh-close" id="vh-close-btn" type="button">×</button>
+    </div>
+    <div class="vh-body">
+      <div class="vh-list" id="vh-list"></div>
+      <div class="vh-diff" id="vh-diff"><div class="vh-empty">选择左侧某版本查看差异</div></div>
+    </div>
+    <div class="vh-footer">
+      <button class="vh-btn vh-btn-danger" id="vh-revert-btn" type="button" hidden>回退到此版本</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .vh-modal {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.5);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  .vh-dialog {
+    width: min(900px, 92vw); height: min(80vh, 700px);
+    display: flex; flex-direction: column;
+    background: #fff; border-radius: 14px; overflow: hidden;
+    color: #1c1917;
+  }
+  .vh-header { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; border-bottom: 1px solid rgba(0,0,0,0.08); }
+  .vh-title { font-size: 1rem; font-weight: 800; }
+  .vh-close { background: none; border: 0; font-size: 1.5rem; color: #78716c; cursor: pointer; line-height: 1; }
+  .vh-body { flex: 1; display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+  .vh-list { overflow-y: auto; border-right: 1px solid rgba(0,0,0,0.06); padding: 0.5rem; }
+  .vh-item { display: block; width: 100%; text-align: left; padding: 0.6rem 0.75rem; border: 0; border-radius: 8px; background: transparent; cursor: pointer; margin-bottom: 0.25rem; }
+  .vh-item:hover { background: #f5f5f4; }
+  .vh-item.is-current { background: rgba(196,112,74,0.1); }
+  .vh-item-time { font-size: 0.72rem; font-weight: 700; color: #1c1917; font-family: monospace; }
+  .vh-item-msg { font-size: 0.78rem; color: #57534e; margin: 0.15rem 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vh-item-author { font-size: 0.68rem; color: #a8a29e; }
+  .vh-diff { overflow-y: auto; padding: 0.75rem 1rem; background: #fafaf9; }
+  .vh-diff-line { margin: 0 0 0.15rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.74rem; font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; word-break: break-word; }
+  .vh-add { background: rgba(22,163,74,0.12); color: #166534; }
+  .vh-del { background: rgba(220,38,38,0.12); color: #991b1b; }
+  .vh-ctx { color: #78716c; }
+  .vh-footer { padding: 0.6rem 1.25rem; border-top: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: flex-end; }
+  .vh-btn-danger { padding: 0.4rem 0.85rem; border: 0; border-radius: 8px; background: #dc2626; color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .vh-empty, .vh-loading, .vh-error { padding: 1rem; color: #a8a29e; font-size: 0.85rem; }
+  .vh-error { color: #dc2626; }
+</style>

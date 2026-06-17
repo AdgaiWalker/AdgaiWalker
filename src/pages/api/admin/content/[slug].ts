@@ -1,60 +1,19 @@
 import type { APIRoute } from 'astro';
 import matter from 'gray-matter';
-import {
-  ContentStoreError,
-  createGitHubContentFileStore,
-  createLocalContentFileStore,
-  type ContentFileStore,
-} from '@/lib/admin-content-store';
+import { ContentStoreError } from '@/lib/admin-content-store';
 import { isAdmin } from '@/lib/admin-auth';
 import { getTopicCandidateById, updateTopicCandidateStatus } from '@/conversation/store';
 import { resolveContentVisibility } from '@/knowledge/visibility';
+import {
+  jsonResponse,
+  getContentStore,
+  validateSlug,
+  getPath,
+  getContentId,
+} from '@/lib/admin-content-helpers';
 
-const GITHUB_OWNER = 'AdgaiWalker';
-const GITHUB_REPO = 'AdgaiWalker';
-const CONTENT_PATH_PREFIX = 'src/content/log/';
 const MAX_CONTENT_BYTES = 100_000;
 const VALID_VISIBILITIES = new Set(['public', 'draft', 'private']);
-
-function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
-  });
-}
-
-function getToken(): string | null {
-  return import.meta.env.GITHUB_TOKEN || null;
-}
-
-function getContentStore(): ContentFileStore {
-  const token = getToken();
-  if (import.meta.env.DEV && !token) {
-    return createLocalContentFileStore();
-  }
-
-  return createGitHubContentFileStore({
-    owner: GITHUB_OWNER,
-    repo: GITHUB_REPO,
-    token,
-  });
-}
-
-function validateSlug(slug: string): boolean {
-  return /^[\p{Script=Han}\w\s.-]+$/u.test(slug)
-    && !slug.includes('..')
-    && !slug.includes('/')
-    && !slug.includes('\\');
-}
-
-function getPath(slug: string): string {
-  const hasKnownExt = slug.endsWith('.md') || slug.endsWith('.mdx');
-  return `${CONTENT_PATH_PREFIX}${hasKnownExt ? slug : `${slug}.md`}`;
-}
-
-function getContentId(slug: string): string {
-  return slug.replace(/\.(md|mdx)$/i, '');
-}
 
 function storeErrorResponse(error: unknown, fallback: string): Response {
   if (error instanceof ContentStoreError) {

@@ -143,6 +143,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/admin/brief` | 选题创作简报生成 | admin cookie |
 | `/api/admin/inspiration` | 站主灵感选题入口（双源选题池） | admin cookie |
 | `/api/admin/content/[slug]` | 内容 CRUD（GitHub API 回写） | admin cookie |
+| `/api/admin/content/[slug]/history` | 文章 git 提交历史列表（GitHub Commits API / 本地 git log） | admin cookie |
+| `/api/admin/content/[slug]/version` | 某历史版本内容（`?ref=<commitSha>`） | admin cookie |
 | `/api/admin/gateway` | AI Gateway 配置 CRUD + 测试连接 + 撤销/重置 | admin cookie |
 | `/api/admin/incidents` | 未解决的安全事件/失败降级记录（Incident）供复盘 | admin cookie |
 | `/api/admin/rules` | 规则候选池 CRUD（observed → candidate → validated → stable → retired） | admin cookie |
@@ -193,7 +195,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
 - **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。服务端 API 路由 `src/pages/api/like.ts` 使用 Upstash Redis（Vercel Marketplace）存储计数，同 IP 每路径 60s 冷却。Redis 不可用时降级为 `FALLBACK` 常量（基线计数 17861）。环境变量 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选）由 Vercel 自动注入。
 - **About 页面组件**（`about/`）：`SectionHeader.astro`（通用 section 标题组件）。关于我 / 关于站两个 Tab 的内容直接内联在 `about/index.astro`，无独立 `AboutSiteTab.astro` 组件。
-- **`AdminEditBar.astro`**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入，提供编辑/新建/删除入口。
+- **`AdminEditBar.astro`**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入。「编辑」按钮触发就地编辑态（不跳页），「历史」按钮打开版本历史 modal，「删除」直调 DELETE API。脚本内 import `inline-editor.ts` + 初始化 `version-history.ts`。
+- **就地编辑组件**（`admin/`）：`InlineEditor.astro`（编辑器骨架：正文/预览/元数据三 tab + 工具栏，预渲染隐藏 admin 激活）、`MetadataForm.astro`（frontmatter 结构化表单 + raw YAML 兜底，`data-field` 控件）、`VersionHistory.astro`（版本时间线 modal + jsdiff）。就地模式挂 `/posts/[slug]`（接管 `#article-body`），独立模式挂 `/admin/content/edit`（新建/brief）。
 
 ### 图标与样式
 
@@ -219,6 +222,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`home-canvas.ts`**：首页 Bento 画布拖拽、主题切换、状态栏反应和点击水波纹逻辑（Spark 抽点子盲盒已迁移至 `GreetingCard.astro`）。
 - **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
 - **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。
+- **`inline-editor.ts`**：就地/独立编辑器逻辑（`InlineEditor.astro` 配套）。导出 `enterInlineEditor(slug)`（就地模式入口）、`initStandaloneEditor(slug, draftTemplate)`（独立模式）。含 marked 客户端预览、frontmatter ↔ YAML 双向同步、localStorage 草稿、sha 乐观锁冲突、Ctrl+S 保存、`data-inline-editing` 钩子。
+- **`version-history.ts`**：版本历史逻辑（`VersionHistory.astro` 配套）。导出 `initVersionHistory()`，监听 `version-history:open` 事件。含 git 历史拉取、jsdiff 渲染、回退（复用 PUT 新提交）。
 
 ### Remark 插件
 
@@ -313,7 +318,10 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`src/lib/admin-auth.ts`**：站主身份判定。仅导出 `isAdmin(request)`（纯 cookie 同步：读 `walker-session` + 校验 role=admin，无需 Redis）。被所有 admin 页面和 `/api/insights`、`/api/admin/*` 路由引用。旧的 `signToken/authCookie` 等已退役（owner 走账号系统）。
 - **`src/lib/account-auth.ts`**：统一会话 cookie。`signSessionToken`/`verifySessionToken`（payload `{sid, role, iat}`，密钥 `COOKIE_SECRET`）、`readSessionId`/`readSessionPayload`、`sessionCookie`/`clearSessionCookie`、`createSessionId`。被 `/api/auth/*`、`/api/match`、`/api/profile` 等引用。
 - **`src/lib/theme.ts`**：多主题循环工具。导出 `THEMES`（`nature`/`aurora`/`sunset`/`mint`）、`ThemeName` 类型、`cycleTheme()` 函数。被 `Navigation.astro`、`home-canvas.ts`、`FullscreenLayout.astro` 引用。
-- **`src/lib/admin-content-store.ts`**：Admin 内容存储适配。通过 GitHub API（`GITHUB_TOKEN`）读写 `src/content/log/` 下的 markdown 文件，`GITHUB_TOKEN` 未配置时抛 503。被 `/api/admin/content/[slug]` 引用。
+- **`src/lib/admin-content-store.ts`**：Admin 内容存储适配。通过 GitHub API（`GITHUB_TOKEN`）读写 `src/content/log/` 下的 markdown 文件，`GITHUB_TOKEN` 未配置时抛 503（开发态降级本地文件）。`ContentFileStore` 接口含 `read(path, {ref?})`（支持读历史版本：GitHub `?ref=` / 本地 `git show`）、`write`、`delete`、`exists`、`listHistory(path, {perPage?})`（GitHub Commits API / 本地 `git log`）。被 `/api/admin/content/[slug]` 及其子路由 `history` / `version` 引用。
+- **`src/lib/admin-content-helpers.ts`**：Admin 内容路由共享工具（去重提取）。导出 `jsonResponse` / `getContentStore` / `validateSlug` / `getPath` / `getContentId` / `getToken` / `CONTENT_PATH_PREFIX`。被 `[slug].ts`、`[slug]/history.ts`、`[slug]/version.ts` 引用。
+- **`src/lib/frontmatter-editor.ts`**：frontmatter ↔ YAML 纯函数。导出 `parseDoc(raw)` / `serializeDoc(doc)` / `FORM_ENUMS`（与 `content.config.ts` 枚举一致）/ `FORM_MANAGED_KEYS`。被 `MetadataForm.astro`、`inline-editor.ts`、`version-history.ts` 引用。
+- **`src/lib/content-draft.ts`**：未保存草稿 localStorage 暂存纯函数。导出 `loadDraft` / `saveDraft` / `clearDraft`（key `walker:draft:<slug>`，损坏/不可用降级 null）。被 `inline-editor.ts` 引用。
 - **`src/types/nav.ts`**：导航类型定义。`NavItem`（`label`、`href`、`icon`、`hint?`）和 `NavGroup`（`title?`、`items`），被 `Navigation.astro` 和 `SidebarNav.astro` 引用。
 
 ## 路径别名
