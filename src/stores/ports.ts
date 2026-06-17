@@ -54,6 +54,8 @@ export interface SessionRepositoryPort {
   get(sessionId: string): Promise<UserSession | null>;
   isValid(sessionId: string): Promise<boolean>;
   revoke(sessionId: string): Promise<void>;
+  /** 踢掉某账号全部会话（改密/重置/封禁即时生效）；exceptSessionId 保留当前会话 */
+  killAllByUsername(username: string, exceptSessionId?: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------

@@ -2,16 +2,16 @@
 /**
  * AuthChip — 可复用身份芯片
  *
- * variant="icon"：图标版（侧栏底部工具栏，与 github/rss 图标同行）
- * variant="text"：文字版（首页 ghost nav 等文字链接区）
+ * variant="icon"：图标版（侧栏底部工具栏）
+ * variant="text"：纯文字版（文字链接区）
+ * variant="pill"：固定右上角毛玻璃胶囊（首页画布，常驻可见）
  *
  * 客户端脚本 src/scripts/auth-chip.ts 探测 /api/profile 统一更新所有 [data-auth-chip]。
- * <script> 经 Astro 打包去重，组件在哪些页面被用就在哪些页面加载（侧栏=内页，首页 ghost nav=首页）。
  */
 import { Icon } from 'astro-icon/components';
 
 interface Props {
-  variant?: 'icon' | 'text';
+  variant?: 'icon' | 'text' | 'pill';
 }
 const { variant = 'text' } = Astro.props;
 ---
@@ -28,6 +28,12 @@ const { variant = 'text' } = Astro.props;
       <Icon name="lucide:log-out" width={18} height={18} />
     </button>
   </span>
+) : variant === 'pill' ? (
+  <span data-auth-chip class="auth-pill">
+    <a href="/login" data-auth-login class="auth-pill-link">登录 / 注册</a>
+    <a href="/account" data-auth-name data-auth-fill hidden class="auth-pill-link" title="我的账号">账号</a>
+    <button data-auth-logout hidden class="auth-pill-link auth-pill-logout" title="登出">登出</button>
+  </span>
 ) : (
   <span data-auth-chip class="auth-chip-text">
     <a href="/login" data-auth-login>登录</a>
@@ -35,6 +41,50 @@ const { variant = 'text' } = Astro.props;
     <button data-auth-logout hidden>登出</button>
   </span>
 )}
+
+<style>
+  .auth-pill {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 50;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.45rem 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+    font-size: 0.82rem;
+  }
+  .auth-pill-link {
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: inherit;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+    line-height: 1;
+  }
+  .auth-pill-link:hover { color: #fff; background: rgba(255, 255, 255, 0.18); }
+  .auth-pill-logout { padding: 0.25rem 0.7rem; }
+
+  /* 亮色主题适配（nature 为默认亮色） */
+  :global(body.theme-nature) .auth-pill {
+    background: rgba(255, 255, 255, 0.66);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+  }
+  :global(body.theme-nature) .auth-pill-link { color: var(--color-parchment-dim, rgba(63,48,39,0.68)); }
+  :global(body.theme-nature) .auth-pill-link:hover { color: var(--color-parchment, #3f3027); background: rgba(0, 0, 0, 0.05); }
+</style>
 
 <script>
   import '@/scripts/auth-chip';

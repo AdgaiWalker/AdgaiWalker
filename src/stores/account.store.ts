@@ -57,8 +57,14 @@ export function createAccountStore(): AccountRepositoryPort {
       if (!ok) {
         throw new Error('用户名已存在');
       }
+      try {
+        await redis.sadd(ACCOUNTS_SET, account.username);
+      } catch (e) {
+        // sadd 失败 → 回滚 key，避免 exists()/listAll 与实际账号不一致
+        await redis.del(accountKey(account.username));
+        throw e;
+      }
       memoryAccounts.set(account.username, account);
-      await redis.sadd(ACCOUNTS_SET, account.username);
     },
 
     async updateStatus(username: string, status: AccountStatus): Promise<void> {
