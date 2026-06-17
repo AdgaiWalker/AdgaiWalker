@@ -171,7 +171,16 @@ export const learningTracks: LearningTrack[] = [
       { title: '光影与空间关系', done: false },
       { title: '设计实践', done: false },
     ],
-    notes: [],
+    notes: [
+      {
+        title: '了解符号学',
+        date: '2026-06-17',
+        aiConversation: {
+          platform: 'deepseek',
+          url: 'https://chat.deepseek.com/share/948zieogqo9t2rz4xu',
+        },
+      },
+    ],
     articles: [],
     resources: [],
   },
