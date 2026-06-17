@@ -28,8 +28,9 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  const sessionId = readSessionId(request);
   const userContext = await userContextService.resolve({
-    sessionId: readSessionId(request),
+    sessionId,
     isAdmin: false,
   });
   if (userContext.authState !== 'user' || !userContext.username) {
@@ -48,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ ok: false, reason: '请填写当前密码和新密码。' }, 400);
   }
 
-  const result = await accountService.changePassword(userContext.username, currentPassword, newPassword);
+  const result = await accountService.changePassword(userContext.username, currentPassword, newPassword, sessionId ?? undefined);
   if (!result.ok) {
     return json(result, 400);
   }

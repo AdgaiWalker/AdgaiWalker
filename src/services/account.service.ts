@@ -21,6 +21,8 @@ import { validatePersonaAnchor } from './profile.service';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 天
 const PASSWORD_MIN = 8;
 const USERNAME_RE = /^[A-Za-z0-9_一-龥]{2,20}$/;
+/** 保留用户名，普通注册禁用（防冒充站主/系统） */
+const RESERVED_USERNAMES = new Set(['admin', 'owner', 'root', 'administrator', 'system', 'walker', 'iwalk', '站长', '站主', '系统', '管理员']);
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16);
@@ -36,6 +38,9 @@ function verifyPassword(password: string, stored: string): boolean {
   if (derived.length !== expected.length) return false;
   return timingSafeEqual(derived, expected);
 }
+
+/** 固定 dummy 哈希：用户不存在时也对它跑一次 scrypt，拉平时延防用户名枚举（时序侧信道） */
+const DUMMY_HASH = hashPassword('dummy-password-do-not-use');
 
 function constantTimeEqualString(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -82,6 +87,9 @@ export function createAccountService(): AccountServicePort {
       const inviteCode = input.inviteCode.trim();
       if (!USERNAME_RE.test(username)) {
         return { ok: false, reason: '用户名需 2-20 位（中英文/数字/下划线）' };
+      }
+      if (RESERVED_USERNAMES.has(username.toLowerCase())) {
+        return { ok: false, reason: '该用户名被保留，请换一个' };
       }
       if (input.password.length < PASSWORD_MIN) {
         return { ok: false, reason: `密码至少 ${PASSWORD_MIN} 位` };
@@ -144,8 +152,12 @@ export function createAccountService(): AccountServicePort {
 
     async login(username: string, password: string): Promise<AuthResult> {
       const account = await accountStore.findByUsername(username.trim());
-      // 防枚举：用户不存在 / 密码错 统一报错
-      if (!account || !verifyPassword(password, account.passwordHash)) {
+      // 防时序侧信道：用户不存在时也对 dummy hash 跑一次 scrypt 拉平时延；文案统一防枚举
+      if (!account) {
+        verifyPassword(password, DUMMY_HASH);
+        return { ok: false, reason: '用户名或密码错误' };
+      }
+      if (!verifyPassword(password, account.passwordHash)) {
         return { ok: false, reason: '用户名或密码错误' };
       }
       if (account.status === 'banned') return { ok: false, reason: '账号已封禁，联系站主' };
@@ -159,13 +171,15 @@ export function createAccountService(): AccountServicePort {
       await sessionStore.revoke(sessionId);
     },
 
-    async changePassword(username: string, currentPassword: string, newPassword: string) {
+    async changePassword(username: string, currentPassword: string, newPassword: string, currentSessionId?: string) {
       const account = await accountStore.findByUsername(username);
       if (!account || !verifyPassword(currentPassword, account.passwordHash)) {
         return { ok: false, reason: '当前密码错误' };
       }
       if (newPassword.length < PASSWORD_MIN) return { ok: false, reason: `密码至少 ${PASSWORD_MIN} 位` };
       await accountStore.updatePasswordHash(username, hashPassword(newPassword));
+      // 改密后踢掉其它设备会话，保留当前
+      await sessionStore.killAllByUsername(username, currentSessionId);
       return { ok: true };
     },
 
@@ -174,6 +188,8 @@ export function createAccountService(): AccountServicePort {
       if (!account) return { ok: false, reason: '用户不存在' };
       const temp = randomTempPassword();
       await accountStore.updatePasswordHash(username, hashPassword(temp));
+      // 重置后该用户全部会话失效，需用新临时密码重新登录
+      await sessionStore.killAllByUsername(username);
       return { ok: true, newPassword: temp };
     },
 
@@ -181,6 +197,8 @@ export function createAccountService(): AccountServicePort {
       const account = await accountStore.findByUsername(username);
       if (!account) return { ok: false, reason: '用户不存在' };
       await accountStore.updateStatus(username, status);
+      // 封禁即时踢掉全部会话
+      if (status === 'banned') await sessionStore.killAllByUsername(username);
       return { ok: true };
     },
 
@@ -190,7 +208,7 @@ export function createAccountService(): AccountServicePort {
 
     async bootstrapOwner(adminPassword: string, ownerUsername: string, ownerPassword: string): Promise<AuthResult> {
       if (await accountStore.exists()) {
-        return { ok: false, reason: '系统已有账号，bootstrap 已关闭' };
+        return { ok: false, code: 'bootstrap-locked', reason: '系统已有账号，bootstrap 已关闭' };
       }
       const expected = import.meta.env.ADMIN_PASSWORD;
       if (!expected) return { ok: false, reason: 'ADMIN_PASSWORD 未配置' };
