@@ -3,6 +3,7 @@
 import { isAdmin } from '@/lib/admin-auth';
 import { getTopicCandidateById } from '@/conversation/store';
 import { generateBrief } from '@/services/brief.service';
+import InlineEditor from '../../../components/admin/InlineEditor.astro';
 
 export const prerender = false;
 
@@ -139,7 +140,6 @@ aiUsePolicy:
     </div>
     <div class="admin-bar-right">
       <a href="/admin/content" class="bar-btn">返回列表</a>
-      <button class="bar-btn bar-btn-primary" id="save-btn" disabled>保存</button>
     </div>
   </div>
 
@@ -152,198 +152,16 @@ aiUsePolicy:
       </select>
     </div>
 
-    <div class="editor-split">
-      <div class="editor-pane">
-        <div class="pane-header">Markdown</div>
-        <textarea class="editor-textarea" id="editor" placeholder="加载中..." disabled></textarea>
-      </div>
-      <div class="editor-pane">
-        <div class="pane-header">预览</div>
-        <div class="preview-pane" id="preview">
-          <div class="loading">加载内容...</div>
-        </div>
-      </div>
-    </div>
-    <div class="status-bar" id="status">就绪</div>
+    <InlineEditor mode="standalone" />
   </div>
 
-  <script define:vars={{ originalSlug: slug, draftTemplate, sourceTopicId: topicId ?? '' }}>
-    const editor = document.getElementById('editor');
-    const preview = document.getElementById('preview');
-    const saveBtn = document.getElementById('save-btn');
-    const status = document.getElementById('status');
-    const slugInput = document.getElementById('slug-input');
-    const extInput = document.getElementById('ext-input');
-    const currentSlug = document.getElementById('current-slug');
-    let sha = '';
-    let dirty = false;
-    let savedSlug = originalSlug;
-
-    function setReady() {
-      editor.disabled = false;
-      saveBtn.disabled = false;
-      renderPreview();
-    }
-
-    if (originalSlug) {
-      fetch(`/api/admin/content/${encodeURIComponent(originalSlug)}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.error) {
-            status.textContent = `加载失败: ${data.error}`;
-            return;
-          }
-          editor.value = data.content;
-          sha = data.sha;
-          setReady();
-          status.textContent = '已加载 · Ctrl+S 保存';
-        })
-        .catch(() => { status.textContent = '网络错误'; });
-    } else {
-      editor.value = draftTemplate;
-      editor.placeholder = draftTemplate;
-      setReady();
-      status.textContent = '新建模式 · 默认保存为 draft';
-    }
-
-    function escapeHtml(text) {
-      const el = document.createElement('span');
-      el.textContent = text;
-      return el.innerHTML;
-    }
-
-    function renderBasicMarkdownPreview(text) {
-      return escapeHtml(text)
-        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
-    }
-
-    function renderPreview() {
-      const raw = editor.value;
-      const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n?/);
-      let html = '';
-      if (fmMatch) {
-        html += `<div style="background:rgba(196,112,74,0.06);padding:0.65rem 0.85rem;border-radius:8px;margin-bottom:1rem;font-size:0.78rem;font-family:monospace;white-space:pre-wrap;color:#57534e">${escapeHtml(fmMatch[1])}</div>`;
-      }
-      const body = fmMatch ? raw.slice(fmMatch[0].length) : raw;
-      html += `<p>${renderBasicMarkdownPreview(body)}</p>`;
-      preview.innerHTML = html;
-    }
-
-    editor.addEventListener('input', () => {
-      dirty = true;
-      saveBtn.textContent = '保存 *';
-      renderPreview();
-    });
-
-    slugInput?.addEventListener('input', () => {
-      currentSlug.textContent = slugInput.value.trim() || '新建内容';
-    });
-
-    function resolveSlug() {
-      if (savedSlug) return savedSlug;
-      const raw = slugInput.value.trim();
-      if (!raw) return '';
-      const ext = extInput.value || '.md';
-      return raw.endsWith('.md') || raw.endsWith('.mdx') ? raw : `${raw}${ext}`;
-    }
-
-    function parseFrontmatter(raw) {
-      const m = raw.match(/^---\n([\s\S]*?)\n---/);
-      if (!m) return null;
-      const fm = {};
-      for (const line of m[1].split('\n')) {
-        const km = line.match(/^(\w+):\s*(.*)$/);
-        if (km) fm[km[1]] = km[2].trim();
-      }
-      return fm;
-    }
-
-    /** 保存前校验 frontmatter 关键字段，返回缺失项（提示用，不阻断） */
-    function findMissingFields(raw) {
-      const fm = parseFrontmatter(raw);
-      if (!fm) return ['frontmatter（--- 分隔块）'];
-      const missing = [];
-      if (!fm.title || fm.title === '""' || fm.title === "''") missing.push('title');
-      if (!fm.date) missing.push('date');
-      if (!fm.type) missing.push('type');
-      if (!fm.visibility && fm.published === undefined) missing.push('visibility/published（可见性）');
-      if (!/^[ \t]*aiUsePolicy[ \t]*:/m.test(raw)) missing.push('aiUsePolicy（AI 边界：声明能否被 AI 读/引/用）');
-      return missing;
-    }
-
-    async function save() {
-      const targetSlug = resolveSlug();
-      if (!targetSlug) {
-        status.textContent = '请先填写 slug。';
-        slugInput?.focus();
-        return;
-      }
-      if (!dirty && sha) return;
-
-      // 保存前提示缺失的关键字段（警告，不阻断，用户可确认继续）
-      const missing = findMissingFields(editor.value);
-      if (missing.length > 0) {
-        const proceed = window.confirm(`以下 frontmatter 字段缺失：${missing.join('、')}。\n仍要保存？`);
-        if (!proceed) {
-          status.textContent = `已取消保存（缺失：${missing.join('、')}）`;
-          return;
-        }
-      }
-
-      saveBtn.disabled = true;
-      status.textContent = '保存中...';
-
-      try {
-        const isCreate = !savedSlug;
-        const payload = {
-          content: editor.value,
-          sha: sha || undefined,
-          create: isCreate,
-          topicId: sourceTopicId || undefined,
-        };
-        const res = await fetch(`/api/admin/content/${encodeURIComponent(targetSlug)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          dirty = false;
-          sha = data.sha || sha;
-          savedSlug = targetSlug;
-          saveBtn.textContent = '保存';
-          currentSlug.textContent = targetSlug;
-          status.textContent = data.message || '已保存。';
-          if (isCreate) {
-            window.history.replaceState(null, '', `/admin/content/edit?slug=${encodeURIComponent(targetSlug)}`);
-            document.getElementById('create-panel')?.setAttribute('hidden', '');
-          }
-        } else {
-          status.textContent = `保存失败: ${data.error || '未知错误'}`;
-        }
-      } catch {
-        status.textContent = '网络错误';
-      } finally {
-        saveBtn.disabled = false;
-      }
-    }
-
-    saveBtn.addEventListener('click', save);
-    document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        save();
-      }
-    });
+  <script is:inline define:vars={{ originalSlug: slug, draftTemplate }}>
+    window.__ieStandalone = { originalSlug, draftTemplate };
+  </script>
+  <script>
+    import { initStandaloneEditor } from '@/scripts/inline-editor';
+    const cfg = (window as any).__ieStandalone;
+    if (cfg) initStandaloneEditor(cfg.originalSlug || '', cfg.draftTemplate);
   </script>
 </body>
 </html>

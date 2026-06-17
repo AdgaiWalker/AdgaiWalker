@@ -37,7 +37,7 @@ export async function getAiReadableContentItems() {
 
 export async function getPublishedPosts() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    isPublicContentData(data) && ['knowledge', 'idea', 'project', 'learn', 'learning'].includes(data.type)
+    isPublicContentData(data) && ['knowledge', 'idea', 'project', 'learning'].includes(data.type)
   ));
 }
 

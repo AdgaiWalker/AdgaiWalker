@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
@@ -17,11 +18,23 @@ export interface ContentWriteInput {
   sha?: string;
 }
 
+export interface ContentHistoryEntry {
+  sha: string;
+  date: string;
+  message: string;
+  author: string;
+}
+
+export interface ContentReadOptions {
+  ref?: string;
+}
+
 export interface ContentFileStore {
-  read(path: string): Promise<ContentFile>;
+  read(path: string, opts?: ContentReadOptions): Promise<ContentFile>;
   write(input: ContentWriteInput): Promise<{ sha?: string }>;
   delete(path: string, sha: string, message: string): Promise<void>;
   exists(path: string): Promise<boolean>;
+  listHistory(path: string, opts?: { perPage?: number }): Promise<ContentHistoryEntry[]>;
 }
 
 export class ContentStoreError extends Error {
@@ -76,8 +89,9 @@ export function createGitHubContentFileStore(options: {
     return fetch(`${GITHUB_API}${path}`, { ...init, headers });
   }
 
-  async function read(path: string): Promise<ContentFile> {
-    const response = await request(contentApiPath(owner, repo, path), { method: 'GET' });
+  async function read(path: string, opts?: ContentReadOptions): Promise<ContentFile> {
+    const query = opts?.ref ? `?ref=${encodeURIComponent(opts.ref)}` : '';
+    const response = await request(`${contentApiPath(owner, repo, path)}${query}`, { method: 'GET' });
     if (!response.ok) throw await parseGitHubError(response, '文件不存在。');
 
     const data = await response.json() as { content: string; sha: string; name?: string };
@@ -122,20 +136,45 @@ export function createGitHubContentFileStore(options: {
         throw error;
       }
     },
+
+    async listHistory(path, opts) {
+      const perPage = Math.min(Math.max(opts?.perPage ?? 30, 1), 100);
+      const query = new URLSearchParams({ path, per_page: String(perPage) });
+      const response = await request(
+        `/repos/${owner}/${repo}/commits?${query.toString()}`,
+        { method: 'GET' },
+      );
+      if (!response.ok) throw await parseGitHubError(response, '历史读取失败。');
+      const data = await response.json() as Array<{
+        sha: string;
+        commit: { message: string; author?: { name?: string; date?: string } };
+      }>;
+      return data.map(c => ({
+        sha: c.sha,
+        date: c.commit.author?.date ?? '',
+        message: c.commit.message ?? '',
+        author: c.commit.author?.name ?? '',
+      }));
+    },
   };
 }
 
 export function createLocalContentFileStore(rootDir = process.cwd()): ContentFileStore {
   return {
-    async read(path) {
+    async read(path, opts) {
       const filePath = resolveWorkspacePath(rootDir, path);
+      if (opts?.ref) {
+        try {
+          const relPath = path.replace(/\\/g, '/');
+          const content = execFileSync('git', ['-C', rootDir, 'show', `${opts.ref}:${relPath}`], { encoding: 'utf-8' });
+          return { content, sha: opts.ref, name: filePath.split(/[\\/]/).at(-1) };
+        } catch {
+          throw new ContentStoreError('版本不存在。', 404);
+        }
+      }
       try {
         const content = await readFile(filePath, 'utf-8');
-        return {
-          content,
-          sha: fileSha(content),
-          name: filePath.split(/[\\/]/).at(-1),
-        };
+        return { content, sha: fileSha(content), name: filePath.split(/[\\/]/).at(-1) };
       } catch {
         throw new ContentStoreError('文件不存在。', 404);
       }
@@ -164,6 +203,24 @@ export function createLocalContentFileStore(rootDir = process.cwd()): ContentFil
       } catch (error) {
         if (error instanceof ContentStoreError && error.status === 404) return false;
         throw error;
+      }
+    },
+
+    async listHistory(path, opts) {
+      const perPage = Math.min(Math.max(opts?.perPage ?? 30, 1), 100);
+      const relPath = path.replace(/\\/g, '/');
+      try {
+        const out = execFileSync(
+          'git',
+          ['-C', rootDir, 'log', `-n`, String(perPage), `--format=%H|%cI|%an|%s`, '--', relPath],
+          { encoding: 'utf-8' },
+        );
+        return out.trim().split('\n').filter(Boolean).map(line => {
+          const [sha, date, author, ...msgParts] = line.split('|');
+          return { sha, date, author, message: msgParts.join('|') };
+        });
+      } catch {
+        return [];
       }
     },
   };
