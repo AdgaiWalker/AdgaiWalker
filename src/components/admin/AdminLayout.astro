@@ -1,0 +1,234 @@
+---
+/**
+ * AdminLayout · Walker 后台共享骨架（spec §2）
+ *
+ * 渲染：侧栏(248px 深色) + 主区(顶栏 + 可选 banner + 内容区)。
+ * 每个后台页面自带完整 <!DOCTYPE html> 与认证逻辑，本组件只产出骨架 HTML 片段。
+ *
+ * 侧栏三个分组（工作流顺序，spec §2.1）：
+ *   认知闭环 → 系统资产 → 运维
+ * 默认仅「认知闭环」展开。
+ */
+import { Icon } from 'astro-icon/components';
+import '@/styles/admin.css';
+
+interface NavItemDef {
+  label: string;
+  href: string;
+  icon: string;          // lucide icon name（不带前缀）
+  match?: string;        // 路径前缀匹配（用于激活态），默认用 href
+  count?: string;        // 计数徽章文字
+  countKind?: 'todo' | 'alert' | 'good';  // 徽章染色
+}
+
+interface NavGroupDef {
+  id: string;
+  label: string;
+  items: NavItemDef[];
+  /** 默认展开的组 id（spec：仅「认知闭环」） */
+}
+
+// §2.1 分组与顺序（= 工作流顺序）
+const NAV_GROUPS: NavGroupDef[] = [
+  {
+    id: 'cognition',
+    label: '认知闭环',
+    items: [
+      { label: '洞察', href: '/admin/insights', icon: 'activity' },
+      { label: '选题库', href: '/admin/topics', icon: 'compass', count: '23', countKind: 'good' },
+      { label: '命中率', href: '/admin/hit-rate', icon: 'target' },
+      { label: '需求复盘', href: '/admin/review', icon: 'clipboard-check', count: '5', countKind: 'todo' },
+    ],
+  },
+  {
+    id: 'assets',
+    label: '系统资产',
+    items: [
+      { label: '内容管理', href: '/admin/content', icon: 'file-text', count: '142' },
+      { label: '规则池', href: '/admin/rules', icon: 'git-branch' },
+      { label: '经验', href: '/admin/experiences', icon: 'lightbulb' },
+      { label: 'Skill 候选', href: '/admin/skills', icon: 'sparkles', count: '3', countKind: 'todo' },
+    ],
+  },
+  {
+    id: 'ops',
+    label: '运维',
+    items: [
+      { label: 'AI Gateway', href: '/admin/ai-gateway', icon: 'zap', count: '●', countKind: 'alert' },
+      { label: '用户', href: '/admin/accounts', icon: 'users' },
+      { label: '邀请码', href: '/admin/invite-codes', icon: 'ticket' },
+      { label: '事件', href: '/admin/incidents', icon: 'alert-triangle', count: '2', countKind: 'alert' },
+    ],
+  },
+];
+
+interface Props {
+  /** 当前激活页 key（用于侧栏激活态 + 默认展开组） */
+  active?: string;
+  /** 顶栏标题 */
+  title: string;
+  /** 顶栏副信息 */
+  subtitle?: string;
+  /** 顶栏右侧操作（按钮等），传入 HTML */
+  actions?: string;
+  /** 是否显示降级 banner（Gateway 异常时） */
+  showBanner?: boolean;
+  /** banner 主文案 */
+  bannerTitle?: string;
+  /** banner 副文案 */
+  bannerSub?: string;
+}
+
+const {
+  active = '',
+  title,
+  subtitle = '',
+  actions = '',
+  showBanner = false,
+  bannerTitle = 'AI Gateway 昨日降级 2 次，3 次调用失败',
+  bannerSub = '部分需求响应变慢 · 建议查看事件日志确认影响范围',
+} = Astro.props;
+
+// 默认展开「认知闭环」（spec §2.1）；若 active 落在其它组，则展开那个组
+const activeGroup = NAV_GROUPS.find(g => g.items.some(i => (i.match ?? i.href) === active))?.id ?? 'cognition';
+const EXPANDED_DEFAULT = activeGroup;
+---
+
+<div class="adm-root">
+  <div class="adm-app">
+    <!-- ===== 侧栏 ===== -->
+    <aside class="adm-sidebar">
+      <!-- ① 身份区 §2.1 -->
+      <div class="adm-sidebar-identity">
+        <div class="adm-identity-avatar" aria-hidden="true"></div>
+        <div>
+          <div class="adm-identity-name">Walker</div>
+          <div class="adm-identity-role">Owner · 驾驶舱</div>
+        </div>
+      </div>
+
+      <!-- ② 导航区（三组折叠） -->
+      <nav class="adm-sidebar-nav" aria-label="后台导航">
+        {NAV_GROUPS.map(group => (
+          <div class="adm-nav-group" data-collapsed={group.id === EXPANDED_DEFAULT ? 'false' : 'true'} data-group={group.id}>
+            <button
+              type="button"
+              class="adm-group-head"
+              aria-expanded={group.id === EXPANDED_DEFAULT ? 'true' : 'false'}
+              data-toggle-group={group.id}
+            >
+              <span class="adm-group-label">{group.label}</span>
+              <span class="adm-group-chev"><Icon name="lucide:chevron-down" width={14} height={14} /></span>
+              <span class="adm-group-count">{group.items.length}</span>
+            </button>
+            <div class="adm-group-children">
+              {group.items.map(item => {
+                const isActive = (item.match ?? item.href) === active;
+                return (
+                  <a
+                    href={item.href}
+                    class:list={["adm-nav-item", { 'is-active': isActive }]}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <span class="adm-nav-icon"><Icon name={`lucide:${item.icon}`} width={16} height={16} /></span>
+                    <span class="adm-nav-label">{item.label}</span>
+                    {item.count && (
+                      <span class:list={["adm-nav-count", item.countKind && `is-${item.countKind}`]}>{item.count}</span>
+                    )}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <!-- ③ 底部 §2.1 -->
+      <div class="adm-sidebar-foot">
+        <a href="/" class="adm-foot-link" target="_blank" rel="noreferrer">
+          <Icon name="lucide:external-link" width={13} height={13} /> 查看站点
+        </a>
+        <button type="button" class="adm-foot-link" id="adm-logout">
+          <Icon name="lucide:log-out" width={13} height={13} /> 登出
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== 主区 ===== -->
+    <div class="adm-main">
+      <!-- 顶栏 -->
+      <header class="adm-topbar">
+        <div class="adm-topbar-left">
+          <h1 class="adm-topbar-title">{title}</h1>
+          {subtitle && <div class="adm-topbar-sub">{subtitle}</div>}
+        </div>
+        <div class="adm-topbar-right" set:html={actions} />
+      </header>
+
+      <!-- 降级 banner（条件渲染，spec §5 可关闭） -->
+      {showBanner && (
+        <div class="adm-banner" id="adm-degraded-banner" role="alert">
+          <span class="adm-banner-icon"><Icon name="lucide:octagon-alert" width={17} height={17} /></span>
+          <div class="adm-banner-body">
+            <div class="adm-banner-title">{bannerTitle}</div>
+            <div class="adm-banner-sub">{bannerSub}</div>
+          </div>
+          <a href="/admin/incidents" class="adm-banner-action">
+            查看事件 <Icon name="lucide:arrow-right" width={13} height={13} />
+          </a>
+          <button type="button" class="adm-banner-dismiss" aria-label="关闭降级提醒" data-dismiss-banner>
+            <Icon name="lucide:x" width={15} height={15} />
+          </button>
+        </div>
+      )}
+
+      <!-- 内容区：页面在此注入 -->
+      <div class="adm-content">
+        <slot />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // §5 交互：侧栏折叠 + banner 关闭 + 登出
+  // 用一次性初始化，避免重复绑定
+  function initAdminChrome() {
+    // 侧栏组折叠（aria-expanded + data-collapsed）
+    document.querySelectorAll('[data-toggle-group]').forEach((btn) => {
+      if ((btn as HTMLElement).dataset.bound === '1') return;
+      (btn as HTMLElement).dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        const groupId = (btn as HTMLElement).dataset.toggleGroup;
+        const group = document.querySelector(`.adm-nav-group[data-group="${groupId}"]`);
+        if (!group) return;
+        const collapsed = group.getAttribute('data-collapsed') === 'true';
+        group.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+        btn.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+      });
+    });
+
+    // banner 关闭
+    document.querySelectorAll('[data-dismiss-banner]').forEach((btn) => {
+      if ((btn as HTMLElement).dataset.bound === '1') return;
+      (btn as HTMLElement).dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        const banner = document.getElementById('adm-degraded-banner');
+        if (banner) banner.setAttribute('hidden', '');
+      });
+    });
+
+    // 登出
+    document.querySelectorAll('#adm-logout').forEach((btn) => {
+      if ((btn as HTMLElement).dataset.bound === '1') return;
+      (btn as HTMLElement).dataset.bound = '1';
+      btn.addEventListener('click', async () => {
+        await fetch('/api/admin/auth', { method: 'DELETE' });
+        window.location.href = '/admin/login';
+      });
+    });
+  }
+
+  initAdminChrome();
+  document.addEventListener('astro:page-load', initAdminChrome);
+</script>

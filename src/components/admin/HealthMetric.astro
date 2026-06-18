@@ -1,0 +1,93 @@
+---
+/**
+ * HealthMetric · 大健康指标卡（spec §3）
+ * 标签 / 图标 / 数值+单位 / 趋势
+ */
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  label: string;
+  value: string | number;
+  unit?: string;
+  icon?: string;            // lucide icon
+  trend?: string;           // 例："↓6% · 昨日降级 2 次"
+  trendKind?: 'good' | 'warn' | 'bad' | 'neutral';
+  iconKind?: 'good' | 'warn' | 'bad' | 'neutral';
+}
+const {
+  label,
+  value,
+  unit = '',
+  icon = 'check',
+  trend = '',
+  trendKind = 'neutral',
+  iconKind = 'good',
+} = Astro.props;
+
+const kindColor = (k: string) => ({
+  good: 'var(--adm-good)',
+  warn: 'var(--adm-warn)',
+  bad: 'var(--adm-bad)',
+  neutral: 'var(--adm-neutral)',
+}[k] ?? 'var(--adm-neutral)');
+---
+<div class="adm-health adm-card">
+  <div class="adm-health-head">
+    <span class="adm-health-label">{label}</span>
+    <span class="adm-health-icon" style={`background:${kindColor(iconKind)}1a`}>
+      <Icon name={`lucide:${icon}`} width={15} height={15} style={`color:${kindColor(iconKind)}`} />
+    </span>
+  </div>
+  <div class="adm-health-val">
+    <span class="adm-health-num">{value}</span>
+    {unit && <span class="adm-health-unit">{unit}</span>}
+  </div>
+  {trend && <div class="adm-health-trend" style={`color:${kindColor(trendKind)}`}>{trend}</div>}
+</div>
+
+<style>
+  .adm-health {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px;
+  }
+  .adm-health-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .adm-health-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--adm-text-dim);
+  }
+  .adm-health-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .adm-health-val {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .adm-health-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--adm-text);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .adm-health-unit {
+    font-size: 13px;
+    color: var(--adm-text-faint);
+    padding-bottom: 2px;
+  }
+  .adm-health-trend {
+    font-size: 11px;
+  }
+</style>

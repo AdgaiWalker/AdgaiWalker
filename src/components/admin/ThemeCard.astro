@@ -1,0 +1,143 @@
+---
+/**
+ * ThemeCard · 反馈聚类主题卡（spec §3, §4.3 Tab3）
+ * 头部（标签 + 主题名 + 计数胶囊）
+ * 代表原话区（引号 + 原话 + 「另有 N 条相似反馈 · 置信 N%」）
+ * AI 建议条（sparkles 图标 + 建议 + 动作按钮，整条带 soft 底色）
+ */
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  tagLabel: string;        // "该写教程" / "该改 bug"
+  tagKind: 'good' | 'warn' | 'bad' | 'neutral';
+  theme: string;           // 主题名
+  count: number;           // 该主题反馈数
+  quote: string;           // 代表原话
+  quoteMeta: string;       // "另有 17 条相似反馈 · 置信 92%"
+  suggestion: string;      // AI 建议
+  action: string;          // 动作按钮
+  actionKind?: 'good' | 'warn' | 'neutral';
+}
+const {
+  tagLabel, tagKind, theme, count, quote, quoteMeta, suggestion, action,
+  actionKind = 'good',
+} = Astro.props;
+
+const tagClass = {
+  good: 'adm-tag-good',
+  warn: 'adm-tag-warn',
+  bad: 'adm-tag-bad',
+  neutral: 'adm-tag-neutral',
+}[tagKind];
+const aiBarBg = {
+  good: 'var(--adm-good-soft)',
+  warn: 'var(--adm-warn-soft)',
+  bad: 'var(--adm-bad-soft)',
+  neutral: 'var(--adm-neutral-soft)',
+}[tagKind];
+const aiIconColor = {
+  good: 'var(--adm-good)',
+  warn: 'var(--adm-warn)',
+  bad: 'var(--adm-bad)',
+  neutral: 'var(--adm-neutral)',
+}[tagKind];
+const actBtnClass = {
+  good: 'adm-btn-primary',
+  warn: '',
+  neutral: '',
+}[actionKind];
+---
+<div class="adm-theme adm-card">
+  <div class="adm-theme-head">
+    <span class:list={["adm-tag", tagClass]}>{tagLabel}</span>
+    <span class="adm-theme-name">{theme}</span>
+    <span class="adm-theme-count">{count}</span>
+  </div>
+
+  <div class="adm-theme-quote">
+    <span class="adm-theme-qmark">"</span>
+    <div class="adm-theme-qbody">
+      <div class="adm-theme-qtext">{quote}</div>
+      <div class="adm-theme-qmeta">{quoteMeta}</div>
+    </div>
+  </div>
+
+  <div class="adm-theme-aibar" style={`background:${aiBarBg}`}>
+    <Icon name="lucide:sparkles" width={13} height={13} style={`color:${aiIconColor}`} />
+    <span class="adm-theme-suggest">{suggestion}</span>
+    <button class:list={["adm-btn", "adm-btn-sm", actBtnClass]} type="button">{action}</button>
+  </div>
+</div>
+
+<style>
+  .adm-theme {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+    border-radius: 11px;
+  }
+  .adm-theme-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .adm-theme-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--adm-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .adm-theme-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--adm-text-dim);
+    background: var(--adm-border-soft);
+    border-radius: var(--adm-radius-pill);
+    padding: 2px 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .adm-theme-quote {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--adm-bg);
+    border: 1px solid var(--adm-border-soft);
+    border-radius: 8px;
+  }
+  .adm-theme-qmark {
+    font-size: 20px;
+    font-weight: 700;
+    color: #c8d4d6;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .adm-theme-qbody {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .adm-theme-qtext {
+    font-size: 12px;
+    color: var(--adm-text);
+    line-height: 1.5;
+  }
+  .adm-theme-qmeta { font-size: 10px; color: var(--adm-text-faint); }
+  .adm-theme-aibar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+  .adm-theme-suggest {
+    flex: 1;
+    font-size: 11px;
+    color: var(--adm-text);
+  }
+</style>

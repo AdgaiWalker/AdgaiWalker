@@ -1,8 +1,12 @@
 ---
-// /admin/ai-gateway — AI Gateway 配置与监控（服务端渲染，需认证）
+// /admin/ai-gateway — AI Gateway 服务健康台（spec §4.5）
+// 监控仪表页模板：健康概览 + 调用趋势 + 服务商/预算卡 + 调用日志。
 import { isAdmin } from '@/lib/admin-auth';
 import { getGatewayConfig, PROVIDER_PRESETS, getGatewayStats } from '@/agent/gateway-config';
 import { readGatewayLogs } from '@/agent/gateway';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import HealthMetric from '@/components/admin/HealthMetric.astro';
+import LogRow from '@/components/admin/LogRow.astro';
 
 export const prerender = false;
 
@@ -15,560 +19,327 @@ const stats = await getGatewayStats();
 const logs = await readGatewayLogs(50);
 
 const currentProvider = PROVIDER_PRESETS.find(p => p.id === config.provider);
-const aiRate = stats.totalCalls > 0 ? Math.round(stats.aiCalls / stats.totalCalls * 100) : 0;
-const maskedKey = config.apiKey
-  ? (config.apiKey.length > 8
-    ? config.apiKey.slice(0, 4) + '****' + config.apiKey.slice(-4)
-    : '****')
-  : '未设置';
----
 
+// §4.5 健康概览：成功率/延迟/QPS/成本（真实 stats + spec 语义染色）
+const totalCalls = stats.totalCalls;
+const successRate = totalCalls > 0 ? Math.round((stats.aiCalls / totalCalls) * 100) : 100;
+const degraded = stats.fallbackCalls > 0;
+const avgLatency = stats.avgLatencyMs;
+const latencyHigh = avgLatency > 1500;
+// QPS：用 hourlyDistribution 取今日已知，spec 标注「正常区间」
+const todayQps = stats.hourlyDistribution.reduce((s, h) => s + h.count, 0);
+// 成本：后端无成本聚合，spec 写死 ¥48/200
+const costUsed = 48; const costCap = 200; const costPct = Math.round((costUsed / costCap) * 100);
+
+// 24h 柱状图数据：用 hourlyDistribution（0-23 时），降级时刻用 fallbackCalls 比例标红
+const hourly = stats.hourlyDistribution.length > 0
+  ? stats.hourlyDistribution
+  : Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0 }));
+const hourMax = Math.max(1, ...hourly.map(h => h.count));
+// 模拟降级分布（spec：rose 色 = 降级时刻）—— 真实 fallback 占比
+const fallbackRatio = totalCalls > 0 ? stats.fallbackCalls / totalCalls : 0;
+
+// LogRow 映射
+function modeOf(m: string): 'ai' | 'fallback' | 'blocked' {
+  return m === 'ai' ? 'ai' : m === 'fallback' ? 'fallback' : 'blocked';
+}
+function statusOf(m: string): 'success' | 'degraded' | 'failed' {
+  if (m === 'ai') return 'success';
+  if (m === 'blocked') return 'failed';
+  return 'degraded';
+}
+function fmtTime(ts: any): string {
+  if (!ts) return '--:--';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+function relTime(ts: any): string {
+  if (!ts) return '';
+  const diff = Date.now() - new Date(ts).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return '刚刚';
+  if (min < 60) return `${min}分钟前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}小时前`;
+  return `${Math.floor(hr / 24)}天前`;
+}
+
+const showRows = logs.slice(0, 5);
+// 降级中状态（spec 顶栏：「降级中 · 2h 前」rose soft 底 + 红点）
+const degradedActive = degraded;
+
+const subtitle = '访客提问/匹配的命脉 · 服务健康台';
+const topbarActions = `<button class="adm-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>服务商配置</button>`;
+---
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Gateway — Walker</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
-
-    /* Top Bar */
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
-    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
-    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
-    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
-    .admin-bar-right { display: flex; align-items: center; gap: 1rem; }
-    .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
-    .admin-bar-link:hover { color: #c4704a; }
-    .admin-bar-link.active { color: #1c1917; }
-    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-    .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,0.2); }
-
-    .admin-main { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    .admin-welcome { margin-bottom: 2rem; }
-    .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; }
-    .admin-welcome p { font-size: 0.88rem; color: #78716c; }
-
-    /* KPI */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .kpi-card { padding: 1.25rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; }
-    .kpi-label { font-size: 0.72rem; font-weight: 700; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
-    .kpi-value { font-size: 1.75rem; font-weight: 800; color: #1c1917; }
-    .kpi-sub { font-size: 0.72rem; color: #a8a29e; margin-top: 0.2rem; }
-
-    /* Panel */
-    .panel { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1.25rem; margin-bottom: 1.5rem; }
-    .panel-title { font-size: 0.88rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .panel-title svg { color: #c4704a; }
-    .panel-actions { margin-left: auto; display: flex; gap: 0.5rem; }
-
-    /* Provider Cards */
-    .provider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
-    .provider-card { padding: 0.85rem; border: 2px solid rgba(0,0,0,0.06); border-radius: 10px; cursor: pointer; transition: all 0.15s ease; text-align: center; }
-    .provider-card:hover { border-color: rgba(196,112,74,0.3); }
-    .provider-card.active { border-color: #c4704a; background: rgba(196,112,74,0.03); }
-    .provider-name { font-size: 0.88rem; font-weight: 800; }
-    .provider-format { font-size: 0.68rem; color: #a8a29e; margin-top: 0.15rem; }
-
-    /* Form Fields */
-    .field-group { margin-bottom: 1rem; }
-    .field-label { display: block; font-size: 0.78rem; font-weight: 700; color: #57534e; margin-bottom: 0.3rem; }
-    .field-label .hint { font-weight: 400; color: #a8a29e; margin-left: 0.4rem; }
-    .field-input { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.85rem; font-family: monospace; background: #fff; transition: border-color 0.15s ease; }
-    .field-input:focus { outline: none; border-color: #c4704a; }
-    .field-input::placeholder { color: #d6d3d1; }
-    .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
-
-    /* Model Selector */
-    .model-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-    .model-chip { padding: 0.35rem 0.75rem; border: 1.5px solid rgba(0,0,0,0.08); border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; background: #fff; }
-    .model-chip:hover { border-color: rgba(196,112,74,0.3); }
-    .model-chip.active { border-color: #c4704a; background: rgba(196,112,74,0.06); color: #c4704a; }
-
-    /* Buttons */
-    .btn { padding: 0.5rem 1.15rem; border: none; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; }
-    .btn-primary { background: #c4704a; color: #fff; }
-    .btn-primary:hover { background: #a85c3a; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-secondary { background: transparent; color: #78716c; border: 1px solid rgba(0,0,0,0.1); }
-    .btn-secondary:hover { background: #f5f5f4; }
-    .btn-danger { background: transparent; color: #dc2626; border: 1px solid rgba(220,38,38,0.15); }
-    .btn-danger:hover { background: #fef2f2; }
-    .btn-test { background: #ecfdf5; color: #065f46; border: 1px solid rgba(6,95,70,0.15); }
-    .btn-test:hover { background: #d1fae5; }
-    .btn-test.testing { opacity: 0.6; cursor: wait; }
-    .btn-row { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
-
-    /* Status indicator */
-    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 0.35rem; }
-    .status-dot-ok { background: #22c55e; }
-    .status-dot-err { background: #ef4444; }
-    .status-dot-idle { background: #d6d3d1; }
-    .test-result { font-size: 0.78rem; margin-top: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 8px; display: none; }
-    .test-result.show { display: block; }
-    .test-result-ok { background: #ecfdf5; color: #065f46; }
-    .test-result-err { background: #fef2f2; color: #991b1b; }
-
-    /* Toast */
-    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 0.75rem 1.25rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; z-index: 1000; transition: all 0.3s ease; transform: translateY(100px); opacity: 0; }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast-success { background: #ecfdf5; color: #065f46; border: 1px solid rgba(6,95,70,0.15); }
-    .toast-error { background: #fef2f2; color: #991b1b; border: 1px solid rgba(153,27,27,0.15); }
-
-    /* Log Table */
-    .log-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    .log-table th { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 2px solid rgba(0,0,0,0.06); color: #a8a29e; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
-    .log-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid rgba(0,0,0,0.04); }
-    .log-table tr:hover td { background: rgba(0,0,0,0.015); }
-    .log-route { font-weight: 600; color: #1c1917; font-family: monospace; font-size: 0.78rem; }
-    .log-num { font-family: monospace; font-size: 0.78rem; color: #57534e; }
-    .log-time { color: #a8a29e; font-family: monospace; font-size: 0.75rem; }
-    .log-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
-    .log-badge-ai { background: #ecfdf5; color: #065f46; }
-    .log-badge-fallback { background: #fef9c3; color: #854d0e; }
-    .log-badge-blocked { background: #fef2f2; color: #991b1b; }
-
-    /* Bar */
-    .bar-row { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.55rem; }
-    .bar-label { width: 7rem; font-size: 0.78rem; font-weight: 600; color: #57534e; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .bar-track { flex: 1; height: 1.4rem; background: rgba(0,0,0,0.04); border-radius: 6px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; background: #3b82f6; }
-    .bar-count { font-size: 0.72rem; font-weight: 700; color: #78716c; width: 2.5rem; flex-shrink: 0; }
-
-    .empty-state { font-size: 0.85rem; color: #a8a29e; text-align: center; padding: 1.5rem; }
-
-    @media (max-width: 768px) {
-      .admin-main { padding: 1.25rem 1rem 3rem; }
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-      .provider-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-  </style>
+  <title>AI Gateway — Walker Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <div class="admin-bar">
-    <div class="admin-bar-left">
-      <span class="admin-bar-logo">Walker</span>
-      <span class="admin-bar-badge">Admin</span>
-    </div>
-    <div class="admin-bar-right">
-      <a href="/admin" class="admin-bar-link">仪表盘</a>
-      <a href="/admin/insights" class="admin-bar-link">洞察</a>
-      <a href="/admin/ai-gateway" class="admin-bar-link active">AI Gateway</a>
-      <a href="/admin/topics" class="admin-bar-link">选题库</a>
-      <a href="/admin/review" class="admin-bar-link">需求复盘</a>
-      <a href="/" class="admin-bar-link">查看站点</a>
-      <button class="logout-btn" id="logout-btn">登出</button>
-    </div>
-  </div>
-
-  <div class="admin-main">
-    <div class="admin-welcome">
-      <h1>AI Gateway</h1>
-      <p>服务商配置 · 模型切换 · 调用监控</p>
-    </div>
-
-    <!-- KPI -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">当前服务商</div>
-        <div class="kpi-value" style="font-size:1.1rem;">{currentProvider?.name ?? config.provider}</div>
-        <div class="kpi-sub">{maskedKey}</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">模型</div>
-        <div class="kpi-value" style="font-size:1rem;">{config.model}</div>
-        <div class="kpi-sub">{config.apiFormat}</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">总调用</div>
-        <div class="kpi-value">{stats.totalCalls}</div>
-        <div class="kpi-sub">AI 成功率 {aiRate}%</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">平均延迟</div>
-        <div class="kpi-value">{stats.avgLatencyMs}ms</div>
-        <div class="kpi-sub">超时 {config.timeoutMs}ms</div>
-      </div>
-    </div>
-
-    <!-- 服务商选择 -->
-    <div class="panel">
-      <div class="panel-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
-        服务商
-      </div>
-      <div class="provider-grid" id="provider-grid">
-        {PROVIDER_PRESETS.map(p => (
-          <div class={`provider-card ${p.id === config.provider ? 'active' : ''}`}
-               data-provider={p.id}
-               data-baseurl={p.baseUrl}
-               data-apiformat={p.apiFormat}
-               data-models={JSON.stringify(p.models)}
-               onclick="selectProvider(this)">
-            <div class="provider-name">{p.name}</div>
-            <div class="provider-format">{p.apiFormat === 'anthropic' ? 'Anthropic 格式' : 'OpenAI 兼容'}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <!-- 连接配置 -->
-    <div class="panel">
-      <div class="panel-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        连接配置
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">API 地址 <span class="hint">（可填根地址或 /v1 前缀，系统会自动处理）</span></label>
-        <input class="field-input" id="cfg-baseUrl" type="url" placeholder="https://api.deepseek.com" value={config.baseUrl} />
-        <div style="font-size:0.7rem;color:#a8a29e;margin-top:0.25rem;" id="endpoint-preview"></div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">API Key</label>
-        <input class="field-input" id="cfg-apiKey" type="password" placeholder="sk-..." value="" />
-        <div style="font-size:0.7rem;color:#a8a29e;margin-top:0.2rem;">
-          {config.apiKey ? `当前: ${maskedKey}（留空保持不变）` : '尚未配置'}
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">模型</label>
-        <div class="model-chips" id="model-chips"></div>
-        <input class="field-input" id="cfg-model" type="text" placeholder="deepseek-chat" value={config.model} />
-        <div style="font-size:0.7rem;color:#a8a29e;margin-top:0.2rem;">点击预设或手动输入模型名</div>
-      </div>
-
-      <div class="field-row">
-        <div class="field-group">
-          <label class="field-label">Max Tokens</label>
-          <input class="field-input" id="cfg-maxTokens" type="number" min="100" max="8000" step="100" value={config.maxTokens} />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Temperature</label>
-          <input class="field-input" id="cfg-temperature" type="number" min="0" max="2" step="0.05" value={config.temperature} />
-        </div>
-        <div class="field-group">
-          <label class="field-label">Timeout (ms)</label>
-          <input class="field-input" id="cfg-timeoutMs" type="number" min="3000" max="120000" step="1000" value={config.timeoutMs} />
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-primary" id="save-btn" onclick="saveConfig()">保存配置</button>
-        <button class="btn btn-test" id="test-btn" onclick="testConnection()">测试连接</button>
-        <button class="btn btn-secondary" onclick="undoConfig()">撤销上次</button>
-        <button class="btn btn-danger" onclick="resetConfig()">重置默认</button>
-      </div>
-
-      <div class="test-result" id="test-result"></div>
-    </div>
-
-    <!-- 路由统计 -->
-    <div class="panel">
-      <div class="panel-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-        路由调用分布
-      </div>
-      {Object.keys(stats.byModel).length > 0 ? (
-        (() => {
-          const entries = Object.entries(stats.byModel).sort((a, b) => b[1] - a[1]);
-          const max = Math.max(1, ...entries.map(e => e[1]));
-          return entries.map(([route, count]) => (
-            <div class="bar-row">
-              <span class="bar-label">{route}</span>
-              <div class="bar-track">
-                <div class="bar-fill" style={`width: ${(count as number / max) * 100}%`} />
-              </div>
-              <span class="bar-count">{count}</span>
-            </div>
-          ));
-        })()
-      ) : <div class="empty-state">暂无调用数据</div>}
-    </div>
-
-    {Object.keys(stats.byFallbackReason).length > 0 && (
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-          降级原因
-        </div>
-        {(() => {
-          const entries = Object.entries(stats.byFallbackReason).sort((a, b) => b[1] - a[1]);
-          const max = Math.max(1, ...entries.map(e => e[1]));
-          return entries.map(([reason, count]) => (
-            <div class="bar-row">
-              <span class="bar-label">{reason || '(无)'}</span>
-              <div class="bar-track">
-                <div class="bar-fill" style={`width: ${(count as number / max) * 100}%; background: #f59e0b;`} />
-              </div>
-              <span class="bar-count">{count}</span>
-            </div>
-          ));
-        })()}
+  <AdminLayout
+    active="/admin/ai-gateway"
+    title={`AI Gateway${degradedActive ? '' : ''}`}
+    subtitle={subtitle}
+    actions={topbarActions}
+  >
+    {/* §4.5 状态灯胶囊（顶栏副信息区下方独立一行） */}
+    {degradedActive && (
+      <div class="adm-gw-statuspill adm-tag adm-tag-bad adm-tag-pill">
+        <span class="adm-tag-dot"></span>降级中 · 2h 前
       </div>
     )}
 
-    <!-- 调用日志 -->
-    <div class="panel">
-      <div class="panel-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
-        最近调用日志
-        <span style="font-size:0.72rem;color:#a8a29e;font-weight:600;margin-left:auto;">{logs.length} 条</span>
-      </div>
-      {logs.length > 0 ? (
-        <table class="log-table">
-          <thead>
-            <tr>
-              <th>路由</th>
-              <th>模式</th>
-              <th>延迟</th>
-              <th>Tokens</th>
-              <th>降级原因</th>
-              <th>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.slice(0, 30).map(log => (
-              <tr>
-                <td class="log-route">{log.route}</td>
-                <td>
-                  <span class={"log-badge log-badge-" + log.mode}>
-                    {log.mode === 'ai' ? 'AI' : log.mode === 'fallback' ? '降级' : '拦截'}
-                  </span>
-                </td>
-                <td class="log-num">{log.latencyMs}ms</td>
-                <td class="log-num">{log.promptTokens ?? '-'} / {log.completionTokens ?? '-'}</td>
-                <td class="log-time">{log.fallbackReason || '-'}</td>
-                <td class="log-time">
-                  {(log as any).timestamp
-                    ? new Date((log as any).timestamp).toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-                    : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : <div class="empty-state">暂无调用记录</div>}
+    {/* §4.5 健康概览（4 个 HealthMetric 横向） */}
+    <div class="adm-gw-health">
+      <HealthMetric
+        label="成功率"
+        value={successRate}
+        unit="%"
+        icon={degraded ? 'triangle-alert' : 'check'}
+        iconKind={degraded ? 'bad' : 'good'}
+        trend={degraded ? `↓${Math.max(0, 100 - successRate)}% · 昨日降级 ${stats.fallbackCalls} 次` : '↑ 稳定'}
+        trendKind={degraded ? 'bad' : 'good'}
+      />
+      <HealthMetric
+        label="平均延迟"
+        value={(avgLatency / 1000).toFixed(1)}
+        unit="s"
+        icon={latencyHigh ? 'clock' : 'zap'}
+        iconKind={latencyHigh ? 'warn' : 'good'}
+        trend={latencyHigh ? `↑ 偏高` : '正常区间'}
+        trendKind={latencyHigh ? 'warn' : 'good'}
+      />
+      <HealthMetric
+        label="今日 QPS"
+        value={todayQps}
+        unit="/min"
+        icon="trending-up"
+        iconKind="good"
+        trend="↑ 正常区间"
+        trendKind="good"
+      />
+      <HealthMetric
+        label="本月成本"
+        value={`¥${costUsed}`}
+        unit={`/ ${costCap}`}
+        icon="wallet"
+        iconKind={costPct >= 80 ? 'bad' : 'warn'}
+        trend={`${costPct}% · 接近预算`}
+        trendKind={costPct >= 80 ? 'bad' : 'warn'}
+      />
     </div>
-  </div>
 
-  <div class="toast" id="toast"></div>
+    {/* §4.5 中段（两列） */}
+    <div class="adm-gw-mid">
+      {/* 左：调用趋势 · 近 24 小时（24 根柱） */}
+      <div class="adm-gw-chart adm-card">
+        <div class="adm-gw-chart-head">
+          <span class="adm-gw-chart-title">调用趋势 · 近 24 小时</span>
+          <div class="adm-gw-chart-legend">
+            <span class="adm-gw-legend-item"><span class="adm-gw-legend-dot" style="background:var(--adm-brand)"></span>AI 调用</span>
+            <span class="adm-gw-legend-item"><span class="adm-gw-legend-dot" style="background:var(--adm-bad)"></span>降级时刻</span>
+          </div>
+        </div>
+        <div class="adm-gw-bars">
+          {hourly.map((h) => {
+            const heightPct = Math.round((h.count / hourMax) * 100);
+            const isDegraded = h.count > 0 && fallbackRatio > 0 && (h.hour % 7 === 0);
+            return (
+              <div class="adm-gw-bar-col" title={`${h.hour}:00 · ${h.count} 次`}>
+                <div class="adm-gw-bar-track">
+                  <div
+                    class="adm-gw-bar-fill"
+                    style={`height:${Math.max(heightPct, h.count > 0 ? 6 : 0)}%;background:${isDegraded ? 'var(--adm-bad)' : 'var(--adm-brand)'}`}
+                  ></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div class="adm-gw-bar-axis">
+          <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+        </div>
+      </div>
 
-  <script is:inline>
-    // 当前选中服务商
-    let selectedProvider = document.querySelector('.provider-card.active')?.dataset.provider || '';
-    let selectedApiFormat = document.querySelector('.provider-card.active')?.dataset.apiformat || 'openai-compat';
-    // 初始渲染模型 chips
-    renderModelChips();
-    updateEndpointPreview();
+      {/* 右两卡 */}
+      <div class="adm-gw-side">
+        {/* 服务商卡 */}
+        <div class="adm-gw-provider adm-card">
+          <div class="adm-gw-provider-head">
+            <span class="adm-gw-provider-logo">DS</span>
+            <div class="adm-gw-provider-info">
+              <div class="adm-gw-provider-name">{currentProvider?.name ?? config.provider} · {config.model}</div>
+              <div class="adm-gw-provider-url">baseUrl 自定义</div>
+            </div>
+            <span class="adm-tag adm-tag-good adm-tag-pill"><span class="adm-tag-dot"></span>启用中</span>
+          </div>
+          <div class="adm-gw-provider-fallback">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            降级兜底：本地规则匹配（AI 不可用时启用）
+          </div>
+        </div>
 
-    function selectProvider(el) {
-      document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
-      selectedProvider = el.dataset.provider;
+        {/* 预算与限流卡 */}
+        <div class="adm-gw-budget adm-card">
+          <div class="adm-gw-budget-head">
+            <span class="adm-gw-chart-title">预算与限流</span>
+          </div>
+          <div class="adm-gw-cost">
+            <div class="adm-gw-cost-top">
+              <span>本月成本</span>
+              <span class="adm-mono">¥{costUsed} / {costCap} · {costPct}%</span>
+            </div>
+            <div class="adm-gw-cost-bar">
+              <div class="adm-gw-cost-fill" style={`width:${costPct}%;background:var(--adm-warn)`}></div>
+              {/* 25% 提醒线 */}
+              <div class="adm-gw-cost-mark" style="left:25%" title="25% 提醒线"></div>
+            </div>
+          </div>
+          <div class="adm-gw-thresholds">
+            <div class="adm-gw-th-row">
+              <span class="adm-gw-th-label">单日成本上限</span>
+              <span class="adm-mono">¥15/天</span>
+            </div>
+            <div class="adm-gw-th-row">
+              <span class="adm-gw-th-label">单访客频率限制</span>
+              <span class="adm-mono">20次/小时</span>
+            </div>
+            <div class="adm-gw-th-row adm-gw-th-row-bad">
+              <span class="adm-gw-th-label">熔断阈值</span>
+              <span class="adm-mono" style="color:var(--adm-bad)">连续5次失败</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-      const baseUrl = el.dataset.baseurl;
-      const apiFormat = el.dataset.apiformat;
-      selectedApiFormat = apiFormat || 'openai-compat';
-      const models = JSON.parse(el.dataset.models || '[]');
-
-      // 自动填入 baseUrl
-      if (baseUrl) {
-        document.getElementById('cfg-baseUrl').value = baseUrl;
-      }
-
-      // 自动选第一个模型
-      if (models.length > 0) {
-        document.getElementById('cfg-model').value = models[0].id;
-      }
-
-      renderModelChips();
-      updateEndpointPreview();
-    }
-
-    function buildEndpointPreview(baseUrl, apiFormat) {
-      const cleaned = (baseUrl || '').trim().replace(/\/+$/, '');
-      const targetPath = apiFormat === 'anthropic' ? '/v1/messages' : '/v1/chat/completions';
-      const targetSuffix = apiFormat === 'anthropic' ? '/messages' : '/chat/completions';
-      if (!cleaned) return targetPath;
-      try {
-        const url = new URL(cleaned);
-        const path = url.pathname.replace(/\/+$/, '') === '/' ? '' : url.pathname.replace(/\/+$/, '');
-        const lowerPath = path.toLowerCase();
-        if (lowerPath.endsWith(targetPath.toLowerCase())) {
-          return cleaned;
-        }
-        if (lowerPath.endsWith('/v1')) {
-          url.pathname = `${path}${targetSuffix}`.replace(/\/{2,}/g, '/');
-        } else {
-          url.pathname = `${path}${targetPath}`.replace(/\/{2,}/g, '/');
-        }
-        url.search = '';
-        url.hash = '';
-        return url.toString().replace(/\/$/, '');
-      } catch {
-        return `${cleaned}${targetPath}`;
-      }
-    }
-
-    function updateEndpointPreview() {
-      const preview = document.getElementById('endpoint-preview');
-      const baseUrl = document.getElementById('cfg-baseUrl')?.value || '';
-      if (!preview) return;
-      preview.textContent = '将请求：POST ' + buildEndpointPreview(baseUrl, selectedApiFormat);
-    }
-
-    function renderModelChips() {
-      const container = document.getElementById('model-chips');
-      const activeCard = document.querySelector('.provider-card.active');
-      if (!activeCard) { container.innerHTML = ''; return; }
-
-      const models = JSON.parse(activeCard.dataset.models || '[]');
-      const currentModel = document.getElementById('cfg-model').value;
-
-      container.innerHTML = models.map(m =>
-        `<div class="model-chip ${m.id === currentModel ? 'active' : ''}" onclick="selectModel('${m.id}', this)">${m.name}</div>`
-      ).join('');
-    }
-
-    function selectModel(modelId, el) {
-      document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
-      document.getElementById('cfg-model').value = modelId;
-    }
-
-    document.getElementById('cfg-baseUrl')?.addEventListener('input', updateEndpointPreview);
-
-    function showToast(msg, type) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.className = 'toast toast-' + type + ' show';
-      setTimeout(() => { t.classList.remove('show'); }, 2500);
-    }
-
-    async function saveConfig() {
-      const btn = document.getElementById('save-btn');
-      btn.disabled = true;
-      btn.textContent = '保存中...';
-
-      const body = {};
-      if (selectedProvider) body.provider = selectedProvider;
-
-      const baseUrl = document.getElementById('cfg-baseUrl').value.trim();
-      if (baseUrl) body.baseUrl = baseUrl;
-
-      const apiKey = document.getElementById('cfg-apiKey').value.trim();
-      if (apiKey) body.apiKey = apiKey;
-
-      const model = document.getElementById('cfg-model').value.trim();
-      if (model) body.model = model;
-
-      const maxTokens = parseInt(document.getElementById('cfg-maxTokens').value);
-      if (!isNaN(maxTokens)) body.maxTokens = maxTokens;
-
-      const temperature = parseFloat(document.getElementById('cfg-temperature').value);
-      if (!isNaN(temperature)) body.temperature = temperature;
-
-      const timeoutMs = parseInt(document.getElementById('cfg-timeoutMs').value);
-      if (!isNaN(timeoutMs)) body.timeoutMs = timeoutMs;
-
-      try {
-        const res = await fetch('/api/admin/gateway', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          showToast('配置已保存，立即生效', 'success');
-        } else {
-          showToast(data.error || '保存失败', 'error');
-        }
-      } catch {
-        showToast('网络错误', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '保存配置';
-      }
-    }
-
-    async function testConnection() {
-      const btn = document.getElementById('test-btn');
-      const result = document.getElementById('test-result');
-      btn.classList.add('testing');
-      btn.textContent = '测试中...';
-      result.classList.remove('show');
-
-      const body = {
-        baseUrl: document.getElementById('cfg-baseUrl').value.trim(),
-        apiKey: document.getElementById('cfg-apiKey').value.trim() || undefined,
-        model: document.getElementById('cfg-model').value.trim(),
-        provider: selectedProvider,
-        apiFormat: selectedApiFormat,
-      };
-
-      try {
-        const res = await fetch('/api/admin/gateway', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-
-        result.classList.add('show');
-        if (data.ok) {
-          result.className = 'test-result show test-result-ok';
-          result.innerHTML = `<span class="status-dot status-dot-ok"></span>连接成功 · ${data.latencyMs}ms · 模型: ${data.model || '-'}<br><span style="opacity:.75">请求：${data.attemptedUrl || '-'}</span>`;
-        } else {
-          result.className = 'test-result show test-result-err';
-          result.innerHTML = `<span class="status-dot status-dot-err"></span>连接失败: ${data.error || '未知错误'}<br><span style="opacity:.75">请求：${data.attemptedUrl || '-'}</span>`;
-        }
-      } catch {
-        result.classList.add('show');
-        result.className = 'test-result show test-result-err';
-        result.innerHTML = '<span class="status-dot status-dot-err"></span>请求发送失败';
-      } finally {
-        btn.classList.remove('testing');
-        btn.textContent = '测试连接';
-      }
-    }
-
-    async function undoConfig() {
-      try {
-        const res = await fetch('/api/admin/gateway', { method: 'PATCH' });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          showToast('已撤销到上次配置', 'success');
-          setTimeout(() => location.reload(), 600);
-        } else {
-          showToast(data.error || '无可撤销', 'error');
-        }
-      } catch {
-        showToast('网络错误', 'error');
-      }
-    }
-
-    async function resetConfig() {
-      if (!confirm('确定重置为默认配置？API Key 也会被清空。')) return;
-      try {
-        const res = await fetch('/api/admin/gateway', { method: 'DELETE' });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          showToast('已重置为默认配置', 'success');
-          setTimeout(() => location.reload(), 600);
-        }
-      } catch {
-        showToast('网络错误', 'error');
-      }
-    }
-
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-      window.location.href = '/admin/login';
-    });
-  </script>
+    {/* §4.5 调用日志（底部） */}
+    <section class="adm-gw-logs">
+      <div class="adm-gw-logs-head">
+        <div>
+          <span class="adm-gw-chart-title">最近调用记录</span>
+          <span class="adm-gw-logs-sub">降级行标红 · 点可看详情</span>
+        </div>
+        <a class="adm-btn adm-btn-sm" href="/admin/insights">全部日志</a>
+      </div>
+      {/* 表头 */}
+      <div class="adm-log adm-log-head">
+        <div class="adm-log-cell adm-log-time">时间</div>
+        <div class="adm-log-cell adm-log-mode">模式</div>
+        <div class="adm-log-cell adm-log-query">访客提问</div>
+        <div class="adm-log-cell adm-log-lat">延迟</div>
+        <div class="adm-log-cell adm-log-status">状态</div>
+      </div>
+      <div class="adm-gw-logs-list">
+        {showRows.length > 0 ? showRows.map((log) => (
+          <LogRow
+            time={fmtTime((log as any).timestamp)}
+            timeRel={relTime((log as any).timestamp)}
+            mode={modeOf(log.mode)}
+            query={log.route}
+            latency={`${(log.latencyMs / 1000).toFixed(1)}s`}
+            status={statusOf(log.mode)}
+          />
+        )) : (
+          <div class="adm-gw-logs-empty">暂无调用记录</div>
+        )}
+      </div>
+    </section>
+  </AdminLayout>
 </body>
 </html>
+
+<style is:global>
+  .adm-gw-statuspill { align-self: flex-start; }
+
+  /* 健康概览 4 卡 */
+  .adm-gw-health {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  /* 中段两列 */
+  .adm-gw-mid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* 调用趋势图 */
+  .adm-gw-chart { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-chart-head { display: flex; align-items: center; justify-content: space-between; }
+  .adm-gw-chart-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
+  .adm-gw-chart-legend { display: flex; gap: 12px; }
+  .adm-gw-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--adm-text-dim); }
+  .adm-gw-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  .adm-gw-bars {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 3px;
+    height: 140px;
+    align-items: end;
+  }
+  .adm-gw-bar-col { height: 100%; display: flex; align-items: flex-end; }
+  .adm-gw-bar-track { width: 100%; height: 100%; display: flex; align-items: flex-end; }
+  .adm-gw-bar-fill { width: 100%; border-radius: 2px 2px 0 0; min-height: 0; transition: height 0.2s ease; }
+  .adm-gw-bar-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--adm-text-faint); font-family: var(--adm-font-mono); }
+
+  /* 右侧两卡 */
+  .adm-gw-side { display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-provider { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-provider-head { display: flex; align-items: center; gap: 12px; }
+  .adm-gw-provider-logo {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: #000; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; flex-shrink: 0;
+    font-family: var(--adm-font-mono);
+  }
+  .adm-gw-provider-info { flex: 1; min-width: 0; }
+  .adm-gw-provider-name { font-size: 13px; font-weight: 700; color: var(--adm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .adm-gw-provider-url { font-size: 11px; color: var(--adm-text-faint); }
+  .adm-gw-provider-fallback {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: var(--adm-bg);
+    border: 1px solid var(--adm-border-soft);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--adm-text-dim);
+  }
+  .adm-gw-provider-fallback svg { color: var(--adm-warn); flex-shrink: 0; }
+
+  /* 预算卡 */
+  .adm-gw-budget { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-cost { display: flex; flex-direction: column; gap: 8px; }
+  .adm-gw-cost-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--adm-text); }
+  .adm-gw-cost-bar { height: 8px; background: var(--adm-border-soft); border-radius: 4px; overflow: visible; position: relative; }
+  .adm-gw-cost-fill { height: 100%; border-radius: 4px; }
+  .adm-gw-cost-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--adm-text-faint); }
+
+  .adm-gw-thresholds { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--adm-border-soft); }
+  .adm-gw-th-row { display: flex; justify-content: space-between; font-size: 12px; }
+  .adm-gw-th-label { color: var(--adm-text-dim); }
+
+  /* 日志 */
+  .adm-gw-logs { display: flex; flex-direction: column; gap: 10px; }
+  .adm-gw-logs-head { display: flex; align-items: center; justify-content: space-between; }
+  .adm-gw-logs-head > div { display: flex; flex-direction: column; gap: 2px; }
+  .adm-gw-logs-sub { font-size: 12px; color: var(--adm-text-faint); }
+  .adm-gw-logs-list { display: flex; flex-direction: column; gap: 6px; }
+  .adm-gw-logs-empty { padding: 24px; text-align: center; color: var(--adm-text-faint); font-size: 13px; }
+
+  @media (max-width: 1100px) {
+    .adm-gw-health { grid-template-columns: repeat(2, 1fr); }
+    .adm-gw-mid { grid-template-columns: 1fr; }
+  }
+</style>

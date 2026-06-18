@@ -1,0 +1,101 @@
+---
+/**
+ * LogRow · 调用日志行（spec §3, §4.5）
+ * 时间 / 模式标签 / 提问 / 延迟 / 状态
+ */
+type ModeKind = 'ai' | 'fallback' | 'blocked';
+type StatusKind = 'success' | 'degraded' | 'failed';
+
+interface Props {
+  time: string;            // "14:32"（JetBrains Mono）
+  timeRel: string;         // "2分钟前"
+  mode: ModeKind;          // AI / 降级 / 失败
+  query: string;           // 访客提问
+  latency: string;         // "1.2s"（JetBrains Mono）
+  status: StatusKind;      // 成功 / 降级 / 失败
+}
+const { time, timeRel, mode, query, latency, status } = Astro.props;
+
+const modeMap = {
+  ai: { label: 'AI', cls: 'adm-tag-good' },
+  fallback: { label: '降级', cls: 'adm-tag-warn' },
+  blocked: { label: '失败', cls: 'adm-tag-bad' },
+}[mode];
+const statusMap = {
+  success: { label: '成功', cls: 'adm-tag-good' },
+  degraded: { label: '降级', cls: 'adm-tag-warn' },
+  failed: { label: '失败', cls: 'adm-tag-bad' },
+}[status];
+const latColor = {
+  success: 'var(--adm-text)',
+  degraded: 'var(--adm-warn)',
+  failed: 'var(--adm-bad)',
+}[status];
+---
+<div class="adm-log">
+  <div class="adm-log-cell adm-log-time">
+    <span class="adm-mono">{time}</span>
+    <span class="adm-log-rel">{timeRel}</span>
+  </div>
+  <div class="adm-log-cell adm-log-mode">
+    <span class:list={["adm-tag", modeMap.cls]}>{modeMap.label}</span>
+  </div>
+  <div class="adm-log-cell adm-log-query">{query}</div>
+  <div class="adm-log-cell adm-log-lat" style={`color:${latColor}`}>
+    <span class="adm-mono">{latency}</span>
+  </div>
+  <div class="adm-log-cell adm-log-status">
+    <span class:list={["adm-tag", "adm-tag-pill", statusMap.cls]}>
+      <span class="adm-tag-dot"></span>{statusMap.label}
+    </span>
+  </div>
+</div>
+
+<style>
+  .adm-log {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border-soft);
+    border-radius: 9px;
+  }
+  .adm-log-cell { flex-shrink: 0; }
+  .adm-log-time { width: 90px; display: flex; flex-direction: column; gap: 1px; }
+  .adm-log-time .adm-mono { font-size: 11px; color: var(--adm-text); }
+  .adm-log-rel { font-size: 10px; color: var(--adm-text-faint); }
+  .adm-log-mode { width: 90px; }
+  .adm-log-query {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    color: var(--adm-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--adm-font-mono);
+  }
+  .adm-log-lat {
+    width: 80px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .adm-log-status { width: 100px; display: flex; justify-content: flex-end; }
+
+  /* 表头 */
+  :global(.adm-log-head) {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 10px 16px !important;
+  }
+  :global(.adm-log-head .adm-log-cell) {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--adm-text-faint);
+    letter-spacing: 0.5px;
+  }
+</style>

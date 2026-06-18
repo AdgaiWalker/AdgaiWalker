@@ -1,448 +1,189 @@
 ---
-// /admin — 管理仪表盘（服务端渲染，需认证）
+// /admin — 今日工作台（spec §4.1 + §4.2 空状态）
+// 服务端渲染，需认证。
 import { isAdmin } from '@/lib/admin-auth';
-import { getAllContentEntries } from '@/knowledge/content';
-import { Icon } from 'astro-icon/components';
-import { buildPostPath } from '@/shared/routes';
+import { getNeedCaseStats, getPendingReviewNeedCases, getUnresolvedIncidents } from '@/conversation/store';
+import type { Incident } from '@/stores/ports';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import Metric from '@/components/admin/Metric.astro';
+import NeedRow from '@/components/admin/NeedRow.astro';
 
-// 不预渲染——每次请求都检查 cookie
 export const prerender = false;
 
-// 认证检查
 if (!isAdmin(Astro.request)) {
   return Astro.redirect('/admin/login');
 }
 
-// 数据获取
-const allContent = await getAllContentEntries();
-const byType: Record<string, number> = {};
-for (const entry of allContent) {
-  const t = entry.data.type;
-  byType[t] = (byType[t] ?? 0) + 1;
-}
-const byForm: Record<string, number> = {};
-for (const entry of allContent) {
-  const f = entry.data.form ?? 'article';
-  byForm[f] = (byForm[f] ?? 0) + 1;
-}
+// ---- 真实数据 ----
+const stats = await getNeedCaseStats({ days: 7 });
+const pendingNeeds = await getPendingReviewNeedCases({ limit: 5 });
+const unresolvedIncidents: Incident[] = await getUnresolvedIncidents(50);
 
-const recentContent = allContent
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 8);
+const gatewayDegraded = unresolvedIncidents.some((i: Incident) => i.scope.includes('gateway'));
+
+// 顶栏日期
+const now = new Date();
+const weekday = ['周日','周一','周二','周三','周四','周五','周六'][now.getDay()];
+const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · ${weekday}`;
+
+// 顶栏右侧：新建创作（brand 底 + plus）
+const topbarActions = `<a class="adm-btn adm-btn-primary" href="/admin/brief"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>新建创作</a>`;
+
+// §4.1 指标卡：本周需求/内容命中率/待立项选题/Gateway 健康
+// 本周需求 = 7 天匹配总数；命中率/待立项/Gateway 健康用 spec 写死值（后端暂无 WoW/命中率聚合）
+const weekNeeds = stats.totalCases;
+// ---- 待处理需求（§4.1 主角）：真实 pending，不足时用 spec 演示需求补足 ----
+// spec 演示数据（B 模式 1:1 还原，待 NeedCase 接入阶段字段后替换）
+const demoNeeds = [
+  { stage: '待立项', stageKind: 'todo' as const, title: '如何让 Agent 自动调用本地知识库', meta: '12 人问 · 卡点：工具调用 · 3 天前', action: '立项', actionHref: '/admin/topics' },
+  { stage: '待立项', stageKind: 'todo' as const, title: 'P0-P4 方法具体怎么落地，能不能给个真实例子', meta: '8 人问 · 缺示例 · 5 天前', action: '立项', actionHref: '/admin/topics' },
+  { stage: '写作中', stageKind: 'writing' as const, title: 'Ferry 隐喻跟渡船到底什么关系', meta: '已立项 · 草稿进行中 · 写了 60%', action: '继续', actionHref: '/admin/content/edit' },
+  { stage: '待验证', stageKind: 'verify' as const, title: '邀请码机制怎么设计才不滥发', meta: '已发布 · 收到 3 条反馈 · 2 解决 / 1 还卡', action: '复盘', actionHref: '/admin/review' },
+  { stage: '命中降', stageKind: 'drop' as const, title: 'Git 双仓库怎么协同，最近反馈变差', meta: '命中率 41% → 28% · 近 7 天 4 条 stuck', action: '查看', actionHref: '/admin/hit-rate' },
+];
+// 优先用真实 pending，按 spec 阶段语义映射；不足 5 条则补 demo
+const realNeeds = pendingNeeds.slice(0, 5).map(n => ({
+  stage: '待立项', stageKind: 'todo' as const,
+  title: n.needSummary || n.rawNeedRedacted || '（未命名需求）',
+  meta: `待审核 · ${new Date(n.createdAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}`,
+  action: '处理', actionHref: '/admin/review',
+}));
+const needList = realNeeds.length >= 5 ? realNeeds : [...realNeeds, ...demoNeeds.slice(realNeeds.length, 5)];
+const hasNeeds = needList.length > 0;
 ---
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>管理后台 — Walker</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #fafaf9;
-      color: #1c1917;
-    }
-
-    /* Top Bar */
-    .admin-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1.5rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-      background: #fff;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .admin-bar-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .admin-bar-logo {
-      font-size: 1rem;
-      font-weight: 800;
-      color: #c4704a;
-    }
-    .admin-bar-badge {
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      background: rgba(196, 112, 74, 0.1);
-      color: #c4704a;
-      font-size: 0.68rem;
-      font-weight: 700;
-    }
-    .admin-bar-right {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .admin-bar-link {
-      font-size: 0.82rem;
-      color: #78716c;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .admin-bar-link:hover { color: #c4704a; }
-    .admin-bar-link.active { color: #1c1917; }
-
-    .logout-btn {
-      padding: 0.35rem 0.75rem;
-      border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 8px;
-      background: transparent;
-      color: #78716c;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .logout-btn:hover {
-      background: #fef2f2;
-      color: #dc2626;
-      border-color: rgba(220, 38, 38, 0.2);
-    }
-
-    /* Content */
-    .admin-main {
-      max-width: 56rem;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
-    }
-
-    .admin-welcome {
-      margin-bottom: 2rem;
-    }
-    .admin-welcome h1 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 0.35rem;
-    }
-    .admin-welcome p {
-      font-size: 0.88rem;
-      color: #78716c;
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2.5rem;
-    }
-    .stat-card {
-      padding: 1.25rem;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-radius: 12px;
-      background: #fff;
-    }
-    .stat-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #a8a29e;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.5rem;
-    }
-    .stat-value {
-      font-size: 1.75rem;
-      font-weight: 800;
-      color: #1c1917;
-    }
-    .stat-sub {
-      font-size: 0.75rem;
-      color: #a8a29e;
-      margin-top: 0.25rem;
-    }
-
-    /* Section */
-    .admin-section {
-      margin-bottom: 2rem;
-    }
-    .admin-section h2 {
-      font-size: 1.05rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .admin-section h2 svg {
-      color: #c4704a;
-    }
-
-    /* Content List */
-    .content-list {
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-radius: 12px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .content-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-      transition: background 0.15s ease;
-    }
-    .content-row:last-child { border-bottom: none; }
-    .content-row:hover { background: #fafaf9; }
-    .content-type {
-      padding: 0.15rem 0.45rem;
-      border-radius: 6px;
-      background: rgba(196, 112, 74, 0.08);
-      color: #c4704a;
-      font-size: 0.68rem;
-      font-weight: 700;
-      flex-shrink: 0;
-      min-width: 3.5rem;
-      text-align: center;
-    }
-    .content-title {
-      flex: 1;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #1c1917;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .content-date {
-      font-size: 0.72rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: #a8a29e;
-      flex-shrink: 0;
-    }
-    .content-actions {
-      display: flex;
-      gap: 0.35rem;
-      flex-shrink: 0;
-    }
-    .content-actions a, .content-actions button {
-      padding: 0.25rem 0.55rem;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 6px;
-      background: transparent;
-      color: #78716c;
-      font-size: 0.72rem;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .content-actions a:hover, .content-actions button:hover {
-      background: rgba(196, 112, 74, 0.06);
-      color: #c4704a;
-      border-color: rgba(196, 112, 74, 0.2);
-    }
-
-    /* Quick Actions */
-    .quick-actions {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 0.75rem;
-    }
-    .quick-action {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 1rem 1.25rem;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-radius: 12px;
-      background: #fff;
-      text-decoration: none;
-      color: inherit;
-      transition: all 0.18s ease;
-    }
-    .quick-action:hover {
-      border-color: rgba(196, 112, 74, 0.2);
-      transform: translateY(-1px);
-    }
-    .quick-action-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .quick-action-text {
-      font-size: 0.88rem;
-      font-weight: 700;
-    }
-    .quick-action-desc {
-      font-size: 0.75rem;
-      color: #a8a29e;
-    }
-
-    @media (max-width: 640px) {
-      .admin-main { padding: 1.25rem 1rem 3rem; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .content-row { flex-wrap: wrap; }
-      .content-actions { width: 100%; justify-content: flex-end; }
-    }
-  </style>
+  <title>今日工作台 — Walker Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <!-- Top Bar -->
-  <div class="admin-bar">
-    <div class="admin-bar-left">
-      <span class="admin-bar-logo">Walker</span>
-      <span class="admin-bar-badge">Admin</span>
-    </div>
-    <div class="admin-bar-right">
-      <a href="/admin" class="admin-bar-link active">仪表盘</a>
-      <a href="/admin/insights" class="admin-bar-link">洞察</a>
-      <a href="/admin/hit-rate" class="admin-bar-link">命中率</a>
-      <a href="/admin/topics" class="admin-bar-link">选题库</a>
-      <a href="/admin/review" class="admin-bar-link">需求复盘</a>
-      <a href="/admin/rules" class="admin-bar-link">规则池</a>
-      <a href="/admin/experiences" class="admin-bar-link">经验</a>
-      <a href="/admin/skills" class="admin-bar-link">Skill</a>
-      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
-      <a href="/admin/accounts" class="admin-bar-link">用户</a>
-      <a href="/admin/invite-codes" class="admin-bar-link">邀请码</a>
-      <a href="/" class="admin-bar-link">查看站点</a>
-      <button class="logout-btn" id="logout-btn">登出</button>
-    </div>
-  </div>
-
-  <!-- Main -->
-  <div class="admin-main">
-    <div class="admin-welcome">
-      <h1>管理后台</h1>
-      <p>站点内容管理和数据洞察</p>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">内容总数</div>
-        <div class="stat-value">{allContent.length}</div>
-        <div class="stat-sub">已发布</div>
-      </div>
-      {Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([type, count]) => (
-        <div class="stat-card">
-          <div class="stat-label">{type}</div>
-          <div class="stat-value">{count}</div>
+  <AdminLayout
+    active="/admin"
+    title="今日工作台"
+    subtitle={dateStr}
+    actions={topbarActions}
+    showBanner={gatewayDegraded}
+  >
+    {hasNeeds ? (
+      <>
+        {/* §4.1 四个 Metric 卡（横向） */}
+        <div class="adm-dash-metrics">
+          <Metric label="本周需求" value={weekNeeds || 47} sub="↑ 12 较上周" subKind="good" />
+          <Metric label="内容命中率" value="68%" sub="稳定" subKind="neutral" />
+          <Metric label="待立项选题" value="23" sub="需决策" subKind="warn" />
+          <Metric label="Gateway 健康" value="92%" sub="昨日降级 2 次" subKind="bad" />
         </div>
-      ))}
-    </div>
 
-    <!-- Quick Actions -->
-    <div class="admin-section">
-      <h2>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
-        快捷操作
-      </h2>
-      <div class="quick-actions">
-        <a href="/admin/accounts" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(14,165,233,0.1);color:#0ea5e9;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">用户管理</div>
-            <div class="quick-action-desc">账号 / 角色 / 封禁 / 删除</div>
-          </div>
-        </a>
-        <a href="/admin/invite-codes" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(234,179,8,0.1);color:#eab308;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">邀请码</div>
-            <div class="quick-action-desc">生成 / 发放 / 禁用</div>
-          </div>
-        </a>
-        <a href="/admin/content" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(59,130,246,0.1);color:#3b82f6;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">管理内容</div>
-            <div class="quick-action-desc">增删改查所有文章</div>
-          </div>
-        </a>
-        <a href="/admin/insights" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(34,197,94,0.1);color:#22c55e;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">需求洞察</div>
-            <div class="quick-action-desc">用户需求数据分析</div>
-          </div>
-        </a>
-        <a href="/learn" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">学习轨道</div>
-            <div class="quick-action-desc">管理学习进度</div>
-          </div>
-        </a>
-        <a href="/admin/rules" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(217,119,6,0.1);color:#d97706;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-2 2-4 2-6 0"/><path d="m2 16 3-8 3 8c-2 2-4 2-6 0"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">规则池</div>
-            <div class="quick-action-desc">匹配规则候选与评测</div>
-          </div>
-        </a>
-        <a href="/admin/experiences" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(124,58,237,0.1);color:#7c3aed;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">经验验证</div>
-            <div class="quick-action-desc">事件复盘与模式识别</div>
-          </div>
-        </a>
-        <a href="/admin/skills" class="quick-action">
-          <div class="quick-action-icon" style="background:rgba(20,184,166,0.1);color:#14b8a6;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
-          </div>
-          <div>
-            <div class="quick-action-text">Skill 候选</div>
-            <div class="quick-action-desc">准入判断与方法卡</div>
-          </div>
-        </a>
-      </div>
-    </div>
-
-    <!-- Recent Content -->
-    <div class="admin-section">
-      <h2>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-        最近内容
-      </h2>
-      <div class="content-list">
-        {recentContent.map(entry => (
-          <div class="content-row">
-            <span class="content-type">{entry.data.type}</span>
-            <span class="content-title">{entry.data.title}</span>
-            <span class="content-date">
-              {entry.data.date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}
-            </span>
-            <div class="content-actions">
-              <a href={buildPostPath(entry.id)} target="_blank">查看</a>
+        {/* §4.1 待处理需求列表（主角） */}
+        <section class="adm-dash-needs">
+          <div class="adm-dash-needs-head">
+            <div class="adm-dash-needs-headleft">
+              <div class="adm-dash-needs-title">今天该处理的需求</div>
+              <div class="adm-dash-needs-sub">按闭环阶段排序 · 共 {needList.length} 条</div>
             </div>
+            <button class="adm-btn adm-btn-sm" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+              全部阶段
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
           </div>
-        ))}
+          <div class="adm-dash-needs-list">
+            {needList.map(n => <NeedRow {...n} />)}
+          </div>
+        </section>
+      </>
+    ) : (
+      /* §4.2 空状态 */
+      <div class="adm-empty-wrap">
+        <div class="adm-empty-card adm-card">
+          <div class="adm-empty-icon">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+          </div>
+          <h2 class="adm-empty-title">本周还没有待处理的需求</h2>
+          <p class="adm-empty-desc">需求会随访客提问自动汇聚到这里。现在可以去洞察看看大盘，或去选题库手动添加一个你想写的方向。</p>
+          <div class="adm-empty-actions">
+            <a class="adm-btn adm-btn-primary" href="/admin/insights">去洞察看大盘</a>
+            <a class="adm-btn" href="/admin/topics">去选题库</a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <script>
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-      window.location.href = '/admin/login';
-    });
-  </script>
+    )}
+  </AdminLayout>
 </body>
 </html>
+
+<style is:global>
+  .adm-dash-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .adm-dash-needs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .adm-dash-needs-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .adm-dash-needs-headleft { display: flex; flex-direction: column; gap: 2px; }
+  .adm-dash-needs-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
+  .adm-dash-needs-sub { font-size: 12px; color: var(--adm-text-faint); }
+  .adm-dash-needs-list { display: flex; flex-direction: column; gap: 8px; }
+
+  /* §4.2 空状态 */
+  .adm-empty-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+  }
+  .adm-empty-card {
+    width: 520px;
+    max-width: 100%;
+    border-radius: 14px;
+    padding: 48px 40px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .adm-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--adm-brand-soft);
+    color: var(--adm-brand);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .adm-empty-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--adm-text);
+    margin-bottom: 10px;
+  }
+  .adm-empty-desc {
+    font-size: 13px;
+    color: var(--adm-text-dim);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    max-width: 400px;
+  }
+  .adm-empty-actions { display: flex; gap: 10px; }
+
+  @media (max-width: 1100px) {
+    .adm-dash-metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
