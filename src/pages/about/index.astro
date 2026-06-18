@@ -552,12 +552,14 @@ const needCategoryLabels: Record<string, string> = {
 <script>
   import { gsap } from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
 
   gsap.registerPlugin(ScrollTrigger);
 
   let abort: AbortController | null = null;
   let uptimeTimer: ReturnType<typeof setInterval> | null = null;
   let typingTimer: ReturnType<typeof setTimeout> | null = null;
+  let emailCopyTimer: ReturnType<typeof setTimeout> | null = null;
 
   function isAboutPage() {
     return !!(document.getElementById('hero-section') && document.querySelector('.about-bio-section'));
@@ -574,6 +576,10 @@ const needCategoryLabels: Record<string, string> = {
     if (typingTimer !== null) {
       clearTimeout(typingTimer);
       typingTimer = null;
+    }
+    if (emailCopyTimer !== null) {
+      clearTimeout(emailCopyTimer);
+      emailCopyTimer = null;
     }
     ScrollTrigger.getAll().forEach(t => t.kill());
   }
@@ -655,7 +661,11 @@ const needCategoryLabels: Record<string, string> = {
         const span = btn.querySelector('span');
         const orig = span?.textContent;
         if (span) span.textContent = '已复制！';
-        setTimeout(() => { if (span && orig) span.textContent = orig; }, 1500);
+        if (emailCopyTimer !== null) clearTimeout(emailCopyTimer);
+        emailCopyTimer = setTimeout(() => {
+          emailCopyTimer = null;
+          if (span && orig) span.textContent = orig;
+        }, 1500);
       } catch { /* fallback */ }
     }, { signal });
   }
@@ -776,9 +786,9 @@ const needCategoryLabels: Record<string, string> = {
     initUptimeCounter();
     initEmailCopy(signal);
     initScrollReveal();
+
+    return cleanup;
   }
 
-  initAll();
-  document.addEventListener('astro:page-load', initAll);
-  document.addEventListener('astro:before-swap', cleanup);
+  registerLifecycle(initAll);
 </script>

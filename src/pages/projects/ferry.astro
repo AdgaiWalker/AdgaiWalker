@@ -10,6 +10,7 @@ import { getCollection } from 'astro:content';
 import { ferryTree, flattenFerryTree, groupByRole } from '@/data/ferry-ecosystem';
 import { isPublicContentData } from '@/knowledge/content';
 import type { FerryNode } from '@/data/ferry-ecosystem';
+import { buildPostPath } from '@/shared/routes';
 
 export const prerender = true;
 
@@ -31,7 +32,7 @@ const roleConfig: Record<string, { label: string; icon: string; color: string; b
 function renderNode(node: FerryNode, depth: number = 0) {
   const config = roleConfig[node.role] ?? roleConfig.root;
   const entry = ferryEntries.find(e => e.id === node.contentSlug);
-  const href = entry ? `/posts/${entry.id}` : node.url ?? '#';
+  const href = entry ? buildPostPath(entry.id) : node.url ?? '#';
   const isExternal = !entry && Boolean(node.url);
 
   return { node, config, href, isExternal, entry, depth };
@@ -101,7 +102,7 @@ function renderNode(node: FerryNode, depth: number = 0) {
           {(() => {
             const relatedArticle = ferryEntries.find(e => e.id === '渡论构建');
             return relatedArticle ? (
-              <a href={`/posts/${relatedArticle.id}`} class="ferry-related-link mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-parchment-dim hover:text-brand transition-colors no-underline">
+              <a href={buildPostPath(relatedArticle.id)} class="ferry-related-link mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-parchment-dim hover:text-brand transition-colors no-underline">
                 <Icon name="lucide:file-text" width={14} height={14} />
                 <span>相关文章：{relatedArticle.data.title}</span>
                 <Icon name="lucide:chevron-right" width={12} height={12} class="ml-auto opacity-40" />

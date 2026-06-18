@@ -45,6 +45,7 @@
 
 <script>
   let giscusAbort: AbortController | null = null;
+  let giscusMessageTimer: ReturnType<typeof setTimeout> | null = null;
 
   function setupGiscusTheme() {
     const savedTheme = localStorage.getItem('walker-theme') || 'nature';
@@ -100,7 +101,9 @@
 
       const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
       if (iframe) {
-        setTimeout(() => {
+        if (giscusMessageTimer !== null) clearTimeout(giscusMessageTimer);
+        giscusMessageTimer = setTimeout(() => {
+          giscusMessageTimer = null;
           const commentCount = document.querySelector('.giscus-wrapper h4');
           if (commentCount) {
             const match = commentCount.textContent?.match(/(\d+)/);
@@ -123,6 +126,10 @@
   document.addEventListener('astro:before-swap', () => {
     giscusAbort?.abort();
     giscusAbort = null;
+    if (giscusMessageTimer !== null) {
+      clearTimeout(giscusMessageTimer);
+      giscusMessageTimer = null;
+    }
   });
 </script>
 

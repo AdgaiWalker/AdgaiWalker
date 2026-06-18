@@ -117,13 +117,14 @@ const {
 
 <script>
   import { cycleTheme } from '../lib/theme';
+  import { registerLifecycle } from '../scripts/with-lifecycle';
 
-  function initFullscreenNav() {
+  registerLifecycle(() => {
     const btn = document.getElementById('fullscreen-theme-toggle');
     if (!btn) return;
 
-    btn.addEventListener('click', () => cycleTheme());
-  }
-  initFullscreenNav();
-  document.addEventListener('astro:page-load', initFullscreenNav);
+    const abort = new AbortController();
+    btn.addEventListener('click', () => cycleTheme(), { signal: abort.signal });
+    return () => abort.abort();
+  });
 </script>

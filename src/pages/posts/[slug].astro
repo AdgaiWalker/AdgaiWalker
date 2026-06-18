@@ -1,4 +1,4 @@
----
+﻿---
 /**
  * /posts/[slug] — 统一文章详情页
  * 沉浸式阅读：内容直接浮在空间里
@@ -15,6 +15,7 @@ import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, buildPostPath } from '@/shared/routes';
 import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/knowledge/content';
+import { getRelatedPosts, summarizeArticleBody } from '@/knowledge/posts';
 import { PLATFORM_ICON_MAP, CHARS_PER_MINUTE_ZH } from '@/shared/constants';
 import { formatDateLocale } from '@/shared/format';
 
@@ -25,6 +26,7 @@ import { Icon } from 'astro-icon/components';
 export const prerender = true;
 
 type ArticleResource = CollectionEntry<'log'>['data']['resources'][number];
+type ArticleVideo = CollectionEntry<'log'>['data']['videos'][number];
 
 export async function getStaticPaths() {
   const entries = await getPublishedPosts();
@@ -53,15 +55,7 @@ const { Content, headings } = await render(entry);
 const components = { PromptBlock, DialogueBubble, BilibiliVideo };
 
 const rawBody = entry.body || '';
-const cleanBody = rawBody
-  .replace(/^---[\s\S]*?---/, '')
-  .replace(/^import\s+.*$/gm, '')
-  .replace(/<[^>]+>/g, '')
-  .replace(/[#*_`\[\]()>|]/g, '')
-  .trim();
-const description = cleanBody.slice(0, 160);
-// 阅读时间估算
-const readingTime = Math.max(1, Math.ceil(cleanBody.length / CHARS_PER_MINUTE_ZH));
+const { description, readingTime } = summarizeArticleBody(rawBody, CHARS_PER_MINUTE_ZH);
 const coverImage = entry.data.cover;
 const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 
@@ -86,21 +80,7 @@ const seriesPrev = hasSeries && currentSeriesIndex > 0 ? seriesEntries[currentSe
 const seriesNext = hasSeries && currentSeriesIndex < seriesEntries.length - 1 ? seriesEntries[currentSeriesIndex + 1] : null;
 
 // 相关推荐：基于 tags 重叠度匹配，排除自身，取前 3 篇
-const currentTags = new Set(entry.data.tags);
-const relatedPosts = allEntries
-  ? allEntries
-      .filter(e => e.id !== entry.id)
-      .map(e => ({
-        id: e.id,
-        title: e.data.title,
-        summary: e.data.summary,
-        tags: e.data.tags,
-        score: e.data.tags.filter((t: string) => currentTags.has(t)).length,
-      }))
-      .filter(e => e.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-  : [];
+const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
 ---
 
 <ArticleLayout
@@ -173,7 +153,7 @@ const relatedPosts = allEntries
           配套视频
         </h2>
         <div class="video-grid">
-          {videos.map((vid: any) => (
+          {videos.map((vid: ArticleVideo) => (
             <a href={vid.url} target="_blank" rel="noopener noreferrer" class="video-card">
               <div class="video-card-inner">
                 <div class="video-platform">
@@ -683,3 +663,5 @@ const relatedPosts = allEntries
     }
   }
 </style>
+
+

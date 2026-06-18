@@ -160,7 +160,7 @@ aiUsePolicy:
   </script>
   <script>
     import { initStandaloneEditor } from '@/scripts/inline-editor';
-    const cfg = (window as any).__ieStandalone;
+    const cfg = window.__ieStandalone;
     if (cfg) initStandaloneEditor(cfg.originalSlug || '', cfg.draftTemplate);
   </script>
 </body>

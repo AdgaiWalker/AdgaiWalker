@@ -4,6 +4,30 @@ import { gsap } from 'gsap';
 
 let dragFrame = 0;
 let scale = 1.0;
+let homeCanvasTimers: ReturnType<typeof setTimeout>[] = [];
+
+interface StatusController {
+  resetToDefault: () => void;
+  startIdle: () => void;
+  stopIdle: () => void;
+}
+
+const statusControllers = new WeakMap<HTMLElement, StatusController>();
+
+function scheduleHomeCanvasTimer(callback: () => void, delay: number): ReturnType<typeof setTimeout> {
+  let timer: ReturnType<typeof setTimeout>;
+  timer = setTimeout(() => {
+    homeCanvasTimers = homeCanvasTimers.filter((item) => item !== timer);
+    callback();
+  }, delay);
+  homeCanvasTimers.push(timer);
+  return timer;
+}
+
+function clearHomeCanvasTimers() {
+  homeCanvasTimers.forEach((timer) => clearTimeout(timer));
+  homeCanvasTimers = [];
+}
 
 function autoFitScale() {
   const CANVAS_WIDTH = 1060;
@@ -216,6 +240,7 @@ function initHomeInteractions() {
 
   return () => {
     abort.abort();
+    clearHomeCanvasTimers();
     cancelAnimationFrame(dragFrame);
     dragFrame = 0;
   };
@@ -244,7 +269,7 @@ const CONTEXT_MAP: Record<string, string> = {
 function showStatusText(statusEl: HTMLElement | null, text: string) {
   if (!statusEl) return;
   statusEl.style.opacity = '0';
-  setTimeout(() => {
+  scheduleHomeCanvasTimer(() => {
     if (statusEl) {
       statusEl.textContent = text;
       statusEl.style.opacity = '1';
@@ -265,7 +290,7 @@ function initIdleMessages(statusEl: HTMLElement, signal: AbortSignal) {
     idleTimer = setInterval(() => {
       idleIndex = (idleIndex + 1) % IDLE_MESSAGES.length;
       showStatusText(statusEl, IDLE_MESSAGES[idleIndex]);
-      setTimeout(() => {
+      scheduleHomeCanvasTimer(() => {
         if (!document.querySelector('.draggable-card:hover')) {
           resetToDefault();
         }
@@ -280,18 +305,19 @@ function initIdleMessages(statusEl: HTMLElement, signal: AbortSignal) {
   // abort 时清理 interval
   signal.addEventListener('abort', stopIdle);
 
-  // Expose stop/start so sibling handlers can coordinate
-  (statusEl as any)._statusResetToDefault = resetToDefault;
-  (statusEl as any)._statusStartIdle = startIdle;
-  (statusEl as any)._statusStopIdle = stopIdle;
+  statusControllers.set(statusEl, {
+    resetToDefault,
+    startIdle,
+    stopIdle,
+  });
 
   startIdle();
 }
 
 function initCardHoverReactions(statusEl: HTMLElement, signal: AbortSignal) {
-  const resetToDefault = (statusEl as any)._statusResetToDefault as () => void;
-  const startIdle = (statusEl as any)._statusStartIdle as () => void;
-  const stopIdle = (statusEl as any)._statusStopIdle as () => void;
+  const controller = statusControllers.get(statusEl);
+  if (!controller) return;
+  const { resetToDefault, startIdle, stopIdle } = controller;
 
   const cardElements = document.querySelectorAll('.draggable-card');
   cardElements.forEach(card => {
@@ -330,7 +356,9 @@ function initCardHoverReactions(statusEl: HTMLElement, signal: AbortSignal) {
 }
 
 function initSocialLinkReactions(statusEl: HTMLElement, signal: AbortSignal) {
-  const resetToDefault = (statusEl as any)._statusResetToDefault as () => void;
+  const controller = statusControllers.get(statusEl);
+  if (!controller) return;
+  const { resetToDefault } = controller;
 
   document.querySelectorAll('a[href*="bilibili"], a[href*="xiaohongshu"]').forEach(el => {
     el.addEventListener('mouseenter', () => {
@@ -368,7 +396,7 @@ function initClickRipple(signal: AbortSignal) {
     ripple.style.left = e.clientX + 'px';
     ripple.style.top = e.clientY + 'px';
     canvas.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
+    scheduleHomeCanvasTimer(() => ripple.remove(), 600);
   }, { signal });
 }
 

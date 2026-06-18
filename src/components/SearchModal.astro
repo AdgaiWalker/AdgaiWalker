@@ -1,45 +1,8 @@
----
+﻿---
 import { Icon } from 'astro-icon/components';
-import { getCollection } from 'astro:content';
-import { isPublicContentData } from '@/knowledge/content';
-import { POSTS, TOOLS, IDEAS, PROJECTS, LEARN, CONTENT, ABOUT, HOME, buildPostPath } from '@/shared/routes';
+import { getSearchModalData } from '@/knowledge/navigation';
 
-const TYPE_LABEL: Record<string, string> = {
-  knowledge: '思考',
-  tool: '资源',
-  idea: '点子',
-  project: '项目',
-  learn: '学习',
-  learning: '学习',
-};
-
-const TYPE_ORDER = ['思考', '资源', '点子', '项目', '学习'];
-
-const navItems = (await getCollection('log', ({ data }) => isPublicContentData(data)))
-  .map(e => {
-    const type = TYPE_LABEL[e.data.type] || '其他';
-    const href =
-      e.data.type === 'knowledge' ? buildPostPath(e.id) :
-      e.data.type === 'idea' ? `${IDEAS}#${encodeURIComponent(e.id)}` :
-      e.data.type === 'tool' ? `${TOOLS}#${encodeURIComponent(e.id)}` :
-      e.data.type === 'project' ? PROJECTS :
-      e.data.type === 'learn' || e.data.type === 'learning' ? LEARN :
-      buildPostPath(e.id);
-    return { title: e.data.title, tags: e.data.tags || [], href, type };
-  })
-  .sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type));
-
-const pages = [
-  { label: '首页', href: HOME },
-  { label: '思考', href: POSTS },
-  { label: '资源', href: TOOLS },
-  { label: '点子', href: IDEAS },
-  { label: '项目', href: PROJECTS },
-  { label: '学习', href: LEARN },
-  { label: '内容', href: CONTENT },
-  { label: '关于', href: ABOUT },
-];
-
+const { items: navItems, pages } = await getSearchModalData();
 const navPanelData = JSON.stringify({ items: navItems, pages }).replace(/</g, '\\u003c');
 ---
 
@@ -537,3 +500,4 @@ const navPanelData = JSON.stringify({ items: navItems, pages }).replace(/</g, '\
   document.addEventListener('astro:page-load', init);
   document.addEventListener('astro:before-swap', () => { abort?.abort(); abort = null; });
 </script>
+

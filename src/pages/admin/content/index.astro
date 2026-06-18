@@ -129,6 +129,8 @@ const rowsJson = JSON.stringify(rows).replace(/</g, '\\u003c');
 
   <script is:inline type="application/json" id="content-rows" set:html={rowsJson}></script>
   <script>
+    import { buildPostPath } from '@/shared/routes';
+
     type ContentRow = {
       id: string;
       title: string;
@@ -228,7 +230,7 @@ const rowsJson = JSON.stringify(rows).replace(/</g, '\\u003c');
       const row = rows.find(item => item.id === slug);
       if (row) {
         row.visibility = nextVisibility;
-        row.href = nextVisibility === 'public' ? `/posts/${encodeURIComponent(row.id)}` : null;
+        row.href = nextVisibility === 'public' ? buildPostPath(row.id) : null;
       }
       renderRows();
     }

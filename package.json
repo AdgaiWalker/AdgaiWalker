@@ -11,6 +11,7 @@
     "preview": "astro preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "astro": "astro"
   },
   "dependencies": {

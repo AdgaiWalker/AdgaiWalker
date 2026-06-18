@@ -3,6 +3,7 @@
 import { isAdmin } from '@/lib/admin-auth';
 import { getAllContentEntries } from '@/knowledge/content';
 import { Icon } from 'astro-icon/components';
+import { buildPostPath } from '@/shared/routes';
 
 // 不预渲染——每次请求都检查 cookie
 export const prerender = false;
@@ -429,7 +430,7 @@ const recentContent = allContent
               {entry.data.date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}
             </span>
             <div class="content-actions">
-              <a href={`/posts/${entry.id}`} target="_blank">查看</a>
+              <a href={buildPostPath(entry.id)} target="_blank">查看</a>
             </div>
           </div>
         ))}

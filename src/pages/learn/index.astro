@@ -220,73 +220,79 @@ const currentTab = rawTab === 'journal' ? 'tracks' : rawTab;
 
   <!-- Client-side Scripts -->
   <script>
+    import { registerLifecycle } from '@/scripts/with-lifecycle';
+
     function initLearnPage() {
+      const abort = new AbortController();
+      const { signal } = abort;
+
       initTabSwitcher();
       initTagFilter();
-    }
 
-    function initTabSwitcher() {
-      const tabs = document.querySelectorAll('.learn-tab');
-      const contents = document.querySelectorAll('.learn-tab-content');
+      return () => abort.abort();
 
-      tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-          e.preventDefault();
-          const target = (tab as HTMLElement).dataset.tab;
+      function initTabSwitcher() {
+        const tabs = document.querySelectorAll('.learn-tab');
+        const contents = document.querySelectorAll('.learn-tab-content');
 
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
+        tabs.forEach(tab => {
+          tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = (tab as HTMLElement).dataset.tab;
 
-          contents.forEach(c => c.classList.remove('active'));
-          document.getElementById(`tab-${target}`)?.classList.add('active');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
 
-          const url = new URL(window.location.href);
-          if (target === 'tracks') {
-            url.searchParams.delete('tab');
-          } else {
-            url.searchParams.set('tab', target!);
-          }
-          window.history.replaceState({}, '', url.toString());
+            contents.forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${target}`)?.classList.add('active');
+
+            const url = new URL(window.location.href);
+            if (target === 'tracks') {
+              url.searchParams.delete('tab');
+            } else {
+              url.searchParams.set('tab', target!);
+            }
+            window.history.replaceState({}, '', url.toString());
+          }, { signal });
         });
-      });
-    }
+      }
 
-    function initTagFilter() {
-      const pills = document.querySelectorAll<HTMLButtonElement>('#thought-tag-bar .filter-pill');
-      const items = document.querySelectorAll<HTMLElement>('#thought-timeline .log-item');
-      const emptyState = document.getElementById('thought-empty');
-      const yearGroups = document.querySelectorAll<HTMLElement>('#thought-timeline .year-group');
-      if (!pills.length || !items.length) return;
+      function initTagFilter() {
+        const pills = document.querySelectorAll<HTMLButtonElement>('#thought-tag-bar .filter-pill');
+        const items = document.querySelectorAll<HTMLElement>('#thought-timeline .log-item');
+        const emptyState = document.getElementById('thought-empty');
+        const yearGroups = document.querySelectorAll<HTMLElement>('#thought-timeline .year-group');
+        if (!pills.length || !items.length) return;
 
-      pills.forEach(pill => {
-        pill.addEventListener('click', () => {
-          pills.forEach(p => p.classList.remove('is-active'));
-          pill.classList.add('is-active');
+        pills.forEach(pill => {
+          pill.addEventListener('click', () => {
+            pills.forEach(p => p.classList.remove('is-active'));
+            pill.classList.add('is-active');
 
-          const tag = pill.dataset.tag || 'all';
-          let visibleCount = 0;
+            const tag = pill.dataset.tag || 'all';
+            let visibleCount = 0;
 
-          items.forEach(item => {
-            const tags = (item.dataset.tags || '').split(',');
-            const show = tag === 'all' || tags.includes(tag);
-            item.classList.toggle('hidden', !show);
-            if (show) visibleCount++;
-          });
+            items.forEach(item => {
+              const tags = (item.dataset.tags || '').split(',');
+              const show = tag === 'all' || tags.includes(tag);
+              item.classList.toggle('hidden', !show);
+              if (show) visibleCount++;
+            });
 
-          yearGroups.forEach(group => {
-            const visible = group.querySelectorAll<HTMLElement>('.log-item:not(.hidden)');
-            group.classList.toggle('hidden', visible.length === 0);
-          });
+            yearGroups.forEach(group => {
+              const visible = group.querySelectorAll<HTMLElement>('.log-item:not(.hidden)');
+              group.classList.toggle('hidden', visible.length === 0);
+            });
 
-          if (emptyState) {
-            emptyState.classList.toggle('hidden', visibleCount > 0);
-          }
+            if (emptyState) {
+              emptyState.classList.toggle('hidden', visibleCount > 0);
+            }
+          }, { signal });
         });
-      });
+      }
     }
 
-    initLearnPage();
-    document.addEventListener('astro:page-load', initLearnPage);
+    registerLifecycle(initLearnPage);
   </script>
 
 </Base>

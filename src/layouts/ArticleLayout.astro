@@ -422,6 +422,24 @@ const hasToc = tocItems.length > 0;
 
   let articleAbort: AbortController | null = null;
   let ghostSidebarObserver: MutationObserver | null = null;
+  let tocHintTimer: ReturnType<typeof setTimeout> | null = null;
+  let ghostTocHideTimer: ReturnType<typeof setTimeout> | null = null;
+  let ghostSidebarHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearArticleTimers() {
+    if (tocHintTimer !== null) {
+      clearTimeout(tocHintTimer);
+      tocHintTimer = null;
+    }
+    if (ghostTocHideTimer !== null) {
+      clearTimeout(ghostTocHideTimer);
+      ghostTocHideTimer = null;
+    }
+    if (ghostSidebarHideTimer !== null) {
+      clearTimeout(ghostSidebarHideTimer);
+      ghostSidebarHideTimer = null;
+    }
+  }
 
   function initGhostToc(signal: AbortSignal) {
     const toc = document.getElementById('ghost-toc');
@@ -430,7 +448,8 @@ const hasToc = tocItems.length > 0;
     // 首次引导脉冲
     const tocHint = document.getElementById('ghost-toc-hint');
     if (tocHint && !localStorage.getItem('walker-toc-hint-seen')) {
-      setTimeout(() => {
+      tocHintTimer = setTimeout(() => {
+        tocHintTimer = null;
         tocHint.classList.add('is-pulsing');
         tocHint.addEventListener('animationend', () => {
           tocHint.classList.remove('is-pulsing');
@@ -439,17 +458,19 @@ const hasToc = tocItems.length > 0;
       }, 1500);
     }
 
-    let hideTimer: ReturnType<typeof setTimeout>;
-
     document.addEventListener('mousemove', (e: MouseEvent) => {
       const viewportWidth = window.innerWidth;
       const inRightZone = e.clientX > viewportWidth - 60;
 
-      clearTimeout(hideTimer);
+      if (ghostTocHideTimer !== null) {
+        clearTimeout(ghostTocHideTimer);
+        ghostTocHideTimer = null;
+      }
       if (inRightZone) {
         toc.classList.add('is-visible');
       } else {
-        hideTimer = setTimeout(() => {
+        ghostTocHideTimer = setTimeout(() => {
+          ghostTocHideTimer = null;
           toc.classList.remove('is-visible');
         }, 400);
       }
@@ -507,16 +528,18 @@ const hasToc = tocItems.length > 0;
     ghostSidebarObserver.observe(root, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] });
 
     // 鼠标移到左边缘 → 露出折叠图标
-    let sidebarHideTimer: ReturnType<typeof setTimeout>;
-
     document.addEventListener('mousemove', (e: MouseEvent) => {
       const inLeftZone = e.clientX < 60;
-      clearTimeout(sidebarHideTimer);
+      if (ghostSidebarHideTimer !== null) {
+        clearTimeout(ghostSidebarHideTimer);
+        ghostSidebarHideTimer = null;
+      }
 
       if (inLeftZone && root.hasAttribute('data-sidebar-collapsed')) {
         root.removeAttribute('data-sidebar-hidden');
       } else if (!inLeftZone && root.hasAttribute('data-sidebar-collapsed')) {
-        sidebarHideTimer = setTimeout(() => {
+        ghostSidebarHideTimer = setTimeout(() => {
+          ghostSidebarHideTimer = null;
           if (root.hasAttribute('data-sidebar-collapsed')) {
             root.setAttribute('data-sidebar-hidden', '');
           }
@@ -555,6 +578,9 @@ const hasToc = tocItems.length > 0;
 
   function initArticleScripts() {
     articleAbort?.abort();
+    ghostSidebarObserver?.disconnect();
+    ghostSidebarObserver = null;
+    clearArticleTimers();
     articleAbort = new AbortController();
     const { signal } = articleAbort;
 
@@ -571,6 +597,7 @@ const hasToc = tocItems.length > 0;
     articleAbort = null;
     ghostSidebarObserver?.disconnect();
     ghostSidebarObserver = null;
+    clearArticleTimers();
     document.documentElement.removeAttribute('data-sidebar-hidden');
   });
 </script>

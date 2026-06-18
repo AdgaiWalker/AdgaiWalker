@@ -202,12 +202,16 @@ const frequentTags = getFrequentTags(allLogs, 2);
 </style>
 
 <script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
   function initTagFilter() {
     const pills = document.querySelectorAll<HTMLButtonElement>('.filter-pill');
     const items = document.querySelectorAll<HTMLElement>('.log-item');
     const emptyState = document.getElementById('empty-state');
     const yearGroups = document.querySelectorAll<HTMLElement>('.year-group');
     if (!pills.length || !items.length) return;
+
+    const abort = new AbortController();
 
     pills.forEach(pill => {
       pill.addEventListener('click', () => {
@@ -233,10 +237,11 @@ const frequentTags = getFrequentTags(allLogs, 2);
         if (emptyState) {
           emptyState.classList.toggle('hidden', visibleCount > 0);
         }
-      });
+      }, { signal: abort.signal });
     });
+
+    return () => abort.abort();
   }
 
-  initTagFilter();
-  document.addEventListener('astro:page-load', initTagFilter);
+  registerLifecycle(initTagFilter);
 </script>
