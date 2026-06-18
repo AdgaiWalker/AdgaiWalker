@@ -27,8 +27,6 @@ const weekday = ['周日','周一','周二','周三','周四','周五','周六']
 const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · ${weekday}`;
 
 // 顶栏右侧：新建创作（brand 底 + plus）
-const topbarActions = `<a class="adm-btn adm-btn-primary" href="/admin/brief"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>新建创作</a>`;
-
 // §4.1 指标卡：本周需求/内容命中率/待立项选题/Gateway 健康
 // 本周需求 = 7 天匹配总数；命中率/待立项/Gateway 健康用 spec 写死值（后端暂无 WoW/命中率聚合）
 const weekNeeds = stats.totalCases;
@@ -66,9 +64,13 @@ const hasNeeds = needList.length > 0;
     active="/admin"
     title="今日工作台"
     subtitle={dateStr}
-    actions={topbarActions}
     showBanner={gatewayDegraded}
   >
+    <Fragment slot="actions">
+      <a class="adm-btn adm-btn-primary" href="/admin/brief">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>新建创作
+      </a>
+    </Fragment>
     {hasNeeds ? (
       <>
         {/* §4.1 四个 Metric 卡（横向） */}

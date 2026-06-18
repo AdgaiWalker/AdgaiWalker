@@ -13,8 +13,6 @@ if (!isAdmin(Astro.request)) {
   return Astro.redirect('/admin/login');
 }
 
-const topbarActions = `<button class="adm-btn" type="button">近 30 天 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>`;
-
 // §4.3 Tab1 功能使用热度（spec 写死 · 后端无 feature-usage 遥测）
 const featureUsage = [
   { name: '提问匹配', count: 482, statusKind: 'good' as const, statusLabel: '活跃', delta: '↑18%', deltaKind: 'good' as const, action: '加固' },
@@ -66,8 +64,10 @@ const themes = [
     active="/admin/insights"
     title="洞察"
     subtitle="看数据 → 改内容 / 改功能 · 近 30 天"
-    actions={topbarActions}
   >
+    <Fragment slot="actions">
+      <button class="adm-btn" type="button">近 30 天 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    </Fragment>
     {/* §4.3 「本周该做的 3 件事」AI 优先级行动条 */}
     <section class="adm-ins-priority">
       <div class="adm-ins-priority-lead">
@@ -216,8 +216,17 @@ const themes = [
         });
       });
     }
+
+    function cleanupInsightsTabs() {
+      document.removeEventListener('astro:page-load', initInsightsTabs);
+      document.querySelectorAll('[data-bound="1"]').forEach((el) => {
+        delete (el as HTMLElement).dataset.bound;
+      });
+    }
+
     initInsightsTabs();
     document.addEventListener('astro:page-load', initInsightsTabs);
+    document.addEventListener('astro:before-swap', cleanupInsightsTabs);
   </script>
 </body>
 </html>

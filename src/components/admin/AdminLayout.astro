@@ -69,8 +69,6 @@ interface Props {
   title: string;
   /** 顶栏副信息 */
   subtitle?: string;
-  /** 顶栏右侧操作（按钮等），传入 HTML */
-  actions?: string;
   /** 是否显示降级 banner（Gateway 异常时） */
   showBanner?: boolean;
   /** banner 主文案 */
@@ -83,7 +81,6 @@ const {
   active = '',
   title,
   subtitle = '',
-  actions = '',
   showBanner = false,
   bannerTitle = 'AI Gateway 昨日降级 2 次，3 次调用失败',
   bannerSub = '部分需求响应变慢 · 建议查看事件日志确认影响范围',
@@ -162,7 +159,9 @@ const EXPANDED_DEFAULT = activeGroup;
           <h1 class="adm-topbar-title">{title}</h1>
           {subtitle && <div class="adm-topbar-sub">{subtitle}</div>}
         </div>
-        <div class="adm-topbar-right" set:html={actions} />
+        <div class="adm-topbar-right">
+          <slot name="actions" />
+        </div>
       </header>
 
       <!-- 降级 banner（条件渲染，spec §5 可关闭） -->
@@ -192,7 +191,7 @@ const EXPANDED_DEFAULT = activeGroup;
 
 <script>
   // §5 交互：侧栏折叠 + banner 关闭 + 登出
-  // 用一次性初始化，避免重复绑定
+  // 生命周期遵循 AdminEditBar 的 init + cleanup 配对范式
   function initAdminChrome() {
     // 侧栏组折叠（aria-expanded + data-collapsed）
     document.querySelectorAll('[data-toggle-group]').forEach((btn) => {
@@ -229,6 +228,15 @@ const EXPANDED_DEFAULT = activeGroup;
     });
   }
 
+  function cleanupAdminChrome() {
+    document.removeEventListener('astro:page-load', initAdminChrome);
+    // 清除 dataset.bound 标记（View Transition 会替换 DOM，但清除确保干净）
+    document.querySelectorAll('[data-bound="1"]').forEach((el) => {
+      delete (el as HTMLElement).dataset.bound;
+    });
+  }
+
   initAdminChrome();
   document.addEventListener('astro:page-load', initAdminChrome);
+  document.addEventListener('astro:before-swap', cleanupAdminChrome);
 </script>

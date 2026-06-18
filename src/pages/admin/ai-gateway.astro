@@ -69,7 +69,6 @@ const showRows = logs.slice(0, 5);
 const degradedActive = degraded;
 
 const subtitle = '访客提问/匹配的命脉 · 服务健康台';
-const topbarActions = `<button class="adm-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>服务商配置</button>`;
 ---
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -86,8 +85,12 @@ const topbarActions = `<button class="adm-btn" type="button"><svg width="14" hei
     active="/admin/ai-gateway"
     title={`AI Gateway${degradedActive ? '' : ''}`}
     subtitle={subtitle}
-    actions={topbarActions}
   >
+    <Fragment slot="actions">
+      <button class="adm-btn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>服务商配置
+      </button>
+    </Fragment>
     {/* §4.5 状态灯胶囊（顶栏副信息区下方独立一行） */}
     {degradedActive && (
       <div class="adm-gw-statuspill adm-tag adm-tag-bad adm-tag-pill">
@@ -239,8 +242,8 @@ const topbarActions = `<button class="adm-btn" type="button"><svg width="14" hei
       <div class="adm-gw-logs-list">
         {showRows.length > 0 ? showRows.map((log) => (
           <LogRow
-            time={fmtTime((log as any).timestamp)}
-            timeRel={relTime((log as any).timestamp)}
+            time={fmtTime(log.timestamp)}
+            timeRel={relTime(log.timestamp)}
             mode={modeOf(log.mode)}
             query={log.route}
             latency={`${(log.latencyMs / 1000).toFixed(1)}s`}
