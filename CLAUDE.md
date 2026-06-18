@@ -33,6 +33,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
 - **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。
 - **注册门票**：`INVITE_CODES`（可选，env 一次性种子）+ 后台 `/admin/invite-codes` 生成的 managed 码（`stores/managed-invite-code.store.ts`，Redis 持久化，默认一人一码）。`/api/auth/register` 校验+消费（env/managed 都认，managed 记 usedBy 追踪谁用了哪个码）。
+- ⚠️ **`vercel env pull` 不导出加密 secret 真实值**：`KV_*`、`CRON_SECRET`、`COOKIE_SECRET`、`GITHUB_TOKEN` 等拉到本地 `.env` 都是空——本地连不上生产 Redis、也拿不到 CRON 鉴权。需连 Redis 时走 Upstash 控制台或部署到 Vercel 运行时。另：**生产 Redis 经 Vercel KV 集成接入（实际变量 `KV_REST_API_URL` / `KV_REST_API_TOKEN`）**，`like.store.ts` 与 `conversation/store.ts` 的 `getRedis()` 同时兼容 `UPSTASH_*` 前缀，任一存在即可。
 
 ## 架构
 
@@ -309,6 +310,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 - **`ports.ts`**：数据层端口。定义 `AuthState`（`public`/`user`/`admin`）、`UserAccount`（用户名+scrypt 密码哈希，零 PII）/`AccountRepositoryPort`、`UserSession`/`SessionRepositoryPort`、`NeedCase`（核心业务对象，带 `username` 归属）、`MatchSession`、`ConversationMessage`、`MatchFeedbackType`（8 种）、`TopicCandidate`、`InviteCode`、`UserProfile`（按 username）、`Incident`、`PublicStats` 等接口及对应 RepositoryPort；`MatchSessionRepositoryPort` 含 `createSessionId`/`saveMessages`/`incrementStats`（会话生命周期收口）。上层只依赖这些接口。
 - **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`**（env 种子 + Redis 用量）/ **`managed-invite-code.store.ts`**（后台生成的邀请码，Redis `auth:invite-code:*` + `auth:invite-codes` 集合，generate/list/disable/delete/recordUsedBy）/ **`account.store.ts`**（UserAccount，Redis `auth:account:*` + SETNX 占名 + updateRole/delete）/ **`session.store.ts`**（UserSession，Redis `auth:session:*` + user→session 索引，listByUsername/killAllByUsername）/ **`user-profile.store.ts`** / **`incident.store.ts`**：各仓储的工厂实现（account/session/managed-invite 自包含 Redis+内存，其余委托 `conversation/store.ts`）。
+- **`like.store.ts`**：点赞计数仓储（独立于 conversation/store）。`LikeStore` 接口 + `InMemoryLikeStore`（Map 计数 + 时间戳冷却）+ `UpstashLikeStore`（Redis `incr` 原子自增、`set ex` 冷却，运行时异常降级内存）+ `createLikeStore()` 工厂（有 KV/UPSTASH 凭据用 Upstash，否则内存）。**0 起步真实计数，无写死假基数**。被 `/api/like` 调用。
 
 #### conversation/（存储实现层）
 
