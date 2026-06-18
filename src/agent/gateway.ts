@@ -29,6 +29,8 @@ export interface GatewayCallLog {
   latencyMs: number;
   promptTokens?: number;
   completionTokens?: number;
+  /** ISO 时间戳；持久化时由 logCall 写入（new Date().toISOString()），内存对象无此字段 */
+  timestamp?: string;
 }
 
 export interface GatewayResponse<T> {

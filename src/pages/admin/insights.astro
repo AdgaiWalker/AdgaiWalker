@@ -1,9 +1,11 @@
 ---
-// /admin/insights — 数据看板（服务端渲染，需认证）
+// /admin/insights — 洞察（spec §4.3）
+// 三 tab（行为/内容/反馈）+ 顶部「本周该做的 3 件事」AI 优先级行动条。
 import { isAdmin } from '@/lib/admin-auth';
-import { getNeedCaseStats, getSearchMisses, getTopicCandidates } from '@/conversation/store';
-import { abilityTypeLabels, frictionLayerLabels, needCategoryLabels } from '@/profiles/resource-index';
-import { readGatewayLogs, type GatewayCallLog } from '@/agent/gateway';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import FeatureRow from '@/components/admin/FeatureRow.astro';
+import ArticleRow from '@/components/admin/ArticleRow.astro';
+import ThemeCard from '@/components/admin/ThemeCard.astro';
 
 export const prerender = false;
 
@@ -11,433 +13,315 @@ if (!isAdmin(Astro.request)) {
   return Astro.redirect('/admin/login');
 }
 
-const stats = await getNeedCaseStats({ days: 30 });
-const allTopics = await getTopicCandidates({ limit: 100 });
-const searchMisses = await getSearchMisses(15);
-const observedTopics = allTopics.filter(t => t.status === 'observed');
-const gatewayLogs = await readGatewayLogs(30);
-const gatewayAiCount = gatewayLogs.filter(l => l.mode === 'ai').length;
-const gatewayFallbackCount = gatewayLogs.filter(l => l.mode === 'fallback').length;
-const gatewayAvgLatency = gatewayLogs.length > 0 ? Math.round(gatewayLogs.reduce((s, l) => s + l.latencyMs, 0) / gatewayLogs.length) : 0;
+// §4.3 Tab1 功能使用热度（spec 写死 · 后端无 feature-usage 遥测）
+const featureUsage = [
+  { name: '提问匹配', count: 482, statusKind: 'good' as const, statusLabel: '活跃', delta: '↑18%', deltaKind: 'good' as const, action: '加固' },
+  { name: '文章阅读', count: 391, statusKind: 'good' as const, statusLabel: '活跃', delta: '↑9%', deltaKind: 'good' as const, action: '加固' },
+  { name: '学习轨道', count: 74, statusKind: 'warn' as const, statusLabel: '观察', delta: '↓4%', deltaKind: 'warn' as const, action: '观察' },
+  { name: '内容关系图谱', count: 38, statusKind: 'warn' as const, statusLabel: '偏低', delta: '↓12%', deltaKind: 'warn' as const, action: '观察' },
+  { name: '点赞', count: 9, statusKind: 'bad' as const, statusLabel: '冷门', delta: '↓41%', deltaKind: 'bad' as const, action: '考虑删除', actionKind: 'bad' as const },
+  { name: '项目展示', count: 3, statusKind: 'bad' as const, statusLabel: '冷门', delta: '↓63%', deltaKind: 'bad' as const, action: '考虑删除', actionKind: 'bad' as const },
+];
+const featureMax = Math.max(...featureUsage.map(f => f.count));
 
-const contentGaps = allTopics.filter(t => t.relatedContentIds.length === 0 && t.status === 'observed');
+// §4.3 流失环节（spec 写死 · 后端无 funnel 数据）
+const dropoffs = [
+  { label: '提问后无匹配走了', value: '61%', delta: '↑', note: '均值 48% · 本周异常', kind: 'bad' as const, action: '改匹配' },
+  { label: '进首页直接走', value: '44%', delta: '↑', note: '均值 39% · 略升', kind: 'warn' as const, action: '改首屏' },
+  { label: '文章读到一半走', value: '23%', delta: '→', note: '均值 24% · 持平', kind: 'neutral' as const, action: '改内容' },
+];
+const dropoffColor = { bad: 'var(--adm-bad)', warn: 'var(--adm-warn)', neutral: 'var(--adm-neutral)' };
 
-// 类别排序
-const sortedCategories = Object.entries(stats.byCategory)
-  .sort((a, b) => b[1] - a[1])
-  .map(([id, count]) => ({ id, label: needCategoryLabels[id as keyof typeof needCategoryLabels] ?? id, count }));
-const categoryMax = Math.max(1, ...sortedCategories.map(c => c.count));
+// §4.3 Tab2 文章热度榜（spec 写死 · 后端无 article-heat）
+const articleHeat = [
+  { rank: 1, title: 'Ferry 隐喻：渡船到底渡的是什么', views: 842, asks: undefined, stay: '', delta: '↑22%', deltaKind: 'good' as const, action: '写更多', actionKind: 'good' as const },
+  { rank: 2, title: 'P0-P4 方法：从原点到扩散', views: 531, asks: undefined, stay: '', delta: '↑11%', deltaKind: 'good' as const, action: '写更多', actionKind: 'good' as const },
+  { rank: 3, title: '如何用 AI Gateway 做需求匹配', views: 318, asks: 88, stay: '2.4m', delta: '↓8%', deltaKind: 'warn' as const, action: '补问答', actionKind: 'warn' as const },
+  { rank: 4, title: '双 Git 仓库协同工作流', views: 96, asks: undefined, stay: '', delta: '→持平', deltaKind: 'neutral' as const, action: '改写', actionKind: 'warn' as const },
+  { rank: 5, title: '学习轨道：六月计划', views: 14, asks: undefined, stay: '', delta: '↓35%', deltaKind: 'bad' as const, action: '藏起来', actionKind: 'bad' as const },
+];
 
-// 卡点与能力分布
-const sortedFrictionLayers = Object.entries(stats.byFrictionLayer)
-  .sort((a, b) => b[1] - a[1])
-  .map(([id, count]) => ({ id, label: frictionLayerLabels[id as keyof typeof frictionLayerLabels] ?? id, count }));
-const frictionLayerMax = Math.max(1, ...sortedFrictionLayers.map(v => v.count));
-
-const sortedAbilityTypes = Object.entries(stats.byAbilityType)
-  .sort((a, b) => b[1] - a[1])
-  .map(([id, count]) => ({ id, label: abilityTypeLabels[id as keyof typeof abilityTypeLabels] ?? id, count }));
-const abilityTypeMax = Math.max(1, ...sortedAbilityTypes.map(v => v.count));
-
-const feedbackLabels: Record<string, string> = {
-  resolved: '解决了',
-  stuck: '还卡着',
-  'not-fit': '不适合',
-  'want-tutorial': '想看教程',
-};
-const sortedFeedback = Object.entries(stats.byFeedbackType)
-  .sort((a, b) => b[1] - a[1])
-  .map(([id, count]) => ({ id, label: feedbackLabels[id] ?? id, count }));
-const feedbackMax = Math.max(1, ...sortedFeedback.map(v => v.count));
-
-// 趋势数据（SVG）
-const trend = stats.dailyTrend.slice(-30);
-const trendMax = Math.max(1, ...trend.map(t => t.count));
-const trendWidth = 600;
-const trendHeight = 120;
-const trendPadding = 30;
-const trendPoints = trend.map((t, i) => {
-  const x = trendPadding + (i / Math.max(1, trend.length - 1)) * (trendWidth - trendPadding * 2);
-  const y = trendHeight - trendPadding - (t.count / trendMax) * (trendHeight - trendPadding * 2);
-  return `${x},${y}`;
-}).join(' ');
+// §4.3 Tab3 反馈聚类（spec 写死 4 主题 · 后端是 rule-based 聚类，非 AI 主题）
+const themes = [
+  { tagLabel: '该写教程', tagKind: 'good' as const, theme: 'P0→P2 完整案例怎么做', count: 18, quote: '看了 Ferry 那篇，但还是不懂具体怎么把一个想法从 P0 推到 P2，能不能给个完整例子一步步走一遍？', quoteMeta: '另有 17 条相似反馈 · 置信 92%', suggestion: '写一篇「P0→P2 完整案例」承接 Ferry 流量，可拆成连载', action: '加入选题', actionKind: 'good' as const },
+  { tagLabel: '该改 bug', tagKind: 'warn' as const, theme: '提问匹配不上就白屏', count: 9, quote: '提问之后转了半天没匹配到东西，最后白屏了，体验很差。', quoteMeta: '另有 8 条相似反馈 · 置信 88% · 与流失率 61% 交叉印证', suggestion: '命中流失榜首，优先改匹配降级兜底（无结果时给推荐而非白屏）', action: '去改', actionKind: 'warn' as const },
+  { tagLabel: '该补素材', tagKind: 'good' as const, theme: '双 Git 协同看不懂', count: 5, quote: '双 Git 仓库那段看晕了，有没有图？', quoteMeta: '另有 4 条相似反馈 · 置信 79%', suggestion: '给「双 Git 协同」补一张流程图，降低阅读门槛', action: '去补', actionKind: 'good' as const },
+  { tagLabel: '无效吐槽', tagKind: 'neutral' as const, theme: '泛泛抱怨（无具体指向）', count: 5, quote: '字太多了懒得看', quoteMeta: '另有 4 条相似反馈 · 置信 64% · 未指向具体内容', suggestion: '标记无效 · 可一键隐藏，不占用决策精力', action: '全部忽略', actionKind: 'neutral' as const },
+];
 ---
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>数据看板 — Walker</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
-
-    /* Top Bar */
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
-    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
-    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
-    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
-    .admin-bar-right { display: flex; align-items: center; gap: 1rem; }
-    .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
-    .admin-bar-link:hover { color: #c4704a; }
-    .admin-bar-link.active { color: #1c1917; }
-    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-    .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,0.2); }
-
-    .admin-main { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    .admin-welcome { margin-bottom: 2rem; }
-    .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; }
-    .admin-welcome p { font-size: 0.88rem; color: #78716c; }
-
-    /* KPI */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .kpi-card { padding: 1.25rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; }
-    .kpi-label { font-size: 0.72rem; font-weight: 700; color: #a8a29e; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
-    .kpi-value { font-size: 1.75rem; font-weight: 800; color: #1c1917; }
-    .kpi-sub { font-size: 0.72rem; color: #a8a29e; margin-top: 0.2rem; }
-
-    /* 双栏布局 */
-    .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-    .insights-full { grid-column: 1 / -1; }
-
-    .panel { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1.25rem; }
-    .panel-title { font-size: 0.88rem; font-weight: 800; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .panel-title svg { color: #c4704a; }
-
-    /* SVG 趋势图 */
-    .trend-svg { width: 100%; height: auto; }
-    .trend-line { fill: none; stroke: #3b82f6; stroke-width: 2; stroke-linejoin: round; }
-    .trend-area { fill: rgba(59,130,246,0.08); }
-    .trend-axis { font-size: 9px; fill: #a8a29e; }
-    .trend-grid { stroke: rgba(0,0,0,0.04); stroke-width: 1; }
-
-    /* 条形图 */
-    .bar-row { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.55rem; }
-    .bar-label { width: 5rem; font-size: 0.78rem; font-weight: 600; color: #57534e; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .bar-track { flex: 1; height: 1.4rem; background: rgba(0,0,0,0.04); border-radius: 6px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s ease; }
-    .bar-fill-blue { background: #3b82f6; }
-    .bar-fill-amber { background: #f59e0b; }
-    .bar-count { font-size: 0.72rem; font-weight: 700; color: #78716c; width: 2.5rem; flex-shrink: 0; }
-
-    /* 排行 */
-    .rank-list { list-style: none; }
-    .rank-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
-    .rank-item:last-child { border-bottom: none; }
-    .rank-idx { width: 1.5rem; height: 1.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; flex-shrink: 0; }
-    .rank-idx-1 { background: #fef3c7; color: #92400e; }
-    .rank-idx-2 { background: #f1f5f9; color: #475569; }
-    .rank-idx-3 { background: #fef2f2; color: #991b1b; }
-    .rank-idx-other { background: #f5f5f4; color: #78716c; }
-    .rank-text { flex: 1; font-size: 0.82rem; color: #1c1917; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .rank-count { font-size: 0.75rem; font-weight: 700; color: #78716c; flex-shrink: 0; }
-
-    /* 内容缺口 */
-    .gap-item { display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.65rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
-    .gap-item:last-child { border-bottom: none; }
-    .gap-warn { width: 20px; height: 20px; border-radius: 999px; background: #fef3c7; color: #92400e; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
-    .gap-info { flex: 1; }
-    .gap-title { font-size: 0.82rem; font-weight: 700; color: #1c1917; }
-    .gap-audience { font-size: 0.72rem; color: #78716c; }
-    .gap-empty { font-size: 0.85rem; color: #a8a29e; text-align: center; padding: 1.5rem; }
-
-    /* Gateway 日志表格 */
-    .gw-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    .gw-table th { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 2px solid rgba(0,0,0,0.06); color: #a8a29e; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
-    .gw-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid rgba(0,0,0,0.04); }
-    .gw-table tr:hover td { background: rgba(0,0,0,0.015); }
-    .gw-route { font-weight: 600; color: #1c1917; font-family: monospace; font-size: 0.78rem; }
-    .gw-num { font-family: monospace; font-size: 0.78rem; color: #57534e; }
-    .gw-reason { color: #a8a29e; font-size: 0.75rem; }
-    .gw-time { color: #a8a29e; font-family: monospace; font-size: 0.75rem; }
-    .gw-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
-    .gw-badge-ai { background: #ecfdf5; color: #065f46; }
-    .gw-badge-fallback { background: #fef9c3; color: #854d0e; }
-    .gw-badge-blocked { background: #fef2f2; color: #991b1b; }
-
-    @media (max-width: 768px) {
-      .insights-grid { grid-template-columns: 1fr; }
-      .admin-main { padding: 1.25rem 1rem 3rem; }
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-  </style>
+  <title>洞察 — Walker Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <div class="admin-bar">
-    <div class="admin-bar-left">
-      <span class="admin-bar-logo">Walker</span>
-      <span class="admin-bar-badge">Admin</span>
-    </div>
-    <div class="admin-bar-right">
-      <a href="/admin" class="admin-bar-link">仪表盘</a>
-      <a href="/admin/insights" class="admin-bar-link active">洞察</a>
-      <a href="/admin/ai-gateway" class="admin-bar-link">AI Gateway</a>
-      <a href="/admin/topics" class="admin-bar-link">选题库</a>
-      <a href="/admin/review" class="admin-bar-link">需求复盘</a>
-      <a href="/" class="admin-bar-link">查看站点</a>
-      <button class="logout-btn" id="logout-btn">登出</button>
-    </div>
-  </div>
+  <AdminLayout
+    active="/admin/insights"
+    title="洞察"
+    subtitle="看数据 → 改内容 / 改功能 · 近 30 天"
+  >
+    <Fragment slot="actions">
+      <button class="adm-btn" type="button">近 30 天 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    </Fragment>
+    {/* §4.3 「本周该做的 3 件事」AI 优先级行动条 */}
+    <section class="adm-ins-priority">
+      <div class="adm-ins-priority-lead">
+        <span class="adm-ins-priority-badge">AI · 本周建议</span>
+        <span class="adm-ins-priority-title">本周该做的 3 件事</span>
+      </div>
+      <div class="adm-ins-priority-cards">
+        <div class="adm-ins-pcard adm-ins-pcard-bad">
+          <span class="adm-ins-pcard-num" style="background:var(--adm-bad)">1</span>
+          <div class="adm-ins-pcard-body">
+            <div class="adm-ins-pcard-title">改提问匹配降级</div>
+            <div class="adm-ins-pcard-sub">流失 61%↑ · 本周最该修</div>
+          </div>
+        </div>
+        <div class="adm-ins-pcard adm-ins-pcard-good">
+          <span class="adm-ins-pcard-num" style="background:var(--adm-good)">2</span>
+          <div class="adm-ins-pcard-body">
+            <div class="adm-ins-pcard-title">写 P0→P2 完整案例</div>
+            <div class="adm-ins-pcard-sub">18 条反馈在等 · 接 Ferry 流量</div>
+          </div>
+        </div>
+        <div class="adm-ins-pcard adm-ins-pcard-warn">
+          <span class="adm-ins-pcard-num" style="background:var(--adm-warn)">3</span>
+          <div class="adm-ins-pcard-body">
+            <div class="adm-ins-pcard-title">换学习轨道标题再试</div>
+            <div class="adm-ins-pcard-sub">14 看或因引流弱 · 先挽救再删</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <div class="admin-main">
-    <div class="admin-welcome">
-      <h1>数据看板</h1>
-      <p>最近 30 天匹配数据 · {new Date().toLocaleDateString('zh-CN')}</p>
-    </div>
-
-    <!-- KPI -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">匹配总数</div>
-        <div class="kpi-value">{stats.totalCases}</div>
-        <div class="kpi-sub">30 天内</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">会话数</div>
-        <div class="kpi-value">{stats.totalSessions}</div>
-        <div class="kpi-sub">累计</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">待处理选题</div>
-        <div class="kpi-value">{observedTopics.length}</div>
-        <div class="kpi-sub">待审核</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">内容缺口</div>
-        <div class="kpi-value">{contentGaps.length}</div>
-        <div class="kpi-sub">无关联资料</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">合规转向率</div>
-        <div class="kpi-value">{Math.round(stats.complianceRedirectRate * 100)}%</div>
-        <div class="kpi-sub">入口边界问题</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">代码 Agent 误用率</div>
-        <div class="kpi-value">{Math.round(stats.codeAgentMisuseRate * 100)}%</div>
-        <div class="kpi-sub">提到 Codex 但不适合代码 Agent</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">AI 成功率</div>
-        <div class="kpi-value">{gatewayLogs.length > 0 ? Math.round(gatewayAiCount / gatewayLogs.length * 100) + '%' : '-'}</div>
-        <div class="kpi-sub">最近 {gatewayLogs.length} 次调用</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">AI 平均延迟</div>
-        <div class="kpi-value">{gatewayAvgLatency > 0 ? gatewayAvgLatency + 'ms' : '-'}</div>
-        <div class="kpi-sub">含降级</div>
-      </div>
+    {/* §4.3 Tab 栏 */}
+    <div class="adm-ins-tabs" role="tablist">
+      <button class="adm-ins-tab is-active" role="tab" aria-selected="true" data-tab="behavior">行为 · 改功能</button>
+      <button class="adm-ins-tab" role="tab" aria-selected="false" data-tab="content">内容 · 改文章</button>
+      <button class="adm-ins-tab" role="tab" aria-selected="false" data-tab="feedback">反馈 · AI 归类</button>
     </div>
 
-    <div class="insights-grid">
-      <!-- 趋势折线图 -->
-      <div class="panel insights-full">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-          匹配趋势
-        </div>
-        {trend.length > 0 ? (
-          <svg class="trend-svg" viewBox={`0 0 ${trendWidth} ${trendHeight}`} preserveAspectRatio="xMidYMid meet">
-            {/* 水平网格线 */}
-            {[0, 0.25, 0.5, 0.75, 1].map(pct => (
-              <line class="trend-grid" x1={trendPadding} y1={trendHeight - trendPadding - pct * (trendHeight - trendPadding * 2)} x2={trendWidth - trendPadding} y2={trendHeight - trendPadding - pct * (trendHeight - trendPadding * 2)} />
-            ))}
-            {/* 面积 */}
-            {trend.length > 1 && (
-              <polygon class="trend-area" points={`${trendPadding},${trendHeight - trendPadding} ${trendPoints} ${trendWidth - trendPadding},${trendHeight - trendPadding}`} />
-            )}
-            {/* 折线 */}
-            {trend.length > 1 && <polyline class="trend-line" points={trendPoints} />}
-            {/* 数据点 */}
-            {trend.map((t, i) => {
-              const x = trendPadding + (i / Math.max(1, trend.length - 1)) * (trendWidth - trendPadding * 2);
-              const y = trendHeight - trendPadding - (t.count / trendMax) * (trendHeight - trendPadding * 2);
-              return <circle cx={x} cy={y} r="3" fill="#3b82f6" />;
-            })}
-            {/* X 轴标签（只标首尾和中间） */}
-            {trend.length > 0 && (
-              <>
-                <text class="trend-axis" x={trendPadding} y={trendHeight - 8}>{trend[0].date.slice(5)}</text>
-                {trend.length > 2 && <text class="trend-axis" x={trendWidth / 2} y={trendHeight - 8} text-anchor="middle">{trend[Math.floor(trend.length / 2)].date.slice(5)}</text>}
-                <text class="trend-axis" x={trendWidth - trendPadding} y={trendHeight - 8} text-anchor="end">{trend[trend.length - 1].date.slice(5)}</text>
-              </>
-            )}
-          </svg>
-        ) : (
-          <div class="gap-empty">暂无趋势数据</div>
-        )}
-      </div>
-
-      <!-- 类别分布 -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg>
-          需求类别分布
-        </div>
-        {sortedCategories.length > 0 ? sortedCategories.map(cat => (
-          <div class="bar-row">
-            <span class="bar-label">{cat.label}</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-fill-blue" style={`width: ${(cat.count / categoryMax) * 100}%`} />
-            </div>
-            <span class="bar-count">{cat.count}</span>
+    {/* ===== Tab 1 · 行为（改功能） ===== */}
+    <section class="adm-ins-panel is-active" data-panel="behavior" role="tabpanel">
+      <div class="adm-ins-two-col">
+        {/* 左列：功能使用热度 */}
+        <div class="adm-ins-col">
+          <div class="adm-ins-col-head">
+            <span class="adm-ins-col-title">功能使用热度</span>
+            <span class="adm-ins-col-sub">次数低 = 考虑删功能 · 次数高 = 加固它</span>
           </div>
-        )) : <div class="gap-empty">暂无数据</div>}
-      </div>
-
-      <!-- 卡点层级分布 -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
-          卡点层级分布
-        </div>
-        {sortedFrictionLayers.length > 0 ? sortedFrictionLayers.map(v => (
-          <div class="bar-row">
-            <span class="bar-label">{v.label}</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-fill-amber" style={`width: ${(v.count / frictionLayerMax) * 100}%`} />
-            </div>
-            <span class="bar-count">{v.count}</span>
+          <div class="adm-ins-feature-list">
+            {featureUsage.map(f => <FeatureRow {...f} max={featureMax} />)}
           </div>
-        )) : <div class="gap-empty">暂无数据</div>}
-      </div>
-
-      <!-- 能力方向分布 -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"/><path d="M4 5h11l-1 4 1 4H4"/><path d="M4 13h13"/></svg>
-          能力方向分布
         </div>
-        {sortedAbilityTypes.length > 0 ? sortedAbilityTypes.map(v => (
-          <div class="bar-row">
-            <span class="bar-label">{v.label}</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-fill-blue" style={`width: ${(v.count / abilityTypeMax) * 100}%`} />
-            </div>
-            <span class="bar-count">{v.count}</span>
+
+        {/* 右列：访客从哪来 · 在哪走 */}
+        <div class="adm-ins-col adm-ins-col-flow">
+          <div class="adm-ins-col-head">
+            <span class="adm-ins-col-title">访客从哪来 · 在哪走</span>
           </div>
-        )) : <div class="gap-empty">暂无数据</div>}
-      </div>
 
-      <!-- 反馈分布 -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
-          反馈分布
-        </div>
-        {sortedFeedback.length > 0 ? sortedFeedback.map(v => (
-          <div class="bar-row">
-            <span class="bar-label">{v.label}</span>
-            <div class="bar-track">
-              <div class="bar-fill bar-fill-amber" style={`width: ${(v.count / feedbackMax) * 100}%`} />
+          {/* 来源卡 */}
+          <div class="adm-ins-card adm-card">
+            <div class="adm-ins-card-head">
+              <span class="adm-ins-card-title">来源</span>
             </div>
-            <span class="bar-count">{v.count}</span>
-          </div>
-        )) : <div class="gap-empty">暂无数据</div>}
-      </div>
-
-      <!-- 热门需求 -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-          热门需求 Top 10
-        </div>
-        {stats.topNeeds.length > 0 ? (
-          <ol class="rank-list">
-            {stats.topNeeds.map((need, i) => (
-              <li class="rank-item">
-                <span class={`rank-idx ${i === 0 ? 'rank-idx-1' : i === 1 ? 'rank-idx-2' : i === 2 ? 'rank-idx-3' : 'rank-idx-other'}`}>{i + 1}</span>
-                <span class="rank-text">{need.summary}</span>
-                <span class="rank-count">{need.count}</span>
-              </li>
-            ))}
-          </ol>
-        ) : <div class="gap-empty">暂无数据</div>}
-      </div>
-
-      <!-- 内容缺口 -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-          内容缺口
-        </div>
-        {contentGaps.length > 0 ? contentGaps.slice(0, 8).map(gap => (
-          <div class="gap-item">
-            <span class="gap-warn">!</span>
-            <div class="gap-info">
-              <div class="gap-title">{gap.title}</div>
-              <div class="gap-audience">
-                {gap.roleDistribution.map(role => `${role.role}×${role.count}`).join(' / ') || '未主动说明的人群'}
-                · {gap.density} 条需求 · {gap.priority}优先级
+            <div class="adm-ins-src">
+              <div class="adm-ins-src-row">
+                <div class="adm-ins-src-top"><span>自媒体公众号</span><span class="adm-mono">1240</span></div>
+                <div class="adm-ins-src-bar"><div style="width:100%;background:var(--adm-brand)"></div></div>
+              </div>
+              <div class="adm-ins-src-row">
+                <div class="adm-ins-src-top"><span>直接访问</span><span class="adm-mono">312</span></div>
+                <div class="adm-ins-src-bar"><div style="width:25%;background:var(--adm-brand)"></div></div>
+              </div>
+              <div class="adm-ins-src-row">
+                <div class="adm-ins-src-top"><span>搜索引擎</span><span class="adm-mono">88</span></div>
+                <div class="adm-ins-src-bar"><div style="width:7%;background:var(--adm-brand)"></div></div>
               </div>
             </div>
           </div>
-        )) : <div class="gap-empty">暂无内容缺口</div>}
-      </div>
 
-      <!-- 搜索无结果（内容缺口信号） -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          搜索无结果 Top 15
-        </div>
-        {searchMisses.length > 0 ? (
-          <ol class="rank-list">
-            {searchMisses.map((miss, i) => (
-              <li class="rank-item">
-                <span class={`rank-idx ${i === 0 ? 'rank-idx-1' : i === 1 ? 'rank-idx-2' : i === 2 ? 'rank-idx-3' : 'rank-idx-other'}`}>{i + 1}</span>
-                <span class="rank-text">{miss.query}</span>
-                <span class="rank-count">{miss.count} 次</span>
-              </li>
+          {/* 流失环节卡（带「需改善」rose 标） */}
+          <div class="adm-ins-card adm-card">
+            <div class="adm-ins-card-head">
+              <span class="adm-ins-card-title">流失环节</span>
+              <span class="adm-tag adm-tag-bad">需改善</span>
+            </div>
+            {dropoffs.map(d => (
+              <div class="adm-ins-drop-row">
+                <div class="adm-ins-drop-top">
+                  <span class="adm-ins-drop-label">{d.label}</span>
+                  <span class="adm-ins-drop-val" style={`color:${dropoffColor[d.kind]}`}>{d.value} <span class="adm-ins-drop-delta">{d.delta}</span></span>
+                </div>
+                <div class="adm-ins-drop-note">
+                  {d.note}
+                  <button class="adm-btn adm-btn-sm" type="button">{d.action}</button>
+                </div>
+              </div>
             ))}
-          </ol>
-        ) : <div class="gap-empty">暂无搜索无结果记录</div>}
-      </div>
-
-      <!-- AI Gateway 日志 -->
-      <div class="panel insights-full">
-        <div class="panel-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
-          AI Gateway 最近调用
+          </div>
         </div>
-        {gatewayLogs.length > 0 ? (
-          <table class="gw-table">
-            <thead>
-              <tr>
-                <th>路由</th>
-                <th>模式</th>
-                <th>延迟</th>
-                <th>降级原因</th>
-                <th>时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gatewayLogs.slice(0, 15).map(log => (
-                <tr>
-                  <td class="gw-route">{log.route}</td>
-                  <td>
-                    <span class={"gw-badge gw-badge-" + log.mode}>
-                      {log.mode === 'ai' ? 'AI' : log.mode === 'fallback' ? '降级' : '拦截'}
-                    </span>
-                  </td>
-                  <td class="gw-num">{log.latencyMs}ms</td>
-                  <td class="gw-reason">{log.fallbackReason || '-'}</td>
-                  <td class="gw-time">{new Date((log as any).timestamp || '').toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : <div class="gap-empty">暂无 AI 调用记录</div>}
       </div>
-    </div>
-  </div>
+    </section>
+
+    {/* ===== Tab 2 · 内容（改文章） ===== */}
+    <section class="adm-ins-panel" data-panel="content" role="tabpanel" hidden>
+      <div class="adm-ins-col-head">
+        <span class="adm-ins-col-title">文章热度榜</span>
+        <span class="adm-ins-col-sub">按热度降序 · 每条通向「写更多 / 补问答 / 改写 / 藏起来」</span>
+      </div>
+      <div class="adm-ins-article-list">
+        {articleHeat.map(a => <ArticleRow {...a} />)}
+      </div>
+    </section>
+
+    {/* ===== Tab 3 · 反馈（AI 归类） ===== */}
+    <section class="adm-ins-panel" data-panel="feedback" role="tabpanel" hidden>
+      <div class="adm-ins-col-head">
+        <span class="adm-ins-col-title">访客反馈 · AI 已聚类</span>
+        <span class="adm-ins-col-sub">37 条反馈 · AI 聚成 4 个主题 · 每主题取代表原话 + 建议</span>
+      </div>
+      <div class="adm-ins-theme-list">
+        {themes.map(t => <ThemeCard {...t} />)}
+      </div>
+    </section>
+  </AdminLayout>
 
   <script>
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-      window.location.href = '/admin/login';
-    });
+    // §5 交互：Tab 切换（激活态下划线 + 加粗，内容区切换）
+    function initInsightsTabs() {
+      const tabs = document.querySelectorAll('[data-tab]');
+      const panels = document.querySelectorAll('[data-panel]');
+      if (tabs.length === 0) return;
+      tabs.forEach((tab) => {
+        if ((tab as HTMLElement).dataset.bound === '1') return;
+        (tab as HTMLElement).dataset.bound = '1';
+        tab.addEventListener('click', () => {
+          const key = (tab as HTMLElement).dataset.tab;
+          tabs.forEach(t => {
+            t.classList.toggle('is-active', t === tab);
+            t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+          });
+          panels.forEach(p => {
+            const show = (p as HTMLElement).dataset.panel === key;
+            p.classList.toggle('is-active', show);
+            if (show) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
+          });
+        });
+      });
+    }
+
+    function cleanupInsightsTabs() {
+      document.removeEventListener('astro:page-load', initInsightsTabs);
+      document.querySelectorAll('[data-bound="1"]').forEach((el) => {
+        delete (el as HTMLElement).dataset.bound;
+      });
+    }
+
+    initInsightsTabs();
+    document.addEventListener('astro:page-load', initInsightsTabs);
+    document.addEventListener('astro:before-swap', cleanupInsightsTabs);
   </script>
 </body>
 </html>
+
+<style is:global>
+  /* §4.3 AI 优先级行动条 */
+  .adm-ins-priority {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 32px;
+    background: var(--adm-bg);
+    border-bottom: 1px solid var(--adm-border);
+    /* 紧贴 tab 栏上方：用负 margin 抵消 content 的 gap */
+    margin: -24px -32px 0;
+  }
+  .adm-ins-priority-lead { display: flex; flex-direction: column; gap: 2px; width: 172px; flex-shrink: 0; }
+  .adm-ins-priority-badge {
+    font-size: 10px; font-weight: 700; color: var(--adm-brand); letter-spacing: 1.2px;
+  }
+  .adm-ins-priority-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
+  .adm-ins-priority-cards { display: flex; gap: 10px; flex: 1; min-width: 0; }
+  .adm-ins-pcard {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--adm-surface);
+    border-radius: 9px;
+    border: 1px solid;
+    flex: 1; min-width: 0;
+  }
+  .adm-ins-pcard-bad { border-color: #e11d4840; }
+  .adm-ins-pcard-good { border-color: #35bfab40; }
+  .adm-ins-pcard-warn { border-color: #f59e0b40; }
+  .adm-ins-pcard-num {
+    width: 22px; height: 22px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .adm-ins-pcard-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .adm-ins-pcard-title { font-size: 13px; font-weight: 600; color: var(--adm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .adm-ins-pcard-sub { font-size: 11px; color: var(--adm-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Tab 栏 */
+  .adm-ins-tabs {
+    display: flex; gap: 4px;
+    padding: 0 32px;
+    background: var(--adm-surface);
+    border-bottom: 1px solid var(--adm-border);
+    margin: 0 -32px;
+  }
+  .adm-ins-tab {
+    padding: 12px 0;
+    margin-right: 24px;
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--adm-text-dim);
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s ease, border-color 0.12s ease;
+  }
+  .adm-ins-tab:hover { color: var(--adm-text); }
+  .adm-ins-tab:focus-visible { outline: 2px solid var(--adm-brand); outline-offset: -2px; }
+  .adm-ins-tab.is-active { color: var(--adm-text); font-weight: 700; border-bottom-color: var(--adm-brand); }
+
+  .adm-ins-panel { display: none; }
+  .adm-ins-panel.is-active { display: block; }
+
+  /* 两列 */
+  .adm-ins-two-col { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+  .adm-ins-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .adm-ins-col-head { display: flex; flex-direction: column; gap: 2px; }
+  .adm-ins-col-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
+  .adm-ins-col-sub { font-size: 12px; color: var(--adm-text-faint); }
+  .adm-ins-feature-list, .adm-ins-article-list, .adm-ins-theme-list { display: flex; flex-direction: column; gap: 8px; }
+
+  /* 来源/流失卡 */
+  .adm-ins-card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .adm-ins-card-head { display: flex; align-items: center; justify-content: space-between; }
+  .adm-ins-card-title { font-size: 13px; font-weight: 700; color: var(--adm-text); }
+  .adm-ins-src { display: flex; flex-direction: column; gap: 12px; }
+  .adm-ins-src-row { display: flex; flex-direction: column; gap: 5px; }
+  .adm-ins-src-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--adm-text); }
+  .adm-ins-src-bar { height: 6px; background: var(--adm-border-soft); border-radius: 3px; overflow: hidden; }
+  .adm-ins-src-bar > div { height: 100%; border-radius: 3px; }
+
+  .adm-ins-drop-row { display: flex; flex-direction: column; gap: 5px; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border-soft); }
+  .adm-ins-drop-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .adm-ins-drop-top { display: flex; justify-content: space-between; align-items: center; }
+  .adm-ins-drop-label { font-size: 12px; color: var(--adm-text); }
+  .adm-ins-drop-val { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .adm-ins-drop-delta { font-size: 11px; }
+  .adm-ins-drop-note { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--adm-text-faint); }
+
+  @media (max-width: 1100px) {
+    .adm-ins-two-col { grid-template-columns: 1fr; }
+    .adm-ins-priority { flex-direction: column; align-items: flex-start; }
+    .adm-ins-priority-cards { width: 100%; flex-direction: column; }
+  }
+</style>
