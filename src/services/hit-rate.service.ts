@@ -1,5 +1,5 @@
 import type { ContentItem } from '@/knowledge/content-model';
-import type { FeedbackStatus, NeedCase, TopicCandidate } from '@/stores/ports';
+import type { ContentFeedbackEvent, FeedbackStatus, NeedCase, TopicCandidate } from '@/stores/ports';
 import { getRedis } from '@/conversation/store';
 
 /** 反馈细分维度（不含 none 未反馈） */
@@ -123,4 +123,157 @@ export async function getLikeLeaderboard(limit = 50): Promise<Array<{ path: stri
   } catch {
     return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// P1-C01：双信号结果分组
+//
+// hai-razor 保留复杂度：MatchFeedback（需求匹配结果）与 ContentFeedback（内容阅读结果）
+// 是两类不同问题，分开存储、分开计算、并列解释，不合并原始分母。
+//
+// matchOutcome  = NeedCase.feedbackStatus（需求匹配会话的结果）
+// contentOutcome = ContentFeedbackEvent.signal（内容阅读后的明确反馈）
+// 无反馈返回 null，不返回 0% 失败。
+// ---------------------------------------------------------------------------
+
+export interface MatchOutcomeGroup {
+  totalCases: number;
+  responded: number;
+  resolved: number;
+  unresolved: number;
+  /** 命中率 = resolved / responded；无反馈返回 null，不返回 0 */
+  rate: number | null;
+}
+
+export interface ContentOutcomeGroup {
+  totalFeedback: number;
+  useful: number;
+  needsMore: number;
+  outdated: number;
+  /** 有用率 = useful / totalFeedback；无反馈返回 null */
+  usefulRate: number | null;
+}
+
+export interface ContentOutcomeSummary {
+  contentId: string;
+  title: string;
+  href: string;
+  /** 来源选题（可能多个内容对应同一选题，也可能无关联） */
+  sourceTopicIds: string[];
+  /** 缺失关联时显示"内容未关联来源选题"，不忽略 */
+  hasSourceTopic: boolean;
+  matchOutcome: MatchOutcomeGroup;
+  contentOutcome: ContentOutcomeGroup;
+  /** 统计时间范围（取数据里最早 / 最晚时间） */
+  timeRange: { from: string; to: string } | null;
+}
+
+function summarizeMatchOutcome(needCases: NeedCase[]): MatchOutcomeGroup {
+  const totalCases = needCases.length;
+  const responded = needCases.filter(c => c.feedbackStatus !== 'none').length;
+  const resolved = needCases.filter(c => c.feedbackStatus === 'resolved').length;
+  const unresolved = responded - resolved;
+  return {
+    totalCases,
+    responded,
+    resolved,
+    unresolved,
+    rate: responded > 0 ? Math.round((resolved / responded) * 100) : null,
+  };
+}
+
+function summarizeContentOutcome(feedback: ContentFeedbackEvent[]): ContentOutcomeGroup {
+  const totalFeedback = feedback.length;
+  const useful = feedback.filter(f => f.signal === 'useful').length;
+  const needsMore = feedback.filter(f => f.signal === 'needs-more').length;
+  const outdated = feedback.filter(f => f.signal === 'outdated').length;
+  return {
+    totalFeedback,
+    useful,
+    needsMore,
+    outdated,
+    usefulRate: totalFeedback > 0 ? Math.round((useful / totalFeedback) * 100) : null,
+  };
+}
+
+function timeRangeOf(times: string[]): { from: string; to: string } | null {
+  if (times.length === 0) return null;
+  const sorted = [...times].sort();
+  return { from: sorted[0], to: sorted[sorted.length - 1] };
+}
+
+/**
+ * 构建双信号结果分组。
+ *
+ * 输入：已发布内容、选题、NeedCase（用于 matchOutcome）、ContentFeedback（用于 contentOutcome）。
+ * contentFeedback 按 contentId 预分组（由调用方从 store 读取并按内容聚合）。
+ *
+ * 关联路径：NeedCase.topicCandidateId → TopicCandidate → Content.sourceTopicId。
+ * 一篇内容可能对应多个选题（relatedContentIds / producedContentSlug / sourceTopicId 任一命中）。
+ */
+export function buildContentOutcomeSummaries(input: {
+  contents: Pick<ContentItem, 'id' | 'title' | 'href' | 'sourceTopicId'>[];
+  topics: TopicCandidate[];
+  needCases: NeedCase[];
+  /** 按内容 ID 预聚合的内容反馈（来自 ContentFeedback store） */
+  contentFeedbackByContent: Map<string, ContentFeedbackEvent[]>;
+}): ContentOutcomeSummary[] {
+  const { contents, topics, needCases, contentFeedbackByContent } = input;
+
+  // NeedCase 按 topicCandidateId 聚合
+  const casesByTopic = new Map<string, NeedCase[]>();
+  for (const needCase of needCases) {
+    if (!needCase.topicCandidateId) continue;
+    const list = casesByTopic.get(needCase.topicCandidateId) ?? [];
+    list.push(needCase);
+    casesByTopic.set(needCase.topicCandidateId, list);
+  }
+
+  const summaries: ContentOutcomeSummary[] = [];
+
+  for (const content of contents) {
+    // 找出关联此内容的所有选题
+    const relatedTopicIds: string[] = [];
+    for (const topic of topics) {
+      if (contentMatchesTopic(content, topic)) {
+        relatedTopicIds.push(topic.topicId);
+      }
+    }
+    const sourceTopicId = content.sourceTopicId;
+    if (sourceTopicId && !relatedTopicIds.includes(sourceTopicId)) {
+      relatedTopicIds.push(sourceTopicId);
+    }
+
+    // 聚合这些选题下的 NeedCase
+    const relatedCases: NeedCase[] = [];
+    for (const topicId of relatedTopicIds) {
+      const list = casesByTopic.get(topicId);
+      if (list) relatedCases.push(...list);
+    }
+
+    const contentFeedback = contentFeedbackByContent.get(content.id) ?? [];
+
+    const allTimes = [
+      ...relatedCases.map(c => c.createdAt),
+      ...contentFeedback.map(f => f.createdAt),
+    ];
+
+    summaries.push({
+      contentId: content.id,
+      title: content.title,
+      href: content.href,
+      sourceTopicIds: relatedTopicIds,
+      hasSourceTopic: relatedTopicIds.length > 0,
+      matchOutcome: summarizeMatchOutcome(relatedCases),
+      contentOutcome: summarizeContentOutcome(contentFeedback),
+      timeRange: timeRangeOf(allTimes),
+    });
+  }
+
+  // 有任何反馈或关联的数据排前；纯无数据排后
+  return summaries.sort((a, b) => {
+    const aHas = a.matchOutcome.responded + a.contentOutcome.totalFeedback;
+    const bHas = b.matchOutcome.responded + b.contentOutcome.totalFeedback;
+    return bHas - aHas;
+  });
 }

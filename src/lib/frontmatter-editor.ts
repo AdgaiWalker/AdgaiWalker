@@ -35,7 +35,7 @@ export function serializeDoc(doc: ParsedDoc): string {
 
 /** MetadataForm select 选项，与 content.config.ts 枚举一致。 */
 export const FORM_ENUMS = {
-  type: ['knowledge', 'tool', 'idea', 'project', 'community', 'learn', 'learning'],
+  type: ['knowledge', 'tool', 'idea', 'project', 'community', 'learn'],
   form: ['article', 'note', 'diary', 'rant', 'gallery', 'video', 'recipe', 'calligraphy', 'resource', 'project', 'idea', 'lesson'],
   domain: ['ai', 'coding', 'product', 'philosophy', 'life', 'cooking', 'calligraphy', 'reading', 'travel', 'emotion', 'community'],
   intent: ['think', 'record', 'teach', 'share', 'verify', 'showcase', 'reflect', 'connect', 'vent'],

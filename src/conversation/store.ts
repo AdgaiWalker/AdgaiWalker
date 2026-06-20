@@ -27,6 +27,7 @@ export type {
 
 import type {
   ConversationMessage,
+  ContentFeedbackEvent,
   ExperienceEvent,
   Incident,
   RuleCandidate,
@@ -37,6 +38,8 @@ import type {
   NeedCase,
   TopicCandidate,
   UserProfile,
+  WorkItem,
+  WorkItemStatus,
 } from '@/stores/ports';
 
 export interface MatchSession {
@@ -68,6 +71,8 @@ const memoryIncidents = new Map<string, Incident>();
 const memoryExperienceEvents = new Map<string, ExperienceEvent>();
 const memoryRuleCandidates = new Map<string, RuleCandidate>();
 const memorySkillCandidates = new Map<string, SkillCandidate>();
+const memoryWorkItems = new Map<string, WorkItem>();
+const memoryContentFeedback = new Map<string, ContentFeedbackEvent>();
 let memoryMatchCount = 0;
 const memoryCategoryCounts = new Map<string, number>();
 
@@ -918,4 +923,257 @@ export async function saveTopicCandidates(candidates: TopicCandidate[]): Promise
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// WorkItem —— 后台决策聚合根存储（P0-B / hai-razor 包 B）
+//
+// Key 约定：
+//   match:workitem:{id}        单实体
+//   match:workitems            全量索引列表（LPUSH id）
+//   match:workitems:by-state:{status}   按状态索引列表（LPUSH id），便于按队列过滤
+// 内存降级：开发期 memory-development；生产缺 Redis 时写操作由 service 层拒绝（503）。
+// ---------------------------------------------------------------------------
+
+function workItemKey(workItemId: string): string {
+  return `match:workitem:${workItemId}`;
+}
+
+const WORKITEMS_LIST = 'match:workitems';
+const WORKITEMS_ACTIVE_LIST = 'match:workitems:active';
+const TERMINAL_STATUSES: WorkItemStatus[] = ['resolved', 'rejected'];
+
+function workItemStateIndexKey(status: WorkItemStatus): string {
+  return `match:workitems:by-state:${status}`;
+}
+
+/** 仅开发期测试用：清空内存 WorkItem，不触碰 Redis。 */
+export function __resetMemoryWorkItems(): void {
+  memoryWorkItems.clear();
+}
+
+export async function saveWorkItem(workItem: WorkItem): Promise<void> {
+  memoryWorkItems.set(workItem.workItemId, workItem);
+  const redis = getRedis();
+  if (!redis) return;
+
+  const existed = Boolean(await redis.get<WorkItem>(workItemKey(workItem.workItemId)));
+  await redis.set(workItemKey(workItem.workItemId), workItem);
+  if (!existed) {
+    await redis.lpush(WORKITEMS_LIST, workItem.workItemId);
+  }
+  // 维护"活跃"列表：终态移出，非终态移入
+  if (TERMINAL_STATUSES.includes(workItem.status)) {
+    await redis.lrem(WORKITEMS_ACTIVE_LIST, 0, workItem.workItemId);
+  } else if (!existed) {
+    await redis.lpush(WORKITEMS_ACTIVE_LIST, workItem.workItemId);
+  }
+  // 状态索引（按 to 状态入，旧状态出 —— 仅在状态迁移时有用；这里基于"新状态"写入）
+  await redis.lrem(workItemStateIndexKey(workItem.status), 0, workItem.workItemId);
+  await redis.lpush(workItemStateIndexKey(workItem.status), workItem.workItemId);
+}
+
+export async function getWorkItemById(workItemId: string): Promise<WorkItem | null> {
+  const redis = getRedis();
+  const fromMemory = memoryWorkItems.get(workItemId) ?? null;
+  if (!redis) return fromMemory;
+  return (await redis.get<WorkItem>(workItemKey(workItemId))) ?? fromMemory;
+}
+
+export async function listWorkItems(options?: {
+  queue?: WorkItem['queue'];
+  status?: WorkItemStatus | WorkItemStatus[];
+  limit?: number;
+}): Promise<WorkItem[]> {
+  const limit = options?.limit ?? 50;
+  const redis = getRedis();
+
+  let ids: string[];
+  if (redis) {
+    // 有状态过滤时优先用状态索引，减少全量扫描
+    const statusFilter = options?.status
+      ? (Array.isArray(options.status) ? options.status : [options.status])
+      : null;
+    ids = statusFilter && statusFilter.length === 1
+      ? await redis.lrange<string>(workItemStateIndexKey(statusFilter[0]), 0, Math.max(0, limit - 1))
+      : await redis.lrange<string>(WORKITEMS_LIST, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryWorkItems.values()]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, limit)
+      .map(item => item.workItemId);
+  }
+
+  const items = redis
+    ? (await Promise.all(ids.map(id => redis!.get<WorkItem>(workItemKey(id)))))
+        .filter((item): item is WorkItem => item !== null)
+    : ids.map(id => memoryWorkItems.get(id)).filter((item): item is WorkItem => item !== null);
+
+  const statusSet = options?.status
+    ? new Set(Array.isArray(options.status) ? options.status : [options.status])
+    : null;
+  const filtered = items.filter(item => {
+    if (options?.queue && item.queue !== options.queue) return false;
+    if (statusSet && !statusSet.has(item.status)) return false;
+    return true;
+  });
+
+  return filtered
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, limit);
+}
+
+export async function listActiveWorkItems(options?: { limit?: number }): Promise<WorkItem[]> {
+  const limit = options?.limit ?? 50;
+  const redis = getRedis();
+
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(WORKITEMS_ACTIVE_LIST, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryWorkItems.values()]
+      .filter(item => !TERMINAL_STATUSES.includes(item.status))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, limit)
+      .map(item => item.workItemId);
+  }
+
+  const items = redis
+    ? (await Promise.all(ids.map(id => redis!.get<WorkItem>(workItemKey(id)))))
+        .filter((item): item is WorkItem => item !== null)
+    : ids.map(id => memoryWorkItems.get(id)).filter((item): item is WorkItem => item !== null);
+
+  return items
+    .filter(item => !TERMINAL_STATUSES.includes(item.status))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, limit);
+}
+
+export async function deleteWorkItem(workItemId: string): Promise<void> {
+  const existing = memoryWorkItems.get(workItemId);
+  if (existing) {
+    memoryWorkItems.delete(workItemId);
+  }
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.del(workItemKey(workItemId));
+  await redis.lrem(WORKITEMS_LIST, 0, workItemId);
+  await redis.lrem(WORKITEMS_ACTIVE_LIST, 0, workItemId);
+  // 状态索引无法精确知道旧状态，遍历可能的状态清理
+  for (const status of [
+    'proposal', 'pending', 'accepted', 'rejected', 'paused',
+    'acting', 'awaiting-verification', 'resolved',
+  ] as WorkItemStatus[]) {
+    await redis.lrem(workItemStateIndexKey(status), 0, workItemId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ContentFeedback —— 内容阅读反馈存储（P1-A）
+//
+// Key 约定：
+//   content-feedback:event:{id}            单事件
+//   content-feedback:recent                最近事件索引（LPUSH id + LTRIM 1000）
+//   content-feedback:content:{contentId}   按内容索引
+//   content-feedback:topic:{topicId}       按选题索引（sourceTopicId 派生）
+// ---------------------------------------------------------------------------
+
+function contentFeedbackKey(feedbackId: string): string {
+  return `content-feedback:event:${feedbackId}`;
+}
+function contentFeedbackByContentKey(contentId: string): string {
+  return `content-feedback:content:${contentId}`;
+}
+function contentFeedbackByTopicKey(topicId: string): string {
+  return `content-feedback:topic:${topicId}`;
+}
+const CONTENT_FEEDBACK_RECENT = 'content-feedback:recent';
+
+/** 仅开发期测试用：清空内存 ContentFeedback，不触碰 Redis。 */
+export function __resetMemoryContentFeedback(): void {
+  memoryContentFeedback.clear();
+}
+
+function inRange(event: ContentFeedbackEvent, range?: { from?: string; to?: string }): boolean {
+  if (!range) return true;
+  if (range.from && event.createdAt < range.from) return false;
+  if (range.to && event.createdAt > range.to) return false;
+  return true;
+}
+
+async function fetchByIds(ids: string[]): Promise<ContentFeedbackEvent[]> {
+  const redis = getRedis();
+  if (redis) {
+    const items = await Promise.all(ids.map(id => redis!.get<ContentFeedbackEvent>(contentFeedbackKey(id))));
+    return items.filter((e): e is ContentFeedbackEvent => e !== null);
+  }
+  return ids.map(id => memoryContentFeedback.get(id)).filter((e): e is ContentFeedbackEvent => e !== null);
+}
+
+export async function saveContentFeedback(event: ContentFeedbackEvent): Promise<void> {
+  memoryContentFeedback.set(event.feedbackId, event);
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(contentFeedbackKey(event.feedbackId), event);
+  await redis.lpush(CONTENT_FEEDBACK_RECENT, event.feedbackId);
+  await redis.ltrim(CONTENT_FEEDBACK_RECENT, 0, 999);
+  await redis.lpush(contentFeedbackByContentKey(event.contentId), event.feedbackId);
+  if (event.sourceTopicId) {
+    await redis.lpush(contentFeedbackByTopicKey(event.sourceTopicId), event.feedbackId);
+  }
+}
+
+export async function findContentFeedbackByContent(
+  contentId: string,
+  range?: { from?: string; to?: string },
+): Promise<ContentFeedbackEvent[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(contentFeedbackByContentKey(contentId), 0, 499);
+  } else {
+    ids = [...memoryContentFeedback.values()]
+      .filter(e => e.contentId === contentId)
+      .map(e => e.feedbackId);
+  }
+  const items = await fetchByIds(ids);
+  return items.filter(e => e.contentId === contentId && inRange(e, range));
+}
+
+export async function findContentFeedbackByTopic(
+  topicId: string,
+  range?: { from?: string; to?: string },
+): Promise<ContentFeedbackEvent[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(contentFeedbackByTopicKey(topicId), 0, 499);
+  } else {
+    ids = [...memoryContentFeedback.values()]
+      .filter(e => e.sourceTopicId === topicId)
+      .map(e => e.feedbackId);
+  }
+  const items = await fetchByIds(ids);
+  return items.filter(e => e.sourceTopicId === topicId && inRange(e, range));
+}
+
+export async function findRecentContentFeedback(
+  range?: { from?: string; to?: string },
+  limit = 500,
+): Promise<ContentFeedbackEvent[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(CONTENT_FEEDBACK_RECENT, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryContentFeedback.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit)
+      .map(e => e.feedbackId);
+  }
+  const items = await fetchByIds(ids);
+  return items
+    .filter(e => inRange(e, range))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
 }

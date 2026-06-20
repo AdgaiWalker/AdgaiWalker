@@ -108,7 +108,7 @@ const LIFE_DOMAINS = new Set<ContentDomain>([
   'emotion',
 ]);
 
-const LEARNING_TYPES = new Set<LogEntry['data']['type']>(['learn', 'learning']);
+const LEARNING_TYPES = new Set<LogEntry['data']['type']>(['learn']);
 
 export function inferForm(entry: LogEntry): ContentForm {
   if (entry.data.form) return entry.data.form;
@@ -121,7 +121,6 @@ export function inferForm(entry: LogEntry): ContentForm {
     case 'project':
       return 'project';
     case 'learn':
-    case 'learning':
       return 'lesson';
     default:
       return 'article';
@@ -148,7 +147,6 @@ export function inferIntent(entry: LogEntry): ContentIntent {
     case 'community':
       return 'connect';
     case 'learn':
-    case 'learning':
       return 'teach';
     default:
       return entry.data.status === 'verified' ? 'verify' : 'record';

@@ -172,10 +172,15 @@ function creationHint(topic: TopicCandidate): string {
                 const hit = getHitRate(topic.topicId);
                 const related = relatedTitles(topic);
                 return (
-                  <article class="topic-card" data-topic-id={topic.topicId}>
+                  <article class="topic-card"
+                    data-topic-id={topic.topicId}
+                    data-source={topic.source === 'inspiration' ? 'walker-thesis' : 'user-demand'}
+                    data-title={topic.title}
+                    data-representative={topic.representativeNeed}
+                  >
                     <div class="topic-head">
                       <span class="topic-priority" style={`background:${priority.bg};color:${priority.color}`}>{priority.label}</span>
-                      <span class="topic-chip">{topic.source === 'inspiration' ? '站主灵感' : `${topic.density} 条需求`}</span>
+                      <span class="topic-chip">{topic.source === 'inspiration' ? '站主主张（无用户证据）' : `${topic.density} 条需求`}</span>
                       {hit.feedbackGiven > 0 && (
                         <span class="topic-chip">命中 {hit.rate}% · resolved {hit.resolved} / stuck {hit.stuck}</span>
                       )}
@@ -232,18 +237,87 @@ function creationHint(topic: TopicCandidate): string {
         const status = el.dataset.action;
         if (!topicId || !status) return;
         const card = el.closest('.topic-card') as HTMLElement | null;
+
+        // P1-D02/D03：暂缓和忽略需要理由；采纳同时创建真实 WorkItem（保留来源身份）。
+        // 不把站主灵感伪装成用户需求 —— walker-thesis 队列明确标注无用户证据。
+        let reason = '';
+        if (status === 'deferred') {
+          reason = window.prompt('暂缓需要说明复查条件：', '暂缓观察，等待更多证据') ?? '';
+          if (!reason.trim()) return;
+        } else if (status === 'ignored') {
+          reason = window.prompt('忽略需要说明理由：', '与当前方向不一致') ?? '';
+          if (!reason.trim()) return;
+        }
+
         try {
           const res = await fetch('/api/insights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topicId, status }),
+            body: JSON.stringify({ topicId, status, note: reason || undefined }),
           });
           const data = await res.json();
-          if (res.ok && data.ok) {
-            if (card) card.style.opacity = '0.35';
-          } else {
+          if (!res.ok || !data.ok) {
             alert(data.error || '操作失败');
+            return;
           }
+
+          // P1-D03：采纳时创建真实 WorkItem 决定（demand-backed / walker-thesis 队列）
+          // 暂缓 / 忽略也创建 WorkItem 保存理由，保留审计（不丢失复查条件 / 忽略理由）。
+          if (status === 'accepted' || status === 'deferred' || status === 'ignored') {
+            const source = card?.dataset.source === 'walker-thesis' ? 'walker-thesis' : 'user-demand';
+            const title = card?.dataset.title ?? '选题';
+            const representative = card?.dataset.representative ?? '';
+            const evidenceSummary = source === 'walker-thesis'
+              ? '站主主张，0 条用户证据，需等待现实验证'
+              : (representative || '来自需求簇的选题');
+            const outcome = status === 'accepted' ? 'accepted'
+              : status === 'deferred' ? 'paused'
+              : 'rejected';
+            const workItemNote = status === 'accepted'
+              ? '采纳选题，进入创作判断'
+              : reason;
+
+            // 先创建 proposal（带证据），再作出决定（采纳 / 暂缓 / 忽略）
+            const createRes = await fetch('/api/admin/decisions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                queue: source,
+                title,
+                summary: evidenceSummary,
+                priorityBand: status === 'ignored' ? 'observe' : 'week',
+                evidenceRefs: [{
+                  evidenceId: `ev_topic_${topicId}`,
+                  sourceType: source === 'walker-thesis' ? 'walker-thesis' : 'need-case',
+                  sourceId: topicId,
+                  occurredAt: new Date().toISOString(),
+                  summary: evidenceSummary,
+                  qualityStatus: source === 'walker-thesis' ? 'unverified' : 'verified-source',
+                }],
+                priorityReasons: [source === 'walker-thesis' ? '站主主动提出，非市场结论' : '需求聚类选题'],
+                topicId,
+                requestDecision: true,
+              }),
+            });
+            const created = await createRes.json().catch(() => null);
+            if (createRes.ok && created?.item?.workItemId) {
+              // 作出决定（保留理由用于审计）
+              const decideRes = await fetch(`/api/admin/decisions/${created.item.workItemId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ decide: { outcome, reason: workItemNote } }),
+              });
+              if (!decideRes.ok) {
+                const err = await decideRes.json().catch(() => ({}));
+                console.warn('工作项决定失败（选题状态已更新）:', err.error || decideRes.status);
+              }
+            } else if (!createRes.ok) {
+              const err = await createRes.json().catch(() => ({}));
+              alert(`选题状态已更新，但工作项创建失败：${err.error || createRes.status}`);
+            }
+          }
+
+          if (card) card.style.opacity = '0.35';
         } catch {
           alert('网络异常，请重试。');
         }

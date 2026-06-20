@@ -1,0 +1,84 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { BlockWidth } from '@/knowledge/block-types';
+
+interface Props {
+  title?: string;
+  tags?: string[];
+  width?: BlockWidth;
+}
+
+const { title, tags = [], width = 'normal' } = Astro.props;
+---
+<div class:list={['cs-block', `cs-block--${width}`, 'not-prose']}>
+  <div class="cs-prompt my-6 panel-glass border-l-2 border-l-gold/30 overflow-hidden">
+    <div class="cs-prompt-header flex items-center gap-2 px-4 py-2 text-xs font-bold text-parchment/50 uppercase tracking-wider border-b border-white/[0.06]">
+      <Icon name="lucide:terminal" width={14} height={14} class="text-gold/50" />
+      PROMPT
+      {title && (
+        <span class="text-parchment/40 text-xs font-body normal-case tracking-normal">— {title}</span>
+      )}
+      <div class="ml-auto flex items-center gap-2">
+        {tags.length > 0 && (
+          <div class="flex gap-1">
+            {tags.map(tag => (
+              <span class="tag-pill">{tag}</span>
+            ))}
+          </div>
+        )}
+        <button
+          class="cs-copy-btn px-2 py-1 rounded bg-white/[0.06] text-xs text-parchment/40 hover:bg-white/[0.1] hover:text-parchment/60 cursor-pointer border-none transition-all font-mono"
+          data-prompt-target="cs-prompt-body"
+        >
+          复制
+        </button>
+      </div>
+    </div>
+    <div class="cs-prompt-body px-5 py-4 text-parchment/70 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<script>
+  let promptAbort: AbortController | null = null;
+  let promptTimers: ReturnType<typeof setTimeout>[] = [];
+
+  function cleanupPromptBlocks() {
+    promptAbort?.abort();
+    promptAbort = null;
+    promptTimers.forEach((timer) => clearTimeout(timer));
+    promptTimers = [];
+  }
+
+  function initPromptBlocks() {
+    cleanupPromptBlocks();
+    promptAbort = new AbortController();
+    const { signal } = promptAbort;
+
+    document.querySelectorAll<HTMLButtonElement>('.cs-copy-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const block = btn.closest('.cs-prompt');
+        const content = block?.querySelector('.cs-prompt-body')?.textContent?.trim();
+        if (!content) return;
+
+        try {
+          await navigator.clipboard.writeText(content);
+          const original = btn.textContent ?? '复制';
+          btn.textContent = '已复制';
+          const timer = setTimeout(() => { btn.textContent = original; }, 2000);
+          promptTimers.push(timer);
+        } catch {
+          btn.textContent = '失败';
+        }
+      }, { signal });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initPromptBlocks);
+  document.addEventListener('astro:before-swap', cleanupPromptBlocks);
+</script>
+
+<style>
+  .cs-prompt { break-inside: avoid; }
+</style>

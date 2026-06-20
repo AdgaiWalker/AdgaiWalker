@@ -64,9 +64,6 @@ describe('itemBelongsToSpace — 空间归属判定', () => {
     it('type=learn', () => {
       expect(itemBelongsToSpace(makeItem({ type: 'learn' }), 'learning')).toBe(true);
     });
-    it('type=learning', () => {
-      expect(itemBelongsToSpace(makeItem({ type: 'learning' }), 'learning')).toBe(true);
-    });
     it('form=lesson', () => {
       expect(itemBelongsToSpace(makeItem({ form: 'lesson' }), 'learning')).toBe(true);
     });

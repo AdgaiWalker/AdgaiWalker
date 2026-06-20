@@ -91,7 +91,7 @@ export function createManagedInviteCodeStore() {
     async listAll(): Promise<ManagedInviteCode[]> {
       const redis = getRedis();
       if (!redis) return [...memoryCodes.values()];
-      const codes = await redis.smembers<string>(SET_KEY);
+      const codes = await redis.smembers<string[]>(SET_KEY);
       const items = await Promise.all(codes.map((c) => redis.get<ManagedInviteCode>(codeKey(c))));
       return items.filter((x): x is ManagedInviteCode => x !== null);
     },

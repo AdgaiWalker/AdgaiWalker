@@ -1,4 +1,5 @@
 import { gsap } from 'gsap';
+import { resolveTocScrollContainer } from './toc-highlight.logic';
 
 /**
  * toc-highlight.ts — TOC 滚动跟随高亮
@@ -29,15 +30,29 @@ function initTocInstance(toc: HTMLElement): (() => void) | null {
     if (slug === activeSlug) return;
     activeSlug = slug;
     
-    let activeLink: HTMLElement | null = null;
+    const activeLink = Array.from(tocLinks).find((link) => link.dataset.tocSlug === slug) ?? null;
     tocLinks.forEach((link) => {
       if (link.dataset.tocSlug === slug) {
         link.classList.add('active');
-        activeLink = link;
       } else {
         link.classList.remove('active');
       }
     });
+
+    // 滚动 TOC 容器，让活跃项保持在可见区内
+    if (activeLink) {
+      const container = resolveTocScrollContainer(toc);
+      const linkTop = activeLink.offsetTop;
+      const scrollTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
+      const linkHeight = activeLink.offsetHeight;
+
+      if (linkTop < scrollTop + 8) {
+        container.scrollTop = linkTop - 8;
+      } else if (linkTop + linkHeight > scrollTop + containerHeight - 8) {
+        container.scrollTop = linkTop + linkHeight - containerHeight + 8;
+      }
+    }
 
     // 联动 Liquid Indicator 平滑粘弹性滑移动效 (Metaball Stretch & Snap)
     if (indicator && activeLink) {
@@ -91,6 +106,27 @@ function initTocInstance(toc: HTMLElement): (() => void) | null {
     }, 100);
   }
 
+  // 初始激活：IntersectionObserver 在首屏可能没有任何标题落入 rootMargin 区间，
+  // 导致首屏无 active 项。按当前滚动位置找出最接近顶部的可见标题作为初始 active；
+  // 若所有标题都在触发线下方（页面顶部），则激活第一个标题，保证"活跃目录项始终存在"（H0-01）。
+  const resolveActiveByScroll = (): string | null => {
+    const scrollY = window.scrollY;
+    const triggerLine = scrollY + 120; // 略低于视口顶部，与 rootMargin -80px 区间一致
+    let candidate: string | null = null;
+    let firstSlug: string | null = null;
+    headingMap.forEach((heading, slug) => {
+      if (firstSlug === null) firstSlug = slug;
+      if (heading.getBoundingClientRect().top + scrollY <= triggerLine) {
+        candidate = slug;
+      }
+    });
+    return candidate ?? firstSlug;
+  };
+  const initialActive = resolveActiveByScroll();
+  if (initialActive) {
+    setActive(initialActive);
+  }
+
   // IntersectionObserver：检测哪些标题进入视口
   const observer = new IntersectionObserver(
     (entries) => {
@@ -111,16 +147,21 @@ function initTocInstance(toc: HTMLElement): (() => void) | null {
 
   headingMap.forEach((heading) => observer.observe(heading));
 
-  // 滚动到底部时，激活最后一个标题
+  // 滚动时按真实滚动位置重算 active。滚动位置是可靠真相源，比 IntersectionObserver
+  // 更能保证"活跃目录项始终存在且正确"（H0-01），尤其在即时滚动（instant）与标题间隙时。
   const handleScroll = (): void => {
     const scrollBottom = window.innerHeight + window.scrollY;
     const docHeight = document.documentElement.scrollHeight;
+    // 接近文档底部，强制激活最后一个标题
     if (docHeight - scrollBottom < 100) {
       const slugs = Array.from(headingMap.keys());
       if (slugs.length > 0) {
         setActive(slugs[slugs.length - 1]);
       }
+      return;
     }
+    const candidate = resolveActiveByScroll();
+    if (candidate) setActive(candidate);
   };
 
   window.addEventListener('scroll', handleScroll, { passive: true });

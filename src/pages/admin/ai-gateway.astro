@@ -1,12 +1,16 @@
 ---
 // /admin/ai-gateway — AI Gateway 服务健康台（spec §4.5）
 // 监控仪表页模板：健康概览 + 调用趋势 + 服务商/预算卡 + 调用日志。
+//
+// P0-A02：本页所有数字必须来自真实 stats 或显式标记为「未接入」。
+// 不写死成本、不把零调用伪装成 100% 成功率、不模拟降级时刻。
 import { isAdmin } from '@/lib/admin-auth';
 import { getGatewayConfig, PROVIDER_PRESETS, getGatewayStats } from '@/agent/gateway-config';
 import { readGatewayLogs } from '@/agent/gateway';
 import AdminLayout from '@/components/admin/AdminLayout.astro';
 import HealthMetric from '@/components/admin/HealthMetric.astro';
 import LogRow from '@/components/admin/LogRow.astro';
+import { deriveAdminSystemHealth } from '@/components/admin/admin-shell-state';
 
 export const prerender = false;
 
@@ -17,27 +21,35 @@ if (!isAdmin(Astro.request)) {
 const config = await getGatewayConfig();
 const stats = await getGatewayStats();
 const logs = await readGatewayLogs(50);
+const checkedAt = new Date().toISOString();
 
 const currentProvider = PROVIDER_PRESETS.find(p => p.id === config.provider);
 
-// §4.5 健康概览：成功率/延迟/QPS/成本（真实 stats + spec 语义染色）
+// §4.5 健康概览：成功率/延迟/QPS —— 零调用一律显示「未知」，不假装 100%
 const totalCalls = stats.totalCalls;
-const successRate = totalCalls > 0 ? Math.round((stats.aiCalls / totalCalls) * 100) : 100;
+const successRate: number | null = totalCalls > 0 ? Math.round((stats.aiCalls / totalCalls) * 100) : null;
 const degraded = stats.fallbackCalls > 0;
 const avgLatency = stats.avgLatencyMs;
 const latencyHigh = avgLatency > 1500;
-// QPS：用 hourlyDistribution 取今日已知，spec 标注「正常区间」
-const todayQps = stats.hourlyDistribution.reduce((s, h) => s + h.count, 0);
-// 成本：后端无成本聚合，spec 写死 ¥48/200
-const costUsed = 48; const costCap = 200; const costPct = Math.round((costUsed / costCap) * 100);
+// 今日调用总数（hourlyDistribution 聚合）。原变量名 todayQps 与标签"/min"语义不符，已正名。
+const todayCalls = stats.hourlyDistribution.reduce((s, h) => s + h.count, 0);
 
-// 24h 柱状图数据：用 hourlyDistribution（0-23 时），降级时刻用 fallbackCalls 比例标红
+// 24h 柱状图数据：用 hourlyDistribution（0-23 时）
 const hourly = stats.hourlyDistribution.length > 0
   ? stats.hourlyDistribution
   : Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0 }));
 const hourMax = Math.max(1, ...hourly.map(h => h.count));
-// 模拟降级分布（spec：rose 色 = 降级时刻）—— 真实 fallback 占比
-const fallbackRatio = totalCalls > 0 ? stats.fallbackCalls / totalCalls : 0;
+// 真实降级小时集合：从已读日志按 timestamp 的 hour 聚合 mode!=ai 的记录。
+// 不再用 `h.hour % 7 === 0` 模拟降级分布。
+const degradedHours = new Set<number>();
+for (const log of logs) {
+  if (log.mode === 'ai' || !log.timestamp) continue;
+  degradedHours.add(new Date(log.timestamp).getHours());
+}
+
+// 降级最近时间：从真实日志里找最近一条非 ai 记录，不写死「2h 前」
+const lastFallbackLog = logs.find(l => l.mode === 'fallback' || l.mode === 'blocked');
+const lastFallbackRel = lastFallbackLog?.timestamp ? relTime(lastFallbackLog.timestamp) : null;
 
 // LogRow 映射
 function modeOf(m: string): 'ai' | 'fallback' | 'blocked' {
@@ -65,8 +77,14 @@ function relTime(ts: any): string {
 }
 
 const showRows = logs.slice(0, 5);
-// 降级中状态（spec 顶栏：「降级中 · 2h 前」rose soft 底 + 红点）
 const degradedActive = degraded;
+
+// 系统健康由真实事实推导，零数据落 unknown，缺配置落 unavailable
+const gatewayConfigured = Boolean(config.apiKey) && Boolean(config.provider);
+const systemHealth = deriveAdminSystemHealth({
+  configured: gatewayConfigured,
+  stats,
+});
 
 const subtitle = '访客提问/匹配的命脉 · 服务健康台';
 ---
@@ -83,8 +101,10 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
 <body>
   <AdminLayout
     active="/admin/ai-gateway"
-    title={`AI Gateway${degradedActive ? '' : ''}`}
+    title="AI Gateway"
     subtitle={subtitle}
+    systemHealth={systemHealth}
+    systemHealthCheckedAt={checkedAt}
   >
     <Fragment slot="actions">
       <button class="adm-btn" type="button">
@@ -94,7 +114,7 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
     {/* §4.5 状态灯胶囊（顶栏副信息区下方独立一行） */}
     {degradedActive && (
       <div class="adm-gw-statuspill adm-tag adm-tag-bad adm-tag-pill">
-        <span class="adm-tag-dot"></span>降级中 · 2h 前
+        <span class="adm-tag-dot"></span>降级中{lastFallbackRel ? ` · ${lastFallbackRel}` : ''}
       </div>
     )}
 
@@ -102,39 +122,43 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
     <div class="adm-gw-health">
       <HealthMetric
         label="成功率"
-        value={successRate}
-        unit="%"
-        icon={degraded ? 'triangle-alert' : 'check'}
-        iconKind={degraded ? 'bad' : 'good'}
-        trend={degraded ? `↓${Math.max(0, 100 - successRate)}% · 昨日降级 ${stats.fallbackCalls} 次` : '↑ 稳定'}
-        trendKind={degraded ? 'bad' : 'good'}
+        value={successRate === null ? '--' : successRate}
+        unit={successRate === null ? '' : '%'}
+        icon={degraded ? 'triangle-alert' : successRate === null ? 'help-circle' : 'check'}
+        iconKind={degraded ? 'bad' : successRate === null ? 'neutral' : 'good'}
+        trend={successRate === null
+          ? '尚无调用记录，无法计算成功率'
+          : degraded
+            ? `↓${Math.max(0, 100 - successRate)}% · 降级 ${stats.fallbackCalls} 次`
+            : '↑ 稳定'}
+        trendKind={successRate === null ? 'neutral' : degraded ? 'bad' : 'good'}
       />
       <HealthMetric
         label="平均延迟"
-        value={(avgLatency / 1000).toFixed(1)}
-        unit="s"
+        value={totalCalls > 0 ? (avgLatency / 1000).toFixed(1) : '--'}
+        unit={totalCalls > 0 ? 's' : ''}
         icon={latencyHigh ? 'clock' : 'zap'}
-        iconKind={latencyHigh ? 'warn' : 'good'}
-        trend={latencyHigh ? `↑ 偏高` : '正常区间'}
-        trendKind={latencyHigh ? 'warn' : 'good'}
+        iconKind={latencyHigh ? 'warn' : totalCalls > 0 ? 'good' : 'neutral'}
+        trend={totalCalls === 0 ? '尚无调用记录' : latencyHigh ? '↑ 偏高' : '正常区间'}
+        trendKind={totalCalls === 0 ? 'neutral' : latencyHigh ? 'warn' : 'good'}
       />
       <HealthMetric
-        label="今日 QPS"
-        value={todayQps}
-        unit="/min"
+        label="今日调用"
+        value={todayCalls}
+        unit="次"
         icon="trending-up"
-        iconKind="good"
-        trend="↑ 正常区间"
-        trendKind="good"
+        iconKind={todayCalls > 0 ? 'good' : 'neutral'}
+        trend={todayCalls > 0 ? '近 24 小时聚合' : '尚无调用记录'}
+        trendKind={todayCalls > 0 ? 'good' : 'neutral'}
       />
       <HealthMetric
-        label="本月成本"
-        value={`¥${costUsed}`}
-        unit={`/ ${costCap}`}
-        icon="wallet"
-        iconKind={costPct >= 80 ? 'bad' : 'warn'}
-        trend={`${costPct}% · 接近预算`}
-        trendKind={costPct >= 80 ? 'bad' : 'warn'}
+        label="降级次数"
+        value={stats.fallbackCalls + stats.blockedCalls}
+        unit="次"
+        icon={degraded ? 'triangle-alert' : 'shield-check'}
+        iconKind={degraded ? 'bad' : 'good'}
+        trend={degraded ? '存在 fallback / blocked 调用' : '无降级记录'}
+        trendKind={degraded ? 'bad' : 'good'}
       />
     </div>
 
@@ -152,7 +176,7 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
         <div class="adm-gw-bars">
           {hourly.map((h) => {
             const heightPct = Math.round((h.count / hourMax) * 100);
-            const isDegraded = h.count > 0 && fallbackRatio > 0 && (h.hour % 7 === 0);
+            const isDegraded = h.count > 0 && degradedHours.has(h.hour);
             return (
               <div class="adm-gw-bar-col" title={`${h.hour}:00 · ${h.count} 次`}>
                 <div class="adm-gw-bar-track">
@@ -175,12 +199,14 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
         {/* 服务商卡 */}
         <div class="adm-gw-provider adm-card">
           <div class="adm-gw-provider-head">
-            <span class="adm-gw-provider-logo">DS</span>
+            <span class="adm-gw-provider-logo">{(currentProvider?.name ?? config.provider).slice(0, 2)}</span>
             <div class="adm-gw-provider-info">
               <div class="adm-gw-provider-name">{currentProvider?.name ?? config.provider} · {config.model}</div>
-              <div class="adm-gw-provider-url">baseUrl 自定义</div>
+              <div class="adm-gw-provider-url">{config.baseUrl || 'baseUrl 未配置'}</div>
             </div>
-            <span class="adm-tag adm-tag-good adm-tag-pill"><span class="adm-tag-dot"></span>启用中</span>
+            <span class:list={['adm-tag', 'adm-tag-pill', gatewayConfigured ? 'adm-tag-good' : 'adm-tag-warn']}>
+              <span class="adm-tag-dot"></span>{gatewayConfigured ? '已配置' : '缺 API Key'}
+            </span>
           </div>
           <div class="adm-gw-provider-fallback">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
@@ -188,7 +214,7 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
           </div>
         </div>
 
-        {/* 预算与限流卡 */}
+        {/* 预算与限流卡 —— P0-A02：成本/限流/熔断均无后端实现，显示「未接入」，不写死假数字 */}
         <div class="adm-gw-budget adm-card">
           <div class="adm-gw-budget-head">
             <span class="adm-gw-chart-title">预算与限流</span>
@@ -196,26 +222,25 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
           <div class="adm-gw-cost">
             <div class="adm-gw-cost-top">
               <span>本月成本</span>
-              <span class="adm-mono">¥{costUsed} / {costCap} · {costPct}%</span>
+              <span class="adm-mono adm-gw-na">未接入</span>
             </div>
             <div class="adm-gw-cost-bar">
-              <div class="adm-gw-cost-fill" style={`width:${costPct}%;background:var(--adm-warn)`}></div>
-              {/* 25% 提醒线 */}
-              <div class="adm-gw-cost-mark" style="left:25%" title="25% 提醒线"></div>
+              <div class="adm-gw-cost-fill" style="width:0%;background:var(--adm-neutral)"></div>
             </div>
+            <p class="adm-gw-na-note">后端尚未记录调用成本。接入成本聚合前不显示预算占用。</p>
           </div>
           <div class="adm-gw-thresholds">
             <div class="adm-gw-th-row">
               <span class="adm-gw-th-label">单日成本上限</span>
-              <span class="adm-mono">¥15/天</span>
+              <span class="adm-mono adm-gw-na">未配置</span>
             </div>
             <div class="adm-gw-th-row">
               <span class="adm-gw-th-label">单访客频率限制</span>
-              <span class="adm-mono">20次/小时</span>
+              <span class="adm-mono adm-gw-na">未配置</span>
             </div>
-            <div class="adm-gw-th-row adm-gw-th-row-bad">
+            <div class="adm-gw-th-row">
               <span class="adm-gw-th-label">熔断阈值</span>
-              <span class="adm-mono" style="color:var(--adm-bad)">连续5次失败</span>
+              <span class="adm-mono adm-gw-na">未实现</span>
             </div>
           </div>
         </div>
@@ -327,7 +352,8 @@ const subtitle = '访客提问/匹配的命脉 · 服务健康台';
   .adm-gw-cost-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--adm-text); }
   .adm-gw-cost-bar { height: 8px; background: var(--adm-border-soft); border-radius: 4px; overflow: visible; position: relative; }
   .adm-gw-cost-fill { height: 100%; border-radius: 4px; }
-  .adm-gw-cost-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--adm-text-faint); }
+  .adm-gw-na { color: var(--adm-text-faint); }
+  .adm-gw-na-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--adm-text-faint); }
 
   .adm-gw-thresholds { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--adm-border-soft); }
   .adm-gw-th-row { display: flex; justify-content: space-between; font-size: 12px; }

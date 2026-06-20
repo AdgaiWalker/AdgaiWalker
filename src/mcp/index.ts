@@ -62,7 +62,7 @@ server.tool(
   '多条件过滤查询 Walker 的内容库（文章、点子、工具、项目、学习指南等）',
   {
     type: z
-      .enum(['knowledge', 'tool', 'idea', 'project', 'community', 'learn', 'learning'])
+      .enum(['knowledge', 'tool', 'idea', 'project', 'community', 'learn'])
       .optional()
       .describe('内容类型'),
     status: z

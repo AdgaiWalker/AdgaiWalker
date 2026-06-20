@@ -3,15 +3,16 @@
  * /posts/[slug] — 统一文章详情页
  * 沉浸式阅读：内容直接浮在空间里
  */
-import ArticleLayout from '../../layouts/ArticleLayout.astro';
-import PromptBlock from '../../components/content/PromptBlock.astro';
-import DialogueBubble from '../../components/content/DialogueBubble.astro';
+import ContentShell from '../../layouts/ContentShell.astro';
+import BlockPrompt from '../../components/blocks/BlockPrompt.astro';
+import BlockDialogue from '../../components/blocks/BlockDialogue.astro';
+import BlockVideo from '../../components/blocks/BlockVideo.astro';
+import BlockFeedback from '../../components/blocks/BlockFeedback.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
 import GiscusWidget from '../../components/GiscusWidget.astro';
 import AdminEditBar from '../../components/admin/AdminEditBar.astro';
 import InlineEditor from '../../components/admin/InlineEditor.astro';
 import VersionHistory from '../../components/admin/VersionHistory.astro';
-import BilibiliVideo from '../../components/content/BilibiliVideo.astro';
 import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, buildPostPath } from '@/shared/routes';
 import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/knowledge/content';
@@ -30,21 +31,14 @@ type ArticleVideo = CollectionEntry<'log'>['data']['videos'][number];
 
 export async function getStaticPaths() {
   const entries = await getPublishedPosts();
-  const articleList = entries.map(articleEntry => ({
-    id: articleEntry.id,
-    title: articleEntry.data.title,
-    date: articleEntry.data.date,
-    tags: articleEntry.data.tags,
-    summary: articleEntry.data.summary,
-  }));
 
   return entries.map(entry => ({
     params: { slug: entry.id },
-    props: { entry, articleList, allEntries: entries },
+    props: { entry, allEntries: entries },
   }));
 }
 
-const { entry, articleList, allEntries } = Astro.props;
+const { entry, allEntries } = Astro.props;
 
 if (!entry) {
   return Astro.redirect('/404');
@@ -52,7 +46,7 @@ if (!entry) {
 
 const { Content, headings } = await render(entry);
 
-const components = { PromptBlock, DialogueBubble, BilibiliVideo };
+const components = { BlockPrompt, BlockDialogue, BlockVideo };
 
 const rawBody = entry.body || '';
 const { description, readingTime } = summarizeArticleBody(rawBody, CHARS_PER_MINUTE_ZH);
@@ -83,18 +77,15 @@ const seriesNext = hasSeries && currentSeriesIndex < seriesEntries.length - 1 ? 
 const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
 ---
 
-<ArticleLayout
-  title={`${entry.data.title} — Walker`}
-  description={description}
-  ogTitle={entry.data.title}
-  ogDescription={entry.data.summary ?? entry.data.description ?? description}
-  ogImage={ogImage ?? '/images/hero-bg.png'}
-  canonicalUrl={Astro.url.href}
-  headings={headings}
-  currentSlug={entry.id}
-  articleList={articleList}
->
-  <article data-pagefind-body>
+	<ContentShell
+	  title={`${entry.data.title} — Walker`}
+	  description={description}
+	  ogTitle={entry.data.title}
+	  ogDescription={entry.data.summary ?? entry.data.description ?? description}
+	  ogImage={ogImage ?? '/images/hero-bg.png'}
+	  canonicalUrl={Astro.url.href}
+	  headings={headings}
+	>
     {/* 面包屑 — 方向感 */}
     <div class="article-breadcrumb">
       <a href={POSTS} class="breadcrumb-link">
@@ -144,6 +135,10 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
 
     {/* 就地编辑器（预渲染隐藏，admin 进入编辑态时激活） */}
     <InlineEditor slug={entry.id} mode="inline" />
+
+    {/* 内容反馈（P1-B02）—— 正文结束后采集"有用 / 需补充 / 已过时"明确信号，
+        与底部 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈 */}
+    <BlockFeedback contentId={entry.id} />
 
     {/* 配套视频 */}
     {videos.length > 0 && (
@@ -279,10 +274,9 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
         <LikeCounter pagePath={buildPostPath(entry.id)} />
       </div>
     </footer>
-  </article>
   <AdminEditBar slug={entry.id} visibility={entry.data.visibility ?? (entry.data.published ? 'public' : 'draft')} />
   <VersionHistory />
-</ArticleLayout>
+	</ContentShell>
 
 <style>
   /* ===== 面包屑 ===== */

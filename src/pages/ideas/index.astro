@@ -2,13 +2,14 @@
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { STATUS_LABELS, SITE_EMAIL } from '@/shared/constants';
 import { Icon } from 'astro-icon/components';
-import { PUBLIC_DEMAND_SIGNAL_MIN, getIdeasPageData } from '@/knowledge/ideas';
+import { PUBLIC_DEMAND_SIGNAL_MIN } from '@/knowledge/ideas';
+import { createIdeasService } from '@/services/ideas.service';
 import { formatDateCompact } from '@/shared/format';
 import { buildPostPath } from '@/shared/routes';
 
 export const prerender = true;
 
-const { ideas, renderedIdeas } = await getIdeasPageData();
+const { ideas, renderedIdeas } = await createIdeasService().getIdeasPageData();
 const statusLabel = STATUS_LABELS;
 ---
 

@@ -1,0 +1,31 @@
+---
+import type { BlockWidth } from '@/knowledge/block-types';
+
+interface Props {
+  bvid: string;
+  page?: number;
+  title?: string;
+  width?: BlockWidth;
+}
+
+const { bvid, page = 1, title = '视频', width = 'full' } = Astro.props;
+const params = new URLSearchParams({
+  bvid,
+  page: String(page),
+  high_quality: '1',
+  as_wide: '1',
+  allowfullscreen: 'true',
+});
+const src = `https://player.bilibili.com/player.html?${params.toString()}`;
+---
+<div class:list={['cs-block', `cs-block--${width}`, 'not-prose']}>
+  <div class="cs-video-wrapper aspect-video w-full rounded-2xl overflow-hidden shadow-xl border border-white/[0.08] bg-abyss/50 relative">
+    <iframe
+      src={src}
+      title={title}
+      allowfullscreen
+      loading="lazy"
+      class="absolute inset-0 w-full h-full"
+    ></iframe>
+  </div>
+</div>

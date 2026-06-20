@@ -19,7 +19,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 跑单个测试文件：`npx vitest run src/services/perception.service.test.ts`。
 
-测试基于 Vitest（`vitest.config.ts`），测试文件位于 `src/services/*.test.ts` 和 `src/stores/*.test.ts`（含 `agent-orchestrator`、`perception`、`matching`、`visibility`、`invite-access`、`profile`、`brief`、`hit-rate`、`match-session.store` 等）。
+测试基于 Vitest（`vitest.config.ts`），默认 node 环境。测试文件分布在 `src/**/*.test.ts`：`src/services/`、`src/stores/`、`src/knowledge/`、`src/lib/`、`src/agent/`，以及 `src/scripts/`（客户端脚本测试）。客户端脚本测试（如 `tool-match-chat.test.ts`、`with-lifecycle.test.ts`）因涉及 DOM，在文件首行用 `// @vitest-environment happy-dom` 注释切换到 happy-dom 环境（`happy-dom` 是 devDependency，按文件启用，不影响其他 node 环境测试）。
 
 **验证三件套（改代码后都要跑，缺一不可）**：`npx astro check`（类型，tsc 严格检查）→ `npm run test`（单元逻辑）→ `npm run build`（构建 + SSR 渲染）。注意 `build` / `build:mcp` 走 esbuild **只转译、不做类型检查**——未定义引用、类型不匹配不会被报，运行时才 ReferenceError；只有 `astro check` 抓类型错。所以改任何 `.ts` 后必须先跑 `astro check`，不能只靠 build / test 判定通过。
 
@@ -60,7 +60,9 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 - **`log`**：博客文章、想法、工具、项目和学习指南，来源 `src/content/log/`。支持 `.md` 和 `.mdx`。Schema 包含以下字段：
   - 基础：`title`、`date`、`updated`（可选）、`tags`、`category`、`published`、`visibility`（`public`/`draft`/`private`，可选，优先于 `published`）、`summary`、`description`、`cover`、`rating`（1-5）、`url`、`qrCode`。
-  - 分类：`type`（枚举：`knowledge`、`tool`、`idea`、`project`、`community`、`learn`、`learning`）、`status`（枚举：`thinking`、`validating`、`building`、`verified`、`archived`）。
+  - 分类：`type`（枚举：`knowledge`、`tool`、`idea`、`project`、`community`、`learn`）、`status`（枚举：`thinking`、`validating`、`building`、`verified`、`archived`）。
+
+  > ⚠️ **`learning` 命名陷阱**：曾存在内容 type 别名 `learning`（已删除，0 内容使用）。现仓库里的 `'learning'` 字面量有三重不同含义，**不要混淆**：(1) `ContentSpace='learning'`（内容宇宙的"学习笔记"空间概念，保留）；(2) `NeedCategory='learning'`（需求分类，`profiles/resource-index.ts` + `agent/match.ts`，保留）；(3) `AbilityType='learning-path'`（能力类型，保留）。内容 type 只剩 `learn`。
   - 内容模型：`form`（`article`/`note`/`diary`/`rant`/`gallery`/`video`/`recipe`/`calligraphy`/`resource`/`project`/`idea`/`lesson`）、`domain`（`ai`/`coding`/`product`/`philosophy`/`life`/`cooking`/`calligraphy`/`reading`/`travel`/`emotion`/`community`）、`intent`（`think`/`record`/`teach`/`share`/`verify`/`showcase`/`reflect`/`connect`/`vent`）、`valueMode`（`utility`/`existence`/`both`）。
   - AI 策略：`aiUsePolicy`（含 `level`：`AI-0`~`AI-4`、`readable`、`citable`、`actionable`、`reason`）。
   - 关联：`related`（ID 数组）、`featured`（布尔）、`sourceTopicId`（关联选题 ID，可选）。
@@ -184,9 +186,9 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 学习指南是一个独立于文章系统的教学模块，数据来源有两部分：
 
 - **指南内容**：`type: learn` 的 log 集合条目（`.md`/`.mdx`），通过 `level` 字段分配到入门/学徒/专家三个阶段。每个指南的 frontmatter 包含 `emoji`、`subtitle`、`yValue`、`graduation`、`safetyNote`、`shareAction` 等教学元数据。指南详情页使用 `src/styles/learn.css` 的独立样式。
-- **学习感悟**：`type: learn | learning | knowledge` 的 log 条目，显示在"学习感悟"Tab 下，本质是文章列表。
+- **学习感悟**：`type: learn | knowledge` 的 log 条目，显示在"学习感悟"Tab 下，本质是文章列表。（旧 `type: learning` 别名已删除；`getPublishedLearningPosts` 不再匹配 `learning` type。）
 - **数据层**：`src/data/learn-data.ts` 定义 `LearnLevel`（阶段）、`LearnTool`（工具指南）接口和 `learnLevels` 常量。页面通过 `getPublishedLearningPosts()` 查询感悟类文章。
-- **路由**：`/learn`（列表页，`?tab=guide` / `?tab=journal` 切换）→ `/learn/guide/[level]/[tool]`（指南详情，SSG 预渲染）。
+- **路由**：`/learn`（列表页，`?tab=tracks` 轨道 / `?tab=thoughts` 思考 / `?tab=guide` 帮你学 切换）→ `/learn/guide/[level]/[tool]`（指南详情，SSG 预渲染）。旧 `?tab=journal` URL 通过 `learn/index.astro` 的三元判断重定向到 `tracks`（向后兼容保留，不再作为新契约）。
 
 ### 核心组件
 
@@ -230,9 +232,11 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`justify-tags.ts`**：文章列表标签两端对齐排版，导出 `justifyTags()` 和 `watchJustifyTags()`，含 resize 和 View Transition 生命周期支持，依赖 `@chenglou/pretext`。
 - **`home-canvas.ts`**：首页 Bento 画布拖拽、主题切换、状态栏反应和点击水波纹逻辑（Spark 抽点子盲盒已迁移至 `GreetingCard.astro`）。
 - **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
-- **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。
+- **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。内部 `runCleanup()` 在 `astro:page-load` 和 `astro:before-swap` 触发后**立即置空 cleanup 引用**，保证每个生命周期阶段至多清理一次（15+ 个消费者，契约不要求 cleanup 幂等）。
 - **`inline-editor.ts`**：就地/独立编辑器逻辑（`InlineEditor.astro` 配套）。导出 `enterInlineEditor(slug)`（就地模式入口）、`initStandaloneEditor(slug, draftTemplate)`（独立模式）。含 marked 客户端预览、frontmatter ↔ YAML 双向同步、localStorage 草稿、sha 乐观锁冲突、Ctrl+S 保存、`data-inline-editing` 钩子。
 - **`version-history.ts`**：版本历史逻辑（`VersionHistory.astro` 配套）。导出 `initVersionHistory()`，监听 `version-history:open` 事件。含 git 历史拉取、jsdiff 渲染、回退（复用 PUT 新提交）。
+- **`tool-match-chat.ts`**：工具匹配对话编排器。导出 `mountToolMatch(root)`，返回 cleanup 函数。闭包内管理身份探测、会话状态、计时器、DOM 事件绑定，用 AbortController 统一清理监听器。调用 `tool-match-view.ts` 的渲染函数。被 `ToolMatchChat.astro` 通过 `registerLifecycle` 挂载。
+- **`tool-match-view.ts`**：工具匹配视图层（纯函数）。导出 `renderPlainResponse`/`renderResultCard`/`renderDiagnosisResponse`/`renderComplianceResponse`/`renderPromptBox` 渲染函数 + `escapeHtml`/`escapeAttr` 转义 + `MatchResponse`/`ActionPlanResult`/`ChatMessage` 等类型。零状态依赖、零 DOM 副作用，只接收 data 返回 HTML 字符串，便于独立单测。
 
 ### Remark 插件
 
@@ -266,11 +270,16 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 业务逻辑采用四层架构：API 路由（HTTP 薄层）→ `services/`（应用服务 / 业务编排）→ `stores/` + `services/interfaces.ts`（端口抽象）→ `conversation/store.ts`（存储实现）。`/api/match` 的 Agent 编排按**六模块边界**分层（Perception / Memory / Planning / Tools / Orchestration / Observability，定义见 `.agents/skills/walker-northstar/references/planning/agent-six-modules-architecture.md`），`NeedCase` 是核心业务对象（取代旧 DemandEvent）。`docs/adr/ADR-0001` 记录了从 `src/lib` + `src/data` 按职责拆分为 knowledge/profiles/agent/conversation/shared 的历史起点；此后新增 `services/`（应用服务层）和 `stores/`（数据仓储端口层）。Astro 展示层文件（pages/、layouts/、components/、scripts/、styles/）保持原位不动。
 
+**分层约定**：`knowledge/` 只含纯查询与纯函数（Astro 构建期内容读取 + 计算），**不直连 store**。需要跨层组合（如 content 读取 + store 需求统计聚合）的编排放 `services/`（典型例子：`ideas.service.ts` 组合 `getPublishedIdeas` + `getNeedCaseStats`）。统计聚合查询（`getNeedCaseStats` 等）按既有模式直接由 service 调用 store 自由函数，不走单实体 RepositoryPort（后者只管 CRUD）。
+
 #### knowledge/（知识库）
 
-- **`content.ts`**：Astro 构建时内容查询函数（`getPublishedContentItems`、`getPublishedPosts`、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`、`getPublishedLearningPosts`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。仅在 Astro 渲染上下文中可用。
+- **`content.ts`**：Astro 构建时内容查询函数（`getPublishedContentItems`、`getPublishedPosts`（含 `knowledge`/`idea`/`project`/`learn`）、`getPublishedResources`、`getPublishedIdeas`、`getPublishedProjects`、`getPublishedLearningPosts`、`getPublishedThoughts`），集中过滤和排序逻辑。还导出 `getVersionChain()`（获取文章版本链）和 `getSeriesEntries()`（获取系列文章列表）。仅在 Astro 渲染上下文中可用。
 - **`content-query.ts`**：独立查询引擎（见上文 Agent 化基础设施）。
-- **`content-model.ts`**：内容模型核心。定义 `ContentSpace`（`all`/`progress`/`life`/`learning`/`tools`/`works`/`ideas`）、`ContentItem` 接口、`toContentItem()` 适配器（将 Astro log 条目投影为多维度内容项）、`itemBelongsToSpace()` 空间分配逻辑、`contentSpaces` 元数据数组。推断函数 `inferForm()`、`inferDomain()`、`inferIntent()`、`inferValueMode()` 从内容属性派生维度。还导出 `formLabels`、`domainLabels`、`intentLabels`、`valueModeLabels` 等显示映射。
+- **`content-model.ts`**：内容模型核心。定义 `ContentSpace`（`all`/`progress`/`life`/`learning`/`tools`/`works`/`ideas`）、`ContentItem` 接口、`toContentItem()` 适配器（将 Astro log 条目投影为多维度内容项）、`itemBelongsToSpace()` 空间分配逻辑、`contentSpaces` 元数据数组。推断函数 `inferForm()`、`inferDomain()`、`inferIntent()`、`inferValueMode()` 从内容属性派生维度。`buildInternalHref()` 处理内部链接、`toContentItem()` 用 `entry.data.url ?? buildInternalHref(entry)` 生成**权威 href**（外链内容带 GitHub URL 时直接用外链，搜索 DTO 不再重新合成）。还导出 `formLabels`、`domainLabels`、`intentLabels`、`valueModeLabels` 等显示映射。
+- **`navigation.ts`**：搜索 DTO 与导航链接。`toSearchItem(item)` 直接用 `item.href`（来自 content-model 的权威链接，**单一真相源**，不按 type/id 重建）、`getSearchModalData()` 聚合搜索项 + 固定页面链接、`searchPageLinks` 常量。
+- **`posts.ts`**：文章展示纯查询（摘要提取、相关文章计算），有单测保护。
+- **`ideas.ts`**：点子纯函数模块。只导出 `getDemandSignal()`（需求信号打分）、`sortIdeasByStatusAndDate()`（按状态权重 + 日期排序）、`PUBLIC_DEMAND_SIGNAL_MIN` 常量和类型。**不直连 store**——页面编排由 `services/ideas.service.ts` 承接。
 - **`visibility.ts`**：内容可见性解析。`resolveContentVisibility()` 根据 `visibility` 和 `published` 字段推断内容为 `public`/`draft`/`private`。优先使用显式 `visibility` 字段，降级到 `published` 布尔值。
 
 #### profiles/（画像系统）
@@ -304,6 +313,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`admin-review.service.ts`**：NeedCase 复盘列表 + admin review 状态管理。
 - **`brief.service.ts`**：选题创作简报生成（规则给角度/结构，不代写正文）。
 - **`hit-rate.service.ts`**：按已发布内容聚合关联需求簇的 resolved/stuck 命中率。
+- **`ideas.service.ts`**：点子页编排服务（`createIdeasService(deps)` 工厂，deps 注入模式）。`getIdeasPageData()` 组合 content 读取（`getPublishedIdeas`）+ 需求统计聚合（`getNeedCaseStats`，近 30 天）+ astro render，调用 knowledge/ideas 的纯函数打分。**knowledge 层不直连 store**——store 聚合由本 service 承接（与 about/insights/mcp 直接消费 `getNeedCaseStats` 的既有模式一致，统计聚合走 store 自由函数而非 NeedCaseRepositoryPort）。
 - **`matching.service.ts`** / **`visibility.service.ts`**：本地匹配（`matchNeed`）/ 可见性判断（`canSee`、`redactNeedCase`、`filterStats`）。
 
 #### stores/（数据仓储端口层）

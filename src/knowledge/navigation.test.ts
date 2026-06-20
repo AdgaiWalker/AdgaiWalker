@@ -7,7 +7,7 @@ vi.mock('@/knowledge/content', () => ({
 }));
 
 import { getPublishedContentItems } from '@/knowledge/content';
-import { getSearchItemHref, getSearchModalData, searchPageLinks, toSearchItem } from './navigation';
+import { getSearchModalData, searchPageLinks, toSearchItem } from './navigation';
 
 function makeItem(partial: Partial<ContentItem> = {}): ContentItem {
   return {
@@ -33,15 +33,26 @@ describe('navigation helpers', () => {
     vi.mocked(getPublishedContentItems).mockReset();
   });
 
-  it('builds route-aware hrefs for ideas and learn items', () => {
-    expect(getSearchItemHref({ id: 'idea one', type: 'idea' })).toBe('/ideas#idea%20one');
-    expect(getSearchItemHref({ id: 'lesson', type: 'learn' })).toBe('/learn');
+  it('uses authoritative href from content model (incl. external)', () => {
+    const external = makeItem({
+      id: 'walkcraft',
+      title: 'Walkcraft',
+      href: 'https://github.com/AdgaiWalker/Walkcraft-Skill-Craft',
+      type: 'project',
+      isExternal: true,
+    });
+    expect(toSearchItem(external).href).toBe(external.href);
+  });
+
+  it('falls back to internal href from content model when not external', () => {
+    const internal = makeItem({ type: 'knowledge', href: '/posts/some-post' });
+    expect(toSearchItem(internal).href).toBe('/posts/some-post');
   });
 
   it('maps content items to a minimal DTO', () => {
     expect(toSearchItem(makeItem({ type: 'tool', tags: ['ai'] }))).toEqual({
       title: '默认内容',
-      href: '/tools#entry',
+      href: '/entry',
       type: '资源',
       tags: ['ai'],
     });

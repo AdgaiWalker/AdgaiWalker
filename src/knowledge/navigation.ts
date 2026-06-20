@@ -1,6 +1,6 @@
 import { getPublishedContentItems } from '@/knowledge/content';
 import type { ContentItem } from '@/knowledge/content-model';
-import { ABOUT, CONTENT, HOME, IDEAS, LEARN, POSTS, PROJECTS, TOOLS, buildPostPath } from '@/shared/routes';
+import { ABOUT, CONTENT, HOME, IDEAS, LEARN, POSTS, PROJECTS, TOOLS } from '@/shared/routes';
 
 export interface SearchItem {
   title: string;
@@ -21,7 +21,6 @@ const TYPE_LABEL: Record<ContentItem['type'], string> = {
   project: '项目',
   community: '社区',
   learn: '学习',
-  learning: '学习',
 };
 
 const TYPE_ORDER = ['思考', '资源', '点子', '项目', '学习', '社区'];
@@ -37,30 +36,10 @@ export const searchPageLinks: PageLink[] = [
   { label: '关于', href: ABOUT },
 ];
 
-export function getSearchItemHref(item: Pick<ContentItem, 'id' | 'type'>): string {
-  switch (item.type) {
-    case 'knowledge':
-      return buildPostPath(item.id);
-    case 'idea':
-      return `${IDEAS}#${encodeURIComponent(item.id)}`;
-    case 'tool':
-      return `${TOOLS}#${encodeURIComponent(item.id)}`;
-    case 'project':
-      return PROJECTS;
-    case 'learn':
-    case 'learning':
-      return LEARN;
-    case 'community':
-      return buildPostPath(item.id);
-    default:
-      return buildPostPath(item.id);
-  }
-}
-
 export function toSearchItem(item: ContentItem): SearchItem {
   return {
     title: item.title,
-    href: getSearchItemHref(item),
+    href: item.href,
     type: TYPE_LABEL[item.type] ?? '其他',
     tags: item.tags ?? [],
   };
