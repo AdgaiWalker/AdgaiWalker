@@ -1,0 +1,211 @@
+---
+import { Icon } from 'astro-icon/components';
+import { isAdmin } from '@/lib/admin-auth';
+import { resolveAdminActor } from '@/lib/admin-actor';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import { createAppearanceService } from '@/services/appearance.service';
+
+export const prerender = false;
+if (!isAdmin(Astro.request)) return Astro.redirect('/admin/login');
+
+const owner = await resolveAdminActor(Astro.request);
+const { theme, media, storageMode, mediaStorageMode } = await createAppearanceService().getState(owner);
+const activeAsset = media.find(asset => asset.assetId === theme.backgroundAssetId);
+const mediaStorageLabel = mediaStorageMode === 'vercel-blob'
+  ? '媒体存储：Vercel Blob 私有对象存储'
+  : mediaStorageMode === 'local-development'
+    ? '媒体存储：开发本地文件'
+    : '媒体存储：不可用';
+const mediaStorageHelp = mediaStorageMode === 'vercel-blob'
+  ? '生产媒体文件会写入 Vercel Blob，后台只通过 Admin API 读取。'
+  : mediaStorageMode === 'local-development'
+    ? '当前为开发/测试模式，媒体文件写入本地目录；不要把它当作生产持久化证据。'
+    : '生产/预览缺少 BLOB_READ_WRITE_TOKEN，图片和视频不会被保存。';
+const mediaUploadDisabled = mediaStorageMode === 'unavailable';
+const themeStorageWarning = storageMode === 'unavailable' ? '主题元数据存储不可用，保存会被拒绝。' : '';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>外观与媒体 · Walker</title>
+</head>
+<body>
+<AdminLayout active="/admin/appearance" title="外观与媒体" subtitle="主题、背景媒体与可读性保护">
+  <div class="appearance" data-appearance>
+    <section class="appearance-preview" style={`--preview-overlay:${theme.readabilityOverlay};`}>
+      {activeAsset?.publicUrl && activeAsset.kind === 'image' && <img src={activeAsset.publicUrl} alt="当前背景预览" />}
+      <div class="preview-overlay"></div>
+      <div class="preview-card">
+        <span>Walker Admin</span>
+        <h1>Apple 现代玻璃 · Walker 翡翠青</h1>
+        <p>低信息密度、充足留白和可读性遮罩会保护正文与操作区。外观变化不改变事实、优先级和业务状态。</p>
+        <button type="button">示例主动作</button>
+      </div>
+    </section>
+
+    <section class="appearance-grid">
+      <form class="appearance-card" data-theme-form>
+        <h2>主题配置</h2>
+        <label for="appearance-theme-name">主题名称</label>
+        <input id="appearance-theme-name" name="name" value={theme.name} maxlength="40" />
+        <label for="appearance-accent">强调色</label>
+        <select id="appearance-accent" name="accent">
+            <option value="walker-jade" selected={theme.accent === 'walker-jade'}>Walker 翡翠青</option>
+            <option value="aurora" selected={theme.accent === 'aurora'}>Aurora</option>
+            <option value="sunset" selected={theme.accent === 'sunset'}>Sunset</option>
+            <option value="mint" selected={theme.accent === 'mint'}>Mint</option>
+          </select>
+        <label for="appearance-density">信息密度</label>
+        <select id="appearance-density" name="density">
+            <option value="low" selected={theme.density === 'low'}>低密度</option>
+            <option value="comfortable" selected={theme.density === 'comfortable'}>舒适</option>
+          </select>
+        <label for="appearance-background">背景媒体</label>
+        <select id="appearance-background" name="backgroundAssetId">
+            <option value="">不使用媒体背景</option>
+            {media.map(asset => <option value={asset.assetId} selected={theme.backgroundAssetId === asset.assetId}>{asset.filename}</option>)}
+          </select>
+        <label for="appearance-overlay">可读性遮罩 <span data-overlay-value>{Math.round(theme.readabilityOverlay * 100)}%</span></label>
+        <input id="appearance-overlay" type="range" name="readabilityOverlay" min="28" max="82" value={Math.round(theme.readabilityOverlay * 100)} />
+        <label class="check"><input type="checkbox" name="reducedMotion" checked={theme.reducedMotion} />减少动效</label>
+        <p class="appearance-status" data-theme-status role="status" aria-live="polite"></p>
+        <div class="appearance-actions">
+          <button class="is-primary" type="submit">保存外观</button>
+          <button type="button" data-theme-reset>恢复默认</button>
+        </div>
+      </form>
+
+      <form class="appearance-card" data-media-form>
+        <h2>媒体资产</h2>
+        <p class="appearance-help">文件本体写入媒体存储，后台只保存元数据与引用。限制 20MB、常见图片/视频类型，并始终 owner 可见。</p>
+        <div class:list={['appearance-storage', mediaUploadDisabled && 'is-unavailable']} data-media-storage-mode={mediaStorageMode}>
+          <strong>{mediaStorageLabel}</strong>
+          <span>{mediaStorageHelp}</span>
+          {themeStorageWarning && <span>{themeStorageWarning}</span>}
+        </div>
+        <label>选择图片/视频<input name="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" disabled={mediaUploadDisabled} /></label>
+        <p class="appearance-status" data-media-status role="status" aria-live="polite"></p>
+        <button class="is-primary" type="submit" disabled={mediaUploadDisabled}>上传到媒体库</button>
+      </form>
+    </section>
+
+    <section class="appearance-card media-library">
+      <h2>媒体库（{media.length}）</h2>
+      {media.length === 0 ? <div class="appearance-empty">暂无媒体。上传后可作为后台背景，但必须经过可读性遮罩保护。</div> : (
+        <div class="media-list">
+          {media.map(asset => (
+            <article class="media-card" data-asset-id={asset.assetId}>
+              {asset.publicUrl && asset.kind === 'image' ? <img src={asset.publicUrl} alt={asset.filename} /> : <div class="media-placeholder"><Icon name="lucide:video" width={24} height={24} /></div>}
+              <div><strong>{asset.filename}</strong><span>{asset.mimeType} · {Math.round(asset.sizeBytes / 1024)}KB · {asset.visibility}</span></div>
+              <button type="button" data-remove-media data-id={asset.assetId}>移除引用</button>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  </div>
+</AdminLayout>
+
+<script>
+  const root = document.querySelector('[data-appearance]') as HTMLElement | null;
+  if (root) {
+    const setStatus = (selector: string, text: string, error = false) => {
+      const node = root.querySelector<HTMLElement>(selector);
+      if (!node) return;
+      node.textContent = text;
+      node.classList.toggle('is-error', error);
+    };
+    const overlayInput = root.querySelector<HTMLInputElement>('input[name="readabilityOverlay"]');
+    overlayInput?.addEventListener('input', () => {
+      root.querySelector('[data-overlay-value]')!.textContent = `${overlayInput.value}%`;
+      root.querySelector<HTMLElement>('.appearance-preview')?.style.setProperty('--preview-overlay', String(Number(overlayInput.value) / 100));
+    });
+
+    root.querySelector<HTMLFormElement>('[data-theme-form]')?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget as HTMLFormElement;
+      const data = new FormData(form);
+      const res = await fetch('/api/admin/appearance', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: String(data.get('name') || ''),
+          accent: data.get('accent'),
+          density: data.get('density'),
+          backgroundAssetId: data.get('backgroundAssetId') || undefined,
+          readabilityOverlay: Number(data.get('readabilityOverlay')) / 100,
+          reducedMotion: data.get('reducedMotion') === 'on',
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      setStatus('[data-theme-status]', res.ok ? '外观已保存。刷新后仍会保留。' : `保存失败：${body.error || res.status}`, !res.ok);
+    });
+
+    root.querySelector('[data-theme-reset]')?.addEventListener('click', async () => {
+      const res = await fetch('/api/admin/appearance?action=reset', { method: 'POST' });
+      const body = await res.json().catch(() => ({}));
+      setStatus('[data-theme-status]', res.ok ? '已恢复默认主题。' : `恢复失败：${body.error || res.status}`, !res.ok);
+    });
+
+    root.querySelector<HTMLFormElement>('[data-media-form]')?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const input = (event.currentTarget as HTMLFormElement).elements.namedItem('file') as HTMLInputElement;
+      const file = input.files?.[0];
+      if (!file) return setStatus('[data-media-status]', '请选择文件。', true);
+      const payload = new FormData();
+      payload.set('file', file);
+      const res = await fetch('/api/admin/appearance', { method: 'POST', body: payload });
+      const body = await res.json().catch(() => ({}));
+      setStatus('[data-media-status]', res.ok ? '媒体已加入。刷新后可选择为背景。' : `上传失败：${body.error || res.status}`, !res.ok);
+      if (res.ok) window.location.reload();
+    });
+
+    root.querySelectorAll<HTMLButtonElement>('[data-remove-media]').forEach(button => button.addEventListener('click', async () => {
+      const id = button.dataset.id;
+      if (!id) return;
+      const res = await fetch(`/api/admin/appearance?assetId=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (res.ok) button.closest('.media-card')?.remove();
+    }));
+  }
+</script>
+
+<style is:global>
+  .appearance { display: grid; gap: 18px; max-width: 1040px; margin: 0 auto; }
+  .appearance-preview { --preview-overlay: .42; position: relative; min-height: 260px; overflow: hidden; border: 1px solid rgba(255,255,255,.9); border-radius: 28px; background: radial-gradient(circle at 10% 10%, rgba(53,191,171,.28), transparent 34%), linear-gradient(135deg, #f8fbfa, #e8f3f1); box-shadow: 0 22px 70px rgba(31,55,50,.1); }
+  .appearance-preview > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .preview-overlay { position: absolute; inset: 0; background: rgba(248,251,250,var(--preview-overlay)); backdrop-filter: blur(18px); }
+  .preview-card { position: relative; z-index: 1; margin: 42px; max-width: 560px; padding: 24px; border: 1px solid rgba(255,255,255,.85); border-radius: 24px; background: rgba(255,255,255,.58); box-shadow: 0 16px 50px rgba(31,55,50,.1); }
+  .preview-card span { color: var(--adm-brand-strong); font-size: 11px; font-weight: 800; }
+  .preview-card h1 { margin: 8px 0; color: var(--adm-text); font: 800 clamp(24px, 3vw, 38px)/1.12 var(--adm-font-ui); letter-spacing: -.04em; }
+  .preview-card p { color: var(--adm-text-dim); font-size: 12px; line-height: 1.7; }
+  .preview-card button, .appearance-card button { min-height: 38px; padding: 0 14px; border: 1px solid var(--adm-border); border-radius: 11px; color: var(--adm-text-dim); background: rgba(255,255,255,.75); cursor: pointer; font-size: 11px; font-weight: 750; }
+  .preview-card button, .appearance-card button.is-primary { color: white; border-color: var(--adm-brand-strong); background: var(--adm-brand-strong); }
+  .appearance-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(280px,.62fr); gap: 14px; }
+  .appearance-card { padding: 18px; border: 1px solid var(--adm-border); border-radius: 20px; background: rgba(255,255,255,.75); box-shadow: 0 14px 40px rgba(39,62,58,.06); }
+  .appearance-card h2 { display: flex; align-items: center; gap: 7px; margin: 0 0 14px; color: var(--adm-text); font: 800 15px/1.3 var(--adm-font-ui); }
+  .appearance-card label { display: grid; gap: 6px; margin-top: 11px; color: var(--adm-text-dim); font-size: 10px; font-weight: 800; }
+  .appearance-card input:not([type='checkbox']), .appearance-card select { width: 100%; min-height: 38px; border: 1px solid var(--adm-border); border-radius: 11px; padding: 0 11px; background: rgba(246,249,248,.8); color: var(--adm-text); outline: 0; }
+  .appearance-card input[type='range'] { padding: 0; }
+  .appearance-card .check { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
+  .appearance-help, .appearance-status { color: var(--adm-text-faint); font-size: 10px; line-height: 1.6; }
+  .appearance-status.is-error { color: var(--adm-bad, #dc2626); }
+  .appearance-storage { display: grid; gap: 4px; margin: 12px 0 4px; padding: 10px 12px; border: 1px solid rgba(53,191,171,.22); border-radius: 13px; background: rgba(53,191,171,.08); color: var(--adm-text-dim); font-size: 10px; line-height: 1.55; }
+  .appearance-storage strong { color: var(--adm-text); font-size: 11px; }
+  .appearance-storage.is-unavailable { border-color: rgba(220,38,38,.24); background: rgba(220,38,38,.07); }
+  .appearance-storage.is-unavailable strong { color: var(--adm-bad, #dc2626); }
+  .appearance-card button:disabled, .appearance-card input:disabled { opacity: .52; cursor: not-allowed; }
+  .appearance-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .appearance-empty { padding: 22px; border: 1px dashed var(--adm-border); border-radius: 14px; color: var(--adm-text-faint); text-align: center; font-size: 11px; }
+  .media-list { display: grid; gap: 10px; }
+  .media-card { display: grid; grid-template-columns: 76px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--adm-border-soft); border-radius: 15px; background: rgba(255,255,255,.58); }
+  .media-card img, .media-placeholder { width: 76px; height: 52px; border-radius: 11px; object-fit: cover; background: var(--adm-brand-soft); color: var(--adm-brand-strong); display: grid; place-items: center; }
+  .media-card strong { display: block; color: var(--adm-text); font-size: 12px; }
+  .media-card span { display: block; margin-top: 4px; color: var(--adm-text-faint); font-size: 9px; }
+  @media (max-width: 820px) { .appearance-grid { grid-template-columns: 1fr; } .preview-card { margin: 24px; } .media-card { grid-template-columns: 64px 1fr; } .media-card button { grid-column: 1/-1; } }
+  @media (prefers-reduced-motion: reduce) { .appearance-preview, .preview-overlay { backdrop-filter: none; } }
+</style>
+</body>
+</html>

@@ -99,7 +99,7 @@ export function createSessionStore(): SessionRepositoryPort {
       });
       const redis = getRedis();
       if (!redis) return out;
-      const ids = await redis.smembers<string>(sessionsByUserKey(username));
+      const ids = await redis.smembers<string[]>(sessionsByUserKey(username));
       await Promise.all(ids.map(async (sid) => {
         if (!out.some((s) => s.sessionId === sid)) {
           const s = await this.get(sid);

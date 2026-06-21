@@ -6,6 +6,8 @@
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import { createAccountService } from '@/services/account.service';
 
 const accountService = createAccountService();
@@ -31,6 +33,16 @@ export const POST: APIRoute = async ({ request }) => {
   if (typeof username !== 'string' || !username) {
     return json({ ok: false, reason: '请指定用户名。' }, 400);
   }
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'account.password.reset',
+    targetType: 'account',
+    targetId: username,
+    reason: '重置账号密码会撤销该用户全部会话并生成一次性临时密码。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
+
   const result = await accountService.resetPassword(username);
   if (!result.ok) {
     return json(result, 400);

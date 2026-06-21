@@ -1,6 +1,7 @@
 ---
 // /admin/topics — 选题池（需求簇 + 站主灵感，服务端渲染，需认证）
 import { isAdmin } from '@/lib/admin-auth';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { getRecentNeedCases, getTopicCandidates } from '@/conversation/store';
 import { matchResources } from '@/profiles/resource-index';
 import type { TopicCandidate } from '@/stores/ports';
@@ -67,41 +68,36 @@ function creationHint(topic: TopicCandidate): string {
 }
 ---
 
-<!DOCTYPE html>
-<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>选题池 — Walker</title>
+  <title>选题 · Walker</title>
+</head>
+
+<AdminLayout
+  active="/admin/topics"
+  title="选题池"
+  subtitle="把用户需求与 Walker 主张分开记录，在证据汇合处做创作决定。"
+>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
-    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
-    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
-    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
-    .admin-bar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .admin-bar-link { font-size: 0.82rem; color: #78716c; text-decoration: none; font-weight: 600; }
-    .admin-bar-link:hover, .admin-bar-link.active { color: #1c1917; }
-    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
-    .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: rgba(220,38,38,0.2); }
-    .admin-main { max-width: 62rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .admin-main { width: min(100%, 72rem); margin: 0 auto; padding: 0 0 4rem; }
     .admin-welcome { margin-bottom: 1.25rem; }
-    .admin-welcome h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.35rem; }
     .admin-welcome p { font-size: 0.88rem; color: #78716c; line-height: 1.6; }
-    .inspiration-box { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem; padding: 0.75rem; border: 1px solid rgba(196,112,74,0.22); border-radius: 10px; background: rgba(196,112,74,0.05); flex-wrap: wrap; }
-    .inspiration-input { flex: 1; min-width: 12rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; padding: 0.55rem 0.75rem; font-size: 0.86rem; outline: none; }
-    .inspiration-btn { padding: 0.55rem 1rem; border: 0; border-radius: 8px; background: #c4704a; color: #fff; font-size: 0.82rem; font-weight: 750; cursor: pointer; }
+    .inspiration-box { display: flex; gap: 0.65rem; align-items: center; margin-bottom: 1.5rem; padding: 0.85rem; border: 1px solid var(--adm-border); border-radius: 18px; background: rgba(255,255,255,0.58); box-shadow: 0 18px 50px rgba(33, 58, 53, .08); backdrop-filter: blur(24px); flex-wrap: wrap; }
+    .inspiration-input { flex: 1; min-width: 12rem; border: 1px solid var(--adm-border); border-radius: 13px; padding: 0.72rem 0.85rem; background: rgba(255,255,255,0.72); color: var(--adm-text); font-size: 0.86rem; outline: none; }
+    .inspiration-input:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 4px var(--adm-brand-soft); }
+    .inspiration-btn { padding: 0.7rem 1rem; border: 0; border-radius: 13px; background: var(--adm-brand); color: #fff; font-size: 0.82rem; font-weight: 750; cursor: pointer; }
     .inspiration-msg { flex-basis: 100%; color: #78716c; font-size: 0.76rem; }
     .tab-bar { display: flex; gap: 0.35rem; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(0,0,0,0.08); overflow-x: auto; }
     .tab-btn { padding: 0.55rem 0.85rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #78716c; font-size: 0.82rem; font-weight: 750; cursor: pointer; white-space: nowrap; }
-    .tab-btn.active { color: #1c1917; border-bottom-color: #c4704a; }
+    .tab-btn.active { color: var(--adm-text); border-bottom-color: var(--adm-brand); }
     .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.2rem; height: 1.2rem; padding: 0 0.3rem; margin-left: 0.3rem; border-radius: 999px; background: rgba(0,0,0,0.06); font-size: 0.65rem; font-weight: 800; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
     .topic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
-    .topic-card { display: flex; flex-direction: column; gap: 0.7rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem; }
-    .topic-card:hover { border-color: rgba(196,112,74,0.28); }
+    .topic-card { display: flex; flex-direction: column; gap: 0.8rem; border: 1px solid var(--adm-border); border-radius: 20px; background: rgba(255,255,255,0.66); padding: 1.05rem; box-shadow: 0 18px 50px rgba(33, 58, 53, .07); backdrop-filter: blur(24px); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .topic-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--adm-brand) 42%, transparent); box-shadow: 0 24px 60px rgba(33, 58, 53, .12); }
     .topic-head { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
     .topic-priority, .topic-chip { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
     .topic-chip { background: #f5f5f4; color: #57534e; }
@@ -112,36 +108,26 @@ function creationHint(topic: TopicCandidate): string {
     .topic-related span { padding: 0.18rem 0.45rem; border-radius: 7px; background: #fafaf9; color: #57534e; font-size: 0.7rem; border: 1px solid rgba(0,0,0,0.05); }
     .topic-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; margin-top: auto; }
     .topic-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.36rem 0.72rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; color: #57534e; text-decoration: none; font-size: 0.75rem; font-weight: 750; cursor: pointer; }
-    .topic-btn-primary { background: rgba(196,112,74,0.08); border-color: rgba(196,112,74,0.18); color: #c4704a; }
+    .topic-btn-primary { background: var(--adm-brand-soft); border-color: color-mix(in srgb, var(--adm-brand) 24%, transparent); color: var(--adm-brand-strong); }
     .topic-btn:hover { transform: translateY(-1px); }
     .topic-empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; font-size: 0.9rem; border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
+    .topic-notice { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 30; max-width: min(26rem, calc(100vw - 3rem)); padding: .8rem 1rem; border: 1px solid var(--adm-border); border-radius: 14px; background: rgba(255,255,255,.9); color: var(--adm-text); box-shadow: 0 18px 55px rgba(33,58,53,.16); backdrop-filter: blur(24px); font-size: .82rem; }
+    .topic-action-dialog { width: min(30rem, calc(100vw - 2rem)); border: 1px solid var(--adm-border); border-radius: 22px; padding: 0; background: rgba(250,252,251,.96); color: var(--adm-text); box-shadow: 0 30px 90px rgba(30,55,50,.24); }
+    .topic-action-dialog::backdrop { background: rgba(22,35,33,.22); backdrop-filter: blur(10px); }
+    .topic-dialog-form { display: grid; gap: 1rem; padding: 1.3rem; }
+    .topic-dialog-form h2 { font-size: 1.1rem; }
+    .topic-dialog-form p { color: var(--adm-text-dim); font-size: .82rem; line-height: 1.6; }
+    .topic-dialog-form textarea { min-height: 7rem; resize: vertical; border: 1px solid var(--adm-border); border-radius: 14px; padding: .8rem; background: rgba(255,255,255,.82); color: var(--adm-text); outline: none; }
+    .topic-dialog-form textarea:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 4px var(--adm-brand-soft); }
+    .topic-dialog-actions { display: flex; justify-content: flex-end; gap: .6rem; }
     @media (max-width: 760px) {
-      .admin-main { padding: 1.25rem 1rem 3rem; }
-      .admin-bar { align-items: flex-start; flex-direction: column; }
+      .admin-main { padding: 0 0 3rem; }
       .topic-grid { grid-template-columns: 1fr; }
     }
   </style>
-</head>
-<body>
-  <div class="admin-bar">
-    <div class="admin-bar-left">
-      <span class="admin-bar-logo">Walker</span>
-      <span class="admin-bar-badge">Admin</span>
-    </div>
-    <div class="admin-bar-right">
-      <a href="/admin" class="admin-bar-link">仪表盘</a>
-      <a href="/admin/insights" class="admin-bar-link">洞察</a>
-      <a href="/admin/hit-rate" class="admin-bar-link">命中率</a>
-      <a href="/admin/topics" class="admin-bar-link active">选题池</a>
-      <a href="/admin/review?view=clusters" class="admin-bar-link">需求复盘</a>
-      <a href="/" class="admin-bar-link">查看站点</a>
-      <button class="logout-btn" id="logout-btn">登出</button>
-    </div>
-  </div>
 
   <main class="admin-main">
     <section class="admin-welcome">
-      <h1>选题池</h1>
       <p>需求簇和站主灵感放在同一个池子里判断。系统提供密度、角色、代表需求和命中反馈，人决定要不要写、怎么写。</p>
     </section>
 
@@ -172,10 +158,15 @@ function creationHint(topic: TopicCandidate): string {
                 const hit = getHitRate(topic.topicId);
                 const related = relatedTitles(topic);
                 return (
-                  <article class="topic-card" data-topic-id={topic.topicId}>
+                  <article class="topic-card"
+                    data-topic-id={topic.topicId}
+                    data-source={topic.source === 'inspiration' ? 'walker-thesis' : 'user-demand'}
+                    data-title={topic.title}
+                    data-representative={topic.representativeNeed}
+                  >
                     <div class="topic-head">
                       <span class="topic-priority" style={`background:${priority.bg};color:${priority.color}`}>{priority.label}</span>
-                      <span class="topic-chip">{topic.source === 'inspiration' ? '站主灵感' : `${topic.density} 条需求`}</span>
+                      <span class="topic-chip">{topic.source === 'inspiration' ? '站主主张（无用户证据）' : `${topic.density} 条需求`}</span>
                       {hit.feedbackGiven > 0 && (
                         <span class="topic-chip">命中 {hit.rate}% · resolved {hit.resolved} / stuck {hit.stuck}</span>
                       )}
@@ -196,6 +187,25 @@ function creationHint(topic: TopicCandidate): string {
                       {(status.id === 'observed' || status.id === 'accepted') && (
                         <a class="topic-btn topic-btn-primary" href={`/admin/brief?topicId=${topic.topicId}`}>生成简报</a>
                       )}
+                      {/* P1-F：从选题直接进入内容编辑，预填 sourceTopicId（写内容/改内容） */}
+                      {topic.producedContentSlug ? (
+                        <a class="topic-btn" href={`/admin/content/edit?slug=${encodeURIComponent(topic.producedContentSlug)}&topicId=${topic.topicId}`}>改内容</a>
+                      ) : (
+                        <a class="topic-btn" href={`/admin/content/edit?topicId=${topic.topicId}&prefill=brief`}>写内容</a>
+                      )}
+                      {/* P1-D03：派生非内容 Action —— 改功能（不冒充内容任务）/ 证据不足（学习请求） */}
+                      {(status.id === 'observed' || status.id === 'accepted') && (
+                        <>
+                          <button class="topic-btn"
+                            data-action-type="change-feature"
+                            data-id={topic.topicId}
+                            data-title={topic.title}>改功能</button>
+                          <button class="topic-btn"
+                            data-action-type="create-learning-request"
+                            data-id={topic.topicId}
+                            data-title={topic.title}>证据不足</button>
+                        </>
+                      )}
                       {status.id === 'observed' && (
                         <>
                           <button class="topic-btn" data-action="accepted" data-id={topic.topicId}>采纳</button>
@@ -212,9 +222,68 @@ function creationHint(topic: TopicCandidate): string {
         </section>
       );
     })}
+    <div class="topic-notice" id="topic-notice" role="status" aria-live="polite" hidden></div>
+    <dialog class="topic-action-dialog" data-topic-action-dialog>
+      <form class="topic-dialog-form" data-topic-dialog-form>
+        <div>
+          <h2 data-topic-dialog-title>补充判断依据</h2>
+          <p data-topic-dialog-description>这段说明会进入事项记录，供后续复查。</p>
+        </div>
+        <textarea data-topic-dialog-reason required maxlength="500"></textarea>
+        <div class="topic-dialog-actions">
+          <button class="topic-btn" type="button" data-topic-dialog-cancel>取消</button>
+          <button class="topic-btn topic-btn-primary" type="submit">确认</button>
+        </div>
+      </form>
+    </dialog>
   </main>
 
   <script>
+    const actionDialog = document.querySelector<HTMLDialogElement>('[data-topic-action-dialog]');
+    const actionDialogForm = document.querySelector<HTMLFormElement>('[data-topic-dialog-form]');
+    const actionDialogTitle = document.querySelector<HTMLElement>('[data-topic-dialog-title]');
+    const actionDialogDescription = document.querySelector<HTMLElement>('[data-topic-dialog-description]');
+    const actionDialogReason = document.querySelector<HTMLTextAreaElement>('[data-topic-dialog-reason]');
+    const notice = document.getElementById('topic-notice');
+
+    function showNotice(message: string) {
+      if (!notice) return;
+      notice.textContent = message;
+      notice.hidden = false;
+      window.setTimeout(() => { notice.hidden = true; }, 4200);
+    }
+
+    function requestReason(options: { title: string; description: string; initial: string }): Promise<string | null> {
+      if (!actionDialog || !actionDialogForm || !actionDialogReason) return Promise.resolve(null);
+      if (actionDialogTitle) actionDialogTitle.textContent = options.title;
+      if (actionDialogDescription) actionDialogDescription.textContent = options.description;
+      actionDialogReason.value = options.initial;
+      actionDialog.showModal();
+      actionDialogReason.focus();
+
+      return new Promise(resolve => {
+        const finish = (value: string | null) => {
+          actionDialogForm.removeEventListener('submit', submitHandler);
+          actionDialog?.removeEventListener('cancel', cancelHandler);
+          document.querySelector('[data-topic-dialog-cancel]')?.removeEventListener('click', cancelHandler);
+          actionDialog.close();
+          resolve(value);
+        };
+        const submitHandler = (event: Event) => {
+          event.preventDefault();
+          const value = actionDialogReason.value.trim();
+          if (value) finish(value);
+        };
+        const cancelHandler = (event: Event) => {
+          event.preventDefault();
+          finish(null);
+        };
+        actionDialogForm.addEventListener('submit', submitHandler);
+        actionDialog.addEventListener('cancel', cancelHandler);
+        document.querySelector('[data-topic-dialog-cancel]')?.addEventListener('click', cancelHandler);
+      });
+    }
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = (btn as HTMLElement).dataset.tab;
@@ -232,20 +301,170 @@ function creationHint(topic: TopicCandidate): string {
         const status = el.dataset.action;
         if (!topicId || !status) return;
         const card = el.closest('.topic-card') as HTMLElement | null;
+
+        // P1-D02/D03：暂缓和忽略需要理由；采纳同时创建真实 WorkItem（保留来源身份）。
+        // 不把站主灵感伪装成用户需求 —— walker-thesis 队列明确标注无用户证据。
+        let reason = '';
+        if (status === 'deferred') {
+          reason = await requestReason({ title: '暂缓这个选题', description: '写下再次检查它的条件，避免暂缓变成遗忘。', initial: '暂缓观察，等待更多证据' }) ?? '';
+          if (!reason.trim()) return;
+        } else if (status === 'ignored') {
+          reason = await requestReason({ title: '忽略这个选题', description: '说明当前不处理的理由，保留可追溯的判断。', initial: '与当前方向不一致' }) ?? '';
+          if (!reason.trim()) return;
+        }
+
         try {
           const res = await fetch('/api/insights', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topicId, status }),
+            body: JSON.stringify({ topicId, status, note: reason || undefined }),
           });
           const data = await res.json();
-          if (res.ok && data.ok) {
-            if (card) card.style.opacity = '0.35';
-          } else {
-            alert(data.error || '操作失败');
+          if (!res.ok || !data.ok) {
+            showNotice(data.error || '操作失败');
+            return;
           }
+
+          // P1-D03：采纳时创建真实 WorkItem 决定（demand-backed / walker-thesis 队列）
+          // 暂缓 / 忽略也创建 WorkItem 保存理由，保留审计（不丢失复查条件 / 忽略理由）。
+          if (status === 'accepted' || status === 'deferred' || status === 'ignored') {
+            const source = card?.dataset.source === 'walker-thesis' ? 'walker-thesis' : 'user-demand';
+            const title = card?.dataset.title ?? '选题';
+            const representative = card?.dataset.representative ?? '';
+            const evidenceSummary = source === 'walker-thesis'
+              ? '站主主张，0 条用户证据，需等待现实验证'
+              : (representative || '来自需求簇的选题');
+            const outcome = status === 'accepted' ? 'accepted'
+              : status === 'deferred' ? 'paused'
+              : 'rejected';
+            const workItemNote = status === 'accepted'
+              ? '采纳选题，进入创作判断'
+              : reason;
+
+            // 先创建 proposal（带证据），再作出决定（采纳 / 暂缓 / 忽略）
+            const createRes = await fetch('/api/admin/decisions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                queue: source,
+                title,
+                summary: evidenceSummary,
+                priorityBand: status === 'ignored' ? 'observe' : 'week',
+                evidenceRefs: [{
+                  evidenceId: `ev_topic_${topicId}`,
+                  sourceType: source === 'walker-thesis' ? 'walker-thesis' : 'need-case',
+                  sourceId: topicId,
+                  occurredAt: new Date().toISOString(),
+                  summary: evidenceSummary,
+                  qualityStatus: source === 'walker-thesis' ? 'unverified' : 'verified-source',
+                }],
+                priorityReasons: [source === 'walker-thesis' ? '站主主动提出，非市场结论' : '需求聚类选题'],
+                topicId,
+                requestDecision: true,
+              }),
+            });
+            const created = await createRes.json().catch(() => null);
+            if (createRes.ok && created?.item?.workItemId) {
+              // 作出决定（保留理由用于审计）
+              const decideRes = await fetch(`/api/admin/decisions/${created.item.workItemId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ decide: { outcome, reason: workItemNote } }),
+              });
+              if (!decideRes.ok) {
+                const err = await decideRes.json().catch(() => ({}));
+                console.warn('工作项决定失败（选题状态已更新）:', err.error || decideRes.status);
+              }
+            } else if (!createRes.ok) {
+              const err = await createRes.json().catch(() => ({}));
+              showNotice(`选题状态已更新，但工作项创建失败：${err.error || createRes.status}`);
+            }
+          }
+
+          if (card) card.style.opacity = '0.35';
         } catch {
-          alert('网络异常，请重试。');
+          showNotice('网络异常，请重试。');
+        }
+      });
+    });
+
+    // P1-D03：派生非内容 Action —— 改功能 / 证据不足（学习请求）。
+    // 不冒充内容任务：change-feature 的 targetType=feature；create-learning-request 明确标记证据不足。
+    // 创建 WorkItem proposal → 接受 → 附加对应 Action，全部走真实 WorkItem API。
+    document.querySelectorAll<HTMLButtonElement>('.topic-btn[data-action-type]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const el = btn as HTMLElement;
+        const topicId = el.dataset.id;
+        const actionType = el.dataset.actionType as 'change-feature' | 'create-learning-request';
+        const title = el.dataset.title ?? '选题';
+        if (!topicId || !actionType) return;
+
+        const reason = actionType === 'change-feature'
+          ? (await requestReason({ title: '创建功能改动', description: '说明要改什么功能，以及为什么内容无法解决。', initial: '这是一个功能问题，不是内容能解决的' }) ?? '')
+          : (await requestReason({ title: '创建补证据任务', description: '说明需要补充的实践、反例、数据或访谈。', initial: '证据不足，先收集更多样本' }) ?? '');
+        if (!reason.trim()) return;
+
+        try {
+          // 1. 创建 WorkItem proposal（选题作为证据）
+          const createRes = await fetch('/api/admin/decisions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              queue: 'user-demand',
+              title: actionType === 'change-feature' ? `改功能：${title}` : `补证据：${title}`,
+              summary: reason,
+              priorityBand: actionType === 'create-learning-request' ? 'insufficient' : 'week',
+              evidenceRefs: [{
+                evidenceId: `ev_topic_${topicId}`,
+                sourceType: 'need-case',
+                sourceId: topicId,
+                occurredAt: new Date().toISOString(),
+                summary: title,
+                qualityStatus: actionType === 'create-learning-request' ? 'unverified' : 'verified-source',
+              }],
+              priorityReasons: [reason],
+              topicId,
+              requestDecision: true,
+            }),
+          });
+          const created = await createRes.json().catch(() => null);
+          if (!createRes.ok || !created?.item?.workItemId) {
+            const err = await createRes.json().catch(() => ({}));
+            showNotice(`工作项创建失败：${err.error || createRes.status}`);
+            return;
+          }
+          const workItemId = created.item.workItemId;
+
+          // 2. 接受决定
+          const decideRes = await fetch(`/api/admin/decisions/${workItemId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ decide: { outcome: 'accepted', reason } }),
+          });
+          if (!decideRes.ok) {
+            showNotice('决定失败，工作项已创建但未附加行动。');
+            return;
+          }
+
+          // 3. 附加对应 Action（change-feature 的 targetType=feature，不冒充内容）
+          const actionMeta = actionType === 'change-feature'
+            ? { targetType: 'feature', expectedOutcome: `修改功能以解决：${title}` }
+            : { targetType: 'learning-request', expectedOutcome: `补充实践/反例/访谈证据：${title}` };
+          const actionRes = await fetch('/api/admin/actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workItemId, actionType, ...actionMeta }),
+          });
+          if (!actionRes.ok) {
+            const err = await actionRes.json().catch(() => ({}));
+            showNotice(`行动创建失败：${err.error || actionRes.status}`);
+            return;
+          }
+          const card = el.closest('.topic-card') as HTMLElement | null;
+          if (card) card.style.opacity = '0.5';
+          showNotice(`已创建工作项并附加${actionType === 'change-feature' ? '改功能' : '学习请求'}行动。`);
+        } catch {
+          showNotice('网络异常，请重试。');
         }
       });
     });
@@ -276,10 +495,5 @@ function creationHint(topic: TopicCandidate): string {
     submit?.addEventListener('click', submitInspiration);
     input?.addEventListener('keydown', event => { if (event.key === 'Enter') submitInspiration(); });
 
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-      window.location.href = '/admin/login';
-    });
   </script>
-</body>
-</html>
+</AdminLayout>

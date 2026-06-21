@@ -1,0 +1,210 @@
+---
+// /admin/outcomes — 结果与下一步（P1-E02）
+//
+// 显示已记录 Outcome 的 WorkItem，附带 suggestNextAction 派生的下一步候选动作。
+// "创建下一步行动"按钮调用 WorkItem API 创建新 Decision + Action（不自动执行，
+// 由 Walker 显式点击）。候选动作不冒充已发生的事实。
+import { Icon } from 'astro-icon/components';
+import { isAdmin } from '@/lib/admin-auth';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import { createWorkbenchService, suggestNextAction } from '@/services/workbench.service';
+
+export const prerender = false;
+if (!isAdmin(Astro.request)) return Astro.redirect('/admin/login');
+
+const service = createWorkbenchService();
+const resolved = await service.list({ status: 'resolved', limit: 30 });
+
+// 为每个已解决事项计算下一步候选（纯函数建议，不自动执行）
+const withSuggestions = resolved.map(item => {
+  const latestOutcome = item.outcomes[item.outcomes.length - 1];
+  const suggestion = latestOutcome
+    ? suggestNextAction({ result: latestOutcome.result, outcomeSummary: latestOutcome.summary })
+    : null;
+  return { item, suggestion, latestOutcome };
+}).filter(row => row.suggestion); // 只显示有候选动作的
+
+const resultLabel: Record<string, string> = {
+  successful: '成功',
+  partial: '部分有效',
+  failed: '失败',
+  inconclusive: '证据不足',
+};
+const resultTone: Record<string, string> = {
+  successful: 'good',
+  partial: 'warn',
+  failed: 'bad',
+  inconclusive: 'neutral',
+};
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>结果与下一步 · Walker</title>
+</head>
+<body>
+<AdminLayout active="/admin" title="结果与下一步" subtitle="从已验证结果派生下一个决定或明确结束">
+
+  <div class="outcomes" data-outcomes>
+    <header class="outcomes-head">
+      <p>已记录 Outcome 的工作项，按结果派生下一步候选动作。候选不自动执行 —— 点击按钮才会创建新的可追踪决定与行动。</p>
+    </header>
+
+    {withSuggestions.length === 0 ? (
+      <div class="outcomes-empty">
+        <Icon name="lucide:inbox" width={28} height={28} />
+        <strong>还没有已记录结果的事项</strong>
+        <span>完成 Evidence → Decision → Action → Outcome 全链路后，这里会出现下一步候选。</span>
+      </div>
+    ) : (
+      <section class="outcome-list">
+        {withSuggestions.map(row => (
+          <article class="outcome-card" data-work-item-id={row.item.workItemId}>
+            <div class="outcome-card-head">
+              <span class={`outcome-result is-${resultTone[row.latestOutcome!.result]}`}>
+                <Icon name="lucide:circle-check" width={14} height={14} />
+                {resultLabel[row.latestOutcome!.result]}
+              </span>
+              <h2>{row.item.title}</h2>
+            </div>
+            <p class="outcome-summary">{row.latestOutcome!.summary}</p>
+
+            <div class="suggestion">
+              <div class="suggestion-label">下一步候选（不自动执行）</div>
+              <p class="suggestion-reason">{row.suggestion!.reason}</p>
+              <div class="suggestion-actions">
+                <button
+                  class="suggestion-btn"
+                  type="button"
+                  data-create-next
+                  data-work-item-id={row.item.workItemId}
+                  data-action-type={row.suggestion!.suggestedActionType}
+                  data-expected-outcome={row.suggestion!.suggestedExpectedOutcome}
+                  data-queue={row.item.queue}
+                  data-source-id={row.item.evidenceRefs[0]?.sourceId ?? row.item.workItemId}
+                  data-source-type={row.item.evidenceRefs[0]?.sourceType ?? 'experience'}
+                  data-summary={row.suggestion!.reason}
+                >
+                  <Icon name="lucide:plus-circle" width={15} height={15} />
+                  创建下一步行动（{row.suggestion!.suggestedActionType}）
+                </button>
+                <span class="suggestion-status" data-suggestion-status role="status" aria-live="polite"></span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </section>
+    )}
+  </div>
+</AdminLayout>
+</body>
+</html>
+
+<script>
+  const root = document.querySelector('[data-outcomes]') as HTMLElement | null;
+  if (root) {
+    root.querySelectorAll<HTMLButtonElement>('[data-create-next]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const d = btn.dataset;
+        const setStatus = (text: string, ok: boolean) => {
+          const target = btn.parentElement?.querySelector('[data-suggestion-status]');
+          if (target) {
+            target.textContent = text;
+            target.classList.toggle('is-error', !ok);
+          }
+        };
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.textContent = '创建中…';
+        try {
+          // 1. 创建新 WorkItem proposal，引用上一个 Outcome 的来源作为证据
+          const createRes = await fetch('/api/admin/decisions', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              queue: d.queue || 'user-demand',
+              title: `基于结果跟进：${d.actionType}`,
+              summary: d.summary || '由上一个 Outcome 派生',
+              priorityBand: 'week',
+              evidenceRefs: [{
+                evidenceId: `ev_next_${d.workItemId}`,
+                sourceType: d.sourceType,
+                sourceId: d.sourceId,
+                occurredAt: new Date().toISOString(),
+                summary: d.summary || '上一个结果',
+                qualityStatus: 'verified-source',
+              }],
+              requestDecision: true,
+            }),
+          });
+          const created = await createRes.json();
+          if (!createRes.ok || !created?.item?.workItemId) {
+            setStatus(`创建失败：${created?.error || createRes.status}`, false);
+            btn.disabled = false;
+            btn.innerHTML = original;
+            return;
+          }
+          // 2. 接受决定
+          await fetch(`/api/admin/decisions/${created.item.workItemId}`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ decide: { outcome: 'accepted', reason: '基于上一个结果跟进' } }),
+          });
+          // 3. 附加候选 Action
+          const actionRes = await fetch('/api/admin/actions', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              workItemId: created.item.workItemId,
+              actionType: d.actionType,
+              targetType: d.actionType === 'evaluate-asset' ? 'asset' : d.actionType === 'create-learning-request' ? 'learning-request' : 'content',
+              expectedOutcome: d.expectedOutcome,
+            }),
+          });
+          if (!actionRes.ok) {
+            const err = await actionRes.json().catch(() => ({}));
+            setStatus(`行动创建失败：${err.error || actionRes.status}`, false);
+            btn.disabled = false;
+            btn.innerHTML = original;
+            return;
+          }
+          setStatus('已创建下一步决定与行动。', true);
+          btn.textContent = '已创建 ✓';
+        } catch {
+          setStatus('网络异常，请重试。', false);
+          btn.disabled = false;
+          btn.innerHTML = original;
+        }
+      });
+    });
+  }
+</script>
+
+<style is:global>
+  .outcomes { width: 100%; max-width: 880px; margin: 0 auto; }
+  .outcomes-head p { margin: 0 0 22px; color: var(--adm-text-dim); font-size: 12px; line-height: 1.7; max-width: 640px; }
+  .outcomes-empty { padding: 36px; display: grid; justify-items: center; gap: 8px; text-align: center; color: var(--adm-text-faint); border: 1px dashed var(--adm-border); border-radius: 18px; background: rgba(255,255,255,.6); }
+  .outcomes-empty strong { color: var(--adm-text-dim); font-size: 13px; }
+  .outcomes-empty span { font-size: 11px; max-width: 360px; }
+  .outcome-list { display: grid; gap: 12px; }
+  .outcome-card { padding: 18px 20px; border: 1px solid var(--adm-border); border-radius: 18px; background: rgba(255,255,255,.78); box-shadow: 0 10px 30px rgba(39,62,58,.06); }
+  .outcome-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .outcome-result { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+  .outcome-result.is-good { color: var(--adm-good, #16a34a); background: rgba(22,163,74,.1); }
+  .outcome-result.is-warn { color: var(--adm-warn, #f59e0b); background: rgba(245,158,11,.1); }
+  .outcome-result.is-bad { color: var(--adm-bad, #dc2626); background: rgba(220,38,38,.1); }
+  .outcome-result.is-neutral { color: var(--adm-text-faint); background: rgba(120,113,108,.1); }
+  .outcome-card h2 { margin: 0; font: 700 15px/1.4 var(--adm-font-ui); color: var(--adm-text); }
+  .outcome-summary { margin: 0 0 14px; color: var(--adm-text-dim); font-size: 12px; line-height: 1.7; }
+  .suggestion { padding: 13px 15px; border-radius: 12px; background: rgba(53,191,171,.06); border: 1px solid rgba(53,191,171,.18); }
+  .suggestion-label { color: var(--adm-brand-strong); font-size: 10px; font-weight: 700; margin-bottom: 5px; }
+  .suggestion-reason { margin: 0 0 11px; color: var(--adm-text-dim); font-size: 11px; line-height: 1.65; }
+  .suggestion-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .suggestion-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border: 0; border-radius: 10px; background: var(--adm-brand-strong); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .suggestion-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .suggestion-status { font-size: 10px; color: var(--adm-text-faint); min-height: 1.2em; }
+  .suggestion-status.is-error { color: var(--adm-bad, #dc2626); }
+</style>

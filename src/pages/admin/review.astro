@@ -269,10 +269,10 @@ function relatedText(topic: TopicCandidate): string {
           if (res.ok && data.ok) {
             if (card) card.style.opacity = '0.35';
           } else {
-            alert(data.error || '操作失败');
+            await window.WalkerAdminUI?.notify({ title: '操作失败', message: data.error || '操作失败' });
           }
         } catch {
-          alert('网络异常，请重试。');
+          await window.WalkerAdminUI?.notify({ title: '网络异常', message: '网络异常，请重试。' });
         }
       });
     });

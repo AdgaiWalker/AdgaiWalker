@@ -18,7 +18,10 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 天
 export type SessionRole = 'user' | 'admin' | 'owner';
 
 function getSecret(): string {
-  return import.meta.env.COOKIE_SECRET ?? '';
+  const configured = import.meta.env.COOKIE_SECRET ?? '';
+  if (configured) return configured;
+  // 本机开发预览需要可签名的临时会话；生产环境仍强制配置 COOKIE_SECRET。
+  return import.meta.env.DEV ? 'walker-local-preview-session-only' : '';
 }
 
 export function createSessionId(): string {

@@ -9,7 +9,7 @@ const log = defineCollection({
     date: z.date(),
     updated: z.date().optional(),
     tags: z.array(z.string()),
-    type: z.enum(['knowledge', 'tool', 'idea', 'project', 'community', 'learn', 'learning']),
+    type: z.enum(['knowledge', 'tool', 'idea', 'project', 'community', 'learn']),
     form: z.enum(['article', 'note', 'diary', 'rant', 'gallery', 'video', 'recipe', 'calligraphy', 'resource', 'project', 'idea', 'lesson']).optional(),
     domain: z.enum(['ai', 'coding', 'product', 'philosophy', 'life', 'cooking', 'calligraphy', 'reading', 'travel', 'emotion', 'community']).optional(),
     intent: z.enum(['think', 'record', 'teach', 'share', 'verify', 'showcase', 'reflect', 'connect', 'vent']).optional(),
@@ -55,6 +55,7 @@ const log = defineCollection({
       badge: z.string(),
       tag: z.string(),
     })).optional(),
+    /** @deprecated 不再使用；视频通过 body 内的 BlockVideo 组件嵌入。保留字段仅为兼容，新增内容不应填写。 */
     videos: z.array(z.object({
       platform: z.enum(['bilibili', 'douyin', 'xiaohongshu', 'youtube', 'github', 'zhihu']),
       url: z.url(),

@@ -177,6 +177,8 @@ try {
     const resetPassword = document.getElementById('reset-password');
     const copyBtn = document.getElementById('copy-btn');
     const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
+    const ask = (message: string, title = '确认账号操作') => window.WalkerAdminUI?.confirm({ title, message, tone: 'danger', confirmText: '确认执行' }) ?? Promise.resolve(false);
+    const tell = (message: string, title = '操作结果') => window.WalkerAdminUI?.notify({ title, message }) ?? Promise.resolve();
 
     document.querySelectorAll<HTMLTableSectionElement>('tbody').forEach((tbody) => {
       tbody.addEventListener('click', async (e) => {
@@ -188,7 +190,7 @@ try {
         const action = target.dataset.action;
 
         if (action === 'reset') {
-          if (!confirm(`确定重置 ${username} 的密码？`)) return;
+          if (!(await ask(`确定重置 ${username} 的密码？新临时密码只会显示一次。`))) return;
           const res = await fetch('/api/admin/accounts/reset', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }),
           });
@@ -198,25 +200,25 @@ try {
             resetPassword.textContent = json.newPassword ?? '';
             dialog.showModal();
           } else {
-            alert(json.reason || '重置失败。');
+            await tell(json.reason || '重置失败。');
           }
         } else if (action === 'toggle-status') {
           const current = target.dataset.status;
           const next = current === 'banned' ? 'active' : 'banned';
-          if (!confirm(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？`)) return;
+          if (!(await ask(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？该操作会影响其后台访问。`))) return;
           const res = await fetch('/api/admin/accounts/status', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, status: next }),
           });
           if (res.ok) window.location.reload();
-          else { const j = await res.json(); alert(j.reason || '操作失败。'); }
+          else { const j = await res.json(); await tell(j.reason || '操作失败。'); }
         } else if (action === 'set-role') {
           const role = target.dataset.role ?? '';
-          if (!confirm(`确定将 ${username} 设为「${roleLabel(role)}」？该用户需重新登录才生效。`)) return;
+          if (!(await ask(`确定将 ${username} 设为「${roleLabel(role)}」？该用户需重新登录才生效。`))) return;
           const res = await fetch('/api/admin/accounts/role', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, role }),
           });
           if (res.ok) window.location.reload();
-          else { const j = await res.json(); alert(j.reason || '操作失败。'); }
+          else { const j = await res.json(); await tell(j.reason || '操作失败。'); }
         }
       });
     });

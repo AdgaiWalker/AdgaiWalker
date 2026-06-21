@@ -14,6 +14,8 @@ interface EditorState {
   sha: string;
   doc: ReturnType<typeof parseDoc> | null;
   dirty: boolean;
+  /** 从选题进入编辑时携带的 topicId，保存时显式回传内容 API（双通道保留 sourceTopicId） */
+  topicId?: string;
   root: HTMLElement;
   editor: HTMLTextAreaElement;
   preview: HTMLElement;
@@ -162,6 +164,20 @@ function setStatus(text: string, kind: '' | 'error' | 'success' = ''): void {
   state.status.className = `ie-status ${kind}`.trim();
 }
 
+async function askEditorConfirm(message: string, title = '确认编辑操作'): Promise<boolean> {
+  return Boolean(await window.WalkerAdminUI?.confirm({ title, message, confirmText: '确认' }));
+}
+
+async function askEditorPrompt(message: string, options?: { title?: string; placeholder?: string; initialValue?: string }): Promise<string | null> {
+  return window.WalkerAdminUI?.prompt({
+    title: options?.title ?? '补充信息',
+    message,
+    placeholder: options?.placeholder,
+    initialValue: options?.initialValue,
+    confirmText: '确认',
+  }) ?? null;
+}
+
 async function loadContent(): Promise<void> {
   if (!state) return;
   if (state.slug) {
@@ -173,7 +189,7 @@ async function loadContent(): Promise<void> {
     state.sha = data.sha;
     const draft = loadDraft(state.slug);
     if (draft && draft.content !== data.content) {
-      if (confirm('检测到未保存的草稿，是否恢复？')) {
+      if (await askEditorConfirm('检测到未保存的草稿，是否恢复？', '恢复草稿')) {
         state.editor.value = draft.content;
         setStatus('已恢复草稿');
       } else {
@@ -196,7 +212,7 @@ async function save(): Promise<void> {
   applyFormToDoc();
   const content = serializeDoc(state.doc);
   if (!state.slug) {
-    const newSlug = (window.prompt('请输入 slug（如 新文章 或 my-post）') || '').trim();
+    const newSlug = (await askEditorPrompt('请输入 slug（如 新文章 或 my-post）', { title: '新建文章 slug', placeholder: 'my-post' }) || '').trim();
     if (!newSlug) { setStatus('请先填写 slug。', 'error'); return; }
     const ext = newSlug.endsWith('.md') || newSlug.endsWith('.mdx') ? '' : '.md';
     state.slug = newSlug + ext;
@@ -209,12 +225,12 @@ async function save(): Promise<void> {
     const res = await fetch(`/api/admin/content/${encodeURIComponent(state.slug)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, sha: state.sha || undefined, create: isCreate }),
+      body: JSON.stringify({ content, sha: state.sha || undefined, create: isCreate, topicId: state.topicId }),
     });
     const data = await res.json();
     if (res.status === 409) {
       setStatus('内容已被改动，需重新拉取。', 'error');
-      if (confirm('服务端内容已变更，丢弃本地改动重新加载？')) await loadContent();
+      if (await askEditorConfirm('服务端内容已变更，丢弃本地改动重新加载？', '重新加载内容')) await loadContent();
       return;
     }
     if (res.ok && data.ok) {
@@ -239,9 +255,9 @@ async function save(): Promise<void> {
   }
 }
 
-function cancel(): void {
+async function cancel(): Promise<void> {
   if (!state) return;
-  if (state.dirty && !confirm('有未保存的改动，确定丢弃？')) return;
+  if (state.dirty && !(await askEditorConfirm('有未保存的改动，确定丢弃？', '丢弃未保存改动'))) return;
   if (state.slug) clearDraft(state.slug);
   if (state.mode === 'inline') {
     exitInlineMode();
@@ -306,15 +322,15 @@ export function enterInlineEditor(slug: string): void {
   initEditor(root, slug, 'inline');
 }
 
-export function initStandaloneEditor(slug: string, draftTemplate: string): void {
+export function initStandaloneEditor(slug: string, draftTemplate: string, topicId?: string): void {
   const root = document.getElementById('inline-editor') as HTMLElement | null;
   if (!root) return;
   window.__ieDraftTemplate = draftTemplate;
   root.hidden = false;
-  initEditor(root, slug, 'standalone');
+  initEditor(root, slug, 'standalone', topicId);
 }
 
-function initEditor(root: HTMLElement, slug: string, mode: 'inline' | 'standalone'): void {
+function initEditor(root: HTMLElement, slug: string, mode: 'inline' | 'standalone', topicId?: string): void {
   const editor = root.querySelector<HTMLTextAreaElement>('#ie-editor')!;
   const preview = root.querySelector<HTMLElement>('#ie-preview')!;
   const status = root.querySelector<HTMLElement>('#ie-status')!;
@@ -324,7 +340,7 @@ function initEditor(root: HTMLElement, slug: string, mode: 'inline' | 'standalon
   const rawYaml = root.querySelector<HTMLTextAreaElement>('#mf-raw-yaml');
   if (slug) historyBtn.hidden = false;
   state = {
-    slug, mode, sha: '', doc: null, dirty: false,
+    slug, mode, sha: '', doc: null, dirty: false, topicId,
     root, editor, preview, status, saveBtn, cancelBtn, historyBtn, rawYaml,
   };
   switchTab('body');

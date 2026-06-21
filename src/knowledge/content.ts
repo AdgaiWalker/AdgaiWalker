@@ -37,7 +37,7 @@ export async function getAiReadableContentItems() {
 
 export async function getPublishedPosts() {
   return sortByDateDescending(await getCollection('log', ({ data }) =>
-    isPublicContentData(data) && ['knowledge', 'idea', 'project', 'learning'].includes(data.type)
+    isPublicContentData(data) && ['knowledge', 'idea', 'project', 'learn'].includes(data.type)
   ));
 }
 
@@ -59,11 +59,11 @@ export async function getPublishedProjects() {
   ));
 }
 
-/** 获取学习感悟类文章（用于 /learn?tab=journal） */
+/** 获取学习感悟类文章（用于 /learn?tab=tracks） */
 export async function getPublishedLearningPosts() {
   const all = await getCollection('log', (entry) =>
     isPublicEntry(entry) &&
-    (entry.data.type === 'learn' || entry.data.type === 'learning' || entry.data.type === 'knowledge')
+    (entry.data.type === 'learn' || entry.data.type === 'knowledge')
   );
   return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }

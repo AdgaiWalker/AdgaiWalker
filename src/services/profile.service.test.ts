@@ -29,6 +29,7 @@ function createFakeProfileStore(): UserProfileRepositoryPort {
       const existing = profiles.get(username);
       if (existing) profiles.set(username, { ...existing, deleteRequestedAt: requestedAt, updatedAt: requestedAt });
     },
+    async deleteByUsername(username) { profiles.delete(username); },
   };
 }
 

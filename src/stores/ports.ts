@@ -456,3 +456,396 @@ export interface SkillCandidateRepositoryPort {
   findByAdmissionStatus(status: SkillAdmissionStatus): Promise<SkillCandidate[]>;
   updateAdmission(skillId: string, status: SkillAdmissionStatus): Promise<void>;
 }
+
+// ---------------------------------------------------------------------------
+// 统一资产生命周期（P2-B）
+//
+// 方案要求：统一 KnowledgeSource / Experience / Rule / Skill / LearningRequest，
+// 统一 observed→candidate→validated→stable→retired。
+//
+// hai-razor 决策：不重命名 Experience.maturity / Skill.admissionStatus / Rule.status
+// （会破坏已有数据与历史命名），而是用一个**统一的 AssetLifecycle 视图**把三者
+// 映射到同一生命周期，再用 AssetEvidenceLink 记录"资产 ← Outcome/Experience 证据"
+// 与"每次晋升的 Walker 批准"。这样三类资产互相关联、连到 Outcome，且不动现有枚举。
+//
+// 核心补缺：方案明确"每次晋升保存 Outcome Evidence 和 Walker 批准"
+//          "能查看某个 Skill 是由哪些 Experience/Outcome 支持的"
+//          "证据不足只生成 LearningRequest，不注册 Skill"。
+// ---------------------------------------------------------------------------
+
+/** 统一资产类型 —— 对应 ExperienceEvent / RuleCandidate / SkillCandidate */
+export type AssetKind = 'experience' | 'rule' | 'skill';
+
+/** 统一生命周期阶段 —— 映射各自历史枚举到同一语言 */
+export type AssetLifecycleStage =
+  | 'observed'    // Experience.maturity=material/embryo | Rule.status=observed | Skill=candidate
+  | 'candidate'   // Experience.maturity=stable-method | Rule.status=candidate | Skill=candidate
+  | 'validated'   // Experience.maturity=skill-candidate | Rule.status=validated | Skill=admitted
+  | 'stable'      // Experience.maturity=skill | Rule.status=stable | Skill=admitted
+  | 'retired';    // Rule.status=retired | Skill=demoted-to-method
+
+/** 把三类资产各自的本地状态映射到统一生命周期阶段 */
+export function normalizeAssetStage(kind: AssetKind, raw: string): AssetLifecycleStage {
+  if (kind === 'rule') {
+    return (['observed', 'candidate', 'validated', 'stable', 'retired'] as const).includes(raw as AssetLifecycleStage)
+      ? (raw as AssetLifecycleStage)
+      : 'observed';
+  }
+  if (kind === 'experience') {
+    const map: Record<string, AssetLifecycleStage> = {
+      material: 'observed', embryo: 'observed',
+      'stable-method': 'candidate', 'skill-candidate': 'validated', skill: 'stable',
+    };
+    return map[raw] ?? 'observed';
+  }
+  // skill
+  const skillMap: Record<string, AssetLifecycleStage> = {
+    candidate: 'candidate', admitted: 'validated', 'demoted-to-method': 'retired',
+  };
+  return skillMap[raw] ?? 'observed';
+}
+
+/**
+ * 资产晋升证据链：记录某次晋升（stage 变化）由哪些 Outcome / Experience 支持，
+ * 以及 Walker 的批准。append-only，保留审计 —— 满足方案"每次晋升保存 Outcome
+ * Evidence 和 Walker 批准"。
+ */
+export interface AssetEvidenceLink {
+  linkId: string;
+  assetKind: AssetKind;
+  assetId: string;
+  /** 晋升到的目标阶段 */
+  stage: AssetLifecycleStage;
+  /** 支撑本次晋升的来源（Outcome ID / Experience ID / Rule ID，引用不复制原文） */
+  sourceOutcomeIds: string[];
+  sourceExperienceIds: string[];
+  /** Walker 批准人 */
+  approvedBy: string;
+  approvedAt: string;
+  reason: string;
+  /** 关联的 WorkItem（可选，回溯到产生这条晋升的决定） */
+  workItemId?: string;
+  /** 进程内单调序号：同毫秒多次晋升时保证倒序稳定（append-only 审计要求） */
+  seq?: number;
+}
+
+export interface AssetEvidenceLinkRepositoryPort {
+  save(link: AssetEvidenceLink): Promise<void>;
+  /** 查看某个资产由哪些 Outcome/Experience 支持（方案明确要求） */
+  findByAsset(kind: AssetKind, assetId: string): Promise<AssetEvidenceLink[]>;
+  findRecent(limit?: number): Promise<AssetEvidenceLink[]>;
+}
+
+// ---------------------------------------------------------------------------
+// LearningRequest —— 证据不足时生成（P2-B）
+//
+// 方案：证据不足只生成 LearningRequest，不注册 Skill；不把未验证材料直接注册为能力。
+// 这是"知识不等于产能"护栏的落地：缺实践/反例/访谈/结果证据时，记一条待补任务。
+// ---------------------------------------------------------------------------
+
+export type LearningRequestStatus = 'open' | 'in-progress' | 'fulfilled' | 'dropped';
+
+export interface LearningRequest {
+  requestId: string;
+  createdAt: string;
+  updatedAt: string;
+  /** 需要补什么类型的证据：实践 / 反例 / 访谈 / 结果 */
+  evidenceGap: 'practice' | 'counter-example' | 'interview' | 'outcome' | 'boundary';
+  /** 为什么需要补（关联的选题/资产/Outcome 摘要，不复制私密原文） */
+  context: string;
+  /** 期望产出（补到什么程度算完成） */
+  expectedEvidence: string;
+  status: LearningRequestStatus;
+  /** 关联选题 / 资产 / WorkItem（可选） */
+  topicId?: string;
+  assetKind?: AssetKind;
+  assetId?: string;
+  workItemId?: string;
+  /** Walker 完成补证后填入的结果摘要 */
+  fulfillmentNote?: string;
+  fulfilledAt?: string;
+}
+
+export interface LearningRequestRepositoryPort {
+  save(request: LearningRequest): Promise<void>;
+  findById(requestId: string): Promise<LearningRequest | null>;
+  findByStatus(status: LearningRequestStatus): Promise<LearningRequest[]>;
+  findRecent(limit?: number): Promise<LearningRequest[]>;
+}
+
+// ---------------------------------------------------------------------------
+// WorkItem —— 后台决策聚合根（P0-B，hai-razor 包 B）
+//
+// 语义四分（Evidence / Decision / Action / Outcome）作为内嵌子结构保留，
+// 但首版共用一个聚合根与一个存储边界。WorkItem 不拥有原始事实，只引用并投影。
+//
+// 信任边界（hai-razor Complexity To Preserve）：
+// - 无 evidenceRefs 的 AI 输出只能是 `proposal`，不能进入 decided/acting
+// - 每次正式状态变化写一条 append-only history（actor / 时间 / from→to / reason）
+// - 不复制私密原文；EvidenceRef 只保存安全摘要
+// ---------------------------------------------------------------------------
+// Admin Appearance —— 后台外观与媒体个人化（UX1）
+// ---------------------------------------------------------------------------
+
+export interface ThemeProfile {
+  profileId: string;
+  owner: string;
+  name: string;
+  accent: 'walker-jade' | 'aurora' | 'sunset' | 'mint';
+  glass: 'apple-modern';
+  density: 'low' | 'comfortable';
+  backgroundAssetId?: string;
+  readabilityOverlay: number;
+  reducedMotion: boolean;
+  visibility: 'owner';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MediaAsset {
+  assetId: string;
+  owner: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  kind: 'image' | 'video';
+  source: 'upload' | 'remote';
+  visibility: 'owner';
+  storageKey: string;
+  publicUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppearanceRepositoryPort {
+  getStorageMode(): Promise<'redis' | 'memory-development' | 'unavailable'>;
+  getTheme(owner: string): Promise<ThemeProfile | null>;
+  saveTheme(theme: ThemeProfile): Promise<void>;
+  resetTheme(owner: string): Promise<ThemeProfile>;
+  saveMedia(asset: MediaAsset): Promise<void>;
+  listMedia(owner: string): Promise<MediaAsset[]>;
+  removeMedia(owner: string, assetId: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+
+/** WorkItem 来源队列 —— 不同来源用不同证据与验证方式，不可抹掉来源身份 */
+export type WorkItemQueue = 'user-demand' | 'walker-thesis' | 'system-event' | 'ai-asset';
+
+/**
+ * WorkItem 生命周期：
+ * - proposal   AI 或系统整理的草案（必须有证据才可进入下一阶段）
+ * - pending    证据完整、已请求 Walker 决定
+ * - accepted   Walker 已接受（可派生 Action）
+ * - rejected   Walker 已拒绝（保留原因，不删除）
+ * - paused     Walker 暂缓（保留复查条件）
+ * - acting     至少一个 Action 已授权执行
+ * - awaiting-verification  Action 已执行完，等待现实验证
+ * - resolved   已记录 Outcome 并闭环
+ */
+export type WorkItemStatus =
+  | 'proposal'
+  | 'pending'
+  | 'accepted'
+  | 'rejected'
+  | 'paused'
+  | 'acting'
+  | 'awaiting-verification'
+  | 'resolved';
+
+/** 优先级带（不跨队列做伪精确横向比较，见 northstar 优先级规则） */
+export type WorkItemPriorityBand =
+  | 'now'
+  | 'week'
+  | 'observe'
+  | 'insufficient'
+  | 'blocked';
+
+export interface EvidenceRef {
+  evidenceId: string;
+  /** 引用的事实来源类型：need-case / walker-thesis / content-feedback / match-feedback / incident / experience / agent-call */
+  sourceType:
+    | 'need-case'
+    | 'walker-thesis'
+    | 'content-feedback'
+    | 'match-feedback'
+    | 'incident'
+    | 'experience'
+    | 'agent-call';
+  sourceId: string;
+  /** 事实发生时间（不是采集时间） */
+  occurredAt: string;
+  /** 进入本 WorkItem 的时间 */
+  collectedAt: string;
+  environment: 'development' | 'preview' | 'production';
+  visibility: 'owner' | 'admin' | 'private' | 'public';
+  freshness: 'fresh' | 'stale' | 'unknown';
+  qualityStatus: 'verified-source' | 'partial' | 'unverified';
+  /** 安全摘要（已脱敏）；不复制私密原文 */
+  summary: string;
+}
+
+export interface DecisionItem {
+  /** Walker 请求决定的问题 */
+  requestedDecision: string;
+  /** 当前决定结果，与 WorkItemStatus 同步 */
+  outcome: 'pending' | 'accepted' | 'rejected' | 'paused';
+  /** 决定理由（接受/拒绝/暂缓都必须有） */
+  reason?: string;
+  /** 作出决定的人（admin / owner username） */
+  decidedBy?: string;
+  decidedAt?: string;
+}
+
+export type WorkItemActionType =
+  | 'create-content'
+  | 'update-content'
+  | 'change-feature'
+  | 'create-learning-request'
+  | 'review-incident'
+  | 'evaluate-asset';
+
+export type WorkItemActionStatus =
+  | 'authorized'
+  | 'in-progress'
+  | 'awaiting-verification'
+  | 'completed'
+  | 'blocked'
+  | 'cancelled';
+
+export interface WorkItemAction {
+  actionId: string;
+  actionType: WorkItemActionType;
+  /** 目标对象类型，如 content / feature / incident */
+  targetType: string;
+  /** 目标 ID（如内容 slug）；未产出前可空 */
+  targetId?: string;
+  assignee: 'walker' | 'ai' | 'shared';
+  status: WorkItemActionStatus;
+  /** 预期结果 —— 没有 expectedOutcome 的 Action 不能进入 authorized */
+  expectedOutcome: string;
+  verifyAt?: string;
+  reversible: boolean;
+  rollbackPlan?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WorkItemOutcomeResult = 'successful' | 'partial' | 'failed' | 'inconclusive';
+
+export interface WorkItemOutcome {
+  outcomeId: string;
+  actionId: string;
+  result: WorkItemOutcomeResult;
+  summary: string;
+  /** 指向支撑结果判断的证据（如 content-feedback） */
+  evidenceRefs: EvidenceRef[];
+  observedAt: string;
+  nextDecisionSuggested?: boolean;
+}
+
+/** append-only 事件历史：审计、恢复与责任解释的唯一来源 */
+export interface WorkItemHistoryEntry {
+  historyId: string;
+  /** 状态迁移的起点；新建时为 null */
+  fromStatus: WorkItemStatus | null;
+  toStatus: WorkItemStatus;
+  /** 触发者；AI 草案由 'ai' 发起，正式决定由 admin/owner username 发起 */
+  actor: string;
+  occurredAt: string;
+  /** 状态变化的理由 / 附带说明 */
+  reason?: string;
+  /** 变更类型，便于按事件类别查询 */
+  kind:
+    | 'created'
+    | 'status-change'
+    | 'evidence-added'
+    | 'action-added'
+    | 'action-updated'
+    | 'outcome-recorded'
+    | 'decision-updated';
+  /** 结构化补充（如新增 evidence 的 id、action 的 id） */
+  detail?: Record<string, unknown>;
+}
+
+export interface WorkItem {
+  workItemId: string;
+  /** 来源队列 */
+  queue: WorkItemQueue;
+  title: string;
+  summary: string;
+  status: WorkItemStatus;
+  priorityBand: WorkItemPriorityBand;
+  /** 优先级理由（同队列内排序依据，不显示伪精确分数） */
+  priorityReasons: string[];
+  /** 已知的不确定性 */
+  uncertainty: string[];
+  /** 指向原始事实的证据引用，不复制私密原文 */
+  evidenceRefs: EvidenceRef[];
+  /** Walker 的决定（首版一个 WorkItem 一个决定） */
+  decision: DecisionItem;
+  /** 由决定派生的可执行动作 */
+  actions: WorkItemAction[];
+  /** 现实结果记录 */
+  outcomes: WorkItemOutcome[];
+  /** append-only 状态历史 */
+  history: WorkItemHistoryEntry[];
+  /** 关联选题（可选，回链 TopicCandidate） */
+  topicId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkItemRepositoryPort {
+  save(workItem: WorkItem): Promise<void>;
+  findById(workItemId: string): Promise<WorkItem | null>;
+  /** 按队列/状态过滤的最近列表；按 updatedAt 倒序 */
+  list(options?: {
+    queue?: WorkItemQueue;
+    status?: WorkItemStatus | WorkItemStatus[];
+    limit?: number;
+  }): Promise<WorkItem[]>;
+  /** 获取全部非终态（不含 resolved/rejected）的事项 */
+  listActive(options?: { limit?: number }): Promise<WorkItem[]>;
+  /** 删除：仅用于开发期清空，不作为正式能力（hai-razor：优先 cancelled/rejected 保留审计） */
+  delete(workItemId: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// ContentFeedback —— 内容阅读反馈（P1-A）
+//
+// 与 MatchFeedbackEvent 严格区分：
+// - MatchFeedback 服务"需求匹配会话"，要求 sessionId，回答"匹配对不对"。
+// - ContentFeedback 服务"内容阅读结果"，匿名访客可提交，回答"内容有没有解决问题"。
+// 两类反馈分开存储、分开计算、并列解释，不合并原始分母（hai-razor 保留复杂度）。
+// ---------------------------------------------------------------------------
+
+export type ContentFeedbackSignal = 'useful' | 'needs-more' | 'outdated';
+
+export interface ContentFeedbackEvent {
+  feedbackId: string;
+  /** 内容 slug（必须对应真实公开内容，服务端校验） */
+  contentId: string;
+  /** 内容公开路径，便于回溯展示 */
+  contentPath: string;
+  /** 由服务端从内容元数据派生，不信任客户端传入 */
+  sourceTopicId?: string;
+  /** 只有服务端可验证关联时才写入；不把一般访客冒充为原需求用户 */
+  sourceNeedCaseId?: string;
+  signal: ContentFeedbackSignal;
+  /** 可选说明，限长 + 脱敏，允许空 */
+  note?: string;
+  createdAt: string;
+  environment: 'development' | 'preview' | 'production';
+  /** 是否同意用于分析；未同意不入分析聚合 */
+  consentForAnalysis: boolean;
+}
+
+export interface ContentFeedbackRepositoryPort {
+  save(event: ContentFeedbackEvent): Promise<void>;
+  findByContent(contentId: string, range?: { from?: string; to?: string }): Promise<ContentFeedbackEvent[]>;
+  findByTopic(topicId: string, range?: { from?: string; to?: string }): Promise<ContentFeedbackEvent[]>;
+  findRecent(range?: { from?: string; to?: string }, limit?: number): Promise<ContentFeedbackEvent[]>;
+}

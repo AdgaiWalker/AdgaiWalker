@@ -13,11 +13,16 @@ form: lesson
 intent: teach
 ---
 
+import BlockVideo from '@/components/blocks/BlockVideo.astro';
+import BlockPrompt from '@/components/blocks/BlockPrompt.astro';
+
 本文适用一切网络环境，外接模型（DeepSeek、中转等）可正常使用 Codex 插件功能。
 
 为什么需要 Codex？CodeBuddy 界面差不多，难道不行吗？——专业级生态和最强模型：CodeBuddy 有的，它有；CodeBuddy 没有的，许多专业级大厂插件都在里面。
 
 **电脑要求**：至少能流畅玩 4399 小游戏，苹果 8G 内存单窗口可运行，其余系统一律 16G 往上。
+
+<BlockVideo bvid="BV1Tf4y1b7cN" />
 
 ## 一、token 渠道
 
@@ -63,9 +68,9 @@ intent: teach
 
 先安装 Google 浏览器（[下载地址](https://www.google.cn/chrome)），然后把提示词发送给 Codex：
 
-```plain text
+<BlockPrompt title="基础开发环境安装 Prompt">
 在 Windows（winget）或 macOS（brew）上自动检测并安装 Git、Node.js LTS、PostgreSQL 最新版，已安装的跳过；配置 npm registry 为国内镜像 https://registry.npmmirror.com；全局安装 @anthropic-ai/claude-code、@openai/codex、@google/gemini-cli；最后验证所有版本，全部安装成功，只需告诉结果。
-```
+</BlockPrompt>
 
 **MCP：** 帮我安装 Chrome DevTools MCP。
 

@@ -9,6 +9,8 @@ import type { APIRoute } from 'astro';
 
 import { isAdmin, isOwner } from '@/lib/admin-auth';
 import { readSessionId } from '@/lib/account-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import { createManagedInviteCodeStore } from '@/stores/managed-invite-code.store';
 import { createUserContextService } from '@/services/user-context.service';
 import { createAccountStore } from '@/stores/account.store';
@@ -51,6 +53,16 @@ export const POST: APIRoute = async ({ request }) => {
   const count = Math.max(1, Math.min(Number(body.count) || 1, 500));
   const maxUses = Math.max(1, Number(body.maxUses) || 1);
 
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'invite-code.generate',
+    targetType: 'invite-code',
+    reason: `生成 ${count} 个邀请码。`,
+    detail: { label, count, maxUses },
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
+
   const created = await store.generate({ label, count, maxUses, createdBy: me.username ?? 'owner' });
   return json({ ok: true, codes: created.map((c) => c.code) });
 };
@@ -67,6 +79,16 @@ export const DELETE: APIRoute = async ({ request }) => {
 
   const code = typeof body.code === 'string' ? body.code : '';
   if (!code) return json({ ok: false, reason: '请指定邀请码。' }, 400);
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'invite-code.delete',
+    targetType: 'invite-code',
+    reason: '删除邀请码会立即移除该身份入口。',
+    detail: { codeHashSuffix: code.slice(-4) },
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
 
   await store.delete(code);
   return json({ ok: true });

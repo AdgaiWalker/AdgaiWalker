@@ -223,6 +223,7 @@ const NAV = [
     const post = (url, body) => fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     }).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
+    const tell = (message) => window.WalkerAdminUI?.notify({ title: '操作结果', message }) ?? Promise.resolve();
 
     document.getElementById('new-skill-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -233,7 +234,7 @@ const NAV = [
       if (payload.sourceExperienceIds) payload.sourceExperienceIds = [payload.sourceExperienceIds];
       else delete payload.sourceExperienceIds;
       const { ok, data } = await post('/api/admin/skills', payload);
-      if (ok && data.ok) window.location.href = '/admin/skills'; else alert(data.error || '保存失败');
+      if (ok && data.ok) window.location.href = '/admin/skills'; else await tell(data.error || '保存失败');
     });
 
     document.querySelectorAll('.btn[data-action]').forEach((btn) => {
@@ -244,19 +245,19 @@ const NAV = [
         if (!skillId || !action) return;
         if (action === 'admit') {
           const { ok, data } = await post('/api/admin/skills?action=admission', { skillId, admissionStatus: 'admitted' });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'demote') {
           const { ok, data } = await post('/api/admin/skills?action=admission', { skillId, admissionStatus: 'demoted-to-method' });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'reset') {
           const { ok, data } = await post('/api/admin/skills?action=admission', { skillId, admissionStatus: 'candidate' });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'bump') {
           const name = card.querySelector('.skill-name')?.textContent ?? '';
           const desc = card.querySelector('.skill-desc')?.textContent ?? '';
           const v = Number(card.dataset.version ?? '1') + 1;
           const { ok, data } = await post('/api/admin/skills', { skillId, name, description: desc, version: v });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         }
       });
     });

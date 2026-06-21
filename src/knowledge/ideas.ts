@@ -1,7 +1,7 @@
 import type { CollectionEntry } from 'astro:content';
+import type { render } from 'astro:content';
 
-import { getNeedCaseStats, type NeedCaseStats } from '@/conversation/store';
-import { getPublishedIdeas } from '@/knowledge/content';
+import type { NeedCaseStats } from '@/conversation/store';
 import { STATUS_WEIGHT } from '@/shared/constants';
 
 export type IdeaEntry = CollectionEntry<'log'>;
@@ -46,32 +46,4 @@ export function sortIdeasByStatusAndDate(entries: IdeaEntry[]): IdeaEntry[] {
     if (weightA !== weightB) return weightA - weightB;
     return b.data.date.getTime() - a.data.date.getTime();
   });
-}
-
-export async function getIdeasPageData(): Promise<{
-  ideas: IdeaEntry[];
-  renderedIdeas: RenderedIdeaCard[];
-}> {
-  const { render } = await import('astro:content');
-  const [ideas, demandStats] = await Promise.all([
-    getPublishedIdeas(),
-    getNeedCaseStats({ days: 30 }),
-  ]);
-
-  const sortedIdeas = sortIdeasByStatusAndDate(ideas);
-  const renderedIdeas = await Promise.all(
-    sortedIdeas.map(async (entry) => {
-      const { Content } = await render(entry);
-      return {
-        entry,
-        Content,
-        demandSignal: getDemandSignal(entry, demandStats),
-      };
-    }),
-  );
-
-  return {
-    ideas: sortedIdeas,
-    renderedIdeas,
-  };
 }

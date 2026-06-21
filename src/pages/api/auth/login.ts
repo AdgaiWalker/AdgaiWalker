@@ -48,5 +48,5 @@ export const POST: APIRoute = async ({ request }) => {
   } catch {
     return json({ ok: false, reason: '服务端会话签名未配置（COOKIE_SECRET）' }, 500);
   }
-  return json({ ok: true, username: result.username }, 200, { 'Set-Cookie': sessionCookie(token) });
+  return json({ ok: true, username: result.username, role: result.role }, 200, { 'Set-Cookie': sessionCookie(token) });
 };

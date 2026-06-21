@@ -7,6 +7,8 @@ import type { APIRoute } from 'astro';
 
 import { isOwner } from '@/lib/admin-auth';
 import { readSessionId } from '@/lib/account-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import { createAccountService } from '@/services/account.service';
 import { createUserContextService } from '@/services/user-context.service';
 import { createAccountStore } from '@/stores/account.store';
@@ -48,6 +50,16 @@ export const POST: APIRoute = async ({ request }) => {
   if (me.username && username === me.username) {
     return json({ ok: false, reason: '不能删除自己。' }, 400);
   }
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'account.delete',
+    targetType: 'account',
+    targetId: username,
+    reason: '删除账号会撤销会话、删除画像、脱敏需求并删除账号。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
 
   const result = await accountService.deleteAccount(username);
   if (!result.ok) return json(result, 400);

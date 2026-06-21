@@ -1,0 +1,25 @@
+{
+  "version": "2.13",
+  "variables": {
+    "brand": { "type": "color", "value": "#35bfab" },
+    "brand-dim": { "type": "color", "value": "#1a8f80" },
+    "brand-soft": { "type": "color", "value": "#35bfab1a" },
+    "amber": { "type": "color", "value": "#f59e0b" },
+    "amber-soft": { "type": "color", "value": "#f59e0b1a" },
+    "rose": { "type": "color", "value": "#e11d48" },
+    "rose-soft": { "type": "color", "value": "#e11d481a" },
+    "bg": { "type": "color", "value": "#fbfbf8" },
+    "surface": { "type": "color", "value": "#ffffff" },
+    "sidebar-bg": { "type": "color", "value": "#0f1a1c" },
+    "sidebar-surface": { "type": "color", "value": "#16282b" },
+    "sidebar-text": { "type": "color", "value": "#c8d4d6" },
+    "sidebar-text-dim": { "type": "color", "value": "#6b8488" },
+    "sidebar-active": { "type": "color", "value": "#35bfab" },
+    "text": { "type": "color", "value": "#1a2325" },
+    "text-dim": { "type": "color", "value": "#64748b" },
+    "text-faint": { "type": "color", "value": "#94a3b8" },
+    "border": { "type": "color", "value": "#e7e5e0" },
+    "border-soft": { "type": "color", "value": "#f0efeb" }
+  },
+  "children": []
+}

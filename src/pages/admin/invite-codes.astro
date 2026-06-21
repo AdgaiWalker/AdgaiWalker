@@ -146,6 +146,8 @@ try {
   registerLifecycle(() => {
     const genForm = document.querySelector<HTMLFormElement>('#gen-form');
     const genResult = document.getElementById('gen-result');
+    const ask = (message: string, title = '确认邀请码操作') => window.WalkerAdminUI?.confirm({ title, message, tone: 'danger', confirmText: '确认执行' }) ?? Promise.resolve(false);
+    const tell = (message: string, title = '操作结果') => window.WalkerAdminUI?.notify({ title, message }) ?? Promise.resolve();
 
     genForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -159,9 +161,9 @@ try {
           genResult.innerHTML = '<div class="gen-result-title">已生成（仅显示一次，点击复制）：</div>' + json.codes.map((c: string) => `<div class="gen-code-line" data-code="${c}">${c}</div>`).join('');
           genResult.hidden = false;
         } else {
-          alert(json.reason || '生成失败');
+          await tell(json.reason || '生成失败');
         }
-      } catch { alert('网络错误'); }
+      } catch { await tell('网络错误'); }
       finally { if (btn) btn.disabled = false; }
     });
 
@@ -181,13 +183,13 @@ try {
         const code = row.dataset.code ?? '';
         const action = target.dataset.action;
         if (action === 'disable') {
-          if (!confirm(`确定禁用 ${code}？已发放的仍有效，但不能新用。`)) return;
+          if (!(await ask(`确定禁用 ${code}？已发放的仍有效，但不能新用。`))) return;
           const res = await fetch('/api/admin/invite-codes/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
-          if (res.ok) window.location.reload(); else { const j = await res.json(); alert(j.reason || '失败'); }
+          if (res.ok) window.location.reload(); else { const j = await res.json(); await tell(j.reason || '失败'); }
         } else if (action === 'delete') {
-          if (!confirm(`确定删除 ${code}？`)) return;
+          if (!(await ask(`确定删除 ${code}？删除后不能用于新访问。`))) return;
           const res = await fetch('/api/admin/invite-codes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
-          if (res.ok) window.location.reload(); else { const j = await res.json(); alert(j.reason || '失败'); }
+          if (res.ok) window.location.reload(); else { const j = await res.json(); await tell(j.reason || '失败'); }
         }
       });
     });
