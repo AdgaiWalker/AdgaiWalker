@@ -2343,3 +2343,45 @@ Decision made autonomously:
 Commit: pending
 ```
 
+### 2026-06-21 第十六轮 UX 收口（多智能体审查发现的缺口 + 守护旁路修复）
+
+```text
+背景: 用户问"基于我们做的这些还有什么是没有注意到的"+ 补充"还有 ux/ui"。
+     启用多智能体对抗式审查（接线可达性 / 文档漂移 / 正确性安全 / 测试覆盖），
+     发现 9 项缺口 + 1 个关键安全 bug。本轮收口。
+
+Commit 链（前述第十六轮"Commit: pending"现已落地）:
+  d8bec4d  P0-B02 + P3-A + P4 AI/Skill/Contributor 护栏
+  7b961b9  P5 经营基础 + Contributor RBAC 策略提案
+  df6fc8f  test-results 卫生
+  d80d0cb  Merge 到 main（feat/p3-p4-impl-round16）
+  f96acb3  本轮 UX 收口 + 守护旁路修复（fix/round16-ux-gaps）
+
+关键安全 bug（守护旁路，比 UX 更严重）:
+  /api/admin/skills?action=admission 到 admitted 直调 updateSkillAdmission，绕过 P4
+  boundary/反例/evalSet 守护——skills 页"准入注册"可无护栏注册。修复：抽出共享校验器
+  validateSkillRegistration（asset.service.ts 导出），promote 与 skills admission 两路径
+  共用；skills admission 到 admitted 现强制 skillRegistration + 走 updateSkillRegistration。
+  +4 单测锁定校验器。
+
+UX 接线缺口修复（已建但够不着 → 可用）:
+  - /admin/hit-rate 渲染 readingOutcome 第三组（阅读深度；P3-A 数据闭环不再断裂）
+  - /admin/skills 准入注册改 modal 收集 boundary/反例/evalSet（新护栏不再制造 UI 死胡同）
+  - /admin 工作台显示 AI proposal expiresAt（不再静默消失）
+  - 文章页阅读遥测隐私告知（一行 + DNT 可关）
+
+文档/配置漂移修复:
+  - .env.example 补 NORTHSTAR_ENABLED
+  - CLAUDE.md 补 P3-A/P4 RBAC/P5 NorthStar/rate-limiter dev 放宽/payment Port
+    架构模式 + /api/content-telemetry 路由 + env 节
+
+仍可选后续（非阻断）:
+  - Skill 暂停/回滚 UI 按钮（pauseSkill/rollbackSkill service 已就绪，/admin/skills 缺按钮）
+  - 新护栏错误文案 UX 审计（missing-boundary 等 WalkerAdminUI 是否给可操作提示）
+  - admin-truth-source-matrix 字段补全（readingOutcome/expiresAt/boundary/grant 行）
+
+Tests: astro check 0 errors；npm test 46 files / 341 tests；build passed；e2e 45/45 确定性。
+
+Commit: f96acb3（fix/round16-ux-gaps，待合并 main）
+```
+
