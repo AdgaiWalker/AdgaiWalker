@@ -142,6 +142,12 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
         与底部 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈 */}
     <BlockFeedback contentId={entry.id} />
 
+    {/* P3-A 隐私告知：本页匿名统计阅读深度（读到哪/是否读完）用于改进内容。
+        不采集 IP/身份；浏览器开启 DoNotTrack 即不采集。 */}
+    <p class="telemetry-privacy-note">
+      匿名统计阅读深度以改进内容；不采集身份，浏览器开启「禁止追踪」即关闭。
+    </p>
+
 	    {/* 相关资源 */}
     {resources.length > 0 && (
       <section class="article-section">
@@ -266,6 +272,16 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     font-size: 0.78rem;
     color: var(--color-parchment-dim);
     opacity: 0.7;
+  }
+
+  /* P3-A 阅读遥测隐私告知：轻量、不阻断 */
+  .telemetry-privacy-note {
+    margin: 0.75rem 0 2rem;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+    font-family: var(--font-mono);
   }
 
   .breadcrumb-link {

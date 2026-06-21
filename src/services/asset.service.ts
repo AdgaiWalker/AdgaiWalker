@@ -66,6 +66,24 @@ function evalSetCoversRequiredCategories(evalSet: { category: string }[]): boole
   return cats.has('normal') && cats.has('boundary') && cats.has('reject') && cats.has('failure');
 }
 
+/**
+ * P4 共享校验器：注册 Skill（到 admitted/registered）前必须有边界 + ≥1 反例 + 覆盖四类的 evalSet。
+ * 供 asset.service.promote 与 /api/admin/skills?action=admission 两条路径共用，避免守护被旁路。
+ * 返回 null = 通过；否则返回 missing-boundary / missing-counterexample / missing-eval-set。
+ */
+export function validateSkillRegistration(reg: {
+  applicableBoundary?: string;
+  failureBoundary?: string;
+  negativeExamples?: string[];
+  evalSet?: { category: string }[];
+} | undefined): 'missing-boundary' | 'missing-counterexample' | 'missing-eval-set' | null {
+  if (!reg) return 'missing-boundary';
+  if (!reg.applicableBoundary?.trim() || !reg.failureBoundary?.trim()) return 'missing-boundary';
+  if (!reg.negativeExamples || reg.negativeExamples.length === 0) return 'missing-counterexample';
+  if (!reg.evalSet || reg.evalSet.length === 0 || !evalSetCoversRequiredCategories(reg.evalSet)) return 'missing-eval-set';
+  return null;
+}
+
 /** P4：统一阶段 → 注册层级（validated=limited 受控灰度，stable=stable 全量） */
 function stageToRegistrationTier(stage: AssetLifecycleStage): 'limited' | 'stable' | undefined {
   if (stage === 'validated') return 'limited';
@@ -144,17 +162,14 @@ export class AssetService implements AssetServicePort {
       }
       // P4 自动注册安全护栏（spec §12.7/§28）：注册到 registered-limited/stable 前，
       // 必须有适用边界、失败边界、≥1 反例、覆盖四类的可回放验证集。默认拒绝。
-      const reg = input.skillRegistration;
-      if (!reg) {
-        return fail('missing-boundary', '注册 Skill 前必须提供 skillRegistration（适用边界 / 失败边界 / 反例 / 验证集）。');
+      const regCode = validateSkillRegistration(input.skillRegistration);
+      if (regCode === 'missing-boundary') {
+        return fail('missing-boundary', '注册 Skill 前必须提供适用边界、失败边界（问题域 / 非问题域）。');
       }
-      if (!reg.applicableBoundary.trim() || !reg.failureBoundary.trim()) {
-        return fail('missing-boundary', '注册 Skill 前必须明确适用边界与失败边界（问题域 / 非问题域）。');
-      }
-      if (!reg.negativeExamples || reg.negativeExamples.length === 0) {
+      if (regCode === 'missing-counterexample') {
         return fail('missing-counterexample', '注册 Skill 前必须提供至少一条反例（仅正例不足以界定边界）。');
       }
-      if (!reg.evalSet || reg.evalSet.length === 0 || !evalSetCoversRequiredCategories(reg.evalSet)) {
+      if (regCode === 'missing-eval-set') {
         return fail('missing-eval-set', '注册 Skill 前必须提供覆盖 normal/boundary/reject/failure 四类的可回放验证集。');
       }
     }

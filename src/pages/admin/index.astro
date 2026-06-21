@@ -67,6 +67,8 @@ type WorkItem = {
   priorityReasons?: string[];
   nextActionReason?: string;
   nextActionType?: WorkItemAction['actionType'];
+  /** P4：AI 来源 proposal 的过期时间（过期后退出今日投影） */
+  expiresAt?: string;
 };
 
 const QUEUE_LABEL: Record<WorkItemEntity['queue'], string> = {
@@ -139,6 +141,7 @@ const persistedItems: WorkItem[] = persistedWorkItems
       priorityReasons: item.priorityReasons,
       nextActionReason: nextSuggestion?.reason,
       nextActionType: nextSuggestion?.suggestedActionType,
+      expiresAt: item.expiresAt,
     };
   });
 
@@ -328,6 +331,9 @@ const showDemoScenario = import.meta.env.DEV;
           >
             <div class="focus-topline">
               <span class="focus-label"><Icon name={`lucide:${focus.icon}`} width={16} height={16} />当前焦点 · {focus.source}</span>
+              {focus.expiresAt && (
+                <span class="focus-expire">AI 草案 · 过期 {new Date(focus.expiresAt).toLocaleDateString('zh-CN')}</span>
+              )}
               <span class="status-pill">待你决定</span>
             </div>
             <h2>{focus.title}</h2>
@@ -982,6 +988,7 @@ const showDemoScenario = import.meta.env.DEV;
   .focus-card[hidden], .queue-item[hidden] { display: none; }
   .focus-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .focus-label { display: inline-flex; align-items: center; gap: 7px; color: var(--adm-brand-strong); font-size: 11px; font-weight: 700; }
+  .focus-expire { font-size: 10px; color: var(--adm-text-dim); background: rgba(154,52,18,0.08); padding: 3px 8px; border-radius: 999px; margin-right: auto; }
   .status-pill { padding: 5px 9px; border-radius: 999px; color: var(--adm-brand-strong); background: var(--adm-brand-soft); font-size: 9px; font-weight: 700; }
   .focus-card h2 { margin: 18px 0 8px; font: 700 clamp(21px, 2vw, 28px)/1.28 var(--adm-font-ui); letter-spacing: -.035em; }
   .focus-card > p { margin: 0; max-width: 720px; color: var(--adm-text-dim); font-size: 12px; line-height: 1.7; }
