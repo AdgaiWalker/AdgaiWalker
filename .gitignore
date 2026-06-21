@@ -33,6 +33,14 @@ pnpm-debug.log*
 
 # Playwright
 .playwright-mcp/
+.playwright-cli/
+output/playwright/
+
+# Codex / dev tooling temp artifacts
+.codex-dev-server*.log
+.codex-doctor-tmp.json
+.codex-*.tmp
+.tmp-unify.cjs
 
 # Obsidian
 .obsidian/
