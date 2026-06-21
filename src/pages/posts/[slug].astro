@@ -7,6 +7,9 @@ import ContentShell from '../../layouts/ContentShell.astro';
 import BlockPrompt from '../../components/blocks/BlockPrompt.astro';
 import BlockDialogue from '../../components/blocks/BlockDialogue.astro';
 import BlockVideo from '../../components/blocks/BlockVideo.astro';
+import BlockCallout from '../../components/blocks/BlockCallout.astro';
+import BlockResource from '../../components/blocks/BlockResource.astro';
+import BlockStep from '../../components/blocks/BlockStep.astro';
 import BlockFeedback from '../../components/blocks/BlockFeedback.astro';
 import LikeCounter from '../../components/LikeCounter.astro';
 import GiscusWidget from '../../components/GiscusWidget.astro';
@@ -45,7 +48,7 @@ if (!entry) {
 
 const { Content, headings } = await render(entry);
 
-const components = { BlockPrompt, BlockDialogue, BlockVideo };
+const components = { BlockPrompt, BlockDialogue, BlockVideo, BlockCallout, BlockResource, BlockStep };
 
 const rawBody = entry.body || '';
 const { description, readingTime } = summarizeArticleBody(rawBody, CHARS_PER_MINUTE_ZH);
