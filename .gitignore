@@ -36,6 +36,9 @@ pnpm-debug.log*
 .playwright-cli/
 output/playwright/
 
+# dev server 日志（output/ 下仅 design-qa.md 等文档需要跟踪）
+output/*.log
+
 # Codex / dev tooling temp artifacts
 .codex-dev-server*.log
 .codex-doctor-tmp.json
