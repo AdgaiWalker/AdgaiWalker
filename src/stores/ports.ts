@@ -989,3 +989,106 @@ export interface ContentTelemetryRepositoryPort {
   findByContent(contentId: string, range?: { from?: string; to?: string }): Promise<ContentTelemetryEvent[]>;
   findRecent(range?: { from?: string; to?: string }, limit?: number): Promise<ContentTelemetryEvent[]>;
 }
+
+// ---------------------------------------------------------------------------
+// P5 NorthStar 经营基础 —— 订单 / 支付 / 退款（spec §14）
+//
+// 硬约束：NorthStar 默认 OFF（isNorthStarEnabled()）。关闭时个人闭环须完整运行，
+// 私密原始数据不自动发布（已有 northstar-containment 测试守护）。
+// 真实支付商（Stripe/支付宝等）属 Human Gate：需账户 + 合规 + 凭据。
+// 这里只建 Port + 开发合成适配器（不真实收费，记录意图）+ 订单状态机，
+// 与 MediaObjectStoragePort（文件dev/Blob生产）、AI Gateway（多服务商）同模式。
+// 真实 PaymentProvider 适配器由 Walker 提供凭据后接入；订单 API 在 NorthStar 开启前不挂公开路由。
+// ---------------------------------------------------------------------------
+
+export type OrderStatus = 'created' | 'paying' | 'paid' | 'fulfilled' | 'refunded' | 'cancelled';
+
+export type OfferKind = 'product' | 'service' | 'capability';
+
+/** 可发布的_offer（商品/服务/能力），由 Walker 选择性发布到 NorthStar 公共网络 */
+export interface NorthStarOffer {
+  offerId: string;
+  kind: OfferKind;
+  title: string;
+  description: string;
+  /** 标价（分，整数；货币由 currency 指定，避免浮点） */
+  priceCents: number;
+  currency: string;
+  /** 发布者（owner），私密对象不自动发布 */
+  publishedBy: string;
+  publishedAt: string;
+  status: 'active' | 'unlisted';
+}
+
+export interface Order {
+  orderId: string;
+  offerId: string;
+  /** 买家标识（NorthStar 公共网络的联系句柄，非站内私有用户画像） */
+  buyerHandle: string;
+  quantity: number;
+  totalCents: number;
+  currency: string;
+  status: OrderStatus;
+  /** 关联支付意图 ID（paying/paid 后） */
+  paymentIntentId?: string;
+  createdAt: string;
+  updatedAt: string;
+  /** append-only 状态历史 */
+  history: { fromStatus: OrderStatus | null; toStatus: OrderStatus; reason: string; occurredAt: string }[];
+}
+
+export type PaymentIntentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded';
+
+export interface PaymentIntent {
+  paymentIntentId: string;
+  orderId: string;
+  amountCents: number;
+  currency: string;
+  status: PaymentIntentStatus;
+  /** 提供商返回的交易号（真实 provider 为 Stripe PI id 等；合成 provider 为 ct_ 前缀） */
+  providerTransactionId?: string;
+  /** 使用的支付提供商标识（如 'dev-synthetic' / 'stripe'） */
+  provider: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RefundRecord {
+  refundId: string;
+  paymentIntentId: string;
+  orderId: string;
+  amountCents: number;
+  reason: string;
+  refundedAt: string;
+}
+
+/**
+ * 支付提供商 Port —— 真实商（Stripe/支付宝）由 Walker 提供凭据后实现并接入；
+ * 开发期用 DevSyntheticPaymentProvider（记录意图、合成成功，不真实收费）。
+ */
+export interface PaymentProviderPort {
+  readonly providerId: string;
+  /** 发起支付意图（不真实扣款；返回 providerTransactionId 供对账） */
+  createIntent(input: { orderId: string; amountCents: number; currency: string }): Promise<{
+    ok: boolean;
+    paymentIntentId?: string;
+    providerTransactionId?: string;
+    code?: 'northstar-disabled' | 'provider-error' | 'invalid-input';
+    message?: string;
+  }>;
+  /** 退款（真实商调用提供商退款 API） */
+  refund(input: { paymentIntentId: string; amountCents: number; reason: string }): Promise<{
+    ok: boolean;
+    refundId?: string;
+    code?: 'not-found' | 'provider-error';
+    message?: string;
+  }>;
+}
+
+export interface NorthStarOrderRepositoryPort {
+  saveOrder(order: Order): Promise<void>;
+  findOrder(orderId: string): Promise<Order | null>;
+  savePaymentIntent(intent: PaymentIntent): Promise<void>;
+  findPaymentIntent(paymentIntentId: string): Promise<PaymentIntent | null>;
+  saveRefund(refund: RefundRecord): Promise<void>;
+}

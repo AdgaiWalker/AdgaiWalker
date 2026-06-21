@@ -1447,6 +1447,9 @@ export const CONTENT_TELEMETRY_REDIS_KEYS = {
 
 const memoryObjectGrants = new Map<string, import('@/stores/ports').ObjectGrant>();
 const memoryActionAudit = new Map<string, import('@/stores/ports').ActionAuditEntry>();
+const memoryNorthStarOrders = new Map<string, import('@/stores/ports').Order>();
+const memoryNorthStarPaymentIntents = new Map<string, import('@/stores/ports').PaymentIntent>();
+const memoryNorthStarRefunds = new Map<string, import('@/stores/ports').RefundRecord>();
 
 function objectGrantKey(grantId: string): string {
   return `object-grant:${grantId}`;
@@ -1533,6 +1536,82 @@ export async function findRecentActionAudit(limit = 100): Promise<import('@/stor
   }
   return ids.map(id => memoryActionAudit.get(id)).filter((e): e is import('@/stores/ports').ActionAuditEntry => Boolean(e))
     .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+}
+
+// ---------------------------------------------------------------------------
+// P5 NorthStar 订单 / 支付意图 / 退款存储（spec §14）
+//
+// Key 约定：
+//   northstar:order:{orderId}            单个订单
+//   northstar:payment-intent:{piId}      单个支付意图
+//   northstar:refund:{refundId}          单个退款
+//   northstar:orders:recent              最近订单索引（LPUSH + LTRIM）
+// 注意：NorthStar 默认 OFF；这些键只在 isNorthStarEnabled() 时由 service 写入。
+// ---------------------------------------------------------------------------
+
+function northstarOrderKey(orderId: string): string {
+  return `northstar:order:${orderId}`;
+}
+function northstarPaymentIntentKey(piId: string): string {
+  return `northstar:payment-intent:${piId}`;
+}
+function northstarRefundKey(refundId: string): string {
+  return `northstar:refund:${refundId}`;
+}
+const NORTHSTAR_ORDERS_RECENT = 'northstar:orders:recent';
+
+/** 仅测试用：清空内存 NorthStar 订单/支付/退款。 */
+export function __resetMemoryNorthStar(): void {
+  memoryNorthStarOrders.clear();
+  memoryNorthStarPaymentIntents.clear();
+  memoryNorthStarRefunds.clear();
+}
+
+export async function saveNorthStarOrder(order: import('@/stores/ports').Order): Promise<void> {
+  memoryNorthStarOrders.set(order.orderId, order);
+  const redis = getRedis();
+  if (!redis) return;
+  const tx = redis.multi();
+  tx.set(northstarOrderKey(order.orderId), order);
+  tx.lpush(NORTHSTAR_ORDERS_RECENT, order.orderId);
+  tx.ltrim(NORTHSTAR_ORDERS_RECENT, 0, 499);
+  await tx.exec();
+}
+
+export async function findNorthStarOrder(orderId: string): Promise<import('@/stores/ports').Order | null> {
+  const redis = getRedis();
+  const fromMemory = memoryNorthStarOrders.get(orderId) ?? null;
+  if (!redis) return fromMemory;
+  try {
+    return (await redis.get<import('@/stores/ports').Order>(northstarOrderKey(orderId))) ?? fromMemory;
+  } catch {
+    return fromMemory;
+  }
+}
+
+export async function saveNorthStarPaymentIntent(intent: import('@/stores/ports').PaymentIntent): Promise<void> {
+  memoryNorthStarPaymentIntents.set(intent.paymentIntentId, intent);
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(northstarPaymentIntentKey(intent.paymentIntentId), intent);
+}
+
+export async function findNorthStarPaymentIntent(piId: string): Promise<import('@/stores/ports').PaymentIntent | null> {
+  const redis = getRedis();
+  const fromMemory = memoryNorthStarPaymentIntents.get(piId) ?? null;
+  if (!redis) return fromMemory;
+  try {
+    return (await redis.get<import('@/stores/ports').PaymentIntent>(northstarPaymentIntentKey(piId))) ?? fromMemory;
+  } catch {
+    return fromMemory;
+  }
+}
+
+export async function saveNorthStarRefund(refund: import('@/stores/ports').RefundRecord): Promise<void> {
+  memoryNorthStarRefunds.set(refund.refundId, refund);
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(northstarRefundKey(refund.refundId), refund);
 }
 
 /** 仅测试用：清空内存 ContentTelemetry，不触碰 Redis。 */
