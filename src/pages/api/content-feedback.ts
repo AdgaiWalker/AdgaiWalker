@@ -14,6 +14,7 @@ import type { APIRoute } from 'astro';
 
 import { createContentFeedbackService } from '@/services/content-feedback.service';
 import { consumeRateLimit } from '@/lib/rate-limiter';
+import { readBodyWithLimit } from '@/lib/body-reader';
 import type { ContentFeedbackSignal } from '@/stores/ports';
 
 export const prerender = false;
@@ -40,7 +41,8 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  // 基础滥用保护：请求体大小
+  // 体积快速预筛：Content-Length 头是客户端可控的廉价预筛，
+  // 真正的体积上限由下方 readBodyWithLimit 读流时强制（防伪造/省略头绕过）。
   const contentLength = Number(request.headers.get('content-length') ?? 0);
   if (contentLength > MAX_BODY_BYTES) {
     return json({ error: '请求体过大。' }, 413);
@@ -65,9 +67,16 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
+  // 读流强制体积上限：即使客户端省略/伪造 Content-Length，超限即 413，
+  // 避免 request.json() 读无界请求体（公开端点 DoS 防护）。
+  const bodyRead = await readBodyWithLimit(request.body, MAX_BODY_BYTES);
+  if (bodyRead.tooLarge) {
+    return json({ error: '请求体过大。' }, 413);
+  }
+
   let body: Record<string, unknown>;
   try {
-    body = await request.json();
+    body = bodyRead.text ? JSON.parse(bodyRead.text) : {};
   } catch {
     return json({ error: '请求格式错误。' }, 400);
   }
