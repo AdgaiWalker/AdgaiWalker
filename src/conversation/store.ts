@@ -1472,7 +1472,26 @@ export async function saveObjectGrant(grant: import('@/stores/ports').ObjectGran
   const tx = redis.multi();
   tx.set(objectGrantKey(grant.grantId), grant);
   tx.lpush(objectGrantByGranteeKey(grant.grantee), grant.grantId);
+  tx.lpush('object-grant:recent', grant.grantId);
+  tx.ltrim('object-grant:recent', 0, 499);
   await tx.exec();
+}
+
+/** 列出全部 grant（按时间倒序，admin 管理面用；不分类）。 */
+export async function findAllObjectGrants(limit = 200): Promise<import('@/stores/ports').ObjectGrant[]> {
+  const redis = getRedis();
+  if (!redis) {
+    return [...memoryObjectGrants.values()]
+      .sort((a, b) => b.grantedAt.localeCompare(a.grantedAt))
+      .slice(0, limit);
+  }
+  // 无全局索引；遍历 by-grantee 集合不可行（未维护用户集合）。退化为内存读 + Redis 全 scan 的并集。
+  // grant 量小（单作者系统），可接受。用内存兜底保证 dev 一致；生产 Redis 路径按 grantId 遍历需索引，
+  // 当前用一个 recent 列表索引（saveObjectGrant 时维护）。
+  const ids = await redis.lrange<string>('object-grant:recent', 0, Math.max(0, limit - 1));
+  const items = await Promise.all(ids.map(id => redis!.get<import('@/stores/ports').ObjectGrant>(objectGrantKey(id))));
+  return items.filter((g): g is import('@/stores/ports').ObjectGrant => g !== null)
+    .sort((a, b) => b.grantedAt.localeCompare(a.grantedAt));
 }
 
 export async function findObjectGrantsByGrantee(

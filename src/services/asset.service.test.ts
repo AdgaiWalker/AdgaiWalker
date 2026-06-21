@@ -363,7 +363,7 @@ describe('validateSkillRegistration 共享守护（防 skills 页旁路）', () 
     expect(validateSkillRegistration({
       applicableBoundary: 'b', failureBoundary: 'f',
       negativeExamples: ['反例'],
-      evalSet: [{ input: 'a', expectedOutput: 'b', category: 'normal' }], // 只一类
+      evalSet: [{ category: 'normal' }], // 只一类，缺 boundary/reject/failure
     })).toBe('missing-eval-set');
   });
 

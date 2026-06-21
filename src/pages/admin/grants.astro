@@ -1,0 +1,194 @@
+---
+/**
+ * /admin/grants — Contributor 对象级授权管理（P4 spec §29）
+ *
+ * owner 可创建/撤销 ObjectGrant；admin 可查看。grant 让 role=user 的 contributor
+ * 受限访问特定资源（由 canAccessAdminResource 在端点消费）。
+ * 带 6 角色模板（Editor/Analyst/Skill Reviewer/Contributor/Finance）一键填入。
+ */
+import Base from '@/layouts/Base.astro';
+import { isAdmin } from '@/lib/admin-auth';
+import { readSessionPayload } from '@/lib/account-auth';
+import { findAllObjectGrants } from '@/conversation/store';
+import type { ObjectGrant } from '@/stores/ports';
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/login');
+}
+
+const canManage = readSessionPayload(Astro.request)?.role === 'owner';
+
+const grants = await findAllObjectGrants();
+
+// 6 角色模板（spec §29 提案）：一键填入对应 grant 集合
+const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId: string; actions: string[] }[]; desc: string }[] = [
+  { role: 'Editor（内容编辑）', desc: '可写内容、读事项；无账号/权限/财务',
+    grants: [{ resourceType: 'content', resourceId: '*', actions: ['read', 'write'] }, { resourceType: 'workitem', resourceId: '*', actions: ['read'] }] },
+  { role: 'Analyst（分析师）', desc: '只读洞察/命中率/事项',
+    grants: [{ resourceType: 'insights', resourceId: '*', actions: ['read'] }, { resourceType: 'hit-rate', resourceId: '*', actions: ['read'] }, { resourceType: 'workitem', resourceId: '*', actions: ['read'] }] },
+  { role: 'Skill Reviewer（资产评审）', desc: '读 + 评审/晋升资产',
+    grants: [{ resourceType: 'skill', resourceId: '*', actions: ['read', 'evaluate', 'review'] }] },
+  { role: 'Contributor（按对象）', desc: '需在下方针对特定 workitem/content 单独授权',
+    grants: [] },
+  { role: 'Finance（财务，NorthStar）', desc: '仅 NorthStar 开启后读订单/支付/退款',
+    grants: [{ resourceType: 'northstar', resourceId: '*', actions: ['read'] }] },
+];
+---
+
+<Base title="授权管理 — Walker">
+  <main class="admin-main">
+    <header class="admin-bar">
+      <h1>Contributor 授权</h1>
+      <nav class="admin-nav">
+        <a href="/admin">仪表盘</a>
+        <a href="/admin/accounts">账号</a>
+        <a href="/admin/invite-codes">邀请码</a>
+        <a href="/admin/grants" aria-current="page">授权</a>
+        <a href="/">站点</a>
+      </nav>
+    </header>
+
+    <p class="hint">对象级授权让 <code>role=user</code> 的协作者受限访问特定资源（不开放整个后台）。授权按 username + 资源类型 + 资源 ID（<code>*</code> 表全部）+ 动作；可设过期时间。所有决策进操作审计。</p>
+
+    {canManage ? (
+      <section class="create-section">
+        <h2>新建授权</h2>
+
+        <div class="role-templates">
+          <span class="tpl-label">角色模板（一键填入）：</span>
+          {ROLE_TEMPLATES.map(t => (
+            <button type="button" class="tpl-btn" data-template={JSON.stringify(t.grants)}>{t.role}</button>
+          ))}
+        </div>
+        <p class="tpl-desc" id="tpl-desc">点模板查看说明。</p>
+
+        <form id="grant-form">
+          <label>被授权用户名 <input type="text" name="grantee" required placeholder="contributor-username" /></label>
+          <label>资源类型
+            <select name="resourceType">
+              <option value="content">content（内容）</option>
+              <option value="workitem">workitem（事项）</option>
+              <option value="skill">skill（资产）</option>
+              <option value="insights">insights（洞察）</option>
+              <option value="hit-rate">hit-rate（命中率）</option>
+              <option value="northstar">northstar（经营）</option>
+            </select>
+          </label>
+          <label>资源 ID（<code>*</code> 表该类型全部）<input type="text" name="resourceId" required value="*" /></label>
+          <label>动作（逗号分隔）<input type="text" name="actions" required placeholder="read,write" /></label>
+          <label>过期时间（可选）<input type="datetime-local" name="expiresAt" /></label>
+          <label class="full">理由（必填）<input type="text" name="reason" required placeholder="为什么授权" /></label>
+          <button type="submit" class="btn-primary">创建授权</button>
+        </form>
+      </section>
+    ) : <p class="hint">仅站主可创建/撤销授权。你以 admin 身份查看。</p>}
+
+    <section class="list-section">
+      <h2>当前授权（{grants.length}）</h2>
+      {grants.length === 0 ? (
+        <p class="empty">暂无授权。协作者被邀请后，在此为其配置受限访问。</p>
+      ) : (
+        <table class="grant-table">
+          <thead><tr><th>用户</th><th>资源</th><th>动作</th><th>过期</th><th>理由</th><th>授权人</th><th></th></tr></thead>
+          <tbody>
+            {grants.map(g => (
+              <tr data-grant-id={g.grantId}>
+                <td>{g.grantee}</td>
+                <td><code>{g.resourceType}:{g.resourceId}</code></td>
+                <td>{g.actions.join(', ')}</td>
+                <td>{g.expiresAt ? new Date(g.expiresAt).toLocaleDateString('zh-CN') : '—'}</td>
+                <td class="reason">{g.reason}</td>
+                <td>{g.grantedBy}</td>
+                <td>{canManage && <button class="revoke-btn" data-revoke={g.grantId}>撤销</button>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  </main>
+
+  <style is:global>
+    .admin-main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-family: var(--font-body); color: var(--color-parchment, #1c1917); }
+    .admin-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+    .admin-bar h1 { font-size: 1.4rem; margin: 0; }
+    .admin-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
+    .admin-nav a { color: var(--color-parchment-dim, #57534e); text-decoration: none; }
+    .admin-nav a[aria-current="page"] { color: var(--color-brand, #35bfab); font-weight: 700; }
+    .hint { font-size: 0.82rem; color: var(--color-parchment-dim, #78716c); line-height: 1.6; }
+    .hint code { background: rgba(0,0,0,0.05); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
+    .create-section, .list-section { background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; }
+    .create-section h2, .list-section h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+    .role-templates { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+    .tpl-label { font-size: 0.8rem; color: var(--color-parchment-dim, #57534e); width: 100%; margin-bottom: 0.25rem; }
+    .tpl-btn { padding: 0.3rem 0.6rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; background: transparent; cursor: pointer; font-size: 0.76rem; }
+    .tpl-btn:hover { background: rgba(53,191,171,0.1); }
+    .tpl-desc { font-size: 0.76rem; color: var(--color-parchment-dim, #78716c); margin: 0 0 0.75rem; min-height: 1.2em; }
+    #grant-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    #grant-form label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; }
+    #grant-form label.full { grid-column: 1 / -1; }
+    #grant-form input, #grant-form select { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
+    #grant-form .btn-primary { grid-column: 1 / -1; justify-self: start; padding: 0.5rem 1.1rem; border: none; border-radius: 8px; background: var(--color-brand, #35bfab); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
+    .empty { color: var(--color-parchment-dim, #a8a29e); padding: 1.5rem 0; text-align: center; }
+    .grant-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .grant-table th { text-align: left; font-size: 0.72rem; color: var(--color-parchment-dim, #78716c); padding: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .grant-table td { padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
+    .grant-table td.reason { color: var(--color-parchment-dim, #57534e); max-width: 220px; }
+    .grant-table code { background: rgba(0,0,0,0.05); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.82em; }
+    .revoke-btn { padding: 0.25rem 0.6rem; border: 1px solid rgba(154,52,18,0.3); border-radius: 6px; background: rgba(154,52,18,0.06); color: #9a3412; cursor: pointer; font-size: 0.76rem; }
+    .revoke-btn:hover { background: rgba(154,52,18,0.14); }
+    @media (max-width: 640px) { #grant-form { grid-template-columns: 1fr; } .admin-nav { flex-wrap: wrap; } }
+  </style>
+
+  <script is:inline>
+    const tell = (m) => window.WalkerAdminUI?.notify?.({ title: '授权管理', message: m }) ?? Promise.resolve();
+    const TPL_DESC = {
+      'Editor（内容编辑）': '可写内容、读事项；无账号/权限/财务。',
+      'Analyst（分析师）': '只读洞察/命中率/事项。',
+      'Skill Reviewer（资产评审）': '读 + 评审/晋升资产。',
+      'Contributor（按对象）': '需针对特定 workitem/content 单独授权（无通配）。',
+      'Finance（财务，NorthStar）': '仅 NorthStar 开启后读订单/支付/退款。',
+    };
+    document.querySelectorAll('.tpl-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const role = btn.textContent;
+        if (TPL_DESC[role]) document.getElementById('tpl-desc').textContent = TPL_DESC[role];
+        const grants = JSON.parse(btn.dataset.template || '[]');
+        // 只填入第一条 grant 到表单（多 grant 模板作为说明，用户按需逐条建）
+        if (grants.length > 0) {
+          const f = document.getElementById('grant-form');
+          const g = grants[0];
+          f.resourceType.value = g.resourceType;
+          f.resourceId.value = g.resourceId;
+          f.actions.value = g.actions.join(',');
+          if (grants.length > 1) document.getElementById('tpl-desc').textContent += '（模板含 ' + grants.length + ' 条 grant，已填首条，其余请逐条创建）';
+        }
+      });
+    });
+    document.getElementById('grant-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const body = {
+        grantee: fd.get('grantee'),
+        resourceType: fd.get('resourceType'),
+        resourceId: fd.get('resourceId'),
+        actions: fd.get('actions').split(',').map((s) => s.trim()).filter(Boolean),
+        reason: fd.get('reason'),
+      };
+      const exp = fd.get('expiresAt');
+      if (exp) body.expiresAt = new Date(exp).toISOString();
+      const res = await fetch('/api/admin/grants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) { window.location.reload(); } else { await tell(data.error || '创建失败'); }
+    });
+    document.querySelectorAll('.revoke-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.revoke;
+        const ok = window.WalkerAdminUI?.confirm ? await window.WalkerAdminUI.confirm({ title: '撤销授权', message: '确定撤销此授权？', danger: true }) : true;
+        if (!ok) return;
+        const res = await fetch('/api/admin/grants?grantId=' + encodeURIComponent(id), { method: 'DELETE' });
+        if (res.ok) window.location.reload(); else await tell('撤销失败');
+      });
+    });
+  </script>
+</Base>

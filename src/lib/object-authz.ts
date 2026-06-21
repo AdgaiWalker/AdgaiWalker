@@ -15,6 +15,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { readSessionPayload } from './account-auth';
+import { isAdmin } from './admin-auth';
 import { createSessionStore } from '@/stores/session.store';
 import {
   findObjectGrantsByGrantee,
@@ -104,4 +105,22 @@ export async function authorizeAndAudit(
     // 审计失败不影响判定
   }
   return { allowed, actor, reason };
+}
+
+/**
+ * P4 消费者辅助：admin/owner 直接放行（保留既有后台权限）；否则走对象级授权判定 + 审计。
+ * 供受保护 admin 端点把"仅 admin"放宽为"admin 或被授权 contributor"。
+ * 用法：const access = await canAccessAdminResource(request, 'content', '*', 'read'); if (!access.allowed) return 401;
+ */
+export async function canAccessAdminResource(
+  request: Request,
+  resourceType: string,
+  resourceId: string,
+  action: string,
+): Promise<{ allowed: boolean; actor: ActorIdentity; reason: string }> {
+  if (isAdmin(request)) {
+    const actor = await resolveActorIdentity(request);
+    return { allowed: true, actor, reason: actor.role === 'owner' ? 'owner 全权限' : 'admin 后台权限' };
+  }
+  return authorizeAndAudit(request, resourceType, resourceId, action);
 }
