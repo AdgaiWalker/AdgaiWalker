@@ -197,7 +197,8 @@ async function loadContent(): Promise<void> {
       }
     }
   } else {
-    state.editor.value = window.__ieDraftTemplate ?? '';
+    // 空 slug（新建/简报）：textarea 已由 SSR 用 draftTemplate 静态预填（正确 UTF-8），
+    // 保留不覆盖。此前用 window.__ieDraftTemplate 注入会在 ClientRouter swap 时 CJK 乱码。
   }
   state.doc = parseDoc(state.editor.value);
   state.editor.disabled = false;
@@ -322,10 +323,11 @@ export function enterInlineEditor(slug: string): void {
   initEditor(root, slug, 'inline');
 }
 
-export function initStandaloneEditor(slug: string, draftTemplate: string, topicId?: string): void {
+export function initStandaloneEditor(slug: string, topicId?: string): void {
   const root = document.getElementById('inline-editor') as HTMLElement | null;
   if (!root) return;
-  window.__ieDraftTemplate = draftTemplate;
+  // draftTemplate 不再由客户端脚本注入——改为 SSR 静态渲染进 textarea（InlineEditor initialBody），
+  // 避免 ClientRouter swap 时内联脚本 CJK 字节被误解码成 Latin-1（中文简报乱码）。
   root.hidden = false;
   initEditor(root, slug, 'standalone', topicId);
 }

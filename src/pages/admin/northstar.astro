@@ -21,17 +21,8 @@ const orders = await findRecentNorthStarOrders(50);
 const support = await getSupportConfig();
 ---
 
-<Base title="NorthStar 经营 — Walker">
+<AdminLayout active="/admin/northstar" domain="system" title="NorthStar" subtitle="公共发布、支持与经营范围">
   <main class="admin-main">
-    <header class="admin-bar">
-      <h1>NorthStar 经营</h1>
-      <nav class="admin-nav">
-        <a href="/admin">仪表盘</a>
-        <a href="/admin/grants">授权</a>
-        <a href="/admin/northstar" aria-current="page">经营</a>
-        <a href="/">站点</a>
-      </nav>
-    </header>
 
     <div class={`ns-status ${enabled ? 'on' : 'off'}`}>
       {enabled ? (

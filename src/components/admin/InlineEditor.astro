@@ -6,9 +6,13 @@ import MetadataForm from './MetadataForm.astro';
 interface Props {
   slug?: string;
   mode?: 'inline' | 'standalone';
+  /** P4/独立模式：SSR 预填正文（如简报模板）。作为静态 HTML 渲染进 textarea，
+   *  绕开客户端 <script define:vars> 注入——后者在 ClientRouter swap 时会把 CJK 字节
+   *  误解码成 Latin-1（乱码），导致中文简报内容（如"建议角度"）损坏。 */
+  initialBody?: string;
 }
 
-const { slug = '', mode = 'inline' } = Astro.props;
+const { slug = '', mode = 'inline', initialBody = '' } = Astro.props;
 ---
 
 <div
@@ -32,7 +36,7 @@ const { slug = '', mode = 'inline' } = Astro.props;
   </div>
 
   <div class="ie-pane ie-pane-body is-active" data-pane="body">
-    <textarea class="ie-textarea" id="ie-editor" placeholder="加载中..." disabled></textarea>
+    <textarea class="ie-textarea" id="ie-editor" placeholder="加载中..." disabled>{initialBody}</textarea>
   </div>
 
   <div class="ie-pane ie-pane-preview" data-pane="preview">

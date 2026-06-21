@@ -1,4 +1,5 @@
 ---
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 // /admin/experiences — 经验验证系统（U10）：原始事件采集 → 复盘 → 模式识别 → 方法成熟度
 // 服务端渲染，需认证。经验事件保真记录用户原话，复盘后标记模式，成熟度推进到 Skill 候选。
 import { isAdmin } from '@/lib/admin-auth';
@@ -23,7 +24,7 @@ const FEEDBACK_COLOR: Record<ExperienceFeedbackResult, { color: string; bg: stri
   success: { color: '#065f46', bg: 'rgba(6,95,70,0.1)' },
   failure: { color: '#b91c1c', bg: 'rgba(185,28,28,0.1)' },
   'no-feedback': { color: '#854d0e', bg: 'rgba(133,77,14,0.1)' },
-  pending: { color: '#78716c', bg: 'rgba(120,113,108,0.1)' },
+  pending: { color: 'var(--adm-text-dim)', bg: 'rgba(120,113,108,0.1)' },
 };
 const MATURITY_FLOW = ['material', 'embryo', 'stable-method', 'skill-candidate', 'skill'] as const;
 const MATURITY_LABEL: Record<string, string> = {
@@ -58,97 +59,58 @@ function formatTime(iso: string): string {
   }
 }
 
-const NAV = [
-  { href: '/admin', label: '仪表盘' },
-  { href: '/admin/insights', label: '洞察' },
-  { href: '/admin/hit-rate', label: '命中率' },
-  { href: '/admin/topics', label: '选题池' },
-  { href: '/admin/review', label: '需求复盘' },
-  { href: '/admin/rules', label: '规则池' },
-  { href: '/admin/experiences', label: '经验复盘' },
-  { href: '/admin/skills', label: 'Skill' },
-  { href: '/', label: '站点' },
-];
+
 ---
 
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>经验验证 — Walker</title>
-  <style>
+<AdminLayout active="/admin/experiences" domain="assets" title="经验" subtitle="记录真实事件、行动、结果与反例">
+<style is:global>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
-    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
-    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
-    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
-    .admin-bar-right { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
-    .admin-bar-link { color: #78716c; text-decoration: none; font-size: 0.82rem; font-weight: 650; }
-    .admin-bar-link:hover, .admin-bar-link.active { color: #1c1917; }
-    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 650; cursor: pointer; }
-    .admin-main { max-width: 62rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: transparent; color: var(--adm-text); }
+     .admin-main { max-width: 1180px; margin: 0 auto; }
     .admin-welcome { margin-bottom: 1.25rem; }
     .admin-welcome h1 { font-size: 1.5rem; font-weight: 850; margin-bottom: 0.35rem; }
-    .admin-welcome p { color: #78716c; font-size: 0.88rem; line-height: 1.6; }
+    .admin-welcome p { color: var(--adm-text-dim); font-size: 0.88rem; line-height: 1.6; }
 
     .stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .stat-chip { padding: 0.55rem 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; min-width: 5.5rem; }
-    .stat-chip-label { font-size: 0.7rem; color: #78716c; font-weight: 700; margin-bottom: 0.15rem; }
+    .stat-chip-label { font-size: 0.7rem; color: var(--adm-text-dim); font-weight: 700; margin-bottom: 0.15rem; }
     .stat-chip-value { font-size: 1.25rem; font-weight: 850; }
 
     .panel { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
     .panel h2 { font-size: 0.92rem; font-weight: 850; margin-bottom: 0.75rem; color: #44403c; }
     .cluster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; }
-    .cluster-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.65rem; background: #fafaf9; border-radius: 7px; font-size: 0.8rem; }
-    .cluster-row .count { font-weight: 850; color: #c4704a; }
+    .cluster-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.65rem; background: transparent; border-radius: 7px; font-size: 0.8rem; }
+    .cluster-row .count { font-weight: 850; color: var(--adm-brand-strong); }
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
     .form-grid .full { grid-column: 1 / -1; }
-    textarea, input[type=text], select { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.85rem; font-family: inherit; background: #fff; color: #1c1917; resize: vertical; }
-    textarea:focus, input:focus, select:focus { outline: 2px solid rgba(196,112,74,0.25); border-color: rgba(196,112,74,0.4); }
+    textarea, input[type=text], select { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.85rem; font-family: inherit; background: #fff; color: var(--adm-text); resize: vertical; }
+    textarea:focus, input:focus, select:focus { outline: 2px solid rgba(53,191,171,0.25); border-color: rgba(53,191,171,0.4); }
     .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.4rem 0.8rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; color: #57534e; text-decoration: none; font-size: 0.78rem; font-weight: 750; cursor: pointer; }
-    .btn:hover { background: #fafaf9; }
-    .btn-primary { background: rgba(196,112,74,0.1); border-color: rgba(196,112,74,0.22); color: #c4704a; }
-    .btn-primary:hover { background: rgba(196,112,74,0.16); }
+    .btn:hover { background: transparent; }
+    .btn-primary { background: rgba(53,191,171,0.1); border-color: rgba(53,191,171,0.22); color: var(--adm-brand-strong); }
+    .btn-primary:hover { background: rgba(53,191,171,0.16); }
 
     .exp-list { display: grid; gap: 0.8rem; }
     .exp-card { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem 1.1rem; }
-    .exp-card.pattern { border-color: rgba(196,112,74,0.3); box-shadow: 0 0 0 1px rgba(196,112,74,0.08); }
+    .exp-card.pattern { border-color: rgba(53,191,171,0.3); box-shadow: 0 0 0 1px rgba(53,191,171,0.08); }
     .exp-head { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
     .badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
-    .exp-quote { color: #1c1917; font-size: 0.95rem; font-weight: 700; line-height: 1.55; padding: 0.6rem 0.8rem; border-left: 3px solid #c4704a; background: #fafaf9; border-radius: 0 8px 8px 0; margin-bottom: 0.65rem; }
+    .exp-quote { color: var(--adm-text); font-size: 0.95rem; font-weight: 700; line-height: 1.55; padding: 0.6rem 0.8rem; border-left: 3px solid var(--adm-brand-strong); background: transparent; border-radius: 0 8px 8px 0; margin-bottom: 0.65rem; }
     .exp-meta { display: grid; gap: 0.35rem; color: #57534e; font-size: 0.78rem; line-height: 1.55; }
-    .meta-label { color: #a8a29e; font-weight: 800; }
-    .exp-time { margin-left: auto; color: #a8a29e; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+    .meta-label { color: var(--adm-text-faint); font-weight: 800; }
+    .exp-time { margin-left: auto; color: var(--adm-text-faint); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
     .exp-foot { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; margin-top: 0.85rem; }
     .reflection-edit { display: none; grid-column: 1 / -1; margin-top: 0.5rem; }
     .reflection-edit.visible { display: block; }
     .maturity-select { width: auto; padding: 0.3rem 0.5rem; font-size: 0.75rem; }
-    .empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--adm-text-faint); border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
     @media (max-width: 760px) {
-      .admin-bar { flex-direction: column; align-items: flex-start; }
       .admin-main { padding: 1.25rem 1rem 3rem; }
       .form-grid { grid-template-columns: 1fr; }
     }
   </style>
-</head>
-<body>
-  <div class="admin-bar">
-    <div class="admin-bar-left">
-      <span class="admin-bar-logo">Walker</span>
-      <span class="admin-bar-badge">Admin</span>
-    </div>
-    <div class="admin-bar-right">
-      {NAV.map(item => (
-        <a href={item.href} class={`admin-bar-link ${item.href === '/admin/experiences' ? 'active' : ''}`}>{item.label}</a>
-      ))}
-      <button class="logout-btn" id="logout-btn">登出</button>
-    </div>
-  </div>
-
-  <main class="admin-main">
+<main class="admin-main">
     <section class="admin-welcome">
       <h1>经验验证</h1>
       <p>保真记录每次帮助用户/自己的原始场景，复盘对比初步判断与结果，识别反复出现的模式，成熟度推进到 Skill 候选。</p>
@@ -221,7 +183,7 @@ const NAV = [
                 <span class="badge" style={`background:${cfg.bg};color:${cfg.color}`}>{FEEDBACK_LABEL[ev.feedbackResult]}</span>
                 <span class="badge" style="background:#f5f5f4;color:#57534e">{ev.source}</span>
                 {ev.maturity && <span class="badge" style="background:rgba(124,58,237,0.1);color:#7c3aed">{MATURITY_LABEL[ev.maturity]}</span>}
-                {ev.patternMarked && <span class="badge" style="background:rgba(196,112,74,0.12);color:#c4704a">★ 已识别模式</span>}
+                {ev.patternMarked && <span class="badge" style="background:rgba(53,191,171,0.12);color:var(--adm-brand-strong)">★ 已识别模式</span>}
                 <span class="exp-time">{formatTime(ev.createdAt)}</span>
               </div>
               <div class="exp-quote">{ev.rawQuote}</div>
@@ -304,11 +266,5 @@ const NAV = [
         if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
       });
     });
-
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-      window.location.href = '/admin/login';
-    });
   </script>
-</body>
-</html>
+</AdminLayout>
