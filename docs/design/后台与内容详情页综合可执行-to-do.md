@@ -23,7 +23,7 @@ G0 / H0 / P0 / P1 / P2 已完成主要技术基础
 -> P5 NorthStar + 经营系统
 ```
 
-当前开发范围只包含 `S0 + UX1 生产化`。UX0 已完成当前体验验收；P3—P5 继续冻结。
+当前开发范围只包含 `S0 + UX1 生产化`。UX0 已完成当前体验验收；~~P3—P5 继续冻结~~ **P3—P5 已按用户指令解冻（2026-06-21 第十五轮）**，转为活跃待办，但实施按 to-do 自身哲学门控（见第 19 节解冻口径）。
 
 当前产品判断：已有 API、Store、状态机和页面数量足够，不再新增孤立管理页面。下一轮必须让作者在工作台连续完成“看见重点、理解依据、作出决定、看到状态变化、处理结果”。
 
@@ -38,13 +38,13 @@ G0 / H0 / P0 / P1 / P2 已完成主要技术基础
 | S0-03 生产缺 Redis 返回 503，不静默进入内存 | 已完成。代码层门闩 + 本地真实 Redis 等价验证通过（`verify:production-storage:local` 10 探针全绿） | 已完成 | （可选加固）在具备 Upstash 凭据的环境运行 `verify:production-storage` 印证云端 REST 网关 |
 | S0-04 Decision / Action / Outcome / ContentFeedback 重启后不丢失 | 已完成。BGSAVE 重启持久化探针通过，新连接读回全部存活 | 已完成 | 同 S0-03 |
 | UX1-07 生产级主题与媒体持久化 | 已完成。本地文件系统等价验证通过（`verify:production-media-storage:local` 7 探针全绿，含 9MB 大文件 + 路径逃逸防护）；Vercel Blob 生产代码为真实实现（非桩） | 已完成 | （可选加固）在具备 Blob token 的环境运行 `verify:production-media-storage` 印证云端 CDN/私有 URL |
-| P0-B02 并发写入不丢索引 | 单作者当前可接受；真实 Redis 跨进程索引读回已由 S0-04 verifier 覆盖核心风险 | 不单独启动 | 若 S0-04 真实验证暴露索引丢失，再升级为事务/幂等索引任务 |
-| P1-E01 自动 Outcome 候选、AI 总结、派生状态回写 | 人工 Outcome 链路已成立；自动候选需要定时任务/AI 调用 | 不在当前包，归入 P3/P4 | 等真实反馈样本和自动化边界明确后启动 |
-| P2-A `.md -> .mdx` 与 `videos/resources` 清理 | ContentShell 统一、Pagefind、ArticleLayout 退役已完成；无真实 Block 内容需求 | 不在当前包，按需触发 | 只有真实文章需要 Block 时迁移，禁止为统一后缀批量迁移 |
-| P2-B Agent 调用回写资产 ID | 资产晋升证据链、LearningRequest、Skill 支撑证据已成立；Agent 调用上下文属于自动化阶段 | 不在当前包，归入 P4 | 等 Agent 调用观测边界确定后做 |
-| P3 完整遥测与内容 Block | 冻结 | 否 | S0 / UX1 通过后，且有真实决策缺口再启动 |
-| P4 AI 自动化与 Contributor | 冻结 | 否 | S0 / UX1 / P2 稳定后再启动 |
-| P5 NorthStar 与经营系统 | 冻结 | 否 | 个人系统可独立工作后，通过范围切换进入 |
+| P0-B02 并发写入不丢索引 | 单作者当前可接受；确定性脏索引已在 #33 修复；并发/事务硬ening 仍可升级 | 解冻（条件门控） | 可主动升级为 Redis MULTI/幂等索引；或等 S0-04 真实验证暴露再升级 |
+| P1-E01 自动 Outcome 候选、AI 总结、派生状态回写 | 人工 Outcome 链路已成立；自动候选需要定时任务/AI 调用 | 解冻（归 P3/P4） | 需 AI Gateway 自动化边界 + 真实反馈样本；属 P4 自动化 |
+| P2-A `.md -> .mdx` 与 `videos/resources` 清理 | ContentShell 统一、Pagefind、ArticleLayout 退役已完成 | 解冻（需求门控） | 由 P3-B 真实 Block 需求触发；禁止为统一后缀批量迁移 |
+| P2-B Agent 调用回写资产 ID | 资产晋升证据链、LearningRequest、Skill 支撑证据已成立 | 解冻（归 P4） | 需 Agent 调用上下文捕获；属 P4 自动化 |
+| P3 完整遥测与内容 Block | **解冻**。遥测按真实决策缺口、内容 Block 是内容表达（无 surveilance 顾虑） | 活跃 | P3-B 内容 Block 可立即实施；P3-A 遥测需先确认支持的决策（不采集无用数据） |
+| P4 AI 自动化与 Contributor | **解冻**。AI 自动注册 Skill 的安全边界、Contributor 授权模型需 Walker 定 | 活跃（决策门控） | 先定 AI 提案/Skill 准入安全边界与 Contributor RBAC 模型，再实施 |
+| P5 NorthStar 与经营系统 | **解冻**。支付/订单/退款 + 公共网络属 Human Gate + 产品定义 | 活跃（Human Gate） | 需 Walker 明确经营范围、支付通道与公开边界；个人闭环须保持可独立关闭 |
 
 ---
 
@@ -1141,7 +1141,7 @@ npx astro check = 0 errors / 11 hints。
 
 ## 12. P3 —— 完整观测与内容 Block
 
-当前状态：冻结。S0 / UX1 生产等价验证通过前，不启动 P3。以下是后续范围，不是当前实施包待办。
+当前状态：**解冻（2026-06-21 第十五轮，用户指令）**。P0—UX1 + S0 主体已合并到 main（#33）；P3 转为活跃待办。实施门控：P3-A 遥测需先确认"它支持哪个真实决策"（不采集不支持决策的数据）；P3-B 内容 Block 是内容表达，无 surveilance 顾虑，可立即实施并触发 P2-A 的真实 mdx 迁移需求。
 
 ### P3-A 遥测
 
@@ -1165,7 +1165,7 @@ npx astro check = 0 errors / 11 hints。
 
 ## 13. P4 —— AI 自动化与 Contributor
 
-当前状态：冻结。S0 / UX1 / P2 稳定前，不启动 P4。以下是后续范围，不是当前实施包待办。
+当前状态：**解冻（2026-06-21 第十五轮，用户指令）**。P4 转为活跃待办。实施门控（决策类，需 Walker 定）：AI 自动注册 Skill 的安全边界（边界/反例/可回放验证集）、无证据假设的 expiresAt 与"不进立即处理"、Contributor 按对象授权的 RBAC 模型。高风险动作（发布/删除/权限/隐私/外部联系）仍走 Human Gate。
 
 - AI 只能用 EvidenceRef 创建 proposal/hypothesis。
 - 无证据假设不进入“立即处理”，且具有 expiresAt。
@@ -1179,7 +1179,7 @@ npx astro check = 0 errors / 11 hints。
 
 ## 14. P5 —— NorthStar 与经营系统
 
-当前状态：冻结。个人系统可独立运行前，不启动 P5。以下是后续范围，不是当前实施包待办。
+当前状态：**解冻（2026-06-21 第十五轮，用户指令）**。P5 转为活跃待办。实施门控（Human Gate + 产品定义，需 Walker 定）：经营范围、支付通道（商品/服务/订单/支付/结算/退款/争议）、公共网络公开边界。硬约束：关闭 NorthStar/经营范围后，Walker 个人闭环仍须完整运行（私密原始数据不自动发布）。
 
 - 通过范围切换进入，不增加到 Walker 个人系统固定一级导航。
 - Publish Interface 选择性发布 content / capability / offer / request。
@@ -2116,6 +2116,50 @@ Decision made autonomously:
   - 云端验证：用户授权下用 vercel cli 实证，发现 env pull 不导出集成 secret 后诚实记录并更正文档，
     不强行提取/打印单个 secret（避免密钥外泄与 Human Gate 越界）。
   - 仓库卫生临时产物（.tmp-unify.cjs/nul/.codex-*/.playwright-cli/ 等）属无关用户文件，本轮不动。
+  - 未提交、未推送。
+
+Commit: pending
+```
+
+### 2026-06-21 第十五轮执行记录（用户指令：P3—P5 + 推迟项全部解冻）
+
+```text
+Task ID: P3 / P4 / P5 + P0-B02 / P1-E01 / P2-A / P2-B 全部解冻
+Status: changed（状态：冻结 → 活跃；实施按 gate 分级）
+
+背景: #33（P0—UX1 + S0）与 #34（output 日志清理）已合并到 main。用户指令"没有完成的全部解冻"。
+     本轮执行字面动作 = 把冻结态全部改为活跃态，并诚实标注每项的实施 gate。
+
+解冻清单与 gate 分级（决定"能否立即实施"）:
+
+  【可立即实施（无 Human Gate、无需求门控）】
+  - P3-B 内容 Block（BlockCallout / BlockResource / BlockStep）：纯内容表达，无 surveilance 顾虑，
+    宽度契约已有（--cs-width-full/normal/narrow）。实施后会触发 P2-A 的真实 mdx 迁移需求。
+  - P0-B02 并发/事务索引硬ening：确定性脏索引已在 #33 修复，可主动升级为 Redis MULTI / 幂等索引写。
+
+  【需求门控（to-do 哲学：按真实决策缺口，不为采集而采集）】
+  - P3-A 遥测：必须先回答"它支持哪个真实 Walker 决策"。content_progress/complete 能补"读者读到哪/是否读完"
+    （当前 hit-rate 只有显式反馈，无阅读行为）——这是真实缺口，但 consent/隐私/最小化需 Walker 确认采集范围。
+  - P2-A .md→.mdx：只在 P3-B 产生真实 Block 需求时触发，禁止为统一后缀批量迁移。
+
+  【决策门控（安全边界/模型 = Walker 定）】
+  - P4 AI 自动注册 Skill：边界/反例/可回放验证集、无证据假设 expiresAt、registered-limited 暂停/回滚。
+  - P4 Contributor：按对象授权 RBAC、任务分配/审核/评论/责任归属。
+  - P1-E01 自动 Outcome 候选/AI 总结：归 P4，需 AI Gateway 自动化边界。
+
+  【Human Gate + 产品定义（必须 Walker 明确，不自行实施）】
+  - P5 经营范围、支付通道（商品/服务/订单/支付/结算/退款/争议）、公共网络公开边界。
+  - S0-03/04/UX1-07 云端真实凭据印证（需 Upstash/Blob 控制台凭据）。
+  - 硬约束：关闭 NorthStar/经营范围后 Walker 个人闭环仍须完整运行；私密原始数据不自动发布。
+
+实施顺序（按 to-do 自身优先级，待 Walker 点真实缺口后启动）:
+  P3-B 内容 Block（可立即） → P3-A 遥测（确认决策后） → P4 安全边界+Contributor（定模型后）
+  → P5 经营/支付（Human Gate）。P0-B02 可与任一批次并行硬ening。
+
+Decision made autonomously:
+  - "解冻"的字面动作（改状态）立即执行并落文档；不擅自实施 gate 门控项（P3-A 遥测/P4/P5），
+    因 to-do 自身把它们门控在 Walker 的真实需求/安全边界/Human Gate 上。
+  - 本轮不写代码，只改规划文档状态 + gate 分级；具体实施哪项由 Walker 按真实缺口点单。
   - 未提交、未推送。
 
 Commit: pending
