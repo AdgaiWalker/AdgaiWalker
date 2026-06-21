@@ -46,6 +46,15 @@ let cachedProvider: PaymentProviderPort | null = null;
  */
 export function getPaymentProvider(): PaymentProviderPort {
   if (cachedProvider) return cachedProvider;
+  // 真实支付商接入点（Human Gate）：Walker 选定 provider（Stripe/支付宝/微信）后，
+  // 安装对应官方 SDK（如 `npm i stripe`），在此按配置返回真实适配器。例如：
+  //
+  //   const cfg = readPaymentConfig(); // 形如 ai-gateway-config 的 Redis hash
+  //   if (cfg?.provider === 'stripe' && cfg.secretKey) {
+  //     return new StripePaymentProvider(cfg.secretKey); // 用官方 SDK：import Stripe from 'stripe'
+  //   }
+  //
+  // 当前 provider 未定 → 用合成（不真实收费），保证状态机可验证。
   cachedProvider = new DevSyntheticPaymentProvider();
   return cachedProvider;
 }

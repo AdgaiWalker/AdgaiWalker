@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 
 import { isAdmin } from '@/lib/admin-auth';
 import { saveSkillCandidate, findRecentSkillCandidates, updateSkillAdmission, updateSkillRegistration } from '@/conversation/store';
-import { validateSkillRegistration } from '@/services/asset.service';
+import { createAssetService, validateSkillRegistration } from '@/services/asset.service';
 import type { SkillCandidate, SkillAdmissionStatus, SkillAdmissionSnapshot } from '@/stores/ports';
 
 export const prerender = false;
@@ -83,6 +83,22 @@ export const POST: APIRoute = async ({ request, url }) => {
       return json({ ok: true });
     }
     await updateSkillAdmission(body.skillId, body.admissionStatus as SkillAdmissionStatus);
+    return json({ ok: true });
+  }
+
+  // P4：暂停 / 恢复 / 回滚已注册 Skill（spec §28 受控注册）
+  const actionLifecycle = url.searchParams.get('action');
+  if (actionLifecycle === 'pause' || actionLifecycle === 'resume' || actionLifecycle === 'rollback') {
+    let body: { skillId?: string; reason?: string; toVersion?: number };
+    try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+    if (!body.skillId) return json({ error: 'skillId 必填' }, 400);
+    if (!body.reason?.trim()) return json({ error: 'reason 必填' }, 400);
+    const svc = createAssetService();
+    let result;
+    if (actionLifecycle === 'pause') result = await svc.pauseSkill(body.skillId, body.reason);
+    else if (actionLifecycle === 'resume') result = await svc.resumeSkill(body.skillId, body.reason);
+    else result = await svc.rollbackSkill(body.skillId, Number(body.toVersion), body.reason);
+    if (!result.ok) return json({ error: result.message ?? '操作失败', code: result.code }, 400);
     return json({ ok: true });
   }
 

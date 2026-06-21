@@ -1,0 +1,180 @@
+---
+/**
+ * /admin/northstar — NorthStar 经营管理（P5 spec §14）
+ *
+ * offer（商品/服务/能力）发布 + 订单/支付/履约/退款。NorthStar 默认 OFF：
+ * 关闭时所有写操作返回 northstar-disabled，页面显示开启说明；个人闭环不受影响。
+ * 真实支付商接入属 Human Gate（合成 provider 走通全链路，真实商待凭据）。
+ */
+import Base from '@/layouts/Base.astro';
+import { isAdmin } from '@/lib/admin-auth';
+import { isNorthStarEnabled } from '@/lib/northstar-range';
+import { findAllNorthStarOffers, findRecentNorthStarOrders } from '@/conversation/store';
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/login');
+}
+
+const enabled = isNorthStarEnabled();
+const offers = await findAllNorthStarOffers();
+const orders = await findRecentNorthStarOrders(50);
+---
+
+<Base title="NorthStar 经营 — Walker">
+  <main class="admin-main">
+    <header class="admin-bar">
+      <h1>NorthStar 经营</h1>
+      <nav class="admin-nav">
+        <a href="/admin">仪表盘</a>
+        <a href="/admin/grants">授权</a>
+        <a href="/admin/northstar" aria-current="page">经营</a>
+        <a href="/">站点</a>
+      </nav>
+    </header>
+
+    <div class={`ns-status ${enabled ? 'on' : 'off'}`}>
+      {enabled ? (
+        <span>● NorthStar 经营范围已开启（<code>NORTHSTAR_ENABLED=true</code>）</span>
+      ) : (
+        <span>○ NorthStar 未开启。个人闭环完整运行；开启需设 <code>NORTHSTAR_ENABLED=true</code>（经营/支付是产品决策，真实支付商凭据属 Human Gate）。</span>
+      )}
+    </div>
+
+    <section class="block">
+      <h2>商品 / 服务 / 能力（{offers.length}）</h2>
+      {enabled ? (
+        <form id="offer-form" class="offer-form">
+          <select name="kind"><option value="service">service</option><option value="product">product</option><option value="capability">capability</option></select>
+          <input type="text" name="title" placeholder="标题（如「30 分钟咨询」）" required />
+          <input type="number" name="priceCents" placeholder="标价（分）" required min="0" />
+          <select name="currency"><option value="CNY">CNY</option><option value="USD">USD</option></select>
+          <input type="text" name="description" placeholder="描述（可选）" class="desc" />
+          <button type="submit" class="btn-primary">发布</button>
+        </form>
+      ) : <p class="hint">开启 NorthStar 后可发布。</p>}
+
+      {offers.length > 0 && (
+        <table class="data-table">
+          <thead><tr><th>标题</th><th>类型</th><th>标价</th><th>状态</th><th></th></tr></thead>
+          <tbody>
+            {offers.map(o => (
+              <tr data-offer-id={o.offerId}>
+                <td>{o.title}<span class="sub">{o.description}</span></td>
+                <td><code>{o.kind}</code></td>
+                <td>{o.priceCents / 100} {o.currency}</td>
+                <td>{o.status === 'active' ? '上架' : '已下架'}</td>
+                <td>
+                  <button class="mini-btn" data-offer-toggle={o.offerId} data-status={o.status === 'active' ? 'unlisted' : 'active'}>
+                    {o.status === 'active' ? '下架' : '上架'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+
+    <section class="block">
+      <h2>订单（{orders.length}）</h2>
+      {orders.length === 0 ? (
+        <p class="empty">暂无订单。开启 NorthStar + 发布 offer 后，可在此创建测试订单走通支付链路（合成 provider）。</p>
+      ) : (
+        <table class="data-table">
+          <thead><tr><th>买家</th><th>offer</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            {orders.map(o => (
+              <tr data-order-id={o.orderId}>
+                <td>{o.buyerHandle}</td>
+                <td><code>{o.offerId.slice(0, 12)}</code></td>
+                <td>{o.totalCents / 100} {o.currency}</td>
+                <td><span class={`status status-${o.status}`}>{o.status}</span></td>
+                <td class="order-actions">
+                  {o.status === 'created' && <button class="mini-btn" data-order-action="pay">支付</button>}
+                  {o.status === 'paid' && <button class="mini-btn" data-order-action="fulfill">履约</button>}
+                  {(o.status === 'paid' || o.status === 'fulfilled') && <button class="mini-btn warn" data-order-action="refund">退款</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <p class="hint">支付走 DevSyntheticPaymentProvider（不真实收费，验证状态机）。真实支付商接入后替换为官方 SDK 适配器。</p>
+    </section>
+  </main>
+
+  <style is:global>
+    .admin-main { max-width: 980px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-family: var(--font-body); color: var(--color-parchment, #1c1917); }
+    .admin-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; }
+    .admin-bar h1 { font-size: 1.4rem; margin: 0; }
+    .admin-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
+    .admin-nav a { color: var(--color-parchment-dim, #57534e); text-decoration: none; }
+    .admin-nav a[aria-current="page"] { color: var(--color-brand, #35bfab); font-weight: 700; }
+    .ns-status { padding: 0.7rem 1rem; border-radius: 10px; font-size: 0.82rem; margin-bottom: 1.25rem; }
+    .ns-status.on { background: rgba(6,95,70,0.1); color: #065f46; }
+    .ns-status.off { background: rgba(120,113,108,0.12); color: #57534e; }
+    .ns-status code { background: rgba(0,0,0,0.06); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
+    .block { background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; }
+    .block h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+    .offer-form { display: grid; grid-template-columns: auto 2fr 1fr auto auto; gap: 0.5rem; margin-bottom: 1rem; }
+    .offer-form .desc { grid-column: 1 / -1; }
+    .offer-form input, .offer-form select { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
+    .btn-primary { padding: 0.45rem 1rem; border: none; border-radius: 8px; background: var(--color-brand, #35bfab); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .data-table th { text-align: left; font-size: 0.72rem; color: var(--color-parchment-dim, #78716c); padding: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .data-table td { padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
+    .data-table .sub { display: block; font-size: 0.72rem; color: var(--color-parchment-dim, #a8a29e); }
+    .data-table code { background: rgba(0,0,0,0.05); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.82em; }
+    .status { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+    .status-created { background: rgba(29,78,216,0.1); color: #1d4ed8; }
+    .status-paying, .status-paid { background: rgba(6,95,70,0.12); color: #065f46; }
+    .status-fulfilled { background: rgba(6,95,70,0.2); color: #064e3b; }
+    .status-refunded, .status-cancelled { background: rgba(154,52,18,0.1); color: #9a3412; }
+    .mini-btn { padding: 0.25rem 0.6rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; background: transparent; cursor: pointer; font-size: 0.76rem; }
+    .mini-btn.warn { border-color: rgba(154,52,18,0.3); color: #9a3412; }
+    .empty, .hint { color: var(--color-parchment-dim, #78716c); font-size: 0.82rem; }
+    .empty { padding: 1rem 0; }
+    @media (max-width: 640px) { .offer-form { grid-template-columns: 1fr; } }
+  </style>
+
+  <script is:inline>
+    const tell = (m) => window.WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
+    const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then((r) => r.json().then((d) => ({ ok: r.ok, data: d })));
+
+    document.getElementById('offer-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const { ok, data } = await post('/api/admin/northstar/offers', {
+        kind: fd.get('kind'), title: fd.get('title'), priceCents: Number(fd.get('priceCents')),
+        currency: fd.get('currency'), description: fd.get('description'),
+      });
+      if (ok && data.ok) window.location.reload(); else await tell(data.error || '发布失败');
+    });
+
+    document.querySelectorAll('[data-offer-toggle]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.offerToggle;
+        const status = btn.dataset.status;
+        const res = await fetch('/api/admin/northstar/offers?offerId=' + encodeURIComponent(id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+      });
+    });
+
+    document.querySelectorAll('[data-order-action]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const tr = btn.closest('tr');
+        const orderId = tr.dataset.orderId;
+        const action = btn.dataset.orderAction;
+        let body = {};
+        if (action === 'refund') {
+          const reason = window.WalkerAdminUI?.prompt ? await window.WalkerAdminUI.prompt({ title: '退款', message: '退款理由', placeholder: '理由' }) : window.prompt('退款理由');
+          if (!reason) return;
+          body = { reason };
+        }
+        const { ok, data } = await post('/api/admin/northstar/orders?action=' + action, { orderId, ...body });
+        if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+      });
+    });
+  </script>
+</Base>

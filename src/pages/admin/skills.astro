@@ -225,6 +225,17 @@ const NAV = [
                 {skill.admissionStatus !== 'candidate' && (
                   <button class="btn" data-action="reset">回到候选</button>
                 )}
+                {/* P4 受控注册：admitted 的 Skill 可暂停/恢复/回滚 */}
+                {skill.admissionStatus === 'admitted' && (
+                  <>
+                    {skill.paused
+                      ? <button class="btn" data-action="resume">恢复运行</button>
+                      : <button class="btn" data-action="pause">暂停</button>}
+                    {(skill.admissionSnapshots?.length ?? 0) > 1 && (
+                      <button class="btn" data-action="rollback">回滚到版本…</button>
+                    )}
+                  </>
+                )}
                 <button class="btn" data-action="bump">升版本（迭代）</button>
               </div>
             </article>
@@ -300,6 +311,25 @@ const NAV = [
           const desc = card.querySelector('.skill-desc')?.textContent ?? '';
           const v = Number(card.dataset.version ?? '1') + 1;
           const { ok, data } = await post('/api/admin/skills', { skillId, name, description: desc, version: v });
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+        } else if (action === 'pause' || action === 'resume') {
+          const reason = window.WalkerAdminUI?.prompt
+            ? await window.WalkerAdminUI.prompt({ title: action === 'pause' ? '暂停 Skill' : '恢复 Skill', message: '请填理由（写进审计）', placeholder: '理由' })
+            : window.prompt(action === 'pause' ? '暂停理由' : '恢复理由');
+          if (!reason) return;
+          const { ok, data } = await post('/api/admin/skills?action=' + action, { skillId, reason });
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+        } else if (action === 'rollback') {
+          const versionStr = window.WalkerAdminUI?.prompt
+            ? await window.WalkerAdminUI.prompt({ title: '回滚 Skill', message: '回滚到哪个准入版本（数字）', placeholder: '版本号' })
+            : window.prompt('回滚到版本（数字）');
+          const toVersion = Number(versionStr);
+          if (!Number.isFinite(toVersion)) { await tell('版本号无效'); return; }
+          const reason = window.WalkerAdminUI?.prompt
+            ? await window.WalkerAdminUI.prompt({ title: '回滚理由', message: '为什么回滚', placeholder: '理由' })
+            : window.prompt('回滚理由');
+          if (!reason) return;
+          const { ok, data } = await post('/api/admin/skills?action=rollback', { skillId, toVersion, reason });
           if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         }
       });
