@@ -4,7 +4,7 @@
  *
  * 列表 + 生成表单（一人一码为默认）+ 禁用/删除。生成后码仅显示一次。
  */
-import Base from '@/layouts/Base.astro';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { readSessionPayload } from '@/lib/account-auth';
 
@@ -104,14 +104,14 @@ try {
       )}
     </section>
   </main>
-</Base>
+</AdminLayout>
 
 <style>
-  .ic-wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .ic-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
   .ic-head { display: flex; align-items: center; justify-content: space-between; }
   .ic-head h1 { font-size: 1.4rem; margin: 0; color: var(--color-parchment, #1a2325); }
   .back { color: var(--color-parchment-dim, #64748b); text-decoration: none; font-size: 0.9rem; }
-  .card { padding: 1.25rem 1.4rem; border-radius: 12px; }
+  .card { padding: 1.25rem 1.4rem; border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); background: var(--adm-surface); box-shadow: 0 16px 46px rgba(39,62,58,.08); }
   .card h2 { margin: 0 0 0.8rem; font-size: 1rem; color: var(--color-parchment, #1a2325); }
   .hint { margin: 0 0 0.8rem; font-size: 0.78rem; color: var(--color-parchment-dim, #888); }
   .gen-form { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }

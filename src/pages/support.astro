@@ -1,0 +1,90 @@
+---
+/**
+ * /support — 赞赏/支持页（P5 个人收款码模型）
+ *
+ * 展示 Walker 的微信/支付宝个人赞赏码 QR + 可选外链（爱发电/Ko-fi）+ 文案。
+ * 访客扫码即可赞赏——无需商户号、无需注册、个人收款。
+ * 配置在 /admin/northstar 的"赞赏设置"维护（存 SupportConfig）。
+ *
+ * SSR（动态读取配置，admin 改完立即生效，无需重建）。
+ */
+import Base from '@/layouts/Base.astro';
+import { getSupportConfig } from '@/conversation/store';
+
+export const prerender = false;
+
+const config = await getSupportConfig();
+const hasQr = Boolean(config?.wechatQrUrl || config?.alipayQrUrl);
+const hasExternal = Boolean(config?.externalUrl);
+---
+
+<Base title="支持 Walker — Walker" description="如果这里的内容对你有帮助，可以请我喝杯咖啡。">
+  <main class="support-page">
+    <header class="support-head">
+      <h1>支持 Walker</h1>
+      <p class="support-sub">
+        {config?.blurb?.trim()
+          ? config.blurb
+          : '如果这里的内容、工具或想法对你有帮助，欢迎请我喝杯咖啡。你的支持让我继续写下去。'}
+      </p>
+    </header>
+
+    {hasQr || hasExternal ? (
+      <section class="support-body">
+        {hasQr && (
+          <div class="qr-row">
+            {config?.wechatQrUrl && (
+              <figure class="qr-card wechat">
+                <img src={config.wechatQrUrl} alt="微信赞赏码" loading="lazy" />
+                <figcaption>微信赞赏</figcaption>
+                <span class="qr-hint">长按或扫码</span>
+              </figure>
+            )}
+            {config?.alipayQrUrl && (
+              <figure class="qr-card alipay">
+                <img src={config.alipayQrUrl} alt="支付宝收款码" loading="lazy" />
+                <figcaption>支付宝</figcaption>
+                <span class="qr-hint">长按或扫码</span>
+              </figure>
+            )}
+          </div>
+        )}
+        {hasExternal && (
+          <a class="external-link" href={config!.externalUrl} target="_blank" rel="noopener noreferrer">
+            {config?.externalLabel?.trim() || '通过平台支持我'} →
+          </a>
+        )}
+      </section>
+    ) : (
+      <section class="support-empty">
+        <p>暂未配置赞赏方式。Walker 可在后台「经营 → 赞赏设置」添加个人赞赏码或支持链接。</p>
+      </section>
+    )}
+
+    <footer class="support-foot">
+      <p>所有内容免费阅读，赞赏完全自愿。谢谢你。</p>
+      <a href="/" class="back-home">← 回到首页</a>
+    </footer>
+  </main>
+</Base>
+
+<style>
+  .support-page { max-width: 640px; margin: 0 auto; padding: 3rem 1.5rem 5rem; text-align: center; }
+  .support-head h1 { font-size: 2rem; margin: 0 0 0.75rem; font-family: var(--font-heading); color: var(--color-heading, #1c1917); }
+  .support-sub { font-size: 0.95rem; line-height: 1.7; color: var(--color-parchment-dim, #57534e); margin: 0 auto; max-width: 480px; }
+  .support-body { margin-top: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: 1.75rem; }
+  .qr-row { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; }
+  .qr-card { margin: 0; padding: 1rem 1rem 0.75rem; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.08); border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; backdrop-filter: blur(6px); }
+  .qr-card img { width: 180px; height: 180px; object-fit: contain; border-radius: 10px; background: #fff; }
+  .qr-card figcaption { font-size: 0.9rem; font-weight: 700; color: var(--color-heading, #1c1917); }
+  .qr-card.wechat figcaption { color: #07c160; }
+  .qr-card.alipay figcaption { color: #1677ff; }
+  .qr-hint { font-size: 0.72rem; color: var(--color-parchment-dim, #a8a29e); }
+  .external-link { display: inline-block; padding: 0.65rem 1.5rem; border-radius: 999px; background: var(--color-brand, #35bfab); color: #fff; text-decoration: none; font-weight: 700; font-size: 0.9rem; }
+  .external-link:hover { filter: brightness(1.05); }
+  .support-empty { margin-top: 2.5rem; padding: 2rem 1rem; color: var(--color-parchment-dim, #a8a29e); font-size: 0.88rem; border: 1px dashed rgba(0,0,0,0.1); border-radius: 14px; }
+  .support-foot { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.06); }
+  .support-foot p { font-size: 0.8rem; color: var(--color-parchment-dim, #a8a29e); margin: 0 0 0.75rem; }
+  .back-home { font-size: 0.82rem; color: var(--color-brand, #35bfab); text-decoration: none; }
+  @media (max-width: 480px) { .qr-card img { width: 150px; height: 150px; } }
+</style>

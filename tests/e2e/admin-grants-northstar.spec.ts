@@ -56,9 +56,7 @@ test.describe('NorthStar 经营管理页', () => {
     await loginAsOwner(page);
     await page.goto('/admin/northstar');
     await expect(page.getByRole('heading', { name: 'NorthStar 经营' })).toBeVisible();
-    // 默认 OFF → 显示未开启说明
     await expect(page.locator('.ns-status.off')).toBeVisible();
-    // OFF 时无发布表单
     await expect(page.locator('#offer-form')).toHaveCount(0);
   });
 
@@ -73,5 +71,47 @@ test.describe('NorthStar 经营管理页', () => {
     });
     expect(result.status).toBe(409);
     expect(result.body.code).toBe('northstar-disabled');
+  });
+});
+
+test.describe('赞赏/支持页（个人收款码模型）', () => {
+  test('保存赞赏配置后 /support 展示 QR + 外链', async ({ page }) => {
+    await loginAsOwner(page);
+    // PUT 赞赏配置
+    const saved = await page.evaluate(async () => {
+      const res = await fetch('/api/admin/support', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wechatQrUrl: 'https://example.com/wx-qr.png',
+          alipayQrUrl: 'https://example.com/alipay-qr.png',
+          externalUrl: 'https://afdian.net/example',
+          externalLabel: '通过爱发电支持',
+          blurb: 'E2E 赞赏测试文案',
+        }),
+      });
+      return res.ok;
+    });
+    expect(saved).toBe(true);
+
+    // /support 展示
+    await page.goto('/support');
+    await expect(page.getByRole('heading', { name: '支持 Walker' })).toBeVisible();
+    await expect(page.getByText('E2E 赞赏测试文案')).toBeVisible();
+    await expect(page.locator('.qr-card.wechat img')).toHaveAttribute('src', 'https://example.com/wx-qr.png');
+    await expect(page.locator('.qr-card.alipay img')).toHaveAttribute('src', 'https://example.com/alipay-qr.png');
+    await expect(page.getByText('通过爱发电支持')).toBeVisible();
+
+    // 清理（避免污染其他测试）
+    await page.evaluate(async () => {
+      await fetch('/api/admin/support', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+    });
+  });
+
+  test('未配置时 /support 显示空状态', async ({ page }) => {
+    await page.goto('/support');
+    await expect(page.locator('.support-empty')).toBeVisible();
   });
 });

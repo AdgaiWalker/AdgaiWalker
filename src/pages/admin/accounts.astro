@@ -5,7 +5,7 @@
  * 列表 + 重置密码 + 封禁/解封 +（仅 owner）指派角色。SSR，isAdmin gate（admin+owner 可进）。
  * 角色指派 + 不能改自己（防站主自降级后无人能指派）。
  */
-import Base from '@/layouts/Base.astro';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { readSessionPayload } from '@/lib/account-auth';
 import { createUserContextService } from '@/services/user-context.service';
@@ -128,14 +128,14 @@ try {
       </form>
     </dialog>
   </main>
-</Base>
+</AdminLayout>
 
 <style>
-  .accounts-wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+  .accounts-wrap { max-width: 1180px; margin: 0 auto; }
   .accounts-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
   .accounts-head h1 { font-size: 1.4rem; margin: 0; color: var(--color-parchment, #1a2325); }
   .back { color: var(--color-parchment-dim, #64748b); text-decoration: none; font-size: 0.9rem; }
-  .panel-glass { padding: 1.25rem; border-radius: 12px; }
+  .panel-glass { padding: 1.25rem; border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); background: var(--adm-surface); box-shadow: 0 16px 46px rgba(39,62,58,.08); }
   .empty { color: var(--color-parchment-dim, #888); }
   .hint { margin: 1rem 0 0; font-size: 0.78rem; color: var(--color-parchment-dim, #888); }
   .accounts-toolbar { margin-bottom: 0.75rem; }

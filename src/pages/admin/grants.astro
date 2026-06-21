@@ -6,7 +6,7 @@
  * 受限访问特定资源（由 canAccessAdminResource 在端点消费）。
  * 带 6 角色模板（Editor/Analyst/Skill Reviewer/Contributor/Finance）一键填入。
  */
-import Base from '@/layouts/Base.astro';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { readSessionPayload } from '@/lib/account-auth';
 import { findAllObjectGrants } from '@/conversation/store';
@@ -109,7 +109,7 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
   </main>
 
   <style is:global>
-    .admin-main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-family: var(--font-body); color: var(--color-parchment, #1c1917); }
+    .admin-main { max-width: 1180px; margin: 0 auto; color: var(--adm-text); }
     .admin-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
     .admin-bar h1 { font-size: 1.4rem; margin: 0; }
     .admin-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
@@ -117,7 +117,7 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
     .admin-nav a[aria-current="page"] { color: var(--color-brand, #35bfab); font-weight: 700; }
     .hint { font-size: 0.82rem; color: var(--color-parchment-dim, #78716c); line-height: 1.6; }
     .hint code { background: rgba(0,0,0,0.05); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
-    .create-section, .list-section { background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; }
+    .create-section, .list-section { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: 0 16px 46px rgba(39,62,58,.08); }
     .create-section h2, .list-section h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
     .role-templates { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
     .tpl-label { font-size: 0.8rem; color: var(--color-parchment-dim, #57534e); width: 100%; margin-bottom: 0.25rem; }
@@ -191,4 +191,4 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
       });
     });
   </script>
-</Base>
+</AdminLayout>

@@ -1451,6 +1451,7 @@ const memoryNorthStarOrders = new Map<string, import('@/stores/ports').Order>();
 const memoryNorthStarPaymentIntents = new Map<string, import('@/stores/ports').PaymentIntent>();
 const memoryNorthStarRefunds = new Map<string, import('@/stores/ports').RefundRecord>();
 const memoryNorthStarOffers = new Map<string, import('@/stores/ports').NorthStarOffer>();
+const memorySupportConfig = new Map<string, import('@/stores/ports').SupportConfig>();
 
 function objectGrantKey(grantId: string): string {
   return `object-grant:${grantId}`;
@@ -1624,6 +1625,30 @@ export async function findAllNorthStarOffers(limit = 200): Promise<import('@/sto
   const items = await Promise.all(ids.map(id => redis!.get<import('@/stores/ports').NorthStarOffer>(northstarOfferKey(id))));
   return items.filter((o): o is import('@/stores/ports').NorthStarOffer => o !== null)
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
+// P5 赞赏/支持配置（单条，个人收款码模型）
+const SUPPORT_CONFIG_KEY = 'northstar:support-config';
+
+export async function getSupportConfig(): Promise<import('@/stores/ports').SupportConfig | null> {
+  const redis = getRedis();
+  const fromMemory = memorySupportConfig.get('singleton') ?? null;
+  if (!redis) return fromMemory;
+  try {
+    return (await redis.get<import('@/stores/ports').SupportConfig>(SUPPORT_CONFIG_KEY)) ?? fromMemory;
+  } catch { return fromMemory; }
+}
+
+export async function saveSupportConfig(config: import('@/stores/ports').SupportConfig): Promise<void> {
+  memorySupportConfig.set('singleton', config);
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(SUPPORT_CONFIG_KEY, config);
+}
+
+/** 仅测试用：清空内存 SupportConfig。 */
+export function __resetMemorySupportConfig(): void {
+  memorySupportConfig.clear();
 }
 
 export async function findRecentNorthStarOrders(limit = 100): Promise<import('@/stores/ports').Order[]> {

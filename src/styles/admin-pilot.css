@@ -63,11 +63,11 @@ button, input, textarea { font: inherit; }
 .adm-scope b { font-size: 11px; font-weight: 650; white-space: nowrap; }
 .adm-scope-menu { position: absolute; z-index: 80; left: 0; right: 0; top: 61px; padding: 7px; background: rgba(255,255,255,.96); border: 1px solid var(--adm-border); border-radius: 15px; box-shadow: 0 18px 50px rgba(32,58,53,.16); }
 .adm-scope-menu[hidden] { display: none; }
-.adm-scope-menu button { width: 100%; padding: 8px; border: 0; border-radius: 9px; display: grid; grid-template-columns: 1fr auto; color: var(--adm-text); background: transparent; text-align: left; }
-.adm-scope-menu button:not(:disabled):hover { background: var(--adm-brand-soft); }
+.adm-scope-menu button, .adm-scope-menu a { width: 100%; padding: 8px; border: 0; border-radius: 9px; display: grid; grid-template-columns: 1fr auto; color: var(--adm-text); background: transparent; text-align: left; text-decoration: none; font: inherit; }
+.adm-scope-menu button:not(:disabled):hover, .adm-scope-menu a:hover { background: var(--adm-brand-soft); }
 .adm-scope-menu button:disabled { opacity: .42; }
-.adm-scope-menu button span, .adm-scope-menu button small { display: block; }
-.adm-scope-menu button small { font-size: 9px; color: var(--adm-text-faint); grid-column: 1; }
+.adm-scope-menu button span, .adm-scope-menu button small, .adm-scope-menu a span, .adm-scope-menu a small { display: block; }
+.adm-scope-menu button small, .adm-scope-menu a small { font-size: 9px; color: var(--adm-text-faint); grid-column: 1; }
 .adm-scope-menu button svg { grid-row: 1 / span 2; grid-column: 2; color: var(--adm-brand-strong); }
 .adm-context-heading { display: flex; align-items: center; gap: 9px; padding: 30px 12px 11px; color: var(--adm-text-faint); font-size: 11px; font-weight: 650; }
 .adm-context-nav { display: grid; gap: 7px; }

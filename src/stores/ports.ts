@@ -1092,3 +1092,30 @@ export interface NorthStarOrderRepositoryPort {
   findPaymentIntent(paymentIntentId: string): Promise<PaymentIntent | null>;
   saveRefund(refund: RefundRecord): Promise<void>;
 }
+
+// ---------------------------------------------------------------------------
+// P5 赞赏/支持配置（个人收款码模型）
+//
+// 个人微信/支付宝赞赏码 QR + 可选外链（爱发电/Ko-fi）+ 文案。
+// 与 NorthStar 订单/支付（需商户资质）不同：赞赏是个人收款码，无需商户号、无需营业执照、
+// 免费，访客扫码付。这是"个人空间"在"无商户、不国内营业、免费"约束下的正确经营形态。
+// 真实经营性收款（offer→order→pay via SDK）保留为未来路径，需商户资质。
+// ---------------------------------------------------------------------------
+
+export interface SupportConfig {
+  /** 微信赞赏码 QR 图片公开 URL（Walker 在 /admin/appearance 上传后填入） */
+  wechatQrUrl?: string;
+  /** 支付宝收款码 QR 图片公开 URL */
+  alipayQrUrl?: string;
+  /** 可选外链（爱发电/Ko-fi/Buy Me a Coffee） */
+  externalUrl?: string;
+  externalLabel?: string;
+  /** 展示文案（为什么支持 / 支持后做什么） */
+  blurb?: string;
+  updatedAt: string;
+}
+
+export interface SupportConfigRepositoryPort {
+  get(): Promise<SupportConfig | null>;
+  save(config: SupportConfig): Promise<void>;
+}

@@ -56,7 +56,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **P4 Skill 注册护栏（默认拒绝）**：注册到 admitted（registered-limited/stable）前必须满足 `validateSkillRegistration`（共享校验器）——适用边界 `applicableBoundary` + 失败边界 `failureBoundary` + ≥1 反例 `negativeExamples` + 覆盖 normal/boundary/reject/failure 的 evalSet，否则 `missing-boundary`/`missing-counterexample`/`missing-eval-set`。**两条路径都强制**：`/api/admin/assets/promote` 与 `/api/admin/skills?action=admission`（到 admitted）共用校验器，防 skills 页旁路。Skill 带 `registrationTier`（limited/stable）+ `paused` 运行时开关 + `admissionSnapshots`（append-only，支持 `pauseSkill`/`resumeSkill`/`rollbackSkill`）。
 - **P4 Contributor 对象级授权（object-authz，默认拒绝）**：`src/lib/object-authz.ts` 的 `canPerformObjectAction` 与既有 role 正交——不修改 `AccountRole` 枚举（不触动认证边界），Contributor = role=user + 至少一条 `ObjectGrant`（grantee/resourceType/resourceId('*')/actions/expiresAt TTL）。owner/admin 全通过；其余需命中未过期 grant。`authorizeAndAudit` 每次决策写 `ActionAuditEntry`（allowed/denied）。授权**策略**（哪些 grant）待 Walker 定后写入。
 - **AI proposal 安全护栏（P4）**：WorkItem 加 `expiresAt`。AI 来源（`queue=ai-asset`）无证据假设**不进入"立即处理"（now）**且有默认 14 天 `expiresAt`；`getTodayProjection` 过滤过期 proposal（保留审计，不删）。Walker 自己的 user-demand/walker-thesis 提案可自由设 now（人的判断不护栏）。
-- **P5 NorthStar 经营（默认 OFF + Port+合成适配器）**：`src/lib/northstar-range.ts` 的 `isNorthStarEnabled()`（env `NORTHSTAR_ENABLED`，默认 OFF）。`NorthStarService`（订单状态机 created→paying→paid→fulfilled/refunded）在 OFF 时所有写返回 `northstar-disabled`，个人闭环完整运行（`northstar-containment` 测试守护私密数据不泄漏）。`PaymentProviderPort` + `DevSyntheticPaymentProvider`（不真实收费）；真实商（Stripe/支付宝）属 Human Gate。与 `MediaObjectStoragePort`（文件dev/Blob生产）、AI Gateway 同 Port+适配器模式。
+- **P5 NorthStar 经营（默认 OFF + Port+合成适配器；赞赏为个人可用形态）**：`src/lib/northstar-range.ts` 的 `isNorthStarEnabled()`（env `NORTHSTAR_ENABLED`，默认 OFF）。`NorthStarService`（订单状态机 created→paying→paid→fulfilled/refunded）在 OFF 时所有写返回 `northstar-disabled`，个人闭环完整运行（`northstar-containment` 测试守护私密数据不泄漏）。`PaymentProviderPort` + `DevSyntheticPaymentProvider`（不真实收费）；真实商（支付宝/微信）API **需商户资质（营业执照/商户号），个人无资质不可用**——SDK（`alipay-sdk-nodejs-all`/`wechatpay-node-v3`）免费但需商户凭证，保留为未来路径。**个人可用的经营形态是赞赏（个人收款码）**：`SupportConfig`（微信/支付宝赞赏码 QR URL + 可选爱发电/Ko-fi 外链 + 文案），`/support` 页展示，访客扫码付，无 SDK/无商户号/免费。与 `MediaObjectStoragePort`（文件dev/Blob生产）、AI Gateway 同 Port+适配器模式。
 
 ### 渲染与部署
 
@@ -106,6 +106,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/learn/guide/[level]/[tool]` | 学习指南详情（入门/学徒/专家 × 工具） | Base |
 | `/content` | 内容宇宙（多维度内容聚合） | Base |
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
+| `/support` | 赞赏/支持页（P5 个人收款码：微信/支付宝赞赏码 QR + 可选外链，SSR 读 SupportConfig） | Base |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
 | `/admin` | 工作台（服务端投影 WorkItem + NeedCase + 站主主张 + 系统事件；去 localStorage 业务状态） | Admin（AdminLayout） |
 | `/login` | 统一登录/注册（用户 + owner 同入口） | Base |
@@ -144,6 +145,10 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/match-feedback` | 推荐结果反馈（`resolved`/`stuck`/`not-fit`/`want-tutorial`/`first-draft`/`next-step-clear`/`wrong-direction`/`need-tutorial`），回写 NeedCase feedbackStatus | 无 |
 | `/api/content-feedback` | 公开内容阅读反馈（`useful`/`needs-more`/`outdated`，匿名访客可提交；sourceTopicId 服务端派生；IP 哈希频率限流 60s/5 次 + 429；note 脱敏限长） | 无（IP 限流） |
 | `/api/content-telemetry` | 公开阅读深度遥测（`content_progress`/`content_complete`，匿名；per-page-load readerToken、DNT 尊重、无 IP/referrer/UA、schemaVersion=1；限流 60s/20 次 + 503；TTL 内容缓存） | 无（IP 限流） |
+| `/api/admin/support` | 赞赏配置读写（个人收款码 QR URL + 外链 + 文案；GET/PUT） | admin cookie |
+| `/api/admin/grants` | Contributor 对象级授权 CRUD（GET/POST/DELETE，owner 可写） | admin cookie（写 owner only） |
+| `/api/admin/northstar/offers` | NorthStar 商品/服务/能力 CRUD（写操作门控 isNorthStarEnabled） | admin cookie |
+| `/api/admin/northstar/orders` | NorthStar 订单 create/pay/fulfill/refund（门控 isNorthStarEnabled，DevSynthetic provider） | admin cookie |
 | `/api/admin/workbench` | 工作台今日投影 / 队列状态列表（view=today\|decisions\|actions\|outcomes，queue/status 过滤） | admin cookie |
 | `/api/admin/workbench/[id]` | 单个 WorkItem 详情（含 evidenceRefs/decision/actions/outcomes/history） | admin cookie |
 | `/api/admin/decisions` | 创建 WorkItem 提案（POST，证据完整可 requestDecision 进 pending） | admin cookie |

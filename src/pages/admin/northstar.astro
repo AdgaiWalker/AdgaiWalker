@@ -6,10 +6,10 @@
  * 关闭时所有写操作返回 northstar-disabled，页面显示开启说明；个人闭环不受影响。
  * 真实支付商接入属 Human Gate（合成 provider 走通全链路，真实商待凭据）。
  */
-import Base from '@/layouts/Base.astro';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { isNorthStarEnabled } from '@/lib/northstar-range';
-import { findAllNorthStarOffers, findRecentNorthStarOrders } from '@/conversation/store';
+import { findAllNorthStarOffers, findRecentNorthStarOrders, getSupportConfig } from '@/conversation/store';
 
 if (!isAdmin(Astro.request)) {
   return Astro.redirect('/login');
@@ -18,6 +18,7 @@ if (!isAdmin(Astro.request)) {
 const enabled = isNorthStarEnabled();
 const offers = await findAllNorthStarOffers();
 const orders = await findRecentNorthStarOrders(50);
+const support = await getSupportConfig();
 ---
 
 <Base title="NorthStar 经营 — Walker">
@@ -39,6 +40,20 @@ const orders = await findRecentNorthStarOrders(50);
         <span>○ NorthStar 未开启。个人闭环完整运行；开启需设 <code>NORTHSTAR_ENABLED=true</code>（经营/支付是产品决策，真实支付商凭据属 Human Gate）。</span>
       )}
     </div>
+
+    <section class="block">
+      <h2>赞赏设置（个人收款码）</h2>
+      <p class="hint">展示你的微信/支付宝个人赞赏码 + 可选外链到 <a href="/support" target="_blank">/support</a>。个人收款码无需商户号、无需营业执照，访客扫码付。QR 图片先在 <a href="/admin/appearance">外观与媒体</a> 上传，把返回的图片地址填到下方。</p>
+      <form id="support-form" class="support-form">
+        <label class="full">微信赞赏码图片地址 <input type="url" name="wechatQrUrl" placeholder="https://…" value={support?.wechatQrUrl ?? ''} /></label>
+        <label class="full">支付宝收款码图片地址 <input type="url" name="alipayQrUrl" placeholder="https://…" value={support?.alipayQrUrl ?? ''} /></label>
+        <label class="full">外链（爱发电/Ko-fi，可选） <input type="url" name="externalUrl" placeholder="https://afdian.net/…" value={support?.externalUrl ?? ''} /></label>
+        <label>外链文案 <input type="text" name="externalLabel" placeholder="通过爱发电支持我" value={support?.externalLabel ?? ''} /></label>
+        <label class="full">赞赏文案（为什么支持） <textarea name="blurb" rows="2" placeholder="如果内容对你有帮助，请我喝杯咖啡。">{support?.blurb ?? ''}</textarea></label>
+        <button type="submit" class="btn-primary">保存赞赏设置</button>
+        <a href="/support" target="_blank" class="preview-link">预览 /support →</a>
+      </form>
+    </section>
 
     <section class="block">
       <h2>商品 / 服务 / 能力（{offers.length}）</h2>
@@ -104,7 +119,7 @@ const orders = await findRecentNorthStarOrders(50);
   </main>
 
   <style is:global>
-    .admin-main { max-width: 980px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-family: var(--font-body); color: var(--color-parchment, #1c1917); }
+    .admin-main { max-width: 1180px; margin: 0 auto; color: var(--adm-text); }
     .admin-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; }
     .admin-bar h1 { font-size: 1.4rem; margin: 0; }
     .admin-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
@@ -114,11 +129,17 @@ const orders = await findRecentNorthStarOrders(50);
     .ns-status.on { background: rgba(6,95,70,0.1); color: #065f46; }
     .ns-status.off { background: rgba(120,113,108,0.12); color: #57534e; }
     .ns-status code { background: rgba(0,0,0,0.06); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
-    .block { background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 1.25rem 1.4rem; margin-top: 1.25rem; }
+    .block { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: 0 16px 46px rgba(39,62,58,.08); }
     .block h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
     .offer-form { display: grid; grid-template-columns: auto 2fr 1fr auto auto; gap: 0.5rem; margin-bottom: 1rem; }
     .offer-form .desc { grid-column: 1 / -1; }
     .offer-form input, .offer-form select { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
+    .support-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+    .support-form label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--color-parchment-dim, #57534e); }
+    .support-form label.full { grid-column: 1 / -1; }
+    .support-form input, .support-form textarea { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
+    .support-form .btn-primary { grid-column: 1 / -1; justify-self: start; }
+    .preview-link { grid-column: 1 / -1; justify-self: start; font-size: 0.8rem; color: var(--color-brand, #35bfab); text-decoration: none; }
     .btn-primary { padding: 0.45rem 1rem; border: none; border-radius: 8px; background: var(--color-brand, #35bfab); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     .data-table th { text-align: left; font-size: 0.72rem; color: var(--color-parchment-dim, #78716c); padding: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
@@ -140,6 +161,21 @@ const orders = await findRecentNorthStarOrders(50);
   <script is:inline>
     const tell = (m) => window.WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
     const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then((r) => r.json().then((d) => ({ ok: r.ok, data: d })));
+
+    document.getElementById('support-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = {
+        wechatQrUrl: fd.get('wechatQrUrl'),
+        alipayQrUrl: fd.get('alipayQrUrl'),
+        externalUrl: fd.get('externalUrl'),
+        externalLabel: fd.get('externalLabel'),
+        blurb: fd.get('blurb'),
+      };
+      const res = await fetch('/api/admin/support', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) await tell('赞赏设置已保存'); else await tell(data.error || '保存失败');
+    });
 
     document.getElementById('offer-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -177,4 +213,4 @@ const orders = await findRecentNorthStarOrders(50);
       });
     });
   </script>
-</Base>
+</AdminLayout>

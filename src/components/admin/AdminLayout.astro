@@ -32,10 +32,10 @@ const SECONDARY: Record<NavDomain['id'], NavItem[]> = {
     { label: '结果', href: '/admin/outcomes', icon: 'circle-check' },
   ],
   needs: [
+    { label: '用户', href: '/admin/accounts', icon: 'users' },
     { label: '需求收件箱', href: '/admin/review', icon: 'inbox' },
     { label: '需求分析', href: '/admin/insights', icon: 'scan-search' },
     { label: '选题', href: '/admin/topics', icon: 'notebook-pen' },
-    { label: '反馈与结果', href: '/admin/hit-rate', icon: 'message-circle-more' },
   ],
   creation: [
     { label: '内容', href: '/admin/content', icon: 'files' },
@@ -52,7 +52,7 @@ const SECONDARY: Record<NavDomain['id'], NavItem[]> = {
   ],
   system: [
     { label: 'AI Gateway', href: '/admin/ai-gateway', icon: 'activity' },
-    { label: '访问控制', href: '/admin/accounts', icon: 'shield-check' },
+    { label: '访问控制', href: '/admin/grants', icon: 'shield-check' },
     { label: '邀请码', href: '/admin/invite-codes', icon: 'ticket-check' },
     { label: '系统事件', href: '/admin/incidents', icon: 'triangle-alert' },
     { label: '外观与媒体', href: '/admin/appearance', icon: 'image' },
@@ -61,6 +61,7 @@ const SECONDARY: Record<NavDomain['id'], NavItem[]> = {
 
 interface Props {
   active?: string;
+  domain?: NavDomain['id'];
   title: string;
   subtitle?: string;
   immersive?: boolean;
@@ -75,6 +76,7 @@ interface Props {
 
 const {
   active = '',
+  domain,
   title,
   subtitle = '',
   immersive = false,
@@ -88,12 +90,14 @@ const {
 
 const systemStatus = getAdminSystemStatus(systemHealth, systemHealthCheckedAt);
 
-const activeDomain =
+const inferredDomain =
   active === '/admin' ? 'workbench' :
-  ['/admin/review', '/admin/insights', '/admin/topics', '/admin/hit-rate'].some(path => active.startsWith(path)) ? 'needs' :
-  ['/admin/content', '/admin/brief'].some(path => active.startsWith(path)) ? 'creation' :
+  ['/admin/outcomes'].some(path => active.startsWith(path)) ? 'workbench' :
+  ['/admin/accounts', '/admin/review', '/admin/insights', '/admin/topics'].some(path => active.startsWith(path)) ? 'needs' :
+  ['/admin/content', '/admin/brief', '/admin/hit-rate'].some(path => active.startsWith(path)) ? 'creation' :
   ['/admin/experiences', '/admin/rules', '/admin/skills', '/admin/assets'].some(path => active.startsWith(path)) ? 'assets' :
   'system';
+const activeDomain = domain ?? inferredDomain;
 
 const currentDomain = DOMAINS.find(item => item.id === activeDomain)!;
 const currentItems = SECONDARY[activeDomain].map(item => {
@@ -156,7 +160,7 @@ const isSecondaryActive = (item: NavItem) => {
         </button>
         <div class="adm-scope-menu" data-scope-menu hidden>
           <button class="is-selected" type="button"><span>Walker</span><small>个人系统</small><Icon name="lucide:check" width={15} height={15} /></button>
-          <button type="button" disabled><span>NorthStar</span><small>规划中</small></button>
+          <a href="/admin/northstar"><span>NorthStar</span><small>公共与经营范围</small></a>
           <button type="button" disabled><span>经营系统</span><small>规划中</small></button>
         </div>
       </div>
