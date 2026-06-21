@@ -12,6 +12,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "check:production-readiness": "node scripts/check-production-readiness.mjs",
+    "verify:production-storage": "node scripts/verify-production-storage.mjs",
+    "verify:production-storage:local": "node scripts/verify-production-storage-local.mjs",
+    "verify:production-media-storage": "node scripts/verify-production-media-storage.mjs",
+    "verify:production-media-storage:local": "node scripts/verify-production-media-storage-local.mjs",
     "astro": "astro"
   },
   "dependencies": {
@@ -25,6 +30,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@tailwindcss/vite": "^4.2.4",
     "@upstash/redis": "^1.38.0",
+    "@vercel/blob": "^2.4.1",
     "astro": "^6.1.10",
     "astro-icon": "^1.1.5",
     "diff": "^9.0.0",
@@ -43,6 +49,7 @@
     "@types/diff": "^7.0.2",
     "@types/js-yaml": "^4.0.9",
     "happy-dom": "^20.10.6",
+    "ioredis": "^5.11.1",
     "playwright": "^1.60.0",
     "tsx": "^4.22.4",
     "vitest": "^4.1.8"
