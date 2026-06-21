@@ -36,14 +36,6 @@ const openLearning = learningRequests.filter(r => r.status === 'open' || r.statu
 const fulfilledLearning = learningRequests.filter(r => r.status === 'fulfilled' || r.status === 'dropped');
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>资产生命周期 · Walker</title>
-</head>
-<body>
 <AdminLayout
   active="/admin/assets"
   title={view === 'learning' ? '学习任务' : '资产生命周期'}

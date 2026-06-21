@@ -25,14 +25,6 @@ const mediaUploadDisabled = mediaStorageMode === 'unavailable';
 const themeStorageWarning = storageMode === 'unavailable' ? '主题元数据存储不可用，保存会被拒绝。' : '';
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>外观与媒体 · Walker</title>
-</head>
-<body>
 <AdminLayout active="/admin/appearance" title="外观与媒体" subtitle="主题、背景媒体与可读性保护">
   <div class="appearance" data-appearance>
     <section class="appearance-preview" style={`--preview-overlay:${theme.readabilityOverlay};`}>
@@ -207,5 +199,3 @@ const themeStorageWarning = storageMode === 'unavailable' ? '主题元数据存�
   @media (max-width: 820px) { .appearance-grid { grid-template-columns: 1fr; } .preview-card { margin: 24px; } .media-card { grid-template-columns: 64px 1fr; } .media-card button { grid-column: 1/-1; } }
   @media (prefers-reduced-motion: reduce) { .appearance-preview, .preview-overlay { backdrop-filter: none; } }
 </style>
-</body>
-</html>

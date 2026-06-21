@@ -55,13 +55,7 @@ function formatTime(iso: string): string {
 ---
 
 <AdminLayout active="/admin/rules" domain="assets" title="规则" subtitle="从多次经验中提取并验证可复用判断">
-<style is:global>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: transparent; color: var(--adm-text); }
-     .admin-main { max-width: 1180px; margin: 0 auto; }
-    .admin-welcome { margin-bottom: 1.25rem; }
-    .admin-welcome h1 { font-size: 1.5rem; font-weight: 850; margin-bottom: 0.35rem; }
-    .admin-welcome p { color: var(--adm-text-dim); font-size: 0.88rem; line-height: 1.6; }
+<style>
 
     .stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .stat-chip { padding: 0.55rem 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; min-width: 5.5rem; }
@@ -97,12 +91,11 @@ function formatTime(iso: string): string {
     .accuracy-edit.visible { display: inline-flex; }
     .accuracy-edit input { width: 5rem; padding: 0.3rem 0.5rem; }
     .empty { text-align: center; padding: 3rem 1rem; color: var(--adm-text-faint); border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
-    @media (max-width: 760px) {
-      .admin-main { padding: 1.25rem 1rem 3rem; }
+    @media (max-width: 760px) {
     }
   </style>
-<main class="admin-main">
-    <section class="admin-welcome">
+<div class="adm-page">
+    <section class="adm-page-welcome">
       <h1>规则候选池</h1>
       <p>从 NeedCase / 经验复盘沉淀出的匹配规则。回放评测后推进状态：观察 → 候选 → 验证 → 稳定，不再适用则退役。</p>
     </section>
@@ -174,7 +167,7 @@ function formatTime(iso: string): string {
         })}
       </section>
     )}
-  </main>
+  </div>
 
   <script is:inline>
     const post = (url, body) => fetch(url, {

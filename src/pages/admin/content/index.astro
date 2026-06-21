@@ -68,18 +68,7 @@ const privCount = entries.filter(e => getContentVisibility(e.data) === 'private'
 
 const subtitle = `${total} 篇 · ${pubCount} 公开 / ${draftCount} 草稿 / ${privCount} 私密`;
 ---
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>内容管理 — Walker Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-</head>
-<body>
-  <AdminLayout
+<AdminLayout
     active="/admin/content"
     title="内容管理"
     subtitle={subtitle}
@@ -182,9 +171,6 @@ const subtitle = `${total} 篇 · ${pubCount} 公开 / ${draftCount} 草稿 / ${
       </div>
     </div>
   </AdminLayout>
-</body>
-</html>
-
 <style is:global>
   /* §4.4 筛选行 */
   .adm-content-filters {

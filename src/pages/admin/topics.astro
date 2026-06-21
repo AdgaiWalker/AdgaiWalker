@@ -68,22 +68,14 @@ function creationHint(topic: TopicCandidate): string {
 }
 ---
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>选题 · Walker</title>
-</head>
+
 
 <AdminLayout
   active="/admin/topics"
   title="选题池"
   subtitle="把用户需求与 Walker 主张分开记录，在证据汇合处做创作决定。"
 >
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    .admin-main { width: min(100%, 72rem); margin: 0 auto; padding: 0 0 4rem; }
-    .admin-welcome { margin-bottom: 1.25rem; }
-    .admin-welcome p { font-size: 0.88rem; color: #78716c; line-height: 1.6; }
+  <style>
     .inspiration-box { display: flex; gap: 0.65rem; align-items: center; margin-bottom: 1.5rem; padding: 0.85rem; border: 1px solid var(--adm-border); border-radius: 18px; background: rgba(255,255,255,0.58); box-shadow: 0 18px 50px rgba(33, 58, 53, .08); backdrop-filter: blur(24px); flex-wrap: wrap; }
     .inspiration-input { flex: 1; min-width: 12rem; border: 1px solid var(--adm-border); border-radius: 13px; padding: 0.72rem 0.85rem; background: rgba(255,255,255,0.72); color: var(--adm-text); font-size: 0.86rem; outline: none; }
     .inspiration-input:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 4px var(--adm-brand-soft); }
@@ -120,14 +112,13 @@ function creationHint(topic: TopicCandidate): string {
     .topic-dialog-form textarea { min-height: 7rem; resize: vertical; border: 1px solid var(--adm-border); border-radius: 14px; padding: .8rem; background: rgba(255,255,255,.82); color: var(--adm-text); outline: none; }
     .topic-dialog-form textarea:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 4px var(--adm-brand-soft); }
     .topic-dialog-actions { display: flex; justify-content: flex-end; gap: .6rem; }
-    @media (max-width: 760px) {
-      .admin-main { padding: 0 0 3rem; }
+    @media (max-width: 760px) {
       .topic-grid { grid-template-columns: 1fr; }
     }
   </style>
 
-  <main class="admin-main">
-    <section class="admin-welcome">
+  <div class="adm-page">
+    <section class="adm-page-welcome">
       <p>需求簇和站主灵感放在同一个池子里判断。系统提供密度、角色、代表需求和命中反馈，人决定要不要写、怎么写。</p>
     </section>
 
@@ -236,7 +227,7 @@ function creationHint(topic: TopicCandidate): string {
         </div>
       </form>
     </dialog>
-  </main>
+  </div>
 
   <script>
     const actionDialog = document.querySelector<HTMLDialogElement>('[data-topic-action-dialog]');
