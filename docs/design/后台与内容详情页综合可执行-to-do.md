@@ -44,8 +44,8 @@ G0 / H0 / P0 / P1 / P2 已完成主要技术基础
 | P2-B Agent 调用回写资产 ID | 资产晋升证据链、LearningRequest、Skill 支撑证据已成立 | 解冻（归 P4） | 需 Agent 调用上下文捕获；属 P4 自动化 |
 | P3-A 完整遥测（阅读深度） | 已完成（第十六轮）。最小集 content_progress(≥50%)/content_complete(≥90%)，隐私最小化（per-page-load readerToken、DNT 尊重、无 IP/referrer/UA、schemaVersion=1）；hit-rate 增 readingOutcome 第三并列组（不合并分母） | 已完成 | （可选）若需更细参与度曲线再补中间 beacon；当前极简页内 beacon 已支持"读完率→改进哪篇"决策 |
 | P3-B 内容 Block | 已完成（#36）。BlockCallout/BlockResource/BlockStep + 宽度契约单一真相源 + Codex入门.mdx 真实用全 3 个 | 已完成 | 按真实内容需要新增更多 Block |
-| P4 AI proposal + Skill 注册护栏 + Contributor RBAC 机制 | 大部分完成（第十六轮）。AI proposal expiresAt + 不进 now + 过滤；Skill 注册 boundary/反例/evalSet 强制 + registered-limited + 暂停/回滚；**Contributor 对象级授权机制已建（object-authz 默认拒绝 + ObjectGrant store + 操作审计）**。策略（哪些 grant）仍 Walker 定 | 机制完成 | 授权策略（7 角色映射 + 具体 grant）待 Walker 定后写入；机制已就绪 |
-| P5 NorthStar 与经营系统 | 经营基础已建（第十六轮）：隔离护栏 + 订单/支付/退款状态机 + PaymentProviderPort + 开发合成适配器（不真实收费）+ NorthStar-OFF 硬守护（默认关闭，OFF 时个人闭环完整运行）。**真实支付商接入 + 公共网络本体仍 Human Gate**（需账户/合规/凭据/产品定义） | 部分完成（基础+护栏） | 需 Walker 选定支付商+开账户+合规+凭据；定公开边界与争议流程；个人闭环须可独立关闭（已有守护） |
+| P4 AI proposal + Skill 注册护栏 + Contributor RBAC | 大部分完成（第十六轮）。AI proposal expiresAt + 不进 now + 过滤；Skill 注册 boundary/反例/evalSet + registered-limited + 暂停/回滚（含 API+UI）；**Contributor RBAC 已落地（object-authz 默认拒绝 + ObjectGrant store + 审计 + grants API + `/admin/grants` 页 + 6 角色模板 + canAccessAdminResource 消费者）**。授权策略待 Walker 定后写入 | 机制+UI 完成 | 授权策略（具体 grant）待 Walker 在 /admin/grants 写入；机制已就绪可承载即将加入的协作者 |
+| P5 NorthStar 与经营系统 | 经营基础 + offers/orders API + admin 页已建；**个人可用"赞赏（个人收款码）"已落地（SupportConfig + /api/admin/support + /support 页，访客扫码付）**；真实经营性收款（支付 SDK）因 Walker 无商户资质搁置（支付宝/微信 API 需执照/商户号，个人不可用） | 赞赏可用；SDK 收款搁置 | 真实经营性收款需 Walker 取得商户资质（个体工商户/境外主体+Stripe）+ 选 provider + 装官方 SDK；赞赏已覆盖个人赞助场景 |
 
 ---
 
@@ -1199,7 +1199,23 @@ Proof（已完成护栏）：ports.ts(WorkItem.expiresAt + SkillCandidate bounda
 
 ## 14. P5 —— NorthStar 与经营系统
 
-当前状态：**经营基础（订单/支付/退款 状态机 + Port + 开发合成适配器 + NorthStar-OFF 硬守护）已建（第十六轮）；真实支付商接入 + 公共网络本体仍 Human Gate + 产品定义**。
+当前状态：**经营基础（订单/支付状态机 + Port + 合成适配器 + OFF 守护）+ offers/orders API + admin 管理页已建；个人可用的"赞赏（个人收款码）"已落地可用；真实经营性收款（支付 SDK）因 Walker 无商户资质搁置为未来路径**。
+
+### 关键决策：支付 SDK 路径不可用 → 赞赏（个人收款码）才是个人可用形态
+
+第十六轮调研（GitHub + 约束分析）：
+- 支付宝/微信支付 **API 收款强制要求商户资质**：微信支付商户号需企业/个体工商户营业执照（个人不能申请）；支付宝网站支付经营性也多需执照。SDK（`alipay/alipay-sdk-nodejs-all` 官方、`wechatpay-node-v3` 社区）免费，但**需商户凭证（appid/商户私钥/商户号/证书）才能发一笔真实交易**。
+- Walker 约束（无营业执照、无个人小微、不想国内营业、要免费）→ **支付宝/微信 API 收款对 Walker 不可用**，免费 SDK 拿来也发不出真实收款。
+- 正确的个人经营形态 = **赞赏（个人收款码）**：微信/支付宝 App 生成个人赞赏码 QR，访客扫码付。无需商户号、无需执照、免费、合法个人赞助。**Walker 已确认**（微信赞赏码截图）。
+
+### 赞赏（个人收款码，可用）—— 本轮真正的经营交付
+
+- [x] `SupportConfig`（微信赞赏码 + 支付宝收款码 QR URL + 可选爱发电/Ko-fi 外链 + 文案）+ 存储。
+- [x] `/api/admin/support` GET/PUT（admin 配置；QR 在 `/admin/appearance` 上传后填 URL）。
+- [x] `/admin/northstar` 加"赞赏设置"区 + `/support` 公开赞赏页（SSR 展示双 QR + 外链 + 文案）+ 页脚"支持"链接。
+- 访客扫码付：零 SDK、零商户号、零费率（个人码），合法个人赞助。
+
+### NorthStar 经营基础（默认 OFF，与 MediaObjectStoragePort/AI Gateway 同 Port+适配器模式）
 
 第十六轮已落地（安全边界内，与 MediaObjectStoragePort/AI Gateway 同 Port+适配器模式）：
 
@@ -1210,7 +1226,7 @@ Proof（已完成护栏）：ports.ts(WorkItem.expiresAt + SkillCandidate bounda
 
 仍 Human Gate + 产品定义（**不自行实施**，需 Walker 决策）：
 
-- [ ] 真实支付提供商接入：需选定支付商、开通账户、合规审查、真实凭据（生产 PaymentProviderPort 实现）。
+- [ ] **真实经营性收款**（offer→order→pay via 支付宝/微信 SDK）：Walker 当前无商户资质（无执照/无小微/不国内营业），此路径不可用。需先取得资质（个体工商户 或 境外主体 + Stripe 等）+ 选定 provider + 装官方 SDK + 凭据，再实现生产 PaymentProviderPort。**赞赏（个人收款码）已覆盖个人赞助场景**，此项是未来正规化经营才需要。
 - [ ] Publish Interface 选择性发布 content/capability/offer/request 到公共网络（需公开边界 + 审查流）。
 - [ ] 匹配显示案例/边界/结果/时效；联系/协作/外部 Outcome 回流个人系统。
 - [ ] 争议处理流程（产品定义）。
@@ -2383,5 +2399,51 @@ UX 接线缺口修复（已建但够不着 → 可用）:
 Tests: astro check 0 errors；npm test 46 files / 341 tests；build passed；e2e 45/45 确定性。
 
 Commit: f96acb3（fix/round16-ux-gaps，待合并 main）
+```
+
+### 2026-06-21 第十六轮续（用户澄清约束后：RBAC 落地 + B 类 + P5 建实 + 赞赏替代支付 SDK）
+
+```text
+背景: 用户回答 4 个澄清问题后明确：P5 近期要做（继续投资）、Contributor 有真人即将加入、
+     部署仍本地（push/云验证不急）、B 类全做。随后用户进一步明确支付要支付宝+微信、要免费、
+     无商户资质/不国内营业 → 调研后判定支付 SDK 路径不可用，改赞赏（个人收款码）模型。
+
+Commit 链（本轮）:
+  46e9e50 / cab1770 / ddd65e7  Contributor RBAC 落地 + B 类打磨 + P5 经营建实（feat/rbac-northstar-polish，已合并 main）
+  50367d9                      P5 赞赏/支持页（个人收款码模型，替代不可用的支付 SDK）
+  bec6b20                      e2e 对齐 AdminLayout + 两处健壮化
+
+Contributor RBAC 落地（真人即将加入）:
+  - /api/admin/grants（owner CRUD）+ /admin/grants 管理页（6 角色模板一键填入 + 过期 TTL + 审计）
+  - canAccessAdminResource 消费者辅助（admin 放行 OR grant 命中）；object-grant store + recent 索引
+  - 机制+UI 完成，Walker 在 /admin/grants 为协作者配 grant 即可；具体端点 isAdmin 放宽待角色确定
+
+B 类打磨全做:
+  - Skill 暂停/恢复/回滚 UI 按钮 + skills API ?action=pause|resume|rollback
+  - 错误文案 UX 审计（中文可操作消息，经 tell(data.error) 展示）
+  - admin-truth-source-matrix 补字段（readingOutcome/contentOutcome/expiresAt/boundary/grant/审计）
+
+P5 经营建实（近期要做，仍本地开发）:
+  - offers/orders API（CRUD + create/pay/fulfill/refund）+ /admin/northstar 管理页 + offer 存储
+  - 真实支付商接入点标注用官方 SDK（不投机装包，provider 未定）
+
+关键决策：支付 SDK 不可用 → 赞赏（个人收款码）:
+  - 调研：支付宝/微信 API 收款强制需商户资质（微信商户号需执照，个人不能申请）；
+    SDK（alipay-sdk-nodejs-all / wechatpay-node-v3）免费但需商户凭证。
+  - Walker 约束（无执照/无小微/不国内营业/要免费）→ API 收款不可用。
+  - 改赞赏模型：SupportConfig（微信+支付宝个人赞赏码 QR + 爱发电/Ko-fi 外链 + 文案）+
+    /api/admin/support + /admin/northstar 赞赏设置 + /support 公开赞赏页 + 页脚"支持"链接。
+  - 访客扫码付：零 SDK/零商户/零费率，合法个人赞助。
+
+Tests: astro check 0 errors；npm test 46 files / 342 tests；build passed；
+       e2e 49→51 passed（+admin-grants-northstar 4 + 赞赏 2）。
+
+Reality deviation:
+  - 真实支付 SDK 路径搁置（不是失败，是约束使然）；赞赏已覆盖个人赞助场景。
+  - 本轮末检测到并行 admin 页重构（13 页 → AdminLayout + 新增 admin-system-map），
+    该重构破坏 content-feedback:107 与 topic-to-editor:59 两个既有测试（功能完好，
+    测试需对齐新 DOM 结构）—— 属并行重构范畴，非本轮代码所致。
+
+Commit: 50367d9 + bec6b20（已在 main）
 ```
 
