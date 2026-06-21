@@ -22,7 +22,7 @@ const support = await getSupportConfig();
 ---
 
 <AdminLayout active="/admin/northstar" domain="system" title="NorthStar" subtitle="公共发布、支持与经营范围">
-  <main class="admin-main">
+  <div class="adm-page">
 
     <div class={`ns-status ${enabled ? 'on' : 'off'}`}>
       {enabled ? (
@@ -107,15 +107,9 @@ const support = await getSupportConfig();
       )}
       <p class="hint">支付走 DevSyntheticPaymentProvider（不真实收费，验证状态机）。真实支付商接入后替换为官方 SDK 适配器。</p>
     </section>
-  </main>
+  </div>
 
-  <style is:global>
-    .admin-main { max-width: 1180px; margin: 0 auto; color: var(--adm-text); }
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; }
-    .admin-bar h1 { font-size: 1.4rem; margin: 0; }
-    .admin-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
-    .admin-nav a { color: var(--color-parchment-dim, #57534e); text-decoration: none; }
-    .admin-nav a[aria-current="page"] { color: var(--color-brand, #35bfab); font-weight: 700; }
+  <style>
     .ns-status { padding: 0.7rem 1rem; border-radius: 10px; font-size: 0.82rem; margin-bottom: 1.25rem; }
     .ns-status.on { background: rgba(6,95,70,0.1); color: #065f46; }
     .ns-status.off { background: rgba(120,113,108,0.12); color: #57534e; }

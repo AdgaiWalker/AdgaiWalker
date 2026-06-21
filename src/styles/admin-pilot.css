@@ -23,6 +23,12 @@
   --adm-verify-soft: rgba(74, 115, 184, .1);
   --adm-radius-card: 22px;
   --adm-radius-btn: 13px;
+  --adm-radius-pill: 999px;
+  --adm-type-method: #35bfab;
+  --adm-type-tool: #3b82f6;
+  --adm-type-essay: #a855f7;
+  --adm-type-life: #ec4899;
+  --adm-type-exp: #f59e0b;
   --adm-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif;
   --adm-font-display: var(--adm-font-ui);
   --adm-font-mono: 'SFMono-Regular', Consolas, monospace;
@@ -178,3 +184,48 @@ button, input, textarea { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .adm-domain-link, .adm-context-link, .adm-context-sidebar { transition: none; }
 }
+
+/* ---------- 按钮变体 ---------- */
+.adm-btn-sm { padding: 5px 10px; font-size: 12px; gap: 5px; border-radius: 9px; }
+.adm-btn-ghost-bad { color: var(--adm-bad); background: var(--adm-bad-soft); border-color: transparent; }
+.adm-btn-ghost-bad:hover { background: rgba(194, 73, 86, .18); color: var(--adm-bad); }
+
+/* ---------- 标签（色盲安全：带文字/图标） ---------- */
+.adm-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.adm-tag-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.adm-tag-pill { border-radius: var(--adm-radius-pill); padding: 2px 8px; }
+
+/* 状态语义色 */
+.adm-tag-good { background: var(--adm-good-soft); color: var(--adm-good); }
+.adm-tag-good .adm-tag-dot { background: var(--adm-good); }
+.adm-tag-warn { background: var(--adm-warn-soft); color: var(--adm-warn); }
+.adm-tag-warn .adm-tag-dot { background: var(--adm-warn); }
+.adm-tag-bad { background: var(--adm-bad-soft); color: var(--adm-bad); }
+.adm-tag-bad .adm-tag-dot { background: var(--adm-bad); }
+.adm-tag-neutral { background: var(--adm-neutral-soft); color: var(--adm-neutral); }
+.adm-tag-neutral .adm-tag-dot { background: var(--adm-neutral); }
+.adm-tag-verify { background: var(--adm-verify-soft); color: var(--adm-verify); }
+.adm-tag-verify .adm-tag-dot { background: var(--adm-verify); }
+
+/* 内容类型色 */
+.adm-tag-method { background: rgba(53, 191, 171, .12); color: var(--adm-type-method); }
+.adm-tag-tool { background: rgba(59, 130, 246, .12); color: var(--adm-type-tool); }
+.adm-tag-essay { background: rgba(168, 85, 247, .12); color: var(--adm-type-essay); }
+.adm-tag-life { background: rgba(236, 72, 153, .12); color: var(--adm-type-life); }
+.adm-tag-exp { background: rgba(245, 158, 11, .12); color: var(--adm-type-exp); }
+
+/* ---------- 页面内容区 ---------- */
+.adm-page { width: 100%; max-width: 1200px; margin: 0 auto; }
+.adm-page-welcome { margin-bottom: 1.25rem; }
+.adm-page-welcome h1 { font-size: 1.5rem; font-weight: 850; margin-bottom: 0.35rem; }
+.adm-page-welcome p { color: var(--adm-text-dim); font-size: 0.88rem; line-height: 1.6; }

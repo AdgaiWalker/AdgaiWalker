@@ -35,7 +35,7 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
 ---
 
 <AdminLayout active="/admin/grants" title="访问控制" subtitle="对象级授权、角色模板与操作责任">
-  <main class="admin-main">
+  <div class="adm-page">
 
     <p class="hint">对象级授权让 <code>role=user</code> 的协作者受限访问特定资源（不开放整个后台）。授权按 username + 资源类型 + 资源 ID（<code>*</code> 表全部）+ 动作；可设过期时间。所有决策进操作审计。</p>
 
@@ -95,15 +95,9 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
         </table>
       )}
     </section>
-  </main>
+  </div>
 
-  <style is:global>
-    .admin-main { max-width: 1180px; margin: 0 auto; color: var(--adm-text); }
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
-    .admin-bar h1 { font-size: 1.4rem; margin: 0; }
-    .admin-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
-    .admin-nav a { color: var(--color-parchment-dim, #57534e); text-decoration: none; }
-    .admin-nav a[aria-current="page"] { color: var(--color-brand, #35bfab); font-weight: 700; }
+  <style>
     .hint { font-size: 0.82rem; color: var(--color-parchment-dim, #78716c); line-height: 1.6; }
     .hint code { background: rgba(0,0,0,0.05); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
     .create-section, .list-section { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: 0 16px 46px rgba(39,62,58,.08); }
@@ -126,7 +120,7 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
     .grant-table code { background: rgba(0,0,0,0.05); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.82em; }
     .revoke-btn { padding: 0.25rem 0.6rem; border: 1px solid rgba(154,52,18,0.3); border-radius: 6px; background: rgba(154,52,18,0.06); color: #9a3412; cursor: pointer; font-size: 0.76rem; }
     .revoke-btn:hover { background: rgba(154,52,18,0.14); }
-    @media (max-width: 640px) { #grant-form { grid-template-columns: 1fr; } .admin-nav { flex-wrap: wrap; } }
+    @media (max-width: 640px) { #grant-form { grid-template-columns: 1fr; } }
   </style>
 
   <script is:inline>

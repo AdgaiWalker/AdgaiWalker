@@ -38,14 +38,6 @@ const resultTone: Record<string, string> = {
 };
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>结果与下一步 · Walker</title>
-</head>
-<body>
 <AdminLayout active="/admin" title="结果与下一步" subtitle="从已验证结果派生下一个决定或明确结束">
 
   <div class="outcomes" data-outcomes>
@@ -100,9 +92,6 @@ const resultTone: Record<string, string> = {
     )}
   </div>
 </AdminLayout>
-</body>
-</html>
-
 <script>
   const root = document.querySelector('[data-outcomes]') as HTMLElement | null;
   if (root) {

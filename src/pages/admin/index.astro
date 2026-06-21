@@ -243,15 +243,7 @@ const storageModeLabel = storageModeInfo === 'memory-development' ? '开发内�
 const showDemoScenario = import.meta.env.DEV;
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>工作台 · Walker</title>
-</head>
-<body>
-  <AdminLayout
+<AdminLayout
     active="/admin"
     title="工作台"
     subtitle={dateLabel}
@@ -948,8 +940,6 @@ const showDemoScenario = import.meta.env.DEV;
       });
     }
   </script>
-</body>
-</html>
 
 <style is:global>
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
