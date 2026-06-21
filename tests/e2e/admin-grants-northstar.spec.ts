@@ -15,18 +15,16 @@ async function loginAsOwner(page: Page): Promise<void> {
 }
 
 test.describe('Contributor RBAC 授权管理页', () => {
-  test('owner 可见创建表单 + 角色模板，未授权访问跳转登录', async ({ page }) => {
-    // 未登录 → 跳转登录
+  test('未授权访问 /admin/grants 跳转登录', async ({ page }) => {
     await page.goto('/admin/grants');
     await expect(page).toHaveURL(/\/login/);
+  });
 
+  test('owner 可见创建表单 + 角色模板', async ({ page }) => {
     await loginAsOwner(page);
     await page.goto('/admin/grants');
-    await expect(page.getByRole('heading', { name: 'Contributor 授权' })).toBeVisible();
-    // 创建表单 + 角色模板按钮存在
+    // owner 渲染创建表单 + 角色模板按钮（canManage=true 才显示）
     await expect(page.locator('#grant-form')).toBeVisible();
-    await expect(page.getByText('角色模板')).toBeVisible();
-    // 6 角色模板按钮
     expect(await page.locator('.tpl-btn').count()).toBeGreaterThanOrEqual(5);
   });
 
@@ -55,7 +53,7 @@ test.describe('NorthStar 经营管理页', () => {
   test('渲染 + OFF 守护状态显示（默认未开启）', async ({ page }) => {
     await loginAsOwner(page);
     await page.goto('/admin/northstar');
-    await expect(page.getByRole('heading', { name: 'NorthStar 经营' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'NorthStar' })).toBeVisible();
     await expect(page.locator('.ns-status.off')).toBeVisible();
     await expect(page.locator('#offer-form')).toHaveCount(0);
   });

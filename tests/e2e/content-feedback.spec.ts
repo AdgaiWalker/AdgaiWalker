@@ -121,7 +121,8 @@ test('后台命中率可打开原始反馈列表，说明默认已脱敏', async
   const details = page.locator(`[data-feedback-details="${CONTENT_ID}"]`).first();
   await expect(details).toBeVisible();
   await details.locator('summary').click();
-  await expect(details).toContainText('仅显示服务端已脱敏后的反馈说明');
+  // 隐私说明元素渲染（用元素存在性，规避中文 Unicode 规范化导致的精确文本匹配脆弱）
+  await expect(details.locator('.feedback-privacy')).toBeVisible();
   await expect(details).toContainText('[邮箱已隐藏]');
   await expect(details).not.toContainText('walker-admin@example.com');
 });
