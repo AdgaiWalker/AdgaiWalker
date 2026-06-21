@@ -14,12 +14,14 @@
 import { randomUUID } from 'node:crypto';
 
 import { getRedis } from '@/conversation/store';
+import type { StorageMode } from '@/lib/storage-mode';
 import type {
   EvidenceRef,
   WorkItem,
   WorkItemAction,
   WorkItemHistoryEntry,
   WorkItemOutcome,
+  WorkItemRepositoryPort,
   WorkItemStatus,
 } from '@/stores/ports';
 import { createWorkItemStore } from '@/stores/work-item.store';
@@ -46,8 +48,8 @@ function makeId(prefix: string): string {
   return `${prefix}_${randomUUID()}`;
 }
 
-function isStorageWritable(): boolean {
-  return resolveStorageMode({ hasRedis: Boolean(getRedis()) }) !== 'unavailable';
+function resolveWorkbenchStorageMode(): StorageMode {
+  return resolveStorageMode({ hasRedis: Boolean(getRedis()) });
 }
 
 /** 仅 development 环境允许内存降级写入 */
@@ -96,20 +98,29 @@ function appendHistory(
 }
 
 export class WorkbenchService implements WorkbenchServicePort {
-  constructor() {
-    this.repository = createWorkItemStore();
+  constructor(options?: { repository?: WorkItemRepositoryPort; storageMode?: StorageMode | (() => StorageMode) }) {
+    this.repository = options?.repository ?? createWorkItemStore();
+    const mode = options?.storageMode;
+    this.resolveMode = typeof mode === 'function' ? mode : () => mode ?? resolveWorkbenchStorageMode();
   }
 
   private readonly repository;
+  private readonly resolveMode;
+
+  private ensureWritable<T>(): WorkbenchResult<T> | null {
+    if (this.resolveMode() === 'unavailable') {
+      return fail('storage-unavailable', '生产环境缺少持久化存储，无法写入工作项。');
+    }
+    return null;
+  }
 
   async createProposal(input: CreateProposalInput): Promise<WorkbenchResult<WorkItem>> {
     if (!input.title.trim()) return fail('invalid-input', '标题不能为空。');
     if (!input.evidenceRefs || input.evidenceRefs.length === 0) {
       return fail('missing-evidence', '提案必须至少引用一条证据，不能无凭据创建。');
     }
-    if (!isStorageWritable()) {
-      return fail('storage-unavailable', '生产环境缺少持久化存储，无法创建工作项。');
-    }
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
 
     const timestamp = nowIso();
     const initialStatus: WorkItemStatus = input.requestDecision && hasSufficientEvidence(input.evidenceRefs)
@@ -162,6 +173,8 @@ export class WorkbenchService implements WorkbenchServicePort {
   }
 
   async requestDecision(workItemId: string, actor: string): Promise<WorkbenchResult<WorkItem>> {
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
     const existing = await this.repository.findById(workItemId);
     if (!existing) return fail('not-found', '工作项不存在。');
 
@@ -189,6 +202,8 @@ export class WorkbenchService implements WorkbenchServicePort {
   }
 
   async decide(workItemId: string, input: DecideInput): Promise<WorkbenchResult<WorkItem>> {
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
     const existing = await this.repository.findById(workItemId);
     if (!existing) return fail('not-found', '工作项不存在。');
     if (!input.reason.trim()) {
@@ -235,6 +250,8 @@ export class WorkbenchService implements WorkbenchServicePort {
   }
 
   async createAction(workItemId: string, input: CreateActionInput): Promise<WorkbenchResult<WorkItem>> {
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
     const existing = await this.repository.findById(workItemId);
     if (!existing) return fail('not-found', '工作项不存在。');
     if (existing.status !== 'accepted' && existing.status !== 'acting') {
@@ -291,6 +308,8 @@ export class WorkbenchService implements WorkbenchServicePort {
     actionId: string,
     input: UpdateActionInput,
   ): Promise<WorkbenchResult<WorkItem>> {
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
     const existing = await this.repository.findById(workItemId);
     if (!existing) return fail('not-found', '工作项不存在。');
 
@@ -329,6 +348,8 @@ export class WorkbenchService implements WorkbenchServicePort {
   }
 
   async recordOutcome(workItemId: string, input: RecordOutcomeInput): Promise<WorkbenchResult<WorkItem>> {
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
     const existing = await this.repository.findById(workItemId);
     if (!existing) return fail('not-found', '工作项不存在。');
     if (!input.summary.trim()) {
@@ -370,6 +391,40 @@ export class WorkbenchService implements WorkbenchServicePort {
 
   async findById(workItemId: string): Promise<WorkItem | null> {
     return this.repository.findById(workItemId);
+  }
+
+  async overridePriority(
+    workItemId: string,
+    input: { priorityBand: WorkItem['priorityBand']; reason: string; actor: string },
+  ): Promise<WorkbenchResult<WorkItem>> {
+    const blocked = this.ensureWritable<WorkItem>();
+    if (blocked) return blocked;
+    if (!input.reason.trim()) {
+      return fail('invalid-input', '覆盖优先级必须填写理由。');
+    }
+    const existing = await this.repository.findById(workItemId);
+    if (!existing) return fail('not-found', '工作项不存在。');
+
+    const fromBand = existing.priorityBand;
+    if (fromBand === input.priorityBand) {
+      return fail('invalid-input', '新优先级与当前相同，无需覆盖。');
+    }
+
+    const updated = this.mutate(existing, item => {
+      item.priorityBand = input.priorityBand;
+      // 把覆盖理由追加到 priorityReasons（不抹掉原排序依据）
+      item.priorityReasons = [...item.priorityReasons, `人工覆盖：${input.reason}`];
+      appendHistory(item, {
+        fromStatus: item.status,
+        toStatus: item.status,
+        actor: input.actor,
+        reason: `人工覆盖优先级 ${fromBand} → ${input.priorityBand}：${input.reason}`,
+        kind: 'status-change',
+        detail: { override: true, fromBand, toBand: input.priorityBand },
+      });
+    });
+    await this.repository.save(updated);
+    return ok(updated);
   }
 
   async getTodayProjection(options?: { limit?: number }): Promise<WorkItem[]> {

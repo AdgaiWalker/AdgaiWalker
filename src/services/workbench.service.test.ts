@@ -324,3 +324,74 @@ describe('suggestNextAction（P1-E02 结果导向下一步）', () => {
     expect(before!.suggestedExpectedOutcome).toBeTruthy();
   });
 });
+
+describe('overridePriority（P1-D02 人工覆盖优先级保存理由与历史）', () => {
+  beforeEach(() => __resetMemoryWorkItems());
+  afterEach(() => __resetMemoryWorkItems());
+
+  it('覆盖优先级带时保存 from→to 理由到历史，不抹掉原排序依据', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: '覆盖测试',
+      summary: '请求决定',
+      priorityBand: 'week',
+      priorityReasons: ['原始排序依据：中频需求'],
+      evidenceRefs: [makeEvidence()],
+      requestDecision: true,
+      actor: 'ai',
+    });
+    const id = created.data!.workItemId;
+
+    const override = await svc.overridePriority(id, {
+      priorityBand: 'now',
+      reason: '今天必须处理，用户反复催',
+      actor: 'walker',
+    });
+    expect(override.ok).toBe(true);
+    expect(override.data!.priorityBand).toBe('now');
+    expect(override.data!.priorityReasons).toContain('原始排序依据：中频需求');
+    expect(override.data!.priorityReasons.some(r => r.includes('人工覆盖'))).toBe(true);
+    const overrideEntry = override.data!.history.find(h => (h.detail as { override?: boolean })?.override);
+    expect(overrideEntry).toBeTruthy();
+    expect(overrideEntry!.actor).toBe('walker');
+    expect(overrideEntry!.reason).toContain('week → now');
+    expect(overrideEntry!.reason).toContain('今天必须处理');
+  });
+
+  it('无理由覆盖被拒绝', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: '无理由覆盖',
+      summary: 'x',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+    const result = await svc.overridePriority(created.data!.workItemId, {
+      priorityBand: 'now',
+      reason: '',
+      actor: 'walker',
+    });
+    expect(result.code).toBe('invalid-input');
+  });
+
+  it('相同优先级覆盖被拒绝（无变化）', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: '同优先级',
+      summary: 'x',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+    const result = await svc.overridePriority(created.data!.workItemId, {
+      priorityBand: 'week',
+      reason: '重复覆盖',
+      actor: 'walker',
+    });
+    expect(result.code).toBe('invalid-input');
+  });
+});

@@ -48,6 +48,29 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   const actor = await resolveAdminActor(request);
   const service = createWorkbenchService();
 
+  // P1-D02：人工覆盖优先级（带理由 + from→to 历史）
+  if (body.overridePriority && typeof body.overridePriority === 'object') {
+    const op = body.overridePriority as Record<string, unknown>;
+    const priorityBand = op.priorityBand;
+    const reason = op.reason;
+    const VALID_BANDS = ['now', 'week', 'observe', 'insufficient', 'blocked'];
+    if (typeof priorityBand !== 'string' || !VALID_BANDS.includes(priorityBand)) {
+      return json({ error: 'overridePriority.priorityBand 不合法。' }, 400);
+    }
+    if (typeof reason !== 'string' || !reason.trim()) {
+      return json({ error: 'overridePriority.reason 不能为空。' }, 400);
+    }
+    const result = await service.overridePriority(id, {
+      priorityBand: priorityBand as 'now' | 'week' | 'observe' | 'insufficient' | 'blocked',
+      reason: reason.trim(),
+      actor,
+    });
+    if (!result.ok) {
+      return json({ error: result.message ?? '覆盖优先级失败。', code: result.code }, STATUS_BY_CODE[result.code] ?? 400);
+    }
+    return json({ ok: true, item: result.data });
+  }
+
   if (body.requestDecision === true) {
     const result = await service.requestDecision(id, actor);
     if (!result.ok) {

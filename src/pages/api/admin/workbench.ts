@@ -13,7 +13,7 @@ import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
 import { createWorkbenchService, suggestNextAction } from '@/services/workbench.service';
-import type { WorkItemQueue, WorkItemStatus } from '@/stores/ports';
+import type { WorkItem, WorkItemQueue, WorkItemStatus } from '@/stores/ports';
 
 export const prerender = false;
 
@@ -28,6 +28,18 @@ function json(data: unknown, status = 200): Response {
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
+}
+
+function summarizeActiveItems(items: WorkItem[]) {
+  return {
+    total: items.length,
+    proposal: items.filter(item => item.status === 'proposal').length,
+    pending: items.filter(item => item.status === 'pending').length,
+    accepted: items.filter(item => item.status === 'accepted').length,
+    acting: items.filter(item => item.status === 'acting').length,
+    awaitingVerification: items.filter(item => item.status === 'awaiting-verification').length,
+    paused: items.filter(item => item.status === 'paused').length,
+  };
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
@@ -85,7 +97,14 @@ export const GET: APIRoute = async ({ request, url }) => {
     return json({ view, items: withSuggestions });
   }
 
-  // 默认 today：活跃事项（非终态）
+  // 默认 today：活跃事项（非终态）。附带真实计数与前三项重点，未知时前端不应显示 0 冒充清空。
   const items = await service.getTodayProjection({ limit });
-  return json({ view: 'today', items });
+  const focusItems = items.slice(0, 3);
+  return json({
+    view: 'today',
+    items,
+    focusItems,
+    backlogCount: Math.max(0, items.length - focusItems.length),
+    counts: summarizeActiveItems(items),
+  });
 };

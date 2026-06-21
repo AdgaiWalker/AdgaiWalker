@@ -458,6 +458,122 @@ export interface SkillCandidateRepositoryPort {
 }
 
 // ---------------------------------------------------------------------------
+// 统一资产生命周期（P2-B）
+//
+// 方案要求：统一 KnowledgeSource / Experience / Rule / Skill / LearningRequest，
+// 统一 observed→candidate→validated→stable→retired。
+//
+// hai-razor 决策：不重命名 Experience.maturity / Skill.admissionStatus / Rule.status
+// （会破坏已有数据与历史命名），而是用一个**统一的 AssetLifecycle 视图**把三者
+// 映射到同一生命周期，再用 AssetEvidenceLink 记录"资产 ← Outcome/Experience 证据"
+// 与"每次晋升的 Walker 批准"。这样三类资产互相关联、连到 Outcome，且不动现有枚举。
+//
+// 核心补缺：方案明确"每次晋升保存 Outcome Evidence 和 Walker 批准"
+//          "能查看某个 Skill 是由哪些 Experience/Outcome 支持的"
+//          "证据不足只生成 LearningRequest，不注册 Skill"。
+// ---------------------------------------------------------------------------
+
+/** 统一资产类型 —— 对应 ExperienceEvent / RuleCandidate / SkillCandidate */
+export type AssetKind = 'experience' | 'rule' | 'skill';
+
+/** 统一生命周期阶段 —— 映射各自历史枚举到同一语言 */
+export type AssetLifecycleStage =
+  | 'observed'    // Experience.maturity=material/embryo | Rule.status=observed | Skill=candidate
+  | 'candidate'   // Experience.maturity=stable-method | Rule.status=candidate | Skill=candidate
+  | 'validated'   // Experience.maturity=skill-candidate | Rule.status=validated | Skill=admitted
+  | 'stable'      // Experience.maturity=skill | Rule.status=stable | Skill=admitted
+  | 'retired';    // Rule.status=retired | Skill=demoted-to-method
+
+/** 把三类资产各自的本地状态映射到统一生命周期阶段 */
+export function normalizeAssetStage(kind: AssetKind, raw: string): AssetLifecycleStage {
+  if (kind === 'rule') {
+    return (['observed', 'candidate', 'validated', 'stable', 'retired'] as const).includes(raw as AssetLifecycleStage)
+      ? (raw as AssetLifecycleStage)
+      : 'observed';
+  }
+  if (kind === 'experience') {
+    const map: Record<string, AssetLifecycleStage> = {
+      material: 'observed', embryo: 'observed',
+      'stable-method': 'candidate', 'skill-candidate': 'validated', skill: 'stable',
+    };
+    return map[raw] ?? 'observed';
+  }
+  // skill
+  const skillMap: Record<string, AssetLifecycleStage> = {
+    candidate: 'candidate', admitted: 'validated', 'demoted-to-method': 'retired',
+  };
+  return skillMap[raw] ?? 'observed';
+}
+
+/**
+ * 资产晋升证据链：记录某次晋升（stage 变化）由哪些 Outcome / Experience 支持，
+ * 以及 Walker 的批准。append-only，保留审计 —— 满足方案"每次晋升保存 Outcome
+ * Evidence 和 Walker 批准"。
+ */
+export interface AssetEvidenceLink {
+  linkId: string;
+  assetKind: AssetKind;
+  assetId: string;
+  /** 晋升到的目标阶段 */
+  stage: AssetLifecycleStage;
+  /** 支撑本次晋升的来源（Outcome ID / Experience ID / Rule ID，引用不复制原文） */
+  sourceOutcomeIds: string[];
+  sourceExperienceIds: string[];
+  /** Walker 批准人 */
+  approvedBy: string;
+  approvedAt: string;
+  reason: string;
+  /** 关联的 WorkItem（可选，回溯到产生这条晋升的决定） */
+  workItemId?: string;
+  /** 进程内单调序号：同毫秒多次晋升时保证倒序稳定（append-only 审计要求） */
+  seq?: number;
+}
+
+export interface AssetEvidenceLinkRepositoryPort {
+  save(link: AssetEvidenceLink): Promise<void>;
+  /** 查看某个资产由哪些 Outcome/Experience 支持（方案明确要求） */
+  findByAsset(kind: AssetKind, assetId: string): Promise<AssetEvidenceLink[]>;
+  findRecent(limit?: number): Promise<AssetEvidenceLink[]>;
+}
+
+// ---------------------------------------------------------------------------
+// LearningRequest —— 证据不足时生成（P2-B）
+//
+// 方案：证据不足只生成 LearningRequest，不注册 Skill；不把未验证材料直接注册为能力。
+// 这是"知识不等于产能"护栏的落地：缺实践/反例/访谈/结果证据时，记一条待补任务。
+// ---------------------------------------------------------------------------
+
+export type LearningRequestStatus = 'open' | 'in-progress' | 'fulfilled' | 'dropped';
+
+export interface LearningRequest {
+  requestId: string;
+  createdAt: string;
+  updatedAt: string;
+  /** 需要补什么类型的证据：实践 / 反例 / 访谈 / 结果 */
+  evidenceGap: 'practice' | 'counter-example' | 'interview' | 'outcome' | 'boundary';
+  /** 为什么需要补（关联的选题/资产/Outcome 摘要，不复制私密原文） */
+  context: string;
+  /** 期望产出（补到什么程度算完成） */
+  expectedEvidence: string;
+  status: LearningRequestStatus;
+  /** 关联选题 / 资产 / WorkItem（可选） */
+  topicId?: string;
+  assetKind?: AssetKind;
+  assetId?: string;
+  workItemId?: string;
+  /** Walker 完成补证后填入的结果摘要 */
+  fulfillmentNote?: string;
+  fulfilledAt?: string;
+}
+
+export interface LearningRequestRepositoryPort {
+  save(request: LearningRequest): Promise<void>;
+  findById(requestId: string): Promise<LearningRequest | null>;
+  findByStatus(status: LearningRequestStatus): Promise<LearningRequest[]>;
+  findRecent(limit?: number): Promise<LearningRequest[]>;
+}
+
+// ---------------------------------------------------------------------------
 // WorkItem —— 后台决策聚合根（P0-B，hai-razor 包 B）
 //
 // 语义四分（Evidence / Decision / Action / Outcome）作为内嵌子结构保留，
@@ -467,6 +583,52 @@ export interface SkillCandidateRepositoryPort {
 // - 无 evidenceRefs 的 AI 输出只能是 `proposal`，不能进入 decided/acting
 // - 每次正式状态变化写一条 append-only history（actor / 时间 / from→to / reason）
 // - 不复制私密原文；EvidenceRef 只保存安全摘要
+// ---------------------------------------------------------------------------
+// Admin Appearance —— 后台外观与媒体个人化（UX1）
+// ---------------------------------------------------------------------------
+
+export interface ThemeProfile {
+  profileId: string;
+  owner: string;
+  name: string;
+  accent: 'walker-jade' | 'aurora' | 'sunset' | 'mint';
+  glass: 'apple-modern';
+  density: 'low' | 'comfortable';
+  backgroundAssetId?: string;
+  readabilityOverlay: number;
+  reducedMotion: boolean;
+  visibility: 'owner';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MediaAsset {
+  assetId: string;
+  owner: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  kind: 'image' | 'video';
+  source: 'upload' | 'remote';
+  visibility: 'owner';
+  storageKey: string;
+  publicUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppearanceRepositoryPort {
+  getStorageMode(): Promise<'redis' | 'memory-development' | 'unavailable'>;
+  getTheme(owner: string): Promise<ThemeProfile | null>;
+  saveTheme(theme: ThemeProfile): Promise<void>;
+  resetTheme(owner: string): Promise<ThemeProfile>;
+  saveMedia(asset: MediaAsset): Promise<void>;
+  listMedia(owner: string): Promise<MediaAsset[]>;
+  removeMedia(owner: string, assetId: string): Promise<void>;
+}
+
 // ---------------------------------------------------------------------------
 
 /** WorkItem 来源队列 —— 不同来源用不同证据与验证方式，不可抹掉来源身份 */

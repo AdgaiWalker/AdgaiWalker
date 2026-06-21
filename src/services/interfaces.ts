@@ -18,7 +18,11 @@ import type {
 } from '@/stores/ports';
 import type { MatchFeedbackEvent, MatchFeedbackType } from '@/stores/ports';
 import type {
+  AssetEvidenceLink,
+  AssetKind,
+  AssetLifecycleStage,
   EvidenceRef,
+  LearningRequest,
   WorkItem,
   WorkItemAction,
   WorkItemActionType,
@@ -337,6 +341,11 @@ export interface WorkbenchServicePort {
   updateAction(workItemId: string, actionId: string, input: UpdateActionInput): Promise<WorkbenchResult<WorkItem>>;
   /** 仅关联已执行（completed）Action 可记录结果 */
   recordOutcome(workItemId: string, input: RecordOutcomeInput): Promise<WorkbenchResult<WorkItem>>;
+  /** P1-D02：Walker 人工覆盖优先级带，保存理由与 from→to 历史（不抹掉原排序依据） */
+  overridePriority(
+    workItemId: string,
+    input: { priorityBand: WorkItem['priorityBand']; reason: string; actor: string },
+  ): Promise<WorkbenchResult<WorkItem>>;
   /** 获取单条 WorkItem */
   findById(workItemId: string): Promise<WorkItem | null>;
   /** 今日投影：待决定 / 执行中 / 待验证 / 已验证 等队列 */
@@ -385,4 +394,63 @@ export interface ContentFeedbackServicePort {
   findByContent(contentId: string, range?: { from?: string; to?: string }): Promise<ContentFeedbackEvent[]>;
   findByTopic(topicId: string, range?: { from?: string; to?: string }): Promise<ContentFeedbackEvent[]>;
   findRecent(range?: { from?: string; to?: string }, limit?: number): Promise<ContentFeedbackEvent[]>;
+}
+
+// ---------------------------------------------------------------------------
+// 资产晋升 —— Experience/Rule/Skill 统一生命周期 + Outcome 证据链（P2-B）
+//
+// 方案要求：每次晋升保存 Outcome Evidence 和 Walker 批准；能查看某个 Skill 由
+// 哪些 Outcome/Experience 支持；证据不足只生成 LearningRequest，不注册 Skill。
+// ---------------------------------------------------------------------------
+
+export type AssetResultCode =
+  | 'ok'
+  | 'not-found'
+  | 'invalid-stage'
+  | 'missing-evidence'
+  | 'storage-unavailable';
+
+export interface AssetResult<T = void> {
+  ok: boolean;
+  code: AssetResultCode;
+  message?: string;
+  data?: T;
+}
+
+export interface PromoteAssetInput {
+  assetKind: AssetKind;
+  assetId: string;
+  /** 晋升到的统一阶段 */
+  toStage: AssetLifecycleStage;
+  /** 支撑本次晋升的来源（至少一条 Outcome 或 Experience，否则拒绝） */
+  sourceOutcomeIds?: string[];
+  sourceExperienceIds?: string[];
+  /** Walker 批准人 */
+  approvedBy: string;
+  reason: string;
+  /** 关联的 WorkItem（可选） */
+  workItemId?: string;
+}
+
+export interface AssetServicePort {
+  /** 晋升资产：记录证据链 + Walker 批准，并回写资产本体的本地状态枚举 */
+  promote(input: PromoteAssetInput): Promise<AssetResult<AssetEvidenceLink>>;
+  /** 查看某个资产由哪些 Outcome/Experience 支持（按时间倒序） */
+  getSupportingEvidence(kind: AssetKind, assetId: string): Promise<AssetEvidenceLink[]>;
+  /** 最近的晋升记录（资产活动流） */
+  recentPromotions(limit?: number): Promise<AssetEvidenceLink[]>;
+  /** 创建学习请求（证据不足时不注册 Skill，生成补证任务） */
+  createLearningRequest(input: {
+    evidenceGap: LearningRequest['evidenceGap'];
+    context: string;
+    expectedEvidence: string;
+    topicId?: string;
+    assetKind?: AssetKind;
+    assetId?: string;
+    workItemId?: string;
+  }): Promise<LearningRequest>;
+  /** 列出学习请求 */
+  listLearningRequests(status?: LearningRequest['status']): Promise<LearningRequest[]>;
+  /** 完成学习请求（Walker 补证后填结果） */
+  fulfillLearningRequest(requestId: string, fulfillmentNote: string): Promise<AssetResult<LearningRequest>>;
 }

@@ -40,6 +40,10 @@ import type {
   UserProfile,
   WorkItem,
   WorkItemStatus,
+  AssetEvidenceLink,
+  AssetKind,
+  LearningRequest,
+  LearningRequestStatus,
 } from '@/stores/ports';
 
 export interface MatchSession {
@@ -73,6 +77,8 @@ const memoryRuleCandidates = new Map<string, RuleCandidate>();
 const memorySkillCandidates = new Map<string, SkillCandidate>();
 const memoryWorkItems = new Map<string, WorkItem>();
 const memoryContentFeedback = new Map<string, ContentFeedbackEvent>();
+const memoryAssetEvidenceLinks = new Map<string, AssetEvidenceLink>();
+const memoryLearningRequests = new Map<string, LearningRequest>();
 let memoryMatchCount = 0;
 const memoryCategoryCounts = new Map<string, number>();
 
@@ -943,6 +949,16 @@ const WORKITEMS_LIST = 'match:workitems';
 const WORKITEMS_ACTIVE_LIST = 'match:workitems:active';
 const TERMINAL_STATUSES: WorkItemStatus[] = ['resolved', 'rejected'];
 
+/**
+ * 生产等价存储验证（scripts/verify-production-storage.mjs）需要与这里使用完全一致的键名，
+ * 否则会写到 app 永远不读的命名空间而"假通过"。这里导出键名真相源，供对账测试锁定一致性。
+ */
+export const WORKITEM_REDIS_KEYS = {
+  workItem: workItemKey,
+  list: WORKITEMS_LIST,
+  activeList: WORKITEMS_ACTIVE_LIST,
+} as const;
+
 function workItemStateIndexKey(status: WorkItemStatus): string {
   return `match:workitems:by-state:${status}`;
 }
@@ -952,23 +968,61 @@ export function __resetMemoryWorkItems(): void {
   memoryWorkItems.clear();
 }
 
+/**
+ * 仅测试用：注入 FakeRedis（或 null）覆盖 getRedis() 的缓存，使 saveWorkItem /
+ * listWorkItems 的 Redis 索引维护逻辑可在无真实 Redis 的测试环境被覆盖。
+ * 传入 undefined 复位为"未缓存，下次按 env 解析"。
+ */
+export function __setCachedRedisForTesting(redis: unknown): void {
+  cachedRedis = (redis as Redis | null) ?? undefined;
+}
+
+/** 仅开发演示场景用：清理指定前缀的内存 WorkItem，不触碰真实 Redis。 */
+export function __deleteMemoryWorkItemsByPrefix(prefix: string): number {
+  let deleted = 0;
+  for (const id of [...memoryWorkItems.keys()]) {
+    if (id.startsWith(prefix)) {
+      memoryWorkItems.delete(id);
+      deleted += 1;
+    }
+  }
+  return deleted;
+}
+
+/** 仅开发演示场景用：清理标题带指定前缀的内存 WorkItem，不触碰真实 Redis。 */
+export function __deleteMemoryWorkItemsByTitlePrefix(prefix: string): number {
+  let deleted = 0;
+  for (const [id, item] of [...memoryWorkItems.entries()]) {
+    if (item.title.startsWith(prefix)) {
+      memoryWorkItems.delete(id);
+      deleted += 1;
+    }
+  }
+  return deleted;
+}
+
 export async function saveWorkItem(workItem: WorkItem): Promise<void> {
   memoryWorkItems.set(workItem.workItemId, workItem);
   const redis = getRedis();
   if (!redis) return;
 
-  const existed = Boolean(await redis.get<WorkItem>(workItemKey(workItem.workItemId)));
+  const previous = await redis.get<WorkItem>(workItemKey(workItem.workItemId));
   await redis.set(workItemKey(workItem.workItemId), workItem);
-  if (!existed) {
+  if (!previous) {
     await redis.lpush(WORKITEMS_LIST, workItem.workItemId);
   }
   // 维护"活跃"列表：终态移出，非终态移入
   if (TERMINAL_STATUSES.includes(workItem.status)) {
     await redis.lrem(WORKITEMS_ACTIVE_LIST, 0, workItem.workItemId);
-  } else if (!existed) {
+  } else if (!previous) {
     await redis.lpush(WORKITEMS_ACTIVE_LIST, workItem.workItemId);
   }
-  // 状态索引（按 to 状态入，旧状态出 —— 仅在状态迁移时有用；这里基于"新状态"写入）
+  // 状态索引：状态迁移时必须从旧状态索引移除，否则已迁移 WorkItem 残留在旧索引，
+  // listWorkItems({status}) 单状态过滤在脏条目超过 limit 时会读到全脏 id、被 re-filter 清空，
+  // 返回错误空列表。此处先按 from→to 清旧，再写新（去重 + 保证在列）。
+  if (previous && previous.status !== workItem.status) {
+    await redis.lrem(workItemStateIndexKey(previous.status), 0, workItem.workItemId);
+  }
   await redis.lrem(workItemStateIndexKey(workItem.status), 0, workItem.workItemId);
   await redis.lpush(workItemStateIndexKey(workItem.status), workItem.workItemId);
 }
@@ -1089,9 +1143,31 @@ function contentFeedbackByTopicKey(topicId: string): string {
 }
 const CONTENT_FEEDBACK_RECENT = 'content-feedback:recent';
 
+/**
+ * 生产等价存储验证（scripts/verify-production-storage.mjs）键名真相源。
+ * 注意 ContentFeedback 键没有 `match:` 前缀，与 WorkItem 不同。
+ */
+export const CONTENT_FEEDBACK_REDIS_KEYS = {
+  event: contentFeedbackKey,
+  recent: CONTENT_FEEDBACK_RECENT,
+  byContent: contentFeedbackByContentKey,
+} as const;
+
 /** 仅开发期测试用：清空内存 ContentFeedback，不触碰 Redis。 */
 export function __resetMemoryContentFeedback(): void {
   memoryContentFeedback.clear();
+}
+
+/** 仅开发演示场景用：清理指定前缀的内存 ContentFeedback，不触碰真实 Redis。 */
+export function __deleteMemoryContentFeedbackByPrefix(prefix: string): number {
+  let deleted = 0;
+  for (const id of [...memoryContentFeedback.keys()]) {
+    if (id.startsWith(prefix)) {
+      memoryContentFeedback.delete(id);
+      deleted += 1;
+    }
+  }
+  return deleted;
 }
 
 function inRange(event: ContentFeedbackEvent, range?: { from?: string; to?: string }): boolean {
@@ -1176,4 +1252,145 @@ export async function findRecentContentFeedback(
     .filter(e => inRange(e, range))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// AssetEvidenceLink —— 资产晋升证据链存储（P2-B）
+//
+// Key 约定：
+//   asset-link:event:{id}               单条晋升记录
+//   asset-link:by-asset:{kind}:{assetId}  某资产的所有晋升记录（按时间倒序）
+//   asset-link:recent                    最近晋升记录索引
+// ---------------------------------------------------------------------------
+
+function assetLinkKey(linkId: string): string {
+  return `asset-link:event:${linkId}`;
+}
+function assetLinkByAssetKey(kind: AssetKind, assetId: string): string {
+  return `asset-link:by-asset:${kind}:${assetId}`;
+}
+const ASSET_LINK_RECENT = 'asset-link:recent';
+
+/** 仅测试用：清空内存 AssetEvidenceLink */
+export function __resetMemoryAssetLinks(): void {
+  memoryAssetEvidenceLinks.clear();
+}
+
+export async function saveAssetEvidenceLink(link: AssetEvidenceLink): Promise<void> {
+  memoryAssetEvidenceLinks.set(link.linkId, link);
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(assetLinkKey(link.linkId), link);
+  await redis.lpush(assetLinkByAssetKey(link.assetKind, link.assetId), link.linkId);
+  await redis.lpush(ASSET_LINK_RECENT, link.linkId);
+  await redis.ltrim(ASSET_LINK_RECENT, 0, 499);
+}
+
+export async function findAssetEvidenceLinks(kind: AssetKind, assetId: string): Promise<AssetEvidenceLink[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(assetLinkByAssetKey(kind, assetId), 0, 99);
+  } else {
+    ids = [...memoryAssetEvidenceLinks.values()]
+      .filter(l => l.assetKind === kind && l.assetId === assetId)
+      .map(l => l.linkId);
+  }
+  const links = redis
+    ? (await Promise.all(ids.map(id => redis!.get<AssetEvidenceLink>(assetLinkKey(id)))))
+        .filter((l): l is AssetEvidenceLink => l !== null)
+    : ids.map(id => memoryAssetEvidenceLinks.get(id)).filter((l): l is AssetEvidenceLink => Boolean(l));
+  return links
+    .filter(l => l.assetKind === kind && l.assetId === assetId)
+    .sort((a, b) => (b.seq ?? 0) - (a.seq ?? 0) || b.approvedAt.localeCompare(a.approvedAt));
+}
+
+export async function findRecentAssetEvidenceLinks(limit = 100): Promise<AssetEvidenceLink[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(ASSET_LINK_RECENT, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryAssetEvidenceLinks.values()]
+      .sort((a, b) => b.approvedAt.localeCompare(a.approvedAt))
+      .slice(0, limit)
+      .map(l => l.linkId);
+  }
+  const links = redis
+    ? (await Promise.all(ids.map(id => redis!.get<AssetEvidenceLink>(assetLinkKey(id)))))
+        .filter((l): l is AssetEvidenceLink => l !== null)
+    : ids.map(id => memoryAssetEvidenceLinks.get(id)).filter((l): l is AssetEvidenceLink => Boolean(l));
+  return links.sort((a, b) => (b.seq ?? 0) - (a.seq ?? 0) || b.approvedAt.localeCompare(a.approvedAt));
+}
+
+// ---------------------------------------------------------------------------
+// LearningRequest —— 证据不足补证任务存储（P2-B）
+//
+// Key 约定：
+//   learning-request:{id}            单条
+//   learning-request:by-status:{status}  按状态索引
+//   learning-request:recent          最近索引
+// ---------------------------------------------------------------------------
+
+function learningRequestKey(requestId: string): string {
+  return `learning-request:${requestId}`;
+}
+function learningRequestByStatusKey(status: LearningRequestStatus): string {
+  return `learning-request:by-status:${status}`;
+}
+const LEARNING_REQUEST_RECENT = 'learning-request:recent';
+
+/** 仅测试用：清空内存 LearningRequest */
+export function __resetMemoryLearningRequests(): void {
+  memoryLearningRequests.clear();
+}
+
+export async function saveLearningRequest(request: LearningRequest): Promise<void> {
+  memoryLearningRequests.set(request.requestId, request);
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(learningRequestKey(request.requestId), request);
+  await redis.lpush(learningRequestByStatusKey(request.status), request.requestId);
+  await redis.lpush(LEARNING_REQUEST_RECENT, request.requestId);
+  await redis.ltrim(LEARNING_REQUEST_RECENT, 0, 499);
+}
+
+export async function getLearningRequestById(requestId: string): Promise<LearningRequest | null> {
+  const redis = getRedis();
+  const fromMemory = memoryLearningRequests.get(requestId) ?? null;
+  if (!redis) return fromMemory;
+  return (await redis.get<LearningRequest>(learningRequestKey(requestId))) ?? fromMemory;
+}
+
+export async function findLearningRequestsByStatus(status: LearningRequestStatus): Promise<LearningRequest[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(learningRequestByStatusKey(status), 0, 199);
+  } else {
+    ids = [...memoryLearningRequests.values()].filter(r => r.status === status).map(r => r.requestId);
+  }
+  const items = redis
+    ? (await Promise.all(ids.map(id => redis!.get<LearningRequest>(learningRequestKey(id)))))
+        .filter((r): r is LearningRequest => r !== null)
+    : ids.map(id => memoryLearningRequests.get(id)).filter((r): r is LearningRequest => Boolean(r));
+  return items.filter(r => r.status === status).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function findRecentLearningRequests(limit = 100): Promise<LearningRequest[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(LEARNING_REQUEST_RECENT, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryLearningRequests.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit)
+      .map(r => r.requestId);
+  }
+  const items = redis
+    ? (await Promise.all(ids.map(id => redis!.get<LearningRequest>(learningRequestKey(id)))))
+        .filter((r): r is LearningRequest => r !== null)
+    : ids.map(id => memoryLearningRequests.get(id)).filter((r): r is LearningRequest => Boolean(r));
+  return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

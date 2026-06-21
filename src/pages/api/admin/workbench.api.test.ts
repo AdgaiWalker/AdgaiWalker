@@ -213,4 +213,81 @@ describe('Workbench Admin API（P0-C02）', () => {
     expect(items.length).toBeGreaterThanOrEqual(1);
     expect(items.every(i => i.queue === 'walker-thesis')).toBe(true); // 同队列内才并列，不跨队列混排
   });
+
+  it('GET workbench today 汇总活跃队列数量，不用 0 冒充未知', async () => {
+    await decisionsPost(ctx(adminRequest({
+      url: 'https://t/api/admin/decisions', method: 'POST',
+      body: { queue: 'user-demand', title: '待决定', summary: 'x', priorityBand: 'now', evidenceRefs: EVIDENCE, requestDecision: true },
+    })));
+    const acceptedRes = await decisionsPost(ctx(adminRequest({
+      url: 'https://t/api/admin/decisions', method: 'POST',
+      body: { queue: 'system-event', title: '待行动', summary: 'x', priorityBand: 'now', evidenceRefs: [{ ...EVIDENCE[0], evidenceId: 'ev_api_2', sourceType: 'incident', sourceId: 'incident_1' }], requestDecision: true },
+    })));
+    const acceptedId = ((await readBody(acceptedRes)).body.item as { workItemId: string }).workItemId;
+    await decisionsPatch(ctx(adminRequest({
+      url: `https://t/api/admin/decisions/${acceptedId}`, method: 'PATCH',
+      body: { decide: { outcome: 'accepted', reason: '需要处理' } },
+    }), { id: acceptedId }));
+
+    const res = await workbenchGet(ctx(adminRequest({ url: 'https://t/api/admin/workbench' })));
+    const { status, body } = await readBody(res);
+    expect(status).toBe(200);
+    expect(body.counts).toMatchObject({ total: 2, pending: 1, accepted: 1, acting: 0, awaitingVerification: 0 });
+  });
+
+  it('GET workbench today 返回前三项重点与其余分类数量', async () => {
+    for (let index = 0; index < 5; index += 1) {
+      await decisionsPost(ctx(adminRequest({
+        url: 'https://t/api/admin/decisions', method: 'POST',
+        body: {
+          queue: 'user-demand',
+          title: `重点 ${index}`,
+          summary: 'x',
+          priorityBand: 'now',
+          evidenceRefs: [{ ...EVIDENCE[0], evidenceId: `ev_focus_${index}`, sourceId: `nc_focus_${index}` }],
+          requestDecision: true,
+        },
+      })));
+    }
+    const res = await workbenchGet(ctx(adminRequest({ url: 'https://t/api/admin/workbench' })));
+    const { body } = await readBody(res);
+    expect((body.focusItems as unknown[])).toHaveLength(3);
+    expect(body.backlogCount).toBe(2);
+  });
+
+  it('P1-D03：从选题派生 change-feature Action（targetType=feature，不冒充内容）', async () => {
+    // 创建 proposal + 接受 + change-feature Action
+    const createRes = await decisionsPost(ctx(adminRequest({
+      url: 'https://t/api/admin/decisions', method: 'POST',
+      body: { queue: 'user-demand', title: '改功能选题', summary: '功能问题', priorityBand: 'week', evidenceRefs: EVIDENCE, requestDecision: true },
+    })));
+    const workItemId = ((await readBody(createRes)).body.item as { workItemId: string }).workItemId;
+    await decisionsPatch(ctx(adminRequest({
+      url: `https://t/api/admin/decisions/${workItemId}`, method: 'PATCH',
+      body: { decide: { outcome: 'accepted', reason: '接受' } },
+    }), { id: workItemId }));
+    const actionRes = await actionsPost(ctx(adminRequest({
+      url: 'https://t/api/admin/actions', method: 'POST',
+      body: { workItemId, actionType: 'change-feature', targetType: 'feature', expectedOutcome: '修改某功能' },
+    })));
+    const { status, body } = await readBody(actionRes);
+    expect(status).toBe(201);
+    const action = (body.item as { actions: { actionType: string; targetType: string }[] }).actions[0];
+    expect(action.actionType).toBe('change-feature');
+    expect(action.targetType).toBe('feature'); // 不冒充内容（targetType≠content）
+  });
+
+  it('P1-D03：证据不足派生 create-learning-request Action（priorityBand=insufficient）', async () => {
+    const createRes = await decisionsPost(ctx(adminRequest({
+      url: 'https://t/api/admin/decisions', method: 'POST',
+      body: {
+        queue: 'user-demand', title: '证据不足选题', summary: '需补证据', priorityBand: 'insufficient',
+        evidenceRefs: [{ evidenceId: 'ev_weak', sourceType: 'need-case', sourceId: 'nc_weak', occurredAt: '2026-06-20T00:00:00.000Z', summary: '弱证据', qualityStatus: 'unverified' }],
+      },
+    })));
+    const item = ((await readBody(createRes)).body.item as { priorityBand: string; status: string });
+    expect(item.priorityBand).toBe('insufficient');
+    // unverified 证据 → proposal，不进入正式待决定
+    expect(item.status).toBe('proposal');
+  });
 });

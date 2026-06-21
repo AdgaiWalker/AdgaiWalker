@@ -55,6 +55,7 @@ const log = defineCollection({
       badge: z.string(),
       tag: z.string(),
     })).optional(),
+    /** @deprecated 不再使用；视频通过 body 内的 BlockVideo 组件嵌入。保留字段仅为兼容，新增内容不应填写。 */
     videos: z.array(z.object({
       platform: z.enum(['bilibili', 'douyin', 'xiaohongshu', 'youtube', 'github', 'zhihu']),
       url: z.url(),

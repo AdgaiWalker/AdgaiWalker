@@ -1,12 +1,20 @@
 ---
 import { Icon } from 'astro-icon/components';
 import { isAdmin } from '@/lib/admin-auth';
-import { getNeedCaseStats, getPendingReviewNeedCases, getUnresolvedIncidents } from '@/conversation/store';
+import {
+  findRecentContentFeedback,
+  findLearningRequestsByStatus,
+  getRedis,
+  getNeedCaseStats,
+  getPendingReviewNeedCases,
+  getUnresolvedIncidents,
+} from '@/conversation/store';
 import { getGatewayConfig, getGatewayStats } from '@/agent/gateway-config';
 import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { deriveAdminSystemHealth } from '@/components/admin/admin-shell-state';
-import { createWorkbenchService } from '@/services/workbench.service';
-import type { WorkItem as WorkItemEntity } from '@/stores/ports';
+import { createWorkbenchService, suggestNextAction } from '@/services/workbench.service';
+import { resolveStorageMode } from '@/lib/storage-mode';
+import type { EvidenceRef, WorkItem as WorkItemEntity, WorkItemAction } from '@/stores/ports';
 
 export const prerender = false;
 if (!isAdmin(Astro.request)) return Astro.redirect('/admin/login');
@@ -28,6 +36,7 @@ const systemHealth = deriveAdminSystemHealth({
 const systemHealthCheckedAt = new Date().toISOString();
 
 const dateLabel = new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
+const workbenchService = createWorkbenchService();
 
 // P0-D02：显示卡片用统一结构；state 映射真实 WorkItem 状态机，不在前端自定义另一个"进行中"字段。
 type WorkItem = {
@@ -45,6 +54,19 @@ type WorkItem = {
   /** 显示状态：从真实 WorkItem.status 派生 */
   state: 'pending' | 'ai' | 'paused' | 'acting' | 'awaiting-verification' | 'ignored';
   icon: string;
+  evidenceSourceType?: EvidenceRef['sourceType'];
+  evidenceSourceId?: string;
+  evidenceOccurredAt?: string;
+  actionType?: WorkItemAction['actionType'];
+  targetType?: string;
+  targetId?: string;
+  actions?: WorkItemAction[];
+  outcomes?: WorkItemEntity['outcomes'];
+  history?: WorkItemEntity['history'];
+  uncertainty?: string[];
+  priorityReasons?: string[];
+  nextActionReason?: string;
+  nextActionType?: WorkItemAction['actionType'];
 };
 
 const QUEUE_LABEL: Record<WorkItemEntity['queue'], string> = {
@@ -77,15 +99,19 @@ const needs: WorkItem[] = pendingNeeds.map((item, index) => ({
   href: `/admin/review?needCaseId=${encodeURIComponent(item.needCaseId)}`,
   state: 'pending',
   icon: 'circle-dot',
+  evidenceSourceType: 'need-case',
+  evidenceSourceId: item.needCaseId,
 }));
 
 // P0-D02：从服务端投影真实 WorkItem（已创建的工作项），按真实状态显示责任方。
 // 这些是 Walker 已经操作过、持久化在服务端的事项；刷新/重启不丢失。
-const persistedWorkItems = await createWorkbenchService().getTodayProjection({ limit: 8 });
+const persistedWorkItems = await workbenchService.getTodayProjection({ limit: 8 });
 const persistedItems: WorkItem[] = persistedWorkItems
   .filter(item => item.status !== 'rejected' && item.status !== 'resolved')
   .map(item => {
     const latestAction = item.actions[item.actions.length - 1];
+    const latestOutcome = item.outcomes[item.outcomes.length - 1];
+    const nextSuggestion = latestOutcome ? suggestNextAction({ result: latestOutcome.result, outcomeSummary: latestOutcome.summary }) : null;
     const assignee = latestAction?.assignee === 'ai' ? 'AI' : latestAction?.assignee === 'shared' ? '共同' : '你';
     return {
       id: `workitem-${item.workItemId}`,
@@ -100,22 +126,77 @@ const persistedItems: WorkItem[] = persistedWorkItems
       href: '/admin',
       state: STATUS_TO_STATE[item.status],
       icon: item.queue === 'system-event' ? 'triangle-alert' : item.queue === 'walker-thesis' ? 'lightbulb' : 'circle-dot',
+      evidenceSourceType: item.evidenceRefs[0]?.sourceType,
+      evidenceSourceId: item.evidenceRefs[0]?.sourceId,
+      evidenceOccurredAt: item.evidenceRefs[0]?.occurredAt,
+      actionType: latestAction?.actionType,
+      targetType: latestAction?.targetType,
+      targetId: latestAction?.targetId,
+      actions: item.actions,
+      outcomes: item.outcomes,
+      history: item.history,
+      uncertainty: item.uncertainty,
+      priorityReasons: item.priorityReasons,
+      nextActionReason: nextSuggestion?.reason,
+      nextActionType: nextSuggestion?.suggestedActionType,
     };
   });
 
-const ownerIdea: WorkItem = {
-  id: 'owner-ai-boundary',
-  source: 'Walker 主张',
-  title: '明确后台中 AI 与人的决策边界',
-  summary: '这是站主主动提出、尚未由用户需求验证的方向。保留它，但不要把它伪装成市场结论。',
-  evidence: '0 条用户证据 · 等待现实验证',
-  evidenceTitle: '站主判断',
-  evidenceBody: 'AI 可以收集、归纳和提出行动草案；涉及发布、删除、权限与资产准入的决定必须由人授权。',
-  action: '建立验证任务',
-  href: '/admin/topics',
+// 只把明确要求行动的内容反馈带入工作台；useful 作为结果证据，不制造待办。
+// 同一内容只展示最近一条，已进入 WorkItem 的反馈不重复出现。
+const representedEvidenceIds = new Set(
+  persistedWorkItems.flatMap(item => item.evidenceRefs.map(ref => ref.sourceId)),
+);
+const recentContentFeedback = await findRecentContentFeedback(undefined, 20);
+const actionableFeedbackByContent = new Map<string, (typeof recentContentFeedback)[number]>();
+for (const feedback of recentContentFeedback) {
+  if (!feedback.consentForAnalysis || feedback.signal === 'useful' || representedEvidenceIds.has(feedback.feedbackId)) continue;
+  if (!actionableFeedbackByContent.has(feedback.contentId)) actionableFeedbackByContent.set(feedback.contentId, feedback);
+}
+const contentFeedbackItems: WorkItem[] = [...actionableFeedbackByContent.values()].map(feedback => ({
+  id: `content-feedback-${feedback.feedbackId}`,
+  source: '内容反馈',
+  title: feedback.signal === 'outdated' ? `复核《${feedback.contentId}》的时效性` : `补充《${feedback.contentId}》`,
+  summary: feedback.note || (feedback.signal === 'outdated' ? '访客认为内容可能已经过时，需要确认事实与更新时间。' : '访客认为内容还不足以解决问题，需要补充边界、步骤或案例。'),
+  evidence: `1 条内容反馈 · ${new Date(feedback.createdAt).toLocaleDateString('zh-CN')}`,
+  evidenceTitle: feedback.signal === 'outdated' ? '访客反馈：已过时' : '访客反馈：需补充',
+  evidenceBody: feedback.note || '访客没有补充文字说明。',
+  action: '修改内容',
+  href: `/admin/content/edit?slug=${encodeURIComponent(feedback.contentId)}`,
   state: 'pending',
-  icon: 'lightbulb',
-};
+  icon: 'message-circle-more',
+  evidenceSourceType: 'content-feedback',
+  evidenceSourceId: feedback.feedbackId,
+  evidenceOccurredAt: feedback.createdAt,
+  actionType: 'update-content',
+  targetType: 'content',
+  targetId: feedback.contentId,
+}));
+
+const learningRequests = await findLearningRequestsByStatus('open');
+const learningGapLabel = {
+  practice: '实践',
+  'counter-example': '反例',
+  interview: '访谈',
+  outcome: '结果',
+  boundary: '边界',
+} as const;
+const learningItems: WorkItem[] = learningRequests
+  .filter(request => !request.workItemId || !persistedWorkItems.some(item => item.workItemId === request.workItemId))
+  .slice(0, 4)
+  .map(request => ({
+    id: `learning-${request.requestId}`,
+    source: '学习任务',
+    title: `补齐${learningGapLabel[request.evidenceGap]}证据`,
+    summary: request.context,
+    evidence: `完成条件：${request.expectedEvidence}`,
+    evidenceTitle: '证据缺口',
+    evidenceBody: request.context,
+    action: '记录补证结果',
+    href: `/admin/assets?view=learning&requestId=${encodeURIComponent(request.requestId)}`,
+    state: 'pending',
+    icon: 'graduation-cap',
+  }));
 
 const systemItem: WorkItem | null = gatewayIncident ? {
   id: `incident-${gatewayIncident.incidentId}`,
@@ -129,14 +210,34 @@ const systemItem: WorkItem | null = gatewayIncident ? {
   href: '/admin/incidents',
   state: 'pending',
   icon: 'triangle-alert',
+  evidenceSourceType: 'incident',
+  evidenceSourceId: gatewayIncident.incidentId,
+  actionType: 'review-incident',
+  targetType: 'incident',
+  targetId: gatewayIncident.incidentId,
 } : null;
 
-// 持久化 WorkItem 排在最前（这些是已进入流程的真实事项），其后是待判断的需求与主张。
-const queue: WorkItem[] = [...persistedItems, ...needs, ownerIdea, ...(systemItem ? [systemItem] : [])];
-const focus = queue[0];
+// 持久化 WorkItem 排在最前，其后是尚未进入流程的真实需求和系统事件。
+// Walker 主张必须由持久化 WorkItem/Thesis 提供；这里不制造默认事项。
+const queue: WorkItem[] = [...persistedItems, ...contentFeedbackItems, ...learningItems, ...needs, ...(systemItem ? [systemItem] : [])];
+const focusQueue = queue.slice(0, 3);
+const backlogQueue = queue.slice(1);
+const hiddenBacklogCount = Math.max(0, queue.length - focusQueue.length);
+const focus = focusQueue[0];
 const pendingCount = queue.filter(item => item.state === 'pending').length;
-const storageMode = import.meta.env.PROD ? 'production' : (import.meta.env.DEV ? 'development' : 'production');
-const storageModeLabel = storageMode === 'development' ? '开发内存模式（重启丢失）' : '生产持久化';
+const actingCount = queue.filter(item => item.state === 'acting').length;
+const awaitingCount = queue.filter(item => item.state === 'awaiting-verification').length;
+const navCounts = {
+  today: queue.length,
+  decisions: queue.filter(item => item.state === 'pending' || item.state === 'ai' || item.state === 'paused').length,
+  actions: actingCount + awaitingCount,
+  outcomes: persistedWorkItems.filter(item => item.status === 'resolved' && item.outcomes.length > 0).length,
+  assetsLearning: learningRequests.filter(request => request.status === 'open' || request.status === 'in-progress').length,
+  incidents: incidents.length,
+};
+const storageModeInfo = resolveStorageMode({ hasRedis: Boolean(getRedis()) });
+const storageModeLabel = storageModeInfo === 'memory-development' ? '开发内存模式（重启丢失）' : storageModeInfo === 'redis' ? 'Redis 持久化' : '存储不可用';
+const showDemoScenario = import.meta.env.DEV;
 ---
 
 <!doctype html>
@@ -155,6 +256,7 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
     showBanner={Boolean(gatewayIncident)}
     systemHealth={systemHealth}
     systemHealthCheckedAt={systemHealthCheckedAt}
+    navCounts={navCounts}
   >
     <div class="workbench" data-workbench>
       <header class="workbench-head">
@@ -195,10 +297,11 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
 
       <div class="workbench-layout">
         <section class="decision-column" aria-label="决定队列">
-          <article
+          {focus ? <article
             class="focus-card is-selected"
             data-decision-item
             data-id={focus.id}
+            data-work-item-id={focus.workItemId}
             data-state={focus.state}
             data-source={focus.source}
             data-title={focus.title}
@@ -208,6 +311,19 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
             data-evidence-body={focus.evidenceBody}
             data-action={focus.action}
             data-href={focus.href}
+            data-evidence-source-type={focus.evidenceSourceType}
+            data-evidence-source-id={focus.evidenceSourceId}
+            data-evidence-occurred-at={focus.evidenceOccurredAt}
+            data-action-type={focus.actionType}
+            data-target-type={focus.targetType}
+            data-target-id={focus.targetId}
+            data-actions={JSON.stringify(focus.actions ?? [])}
+            data-outcomes={JSON.stringify(focus.outcomes ?? [])}
+            data-history={JSON.stringify(focus.history ?? [])}
+            data-uncertainty={JSON.stringify(focus.uncertainty ?? [])}
+            data-priority-reasons={JSON.stringify(focus.priorityReasons ?? [])}
+            data-next-action-reason={focus.nextActionReason}
+            data-next-action-type={focus.nextActionType}
             tabindex="0"
           >
             <div class="focus-topline">
@@ -222,9 +338,15 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
               <button type="button" data-pause>暂缓</button>
               <button class="icon-action" type="button" aria-label="更多操作" data-more><Icon name="lucide:ellipsis" width={20} height={20} /></button>
             </div>
-          </article>
+          </article> : <section class="workbench-empty" data-workbench-empty>
+            <span class="workbench-empty-icon"><Icon name="lucide:inbox" width={22} height={22} /></span>
+            <div>
+              <strong>当前没有需要你决定的真实事项</strong>
+              <p>新的用户需求、内容反馈、待验证结果或系统事件出现后，会进入这里。</p>
+            </div>
+          </section>}
 
-          <section class="decision-confirm" data-decision-confirm hidden>
+          {focus && <section class="decision-confirm" data-decision-confirm hidden>
             <div class="confirm-head">
               <span><Icon name="lucide:shield-check" width={17} height={17} />执行前确认</span>
               <button type="button" aria-label="关闭" data-confirm-close><Icon name="lucide:x" width={17} height={17} /></button>
@@ -236,9 +358,23 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
             </div>
             <label><input type="checkbox" data-confirm-check />我已检查证据，允许 AI 按步骤生成草稿</label>
             <button class="confirm-submit" type="button" data-confirm-submit disabled>确认并执行</button>
-          </section>
+          </section>}
 
-          <section class="execution-card" data-execution hidden aria-live="polite">
+          {focus && <form class="decision-inline-form" data-pause-form hidden>
+            <div class="inline-form-head">
+              <div><strong>暂缓当前事项</strong><span>说明什么时候重新打开，避免事项永久消失。</span></div>
+              <button type="button" aria-label="关闭暂缓表单" data-pause-cancel><Icon name="lucide:x" width={17} height={17} /></button>
+            </div>
+            <label for="pause-reason">复查条件或暂缓原因</label>
+            <textarea id="pause-reason" name="reason" rows="3" required placeholder="例如：等待另外两条真实反馈后复查"></textarea>
+            <p class="inline-form-status" data-pause-status hidden role="status"></p>
+            <div class="inline-form-actions">
+              <button type="button" data-pause-cancel>取消</button>
+              <button class="is-primary" type="submit">确认暂缓</button>
+            </div>
+          </form>}
+
+          {focus && <section class="execution-card" data-execution hidden aria-live="polite">
             <div class="execution-head">
               <span><Icon name="lucide:loader-circle" width={17} height={17} data-spinner />当前会话正在执行</span>
               <button type="button" data-stop-execution>停止</button>
@@ -248,15 +384,16 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
               <li data-step="1"><i></i><span>生成可编辑的行动草稿</span><small>等待</small></li>
               <li data-step="2"><i></i><span>建立结果验证条件</span><small>等待</small></li>
             </ol>
-          </section>
+          </section>}
 
-          <div class="queue-label"><span>接下来</span><small>选择任意事项查看具体证据</small></div>
+          <div class="queue-label"><span>接下来</span><small>{hiddenBacklogCount > 0 ? `另有 ${hiddenBacklogCount} 项进入分类队列` : '首屏最多突出前三项真实重点'}</small></div>
           <div class="decision-queue" data-decision-list>
-            {queue.slice(1).map(item => (
+            {backlogQueue.map(item => (
               <article
                 class="queue-item"
                 data-decision-item
                 data-id={item.id}
+                data-work-item-id={item.workItemId}
                 data-state={item.state}
                 data-source={item.source}
                 data-title={item.title}
@@ -266,6 +403,19 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
                 data-evidence-body={item.evidenceBody}
                 data-action={item.action}
                 data-href={item.href}
+                data-evidence-source-type={item.evidenceSourceType}
+                data-evidence-source-id={item.evidenceSourceId}
+                data-evidence-occurred-at={item.evidenceOccurredAt}
+                data-action-type={item.actionType}
+                data-target-type={item.targetType}
+                data-target-id={item.targetId}
+                data-actions={JSON.stringify(item.actions ?? [])}
+                data-outcomes={JSON.stringify(item.outcomes ?? [])}
+                data-history={JSON.stringify(item.history ?? [])}
+                data-uncertainty={JSON.stringify(item.uncertainty ?? [])}
+                data-priority-reasons={JSON.stringify(item.priorityReasons ?? [])}
+                data-next-action-reason={item.nextActionReason}
+                data-next-action-type={item.nextActionType}
                 tabindex="0"
               >
                 <span class="queue-icon"><Icon name={`lucide:${item.icon}`} width={18} height={18} /></span>
@@ -288,19 +438,20 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
           </div>
         </section>
 
-        <aside class="decision-detail" data-detail-panel>
+        <aside class="decision-detail" data-detail-panel hidden={!focus}>
           <div class="detail-head">
-            <span class="detail-source" data-detail-source>{focus.source}</span>
+            <span class="detail-source" data-detail-source>{focus?.source}</span>
             <button type="button" aria-label="收起详情" data-detail-close><Icon name="lucide:x" width={19} height={19} /></button>
           </div>
-          <h2 data-detail-title>{focus.title}</h2>
+          <h2 data-detail-title>{focus?.title}</h2>
           <div class="detail-tabs">
             <button class="is-active" type="button" data-detail-tab="why">为什么现在</button>
             <button type="button" data-detail-tab="evidence">原始证据</button>
+            <button type="button" data-detail-tab="history">历史</button>
             <button type="button" data-detail-tab="next">下一步</button>
           </div>
           <div class="detail-view" data-detail-view="why">
-            <p data-detail-summary>{focus.summary}</p>
+            <p data-detail-summary>{focus?.summary}</p>
             <ul>
               <li><Icon name="lucide:check-circle-2" width={16} height={16} /><span>来源已标明，不把站主判断伪装成用户需求</span></li>
               <li><Icon name="lucide:check-circle-2" width={16} height={16} /><span>必须由你确认后，才进入执行步骤</span></li>
@@ -309,26 +460,53 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
           </div>
           <div class="detail-view" data-detail-view="evidence" hidden>
             <div class="evidence-card" data-evidence-card>
-              <span data-detail-evidence-title>{focus.evidenceTitle}</span>
-              <blockquote data-detail-evidence-body>{focus.evidenceBody}</blockquote>
-              <small data-detail-evidence>{focus.evidence}</small>
+              <span data-detail-evidence-title>{focus?.evidenceTitle}</span>
+              <blockquote data-detail-evidence-body>{focus?.evidenceBody}</blockquote>
+              <small data-detail-evidence>{focus?.evidence}</small>
             </div>
           </div>
+          <div class="detail-view" data-detail-view="history" hidden>
+            <div class="history-list" data-detail-history></div>
+          </div>
           <div class="detail-view" data-detail-view="next" hidden>
-            <ol class="next-steps">
+            <ol class="next-steps" data-next-steps>
               <li><i>1</i><span>确认问题是否真实且值得处理</span></li>
               <li><i>2</i><span>让 AI 生成内容、功能或验证任务草稿</span></li>
               <li><i>3</i><span>你检查并授权，再进入真实执行</span></li>
             </ol>
+            <form class="outcome-inline-form" data-outcome-form hidden>
+              <label for="outcome-result">记录执行结果</label>
+              <select id="outcome-result" name="result" required>
+                <option value="successful">successful · 已解决</option>
+                <option value="partial">partial · 部分有效</option>
+                <option value="failed">failed · 未解决</option>
+                <option value="inconclusive">inconclusive · 证据不足</option>
+              </select>
+              <textarea name="summary" rows="3" required placeholder="记录现实结果、证据和边界"></textarea>
+              <p class="inline-form-status" data-outcome-status hidden role="status"></p>
+              <button class="detail-primary" type="submit">保存 Outcome</button>
+            </form>
           </div>
           <div class="detail-footer">
-            <button class="detail-primary" type="button" data-detail-start>{focus.action}</button>
-            <a href={focus.href} data-detail-href>打开原始记录<Icon name="lucide:arrow-up-right" width={14} height={14} /></a>
+            <button class="detail-primary" type="button" data-detail-start>{focus?.action || '开始处理'}</button>
+            <a href={focus?.href || '#'} data-detail-href>打开原始记录<Icon name="lucide:arrow-up-right" width={14} height={14} /></a>
           </div>
         </aside>
       </div>
 
       <p class="truth-note"><Icon name="lucide:database" width={13} height={13} />7 天内记录 {stats.totalCases} 条需求；决定/行动/结果存储于 {storageModeLabel}；未采集的数据不会显示成指标。</p>
+
+      {showDemoScenario && <section class="demo-scenario" data-demo-scenario>
+        <div>
+          <strong>开发演示场景</strong>
+          <p>仅本机开发环境可用。生成带“模拟数据”标记的内容反馈 → WorkItem → Action，不进入生产；可一键清理。</p>
+        </div>
+        <div class="demo-actions">
+          <button type="button" data-demo-create>生成模拟闭环</button>
+          <button type="button" data-demo-clear>清理模拟数据</button>
+        </div>
+        <span data-demo-status role="status" aria-live="polite"></span>
+      </section>}
     </div>
   </AdminLayout>
 
@@ -345,6 +523,41 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
         if (node) node.textContent = value;
       };
 
+      const parseJsonData = <T,>(value: string | undefined, fallback: T): T => {
+        if (!value) return fallback;
+        try { return JSON.parse(value) as T; } catch { return fallback; }
+      };
+
+      const renderDetailLists = (d: DOMStringMap) => {
+        const history = parseJsonData<Array<{ kind: string; actor: string; reason?: string; occurredAt: string }>>(d.history, []);
+        const actions = parseJsonData<Array<{ actionId: string; actionType: string; status: string; expectedOutcome: string }>>(d.actions, []);
+        const outcomes = parseJsonData<Array<{ result: string; summary: string; observedAt: string }>>(d.outcomes, []);
+        const uncertainty = parseJsonData<string[]>(d.uncertainty, []);
+        const reasons = parseJsonData<string[]>(d.priorityReasons, []);
+        const historyBox = root.querySelector<HTMLElement>('[data-detail-history]');
+        if (historyBox) {
+          const rows = history.slice(-5).reverse().map(entry => `<article><strong>${entry.kind}</strong><span>${entry.reason || '无补充说明'}</span><small>${entry.actor} · ${new Date(entry.occurredAt).toLocaleString('zh-CN')}</small></article>`);
+          historyBox.innerHTML = rows.length ? rows.join('') : '<p>还没有持久化历史；待你作出决定后会写入这里。</p>';
+        }
+        const nextSteps = root.querySelector<HTMLElement>('[data-next-steps]');
+        if (nextSteps) {
+          const actionText = actions.length ? `当前行动：${actions.at(-1)!.actionType} · ${actions.at(-1)!.status} · ${actions.at(-1)!.expectedOutcome}` : '还没有 Action：先接受或暂缓当前决定。';
+          const outcomeText = outcomes.length ? `最近结果：${outcomes.at(-1)!.result} · ${outcomes.at(-1)!.summary}` : '还没有 Outcome：执行完成后在这里记录现实结果。';
+          const nextText = d.nextActionReason || (uncertainty.length ? `不确定性：${uncertainty.join('；')}` : reasons[0] || '下一步会由真实状态和结果派生，不自动执行。');
+          nextSteps.innerHTML = `<li><i>1</i><span>${actionText}</span></li><li><i>2</i><span>${outcomeText}</span></li><li><i>3</i><span>${nextText}</span></li>`;
+        }
+        const outcomeForm = root.querySelector<HTMLFormElement>('[data-outcome-form]');
+        if (outcomeForm) {
+          const latest = actions.at(-1);
+          outcomeForm.hidden = !(d.workItemId && latest && (latest.status === 'completed' || latest.status === 'awaiting-verification'));
+          outcomeForm.dataset.workItemId = d.workItemId || '';
+          outcomeForm.dataset.actionId = latest?.actionId || '';
+          outcomeForm.dataset.evidenceSourceType = d.evidenceSourceType || '';
+          outcomeForm.dataset.evidenceSourceId = d.evidenceSourceId || '';
+          outcomeForm.dataset.evidenceSummary = d.evidenceBody || d.summary || '';
+        }
+      };
+
       const selectItem = (item: HTMLElement) => {
         selected?.classList.remove('is-selected');
         item.classList.add('is-selected');
@@ -358,6 +571,7 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
         setText('[data-detail-evidence-body]', d.evidenceBody);
         setText('[data-detail-start]', d.action || '开始处理');
         setText('[data-confirm-action]', d.action || '建立一个可验证的处理任务');
+        renderDetailLists(d);
         const href = root.querySelector<HTMLAnchorElement>('[data-detail-href]');
         if (href) href.href = d.href || '#';
         detail.hidden = false;
@@ -374,6 +588,7 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
         });
       };
       items().forEach(bindItem);
+      if (selected) renderDetailLists(selected.dataset);
 
       root.querySelector('[data-detail-close]')?.addEventListener('click', () => { detail.hidden = true; });
       root.querySelector('[data-evidence-focus]')?.addEventListener('click', () => {
@@ -441,14 +656,15 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
             }
             // 创建行动（产出内容/改功能由事项来源决定）
             const d = selected?.dataset;
-            const actionType = d?.source === '系统事件' ? 'review-incident' : 'create-content';
+            const actionType = d?.actionType || (d?.source === '系统事件' ? 'review-incident' : 'create-content');
             const actionRes = await fetch('/api/admin/actions', {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
               body: JSON.stringify({
                 workItemId: result.workItemId,
                 actionType,
-                targetType: actionType === 'review-incident' ? 'incident' : 'content',
+                targetType: d?.targetType || (actionType === 'review-incident' ? 'incident' : 'content'),
+                targetId: d?.targetId || undefined,
                 expectedOutcome: d?.title ? `基于"${d.title}"产出可验证的方案` : '产出可验证的方案',
               }),
             });
@@ -459,7 +675,16 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
               return;
             }
             execution.classList.add('is-complete');
-            if (selected) selected.dataset.workItemId = result.workItemId;
+            if (selected) {
+              selected.dataset.workItemId = result.workItemId;
+              const actionData = await actionRes.json().catch(() => ({}));
+              if (actionData.item) {
+                selected.dataset.state = actionData.item.status === 'awaiting-verification' ? 'awaiting-verification' : 'acting';
+                selected.dataset.actions = JSON.stringify(actionData.item.actions || []);
+                selected.dataset.history = JSON.stringify(actionData.item.history || []);
+                renderDetailLists(selected.dataset);
+              }
+            }
             setText('.execution-head span', '工作项已建立，等待你执行并验证');
           }
           step += 1;
@@ -479,13 +704,29 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
       const ensureWorkItemForSelected = async (decide?: { outcome: 'accepted' | 'paused' | 'rejected'; reason: string }) => {
         if (!selected) return { ok: false as const, error: '未选择事项' };
         const d = selected.dataset;
+        if (d.workItemId) {
+          if (!decide) return { ok: true as const, workItemId: d.workItemId };
+          const decideRes = await fetch(`/api/admin/decisions/${d.workItemId}`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ decide }),
+          });
+          if (!decideRes.ok) {
+            const err = await decideRes.json().catch(() => ({}));
+            return { ok: false as const, error: err.error || `决定失败（${decideRes.status}）`, workItemId: d.workItemId };
+          }
+          const decided = await decideRes.json();
+          return { ok: true as const, workItemId: d.workItemId, item: decided.item };
+        }
         const sourceNeedCaseId = (d.id || '').replace(/^need-/, '');
         const isNeedCase = d.id?.startsWith('need-') && sourceNeedCaseId.length > 0;
-        const evidenceRefs = isNeedCase ? [{
-          evidenceId: `ev_nc_${sourceNeedCaseId}`,
-          sourceType: 'need-case' as const,
-          sourceId: sourceNeedCaseId,
-          occurredAt: new Date().toISOString(),
+        const sourceType = d.evidenceSourceType || (isNeedCase ? 'need-case' : undefined);
+        const sourceId = d.evidenceSourceId || (isNeedCase ? sourceNeedCaseId : undefined);
+        const evidenceRefs = sourceType && sourceId ? [{
+          evidenceId: `ev_${sourceType.replace(/-/g, '_')}_${sourceId}`,
+          sourceType,
+          sourceId,
+          occurredAt: d.evidenceOccurredAt || new Date().toISOString(),
           summary: d.evidenceBody || d.summary || '原始需求',
           qualityStatus: 'verified-source' as const,
         }] : [];
@@ -493,7 +734,7 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
         if (evidenceRefs.length === 0 && decide) {
           return { ok: false as const, error: '该事项无现实证据，不能直接作出决定。' };
         }
-        const queue = d.source === '用户需求' ? 'user-demand'
+        const queue = d.source === '用户需求' || d.source === '内容反馈' ? 'user-demand'
           : d.source === 'Walker 主张' ? 'walker-thesis'
           : d.source === '系统事件' ? 'system-event' : 'ai-asset';
         const createRes = await fetch('/api/admin/decisions', {
@@ -532,19 +773,104 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
         return { ok: true as const, workItemId, item: created.item };
       };
 
-      root.querySelector('[data-pause]')?.addEventListener('click', async () => {
+      const outcomeForm = root.querySelector<HTMLFormElement>('[data-outcome-form]');
+      outcomeForm?.addEventListener('submit', async event => {
+        event.preventDefault();
+        const status = outcomeForm.querySelector<HTMLElement>('[data-outcome-status]');
+        const submit = outcomeForm.querySelector<HTMLButtonElement>('button[type="submit"]');
+        const result = (outcomeForm.elements.namedItem('result') as HTMLSelectElement).value;
+        const summaryInput = outcomeForm.elements.namedItem('summary') as HTMLTextAreaElement;
+        const summary = summaryInput.value.trim();
+        if (!summary) return summaryInput.focus();
+        if (submit) submit.disabled = true;
+        if (status) status.hidden = true;
+        try {
+          const evidenceSourceType = outcomeForm.dataset.evidenceSourceType || 'content-feedback';
+          const evidenceSourceId = outcomeForm.dataset.evidenceSourceId || outcomeForm.dataset.actionId || 'manual-outcome';
+          const res = await fetch('/api/admin/outcomes', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              workItemId: outcomeForm.dataset.workItemId,
+              actionId: outcomeForm.dataset.actionId,
+              result,
+              summary,
+              evidenceRefs: [{
+                evidenceId: `ev_outcome_${Date.now()}`,
+                sourceType: evidenceSourceType,
+                sourceId: evidenceSourceId,
+                occurredAt: new Date().toISOString(),
+                summary: outcomeForm.dataset.evidenceSummary || summary,
+                qualityStatus: 'verified-source',
+              }],
+              nextDecisionSuggested: true,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            if (status) { status.textContent = `保存失败：${data.error || res.status}。输入已保留。`; status.hidden = false; }
+            return;
+          }
+          if (selected) {
+            selected.dataset.state = 'ignored';
+            selected.dataset.outcomes = JSON.stringify(data.item?.outcomes || []);
+            selected.dataset.history = JSON.stringify(data.item?.history || []);
+            selected.dataset.nextActionReason = '结果已记录，可继续创建下一步或结束观察。';
+            renderDetailLists(selected.dataset);
+          }
+          summaryInput.value = '';
+          if (status) { status.textContent = 'Outcome 已保存，当前事项已进入结果历史。'; status.hidden = false; }
+        } catch {
+          if (status) { status.textContent = '网络异常，请重试。输入已保留。'; status.hidden = false; }
+        } finally {
+          if (submit) submit.disabled = false;
+        }
+      });
+
+      const pauseForm = root.querySelector<HTMLFormElement>('[data-pause-form]');
+      const pauseStatus = root.querySelector<HTMLElement>('[data-pause-status]');
+      const closePauseForm = () => {
+        if (pauseForm) pauseForm.hidden = true;
+        if (pauseStatus) pauseStatus.hidden = true;
+      };
+      root.querySelector('[data-pause]')?.addEventListener('click', () => {
+        if (!pauseForm || !selected) return;
+        pauseForm.hidden = false;
+        const input = pauseForm.elements.namedItem('reason') as HTMLTextAreaElement;
+        input.focus();
+      });
+      root.querySelectorAll('[data-pause-cancel]').forEach(button => button.addEventListener('click', closePauseForm));
+      pauseForm?.addEventListener('submit', async event => {
+        event.preventDefault();
         if (!selected) return;
-        const reason = window.prompt('暂缓需要说明复查条件或原因：', '证据不足，暂缓观察');
-        if (!reason || !reason.trim()) return; // 取消则不伪造暂缓
-        const result = await ensureWorkItemForSelected({ outcome: 'paused', reason: reason.trim() });
+        const input = pauseForm.elements.namedItem('reason') as HTMLTextAreaElement;
+        const reason = input.value.trim();
+        if (!reason) return input.focus();
+        const submit = pauseForm.querySelector<HTMLButtonElement>('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        if (pauseStatus) pauseStatus.hidden = true;
+        const result = await ensureWorkItemForSelected({ outcome: 'paused', reason });
+        if (submit) submit.disabled = false;
         if (!result.ok) {
-          window.alert(`暂缓失败：${result.error}\n你的输入已保留，请重试或检查系统状态。`);
+          if (pauseStatus) {
+            pauseStatus.textContent = `暂缓失败：${result.error}。你的输入仍在，可以直接重试。`;
+            pauseStatus.hidden = false;
+          }
           return;
         }
-        selected.dataset.state = 'paused';
-        selected.dataset.workItemId = result.workItemId;
-        selected.classList.add('is-paused');
+        if (selected) {
+          selected.dataset.state = 'paused';
+          selected.dataset.workItemId = result.workItemId;
+          if (result.item) {
+            selected.dataset.history = JSON.stringify(result.item.history || []);
+            selected.dataset.priorityReasons = JSON.stringify(result.item.priorityReasons || []);
+          }
+          renderDetailLists(selected.dataset);
+        }
+        selected?.classList.add('is-paused');
         setText('.status-pill', '已暂缓');
+        input.value = '';
+        closePauseForm();
       });
 
       const commandForm = root.querySelector<HTMLFormElement>('[data-command-form]');
@@ -593,6 +919,27 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
         // P0-D：AI 命令草稿无真实证据，按 hai-razor 只能是 proposal，且必须在绑定证据后才持久化。
         // 这里不再写 localStorage 伪造持久化；草稿仅停留在当前会话，刷新后清空。
       });
+      root.querySelectorAll<HTMLButtonElement>('[data-demo-create], [data-demo-clear]').forEach(button => {
+        button.addEventListener('click', async () => {
+          const status = root.querySelector<HTMLElement>('[data-demo-status]');
+          const isCreate = button.hasAttribute('data-demo-create');
+          button.disabled = true;
+          if (status) status.textContent = isCreate ? '正在生成模拟场景…' : '正在清理模拟数据…';
+          try {
+            const res = await fetch('/api/admin/demo-scenario', { method: isCreate ? 'POST' : 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              if (status) status.textContent = `操作失败：${data.error || res.status}`;
+              return;
+            }
+            if (status) status.textContent = isCreate ? '模拟闭环已生成，刷新后可在工作台查看。' : '模拟数据已清理，刷新后生效。';
+          } catch {
+            if (status) status.textContent = '网络异常，请重试。';
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
     }
   </script>
 </body>
@@ -627,6 +974,10 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
   .workbench-filters button.is-active { color: var(--adm-brand-strong); background: var(--adm-brand-soft); }
   .workbench-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(310px, .72fr); gap: 18px; align-items: start; }
   .decision-column { min-width: 0; display: grid; gap: 12px; }
+  .workbench-empty { min-height: 210px; padding: clamp(24px, 4vw, 42px); display: flex; align-items: center; gap: 18px; border: 1px solid rgba(255,255,255,.88); border-radius: 24px; background: rgba(255,255,255,.66); box-shadow: 0 16px 44px rgba(39,62,58,.06); }
+  .workbench-empty-icon { width: 48px; height: 48px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 16px; color: var(--adm-brand-strong); background: var(--adm-brand-soft); }
+  .workbench-empty strong { display: block; color: var(--adm-text); font-size: 16px; }
+  .workbench-empty p { margin: 7px 0 0; max-width: 520px; color: var(--adm-text-faint); font-size: 11px; line-height: 1.7; }
   .focus-card { padding: clamp(22px, 2.3vw, 32px); border: 1px solid rgba(53,191,171,.44); border-radius: 24px; background: rgba(255,255,255,.82); box-shadow: 0 17px 48px rgba(39, 62, 58, .08), 0 0 0 3px rgba(53,191,171,.05); cursor: default; outline: 0; }
   .focus-card[hidden], .queue-item[hidden] { display: none; }
   .focus-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -643,6 +994,21 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
   .focus-card.is-paused { border-color: var(--adm-border); opacity: .72; }
   .decision-confirm, .execution-card { padding: 18px; border: 1px solid var(--adm-border); border-radius: 19px; background: rgba(255,255,255,.78); box-shadow: 0 12px 35px rgba(39,62,58,.06); }
   .decision-confirm[hidden], .execution-card[hidden] { display: none; }
+  .decision-inline-form { padding: 19px; border: 1px solid rgba(53,191,171,.28); border-radius: 19px; background: rgba(255,255,255,.86); box-shadow: 0 14px 38px rgba(39,62,58,.07); }
+  .decision-inline-form[hidden] { display: none; }
+  .inline-form-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .inline-form-head strong { display: block; color: var(--adm-text); font-size: 13px; }
+  .inline-form-head span { display: block; margin-top: 4px; color: var(--adm-text-faint); font-size: 10px; }
+  .inline-form-head button { width: 30px; height: 30px; border: 0; display: grid; place-items: center; color: var(--adm-text-faint); background: transparent; cursor: pointer; }
+  .decision-inline-form > label { display: block; margin: 17px 0 7px; color: var(--adm-text-dim); font-size: 10px; font-weight: 700; }
+  .decision-inline-form textarea { width: 100%; resize: vertical; min-height: 78px; padding: 11px 12px; border: 1px solid var(--adm-border); border-radius: 12px; outline: 0; color: var(--adm-text); background: rgba(246,249,248,.82); font: 11px/1.6 var(--adm-font-ui); }
+  .decision-inline-form textarea:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 3px var(--adm-brand-soft); }
+  .inline-form-status { margin: 9px 0 0; color: #a34b42; font-size: 10px; }
+  .inline-form-status[hidden] { display: none; }
+  .inline-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .inline-form-actions button { min-width: 88px; height: 38px; padding: 0 14px; border: 1px solid var(--adm-border); border-radius: 11px; color: var(--adm-text-dim); background: rgba(255,255,255,.72); cursor: pointer; font-size: 10px; font-weight: 700; }
+  .inline-form-actions button.is-primary { color: white; border-color: var(--adm-brand-strong); background: var(--adm-brand-strong); }
+  .inline-form-actions button:disabled { opacity: .48; cursor: wait; }
   .confirm-head, .execution-head { display: flex; align-items: center; justify-content: space-between; color: var(--adm-text); font-size: 12px; font-weight: 700; }
   .confirm-head span, .execution-head span { display: flex; align-items: center; gap: 7px; }
   .confirm-head button, .execution-head button { border: 0; background: transparent; color: var(--adm-text-faint); cursor: pointer; }
@@ -668,12 +1034,12 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
   .queue-item > svg { color: var(--adm-text-faint); }
   .queue-empty { padding: 30px; display: grid; justify-items: center; gap: 7px; color: var(--adm-text-faint); text-align: center; }
   .queue-empty[hidden] { display: none; }.queue-empty strong { color: var(--adm-text-dim); font-size: 12px; }.queue-empty span { font-size: 9px; }
-  .decision-detail { position: sticky; top: 0; min-height: 500px; padding: 23px; border: 1px solid rgba(255,255,255,.88); border-radius: 24px; background: rgba(255,255,255,.73); box-shadow: 0 16px 48px rgba(39,62,58,.08); backdrop-filter: blur(24px); }
+  .decision-detail { position: sticky; top: 0; min-height: 500px; padding: 23px; padding-bottom: 96px; border: 1px solid rgba(255,255,255,.88); border-radius: 24px; background: rgba(255,255,255,.73); box-shadow: 0 16px 48px rgba(39,62,58,.08); backdrop-filter: blur(24px); }
   .decision-detail[hidden] { display: none; }
   .detail-head { display: flex; align-items: center; justify-content: space-between; }
   .detail-source { color: var(--adm-brand-strong); font-size: 10px; font-weight: 700; }.detail-head button { border: 0; background: transparent; color: var(--adm-text-faint); cursor: pointer; }
   .decision-detail > h2 { margin: 13px 0 17px; font: 700 19px/1.38 var(--adm-font-ui); letter-spacing: -.025em; }
-  .detail-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--adm-border-soft); }
+  .detail-tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--adm-border-soft); }
   .detail-tabs button { padding: 10px 3px; border: 0; border-bottom: 2px solid transparent; color: var(--adm-text-faint); background: transparent; cursor: pointer; font-size: 10px; font-weight: 650; }
   .detail-tabs button.is-active { color: var(--adm-brand-strong); border-bottom-color: var(--adm-brand); }
   .detail-view { padding: 20px 0; }.detail-view[hidden] { display: none; }
@@ -683,10 +1049,29 @@ const storageModeLabel = storageMode === 'development' ? '开发内存模式（�
   .evidence-card { padding: 17px; border-radius: 16px; background: rgba(238,243,242,.7); }
   .evidence-card > span { color: var(--adm-brand-strong); font-size: 9px; font-weight: 700; }.evidence-card blockquote { margin: 10px 0; color: var(--adm-text); font-size: 11px; line-height: 1.7; }.evidence-card small { color: var(--adm-text-faint); font-size: 9px; }
   .next-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 13px; }.next-steps li { display: grid; grid-template-columns: 25px 1fr; align-items: center; }.next-steps i { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--adm-brand-soft); color: var(--adm-brand-strong); font-size: 9px; font-style: normal; }
+  .history-list { display: grid; gap: 8px; }
+  .history-list article { padding: 11px 12px; border: 1px solid var(--adm-border-soft); border-radius: 12px; background: rgba(255,255,255,.58); }
+  .history-list strong { display: block; color: var(--adm-text); font-size: 10px; }
+  .history-list span { display: block; margin-top: 4px; color: var(--adm-text-dim); font-size: 10px; line-height: 1.55; }
+  .history-list small, .history-list p { display: block; margin: 5px 0 0; color: var(--adm-text-faint); font-size: 9px; }
+  .outcome-inline-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--adm-border-soft); display: grid; gap: 9px; }
+  .outcome-inline-form[hidden] { display: none; }
+  .outcome-inline-form label { color: var(--adm-text-dim); font-size: 10px; font-weight: 700; }
+  .outcome-inline-form select, .outcome-inline-form textarea { width: 100%; border: 1px solid var(--adm-border); border-radius: 11px; padding: 10px 11px; background: rgba(246,249,248,.82); color: var(--adm-text); font: 11px/1.55 var(--adm-font-ui); outline: 0; }
+  .outcome-inline-form textarea { resize: vertical; min-height: 78px; }
+  .outcome-inline-form select:focus, .outcome-inline-form textarea:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 3px var(--adm-brand-soft); }
   .detail-footer { position: absolute; left: 23px; right: 23px; bottom: 23px; display: grid; gap: 9px; }
   .detail-primary { height: 43px; border: 0; border-radius: 12px; color: white; background: var(--adm-brand-strong); cursor: pointer; font-size: 11px; font-weight: 700; box-shadow: 0 9px 24px rgba(20,158,139,.18); }
   .detail-footer a { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--adm-text-faint); text-decoration: none; font-size: 9px; }
   .truth-note { margin: 16px 2px 0; display: flex; align-items: center; gap: 6px; color: var(--adm-text-faint); font-size: 9px; }
+  .demo-scenario { margin-top: 14px; padding: 15px 17px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px dashed rgba(20,158,139,.36); border-radius: 17px; background: rgba(53,191,171,.07); color: var(--adm-text-dim); }
+  .demo-scenario strong { display: block; color: var(--adm-brand-strong); font-size: 12px; }
+  .demo-scenario p { margin: 4px 0 0; max-width: 620px; color: var(--adm-text-faint); font-size: 10px; line-height: 1.6; }
+  .demo-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+  .demo-actions button { min-height: 34px; padding: 0 11px; border: 1px solid var(--adm-border); border-radius: 10px; color: var(--adm-text-dim); background: rgba(255,255,255,.7); cursor: pointer; font-size: 10px; font-weight: 700; }
+  .demo-actions button:first-child { color: white; border-color: var(--adm-brand-strong); background: var(--adm-brand-strong); }
+  .demo-actions button:disabled { opacity: .5; cursor: wait; }
+  .demo-scenario [data-demo-status] { min-width: 120px; color: var(--adm-text-faint); font-size: 10px; }
   @keyframes wb-spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 980px) {
