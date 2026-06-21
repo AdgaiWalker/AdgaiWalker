@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
-import { getRecentNeedCases, getTopicCandidates, findRecentContentFeedback } from '@/conversation/store';
+import { getRecentNeedCases, getTopicCandidates, findRecentContentFeedback, findRecentContentTelemetry } from '@/conversation/store';
 import { getPublishedContentItems } from '@/knowledge/content';
 import { buildContentOutcomeSummaries, calculateContentHitRates } from '@/services/hit-rate.service';
-import type { ContentFeedbackEvent } from '@/stores/ports';
+import type { ContentFeedbackEvent, ContentTelemetryEvent } from '@/stores/ports';
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -16,11 +16,12 @@ function json(data: unknown, status = 200): Response {
 export const GET: APIRoute = async ({ request }) => {
   if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
 
-  const [contents, topics, needCases, contentFeedback] = await Promise.all([
+  const [contents, topics, needCases, contentFeedback, contentTelemetry] = await Promise.all([
     getPublishedContentItems(),
     getTopicCandidates({ limit: 500 }),
     getRecentNeedCases(2000),
     findRecentContentFeedback(undefined, 2000),
+    findRecentContentTelemetry(undefined, 2000),
   ]);
 
   // P1-C02：按内容 ID 预聚合内容反馈（独立于匹配反馈，不合并分母）
@@ -31,19 +32,28 @@ export const GET: APIRoute = async ({ request }) => {
     contentFeedbackByContent.set(fb.contentId, list);
   }
 
-  // 兼容旧命中率视图 + 新双信号结果分组（并列解释，不合并）
+  // P3-A：按内容 ID 预聚合阅读深度遥测（第三并列信号，不合并分母）
+  const contentTelemetryByContent = new Map<string, ContentTelemetryEvent[]>();
+  for (const ev of contentTelemetry) {
+    const list = contentTelemetryByContent.get(ev.contentId) ?? [];
+    list.push(ev);
+    contentTelemetryByContent.set(ev.contentId, list);
+  }
+
+  // 兼容旧命中率视图 + 新三信号结果分组（并列解释，不合并）
   const hitRates = calculateContentHitRates({ contents, topics, needCases });
   const outcomeSummaries = buildContentOutcomeSummaries({
     contents,
     topics,
     needCases,
     contentFeedbackByContent,
+    contentTelemetryByContent,
   });
 
   return json({
     hitRates,
     count: hitRates.length,
-    // 新双信号分组：matchOutcome（需求匹配结果）与 contentOutcome（内容阅读结果）分开
+    // 三信号分组：matchOutcome（需求匹配）/ contentOutcome（内容反馈）/ readingOutcome（阅读深度）分开
     outcomeSummaries,
   });
 };

@@ -17,9 +17,13 @@ import { randomUUID } from 'node:crypto';
 
 import { getRedis } from '@/conversation/store';
 import {
+  getSkillCandidateById,
+  rollbackSkillAdmission,
+  setSkillPaused,
   updateExperienceEvent,
   updateRuleStatus,
   updateSkillAdmission,
+  updateSkillRegistration,
 } from '@/conversation/store';
 import { createAssetEvidenceLinkStore } from '@/stores/asset-evidence-link.store';
 import { createLearningRequestStore } from '@/stores/learning-request.store';
@@ -31,7 +35,9 @@ import type {
   ExperienceEvent,
   LearningRequest,
   RuleStatus,
+  SkillAdmissionSnapshot,
   SkillAdmissionStatus,
+  SkillCandidate,
 } from '@/stores/ports';
 
 import type {
@@ -42,6 +48,29 @@ import type {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+/** P4：构建一份准入快照（append-only，供 rollbackSkill 定位恢复点） */
+function makeSnapshot(
+  version: number,
+  status: SkillAdmissionStatus,
+  reason: string,
+  over: Partial<SkillAdmissionSnapshot> = {},
+): SkillAdmissionSnapshot {
+  return { version, admissionStatus: status, capturedAt: nowIso(), reason, ...over };
+}
+
+/** P4：evalSet 是否覆盖 spec §28.3 要求的四类输入（normal/boundary/reject/failure） */
+function evalSetCoversRequiredCategories(evalSet: { category: string }[]): boolean {
+  const cats = new Set(evalSet.map(e => e.category));
+  return cats.has('normal') && cats.has('boundary') && cats.has('reject') && cats.has('failure');
+}
+
+/** P4：统一阶段 → 注册层级（validated=limited 受控灰度，stable=stable 全量） */
+function stageToRegistrationTier(stage: AssetLifecycleStage): 'limited' | 'stable' | undefined {
+  if (stage === 'validated') return 'limited';
+  if (stage === 'stable') return 'stable';
+  return undefined;
 }
 
 /** 进程内单调序号：同毫秒内的多次晋升仍能保持顺序（append-only 审计要求）。 */
@@ -105,10 +134,28 @@ export class AssetService implements AssetServicePort {
     const hasOutcomeSource = (input.sourceOutcomeIds?.length ?? 0) > 0;
     const hasExperienceSource = (input.sourceExperienceIds?.length ?? 0) > 0;
 
+    const isSkillRegistration = input.assetKind === 'skill'
+      && (input.toStage === 'validated' || input.toStage === 'stable');
+
     // 注册 Skill（validated/stable）必须有支撑证据 —— 方案护栏
-    if (input.assetKind === 'skill' && (input.toStage === 'validated' || input.toStage === 'stable')) {
+    if (isSkillRegistration) {
       if (!hasOutcomeSource && !hasExperienceSource) {
         return fail('missing-evidence', '注册 Skill 前必须有 Outcome 或 Experience 支撑证据；证据不足请改用 createLearningRequest。');
+      }
+      // P4 自动注册安全护栏（spec §12.7/§28）：注册到 registered-limited/stable 前，
+      // 必须有适用边界、失败边界、≥1 反例、覆盖四类的可回放验证集。默认拒绝。
+      const reg = input.skillRegistration;
+      if (!reg) {
+        return fail('missing-boundary', '注册 Skill 前必须提供 skillRegistration（适用边界 / 失败边界 / 反例 / 验证集）。');
+      }
+      if (!reg.applicableBoundary.trim() || !reg.failureBoundary.trim()) {
+        return fail('missing-boundary', '注册 Skill 前必须明确适用边界与失败边界（问题域 / 非问题域）。');
+      }
+      if (!reg.negativeExamples || reg.negativeExamples.length === 0) {
+        return fail('missing-counterexample', '注册 Skill 前必须提供至少一条反例（仅正例不足以界定边界）。');
+      }
+      if (!reg.evalSet || reg.evalSet.length === 0 || !evalSetCoversRequiredCategories(reg.evalSet)) {
+        return fail('missing-eval-set', '注册 Skill 前必须提供覆盖 normal/boundary/reject/failure 四类的可回放验证集。');
       }
     }
     // 所有晋升都要求至少一条来源（observed→candidate 也算"被证据推动"）
@@ -143,12 +190,59 @@ export class AssetService implements AssetServicePort {
       await updateExperienceEvent(input.assetId, { maturity: stageToExperienceMaturity(input.toStage) });
     } else if (input.assetKind === 'rule') {
       await updateRuleStatus(input.assetId, stageToRuleStatus(input.toStage), input.reason);
+    } else if (isSkillRegistration) {
+      // P4：注册 Skill 用 updateSkillRegistration 写入 boundary/反例/evalSet/层级 + 准入快照
+      const existing = await getSkillCandidateById(input.assetId);
+      const nextVersion = (existing?.admissionSnapshots?.length ?? 0) + 1;
+      const targetStatus = stageToSkillAdmission(input.toStage);
+      await updateSkillRegistration(input.assetId, {
+        admissionStatus: targetStatus,
+        registrationTier: stageToRegistrationTier(input.toStage),
+        applicableBoundary: input.skillRegistration!.applicableBoundary.trim(),
+        failureBoundary: input.skillRegistration!.failureBoundary.trim(),
+        positiveExamples: input.skillRegistration!.positiveExamples ?? [],
+        negativeExamples: input.skillRegistration!.negativeExamples,
+        evalSet: input.skillRegistration!.evalSet,
+        snapshot: makeSnapshot(nextVersion, targetStatus, input.reason, {
+          registrationTier: stageToRegistrationTier(input.toStage),
+        }),
+      });
     } else {
       await updateSkillAdmission(input.assetId, stageToSkillAdmission(input.toStage));
     }
 
     await this.linkStore.save(link);
     return ok(link);
+  }
+
+  async pauseSkill(skillId: string, reason: string): Promise<AssetResult<void>> {
+    if (!reason.trim()) return fail('invalid-input', '暂停必须填写理由。');
+    const existing = await getSkillCandidateById(skillId);
+    if (!existing) return fail('not-found', 'Skill 不存在。');
+    const nextVersion = (existing.admissionSnapshots?.length ?? 0) + 1;
+    await setSkillPaused(skillId, true, reason.trim(), makeSnapshot(nextVersion, existing.admissionStatus, `暂停：${reason}`));
+    return ok(undefined);
+  }
+
+  async resumeSkill(skillId: string, reason: string): Promise<AssetResult<void>> {
+    if (!reason.trim()) return fail('invalid-input', '恢复必须填写理由。');
+    const existing = await getSkillCandidateById(skillId);
+    if (!existing) return fail('not-found', 'Skill 不存在。');
+    const nextVersion = (existing.admissionSnapshots?.length ?? 0) + 1;
+    await setSkillPaused(skillId, false, reason.trim(), makeSnapshot(nextVersion, existing.admissionStatus, `恢复：${reason}`));
+    return ok(undefined);
+  }
+
+  async rollbackSkill(skillId: string, toVersion: number, reason: string): Promise<AssetResult<void>> {
+    if (!reason.trim()) return fail('invalid-input', '回滚必须填写理由。');
+    const existing = await getSkillCandidateById(skillId);
+    if (!existing) return fail('not-found', 'Skill 不存在。');
+    const snapshot = (existing.admissionSnapshots ?? []).find(s => s.version === toVersion);
+    if (!snapshot) {
+      return fail('not-found', `找不到版本 ${toVersion} 的准入快照，无法回滚。`);
+    }
+    await rollbackSkillAdmission(skillId, { ...snapshot, reason: `回滚到 v${toVersion}：${reason}` });
+    return ok(undefined);
   }
 
   async getSupportingEvidence(kind: AssetKind, assetId: string): Promise<AssetEvidenceLink[]> {

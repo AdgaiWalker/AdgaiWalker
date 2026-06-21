@@ -86,6 +86,7 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
 	  ogImage={ogImage ?? '/images/hero-bg.png'}
 	  canonicalUrl={Astro.url.href}
 	  headings={headings}
+	  contentId={entry.id}
 	>
     {/* 面包屑 — 方向感 */}
     <div class="article-breadcrumb">

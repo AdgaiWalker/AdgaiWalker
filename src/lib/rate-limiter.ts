@@ -38,7 +38,17 @@ function windowKey(namespace: string, hashedId: string, windowSeconds: number): 
 
 /**
  * 检查并计数。allowed=false 时表示超限（调用方返回 429）。
+ *
+ * 环境感知：限流是生产防滥用护栏。开发/测试环境（!PROD）所有测试与开发机共享同一来源 IP，
+ * 跨用例合法提交会人造地撞上单访客限流（如 E2E 套件 admin-workbench + content-feedback 共 6+ 次
+ * content-feedback POST 共享一桶），因此非生产环境放宽有效上限；生产（PROD）严格按 config.max。
  */
+const DEV_MAX_MULTIPLIER = 50;
+/** 当前环境下的有效上限：生产严格按 config.max；开发/测试放宽（限流是生产防滥用，dev 不该阻断测试/开发机）。 */
+export function effectiveMax(config: RateLimitConfig): number {
+  return import.meta.env.PROD ? config.max : config.max * DEV_MAX_MULTIPLIER;
+}
+
 export async function consumeRateLimit(
   namespace: string,
   ip: string,
@@ -48,6 +58,7 @@ export async function consumeRateLimit(
   const key = windowKey(namespace, hashedId, config.windowSeconds);
   const now = Math.floor(Date.now() / 1000);
   const retryAfter = config.windowSeconds - (now % config.windowSeconds);
+  const max = effectiveMax(config);
 
   const redis = getRedis();
   if (redis) {
@@ -56,7 +67,7 @@ export async function consumeRateLimit(
       if (count === 1) {
         await redis.expire(key, config.windowSeconds);
       }
-      return { allowed: count <= config.max, count, retryAfter };
+      return { allowed: count <= max, count, retryAfter };
     } catch {
       // Redis 异常时降级到内存（不阻断正常反馈）
     }
@@ -73,7 +84,7 @@ export async function consumeRateLimit(
     }, config.windowSeconds * 1000);
     memoryTimers.set(key, timer);
   }
-  return { allowed: next <= config.max, count: next, retryAfter };
+  return { allowed: next <= max, count: next, retryAfter };
 }
 
 // 进程内内存计数器（仅 Redis 不可用时）

@@ -23,6 +23,9 @@ import type {
   AssetLifecycleStage,
   EvidenceRef,
   LearningRequest,
+  SkillAdmissionSnapshot,
+  SkillEvalCase,
+  SkillRegistrationTier,
   WorkItem,
   WorkItemAction,
   WorkItemActionType,
@@ -30,7 +33,7 @@ import type {
   WorkItemQueue,
   WorkItemStatus,
 } from '@/stores/ports';
-import type { ContentFeedbackEvent, ContentFeedbackSignal } from '@/stores/ports';
+import type { ContentFeedbackEvent, ContentFeedbackSignal, ContentTelemetryEvent } from '@/stores/ports';
 
 // ---------------------------------------------------------------------------
 // 感知层 — 输入清洗、PII 脱敏、未成年人标记（Agent 六模块 - Perception）
@@ -397,6 +400,41 @@ export interface ContentFeedbackServicePort {
 }
 
 // ---------------------------------------------------------------------------
+// P3-A：内容阅读深度遥测 —— 与 ContentFeedback 分开存储/计算（不合并分母）
+// ---------------------------------------------------------------------------
+
+export type ContentTelemetryResultCode =
+  | 'ok'
+  | 'content-not-found'
+  | 'invalid-input'
+  | 'storage-unavailable';
+
+export interface ContentTelemetrySubmitInput {
+  contentId: string;
+  eventType: 'content_progress' | 'content_complete';
+  /** 0–1，content_complete 恒为 1 */
+  progress: number;
+  /** per-page-load 随机 UUID（客户端 sessionStorage 生成，非身份派生） */
+  readerToken: string;
+  consentForAnalysis: boolean;
+}
+
+export interface ContentTelemetryResult {
+  ok: boolean;
+  code: ContentTelemetryResultCode;
+  message?: string;
+  eventId?: string;
+  sourceTopicId?: string;
+}
+
+export interface ContentTelemetryServicePort {
+  /** 验证 contentId 对应真实公开内容，规整 progress，写入事件，返回派生关联 */
+  submit(input: ContentTelemetrySubmitInput): Promise<ContentTelemetryResult>;
+  findByContent(contentId: string, range?: { from?: string; to?: string }): Promise<ContentTelemetryEvent[]>;
+  findRecent(range?: { from?: string; to?: string }, limit?: number): Promise<ContentTelemetryEvent[]>;
+}
+
+// ---------------------------------------------------------------------------
 // 资产晋升 —— Experience/Rule/Skill 统一生命周期 + Outcome 证据链（P2-B）
 //
 // 方案要求：每次晋升保存 Outcome Evidence 和 Walker 批准；能查看某个 Skill 由
@@ -406,8 +444,12 @@ export interface ContentFeedbackServicePort {
 export type AssetResultCode =
   | 'ok'
   | 'not-found'
+  | 'invalid-input'
   | 'invalid-stage'
   | 'missing-evidence'
+  | 'missing-boundary'
+  | 'missing-counterexample'
+  | 'missing-eval-set'
   | 'storage-unavailable';
 
 export interface AssetResult<T = void> {
@@ -415,6 +457,17 @@ export interface AssetResult<T = void> {
   code: AssetResultCode;
   message?: string;
   data?: T;
+}
+
+/** P4 Skill 注册护栏字段（注册到 admitted 时由 promote 强制非空） */
+export interface SkillRegistrationInput {
+  applicableBoundary: string;
+  failureBoundary: string;
+  positiveExamples?: string[];
+  /** 反例（注册前至少 1 条） */
+  negativeExamples: string[];
+  /** 可回放验证集（覆盖 normal/boundary/reject/failure） */
+  evalSet: SkillEvalCase[];
 }
 
 export interface PromoteAssetInput {
@@ -430,6 +483,8 @@ export interface PromoteAssetInput {
   reason: string;
   /** 关联的 WorkItem（可选） */
   workItemId?: string;
+  /** P4：注册 Skill（toStage=validated/stable）时必填的护栏字段 */
+  skillRegistration?: SkillRegistrationInput;
 }
 
 export interface AssetServicePort {
@@ -453,4 +508,11 @@ export interface AssetServicePort {
   listLearningRequests(status?: LearningRequest['status']): Promise<LearningRequest[]>;
   /** 完成学习请求（Walker 补证后填结果） */
   fulfillLearningRequest(requestId: string, fulfillmentNote: string): Promise<AssetResult<LearningRequest>>;
+  // ---- P4：Skill 受控注册（暂停 / 恢复 / 回滚）----
+  /** 暂停一个已注册 Skill（运行时退出 Agent 调用，不动 admissionStatus） */
+  pauseSkill(skillId: string, reason: string): Promise<AssetResult<void>>;
+  /** 恢复一个已暂停 Skill */
+  resumeSkill(skillId: string, reason: string): Promise<AssetResult<void>>;
+  /** 从某版本快照回滚 Skill 的准入状态（spec §28 可回滚） */
+  rollbackSkill(skillId: string, toVersion: number, reason: string): Promise<AssetResult<void>>;
 }
