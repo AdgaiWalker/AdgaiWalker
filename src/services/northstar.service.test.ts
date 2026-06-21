@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __resetMemoryNorthStar } from '@/conversation/store';
+import { __resetMemoryNorthStar, findAllNorthStarOffers, findNorthStarOffer, saveNorthStarOffer } from '@/conversation/store';
 import { createNorthStarService } from './northstar.service';
 import type { NorthStarOffer } from '@/stores/ports';
 
@@ -117,10 +117,24 @@ describe('NorthStarService NorthStar-OFF 硬守护', () => {
     const created = await svc.createOrder({ offer: OFFER, buyerHandle: 'x', quantity: 1 });
     expect(created.ok).toBe(false);
     expect(created.code).toBe('northstar-disabled');
-
-    // 关闭时 startPayment/fulfill/refund 也都拒绝（即便传不存在的 id 也先判 OFF）
     expect((await svc.startPayment('any')).code).toBe('northstar-disabled');
     expect((await svc.fulfill('any')).code).toBe('northstar-disabled');
     expect((await svc.refund('any', 'r')).code).toBe('northstar-disabled');
+  });
+});
+
+describe('NorthStar offer 存储', () => {
+  beforeEach(() => __resetMemoryNorthStar());
+  afterEach(() => __resetMemoryNorthStar());
+
+  it('save / findById / findAll（按发布时间倒序）', async () => {
+    const a: NorthStarOffer = { ...OFFER, offerId: 'offer-a', publishedAt: '2026-06-20T00:00:00.000Z' };
+    const b: NorthStarOffer = { ...OFFER, offerId: 'offer-b', publishedAt: '2026-06-21T00:00:00.000Z' };
+    await saveNorthStarOffer(a);
+    await saveNorthStarOffer(b);
+    expect((await findNorthStarOffer('offer-a'))?.offerId).toBe('offer-a');
+    expect((await findNorthStarOffer('missing'))).toBeNull();
+    const all = await findAllNorthStarOffers();
+    expect(all.map(o => o.offerId)).toEqual(['offer-b', 'offer-a']); // 倒序
   });
 });

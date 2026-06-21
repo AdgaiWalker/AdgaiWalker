@@ -1450,6 +1450,7 @@ const memoryActionAudit = new Map<string, import('@/stores/ports').ActionAuditEn
 const memoryNorthStarOrders = new Map<string, import('@/stores/ports').Order>();
 const memoryNorthStarPaymentIntents = new Map<string, import('@/stores/ports').PaymentIntent>();
 const memoryNorthStarRefunds = new Map<string, import('@/stores/ports').RefundRecord>();
+const memoryNorthStarOffers = new Map<string, import('@/stores/ports').NorthStarOffer>();
 
 function objectGrantKey(grantId: string): string {
   return `object-grant:${grantId}`;
@@ -1584,6 +1585,58 @@ export function __resetMemoryNorthStar(): void {
   memoryNorthStarOrders.clear();
   memoryNorthStarPaymentIntents.clear();
   memoryNorthStarRefunds.clear();
+  memoryNorthStarOffers.clear();
+}
+
+function northstarOfferKey(offerId: string): string {
+  return `northstar:offer:${offerId}`;
+}
+const NORTHSTAR_OFFERS_RECENT = 'northstar:offers:recent';
+
+export async function saveNorthStarOffer(offer: import('@/stores/ports').NorthStarOffer): Promise<void> {
+  memoryNorthStarOffers.set(offer.offerId, offer);
+  const redis = getRedis();
+  if (!redis) return;
+  const tx = redis.multi();
+  tx.set(northstarOfferKey(offer.offerId), offer);
+  tx.lpush(NORTHSTAR_OFFERS_RECENT, offer.offerId);
+  tx.ltrim(NORTHSTAR_OFFERS_RECENT, 0, 199);
+  await tx.exec();
+}
+
+export async function findNorthStarOffer(offerId: string): Promise<import('@/stores/ports').NorthStarOffer | null> {
+  const redis = getRedis();
+  const fromMemory = memoryNorthStarOffers.get(offerId) ?? null;
+  if (!redis) return fromMemory;
+  try {
+    return (await redis.get<import('@/stores/ports').NorthStarOffer>(northstarOfferKey(offerId))) ?? fromMemory;
+  } catch { return fromMemory; }
+}
+
+export async function findAllNorthStarOffers(limit = 200): Promise<import('@/stores/ports').NorthStarOffer[]> {
+  const redis = getRedis();
+  if (!redis) {
+    return [...memoryNorthStarOffers.values()]
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+      .slice(0, limit);
+  }
+  const ids = await redis.lrange<string>(NORTHSTAR_OFFERS_RECENT, 0, Math.max(0, limit - 1));
+  const items = await Promise.all(ids.map(id => redis!.get<import('@/stores/ports').NorthStarOffer>(northstarOfferKey(id))));
+  return items.filter((o): o is import('@/stores/ports').NorthStarOffer => o !== null)
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
+export async function findRecentNorthStarOrders(limit = 100): Promise<import('@/stores/ports').Order[]> {
+  const redis = getRedis();
+  if (!redis) {
+    return [...memoryNorthStarOrders.values()]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, limit);
+  }
+  const ids = await redis.lrange<string>(NORTHSTAR_ORDERS_RECENT, 0, Math.max(0, limit - 1));
+  const items = await Promise.all(ids.map(id => redis!.get<import('@/stores/ports').Order>(northstarOrderKey(id))));
+  return items.filter((o): o is import('@/stores/ports').Order => o !== null)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function saveNorthStarOrder(order: import('@/stores/ports').Order): Promise<void> {
