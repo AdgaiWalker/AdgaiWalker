@@ -9,6 +9,7 @@ import {
   saveSkillCandidate,
 } from '@/conversation/store';
 import { createAssetService } from './asset.service';
+import { validateSkillRegistration } from './asset.service';
 import type { SkillCandidate } from '@/stores/ports';
 
 /** P4：构造一份满足注册护栏的 skillRegistration（边界 + 反例 + 四类 evalSet） */
@@ -339,5 +340,34 @@ describe('AssetService P4 Skill 暂停 / 恢复 / 回滚', () => {
     });
     const rb = await svc.rollbackSkill('sk-rb2', 99, '不存在');
     expect(rb.code).toBe('not-found');
+  });
+});
+
+describe('validateSkillRegistration 共享守护（防 skills 页旁路）', () => {
+  // 此校验器被 asset.service.promote 与 /api/admin/skills?action=admission 共用，
+  // 确保 Skill 注册的两条路径都不被旁路。测试覆盖各种缺失。
+  it('undefined / 缺边界 → missing-boundary', () => {
+    expect(validateSkillRegistration(undefined)).toBe('missing-boundary');
+    expect(validateSkillRegistration({ applicableBoundary: '', failureBoundary: '' })).toBe('missing-boundary');
+    expect(validateSkillRegistration({ applicableBoundary: 'b', failureBoundary: '' })).toBe('missing-boundary');
+  });
+
+  it('有边界但无反例 → missing-counterexample', () => {
+    expect(validateSkillRegistration({
+      applicableBoundary: 'b', failureBoundary: 'f',
+      negativeExamples: [], evalSet: validSkillReg().evalSet,
+    })).toBe('missing-counterexample');
+  });
+
+  it('evalSet 缺类别 → missing-eval-set', () => {
+    expect(validateSkillRegistration({
+      applicableBoundary: 'b', failureBoundary: 'f',
+      negativeExamples: ['反例'],
+      evalSet: [{ input: 'a', expectedOutput: 'b', category: 'normal' }], // 只一类
+    })).toBe('missing-eval-set');
+  });
+
+  it('完整（四类 evalSet + 反例 + 边界）→ null（通过）', () => {
+    expect(validateSkillRegistration(validSkillReg())).toBeNull();
   });
 });

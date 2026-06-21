@@ -235,6 +235,17 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
                     <span class="hit-chip">已过时 {summary.contentOutcome.outdated}</span>
                   </div>
                 </div>
+                <div class="outcome-group">
+                  <div class="outcome-label">阅读深度（匿名遥测，P3-A）</div>
+                  <div class="outcome-body">
+                    {summary.readingOutcome.completionRate === null
+                      ? <span class="outcome-null">暂无阅读信号</span>
+                      : <span class="hit-rate">{summary.readingOutcome.completionRate}% 读完</span>}
+                    <span class="hit-chip">读者 {summary.readingOutcome.uniqueReaders}</span>
+                    <span class="hit-chip">读完 {summary.readingOutcome.completed}</span>
+                    <span class="hit-chip">有进度 {summary.readingOutcome.withProgressSignal}</span>
+                  </div>
+                </div>
               </div>
               {summary.timeRange && (
                 <div class="hit-meta">
