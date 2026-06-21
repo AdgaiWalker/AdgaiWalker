@@ -87,7 +87,9 @@ test('键盘可完成整个反馈流程', async ({ page }) => {
   // 用键盘提交
   await feedback.locator('[data-bf-submit]').focus();
   await page.keyboard.press('Enter');
-  await expect(feedback.locator('[data-bf-done]')).toBeVisible();
+  // done 依赖 POST /api/content-feedback 往返。历史上全量套件下 admin-workbench + 本 spec
+  // 共享 IP 限流桶曾导致 429（已由 rate-limiter dev 放宽修复）；仍给宽超时应对 dev server 延迟。
+  await expect(feedback.locator('[data-bf-done]')).toBeVisible({ timeout: 15_000 });
 });
 
 test('手机宽度反馈区无水平溢出', async ({ page }) => {

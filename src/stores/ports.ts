@@ -428,6 +428,28 @@ export interface RuleCandidateRepositoryPort {
 
 export type SkillAdmissionStatus = 'candidate' | 'admitted' | 'demoted-to-method';
 
+/**
+ * P4 Skill 自动注册护栏：可回放验证集（spec §28.3）。
+ * 注册到 registered-limited 前必须覆盖正常/边界/拒绝/失败四类输入。
+ */
+export interface SkillEvalCase {
+  input: string;
+  expectedOutput: string;
+  category: 'normal' | 'boundary' | 'reject' | 'failure';
+}
+
+/** P4 Skill 暂停/回滚：每次准入变化存一份快照，支持受控回滚（spec §28）。 */
+export interface SkillAdmissionSnapshot {
+  version: number;
+  admissionStatus: SkillAdmissionStatus;
+  registrationTier?: SkillRegistrationTier;
+  paused?: boolean;
+  capturedAt: string;
+  reason: string;
+}
+
+export type SkillRegistrationTier = 'limited' | 'stable';
+
 export interface SkillCandidate {
   skillId: string;
   createdAt: string;
@@ -448,6 +470,25 @@ export interface SkillCandidate {
   sourceExperienceIds: string[];
   /** 版本 */
   version: number;
+  // ---- P4 自动注册安全护栏（可选；注册到 admitted 前由 AssetService.promote 强制非空）----
+  /** 适用边界 / 问题域（注册前必填） */
+  applicableBoundary?: string;
+  /** 非问题域 / 失败边界（注册前必填） */
+  failureBoundary?: string;
+  /** 正例 */
+  positiveExamples?: string[];
+  /** 反例（注册前至少 1 条） */
+  negativeExamples?: string[];
+  /** 可回放验证集（注册前必填，覆盖 normal/boundary/reject/failure） */
+  evalSet?: SkillEvalCase[];
+  /** 注册层级：limited（受控灰度）/ stable（全量）。validated→limited，stable→stable */
+  registrationTier?: SkillRegistrationTier;
+  /** 运行时暂停开关（与 admissionStatus 正交：admitted 但 paused 不被 Agent 调用） */
+  paused?: boolean;
+  pausedReason?: string;
+  pausedAt?: string;
+  /** 准入变化历史快照（append-only，支持 rollbackSkill） */
+  admissionSnapshots?: SkillAdmissionSnapshot[];
 }
 
 export interface SkillCandidateRepositoryPort {
@@ -571,6 +612,57 @@ export interface LearningRequestRepositoryPort {
   findById(requestId: string): Promise<LearningRequest | null>;
   findByStatus(status: LearningRequestStatus): Promise<LearningRequest[]>;
   findRecent(limit?: number): Promise<LearningRequest[]>;
+}
+
+// ---------------------------------------------------------------------------
+// P4 Contributor 对象级授权（spec §29 RBAC）
+//
+// 与既有 role(admin/user/owner) 正交：不修改 AccountRole 枚举（不触动认证边界）。
+// Contributor = role='user' + 至少一条 ObjectGrant。默认拒绝：无 grant 则仅 owner/admin 通过。
+// Grant 按 resourceType + resourceId（'*' 表该类型全部）+ actions 三维授权，可选 expiresAt TTL。
+// ---------------------------------------------------------------------------
+
+export interface ObjectGrant {
+  grantId: string;
+  /** 被授权用户名（contributor = role=user + grant） */
+  grantee: string;
+  /** 资源类型，如 'workitem' | 'content' | 'skill' */
+  resourceType: string;
+  /** 资源 ID；'*' 表该类型全部资源 */
+  resourceId: string;
+  /** 允许的动作，如 ['read', 'comment', 'review'] */
+  actions: string[];
+  /** 授权人（仅 owner 可授权） */
+  grantedBy: string;
+  grantedAt: string;
+  /** 可选过期时间；过期 grant 视同不存在 */
+  expiresAt?: string;
+  reason: string;
+}
+
+export interface ObjectGrantRepositoryPort {
+  save(grant: ObjectGrant): Promise<void>;
+  findByGrantee(grantee: string, resourceType?: string): Promise<ObjectGrant[]>;
+  revoke(grantId: string): Promise<void>;
+}
+
+/** P4 操作审计（spec §29.4：谁在何时对什么对象执行了什么动作；Contributor 不可修改） */
+export interface ActionAuditEntry {
+  auditId: string;
+  /** 操作者用户名；未登录为 'anonymous' */
+  actor: string;
+  role: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  result: 'allowed' | 'denied';
+  reason: string;
+  occurredAt: string;
+}
+
+export interface ActionAuditRepositoryPort {
+  save(entry: ActionAuditEntry): Promise<void>;
+  findRecent(limit?: number): Promise<ActionAuditEntry[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -794,6 +886,12 @@ export interface WorkItem {
   history: WorkItemHistoryEntry[];
   /** 关联选题（可选，回链 TopicCandidate） */
   topicId?: string;
+  /**
+   * P4 安全护栏：AI 来源（queue=ai-asset）或无充分证据的 proposal 的过期时间。
+   * 过期 proposal 不进入"立即处理/今日投影"（无证据假设不进入正式待决定队列），
+   * 但保留在存储中供审计。pending 及之后的状态无 expiresAt。
+   */
+  expiresAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -848,4 +946,46 @@ export interface ContentFeedbackRepositoryPort {
   findByContent(contentId: string, range?: { from?: string; to?: string }): Promise<ContentFeedbackEvent[]>;
   findByTopic(topicId: string, range?: { from?: string; to?: string }): Promise<ContentFeedbackEvent[]>;
   findRecent(range?: { from?: string; to?: string }, limit?: number): Promise<ContentFeedbackEvent[]>;
+}
+
+// ---------------------------------------------------------------------------
+// P3-A：内容阅读深度遥测（ContentTelemetry）
+//
+// 与 ContentFeedback（显式反馈）分开存储、分开计算、并列解释，不合并分母。
+// 支持的真实决策："哪篇内容读者读到哪 / 是否读完 → 优先改进哪篇"
+// （补 hit-rate 只有显式反馈、无阅读行为的缺口）。
+//
+// 隐私最小化（to-do 第 12 节 / 第 2 节）：
+// - 不存储 IP（限流用 IP 哈希仅滚动窗口内瞬态，不入事件）。
+// - readerToken 是 per-page-load 随机 UUID（sessionStorage，非跨会话、非身份派生），
+//   仅用于近期窗口内 uniqueReaders 去重（同一读者上下滚动不重复计数）。
+// - 不采集 referrer / userAgent / 任何可指纹字段（不支持"改进哪篇"决策的数据不采）。
+// - consentForAnalysis 默认 true（匿名聚合阅读深度，无 PII，与既有 search-events 被动采集一致）。
+// ---------------------------------------------------------------------------
+
+export type ContentTelemetryEventType = 'content_progress' | 'content_complete';
+
+export interface ContentTelemetryEvent {
+  eventId: string;
+  /** 内容 slug（服务端校验为真实公开内容） */
+  contentId: string;
+  contentPath: string;
+  /** 服务端从内容元数据派生，不信任客户端传入 */
+  sourceTopicId?: string;
+  eventType: ContentTelemetryEventType;
+  /** 阅读进度 0–1；content_complete 恒为 1 */
+  progress: number;
+  /** per-page-load 随机 UUID（非身份、非跨会话），仅用于近期窗口去重 */
+  readerToken: string;
+  createdAt: string;
+  environment: 'development' | 'preview' | 'production';
+  consentForAnalysis: boolean;
+  /** 事件 schema 版本，服务端写死，便于未来迁移按版本过滤 */
+  schemaVersion: 1;
+}
+
+export interface ContentTelemetryRepositoryPort {
+  save(event: ContentTelemetryEvent): Promise<void>;
+  findByContent(contentId: string, range?: { from?: string; to?: string }): Promise<ContentTelemetryEvent[]>;
+  findRecent(range?: { from?: string; to?: string }, limit?: number): Promise<ContentTelemetryEvent[]>;
 }

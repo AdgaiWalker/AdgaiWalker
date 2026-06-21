@@ -34,12 +34,15 @@ interface Props {
   headings: Heading[];
   hasToc?: boolean;
   feedback?: boolean;
+  /** 内容 slug；用于阅读深度遥测（P3-A）。不传则不采集。 */
+  contentId?: string;
 }
 
 const {
   headings,
   hasToc: _hasToc,
   feedback = false,
+  contentId = '',
   ...seoProps
 } = Astro.props;
 const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
@@ -48,7 +51,7 @@ const hasToc = _hasToc ?? tocItems.length > 0;
 
 <Base {...seoProps} pureMode={false}>
   <!-- 沉浸式阅读区域 -->
-  <div class="reading-space" id="reading-space">
+  <div class="reading-space" id="reading-space" data-content-id={contentId}>
     <!-- 左边缘提示区 — 侧边栏幽灵 -->
     <div class="sidebar-ghost-hint" id="sidebar-ghost-hint" aria-hidden="true"></div>
 
@@ -333,6 +336,7 @@ const hasToc = _hasToc ?? tocItems.length > 0;
 <script>
   import '../scripts/toc-highlight';
   import { applyTocCollapsedState, readTocCollapsedState } from '../scripts/toc-collapse-state';
+  import { resetContentTelemetryState, trackReadingProgress } from '../scripts/content-telemetry';
 
   let articleAbort: AbortController | null = null;
   let ghostSidebarObserver: MutationObserver | null = null;
@@ -345,6 +349,8 @@ const hasToc = _hasToc ?? tocItems.length > 0;
   function initReadingProgress(signal: AbortSignal) {
     const bar = document.getElementById('reading-progress-bar');
     const pct = document.getElementById('reading-progress-pct');
+    const readingSpace = document.getElementById('reading-space');
+    const contentId = readingSpace?.dataset.contentId ?? '';
     if (!bar) return;
 
     const update = () => {
@@ -360,6 +366,8 @@ const hasToc = _hasToc ?? tocItems.length > 0;
           pct.style.opacity = '0.7';
         } else { pct.style.opacity = '0'; }
       }
+      // P3-A：把已算好的 progress 喂给遥测 beacon（不新增滚动监听，内部步进去重）
+      if (contentId) trackReadingProgress(contentId, progress);
     };
     window.addEventListener('scroll', update, { passive: true, signal });
     update();
@@ -413,6 +421,9 @@ const hasToc = _hasToc ?? tocItems.length > 0;
     clearArticleTimers();
     articleAbort = new AbortController();
     const { signal } = articleAbort;
+
+    // P3-A：每次页面（重新）加载重置遥测触发状态
+    resetContentTelemetryState();
 
     initTocCollapse(signal);
     initGhostSidebar(signal);

@@ -40,8 +40,23 @@ import type { WorkItemActionType, WorkItemOutcomeResult } from '@/stores/ports';
 
 const WORKITEM_ID_PREFIX = 'wi';
 
+/** P4：AI 来源 proposal 的默认存活天数。过期后不进入"今日/立即处理"投影，但仍留审计。 */
+const AI_PROPOSAL_TTL_DAYS = 14;
+
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function expiryFromDays(days: number): string {
+  // 用基础日期计算，避免引入额外依赖；nowIso 已是 ISO 字符串
+  const d = new Date(nowIso());
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString();
+}
+
+/** P4：proposal 是否已过期（仅 proposal 状态有过期概念；过期不删除，只退出活跃投影） */
+function isProposalExpired(item: WorkItem, now = nowIso()): boolean {
+  return item.status === 'proposal' && typeof item.expiresAt === 'string' && item.expiresAt < now;
 }
 
 function makeId(prefix: string): string {
@@ -119,6 +134,12 @@ export class WorkbenchService implements WorkbenchServicePort {
     if (!input.evidenceRefs || input.evidenceRefs.length === 0) {
       return fail('missing-evidence', '提案必须至少引用一条证据，不能无凭据创建。');
     }
+    // P4 安全护栏：AI 来源（queue=ai-asset）的无证据假设不得进入"立即处理"（now）队列，
+    // 避免 AI 草案冒充紧急事项抢占 Walker 的判断带宽。
+    // （Walker 自己的 user-demand/walker-thesis/system-event 提案可自由设 now —— 那是人的判断。）
+    if (input.queue === 'ai-asset' && input.priorityBand === 'now' && !hasSufficientEvidence(input.evidenceRefs)) {
+      return fail('invalid-input', 'AI 无证据假设不能进入"立即处理"，请补充已验证证据或降级优先级。');
+    }
     const blocked = this.ensureWritable<WorkItem>();
     if (blocked) return blocked;
 
@@ -146,6 +167,8 @@ export class WorkbenchService implements WorkbenchServicePort {
       outcomes: [],
       history: [],
       topicId: input.topicId,
+      // P4：AI 来源 proposal 写入过期时间，过期后退出活跃投影（无证据假设不长期占用判断带宽）
+      expiresAt: input.queue === 'ai-asset' ? expiryFromDays(AI_PROPOSAL_TTL_DAYS) : undefined,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -409,6 +432,10 @@ export class WorkbenchService implements WorkbenchServicePort {
     if (fromBand === input.priorityBand) {
       return fail('invalid-input', '新优先级与当前相同，无需覆盖。');
     }
+    // P4：人工覆盖也不能把 AI 来源无证据假设提升到"立即处理"（与创建时护栏一致）
+    if (input.priorityBand === 'now' && existing.queue === 'ai-asset' && !hasSufficientEvidence(existing.evidenceRefs)) {
+      return fail('invalid-input', 'AI 无证据假设不能覆盖为"立即处理"。');
+    }
 
     const updated = this.mutate(existing, item => {
       item.priorityBand = input.priorityBand;
@@ -428,7 +455,9 @@ export class WorkbenchService implements WorkbenchServicePort {
   }
 
   async getTodayProjection(options?: { limit?: number }): Promise<WorkItem[]> {
-    return this.repository.listActive({ limit: options?.limit ?? 30 });
+    const items = await this.repository.listActive({ limit: options?.limit ?? 30 });
+    // P4：过期的 AI/无证据 proposal 不进入"今日"投影（保留在存储供审计，不删除）
+    return items.filter(item => !isProposalExpired(item));
   }
 
   async list(options?: Parameters<WorkbenchServicePort['list']>[0]): Promise<WorkItem[]> {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildContentOutcomeSummaries, calculateContentHitRates } from '@/services/hit-rate.service';
-import type { ContentFeedbackEvent, NeedCase, TopicCandidate } from '@/stores/ports';
+import type { ContentFeedbackEvent, ContentTelemetryEvent, NeedCase, TopicCandidate } from '@/stores/ports';
 
 function createTopic(overrides: Partial<TopicCandidate> = {}): TopicCandidate {
   return {
@@ -121,6 +121,22 @@ function makeFeedback(over: Partial<ContentFeedbackEvent>): ContentFeedbackEvent
   };
 }
 
+function makeTelemetry(over: Partial<ContentTelemetryEvent>): ContentTelemetryEvent {
+  return {
+    eventId: over.eventId ?? crypto.randomUUID(),
+    contentId: over.contentId ?? 'ai-first-step',
+    contentPath: over.contentPath ?? '/posts/ai-first-step',
+    sourceTopicId: over.sourceTopicId,
+    eventType: over.eventType ?? 'content_progress',
+    progress: over.progress ?? 0.5,
+    readerToken: over.readerToken ?? crypto.randomUUID(),
+    createdAt: over.createdAt ?? '2026-06-20T00:00:00.000Z',
+    environment: 'development',
+    consentForAnalysis: true,
+    schemaVersion: 1,
+  };
+}
+
 describe('buildContentOutcomeSummaries（P1-C01 双信号分组）', () => {
   it('只有匹配反馈时，matchOutcome 有值、contentOutcome 为空且 usefulRate 为 null', () => {
     const [summary] = buildContentOutcomeSummaries({
@@ -219,5 +235,65 @@ describe('buildContentOutcomeSummaries（P1-C01 双信号分组）', () => {
     // 但 contentOutcome 各自独立
     expect(a.contentOutcome.useful).toBe(1);
     expect(b.contentOutcome.outdated).toBe(1);
+  });
+});
+
+describe('buildContentOutcomeSummaries readingOutcome（P3-A 第三并列信号）', () => {
+  it('无遥测时 readingOutcome 各计数为 0、completionRate 为 null', () => {
+    const [summary] = buildContentOutcomeSummaries({
+      contents: [{ id: 'ai-first-step', title: 'AI 第一步', href: '/posts/ai-first-step' }],
+      topics: [],
+      needCases: [],
+      contentFeedbackByContent: new Map(),
+    });
+    expect(summary.readingOutcome.uniqueReaders).toBe(0);
+    expect(summary.readingOutcome.completionRate).toBeNull();
+  });
+
+  it('按 readerToken 去重 uniqueReaders，completed/withProgressSignal 分别统计', () => {
+    const [summary] = buildContentOutcomeSummaries({
+      contents: [{ id: 'ai-first-step', title: 'AI 第一步', href: '/posts/ai-first-step' }],
+      topics: [],
+      needCases: [],
+      contentFeedbackByContent: new Map(),
+      contentTelemetryByContent: new Map([
+        ['ai-first-step', [
+          // reader-1：有 progress + complete（完成）
+          makeTelemetry({ readerToken: 'r1', eventType: 'content_progress', progress: 0.5 }),
+          makeTelemetry({ readerToken: 'r1', eventType: 'content_complete', progress: 1 }),
+          // reader-2：只有 progress（未完成）
+          makeTelemetry({ readerToken: 'r2', eventType: 'content_progress', progress: 0.25 }),
+          makeTelemetry({ readerToken: 'r2', eventType: 'content_progress', progress: 0.75 }),
+          // reader-3：只有 complete（直接完成）
+          makeTelemetry({ readerToken: 'r3', eventType: 'content_complete', progress: 1 }),
+        ]],
+      ]),
+    });
+    expect(summary.readingOutcome.uniqueReaders).toBe(3);
+    expect(summary.readingOutcome.withProgressSignal).toBe(2); // r1, r2
+    expect(summary.readingOutcome.completed).toBe(2); // r1, r3
+    expect(summary.readingOutcome.completionRate).toBe(67); // 2/3
+  });
+
+  it('readingOutcome 与 matchOutcome/contentOutcome 不合并分母', () => {
+    const [summary] = buildContentOutcomeSummaries({
+      contents: [{ id: 'ai-first-step', title: 'AI 第一步', href: '/posts/ai-first-step', sourceTopicId: 'topic-hit-rate' }],
+      topics: [createTopic()],
+      needCases: [createNeedCase({ topicCandidateId: 'topic-hit-rate', feedbackStatus: 'resolved' })],
+      contentFeedbackByContent: new Map([
+        ['ai-first-step', [makeFeedback({ signal: 'useful' })]],
+      ]),
+      contentTelemetryByContent: new Map([
+        ['ai-first-step', [
+          makeTelemetry({ readerToken: 'r1', eventType: 'content_complete', progress: 1 }),
+          makeTelemetry({ readerToken: 'r2', eventType: 'content_progress', progress: 0.5 }),
+        ]],
+      ]),
+    });
+    // 三组分母各自独立
+    expect(summary.matchOutcome.responded).toBe(1);
+    expect(summary.contentOutcome.totalFeedback).toBe(1);
+    expect(summary.readingOutcome.uniqueReaders).toBe(2);
+    expect(summary.readingOutcome.completionRate).toBe(50);
   });
 });

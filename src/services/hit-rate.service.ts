@@ -1,5 +1,5 @@
 import type { ContentItem } from '@/knowledge/content-model';
-import type { ContentFeedbackEvent, FeedbackStatus, NeedCase, TopicCandidate } from '@/stores/ports';
+import type { ContentFeedbackEvent, ContentTelemetryEvent, FeedbackStatus, NeedCase, TopicCandidate } from '@/stores/ports';
 import { getRedis } from '@/conversation/store';
 
 /** 反馈细分维度（不含 none 未反馈） */
@@ -154,6 +154,22 @@ export interface ContentOutcomeGroup {
   usefulRate: number | null;
 }
 
+/**
+ * P3-A 阅读深度结果组（第三并列信号，与 matchOutcome / contentOutcome 不合并分母）。
+ * uniqueReaders 用 readerToken 去重（per-page-load 随机 UUID）。
+ * completionRate = completed / uniqueReaders；无阅读信号返回 null。
+ */
+export interface ReadingOutcomeGroup {
+  /** 去重后的不同读者数（readerToken 维度） */
+  uniqueReaders: number;
+  /** 触发 content_complete 的读者数（去重） */
+  completed: number;
+  /** 至少发过一次 progress 信号的读者数（去重） */
+  withProgressSignal: number;
+  /** 完成率 = completed / uniqueReaders；无阅读信号返回 null */
+  completionRate: number | null;
+}
+
 export interface ContentOutcomeSummary {
   contentId: string;
   title: string;
@@ -164,6 +180,8 @@ export interface ContentOutcomeSummary {
   hasSourceTopic: boolean;
   matchOutcome: MatchOutcomeGroup;
   contentOutcome: ContentOutcomeGroup;
+  /** P3-A 阅读深度（第三并列信号，无数据时各计数为 0、completionRate 为 null） */
+  readingOutcome: ReadingOutcomeGroup;
   /** 统计时间范围（取数据里最早 / 最晚时间） */
   timeRange: { from: string; to: string } | null;
 }
@@ -196,6 +214,30 @@ function summarizeContentOutcome(feedback: ContentFeedbackEvent[]): ContentOutco
   };
 }
 
+function summarizeReadingOutcome(telemetry: ContentTelemetryEvent[]): ReadingOutcomeGroup {
+  if (telemetry.length === 0) {
+    return { uniqueReaders: 0, completed: 0, withProgressSignal: 0, completionRate: null };
+  }
+  // 按 readerToken 聚合：一个 reader 是否有 progress / 是否 complete
+  const readerProgress = new Set<string>();
+  const readerComplete = new Set<string>();
+  for (const ev of telemetry) {
+    if (!ev.readerToken) continue;
+    if (ev.eventType === 'content_progress') readerProgress.add(ev.readerToken);
+    if (ev.eventType === 'content_complete') readerComplete.add(ev.readerToken);
+  }
+  // uniqueReaders = 出现过的所有 readerToken
+  const uniqueReaders = new Set(telemetry.map(ev => ev.readerToken).filter(Boolean)).size;
+  const withProgressSignal = readerProgress.size;
+  const completed = readerComplete.size;
+  return {
+    uniqueReaders,
+    completed,
+    withProgressSignal,
+    completionRate: uniqueReaders > 0 ? Math.round((completed / uniqueReaders) * 100) : null,
+  };
+}
+
 function timeRangeOf(times: string[]): { from: string; to: string } | null {
   if (times.length === 0) return null;
   const sorted = [...times].sort();
@@ -217,8 +259,10 @@ export function buildContentOutcomeSummaries(input: {
   needCases: NeedCase[];
   /** 按内容 ID 预聚合的内容反馈（来自 ContentFeedback store） */
   contentFeedbackByContent: Map<string, ContentFeedbackEvent[]>;
+  /** 按内容 ID 预聚合的阅读深度遥测（来自 ContentTelemetry store，P3-A；可选） */
+  contentTelemetryByContent?: Map<string, ContentTelemetryEvent[]>;
 }): ContentOutcomeSummary[] {
-  const { contents, topics, needCases, contentFeedbackByContent } = input;
+  const { contents, topics, needCases, contentFeedbackByContent, contentTelemetryByContent } = input;
 
   // NeedCase 按 topicCandidateId 聚合
   const casesByTopic = new Map<string, NeedCase[]>();
@@ -252,10 +296,12 @@ export function buildContentOutcomeSummaries(input: {
     }
 
     const contentFeedback = contentFeedbackByContent.get(content.id) ?? [];
+    const contentTelemetry = contentTelemetryByContent?.get(content.id) ?? [];
 
     const allTimes = [
       ...relatedCases.map(c => c.createdAt),
       ...contentFeedback.map(f => f.createdAt),
+      ...contentTelemetry.map(t => t.createdAt),
     ];
 
     summaries.push({
@@ -266,14 +312,15 @@ export function buildContentOutcomeSummaries(input: {
       hasSourceTopic: relatedTopicIds.length > 0,
       matchOutcome: summarizeMatchOutcome(relatedCases),
       contentOutcome: summarizeContentOutcome(contentFeedback),
+      readingOutcome: summarizeReadingOutcome(contentTelemetry),
       timeRange: timeRangeOf(allTimes),
     });
   }
 
   // 有任何反馈或关联的数据排前；纯无数据排后
   return summaries.sort((a, b) => {
-    const aHas = a.matchOutcome.responded + a.contentOutcome.totalFeedback;
-    const bHas = b.matchOutcome.responded + b.contentOutcome.totalFeedback;
+    const aHas = a.matchOutcome.responded + a.contentOutcome.totalFeedback + a.readingOutcome.uniqueReaders;
+    const bHas = b.matchOutcome.responded + b.contentOutcome.totalFeedback + b.readingOutcome.uniqueReaders;
     return bHas - aHas;
   });
 }

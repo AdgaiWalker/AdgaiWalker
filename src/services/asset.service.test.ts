@@ -3,19 +3,61 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   __resetMemoryAssetLinks,
   __resetMemoryLearningRequests,
+  __resetMemorySkillCandidates,
   __resetMemoryWorkItems,
+  getSkillCandidateById,
+  saveSkillCandidate,
 } from '@/conversation/store';
 import { createAssetService } from './asset.service';
+import type { SkillCandidate } from '@/stores/ports';
+
+/** P4：构造一份满足注册护栏的 skillRegistration（边界 + 反例 + 四类 evalSet） */
+function validSkillReg() {
+  return {
+    applicableBoundary: '用于把自然语言需求转成站内资源推荐',
+    failureBoundary: '不处理账号、支付、私密对话',
+    negativeExamples: ['要求删除账号', '索要他人隐私'],
+    evalSet: [
+      { input: '我想学 AI', expectedOutput: '推荐入门指南', category: 'normal' as const },
+      { input: '已有 3 年经验', expectedOutput: '推荐专家轨', category: 'boundary' as const },
+      { input: '帮我删账号', expectedOutput: '拒绝并指引 /account', category: 'reject' as const },
+      { input: '乱码输入', expectedOutput: '请求澄清', category: 'failure' as const },
+    ],
+  };
+}
+
+function seedSkill(skillId: string, over: Partial<SkillCandidate> = {}): SkillCandidate {
+  const now = '2026-06-21T00:00:00.000Z';
+  const skill: SkillCandidate = {
+    skillId,
+    createdAt: now,
+    updatedAt: now,
+    name: `测试 Skill ${skillId}`,
+    description: '注册护栏测试',
+    admissionStatus: 'candidate',
+    domain: 'recommendation',
+    inputConditions: '自然语言需求',
+    outputForm: '资源推荐',
+    validationCriteria: '回放通过',
+    sourceExperienceIds: [],
+    version: 1,
+    ...over,
+  };
+  void saveSkillCandidate(skill);
+  return skill;
+}
 
 describe('AssetService 资产晋升链路（P2-B）', () => {
   beforeEach(() => {
     __resetMemoryAssetLinks();
     __resetMemoryLearningRequests();
+    __resetMemorySkillCandidates();
     __resetMemoryWorkItems();
   });
   afterEach(() => {
     __resetMemoryAssetLinks();
     __resetMemoryLearningRequests();
+    __resetMemorySkillCandidates();
     __resetMemoryWorkItems();
   });
 
@@ -45,7 +87,7 @@ describe('AssetService 资产晋升链路（P2-B）', () => {
     expect(blocked.code).toBe('missing-evidence');
     expect(blocked.message).toContain('Skill');
 
-    // 带 Outcome 证据注册 Skill → 通过
+    // 带 Outcome 证据 + 完整注册护栏注册 Skill → 通过
     const ok = await svc.promote({
       assetKind: 'skill',
       assetId: 'skill-1',
@@ -53,6 +95,7 @@ describe('AssetService 资产晋升链路（P2-B）', () => {
       sourceOutcomeIds: ['outcome-1'],
       approvedBy: 'walker',
       reason: '有 Outcome 支撑，准入',
+      skillRegistration: validSkillReg(),
     });
     expect(ok.ok).toBe(true);
     expect(ok.data!.stage).toBe('validated');
@@ -103,6 +146,7 @@ describe('AssetService 资产晋升链路（P2-B）', () => {
     await svc.promote({
       assetKind: 'skill', assetId: 's1', toStage: 'validated',
       sourceOutcomeIds: ['o2'], approvedBy: 'walker', reason: 's1',
+      skillRegistration: validSkillReg(),
     });
     const recent = await svc.recentPromotions();
     expect(recent.length).toBeGreaterThanOrEqual(2);
@@ -147,5 +191,153 @@ describe('AssetService 资产晋升链路（P2-B）', () => {
     const svc = createAssetService();
     const result = await svc.fulfillLearningRequest('lr_missing', 'x');
     expect(result.code).toBe('not-found');
+  });
+});
+
+describe('AssetService P4 Skill 注册护栏（默认拒绝）', () => {
+  beforeEach(() => {
+    __resetMemoryAssetLinks();
+    __resetMemorySkillCandidates();
+    __resetMemoryWorkItems();
+  });
+
+  it('注册 Skill 缺 skillRegistration → missing-boundary', async () => {
+    const svc = createAssetService();
+    const result = await svc.promote({
+      assetKind: 'skill', assetId: 'sk', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: 'r',
+    });
+    expect(result.code).toBe('missing-boundary');
+  });
+
+  it('注册 Skill 缺反例 → missing-counterexample', async () => {
+    const svc = createAssetService();
+    const result = await svc.promote({
+      assetKind: 'skill', assetId: 'sk', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: 'r',
+      skillRegistration: {
+        applicableBoundary: 'b', failureBoundary: 'f',
+        negativeExamples: [], evalSet: validSkillReg().evalSet,
+      },
+    });
+    expect(result.code).toBe('missing-counterexample');
+  });
+
+  it('注册 Skill evalSet 缺类别 → missing-eval-set', async () => {
+    const svc = createAssetService();
+    const result = await svc.promote({
+      assetKind: 'skill', assetId: 'sk', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: 'r',
+      skillRegistration: {
+        applicableBoundary: 'b', failureBoundary: 'f',
+        negativeExamples: ['反例1'],
+        evalSet: [
+          { input: 'a', expectedOutput: 'b', category: 'normal' },
+          { input: 'c', expectedOutput: 'd', category: 'boundary' },
+          // 缺 reject / failure
+        ],
+      },
+    });
+    expect(result.code).toBe('missing-eval-set');
+  });
+
+  it('注册 Skill 完整护栏 → 写入边界/反例/evalSet + 层级 + 快照', async () => {
+    seedSkill('sk-full');
+    const svc = createAssetService();
+    const result = await svc.promote({
+      assetKind: 'skill', assetId: 'sk-full', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: '完整注册',
+      skillRegistration: validSkillReg(),
+    });
+    expect(result.ok).toBe(true);
+    const skill = await getSkillCandidateById('sk-full');
+    expect(skill?.admissionStatus).toBe('admitted');
+    expect(skill?.registrationTier).toBe('limited'); // validated → limited
+    expect(skill?.applicableBoundary).toBeTruthy();
+    expect(skill?.negativeExamples?.length).toBeGreaterThan(0);
+    expect(skill?.evalSet?.length).toBe(4);
+    expect(skill?.admissionSnapshots).toHaveLength(1);
+    expect(skill?.admissionSnapshots?.[0].registrationTier).toBe('limited');
+  });
+
+  it('stable 阶段 → registrationTier=stable', async () => {
+    seedSkill('sk-stable');
+    const svc = createAssetService();
+    await svc.promote({
+      assetKind: 'skill', assetId: 'sk-stable', toStage: 'stable',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: '全量',
+      skillRegistration: validSkillReg(),
+    });
+    const skill = await getSkillCandidateById('sk-stable');
+    expect(skill?.registrationTier).toBe('stable');
+  });
+});
+
+describe('AssetService P4 Skill 暂停 / 恢复 / 回滚', () => {
+  beforeEach(() => {
+    __resetMemoryAssetLinks();
+    __resetMemorySkillCandidates();
+    __resetMemoryWorkItems();
+  });
+
+  it('pauseSkill 置 paused 标志 + 写快照；resumeSkill 恢复', async () => {
+    seedSkill('sk-p');
+    const svc = createAssetService();
+    await svc.promote({
+      assetKind: 'skill', assetId: 'sk-p', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: '注册',
+      skillRegistration: validSkillReg(),
+    });
+
+    const paused = await svc.pauseSkill('sk-p', '回放命中率下降');
+    expect(paused.ok).toBe(true);
+    let skill = await getSkillCandidateById('sk-p');
+    expect(skill?.paused).toBe(true);
+    expect(skill?.pausedReason).toContain('回放命中率下降');
+    expect(skill?.admissionSnapshots).toHaveLength(2); // 注册 + 暂停
+
+    const resumed = await svc.resumeSkill('sk-p', '修复后恢复');
+    expect(resumed.ok).toBe(true);
+    skill = await getSkillCandidateById('sk-p');
+    expect(skill?.paused).toBe(false);
+    expect(skill?.pausedReason).toBeUndefined();
+  });
+
+  it('pauseSkill 缺理由 / 不存在 → 拒绝', async () => {
+    const svc = createAssetService();
+    expect((await svc.pauseSkill('sk-x', '')).code).toBe('invalid-input');
+    expect((await svc.pauseSkill('sk-missing', 'r')).code).toBe('not-found');
+  });
+
+  it('rollbackSkill 回滚到注册版本，admission 恢复', async () => {
+    seedSkill('sk-rb');
+    const svc = createAssetService();
+    await svc.promote({
+      assetKind: 'skill', assetId: 'sk-rb', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: 'v1 注册',
+      skillRegistration: validSkillReg(),
+    });
+    // 再暂停产生 v2 快照
+    await svc.pauseSkill('sk-rb', '问题');
+
+    // 回滚到 v1（注册时的快照）
+    const rb = await svc.rollbackSkill('sk-rb', 1, '回滚到首版注册');
+    expect(rb.ok).toBe(true);
+    const skill = await getSkillCandidateById('sk-rb');
+    expect(skill?.paused).toBe(false); // v1 快照 paused 未定义 → 回滚后 false
+    expect(skill?.admissionStatus).toBe('admitted');
+    expect(skill?.admissionSnapshots?.length).toBeGreaterThanOrEqual(3); // v1 + v2 + 回滚快照
+  });
+
+  it('rollbackSkill 到不存在版本 → not-found', async () => {
+    seedSkill('sk-rb2');
+    const svc = createAssetService();
+    await svc.promote({
+      assetKind: 'skill', assetId: 'sk-rb2', toStage: 'validated',
+      sourceOutcomeIds: ['o1'], approvedBy: 'walker', reason: 'r',
+      skillRegistration: validSkillReg(),
+    });
+    const rb = await svc.rollbackSkill('sk-rb2', 99, '不存在');
+    expect(rb.code).toBe('not-found');
   });
 });

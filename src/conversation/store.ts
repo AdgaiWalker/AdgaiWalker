@@ -28,6 +28,7 @@ export type {
 import type {
   ConversationMessage,
   ContentFeedbackEvent,
+  ContentTelemetryEvent,
   ExperienceEvent,
   Incident,
   RuleCandidate,
@@ -77,6 +78,7 @@ const memoryRuleCandidates = new Map<string, RuleCandidate>();
 const memorySkillCandidates = new Map<string, SkillCandidate>();
 const memoryWorkItems = new Map<string, WorkItem>();
 const memoryContentFeedback = new Map<string, ContentFeedbackEvent>();
+const memoryContentTelemetry = new Map<string, ContentTelemetryEvent>();
 const memoryAssetEvidenceLinks = new Map<string, AssetEvidenceLink>();
 const memoryLearningRequests = new Map<string, LearningRequest>();
 let memoryMatchCount = 0;
@@ -713,6 +715,11 @@ export async function saveSkillCandidate(skill: SkillCandidate): Promise<void> {
   await redis.ltrim('match:skills:recent', 0, 499);
 }
 
+/** 仅测试用：清空内存 SkillCandidate，不触碰 Redis。 */
+export function __resetMemorySkillCandidates(): void {
+  memorySkillCandidates.clear();
+}
+
 export async function findRecentSkillCandidates(limit = 50): Promise<SkillCandidate[]> {
   const redis = getRedis();
   if (!redis) {
@@ -746,6 +753,142 @@ export async function updateSkillAdmission(skillId: string, admissionStatus: Ski
     if (current) {
       await redis.set(skillKey(skillId), { ...current, admissionStatus, updatedAt: new Date().toISOString() });
     }
+  } catch { /* 静默 */ }
+}
+
+/** P4：按 ID 取单个 SkillCandidate（pause/rollback 用）。 */
+export async function getSkillCandidateById(skillId: string): Promise<SkillCandidate | null> {
+  const redis = getRedis();
+  const fromMemory = memorySkillCandidates.get(skillId) ?? null;
+  if (!redis) return fromMemory;
+  try {
+    return (await redis.get<SkillCandidate>(skillKey(skillId))) ?? fromMemory;
+  } catch {
+    return fromMemory;
+  }
+}
+
+/**
+ * P4：写入 Skill 注册护栏字段（边界/反例/验证集/注册层级）+ 准入状态 + 快照。
+ * 由 AssetService.promote 在注册到 admitted 时调用。
+ */
+export async function updateSkillRegistration(
+  skillId: string,
+  fields: {
+    admissionStatus: SkillAdmissionStatus;
+    registrationTier?: import('@/stores/ports').SkillRegistrationTier;
+    applicableBoundary?: string;
+    failureBoundary?: string;
+    positiveExamples?: string[];
+    negativeExamples?: string[];
+    evalSet?: import('@/stores/ports').SkillEvalCase[];
+    snapshot: import('@/stores/ports').SkillAdmissionSnapshot;
+  },
+): Promise<void> {
+  const redis = getRedis();
+  const existing = memorySkillCandidates.get(skillId);
+  if (existing) {
+    memorySkillCandidates.set(skillId, {
+      ...existing,
+      admissionStatus: fields.admissionStatus,
+      registrationTier: fields.registrationTier ?? existing.registrationTier,
+      applicableBoundary: fields.applicableBoundary ?? existing.applicableBoundary,
+      failureBoundary: fields.failureBoundary ?? existing.failureBoundary,
+      positiveExamples: fields.positiveExamples ?? existing.positiveExamples,
+      negativeExamples: fields.negativeExamples ?? existing.negativeExamples,
+      evalSet: fields.evalSet ?? existing.evalSet,
+      admissionSnapshots: [...(existing.admissionSnapshots ?? []), fields.snapshot],
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  if (!redis) return;
+  try {
+    const current = await redis.get<SkillCandidate>(skillKey(skillId));
+    if (current) {
+      const merged: SkillCandidate = {
+        ...current,
+        admissionStatus: fields.admissionStatus,
+        registrationTier: fields.registrationTier ?? current.registrationTier,
+        applicableBoundary: fields.applicableBoundary ?? current.applicableBoundary,
+        failureBoundary: fields.failureBoundary ?? current.failureBoundary,
+        positiveExamples: fields.positiveExamples ?? current.positiveExamples,
+        negativeExamples: fields.negativeExamples ?? current.negativeExamples,
+        evalSet: fields.evalSet ?? current.evalSet,
+        admissionSnapshots: [...(current.admissionSnapshots ?? []), fields.snapshot],
+        updatedAt: new Date().toISOString(),
+      };
+      await redis.set(skillKey(skillId), merged);
+    }
+  } catch { /* 静默 */ }
+}
+
+/**
+ * P4：暂停 / 恢复一个已注册 Skill（运行时开关，与 admissionStatus 正交）。
+ * paused 的 admitted Skill 不被 Agent 调用（spec §28 受控注册：可暂停）。
+ */
+export async function setSkillPaused(
+  skillId: string,
+  paused: boolean,
+  reason: string,
+  snapshot?: import('@/stores/ports').SkillAdmissionSnapshot,
+): Promise<void> {
+  const redis = getRedis();
+  const ts = new Date().toISOString();
+  const existing = memorySkillCandidates.get(skillId);
+  if (existing) {
+    memorySkillCandidates.set(skillId, {
+      ...existing,
+      paused,
+      pausedReason: paused ? reason : undefined,
+      pausedAt: paused ? ts : undefined,
+      admissionSnapshots: snapshot ? [...(existing.admissionSnapshots ?? []), snapshot] : existing.admissionSnapshots,
+      updatedAt: ts,
+    });
+  }
+  if (!redis) return;
+  try {
+    const current = await redis.get<SkillCandidate>(skillKey(skillId));
+    if (current) {
+      const merged: SkillCandidate = {
+        ...current,
+        paused,
+        pausedReason: paused ? reason : undefined,
+        pausedAt: paused ? ts : undefined,
+        admissionSnapshots: snapshot ? [...(current.admissionSnapshots ?? []), snapshot] : current.admissionSnapshots,
+        updatedAt: ts,
+      };
+      await redis.set(skillKey(skillId), merged);
+    }
+  } catch { /* 静默 */ }
+}
+
+/**
+ * P4：从一个准入快照回滚 Skill 的 admission 状态（spec §28 可回滚）。
+ * 只恢复 admission 相关字段（status/tier/paused），不动 boundary/evalSet 本体。
+ * 调用方负责按 toVersion 选出快照后传入。
+ */
+export async function rollbackSkillAdmission(
+  skillId: string,
+  snapshot: import('@/stores/ports').SkillAdmissionSnapshot,
+): Promise<void> {
+  const redis = getRedis();
+  const ts = new Date().toISOString();
+  const apply = (s: SkillCandidate): SkillCandidate => ({
+    ...s,
+    admissionStatus: snapshot.admissionStatus,
+    registrationTier: snapshot.registrationTier ?? s.registrationTier,
+    paused: snapshot.paused ?? false,
+    pausedReason: snapshot.paused ? (s.pausedReason ?? '回滚恢复') : undefined,
+    pausedAt: snapshot.paused ? (s.pausedAt ?? ts) : undefined,
+    admissionSnapshots: [...(s.admissionSnapshots ?? []), snapshot],
+    updatedAt: ts,
+  });
+  const existing = memorySkillCandidates.get(skillId);
+  if (existing) memorySkillCandidates.set(skillId, apply(existing));
+  if (!redis) return;
+  try {
+    const current = await redis.get<SkillCandidate>(skillKey(skillId));
+    if (current) await redis.set(skillKey(skillId), apply(current));
   } catch { /* 静默 */ }
 }
 
@@ -1006,25 +1149,35 @@ export async function saveWorkItem(workItem: WorkItem): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
+  // previous 必须在事务外读取（Upstash MULTI 不支持事务内读用于分支判断）。
   const previous = await redis.get<WorkItem>(workItemKey(workItem.workItemId));
-  await redis.set(workItemKey(workItem.workItemId), workItem);
+
+  // P0-B02：实体写入与所有索引维护放进单个 MULTI/EXEC 原子事务。
+  // 此前是顺序 await 单命令，set 写完后若 lpush 前进程崩溃或某条 HTTP 失败，
+  // 会留下"实体已更新但索引未更新"的不一致——listWorkItems 读到旧状态索引。
+  // MULTI 保证写阶段原子：要么全部生效，要么全部不生效。
+  // 事务内仍保留"先 lrem 再 lpush"的幂等命令顺序作为 defense-in-depth，
+  // 即便将来误用非原子 pipeline 也不会产生脏索引。
+  const tx = redis.multi();
+  tx.set(workItemKey(workItem.workItemId), workItem);
   if (!previous) {
-    await redis.lpush(WORKITEMS_LIST, workItem.workItemId);
+    tx.lpush(WORKITEMS_LIST, workItem.workItemId);
   }
   // 维护"活跃"列表：终态移出，非终态移入
   if (TERMINAL_STATUSES.includes(workItem.status)) {
-    await redis.lrem(WORKITEMS_ACTIVE_LIST, 0, workItem.workItemId);
+    tx.lrem(WORKITEMS_ACTIVE_LIST, 0, workItem.workItemId);
   } else if (!previous) {
-    await redis.lpush(WORKITEMS_ACTIVE_LIST, workItem.workItemId);
+    tx.lpush(WORKITEMS_ACTIVE_LIST, workItem.workItemId);
   }
   // 状态索引：状态迁移时必须从旧状态索引移除，否则已迁移 WorkItem 残留在旧索引，
   // listWorkItems({status}) 单状态过滤在脏条目超过 limit 时会读到全脏 id、被 re-filter 清空，
   // 返回错误空列表。此处先按 from→to 清旧，再写新（去重 + 保证在列）。
   if (previous && previous.status !== workItem.status) {
-    await redis.lrem(workItemStateIndexKey(previous.status), 0, workItem.workItemId);
+    tx.lrem(workItemStateIndexKey(previous.status), 0, workItem.workItemId);
   }
-  await redis.lrem(workItemStateIndexKey(workItem.status), 0, workItem.workItemId);
-  await redis.lpush(workItemStateIndexKey(workItem.status), workItem.workItemId);
+  tx.lrem(workItemStateIndexKey(workItem.status), 0, workItem.workItemId);
+  tx.lpush(workItemStateIndexKey(workItem.status), workItem.workItemId);
+  await tx.exec();
 }
 
 export async function getWorkItemById(workItemId: string): Promise<WorkItem | null> {
@@ -1255,6 +1408,207 @@ export async function findRecentContentFeedback(
 }
 
 // ---------------------------------------------------------------------------
+// ContentTelemetry —— 内容阅读深度遥测存储（P3-A）
+//
+// 与 ContentFeedback 分开存储/计算（不合并分母）。支持真实决策：
+// "哪篇内容读者读到哪 / 是否读完 → 优先改进哪篇"。
+//
+// Key 约定（无 `match:` 前缀，与 ContentFeedback 同族）：
+//   telemetry:event:{eventId}            单条事件
+//   telemetry:recent                     最近事件索引（LPUSH id + LTRIM 2000）
+//   telemetry:content:{contentId}        按内容索引（供 hit-rate readingOutcome 消费）
+// ---------------------------------------------------------------------------
+
+function contentTelemetryKey(eventId: string): string {
+  return `telemetry:event:${eventId}`;
+}
+function contentTelemetryByContentKey(contentId: string): string {
+  return `telemetry:content:${contentId}`;
+}
+const CONTENT_TELEMETRY_RECENT = 'telemetry:recent';
+
+/**
+ * 生产等价存储验证键名真相源（与 WORKITEM_REDIS_KEYS / CONTENT_FEEDBACK_REDIS_KEYS 同模式）。
+ */
+export const CONTENT_TELEMETRY_REDIS_KEYS = {
+  event: contentTelemetryKey,
+  recent: CONTENT_TELEMETRY_RECENT,
+  byContent: contentTelemetryByContentKey,
+} as const;
+
+// ---------------------------------------------------------------------------
+// P4 Contributor 对象级授权 + 操作审计存储（spec §29）
+//
+// Key 约定：
+//   object-grant:{grantId}                单条授权
+//   object-grant:by-grantee:{username}    某用户的所有授权（按 resourceType 可再过滤）
+//   action-audit:recent                   最近审计（LPUSH + LTRIM）
+// ---------------------------------------------------------------------------
+
+const memoryObjectGrants = new Map<string, import('@/stores/ports').ObjectGrant>();
+const memoryActionAudit = new Map<string, import('@/stores/ports').ActionAuditEntry>();
+
+function objectGrantKey(grantId: string): string {
+  return `object-grant:${grantId}`;
+}
+function objectGrantByGranteeKey(username: string): string {
+  return `object-grant:by-grantee:${username}`;
+}
+const ACTION_AUDIT_RECENT = 'action-audit:recent';
+
+/** 仅测试用：清空内存授权与审计。 */
+export function __resetMemoryObjectGrants(): void {
+  memoryObjectGrants.clear();
+  memoryActionAudit.clear();
+}
+
+export async function saveObjectGrant(grant: import('@/stores/ports').ObjectGrant): Promise<void> {
+  memoryObjectGrants.set(grant.grantId, grant);
+  const redis = getRedis();
+  if (!redis) return;
+  const tx = redis.multi();
+  tx.set(objectGrantKey(grant.grantId), grant);
+  tx.lpush(objectGrantByGranteeKey(grant.grantee), grant.grantId);
+  await tx.exec();
+}
+
+export async function findObjectGrantsByGrantee(
+  username: string,
+  resourceType?: string,
+): Promise<import('@/stores/ports').ObjectGrant[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(objectGrantByGranteeKey(username), 0, 199);
+  } else {
+    ids = [...memoryObjectGrants.values()].filter(g => g.grantee === username).map(g => g.grantId);
+  }
+  const fetch = redis
+    ? (await Promise.all(ids.map(id => redis!.get<import('@/stores/ports').ObjectGrant>(objectGrantKey(id)))))
+        .filter((g): g is import('@/stores/ports').ObjectGrant => g !== null)
+    : ids.map(id => memoryObjectGrants.get(id)).filter((g): g is import('@/stores/ports').ObjectGrant => Boolean(g));
+  return fetch.filter(g => g.grantee === username && (!resourceType || g.resourceType === resourceType));
+}
+
+export async function revokeObjectGrant(grantId: string): Promise<void> {
+  const existing = memoryObjectGrants.get(grantId);
+  memoryObjectGrants.delete(grantId);
+  const redis = getRedis();
+  if (!redis) return;
+  const current = await redis.get<import('@/stores/ports').ObjectGrant>(objectGrantKey(grantId));
+  const tx = redis.multi();
+  tx.del(objectGrantKey(grantId));
+  if (current ?? existing) {
+    tx.lrem(objectGrantByGranteeKey((current ?? existing)!.grantee), 0, grantId);
+  }
+  await tx.exec();
+}
+
+export async function saveActionAudit(entry: import('@/stores/ports').ActionAuditEntry): Promise<void> {
+  memoryActionAudit.set(entry.auditId, entry);
+  const redis = getRedis();
+  if (!redis) return;
+  const tx = redis.multi();
+  tx.set(`action-audit:${entry.auditId}`, entry);
+  tx.lpush(ACTION_AUDIT_RECENT, entry.auditId);
+  tx.ltrim(ACTION_AUDIT_RECENT, 0, 999);
+  await tx.exec();
+}
+
+export async function findRecentActionAudit(limit = 100): Promise<import('@/stores/ports').ActionAuditEntry[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(ACTION_AUDIT_RECENT, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryActionAudit.values()]
+      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+      .slice(0, limit)
+      .map(e => e.auditId);
+  }
+  if (redis) {
+    const items = await Promise.all(ids.map(id => redis!.get<import('@/stores/ports').ActionAuditEntry>(`action-audit:${id}`)));
+    return items.filter((e): e is import('@/stores/ports').ActionAuditEntry => e !== null)
+      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  }
+  return ids.map(id => memoryActionAudit.get(id)).filter((e): e is import('@/stores/ports').ActionAuditEntry => Boolean(e))
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+}
+
+/** 仅测试用：清空内存 ContentTelemetry，不触碰 Redis。 */
+export function __resetMemoryContentTelemetry(): void {
+  memoryContentTelemetry.clear();
+}
+
+function telemetryInRange(event: ContentTelemetryEvent, range?: { from?: string; to?: string }): boolean {
+  if (!range) return true;
+  if (range.from && event.createdAt < range.from) return false;
+  if (range.to && event.createdAt > range.to) return false;
+  return true;
+}
+
+async function fetchTelemetryByIds(ids: string[]): Promise<ContentTelemetryEvent[]> {
+  const redis = getRedis();
+  if (redis) {
+    const items = await Promise.all(ids.map(id => redis!.get<ContentTelemetryEvent>(contentTelemetryKey(id))));
+    return items.filter((e): e is ContentTelemetryEvent => e !== null);
+  }
+  return ids.map(id => memoryContentTelemetry.get(id)).filter((e): e is ContentTelemetryEvent => e !== null);
+}
+
+export async function saveContentTelemetry(event: ContentTelemetryEvent): Promise<void> {
+  memoryContentTelemetry.set(event.eventId, event);
+  const redis = getRedis();
+  if (!redis) return;
+  // P0-B02 同款 MULTI 原子事务：实体 + recent 索引 + by-content 索引一起提交，
+  // 避免 set 后 lpush 前失败留下"实体已写但索引丢"的不一致。
+  const tx = redis.multi();
+  tx.set(contentTelemetryKey(event.eventId), event);
+  tx.lpush(CONTENT_TELEMETRY_RECENT, event.eventId);
+  tx.ltrim(CONTENT_TELEMETRY_RECENT, 0, 1999);
+  tx.lpush(contentTelemetryByContentKey(event.contentId), event.eventId);
+  await tx.exec();
+}
+
+export async function findContentTelemetryByContent(
+  contentId: string,
+  range?: { from?: string; to?: string },
+): Promise<ContentTelemetryEvent[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(contentTelemetryByContentKey(contentId), 0, 999);
+  } else {
+    ids = [...memoryContentTelemetry.values()]
+      .filter(e => e.contentId === contentId)
+      .map(e => e.eventId);
+  }
+  const items = await fetchTelemetryByIds(ids);
+  return items.filter(e => e.contentId === contentId && telemetryInRange(e, range));
+}
+
+export async function findRecentContentTelemetry(
+  range?: { from?: string; to?: string },
+  limit = 2000,
+): Promise<ContentTelemetryEvent[]> {
+  const redis = getRedis();
+  let ids: string[];
+  if (redis) {
+    ids = await redis.lrange<string>(CONTENT_TELEMETRY_RECENT, 0, Math.max(0, limit - 1));
+  } else {
+    ids = [...memoryContentTelemetry.values()]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit)
+      .map(e => e.eventId);
+  }
+  const items = await fetchTelemetryByIds(ids);
+  return items
+    .filter(e => telemetryInRange(e, range))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
 // AssetEvidenceLink —— 资产晋升证据链存储（P2-B）
 //
 // Key 约定：
@@ -1349,10 +1703,24 @@ export async function saveLearningRequest(request: LearningRequest): Promise<voi
   memoryLearningRequests.set(request.requestId, request);
   const redis = getRedis();
   if (!redis) return;
-  await redis.set(learningRequestKey(request.requestId), request);
-  await redis.lpush(learningRequestByStatusKey(request.status), request.requestId);
-  await redis.lpush(LEARNING_REQUEST_RECENT, request.requestId);
-  await redis.ltrim(LEARNING_REQUEST_RECENT, 0, 499);
+
+  // previous 在事务外读取（Upstash MULTI 不支持事务内读用于分支判断）。
+  const previous = await redis.get<LearningRequest>(learningRequestKey(request.requestId));
+
+  // P0-B02：实体 + 索引写入放进单个 MULTI/EXEC 原子事务（与 saveWorkItem 同策略）。
+  // 同时修复此前的确定性脏索引 bug：状态迁移时未从旧 by-status 索引移除，
+  // 与第十四轮前的 saveWorkItem 同形——findLearningRequestsByStatus 单状态过滤
+  // 在脏条目超过 lrange 上限时会读到全脏 id、被 re-filter 清空，返回错误空列表。
+  const tx = redis.multi();
+  tx.set(learningRequestKey(request.requestId), request);
+  if (previous && previous.status !== request.status) {
+    tx.lrem(learningRequestByStatusKey(previous.status), 0, request.requestId);
+  }
+  tx.lrem(learningRequestByStatusKey(request.status), 0, request.requestId);
+  tx.lpush(learningRequestByStatusKey(request.status), request.requestId);
+  tx.lpush(LEARNING_REQUEST_RECENT, request.requestId);
+  tx.ltrim(LEARNING_REQUEST_RECENT, 0, 499);
+  await tx.exec();
 }
 
 export async function getLearningRequestById(requestId: string): Promise<LearningRequest | null> {

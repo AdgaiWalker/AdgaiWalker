@@ -51,10 +51,21 @@ test.describe.serial('P2-B 资产生命周期', () => {
     expect(blocked.status).toBe(409);
     expect(blocked.body.code).toBe('missing-evidence');
 
-    // 带 Outcome 证据 → 201
+    // 带 Outcome 证据 + 完整注册护栏（边界/反例/验证集） → 201
     const ok = await apiCall(page, 'POST', '/api/admin/assets/promote', {
       assetKind: 'skill', assetId: 'skill-e2e-1', toStage: 'validated',
       sourceOutcomeIds: ['outcome-e2e-1'], reason: '有 Outcome 支撑',
+      skillRegistration: {
+        applicableBoundary: 'E2E 测试边界',
+        failureBoundary: 'E2E 非问题域',
+        negativeExamples: ['反例1'],
+        evalSet: [
+          { input: 'a', expectedOutput: 'b', category: 'normal' },
+          { input: 'c', expectedOutput: 'd', category: 'boundary' },
+          { input: 'e', expectedOutput: 'f', category: 'reject' },
+          { input: 'g', expectedOutput: 'h', category: 'failure' },
+        ],
+      },
     });
     expect(ok.status).toBe(201);
     expect(ok.body.link.sourceOutcomeIds).toEqual(['outcome-e2e-1']);
