@@ -2458,3 +2458,23 @@ Reality deviation:
 
 Commit: 50367d9 + bec6b20（已在 main）
 ```
+### 2026-06-21 合并后真实性审查收口
+
+```text
+Task ID: UX0-09 / P0-01 follow-up
+Status: completed
+
+发现:
+  /admin/insights 仍展示无事实源的静态访问量、来源、流失率、文章热度、反馈聚类与 AI 优先级。
+
+完成:
+  [x] 删除所有静态指标与无证据 AI 建议
+  [x] 只读取真实 NeedCaseStats / TopicCandidate
+  [x] 从待复盘需求、未解决反馈、开放选题生成可追溯动作
+  [x] 未采集的功能使用、来源、漏斗、全站热度明确显示“未采集”
+  [x] 洞察只归需求模块，移除创作栏重复入口
+  [x] 新增 E2E 防止旧伪数据回归
+
+验证:
+  npx playwright test tests/e2e/admin-shell-unification.spec.ts = 3 passed（包含先红后绿证据）
+```
