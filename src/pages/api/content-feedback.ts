@@ -13,6 +13,7 @@
 import type { APIRoute } from 'astro';
 
 import { createContentFeedbackService } from '@/services/content-feedback.service';
+import { consumeRateLimit } from '@/lib/rate-limiter';
 import type { ContentFeedbackSignal } from '@/stores/ports';
 
 export const prerender = false;
@@ -20,6 +21,8 @@ export const prerender = false;
 const VALID_SIGNALS: ContentFeedbackSignal[] = ['useful', 'needs-more', 'outdated'];
 const MAX_NOTE_LENGTH = 240;
 const MAX_BODY_BYTES = 4 * 1024; // 4KB，防止超大请求体
+// P1-A04：基础频率限流 —— 每个 IP 哈希 60s 内最多 5 条反馈（不用 IP 明文长期识别）
+const RATE_LIMIT_CONFIG = { windowSeconds: 60, max: 5 };
 
 const STATUS_BY_CODE: Record<string, number> = {
   ok: 201,
@@ -41,6 +44,25 @@ export const POST: APIRoute = async ({ request }) => {
   const contentLength = Number(request.headers.get('content-length') ?? 0);
   if (contentLength > MAX_BODY_BYTES) {
     return json({ error: '请求体过大。' }, 413);
+  }
+
+  // P1-A04：基础频率限流（IP 哈希 + 滚动窗口，不用 IP 明文长期识别）
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? request.headers.get('x-real-ip')
+    ?? 'unknown';
+  const rateLimit = await consumeRateLimit('content-feedback', clientIp, RATE_LIMIT_CONFIG);
+  if (!rateLimit.allowed) {
+    return new Response(
+      JSON.stringify({ error: '提交过于频繁，请稍后再试。', code: 'rate-limited' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'Retry-After': String(rateLimit.retryAfter),
+        },
+      },
+    );
   }
 
   let body: Record<string, unknown>;

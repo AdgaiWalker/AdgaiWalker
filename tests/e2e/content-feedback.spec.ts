@@ -13,6 +13,15 @@ import { expect, test, type Page } from 'playwright/test';
 const FIXED_POST = '/posts/side-hustle-blueprint';
 const CONTENT_ID = 'side-hustle-blueprint';
 
+async function loginAsOwner(page: Page): Promise<void> {
+  await page.goto('/');
+  const ok = await page.evaluate(async () => {
+    const res = await fetch('/api/auth/dev-preview', { method: 'POST' });
+    return res.ok;
+  });
+  expect(ok).toBe(true);
+}
+
 async function openFeedbackFresh(page: Page): Promise<void> {
   // 先清 localStorage 再导航，避免上一次测试的 DONE 标记隐藏表单
   await page.addInitScript((id) => {
@@ -91,4 +100,26 @@ test('手机宽度反馈区无水平溢出', async ({ page }) => {
   expect(box).toBeTruthy();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(375 + 1); // 允许 1px 容差
+});
+
+test('后台命中率可打开原始反馈列表，说明默认已脱敏', async ({ page }) => {
+  const submitted = await page.request.post('/api/content-feedback', {
+    headers: { 'x-forwarded-for': `203.0.113.${Date.now() % 250}` },
+    data: {
+      contentId: CONTENT_ID,
+      signal: 'needs-more',
+      note: '请补一个例子，我的邮箱是 walker-admin@example.com',
+      consentForAnalysis: true,
+    },
+  });
+  expect(submitted.status()).toBe(201);
+
+  await loginAsOwner(page);
+  await page.goto('/admin/hit-rate?view=outcome');
+  const details = page.locator(`[data-feedback-details="${CONTENT_ID}"]`).first();
+  await expect(details).toBeVisible();
+  await details.locator('summary').click();
+  await expect(details).toContainText('仅显示服务端已脱敏后的反馈说明');
+  await expect(details).toContainText('[邮箱已隐藏]');
+  await expect(details).not.toContainText('walker-admin@example.com');
 });

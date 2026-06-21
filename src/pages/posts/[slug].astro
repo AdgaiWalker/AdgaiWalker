@@ -17,7 +17,7 @@ import ResourceCard from '../../components/ResourceCard.astro';
 import { POSTS, buildPostPath } from '@/shared/routes';
 import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/knowledge/content';
 import { getRelatedPosts, summarizeArticleBody } from '@/knowledge/posts';
-import { PLATFORM_ICON_MAP, CHARS_PER_MINUTE_ZH } from '@/shared/constants';
+import { CHARS_PER_MINUTE_ZH } from '@/shared/constants';
 import { formatDateLocale } from '@/shared/format';
 
 import { render, type CollectionEntry } from 'astro:content';
@@ -26,10 +26,9 @@ import { Icon } from 'astro-icon/components';
 
 export const prerender = true;
 
-type ArticleResource = CollectionEntry<'log'>['data']['resources'][number];
-type ArticleVideo = CollectionEntry<'log'>['data']['videos'][number];
+	type ArticleResource = CollectionEntry<'log'>['data']['resources'][number];
 
-export async function getStaticPaths() {
+	export async function getStaticPaths() {
   const entries = await getPublishedPosts();
 
   return entries.map(entry => ({
@@ -53,7 +52,6 @@ const { description, readingTime } = summarizeArticleBody(rawBody, CHARS_PER_MIN
 const coverImage = entry.data.cover;
 const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
 
-const videos = entry.data.videos || [];
 const resources = entry.data.resources || [];
 
 // 版本链 & 系列导航
@@ -140,32 +138,7 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
         与底部 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈 */}
     <BlockFeedback contentId={entry.id} />
 
-    {/* 配套视频 */}
-    {videos.length > 0 && (
-      <section class="article-section">
-        <h2 class="section-heading">
-          <Icon name="lucide:video" width={20} height={20} class="section-icon" />
-          配套视频
-        </h2>
-        <div class="video-grid">
-          {videos.map((vid: ArticleVideo) => (
-            <a href={vid.url} target="_blank" rel="noopener noreferrer" class="video-card">
-              <div class="video-card-inner">
-                <div class="video-platform">
-                  <Icon name={PLATFORM_ICON_MAP[vid.platform] || 'lucide:circle-play'} width={18} height={18} />
-                </div>
-                <div class="video-info">
-                  <div class="video-title">{vid.title || '观看视频'}</div>
-                  <div class="video-platform-name">{vid.platform}</div>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
-    )}
-
-    {/* 相关资源 */}
+	    {/* 相关资源 */}
     {resources.length > 0 && (
       <section class="article-section">
         <h2 class="section-heading">

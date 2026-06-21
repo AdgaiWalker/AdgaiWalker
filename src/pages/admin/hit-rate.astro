@@ -47,6 +47,11 @@ const outcomeSummaries = buildContentOutcomeSummaries({
   needCases,
   contentFeedbackByContent,
 });
+const CONTENT_FEEDBACK_LABEL: Record<ContentFeedbackEvent['signal'], string> = {
+  useful: '有用',
+  'needs-more': '需补充',
+  outdated: '已过时',
+};
 // 有反馈的数据排前（service 已排序），取有任意信号的
 const summariesWithSignal = outcomeSummaries.filter(
   s => s.matchOutcome.responded > 0 || s.contentOutcome.totalFeedback > 0,
@@ -108,6 +113,15 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
     .outcome-label { font-size: 0.7rem; font-weight: 750; color: #57534e; margin-bottom: 0.4rem; }
     .outcome-body { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .outcome-null { font-size: 0.78rem; color: #a8a29e; }
+    .feedback-details { margin-top: 0.65rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; overflow: hidden; }
+    .feedback-details summary { cursor: pointer; padding: 0.65rem 0.8rem; color: #57534e; font-size: 0.78rem; font-weight: 800; list-style-position: inside; }
+    .feedback-details[open] summary { border-bottom: 1px solid rgba(0,0,0,0.05); }
+    .feedback-privacy { padding: 0 0.8rem 0.65rem; color: #a8a29e; font-size: 0.72rem; line-height: 1.6; }
+    .feedback-list { display: grid; gap: 0.5rem; padding: 0 0.8rem 0.8rem; }
+    .feedback-item { padding: 0.65rem; border-radius: 8px; background: #fafaf9; border: 1px solid rgba(0,0,0,0.04); }
+    .feedback-item-head { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.35rem; }
+    .feedback-note { color: #44403c; font-size: 0.8rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .feedback-note.empty-note { color: #a8a29e; }
     @media (max-width: 760px) {
       .admin-bar { flex-direction: column; align-items: flex-start; }
       .admin-main { padding: 1.25rem 1rem 3rem; }
@@ -186,6 +200,10 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
         <section class="hit-list">
           {summariesWithSignal.map(summary => (
             <article class="hit-row">
+              {(() => {
+                const feedbackList = contentFeedbackByContent.get(summary.contentId) ?? [];
+                return (
+                  <>
               <div class="hit-head">
                 <a class="hit-title" href={summary.href}>{summary.title}</a>
                 {summary.hasSourceTopic
@@ -223,6 +241,30 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
                   <span class="hit-chip">统计范围 {new Date(summary.timeRange.from).toLocaleDateString('zh-CN')} ~ {new Date(summary.timeRange.to).toLocaleDateString('zh-CN')}</span>
                 </div>
               )}
+              {feedbackList.length > 0 && (
+                <details class="feedback-details" data-feedback-details={summary.contentId}>
+                  <summary>打开原始反馈列表（{feedbackList.length}）</summary>
+                  <p class="feedback-privacy">仅显示服务端已脱敏后的反馈说明；不展示访客身份、IP、联系方式原文或其他私密原始字段。</p>
+                  <div class="feedback-list">
+                    {feedbackList.map(feedback => (
+                      <div class="feedback-item" data-feedback-id={feedback.feedbackId}>
+                        <div class="feedback-item-head">
+                          <span class="hit-chip">{CONTENT_FEEDBACK_LABEL[feedback.signal]}</span>
+                          <span class="hit-chip">{new Date(feedback.createdAt).toLocaleString('zh-CN')}</span>
+                          <span class="hit-chip">{feedback.environment}</span>
+                          <span class="hit-chip">{feedback.consentForAnalysis ? '可用于分析' : '仅作单条反馈'}</span>
+                        </div>
+                        {feedback.note
+                          ? <p class="feedback-note">{feedback.note}</p>
+                          : <p class="feedback-note empty-note">没有补充说明。</p>}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+                  </>
+                );
+              })()}
             </article>
           ))}
         </section>

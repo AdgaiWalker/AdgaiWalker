@@ -16,7 +16,8 @@ import { compactText, redactSensitiveText } from '@/agent/privacy';
 import { getRedis } from '@/conversation/store';
 import { createContentFeedbackStore } from '@/stores/content-feedback.store';
 import { resolveStorageMode } from '@/lib/storage-mode';
-import type { ContentFeedbackEvent, ContentFeedbackSignal } from '@/stores/ports';
+import type { StorageMode } from '@/lib/storage-mode';
+import type { ContentFeedbackEvent, ContentFeedbackRepositoryPort, ContentFeedbackSignal } from '@/stores/ports';
 
 import type {
   ContentFeedbackResult,
@@ -27,12 +28,19 @@ import type {
 const VALID_SIGNALS: ContentFeedbackSignal[] = ['useful', 'needs-more', 'outdated'];
 const MAX_NOTE_LENGTH = 240;
 
+function resolveContentFeedbackStorageMode(): StorageMode {
+  return resolveStorageMode({ hasRedis: Boolean(getRedis()) });
+}
+
 export class ContentFeedbackService implements ContentFeedbackServicePort {
-  constructor() {
-    this.store = createContentFeedbackStore();
+  constructor(options?: { store?: ContentFeedbackRepositoryPort; storageMode?: StorageMode | (() => StorageMode) }) {
+    this.store = options?.store ?? createContentFeedbackStore();
+    const mode = options?.storageMode;
+    this.resolveMode = typeof mode === 'function' ? mode : () => mode ?? resolveContentFeedbackStorageMode();
   }
 
   private readonly store;
+  private readonly resolveMode;
 
   async submit(input: ContentFeedbackSubmitInput): Promise<ContentFeedbackResult> {
     if (typeof input.contentId !== 'string' || !input.contentId.trim()) {
@@ -58,8 +66,7 @@ export class ContentFeedbackService implements ContentFeedbackServicePort {
     }
 
     // 生产缺 Redis 不静默丢反馈
-    const mode = resolveStorageMode({ hasRedis: Boolean(getRedis()) });
-    if (mode === 'unavailable') {
+    if (this.resolveMode() === 'unavailable') {
       return { ok: false, code: 'storage-unavailable', message: '存储不可用，反馈未保存。' };
     }
 
@@ -98,6 +105,6 @@ export class ContentFeedbackService implements ContentFeedbackServicePort {
   }
 }
 
-export function createContentFeedbackService(): ContentFeedbackServicePort {
-  return new ContentFeedbackService();
+export function createContentFeedbackService(options?: ConstructorParameters<typeof ContentFeedbackService>[0]): ContentFeedbackServicePort {
+  return new ContentFeedbackService(options);
 }

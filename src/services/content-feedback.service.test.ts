@@ -118,4 +118,15 @@ describe('ContentFeedbackService（P1-A03）', () => {
     const result = await svc.submit({ contentId: 'real-slug', signal: 'love' as never, consentForAnalysis: true });
     expect(result.code).toBe('invalid-input');
   });
+
+  it('storage-unavailable：存储不可用时拒绝保存反馈', async () => {
+    vi.mocked(getPublishedContentItems).mockResolvedValue([makeContent()]);
+    const svc = createContentFeedbackService({ storageMode: 'unavailable' });
+
+    const result = await svc.submit({ contentId: 'real-slug', signal: 'useful', consentForAnalysis: true });
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('storage-unavailable');
+    await expect(svc.findByContent('real-slug')).resolves.toHaveLength(0);
+  });
 });
