@@ -220,6 +220,7 @@ const NAV = [
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
+    const tell = (message) => window.WalkerAdminUI?.notify({ title: '操作结果', message }) ?? Promise.resolve();
 
     document.getElementById('new-rule-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -227,7 +228,7 @@ const NAV = [
       const description = (fd.get('description') || '').toString().trim();
       if (!description) return;
       const { ok, data } = await post('/api/admin/rules', { description, note: (fd.get('note') || '').toString().trim() || undefined });
-      if (ok && data.ok) { window.location.reload(); } else { alert(data.error || '保存失败'); }
+      if (ok && data.ok) { window.location.reload(); } else { await tell(data.error || '保存失败'); }
     });
 
     document.querySelectorAll('[data-toggle="accuracy"]').forEach((btn) => {
@@ -246,16 +247,16 @@ const NAV = [
         if (action === 'advance') {
           const next = btn.dataset.next;
           const { ok, data } = await post('/api/admin/rules?action=status', { ruleId, status: next });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'retire') {
           const { ok, data } = await post('/api/admin/rules?action=status', { ruleId, status: 'retired' });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'accuracy') {
           const input = document.querySelector(`[data-accuracy-input="${ruleId}"]`);
           const pct = Number(input?.value);
-          if (Number.isNaN(pct) || pct < 0 || pct > 100) { alert('请输入 0-100 的百分比'); return; }
+          if (Number.isNaN(pct) || pct < 0 || pct > 100) { await tell('请输入 0-100 的百分比'); return; }
           const { ok, data } = await post('/api/admin/rules', { ruleId, accuracy: pct / 100 });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '保存失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
         }
       });
     });

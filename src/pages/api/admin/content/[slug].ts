@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import matter from 'gray-matter';
 import { ContentStoreError } from '@/lib/admin-content-store';
 import { isAdmin } from '@/lib/admin-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import { getTopicCandidateById, updateTopicCandidateStatus } from '@/conversation/store';
 import { resolveContentVisibility } from '@/knowledge/visibility';
 import {
@@ -160,6 +162,16 @@ export const DELETE: APIRoute = async ({ params, request }) => {
   const store = getContentStore();
   try {
     const file = await store.read(path);
+    const actor = await resolveAdminActor(request);
+    const audit = await requireHighRiskAudit({
+      actor,
+      action: 'content.delete',
+      targetType: 'content',
+      targetId: slug,
+      reason: '删除内容文件会移除公开或草稿内容，需要审计成功后执行。',
+      detail: { path },
+    });
+    if (!audit.ok) return jsonResponse({ error: audit.reason, code: audit.code }, audit.status);
     await store.delete(path, file.sha, `content: delete ${slug}`);
     return jsonResponse({ ok: true, slug });
   } catch (error) {

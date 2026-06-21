@@ -255,6 +255,7 @@ const NAV = [
     const post = (url, body) => fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     }).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
+    const tell = (message) => window.WalkerAdminUI?.notify({ title: '操作结果', message }) ?? Promise.resolve();
 
     document.getElementById('new-exp-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -263,7 +264,7 @@ const NAV = [
       payload.rawQuote = (payload.rawQuote || '').toString().trim();
       if (!payload.rawQuote) return;
       const { ok, data } = await post('/api/admin/experience-events', payload);
-      if (ok && data.ok) window.location.reload(); else alert(data.error || '保存失败');
+      if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
     });
 
     document.querySelectorAll('[data-toggle="reflection"]').forEach((btn) => {
@@ -282,13 +283,13 @@ const NAV = [
         if (action === 'pattern') {
           const next = card.dataset.pattern !== '1';
           const { ok, data } = await post('/api/admin/experience-events?action=update', { experienceId: expId, patternMarked: next });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '操作失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'reflection') {
           const input = document.querySelector(`[data-reflection-input="${expId}"]`);
           const reflection = (input?.value || '').toString().trim();
           if (!reflection) return;
           const { ok, data } = await post('/api/admin/experience-events?action=update', { experienceId: expId, reflection });
-          if (ok && data.ok) window.location.reload(); else alert(data.error || '保存失败');
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
         }
       });
     });
@@ -300,7 +301,7 @@ const NAV = [
         const maturity = sel.value;
         if (!expId || !maturity) return;
         const { ok, data } = await post('/api/admin/experience-events?action=update', { experienceId: expId, maturity });
-        if (ok && data.ok) window.location.reload(); else alert(data.error || '保存失败');
+        if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
       });
     });
 

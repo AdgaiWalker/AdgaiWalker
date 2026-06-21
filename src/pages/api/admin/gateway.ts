@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '@/lib/admin-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import {
   PROVIDER_PRESETS,
   type GatewayConfig,
@@ -100,6 +102,16 @@ export const PUT: APIRoute = async ({ request }) => {
     return json({ error: '没有有效的配置更新。' }, 400);
   }
 
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'gateway.config.update',
+    targetType: 'ai-gateway',
+    reason: '修改 AI Gateway 配置会影响所有 AI 调用。',
+    detail: { fields: Object.keys(updates) },
+  });
+  if (!audit.ok) return json({ error: audit.reason, code: audit.code }, audit.status);
+
   const updated = await updateGatewayConfig(updates);
   // 返回时隐藏 apiKey 中间部分
   return json({ ok: true, config: maskApiKey(updated) });
@@ -138,6 +150,15 @@ export const POST: APIRoute = async ({ request }) => {
 export const PATCH: APIRoute = async ({ request }) => {
   if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
 
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'gateway.config.undo',
+    targetType: 'ai-gateway',
+    reason: '撤销 AI Gateway 配置会影响后续 AI 调用。',
+  });
+  if (!audit.ok) return json({ error: audit.reason, code: audit.code }, audit.status);
+
   const restored = await undoGatewayConfig();
   if (!restored) {
     return json({ error: '没有可撤销的配置。' }, 404);
@@ -149,6 +170,15 @@ export const PATCH: APIRoute = async ({ request }) => {
 /** DELETE — 重置 */
 export const DELETE: APIRoute = async ({ request }) => {
   if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'gateway.config.reset',
+    targetType: 'ai-gateway',
+    reason: '重置 AI Gateway 配置会影响所有 AI 调用。',
+  });
+  if (!audit.ok) return json({ error: audit.reason, code: audit.code }, audit.status);
 
   const config = await resetGatewayConfig();
   return json({ ok: true, config: maskApiKey(config) });

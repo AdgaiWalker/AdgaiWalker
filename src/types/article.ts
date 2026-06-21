@@ -1,5 +1,5 @@
 /**
- * 文章条目 — ArticleNav 和 ArticleLayout 共享的轻量类型
+ * 文章条目 — ArticleNav 共享的轻量类型
  */
 export interface ArticleEntry {
   id: string;

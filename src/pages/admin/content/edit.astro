@@ -155,13 +155,13 @@ aiUsePolicy:
     <InlineEditor mode="standalone" />
   </div>
 
-  <script is:inline define:vars={{ originalSlug: slug, draftTemplate }}>
-    window.__ieStandalone = { originalSlug, draftTemplate };
+  <script is:inline define:vars={{ originalSlug: slug, draftTemplate, topicIdParam: topicId ?? '' }}>
+    window.__ieStandalone = { originalSlug, draftTemplate, topicIdParam };
   </script>
   <script>
     import { initStandaloneEditor } from '@/scripts/inline-editor';
     const cfg = window.__ieStandalone;
-    if (cfg) initStandaloneEditor(cfg.originalSlug || '', cfg.draftTemplate);
+    if (cfg) initStandaloneEditor(cfg.originalSlug || '', cfg.draftTemplate, cfg.topicIdParam || undefined);
   </script>
 </body>
 </html>

@@ -9,6 +9,7 @@ interface NavItem {
   href: string;
   icon: string;
   disabled?: boolean;
+  badge?: number;
 }
 
 interface NavDomain extends NavItem {
@@ -19,7 +20,7 @@ const DOMAINS: NavDomain[] = [
   { id: 'workbench', label: '工作台', href: '/admin', icon: 'house' },
   { id: 'needs', label: '需求', href: '/admin/review', icon: 'circle-dot' },
   { id: 'creation', label: '创作', href: '/admin/content', icon: 'pen-line' },
-  { id: 'assets', label: '资产', href: '/admin/experiences', icon: 'package' },
+  { id: 'assets', label: '资产', href: '/admin/assets', icon: 'package' },
   { id: 'system', label: '系统', href: '/admin/ai-gateway', icon: 'settings-2' },
 ];
 
@@ -28,7 +29,7 @@ const SECONDARY: Record<NavDomain['id'], NavItem[]> = {
     { label: '今日', href: '/admin', icon: 'sun' },
     { label: '决定', href: '/admin?view=decisions', icon: 'list-checks' },
     { label: '动作', href: '/admin?view=actions', icon: 'play-circle' },
-    { label: '结果', href: '/admin?view=outcomes', icon: 'circle-check' },
+    { label: '结果', href: '/admin/outcomes', icon: 'circle-check' },
   ],
   needs: [
     { label: '需求收件箱', href: '/admin/review', icon: 'inbox' },
@@ -43,17 +44,18 @@ const SECONDARY: Record<NavDomain['id'], NavItem[]> = {
     { label: '功能决策', href: '/admin/insights', icon: 'split' },
   ],
   assets: [
+    { label: '资产总览', href: '/admin/assets', icon: 'layout-dashboard' },
     { label: '经验', href: '/admin/experiences', icon: 'notebook-tabs' },
     { label: '规则', href: '/admin/rules', icon: 'git-branch' },
     { label: 'Skill', href: '/admin/skills', icon: 'sparkles' },
-    { label: '学习任务', href: '#learning', icon: 'graduation-cap', disabled: true },
+    { label: '学习任务', href: '/admin/assets?view=learning', icon: 'graduation-cap' },
   ],
   system: [
     { label: 'AI Gateway', href: '/admin/ai-gateway', icon: 'activity' },
     { label: '访问控制', href: '/admin/accounts', icon: 'shield-check' },
     { label: '邀请码', href: '/admin/invite-codes', icon: 'ticket-check' },
     { label: '系统事件', href: '/admin/incidents', icon: 'triangle-alert' },
-    { label: '外观与媒体', href: '#appearance', icon: 'image', disabled: true },
+    { label: '外观与媒体', href: '/admin/appearance', icon: 'image' },
   ],
 };
 
@@ -68,6 +70,7 @@ interface Props {
   systemHealth?: AdminSystemHealth;
   /** 系统健康最近一次检查时间（ISO）；用于侧栏显示「最近检查」 */
   systemHealthCheckedAt?: string;
+  navCounts?: Partial<Record<'today' | 'decisions' | 'actions' | 'outcomes' | 'assetsLearning' | 'incidents', number>>;
 }
 
 const {
@@ -80,6 +83,7 @@ const {
   bannerSub = '部分请求已切换备用路径，建议查看系统事件。',
   systemHealth = 'unknown',
   systemHealthCheckedAt,
+  navCounts = {},
 } = Astro.props;
 
 const systemStatus = getAdminSystemStatus(systemHealth, systemHealthCheckedAt);
@@ -88,17 +92,25 @@ const activeDomain =
   active === '/admin' ? 'workbench' :
   ['/admin/review', '/admin/insights', '/admin/topics', '/admin/hit-rate'].some(path => active.startsWith(path)) ? 'needs' :
   ['/admin/content', '/admin/brief'].some(path => active.startsWith(path)) ? 'creation' :
-  ['/admin/experiences', '/admin/rules', '/admin/skills'].some(path => active.startsWith(path)) ? 'assets' :
+  ['/admin/experiences', '/admin/rules', '/admin/skills', '/admin/assets'].some(path => active.startsWith(path)) ? 'assets' :
   'system';
 
 const currentDomain = DOMAINS.find(item => item.id === activeDomain)!;
-const currentItems = SECONDARY[activeDomain];
+const currentItems = SECONDARY[activeDomain].map(item => {
+  if (item.href === '/admin') return { ...item, badge: navCounts.today };
+  if (item.href === '/admin?view=decisions') return { ...item, badge: navCounts.decisions };
+  if (item.href === '/admin?view=actions') return { ...item, badge: navCounts.actions };
+  if (item.href === '/admin/outcomes') return { ...item, badge: navCounts.outcomes };
+  if (item.href === '/admin/assets?view=learning') return { ...item, badge: navCounts.assetsLearning };
+  if (item.href === '/admin/incidents') return { ...item, badge: navCounts.incidents };
+  return item;
+});
 const currentPath = Astro.url.pathname;
 const currentView = Astro.url.searchParams.get('view');
 const isSecondaryActive = (item: NavItem) => {
   const [path, search = ''] = item.href.split('?');
-  if (activeDomain === 'workbench') {
-    const view = new URLSearchParams(search).get('view');
+  const view = new URLSearchParams(search).get('view');
+  if (view || path === currentPath) {
     return path === currentPath && (view ? view === currentView : !currentView);
   }
   return item.href !== '#' && (active === path || (path !== '/admin' && active.startsWith(path)));
@@ -117,7 +129,7 @@ const isSecondaryActive = (item: NavItem) => {
         {DOMAINS.map(item => {
           const isActive = item.id === activeDomain;
           return (
-            <a class:list={['adm-domain-link', { 'is-active': isActive }]} href={item.href} aria-current={isActive ? 'page' : undefined}>
+            <a class:list={['adm-domain-link', { 'is-active': isActive }]} href={item.href} aria-current={isActive ? 'page' : undefined} data-admin-primary={item.id}>
               <Icon name={`lucide:${item.icon}`} width={22} height={22} />
               <span>{item.label}</span>
             </a>
@@ -165,6 +177,7 @@ const isSecondaryActive = (item: NavItem) => {
             >
               <Icon name={`lucide:${item.icon}`} width={18} height={18} />
               <span>{item.label}</span>
+              {typeof item.badge === 'number' && item.badge > 0 && <small class="adm-nav-badge">{item.badge}</small>}
               {item.disabled && <small>稍后</small>}
             </a>
           );
@@ -208,6 +221,24 @@ const isSecondaryActive = (item: NavItem) => {
     </div>
   </div>
   <button class="adm-shell-backdrop" type="button" aria-label="关闭导航" data-context-close></button>
+  <dialog class="adm-ui-dialog" data-admin-ui-dialog>
+    <form method="dialog" class="adm-ui-dialog-card" data-admin-ui-form>
+      <div>
+        <span class="adm-ui-dialog-kicker" data-admin-ui-kicker>需要确认</span>
+        <h2 data-admin-ui-title>确认操作</h2>
+        <p data-admin-ui-message></p>
+      </div>
+      <label class="adm-ui-dialog-input" data-admin-ui-input-wrap hidden>
+        <span data-admin-ui-input-label>补充说明</span>
+        <input data-admin-ui-input />
+        <textarea data-admin-ui-textarea hidden></textarea>
+      </label>
+      <div class="adm-ui-dialog-actions">
+        <button type="button" data-admin-ui-cancel>取消</button>
+        <button class="is-primary" type="submit" data-admin-ui-confirm>确认</button>
+      </div>
+    </form>
+  </dialog>
 </div>
 
 <script>
@@ -217,6 +248,7 @@ const isSecondaryActive = (item: NavItem) => {
     const abort = new AbortController();
     const { signal } = abort;
     const root = document.querySelector('.adm-root');
+    const previousAdminUI = window.WalkerAdminUI;
     document.querySelector('[data-context-open]')?.addEventListener('click', () => root?.classList.add('is-context-open'), { signal });
     document.querySelectorAll('[data-context-close]').forEach(button => button.addEventListener('click', () => root?.classList.remove('is-context-open'), { signal }));
 
@@ -245,8 +277,90 @@ const isSecondaryActive = (item: NavItem) => {
       window.location.href = '/admin/login';
     }, { signal });
 
+    const dialog = document.querySelector<HTMLDialogElement>('[data-admin-ui-dialog]');
+    const title = document.querySelector<HTMLElement>('[data-admin-ui-title]');
+    const kicker = document.querySelector<HTMLElement>('[data-admin-ui-kicker]');
+    const message = document.querySelector<HTMLElement>('[data-admin-ui-message]');
+    const form = document.querySelector<HTMLFormElement>('[data-admin-ui-form]');
+    const cancel = document.querySelector<HTMLButtonElement>('[data-admin-ui-cancel]');
+    const confirm = document.querySelector<HTMLButtonElement>('[data-admin-ui-confirm]');
+    const inputWrap = document.querySelector<HTMLElement>('[data-admin-ui-input-wrap]');
+    const inputLabel = document.querySelector<HTMLElement>('[data-admin-ui-input-label]');
+    const input = document.querySelector<HTMLInputElement>('[data-admin-ui-input]');
+    const textarea = document.querySelector<HTMLTextAreaElement>('[data-admin-ui-textarea]');
+
+    const runDialog = (options: {
+      mode: 'confirm' | 'prompt' | 'notify';
+      title?: string;
+      message: string;
+      initialValue?: string;
+      placeholder?: string;
+      multiline?: boolean;
+      confirmText?: string;
+      cancelText?: string;
+      tone?: WalkerAdminDialogTone;
+    }) => new Promise<string | boolean | null>(resolve => {
+      if (!dialog || !form || !title || !message || !confirm || !cancel || !inputWrap || !input || !textarea) {
+        resolve(options.mode === 'confirm' ? false : options.mode === 'prompt' ? null : true);
+        return;
+      }
+
+      const isPrompt = options.mode === 'prompt';
+      const isNotify = options.mode === 'notify';
+      dialog.classList.toggle('is-danger', options.tone === 'danger');
+      if (kicker) kicker.textContent = options.tone === 'danger' ? '高风险操作' : isNotify ? '操作结果' : '需要确认';
+      title.textContent = options.title || (isNotify ? '提示' : '确认操作');
+      message.textContent = options.message;
+      confirm.textContent = options.confirmText || (isNotify ? '知道了' : '确认');
+      cancel.textContent = options.cancelText || '取消';
+      cancel.hidden = isNotify;
+      inputWrap.hidden = !isPrompt;
+      input.hidden = Boolean(options.multiline);
+      textarea.hidden = !options.multiline;
+      const activeInput = options.multiline ? textarea : input;
+      activeInput.value = options.initialValue || '';
+      activeInput.placeholder = options.placeholder || '';
+      if (inputLabel) inputLabel.textContent = options.title || '补充说明';
+
+      const cleanup = () => {
+        form.removeEventListener('submit', onSubmit);
+        cancel.removeEventListener('click', onCancel);
+        dialog.removeEventListener('cancel', onNativeCancel);
+        dialog.classList.remove('is-danger');
+      };
+      const finish = (value: string | boolean | null) => {
+        cleanup();
+        if (dialog.open) dialog.close();
+        resolve(value);
+      };
+      const onSubmit = (event: SubmitEvent) => {
+        event.preventDefault();
+        finish(isPrompt ? activeInput.value.trim() : true);
+      };
+      const onCancel = () => finish(isNotify ? true : isPrompt ? null : false);
+      const onNativeCancel = (event: Event) => {
+        event.preventDefault();
+        onCancel();
+      };
+      form.addEventListener('submit', onSubmit, { signal });
+      cancel.addEventListener('click', onCancel, { signal });
+      dialog.addEventListener('cancel', onNativeCancel, { signal });
+      dialog.showModal();
+      window.setTimeout(() => (isPrompt ? activeInput : confirm).focus(), 0);
+    });
+
+    window.WalkerAdminUI = {
+      confirm: async options => Boolean(await runDialog({ mode: 'confirm', ...options })),
+      prompt: async options => {
+        const value = await runDialog({ mode: 'prompt', ...options });
+        return typeof value === 'string' ? value : null;
+      },
+      notify: async options => { await runDialog({ mode: 'notify', ...options }); },
+    };
+
     return () => {
       abort.abort();
+      window.WalkerAdminUI = previousAdminUI;
       root?.classList.remove('is-context-open');
     };
   }

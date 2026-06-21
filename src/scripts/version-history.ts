@@ -79,11 +79,17 @@ async function showVersion(sha: string): Promise<void> {
 
 async function revert(sha: string): Promise<void> {
   if (!currentSlug) return;
-  if (!confirm(`回退到 ${sha.slice(0, 7)}？将以此版本内容创建一次新提交。`)) return;
+  const confirmed = await window.WalkerAdminUI?.confirm({
+    title: '回退内容版本',
+    message: `回退到 ${sha.slice(0, 7)}？将以此版本内容创建一次新提交。`,
+    confirmText: '确认回退',
+    tone: 'danger',
+  });
+  if (!confirmed) return;
   try {
     const verRes = await fetch(`/api/admin/content/${encodeURIComponent(currentSlug)}/version?ref=${encodeURIComponent(sha)}`);
     const verData = await verRes.json();
-    if (verData.error) { alert(`读取版本失败: ${verData.error}`); return; }
+    if (verData.error) { await window.WalkerAdminUI?.notify({ title: '读取版本失败', message: verData.error }); return; }
     const curRes = await fetch(`/api/admin/content/${encodeURIComponent(currentSlug)}`);
     const curData = await curRes.json();
     const putRes = await fetch(`/api/admin/content/${encodeURIComponent(currentSlug)}`, {
@@ -93,14 +99,14 @@ async function revert(sha: string): Promise<void> {
     });
     const putData = await putRes.json();
     if (putRes.ok && putData.ok) {
-      alert('已回退，约 60s 后线上生效。建议刷新页面重新进入编辑态。');
+      await window.WalkerAdminUI?.notify({ title: '已回退', message: '约 60s 后线上生效。建议刷新页面重新进入编辑态。' });
       closeModal();
       window.location.reload();
     } else {
-      alert(`回退失败: ${putData.error || '未知错误'}`);
+      await window.WalkerAdminUI?.notify({ title: '回退失败', message: putData.error || '未知错误' });
     }
   } catch {
-    alert('网络错误');
+    await window.WalkerAdminUI?.notify({ title: '网络错误', message: '网络错误' });
   }
 }
 

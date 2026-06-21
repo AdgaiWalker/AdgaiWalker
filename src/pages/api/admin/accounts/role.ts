@@ -8,6 +8,8 @@ import type { APIRoute } from 'astro';
 
 import { isOwner } from '@/lib/admin-auth';
 import { readSessionId } from '@/lib/account-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import { createAccountService } from '@/services/account.service';
 import { createUserContextService } from '@/services/user-context.service';
 import { createAccountStore } from '@/stores/account.store';
@@ -57,6 +59,17 @@ export const POST: APIRoute = async ({ request }) => {
   if (myUsername && username === myUsername) {
     return json({ ok: false, reason: '不能修改自己的角色。' }, 400);
   }
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'account.role.update',
+    targetType: 'account',
+    targetId: username,
+    reason: `账号角色变更为 ${role}。`,
+    detail: { role },
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
 
   const result = await accountService.setRole(username, role as AccountRole);
   if (!result.ok) return json(result, 400);

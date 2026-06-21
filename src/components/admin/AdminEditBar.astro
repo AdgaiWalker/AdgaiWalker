@@ -193,7 +193,13 @@ const { slug = '', visibility = '' } = Astro.props;
 
     if (!deleteBtn || !status) return;
     deleteBtn.addEventListener('click', async () => {
-      if (!confirm('确定要删除这篇文章吗？此操作不可撤销。')) return;
+      const confirmed = await window.WalkerAdminUI?.confirm({
+        title: '删除文章',
+        message: '确定要删除这篇文章吗？此操作不可撤销。',
+        confirmText: '确认删除',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
       deleteBtn.disabled = true;
       try {
         const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, { method: 'DELETE', signal });

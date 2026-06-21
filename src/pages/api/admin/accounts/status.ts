@@ -6,6 +6,8 @@
 import type { APIRoute } from 'astro';
 
 import { isAdmin } from '@/lib/admin-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
 import { createAccountService } from '@/services/account.service';
 import type { AccountStatus } from '@/stores/ports';
 
@@ -35,6 +37,17 @@ export const POST: APIRoute = async ({ request }) => {
   if (status !== 'active' && status !== 'banned') {
     return json({ ok: false, reason: 'status 必须是 active 或 banned。' }, 400);
   }
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'account.status.update',
+    targetType: 'account',
+    targetId: username,
+    reason: `账号状态变更为 ${status}。`,
+    detail: { status },
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
+
   const result = await accountService.setStatus(username, status as AccountStatus);
   if (!result.ok) {
     return json(result, 400);
