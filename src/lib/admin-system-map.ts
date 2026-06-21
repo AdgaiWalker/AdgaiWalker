@@ -39,7 +39,6 @@ export const ADMIN_SECONDARY_NAV: Readonly<Record<AdminModuleId, readonly AdminN
     { label: '内容', href: '/admin/content', icon: 'files' },
     { label: '创作简报', href: '/admin/brief', icon: 'file-pen-line' },
     { label: '内容命中', href: '/admin/hit-rate', icon: 'target' },
-    { label: '功能决策', href: '/admin/insights', icon: 'split' },
   ],
   assets: [
     { label: '资产总览', href: '/admin/assets', icon: 'layout-dashboard' },

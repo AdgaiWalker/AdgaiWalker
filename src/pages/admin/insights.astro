@@ -1,11 +1,7 @@
 ---
-// /admin/insights — 洞察（spec §4.3）
-// 三 tab（行为/内容/反馈）+ 顶部「本周该做的 3 件事」AI 优先级行动条。
-import { isAdmin } from '@/lib/admin-auth';
 import AdminLayout from '@/components/admin/AdminLayout.astro';
-import FeatureRow from '@/components/admin/FeatureRow.astro';
-import ArticleRow from '@/components/admin/ArticleRow.astro';
-import ThemeCard from '@/components/admin/ThemeCard.astro';
+import { getNeedCaseStats, getTopicCandidates } from '@/conversation/store';
+import { isAdmin } from '@/lib/admin-auth';
 
 export const prerender = false;
 
@@ -13,315 +9,221 @@ if (!isAdmin(Astro.request)) {
   return Astro.redirect('/admin/login');
 }
 
-// §4.3 Tab1 功能使用热度（spec 写死 · 后端无 feature-usage 遥测）
-const featureUsage = [
-  { name: '提问匹配', count: 482, statusKind: 'good' as const, statusLabel: '活跃', delta: '↑18%', deltaKind: 'good' as const, action: '加固' },
-  { name: '文章阅读', count: 391, statusKind: 'good' as const, statusLabel: '活跃', delta: '↑9%', deltaKind: 'good' as const, action: '加固' },
-  { name: '学习轨道', count: 74, statusKind: 'warn' as const, statusLabel: '观察', delta: '↓4%', deltaKind: 'warn' as const, action: '观察' },
-  { name: '内容关系图谱', count: 38, statusKind: 'warn' as const, statusLabel: '偏低', delta: '↓12%', deltaKind: 'warn' as const, action: '观察' },
-  { name: '点赞', count: 9, statusKind: 'bad' as const, statusLabel: '冷门', delta: '↓41%', deltaKind: 'bad' as const, action: '考虑删除', actionKind: 'bad' as const },
-  { name: '项目展示', count: 3, statusKind: 'bad' as const, statusLabel: '冷门', delta: '↓63%', deltaKind: 'bad' as const, action: '考虑删除', actionKind: 'bad' as const },
-];
-const featureMax = Math.max(...featureUsage.map(f => f.count));
+const days = 30;
+const [stats, topics] = await Promise.all([
+  getNeedCaseStats({ days }),
+  getTopicCandidates({ limit: 200 }),
+]);
 
-// §4.3 流失环节（spec 写死 · 后端无 funnel 数据）
-const dropoffs = [
-  { label: '提问后无匹配走了', value: '61%', delta: '↑', note: '均值 48% · 本周异常', kind: 'bad' as const, action: '改匹配' },
-  { label: '进首页直接走', value: '44%', delta: '↑', note: '均值 39% · 略升', kind: 'warn' as const, action: '改首屏' },
-  { label: '文章读到一半走', value: '23%', delta: '→', note: '均值 24% · 持平', kind: 'neutral' as const, action: '改内容' },
-];
-const dropoffColor = { bad: 'var(--adm-bad)', warn: 'var(--adm-warn)', neutral: 'var(--adm-neutral)' };
+const pendingReviewCount = stats.byReviewStatus.pending ?? 0;
+const unresolvedFeedbackCount = (stats.byFeedbackType.stuck ?? 0) + (stats.byFeedbackType['needs-more'] ?? 0);
+const openTopicCount = topics.filter(topic => topic.status === 'observed' || topic.status === 'accepted').length;
 
-// §4.3 Tab2 文章热度榜（spec 写死 · 后端无 article-heat）
-const articleHeat = [
-  { rank: 1, title: 'Ferry 隐喻：渡船到底渡的是什么', views: 842, asks: undefined, stay: '', delta: '↑22%', deltaKind: 'good' as const, action: '写更多', actionKind: 'good' as const },
-  { rank: 2, title: 'P0-P4 方法：从原点到扩散', views: 531, asks: undefined, stay: '', delta: '↑11%', deltaKind: 'good' as const, action: '写更多', actionKind: 'good' as const },
-  { rank: 3, title: '如何用 AI Gateway 做需求匹配', views: 318, asks: 88, stay: '2.4m', delta: '↓8%', deltaKind: 'warn' as const, action: '补问答', actionKind: 'warn' as const },
-  { rank: 4, title: '双 Git 仓库协同工作流', views: 96, asks: undefined, stay: '', delta: '→持平', deltaKind: 'neutral' as const, action: '改写', actionKind: 'warn' as const },
-  { rank: 5, title: '学习轨道：六月计划', views: 14, asks: undefined, stay: '', delta: '↓35%', deltaKind: 'bad' as const, action: '藏起来', actionKind: 'bad' as const },
-];
+const actions = [
+  pendingReviewCount > 0 ? {
+    label: '复盘需求',
+    reason: `${pendingReviewCount} 条需求仍待人工判断`,
+    href: '/admin/review',
+  } : null,
+  unresolvedFeedbackCount > 0 ? {
+    label: '检查未解决反馈',
+    reason: `${unresolvedFeedbackCount} 条真实反馈指向卡住或需要补充`,
+    href: '/admin/hit-rate?view=outcome',
+  } : null,
+  openTopicCount > 0 ? {
+    label: '处理选题',
+    reason: `${openTopicCount} 个选题仍处于观察或已采纳状态`,
+    href: '/admin/topics',
+  } : null,
+].filter((item): item is NonNullable<typeof item> => Boolean(item));
 
-// §4.3 Tab3 反馈聚类（spec 写死 4 主题 · 后端是 rule-based 聚类，非 AI 主题）
-const themes = [
-  { tagLabel: '该写教程', tagKind: 'good' as const, theme: 'P0→P2 完整案例怎么做', count: 18, quote: '看了 Ferry 那篇，但还是不懂具体怎么把一个想法从 P0 推到 P2，能不能给个完整例子一步步走一遍？', quoteMeta: '另有 17 条相似反馈 · 置信 92%', suggestion: '写一篇「P0→P2 完整案例」承接 Ferry 流量，可拆成连载', action: '加入选题', actionKind: 'good' as const },
-  { tagLabel: '该改 bug', tagKind: 'warn' as const, theme: '提问匹配不上就白屏', count: 9, quote: '提问之后转了半天没匹配到东西，最后白屏了，体验很差。', quoteMeta: '另有 8 条相似反馈 · 置信 88% · 与流失率 61% 交叉印证', suggestion: '命中流失榜首，优先改匹配降级兜底（无结果时给推荐而非白屏）', action: '去改', actionKind: 'warn' as const },
-  { tagLabel: '该补素材', tagKind: 'good' as const, theme: '双 Git 协同看不懂', count: 5, quote: '双 Git 仓库那段看晕了，有没有图？', quoteMeta: '另有 4 条相似反馈 · 置信 79%', suggestion: '给「双 Git 协同」补一张流程图，降低阅读门槛', action: '去补', actionKind: 'good' as const },
-  { tagLabel: '无效吐槽', tagKind: 'neutral' as const, theme: '泛泛抱怨（无具体指向）', count: 5, quote: '字太多了懒得看', quoteMeta: '另有 4 条相似反馈 · 置信 64% · 未指向具体内容', suggestion: '标记无效 · 可一键隐藏，不占用决策精力', action: '全部忽略', actionKind: 'neutral' as const },
+const reviewLabels: Record<string, string> = {
+  pending: '待复盘',
+  accepted: '已采纳',
+  deferred: '已暂缓',
+  ignored: '已忽略',
+  produced: '已产出',
+};
+
+const feedbackLabels: Record<string, string> = {
+  resolved: '已解决',
+  stuck: '仍卡住',
+  useful: '有用',
+  'needs-more': '需要补充',
+  outdated: '已过时',
+  positive: '正向',
+  negative: '负向',
+};
+
+const reviewEntries = Object.entries(stats.byReviewStatus).sort((a, b) => b[1] - a[1]);
+const feedbackEntries = Object.entries(stats.byFeedbackType).sort((a, b) => b[1] - a[1]);
+const dataGaps = [
+  { title: '功能使用', detail: '尚未建立可用于功能取舍的完整事件口径。' },
+  { title: '访问来源', detail: '尚未采集可靠的来源归因。' },
+  { title: '流失环节', detail: '尚未建立完整漏斗，不能计算流失率。' },
+  { title: '全站文章热度', detail: '当前只有阅读深度与明确反馈，不能冒充浏览热度榜。' },
 ];
 ---
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>洞察 — Walker Admin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-</head>
-<body>
-  <AdminLayout
-    active="/admin/insights"
-    title="洞察"
-    subtitle="看数据 → 改内容 / 改功能 · 近 30 天"
-  >
-    <Fragment slot="actions">
-      <button class="adm-btn" type="button">近 30 天 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-    </Fragment>
-    {/* §4.3 「本周该做的 3 件事」AI 优先级行动条 */}
-    <section class="adm-ins-priority">
-      <div class="adm-ins-priority-lead">
-        <span class="adm-ins-priority-badge">AI · 本周建议</span>
-        <span class="adm-ins-priority-title">本周该做的 3 件事</span>
-      </div>
-      <div class="adm-ins-priority-cards">
-        <div class="adm-ins-pcard adm-ins-pcard-bad">
-          <span class="adm-ins-pcard-num" style="background:var(--adm-bad)">1</span>
-          <div class="adm-ins-pcard-body">
-            <div class="adm-ins-pcard-title">改提问匹配降级</div>
-            <div class="adm-ins-pcard-sub">流失 61%↑ · 本周最该修</div>
-          </div>
-        </div>
-        <div class="adm-ins-pcard adm-ins-pcard-good">
-          <span class="adm-ins-pcard-num" style="background:var(--adm-good)">2</span>
-          <div class="adm-ins-pcard-body">
-            <div class="adm-ins-pcard-title">写 P0→P2 完整案例</div>
-            <div class="adm-ins-pcard-sub">18 条反馈在等 · 接 Ferry 流量</div>
-          </div>
-        </div>
-        <div class="adm-ins-pcard adm-ins-pcard-warn">
-          <span class="adm-ins-pcard-num" style="background:var(--adm-warn)">3</span>
-          <div class="adm-ins-pcard-body">
-            <div class="adm-ins-pcard-title">换学习轨道标题再试</div>
-            <div class="adm-ins-pcard-sub">14 看或因引流弱 · 先挽救再删</div>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    {/* §4.3 Tab 栏 */}
-    <div class="adm-ins-tabs" role="tablist">
-      <button class="adm-ins-tab is-active" role="tab" aria-selected="true" data-tab="behavior">行为 · 改功能</button>
-      <button class="adm-ins-tab" role="tab" aria-selected="false" data-tab="content">内容 · 改文章</button>
-      <button class="adm-ins-tab" role="tab" aria-selected="false" data-tab="feedback">反馈 · AI 归类</button>
+<AdminLayout
+  active="/admin/insights"
+  domain="needs"
+  title="需求分析"
+  subtitle={`近 ${days} 天 · 只展示可追溯事实，缺失数据明确标记`}
+>
+  <section class="insight-section">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">现在可处理</p>
+        <h2>由真实证据产生的动作</h2>
+      </div>
+      <span class="scope">统计范围：近 {days} 天</span>
     </div>
 
-    {/* ===== Tab 1 · 行为（改功能） ===== */}
-    <section class="adm-ins-panel is-active" data-panel="behavior" role="tabpanel">
-      <div class="adm-ins-two-col">
-        {/* 左列：功能使用热度 */}
-        <div class="adm-ins-col">
-          <div class="adm-ins-col-head">
-            <span class="adm-ins-col-title">功能使用热度</span>
-            <span class="adm-ins-col-sub">次数低 = 考虑删功能 · 次数高 = 加固它</span>
-          </div>
-          <div class="adm-ins-feature-list">
-            {featureUsage.map(f => <FeatureRow {...f} max={featureMax} />)}
-          </div>
+    {actions.length > 0 ? (
+      <div class="action-grid">
+        {actions.slice(0, 3).map((action, index) => (
+          <a class="action-card" href={action.href}>
+            <span class="action-index">{index + 1}</span>
+            <span class="action-copy">
+              <strong>{action.label}</strong>
+              <small>{action.reason}</small>
+            </span>
+            <span aria-hidden="true">→</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state">
+        <strong>当前没有可由现有证据生成的重点动作</strong>
+        <span>新增需求、明确反馈或选题状态变化后，这里才会出现事项。</span>
+      </div>
+    )}
+  </section>
+
+  <section class="fact-grid" aria-label="真实聚合数据">
+    <article class="fact-card">
+      <span>需求记录</span>
+      <strong>{stats.totalCases}</strong>
+      <small>近 {days} 天真实 NeedCase</small>
+    </article>
+    <article class="fact-card">
+      <span>匹配会话</span>
+      <strong>{stats.totalSessions}</strong>
+      <small>当前存储中的真实会话总数</small>
+    </article>
+    <article class="fact-card">
+      <span>开放选题</span>
+      <strong>{openTopicCount}</strong>
+      <small>观察中或已采纳，尚未关闭</small>
+    </article>
+  </section>
+
+  <section class="insight-columns">
+    <article class="insight-section">
+      <div class="section-head compact">
+        <div>
+          <p class="eyebrow">需求</p>
+          <h2>重复出现的问题</h2>
         </div>
+        <a href="/admin/review">查看原始需求</a>
+      </div>
+      {stats.topNeeds.length > 0 ? (
+        <ol class="rank-list">
+          {stats.topNeeds.slice(0, 8).map(item => (
+            <li><span>{item.summary}</span><strong>{item.count}</strong></li>
+          ))}
+        </ol>
+      ) : (
+        <div class="empty-state small">近 {days} 天没有需求记录。</div>
+      )}
+    </article>
 
-        {/* 右列：访客从哪来 · 在哪走 */}
-        <div class="adm-ins-col adm-ins-col-flow">
-          <div class="adm-ins-col-head">
-            <span class="adm-ins-col-title">访客从哪来 · 在哪走</span>
-          </div>
-
-          {/* 来源卡 */}
-          <div class="adm-ins-card adm-card">
-            <div class="adm-ins-card-head">
-              <span class="adm-ins-card-title">来源</span>
-            </div>
-            <div class="adm-ins-src">
-              <div class="adm-ins-src-row">
-                <div class="adm-ins-src-top"><span>自媒体公众号</span><span class="adm-mono">1240</span></div>
-                <div class="adm-ins-src-bar"><div style="width:100%;background:var(--adm-brand)"></div></div>
-              </div>
-              <div class="adm-ins-src-row">
-                <div class="adm-ins-src-top"><span>直接访问</span><span class="adm-mono">312</span></div>
-                <div class="adm-ins-src-bar"><div style="width:25%;background:var(--adm-brand)"></div></div>
-              </div>
-              <div class="adm-ins-src-row">
-                <div class="adm-ins-src-top"><span>搜索引擎</span><span class="adm-mono">88</span></div>
-                <div class="adm-ins-src-bar"><div style="width:7%;background:var(--adm-brand)"></div></div>
-              </div>
-            </div>
-          </div>
-
-          {/* 流失环节卡（带「需改善」rose 标） */}
-          <div class="adm-ins-card adm-card">
-            <div class="adm-ins-card-head">
-              <span class="adm-ins-card-title">流失环节</span>
-              <span class="adm-tag adm-tag-bad">需改善</span>
-            </div>
-            {dropoffs.map(d => (
-              <div class="adm-ins-drop-row">
-                <div class="adm-ins-drop-top">
-                  <span class="adm-ins-drop-label">{d.label}</span>
-                  <span class="adm-ins-drop-val" style={`color:${dropoffColor[d.kind]}`}>{d.value} <span class="adm-ins-drop-delta">{d.delta}</span></span>
-                </div>
-                <div class="adm-ins-drop-note">
-                  {d.note}
-                  <button class="adm-btn adm-btn-sm" type="button">{d.action}</button>
-                </div>
-              </div>
-            ))}
-          </div>
+    <article class="insight-section">
+      <div class="section-head compact">
+        <div>
+          <p class="eyebrow">状态</p>
+          <h2>复盘与反馈</h2>
         </div>
       </div>
-    </section>
-
-    {/* ===== Tab 2 · 内容（改文章） ===== */}
-    <section class="adm-ins-panel" data-panel="content" role="tabpanel" hidden>
-      <div class="adm-ins-col-head">
-        <span class="adm-ins-col-title">文章热度榜</span>
-        <span class="adm-ins-col-sub">按热度降序 · 每条通向「写更多 / 补问答 / 改写 / 藏起来」</span>
+      <div class="signal-groups">
+        <div>
+          <h3>需求复盘</h3>
+          {reviewEntries.length > 0 ? reviewEntries.map(([key, value]) => (
+            <div class="signal-row"><span>{reviewLabels[key] ?? key}</span><strong>{value}</strong></div>
+          )) : <p class="muted">暂无复盘状态。</p>}
+        </div>
+        <div>
+          <h3>反馈信号</h3>
+          {feedbackEntries.length > 0 ? feedbackEntries.map(([key, value]) => (
+            <div class="signal-row"><span>{feedbackLabels[key] ?? key}</span><strong>{value}</strong></div>
+          )) : <p class="muted">暂无反馈信号。</p>}
+        </div>
       </div>
-      <div class="adm-ins-article-list">
-        {articleHeat.map(a => <ArticleRow {...a} />)}
+    </article>
+  </section>
+
+  <section class="insight-section">
+    <div class="section-head compact">
+      <div>
+        <p class="eyebrow">数据边界</p>
+        <h2>现在不能判断的事情</h2>
       </div>
-    </section>
+    </div>
+    <div class="gap-grid">
+      {dataGaps.map(gap => (
+        <article class="gap-card">
+          <div><strong>{gap.title}</strong><span class="unknown">未采集</span></div>
+          <p>{gap.detail}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</AdminLayout>
 
-    {/* ===== Tab 3 · 反馈（AI 归类） ===== */}
-    <section class="adm-ins-panel" data-panel="feedback" role="tabpanel" hidden>
-      <div class="adm-ins-col-head">
-        <span class="adm-ins-col-title">访客反馈 · AI 已聚类</span>
-        <span class="adm-ins-col-sub">37 条反馈 · AI 聚成 4 个主题 · 每主题取代表原话 + 建议</span>
-      </div>
-      <div class="adm-ins-theme-list">
-        {themes.map(t => <ThemeCard {...t} />)}
-      </div>
-    </section>
-  </AdminLayout>
-
-  <script>
-    // §5 交互：Tab 切换（激活态下划线 + 加粗，内容区切换）
-    function initInsightsTabs() {
-      const tabs = document.querySelectorAll('[data-tab]');
-      const panels = document.querySelectorAll('[data-panel]');
-      if (tabs.length === 0) return;
-      tabs.forEach((tab) => {
-        if ((tab as HTMLElement).dataset.bound === '1') return;
-        (tab as HTMLElement).dataset.bound = '1';
-        tab.addEventListener('click', () => {
-          const key = (tab as HTMLElement).dataset.tab;
-          tabs.forEach(t => {
-            t.classList.toggle('is-active', t === tab);
-            t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
-          });
-          panels.forEach(p => {
-            const show = (p as HTMLElement).dataset.panel === key;
-            p.classList.toggle('is-active', show);
-            if (show) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
-          });
-        });
-      });
-    }
-
-    function cleanupInsightsTabs() {
-      document.removeEventListener('astro:page-load', initInsightsTabs);
-      document.querySelectorAll('[data-bound="1"]').forEach((el) => {
-        delete (el as HTMLElement).dataset.bound;
-      });
-    }
-
-    initInsightsTabs();
-    document.addEventListener('astro:page-load', initInsightsTabs);
-    document.addEventListener('astro:before-swap', cleanupInsightsTabs);
-  </script>
-</body>
-</html>
-
-<style is:global>
-  /* §4.3 AI 优先级行动条 */
-  .adm-ins-priority {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 32px;
-    background: var(--adm-bg);
-    border-bottom: 1px solid var(--adm-border);
-    /* 紧贴 tab 栏上方：用负 margin 抵消 content 的 gap */
-    margin: -24px -32px 0;
-  }
-  .adm-ins-priority-lead { display: flex; flex-direction: column; gap: 2px; width: 172px; flex-shrink: 0; }
-  .adm-ins-priority-badge {
-    font-size: 10px; font-weight: 700; color: var(--adm-brand); letter-spacing: 1.2px;
-  }
-  .adm-ins-priority-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
-  .adm-ins-priority-cards { display: flex; gap: 10px; flex: 1; min-width: 0; }
-  .adm-ins-pcard {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px;
+<style>
+  .insight-section {
+    padding: clamp(1.1rem, 2vw, 1.6rem);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius-card);
     background: var(--adm-surface);
-    border-radius: 9px;
-    border: 1px solid;
-    flex: 1; min-width: 0;
+    box-shadow: 0 18px 55px rgba(27, 65, 59, 0.06);
   }
-  .adm-ins-pcard-bad { border-color: #e11d4840; }
-  .adm-ins-pcard-good { border-color: #35bfab40; }
-  .adm-ins-pcard-warn { border-color: #f59e0b40; }
-  .adm-ins-pcard-num {
-    width: 22px; height: 22px; border-radius: 999px;
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 11px; font-weight: 700; flex-shrink: 0;
-  }
-  .adm-ins-pcard-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .adm-ins-pcard-title { font-size: 13px; font-weight: 600; color: var(--adm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .adm-ins-pcard-sub { font-size: 11px; color: var(--adm-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* Tab 栏 */
-  .adm-ins-tabs {
-    display: flex; gap: 4px;
-    padding: 0 32px;
-    background: var(--adm-surface);
-    border-bottom: 1px solid var(--adm-border);
-    margin: 0 -32px;
-  }
-  .adm-ins-tab {
-    padding: 12px 0;
-    margin-right: 24px;
-    background: none; border: none; cursor: pointer;
-    font-family: inherit; font-size: 14px; font-weight: 500;
-    color: var(--adm-text-dim);
-    border-bottom: 2px solid transparent;
-    transition: color 0.12s ease, border-color 0.12s ease;
-  }
-  .adm-ins-tab:hover { color: var(--adm-text); }
-  .adm-ins-tab:focus-visible { outline: 2px solid var(--adm-brand); outline-offset: -2px; }
-  .adm-ins-tab.is-active { color: var(--adm-text); font-weight: 700; border-bottom-color: var(--adm-brand); }
-
-  .adm-ins-panel { display: none; }
-  .adm-ins-panel.is-active { display: block; }
-
-  /* 两列 */
-  .adm-ins-two-col { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
-  .adm-ins-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-  .adm-ins-col-head { display: flex; flex-direction: column; gap: 2px; }
-  .adm-ins-col-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
-  .adm-ins-col-sub { font-size: 12px; color: var(--adm-text-faint); }
-  .adm-ins-feature-list, .adm-ins-article-list, .adm-ins-theme-list { display: flex; flex-direction: column; gap: 8px; }
-
-  /* 来源/流失卡 */
-  .adm-ins-card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-  .adm-ins-card-head { display: flex; align-items: center; justify-content: space-between; }
-  .adm-ins-card-title { font-size: 13px; font-weight: 700; color: var(--adm-text); }
-  .adm-ins-src { display: flex; flex-direction: column; gap: 12px; }
-  .adm-ins-src-row { display: flex; flex-direction: column; gap: 5px; }
-  .adm-ins-src-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--adm-text); }
-  .adm-ins-src-bar { height: 6px; background: var(--adm-border-soft); border-radius: 3px; overflow: hidden; }
-  .adm-ins-src-bar > div { height: 100%; border-radius: 3px; }
-
-  .adm-ins-drop-row { display: flex; flex-direction: column; gap: 5px; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border-soft); }
-  .adm-ins-drop-row:last-child { border-bottom: none; padding-bottom: 0; }
-  .adm-ins-drop-top { display: flex; justify-content: space-between; align-items: center; }
-  .adm-ins-drop-label { font-size: 12px; color: var(--adm-text); }
-  .adm-ins-drop-val { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .adm-ins-drop-delta { font-size: 11px; }
-  .adm-ins-drop-note { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--adm-text-faint); }
-
-  @media (max-width: 1100px) {
-    .adm-ins-two-col { grid-template-columns: 1fr; }
-    .adm-ins-priority { flex-direction: column; align-items: flex-start; }
-    .adm-ins-priority-cards { width: 100%; flex-direction: column; }
-  }
+  .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+  .section-head.compact { margin-bottom: .85rem; }
+  .section-head h2 { margin: .15rem 0 0; font-size: 1rem; color: var(--adm-text); }
+  .section-head a { color: var(--adm-brand-strong); font-size: .8rem; text-decoration: none; }
+  .eyebrow { margin: 0; color: var(--adm-brand-strong); font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+  .scope { color: var(--adm-text-faint); font-size: .72rem; }
+  .action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
+  .action-card { display: flex; align-items: center; gap: .7rem; padding: .9rem; border: 1px solid rgba(53,191,171,.22); border-radius: 14px; background: rgba(53,191,171,.06); color: var(--adm-text); text-decoration: none; }
+  .action-card:hover { border-color: rgba(53,191,171,.48); transform: translateY(-1px); }
+  .action-index { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border-radius: 999px; background: var(--adm-brand-strong); color: white; font-size: .72rem; font-weight: 800; flex: 0 0 auto; }
+  .action-copy { display: grid; gap: .2rem; min-width: 0; flex: 1; }
+  .action-copy strong { font-size: .86rem; }
+  .action-copy small { color: var(--adm-text-dim); line-height: 1.45; }
+  .fact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+  .fact-card { display: grid; gap: .25rem; padding: 1rem 1.1rem; border: 1px solid var(--adm-border); border-radius: 16px; background: rgba(255,255,255,.55); }
+  .fact-card span, .fact-card small { color: var(--adm-text-dim); font-size: .74rem; }
+  .fact-card strong { color: var(--adm-text); font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+  .insight-columns { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); gap: .85rem; }
+  .rank-list { list-style: none; display: grid; gap: .3rem; margin: 0; padding: 0; }
+  .rank-list li, .signal-row { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem .75rem; border-radius: 10px; background: rgba(41,84,77,.035); }
+  .rank-list span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; }
+  .rank-list strong, .signal-row strong { color: var(--adm-brand-strong); font-variant-numeric: tabular-nums; }
+  .signal-groups { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .signal-groups h3 { margin: 0 0 .5rem; font-size: .76rem; color: var(--adm-text-dim); }
+  .signal-row { padding: .5rem .65rem; margin-bottom: .3rem; font-size: .78rem; }
+  .gap-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; }
+  .gap-card { padding: .85rem; border: 1px dashed var(--adm-border); border-radius: 13px; background: rgba(255,255,255,.35); }
+  .gap-card > div { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+  .gap-card strong { font-size: .8rem; }
+  .gap-card p { margin: .55rem 0 0; color: var(--adm-text-dim); font-size: .72rem; line-height: 1.55; }
+  .unknown { padding: .16rem .45rem; border-radius: 999px; background: rgba(100,116,139,.1); color: var(--adm-text-dim); font-size: .65rem; font-weight: 750; }
+  .empty-state { display: grid; gap: .3rem; padding: 1rem; border: 1px dashed var(--adm-border); border-radius: 12px; color: var(--adm-text-dim); font-size: .78rem; }
+  .empty-state strong { color: var(--adm-text); }
+  .empty-state.small { padding: .8rem; }
+  .muted { color: var(--adm-text-faint); font-size: .75rem; }
+  @media (max-width: 1050px) { .action-grid, .gap-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .insight-columns { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .action-grid, .fact-grid, .gap-grid, .signal-groups { grid-template-columns: 1fr; } .section-head { flex-direction: column; } }
 </style>

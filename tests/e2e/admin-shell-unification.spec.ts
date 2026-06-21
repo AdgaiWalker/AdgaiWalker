@@ -55,4 +55,10 @@ test.describe('后台共享骨架', () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });
+  test('洞察页不展示无来源指标，缺少遥测时明确标记未采集', async ({ page }) => {
+    await page.goto('/admin/insights');
+    await expect(page.getByText('未采集', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('流失 61%↑ · 本周最该修')).toHaveCount(0);
+    await expect(page.getByText('自媒体公众号')).toHaveCount(0);
+  });
 });
