@@ -129,6 +129,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/admin/experiences` | 经验验证系统（事件采集 → 复盘 → 模式 → Skill 候选） | Admin（独立样式） |
 | `/admin/skills` | Skill 准入与 Agent 路由（候选 → 准入 → 注册/降级为方法卡） | Admin（独立样式） |
 | `/admin/assets` | 资产生命周期（Experience/Rule/Skill 统一晋升活动 + 证据链 + 学习请求补证） | Admin（AdminLayout） |
+| `/admin/grants` | Contributor 对象级授权管理（创建/撤销 ObjectGrant + 6 角色模板，owner 可写） | Admin（AdminLayout） |
+| `/admin/northstar` | NorthStar 经营管理（赞赏设置 + offers/orders，门控 isNorthStarEnabled） | Admin（AdminLayout） |
 | `/404` | 404 页面 | Base |
 | `/rss.xml` | RSS 订阅源 | 无布局 |
 | `/llms.txt` | AI 可读站点地图 | 无布局（静态文本） |
