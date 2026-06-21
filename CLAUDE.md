@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、快速入口和 Spark 抽点子盲盒；内页包含文章列表与阅读页、资源工具页、点子库、项目页、学习指南页、内容宇宙、侧边栏导航、Pagefind 搜索、Upstash Redis 点赞和 Giscus 评论。站点结构对齐"个人前进系统"：思考（posts）、资源（tools）、点子（ideas）、项目（projects）、学习（learn）。决策和规划参见 `docs/README.md`。
+Walker（秋知 / AdgaiWalker）的个人空间 / 数字花园，基于中文 Astro 6 站点，部署在 Vercel。站点地址：https://iwalk.pro。首页为可拖拽 Bento Box 画布，展示身份卡片、最近文章、快速入口和 Spark 抽点子盲盒；内页包含文章列表与阅读页、资源工具页、点子库、项目页、学习指南页、内容宇宙、侧边栏导航、Pagefind 搜索、Upstash Redis 点赞和 Giscus 评论。站点结构对齐"个人前进系统"：思考（posts）、资源（tools）、点子（ideas）、项目（projects）、学习（learn）。后台是**决策系统而非页面集合**：把需求/主张/反馈/系统事件变成 Evidence → Decision → Action → Outcome 的可追踪闭环（单一 `WorkItem` 聚合根，见架构节），内容详情页通过 BlockFeedback 采集阅读结果回流后台。决策和规划参见 `docs/README.md`；后台与内容详情页综合设计见 `docs/design/`。
 
 ## 常用命令
 
@@ -14,14 +14,15 @@ npm run build      # 生产构建 + Pagefind 索引生成（esbuild 转译，不
 npm run build:mcp  # 编译 MCP server（src/mcp/ + src/knowledge/content-query.ts → dist/mcp/index.mjs；esbuild 转译，不做类型检查）
 npm run preview    # 本地预览生产构建
 npm run test       # 运行 Vitest 单元测试（npm run test:watch 为 watch 模式）
+npm run test:e2e   # 运行 Playwright E2E（自动起 dev server，单 worker 顺序执行；TOC 高亮/工作台会话对时序敏感，不可并发）
 npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:mcp/test 全过也不代表类型对）
 ```
 
-跑单个测试文件：`npx vitest run src/services/perception.service.test.ts`。
+跑单个测试文件：`npx vitest run src/services/perception.service.test.ts`。跑单个 E2E：`npx playwright test tests/e2e/content-feedback.spec.ts`。
 
-测试基于 Vitest（`vitest.config.ts`），默认 node 环境。测试文件分布在 `src/**/*.test.ts`：`src/services/`、`src/stores/`、`src/knowledge/`、`src/lib/`、`src/agent/`，以及 `src/scripts/`（客户端脚本测试）。客户端脚本测试（如 `tool-match-chat.test.ts`、`with-lifecycle.test.ts`）因涉及 DOM，在文件首行用 `// @vitest-environment happy-dom` 注释切换到 happy-dom 环境（`happy-dom` 是 devDependency，按文件启用，不影响其他 node 环境测试）。
+测试基于 Vitest（`vitest.config.ts`），默认 node 环境。测试文件分布在 `src/**/*.test.ts`：`src/services/`、`src/stores/`、`src/knowledge/`、`src/lib/`、`src/agent/`、`src/pages/api/`，以及 `src/scripts/`（客户端脚本测试）。客户端脚本测试（如 `tool-match-chat.test.ts`、`with-lifecycle.test.ts`）因涉及 DOM，在文件首行用 `// @vitest-environment happy-dom` 注释切换到 happy-dom 环境（`happy-dom` 是 devDependency，按文件启用，不影响其他 node 环境测试）。Admin API 路由集成测试（如 `src/pages/api/admin/workbench.api.test.ts`）直接调路由处理函数 + 模拟 admin 会话 cookie，覆盖未授权/非法 body/非法状态迁移/正常完整迁移。E2E 测试在 `tests/e2e/*.spec.ts`（Playwright，`playwright.config.ts` 单 worker）：通过 `/api/auth/dev-preview`（仅本机 dev）建立 owner 会话，用页面内同源 fetch 绕开 CSRF；涉及写真实内容文件的测试（如 `topic-content-publish`、`topic-to-editor`）用 afterAll 强制清理，不污染真实内容。
 
-**验证三件套（改代码后都要跑，缺一不可）**：`npx astro check`（类型，tsc 严格检查）→ `npm run test`（单元逻辑）→ `npm run build`（构建 + SSR 渲染）。注意 `build` / `build:mcp` 走 esbuild **只转译、不做类型检查**——未定义引用、类型不匹配不会被报，运行时才 ReferenceError；只有 `astro check` 抓类型错。所以改任何 `.ts` 后必须先跑 `astro check`，不能只靠 build / test 判定通过。
+**验证四件套（改代码后都要跑，缺一不可）**：`npx astro check`（类型，tsc 严格检查）→ `npm run test`（单元/集成逻辑）→ `npm run build`（构建 + SSR 渲染）→ `npm run test:e2e`（浏览器真实闭环，TOC/工作台/反馈/选题到发布）。注意 `build` / `build:mcp` 走 esbuild **只转译、不做类型检查**——未定义引用、类型不匹配不会被报，运行时才 ReferenceError；只有 `astro check` 抓类型错。所以改任何 `.ts` 后必须先跑 `astro check`，不能只靠 build / test 判定通过。
 
 ## 环境变量
 
@@ -31,7 +32,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **Giscus 评论**：`PUBLIC_GISCUS_REPO` / `PUBLIC_GISCUS_REPO_ID` / `PUBLIC_GISCUS_CATEGORY` / `PUBLIC_GISCUS_CATEGORY_ID`。未配置时评论组件不渲染。
 - **AI 匹配（可选）**：通过 AI Gateway 配置（服务商 API key、`baseUrl`、`model`），配置存 Redis hash `ai-gateway:config`，在 `/admin/ai-gateway` 管理页维护（预设 DeepSeek / OpenAI / Anthropic / 自定义）。未配置时仅使用本地规则匹配，不调用模型、不产生费用。`ANTHROPIC_API_KEY` 仍作为 `src/agent/gateway.ts` 的运行时 fallback 被读取（`config.apiKey || import.meta.env.ANTHROPIC_API_KEY`）；建议只在 `/admin/ai-gateway` 配置 key，不依赖环境变量。
 - **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
-- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。
+- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。内容反馈（`/api/content-feedback`）限流在 `lib/rate-limiter.ts` 硬编码（IP 哈希 60s/5 次），不依赖这些 env。
 - **注册门票**：`INVITE_CODES`（可选，env 一次性种子）+ 后台 `/admin/invite-codes` 生成的 managed 码（`stores/managed-invite-code.store.ts`，Redis 持久化，默认一人一码）。`/api/auth/register` 校验+消费（env/managed 都认，managed 记 usedBy 追踪谁用了哪个码）。
 - ⚠️ **`vercel env pull` 不导出加密 secret 真实值**：`KV_*`、`CRON_SECRET`、`COOKIE_SECRET`、`GITHUB_TOKEN` 等拉到本地 `.env` 都是空——本地连不上生产 Redis、也拿不到 CRON 鉴权。需连 Redis 时走 Upstash 控制台或部署到 Vercel 运行时。另：**生产 Redis 经 Vercel KV 集成接入（实际变量 `KV_REST_API_URL` / `KV_REST_API_TOKEN`）**，`like.store.ts` 与 `conversation/store.ts` 的 `getRedis()` 同时兼容 `UPSTASH_*` 前缀，任一存在即可。
 
@@ -45,6 +46,11 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **内容编辑回写**：Admin 内容编辑器（`/admin/content/edit`）通过 GitHub API（`GITHUB_TOKEN`）回写 markdown 文件，而非直接写文件系统。
 - **AI Gateway 统一入口**：所有 AI 调用通过 `src/agent/gateway.ts` 的 `callGateway()` 统一入口，流程：Pretext → 敏感词检测 → API key 检查 → AI 调用 → 输出检测 → 日志。
 - **双 Git 边界**：产品仓库（本仓库 AdgaiWalker，保护 `reality`）与 skill 仓库（`.agents/skills/walker-northstar`，独立 git，保护 `blueprint` + references）分开管理。`.agents/` 在产品仓库 `.gitignore` 中。
+- **后台决策聚合（WorkItem，P0-B/C/D + P1）**：后台业务状态权威化——决定/行动/结果不再存 localStorage，统一走单一 `WorkItem` 聚合根（`stores/ports.ts` 的 `WorkItem` + `WorkItemRepositoryPort`），承载 `evidenceRefs / decision / actions / outcomes / history`（append-only）。设计基线见 `docs/design/admin-content-hai-razor.md`（hai-razor：合并四套独立 Store 为一个聚合，保留语义不建物理边界）。状态机在 `services/workbench.service.ts`（`proposal→pending→accepted→acting→awaiting-verification→resolved` + rejected/paused），守护信任边界：无 evidenceRefs 不进 pending、无 expectedOutcome 不进 authorized、无 completed Action 不记 Outcome、AI 无证据只能是 proposal、每次状态变化写 history（actor/from→to/reason）。工作台 SSR 首屏从 `getTodayProjection` 投影，localStorage 只保留 TOC 折叠等 UI 偏好。
+- **存储环境合同（storage-mode，P0-B03）**：`lib/storage-mode.ts` 定义 `redis | memory-development | unavailable`。开发/测试无 Redis 允许显式内存降级；**生产/预览缺 Redis 时写 API 返回 503 storage-unavailable，不静默退回内存制造假持久**（hai-razor 护栏）。工作台页显示当前存储模式与持久性风险。
+- **系统健康事实合同（admin-shell-state，P0-A02）**：后台侧栏状态从真实事实推导（`deriveAdminSystemHealth`：Gateway 配置 + 调用统计 + 事件），四态 `healthy/degraded/unavailable/unknown` + `lastCheckedAt`。**零数据落 unknown，缺配置落 unavailable，绝不硬编码"系统可用"**。`/admin/ai-gateway` 删除写死成本（¥48/200）、零调用伪 100% 成功率、取模降级分布、"2h 前"等无来源数字。
+- **双反馈渠道（MatchFeedback ≠ ContentFeedback，P1-A/B/C）**：`MatchFeedbackEvent`（需求匹配会话结果，需 sessionId）与 `ContentFeedbackEvent`（内容阅读结果，匿名访客可提交）**分开存储、分开计算、并列解释，不合并分母**（hai-razor）。`hit-rate.service.ts` 的 `buildContentOutcomeSummaries` 输出 `matchOutcome` + `contentOutcome` 两个并列分组，无反馈返回 null 不返 0% 失败。
+- **资产生命周期统一（P2-B）**：Experience/Rule/Skill 各有历史状态枚举（`maturity`/`status`/`admissionStatus`），不重命名（会破坏数据），改用 `normalizeAssetStage` 统一映射到 `observed→candidate→validated→stable→retired`。`AssetService.promote` 晋升时回写各资产本地枚举 + 记录 `AssetEvidenceLink`（来源 Outcome/Experience + Walker 批准 + 理由，append-only + 单调 seq）。**注册 Skill 前必须有 Outcome/Experience 支撑证据，否则 missing-evidence**（护栏：知识不等于产能）；证据不足只生成 `LearningRequest`，不注册 Skill。可反查"某资产由哪些 Outcome 支持"（`getSupportingEvidence` + `/api/admin/assets/evidence`）。`/admin/assets` 页统一展示晋升活动 + 待补证任务。
 
 ### 渲染与部署
 
@@ -76,7 +82,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 1. **`Base.astro`**：根外壳。处理共享 head、JSON-LD、导航、页脚、格线纹理背景、鼠标光晕和阅读模式。共享 head 由 `src/components/shared/HeadCommon.astro` 提供。
 2. **`SidebarLayout.astro`**：通用内页布局，带页面头部、图标和计数。用于 `/posts`、`/tools`、`/ideas`、`/projects` 等列表型页面。
-3. **`ArticleLayout.astro`**：两栏布局（TOC 目录 + 文章正文），`ArticleNav` 由 `ArticleLayout` import 并通过 `nav-extension` slot 注入 Navigation → SidebarNav，内容区使用 `pureMode=true` 的阅读模式。文章页侧边栏初始折叠隐藏，鼠标悬停左边缘或按 `[` 键展开。移动端有浮动导航 FAB。
+3. **`ContentShell.astro`**（`src/layouts/`）：统一块阅读容器，被 `/posts/[slug]` 唯一引用（canonical 文章详情布局）。不预设布局模式、不探测首块类型；块自声明宽度等级（CSS 变量 `--cs-width-full/normal/narrow` + `--cs-toc-offset`），容器只提供阅读基础设施（进度条、TOC、反馈区）。`toc-highlight.ts` 按滚动位置激活当前目录项（滚动位置作真相源，比纯 IntersectionObserver 更可靠，保证首屏与间隙总有 active 项）。**注意**：曾存在重复实现 `src/components/blocks/ContentShell.astro`（含移动 TOC drawer/FAB），已按 hai-razor 删除；旧 `ArticleLayout.astro` 零引用后也已退役删除（P2-A）。
 4. **`FullscreenLayout.astro`**：全屏页面布局，包裹 `Base.astro` 并通过 `fullscreen` 标志隐藏导航、页脚和环境效果。用于 `/about`。
 
 ### 路由结构
@@ -85,7 +91,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | --- | --- | --- |
 | `/` | 个人空间（可拖拽 Bento Box 画布） | Base |
 | `/posts` | 文章列表（思考） | SidebarLayout |
-| `/posts/[slug]` | 文章详情 | ArticleLayout |
+| `/posts/[slug]` | 文章详情（TOC + 进度 + BlockFeedback + LikeCounter + Giscus） | ContentShell（`src/layouts/`） |
 | `/tools` | 资源列表（工具） | SidebarLayout |
 | `/ideas` | 点子库 | SidebarLayout |
 | `/projects` | 项目列表 | SidebarLayout |
@@ -95,7 +101,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/content` | 内容宇宙（多维度内容聚合） | Base |
 | `/about` | 关于（含关于我/关于站 Tab） | FullscreenLayout |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
-| `/admin` | 管理仪表盘（内容统计 + 快捷入口） | Admin（独立样式） |
+| `/admin` | 工作台（服务端投影 WorkItem + NeedCase + 站主主张 + 系统事件；去 localStorage 业务状态） | Admin（AdminLayout） |
 | `/login` | 统一登录/注册（用户 + owner 同入口） | Base |
 | `/admin/login` | 重定向到 /login（owner 账号登录入口） | Admin（独立样式） |
 | `/admin/accounts` | 账号管理（列表/搜索/重置/封禁/改角色） | Admin（独立样式） |
@@ -106,14 +112,16 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/admin/ai-gateway` | AI Gateway 配置与监控（服务商/模型/日志） | Admin（独立样式） |
 | `/admin/topics` | 选题库（管理员专属） | Admin（独立样式） |
 | `/admin/review` | 需求复盘（NeedCase 簇视图 + 逐条视图） | Admin（独立样式） |
-| `/admin/hit-rate` | 内容命中率（已发布内容 × 关联需求簇 resolved/stuck） | Admin（独立样式） |
-| `/admin/brief` | 创作简报（选题 → 简报 → 编辑器） | Admin（独立样式） |
+| `/admin/hit-rate` | 内容命中率（已发布内容 × 关联需求簇 resolved/stuck；双信号结果分组 matchOutcome/contentOutcome） | Admin（独立样式） |
+| `/admin/outcomes` | 结果与下一步（已记录 Outcome 的 WorkItem + suggestNextAction 派生的候选动作按钮） | Admin（独立样式） |
+| `/admin/brief` | 创作简报（选题 → 简报 → 编辑器，"去编辑器创作"预填 sourceTopicId） | Admin（独立样式） |
 | `/admin/content` | 内容列表管理（管理员专属） | Admin（独立样式） |
 | `/admin/content/edit` | 内容编辑器（管理员专属） | Admin（独立样式） |
 | `/admin/incidents` | 安全事件/失败降级待复盘（Incident） | Admin（独立样式） |
 | `/admin/rules` | 规则候选池（observed → candidate → validated → stable → retired） | Admin（独立样式） |
 | `/admin/experiences` | 经验验证系统（事件采集 → 复盘 → 模式 → Skill 候选） | Admin（独立样式） |
 | `/admin/skills` | Skill 准入与 Agent 路由（候选 → 准入 → 注册/降级为方法卡） | Admin（独立样式） |
+| `/admin/assets` | 资产生命周期（Experience/Rule/Skill 统一晋升活动 + 证据链 + 学习请求补证） | Admin（AdminLayout） |
 | `/404` | 404 页面 | Base |
 | `/rss.xml` | RSS 订阅源 | 无布局 |
 | `/llms.txt` | AI 可读站点地图 | 无布局（静态文本） |
@@ -128,6 +136,17 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/match` | 用户需求匹配（HTTP 薄层 → `agentOrchestrator.handleNeed` → 本地匹配 + AI Gateway）。后端 gate：public 返回 401，需受邀或管理员。 | 无（IP/会话限流） |
 | `/api/match-end` | 结束匹配会话 | 无（sessionId） |
 | `/api/match-feedback` | 推荐结果反馈（`resolved`/`stuck`/`not-fit`/`want-tutorial`/`first-draft`/`next-step-clear`/`wrong-direction`/`need-tutorial`），回写 NeedCase feedbackStatus | 无 |
+| `/api/content-feedback` | 公开内容阅读反馈（`useful`/`needs-more`/`outdated`，匿名访客可提交；sourceTopicId 服务端派生；IP 哈希频率限流 60s/5 次 + 429；note 脱敏限长） | 无（IP 限流） |
+| `/api/admin/workbench` | 工作台今日投影 / 队列状态列表（view=today\|decisions\|actions\|outcomes，queue/status 过滤） | admin cookie |
+| `/api/admin/workbench/[id]` | 单个 WorkItem 详情（含 evidenceRefs/decision/actions/outcomes/history） | admin cookie |
+| `/api/admin/decisions` | 创建 WorkItem 提案（POST，证据完整可 requestDecision 进 pending） | admin cookie |
+| `/api/admin/decisions/[id]` | 作出决定 / 请求决定 / 覆盖优先级（PATCH，decide\|requestDecision\|overridePriority） | admin cookie |
+| `/api/admin/actions` | 为 WorkItem 创建行动（POST，仅 accepted；expectedOutcome 必填） | admin cookie |
+| `/api/admin/actions/[id]` | 更新行动状态（PATCH，authorized/in-progress/completed/blocked/cancelled） | admin cookie |
+| `/api/admin/outcomes` | 为已执行 Action 记录结果（POST，successful/partial/failed/inconclusive） | admin cookie |
+| `/api/admin/assets/promote` | 资产晋升（POST，统一阶段 + Outcome/Experience 来源 + Walker 批准；注册 Skill 前必须有证据） | admin cookie |
+| `/api/admin/assets/evidence` | 查看某资产由哪些 Outcome/Experience 支持（GET ?kind=&assetId=） | admin cookie |
+| `/api/admin/learning-requests` | 学习请求 GET 列表 / POST 创建 / PATCH 完成补证（证据不足时不注册 Skill） | admin cookie |
 | `/api/match-process` | 批处理需求聚类生成 TopicCandidate（Cron 触发） | CRON_SECRET |
 | `/api/match-history` | 用户对话历史（按 sessionId 列表） | 无（sessionId） |
 | `/api/auth/register` | 邀请码门控注册（用户名+密码+锚点，建账号+消费邀请+建会话） | 无 |
@@ -205,6 +224,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`Footer.astro`**（根级）：全局页脚，被 `Base.astro` 使用。
 - **内容组件**（`content/`）：`BilibiliVideo.astro`、`DialogueBubble.astro`、`PromptBlock.astro`，用于 MDX 文章内嵌，在 `[slug].astro` 中注册为组件映射。
 - **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。计数与降级逻辑在 `src/stores/like.store.ts`（`LikeStore` 接口 + 内存/Upstash 实现 + `createLikeStore()` 工厂）：有 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选，Vercel 自动注入）时用 Redis `incr` 原子自增（修旧 read-then-write 并发丢赞）；否则或 Redis 运行时异常走内存降级（dev 无 Redis 也能真点真涨，重启丢失）。**0 起步真实计数，不再有写死的假基数**。`/api/like` 是 HTTP 薄层（路径白名单 + 每 IP 每路径 60s 冷却 + 单页 999999 上限）。
+- **`BlockFeedback.astro`**（`blocks/`）：内容阅读结果反馈组件（P1-B），位于正文结束后、评论前。三档明确信号（有用/需补充/已过时），需补充/已过时展开可选说明，提交到 `/api/content-feedback`。成功显示"已收到"不显示伪造统计；失败保留表单可重试；localStorage 仅防同浏览器重复提示（不作成功证据）；noscript 降级；aria-live + 键盘 + 44px 点击区。与 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈。
+- **`AdminLayout.astro`**（`admin/`）：后台共享壳（一级模块导航 + 二级上下文导航 + 个人菜单 + 系统健康侧栏）。Props 含 `systemHealth`（healthy/degraded/unavailable/unknown）+ `systemHealthCheckedAt`（最近检查时间），由各页用 `deriveAdminSystemHealth` 从真实事实推导后传入。客户端交互用 `registerLifecycle` + AbortController 单次注册。
 - **About 页面组件**（`about/`）：`SectionHeader.astro`（通用 section 标题组件）。关于我 / 关于站两个 Tab 的内容直接内联在 `about/index.astro`，无独立 `AboutSiteTab.astro` 组件。
 - **`AdminEditBar.astro`**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入。「编辑」按钮触发就地编辑态（不跳页），「历史」按钮打开版本历史 modal，「删除」直调 DELETE API。脚本内 import `inline-editor.ts` + 初始化 `version-history.ts`。
 - **就地编辑组件**（`admin/`）：`InlineEditor.astro`（编辑器骨架：正文/预览/元数据三 tab + 工具栏，预渲染隐藏 admin 激活）、`MetadataForm.astro`（frontmatter 结构化表单 + raw YAML 兜底，`data-field` 控件）、`VersionHistory.astro`（版本时间线 modal + jsdiff）。就地模式挂 `/posts/[slug]`（接管 `#article-body`），独立模式挂 `/admin/content/edit`（新建/brief）。
@@ -228,12 +249,12 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`home-entrance.ts`**：首页 `.draggable-card` 元素 GSAP stagger 入场动画（back.out 缓动）。
 - **`page-transitions.ts`**：全站页面切换动效（`gsap.fromTo` 淡入 + 微上移），消除与 Astro 内置 fade 的冲突。
 - **`sidebar-state.ts`**：侧边栏折叠/展开，通过 `data-sidebar-collapsed` 属性控制，使用 `localStorage` 持久化。
-- **`toc-highlight.ts`**：文章目录当前标题高亮，通过 IntersectionObserver 追踪。
+- **`toc-highlight.ts`**：文章目录当前标题高亮。按滚动位置激活当前目录项（`resolveActiveByScroll` 作真相源，比纯 IntersectionObserver 更可靠——保证首屏与标题间隙总有 active 项；接近文档底部激活末项），并把活跃项滚动进 `.toc-sidebar-inner` 可视区。容器选择逻辑抽到 `toc-highlight.logic.ts`（`resolveTocScrollContainer`，优先 canonical `.toc-sidebar-inner`，安全回退到 toc 自身），含单测。
 - **`justify-tags.ts`**：文章列表标签两端对齐排版，导出 `justifyTags()` 和 `watchJustifyTags()`，含 resize 和 View Transition 生命周期支持，依赖 `@chenglou/pretext`。
 - **`home-canvas.ts`**：首页 Bento 画布拖拽、主题切换、状态栏反应和点击水波纹逻辑（Spark 抽点子盲盒已迁移至 `GreetingCard.astro`）。
 - **`tilt-effect.ts`**：3D 卡片透视倾斜效果，导出 `setupTilt(selector, options)`，被 Base.astro 和 about.astro 使用。
 - **`with-lifecycle.ts`**：Astro View Transition 生命周期工具，导出 `registerLifecycle(init)`。内部 `runCleanup()` 在 `astro:page-load` 和 `astro:before-swap` 触发后**立即置空 cleanup 引用**，保证每个生命周期阶段至多清理一次（15+ 个消费者，契约不要求 cleanup 幂等）。
-- **`inline-editor.ts`**：就地/独立编辑器逻辑（`InlineEditor.astro` 配套）。导出 `enterInlineEditor(slug)`（就地模式入口）、`initStandaloneEditor(slug, draftTemplate)`（独立模式）。含 marked 客户端预览、frontmatter ↔ YAML 双向同步、localStorage 草稿、sha 乐观锁冲突、Ctrl+S 保存、`data-inline-editing` 钩子。
+- **`inline-editor.ts`**：就地/独立编辑器逻辑（`InlineEditor.astro` 配套）。导出 `enterInlineEditor(slug)`（就地模式入口）、`initStandaloneEditor(slug, draftTemplate, topicId?)`（独立模式）。含 marked 客户端预览、frontmatter ↔ YAML 双向同步、localStorage 草稿、sha 乐观锁冲突、Ctrl+S 保存、`data-inline-editing` 钩子。从选题进入编辑时携带 `topicId`，保存时显式回传内容 API（与 frontmatter `sourceTopicId` 双通道保留关联）。
 - **`version-history.ts`**：版本历史逻辑（`VersionHistory.astro` 配套）。导出 `initVersionHistory()`，监听 `version-history:open` 事件。含 git 历史拉取、jsdiff 渲染、回退（复用 PUT 新提交）。
 - **`tool-match-chat.ts`**：工具匹配对话编排器。导出 `mountToolMatch(root)`，返回 cleanup 函数。闭包内管理身份探测、会话状态、计时器、DOM 事件绑定，用 AbortController 统一清理监听器。调用 `tool-match-view.ts` 的渲染函数。被 `ToolMatchChat.astro` 通过 `registerLifecycle` 挂载。
 - **`tool-match-view.ts`**：工具匹配视图层（纯函数）。导出 `renderPlainResponse`/`renderResultCard`/`renderDiagnosisResponse`/`renderComplianceResponse`/`renderPromptBox` 渲染函数 + `escapeHtml`/`escapeAttr` 转义 + `MatchResponse`/`ActionPlanResult`/`ChatMessage` 等类型。零状态依赖、零 DOM 副作用，只接收 data 返回 HTML 字符串，便于独立单测。
@@ -302,7 +323,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 业务编排层，API 路由只做协议层（解析、限流、响应），业务委托给 service。`agent-orchestrator.service.ts` 是 `/api/match` 的业务核心。
 
-- **`interfaces.ts`**：业务层端口。定义 `MatchingServicePort`、`VisibilityServicePort`（角色 `public`/`user`/`admin` × 可见性 `public`/`draft`/`private`/`admin-only`）、`UserContextServicePort`、`AccountServicePort`（注册/登录/登出/改密/重置/封禁/owner bootstrap）、`UserProfileServicePort`（按 username）、`AgentOrchestratorPort`、`PerceptionServicePort`、`FeedbackServicePort`、`AdminReviewServicePort`、`SafetyServicePort`。
+- **`interfaces.ts`**：业务层端口。定义 `MatchingServicePort`、`VisibilityServicePort`（角色 `public`/`user`/`admin` × 可见性 `public`/`draft`/`private`/`admin-only`）、`UserContextServicePort`、`AccountServicePort`（注册/登录/登出/改密/重置/封禁/owner bootstrap）、`UserProfileServicePort`（按 username）、`AgentOrchestratorPort`、`PerceptionServicePort`、`FeedbackServicePort`、`AdminReviewServicePort`、`SafetyServicePort`、`WorkbenchServicePort`（WorkItem 决策聚合：createProposal/requestDecision/decide/createAction/updateAction/recordOutcome/overridePriority/getTodayProjection/list）、`ContentFeedbackServicePort`（公开内容反馈：submit/findByContent/findByTopic/findRecent）、`AssetServicePort`（资产晋升：promote/getSupportingEvidence/recentPromotions/createLearningRequest/listLearningRequests/fulfillLearningRequest）。所有 service 返回机器可读 code（`WorkbenchResult`/`ContentFeedbackResult`/`AssetResult`），API 层据此映射 HTTP 状态，不靠中文文案判断。
 - **`agent-orchestrator.service.ts`**：`/api/match` 的业务核心（取代旧 `question.service.ts`）。按六模块生命周期编排 `handleNeed`：`perceive`（PerceptionService）→ `planRecommendation`（本地匹配 + 模型增强 + 字段挑选）→ `persistSession`（会话/统计/消息）→ `buildAgentRecommendation` + `safetyFlags` → `recordNeedCase`（生成 + 保存 NeedCase，失败降级记 Incident）→ `buildResponsePayload`。AI 失败降级本地规则；NeedCase 保存失败不阻断用户响应。对外 `handleNeed` 签名稳定，内部拆为命名步骤函数。
 - **`perception.service.ts`**：六模块之 Perception。消息截断、逐条 PII 脱敏 + 压缩、最新需求提取、未成年标记，经 `PerceptionServicePort` 暴露。
 - **`user-context.service.ts`**：汇总身份（`admin`/`invited`/`public`）+ invited 会话 + 画像为 `UserContext`。
@@ -312,19 +333,22 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`feedback.service.ts`**：反馈保存并回写 NeedCase 的 `feedbackStatus`。
 - **`admin-review.service.ts`**：NeedCase 复盘列表 + admin review 状态管理。
 - **`brief.service.ts`**：选题创作简报生成（规则给角度/结构，不代写正文）。
-- **`hit-rate.service.ts`**：按已发布内容聚合关联需求簇的 resolved/stuck 命中率。
+- **`hit-rate.service.ts`**：内容反馈结果聚合。`calculateContentHitRates`（旧：按已发布内容聚合关联需求簇 resolved/stuck 命中率）+ `buildContentOutcomeSummaries`（P1-C：双信号结果分组，`matchOutcome` 来自 NeedCase.feedbackStatus，`contentOutcome` 来自 ContentFeedbackEvent.signal，两组并列不合并分母，无反馈返回 null 不返 0% 失败）+ `getLikeLeaderboard`。
 - **`ideas.service.ts`**：点子页编排服务（`createIdeasService(deps)` 工厂，deps 注入模式）。`getIdeasPageData()` 组合 content 读取（`getPublishedIdeas`）+ 需求统计聚合（`getNeedCaseStats`，近 30 天）+ astro render，调用 knowledge/ideas 的纯函数打分。**knowledge 层不直连 store**——store 聚合由本 service 承接（与 about/insights/mcp 直接消费 `getNeedCaseStats` 的既有模式一致，统计聚合走 store 自由函数而非 NeedCaseRepositoryPort）。
+- **`workbench.service.ts`**：WorkItem 决策聚合的业务编排（P0-B/C/D + P1）。所有状态迁移在此完成（页面/前端不拼装业务事实）。守护 hai-razor 信任边界：无证据不进 pending、无 expectedOutcome 不进 authorized、无 completed Action 不记 Outcome、AI 无证据只能 proposal、每次状态变化写 append-only history（actor/时间/from→to/reason）。`overridePriority` 保存优先级覆盖的 from→to 理由与历史（不抹掉原排序依据）。`suggestNextAction`（纯函数，导出）按 Outcome 结果派生下一步候选动作（successful→evaluate-asset / partial→create-content / failed→update-content / inconclusive→create-learning-request），不自动执行。
+- **`content-feedback.service.ts`**：内容阅读反馈业务编排（P1-A）。验证 contentId 对应真实公开内容（不存在→content-not-found），sourceTopicId 从内容元数据派生（忽略客户端传入），note 走 `redactSensitiveText` + `compactText` 限长脱敏，写入 `ContentFeedbackEvent`。生产缺 Redis 返回 storage-unavailable 不静默丢反馈。
+- **`asset.service.ts`**：资产统一晋升链路（P2-B）。`promote` 把统一 `AssetLifecycleStage` 映射回 Experience/Rule/Skill 各自本地枚举并回写，同时记录 `AssetEvidenceLink`（来源 Outcome/Experience + Walker 批准 + 理由 + 单调 seq）。注册 Skill 前 `missing-evidence` 守护；`createLearningRequest`/`fulfillLearningRequest` 处理证据不足补证；`getSupportingEvidence`/`recentPromotions` 反查支撑来源。
 - **`matching.service.ts`** / **`visibility.service.ts`**：本地匹配（`matchNeed`）/ 可见性判断（`canSee`、`redactNeedCase`、`filterStats`）。
 
 #### stores/（数据仓储端口层）
 
-- **`ports.ts`**：数据层端口。定义 `AuthState`（`public`/`user`/`admin`）、`UserAccount`（用户名+scrypt 密码哈希，零 PII）/`AccountRepositoryPort`、`UserSession`/`SessionRepositoryPort`、`NeedCase`（核心业务对象，带 `username` 归属）、`MatchSession`、`ConversationMessage`、`MatchFeedbackType`（8 种）、`TopicCandidate`、`InviteCode`、`UserProfile`（按 username）、`Incident`、`PublicStats` 等接口及对应 RepositoryPort；`MatchSessionRepositoryPort` 含 `createSessionId`/`saveMessages`/`incrementStats`（会话生命周期收口）。上层只依赖这些接口。
-- **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`**（env 种子 + Redis 用量）/ **`managed-invite-code.store.ts`**（后台生成的邀请码，Redis `auth:invite-code:*` + `auth:invite-codes` 集合，generate/list/disable/delete/recordUsedBy）/ **`account.store.ts`**（UserAccount，Redis `auth:account:*` + SETNX 占名 + updateRole/delete）/ **`session.store.ts`**（UserSession，Redis `auth:session:*` + user→session 索引，listByUsername/killAllByUsername）/ **`user-profile.store.ts`** / **`incident.store.ts`**：各仓储的工厂实现（account/session/managed-invite 自包含 Redis+内存，其余委托 `conversation/store.ts`）。
+- **`ports.ts`**：数据层端口。定义 `AuthState`（`public`/`user`/`admin`）、`UserAccount`（用户名+scrypt 密码哈希，零 PII）/`AccountRepositoryPort`、`UserSession`/`SessionRepositoryPort`、`NeedCase`（核心业务对象，带 `username` 归属）、`MatchSession`、`ConversationMessage`、`MatchFeedbackType`（8 种）、`TopicCandidate`、`InviteCode`、`UserProfile`（按 username）、`Incident`、`PublicStats`、`WorkItem`（后台决策聚合根：evidenceRefs/decision/actions/outcomes/history，状态机 proposal→...→resolved，来源队列 user-demand/walker-thesis/system-event/ai-asset）/`WorkItemRepositoryPort`、`ContentFeedbackEvent`（内容阅读反馈，signal useful/needs-more/outdated）/`ContentFeedbackRepositoryPort`、`AssetKind`/`AssetLifecycleStage`/`normalizeAssetStage`/`AssetEvidenceLink`/`AssetEvidenceLinkRepositoryPort`（资产生命周期统一映射 + 晋升证据链）、`LearningRequest`/`LearningRequestRepositoryPort`（证据不足补证任务）等接口及对应 RepositoryPort；`MatchSessionRepositoryPort` 含 `createSessionId`/`saveMessages`/`incrementStats`（会话生命周期收口）。上层只依赖这些接口。
+- **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`**（env 种子 + Redis 用量）/ **`managed-invite-code.store.ts`**（后台生成的邀请码，Redis `auth:invite-code:*` + `auth:invite-codes` 集合，generate/list/disable/delete/recordUsedBy）/ **`account.store.ts`**（UserAccount，Redis `auth:account:*` + SETNX 占名 + updateRole/delete）/ **`session.store.ts`**（UserSession，Redis `auth:session:*` + user→session 索引，listByUsername/killAllByUsername）/ **`user-profile.store.ts`** / **`incident.store.ts`** / **`work-item.store.ts`**（WorkItem，Redis `match:workitem:*` + 活跃列表 + 状态索引）/ **`content-feedback.store.ts`**（ContentFeedback，Redis `content-feedback:*` + 按内容/选题索引）/ **`asset-evidence-link.store.ts`**（AssetEvidenceLink，Redis `asset-link:*` + 按资产索引 + 单调 seq）/ **`learning-request.store.ts`**（LearningRequest，Redis `learning-request:*` + 按状态索引）：各仓储的工厂实现（account/session/managed-invite 自包含 Redis+内存，其余委托 `conversation/store.ts`）。
 - **`like.store.ts`**：点赞计数仓储（独立于 conversation/store）。`LikeStore` 接口 + `InMemoryLikeStore`（Map 计数 + 时间戳冷却）+ `UpstashLikeStore`（Redis `incr` 原子自增、`set ex` 冷却，运行时异常降级内存）+ `createLikeStore()` 工厂（有 KV/UPSTASH 凭据用 Upstash，否则内存）。**0 起步真实计数，无写死假基数**。被 `/api/like` 调用。
 
 #### conversation/（存储实现层）
 
-- **`store.ts`**：Redis + 内存降级的存储实现。管理 `MatchSession`、`NeedCase`（取代旧 DemandEvent）、`TopicCandidate`、`MatchFeedbackEvent`、`ConversationMessage`、`InvitedSession`、`UserProfile`、`Incident` 生命周期，导出 `getRedis()`、`createSessionId()`、`saveConversationMessages()`、`getNeedCaseStats()`（取代旧 `getDemandStats`）、`getTopicCandidates()`、`saveNeedCase()`、`redactNeedCasesBySession()` 等。被 `stores/` 仓储委托调用，也被 MCP server 和 `/api/match-feedback`（`saveMatchFeedback`）直接引用。
+- **`store.ts`**：Redis + 内存降级的存储实现。管理 `MatchSession`、`NeedCase`（取代旧 DemandEvent）、`TopicCandidate`、`MatchFeedbackEvent`、`ConversationMessage`、`InvitedSession`、`UserProfile`、`Incident`、`WorkItem`（match:workitem:*）、`ContentFeedbackEvent`（content-feedback:*）、`AssetEvidenceLink`（asset-link:*）、`LearningRequest`（learning-request:*）生命周期，导出 `getRedis()`、`createSessionId()`、`saveConversationMessages()`、`getNeedCaseStats()`（取代旧 `getDemandStats`）、`getTopicCandidates()`、`saveNeedCase()`、`redactNeedCasesBySession()`、`saveWorkItem/listWorkItems/listActiveWorkItems`、`saveContentFeedback/findContentFeedbackByContent/findRecentContentFeedback`、`saveAssetEvidenceLink/findAssetEvidenceLinks`、`saveLearningRequest/findLearningRequestsByStatus` 等。被 `stores/` 仓储委托调用，也被 MCP server 和 `/api/match-feedback`（`saveMatchFeedback`）直接引用。
 
 #### shared/（共享工具）
 
@@ -342,6 +366,10 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`src/lib/admin-content-helpers.ts`**：Admin 内容路由共享工具（去重提取）。导出 `jsonResponse` / `getContentStore` / `validateSlug` / `getPath` / `getContentId` / `getToken` / `CONTENT_PATH_PREFIX`。被 `[slug].ts`、`[slug]/history.ts`、`[slug]/version.ts` 引用。
 - **`src/lib/frontmatter-editor.ts`**：frontmatter ↔ YAML 纯函数。导出 `parseDoc(raw)` / `serializeDoc(doc)` / `FORM_ENUMS`（与 `content.config.ts` 枚举一致）/ `FORM_MANAGED_KEYS`。被 `MetadataForm.astro`、`inline-editor.ts`、`version-history.ts` 引用。
 - **`src/lib/content-draft.ts`**：未保存草稿 localStorage 暂存纯函数。导出 `loadDraft` / `saveDraft` / `clearDraft`（key `walker:draft:<slug>`，损坏/不可用降级 null）。被 `inline-editor.ts` 引用。
+- **`src/lib/storage-mode.ts`**：存储环境合同（P0-B03）。`resolveStorageMode({hasRedis, environment})` → `redis | memory-development | unavailable`（开发/test 无 Redis 允许内存；生产/预览缺 Redis 必须 unavailable）。`isWritable` / `isPersistent`。被 workbench/content-feedback service 用于判定写 API 是否允许。
+- **`src/lib/rate-limiter.ts`**：基础频率限流（P1-A04）。`consumeRateLimit(namespace, ip, config)` 用 IP 的 SHA-256 哈希 + 滚动窗口计数（Redis INCR+EXPIRE 原子；无 Redis 内存降级），**不用 IP 明文长期识别**（窗口过期丢弃哈希）。`hashIdentifier` 不暴露明文。被 `/api/content-feedback` 使用。
+- **`src/lib/admin-actor.ts`**：从 admin 请求派生操作者身份（用于审计与 WorkItem history.actor）。`resolveAdminActor(request)` 优先用会话 username，失败回退 role；**不信任客户端传入的 actor**（所有 service 的 actor 由这里派生）。
+- **`src/components/admin/admin-shell-state.ts`**：系统健康事实合同（P0-A02）。`AdminSystemHealth`（healthy/degraded/unavailable/unknown）+ `deriveAdminSystemHealth({configured, lastProbeOk, stats, hasGatewayIncident})` 从真实事实推导，零数据落 unknown、缺配置/探测失败落 unavailable、绝不硬编码 healthy。被各 admin 页传入 AdminLayout。
 - **`src/types/nav.ts`**：导航类型定义。`NavItem`（`label`、`href`、`icon`、`hint?`）和 `NavGroup`（`title?`、`items`），被 `Navigation.astro` 和 `SidebarNav.astro` 引用。
 
 ## 路径别名
@@ -352,7 +380,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 
 ## 文档治理
 
-`docs/` 不是当前项目工作台。当前有效的 PRD、计划、架构和执行状态统一放在 `.agents/skills/walker-northstar/references/`（walker-northstar skill 仓库，独立 git）。`docs/` 仅保留三类材料：归档（`docs/archive/`）、架构决策记录（`docs/adr/`）、专题资料（`docs/AI赋能/` 等）。详见 `docs/README.md`。
+`docs/` 不是当前项目工作台。当前有效的 PRD、计划、架构和执行状态统一放在 `.agents/skills/walker-northstar/references/`（walker-northstar skill 仓库，独立 git）。`docs/` 保留四类材料：归档（`docs/archive/`）、架构决策记录（`docs/adr/`）、专题资料（`docs/AI赋能/` 等）、**设计输入与审计**（`docs/design/`）。`docs/design/` 存放后台与内容详情页综合实施方案、可执行 to-do、hai-razor 审计等**候选设计输入**——它们是 reality 实施的依据与执行记录回写处，但不拥有当前执行权（执行权在 `references/working/` 三件套，确认切换轮次后迁入）。详见 `docs/README.md`。
 
 ## 内容创作
 
