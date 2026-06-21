@@ -67,3 +67,6 @@ public/pagefind/
 # dev server 日志
 .astro-dev.log
 dev-server.log
+
+# Playwright test output (transient)
+test-results/
