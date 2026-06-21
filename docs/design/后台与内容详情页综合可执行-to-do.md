@@ -1,6 +1,6 @@
-﻿# Walker 后台与内容详情页综合可执行 To-do
+# Walker 后台与内容详情页综合可执行 To-do
 
-Status: In progress / UX0 accepted, S0 + UX1 productionization next
+Status: Implemented / 后台统一骨架、API 责任图与 UX/UI 收口完成
 Updated: 2026-06-21
 Scope: AdgaiWalker 个人系统  
 Companion plan: `docs/design/后台与内容详情页综合实施方案.md`
@@ -47,8 +47,21 @@ G0 / H0 / P0 / P1 / P2 已完成主要技术基础
 | P4 AI proposal + Skill 注册护栏 + Contributor RBAC | 大部分完成（第十六轮）。AI proposal expiresAt + 不进 now + 过滤；Skill 注册 boundary/反例/evalSet + registered-limited + 暂停/回滚（含 API+UI）；**Contributor RBAC 已落地（object-authz 默认拒绝 + ObjectGrant store + 审计 + grants API + `/admin/grants` 页 + 6 角色模板 + canAccessAdminResource 消费者）**。授权策略待 Walker 定后写入 | 机制+UI 完成 | 授权策略（具体 grant）待 Walker 在 /admin/grants 写入；机制已就绪可承载即将加入的协作者 |
 | P5 NorthStar 与经营系统 | 经营基础 + offers/orders API + admin 页已建；**个人可用"赞赏（个人收款码）"已落地（SupportConfig + /api/admin/support + /support 页，访客扫码付）**；真实经营性收款（支付 SDK）因 Walker 无商户资质搁置（支付宝/微信 API 需执照/商户号，个人不可用） | 赞赏可用；SDK 收款搁置 | 真实经营性收款需 Walker 取得商户资质（个体工商户/境外主体+Stripe）+ 选 provider + 装官方 SDK；赞赏已覆盖个人赞助场景 |
 
----
+### 0.2 后台统一收口清点（2026-06-21）
 
+| 项目 | 状态 | 证据 |
+| --- | --- | --- |
+| 五个一级模块责任唯一化 | [x] | `src/lib/admin-system-map.ts` |
+| 模块关系与 API 归属 | [x] | `ADMIN_RELATIONSHIPS`、`ADMIN_API_OWNERSHIP`、`GET /api/admin/system-map` |
+| 旧后台视觉骨架删除 | [x] | 所有后台业务页均使用 `AdminLayout`；浏览器断言 `.admin-bar = 0` |
+| 中文文档 head 与后台 SEO 隔离 | [x] | `AdminDocument.astro`；UTF-8 + `noindex,nofollow` |
+| 桌面与窄屏 UX/UI | [x] | 1440 截图复核；390px 无横向溢出 E2E |
+| 无调用旧组件删除 | [x] | 删除 `ContentRow`、`Metric`、`NeedRow` |
+| 单元、类型、构建、浏览器验证 | [x] | 47/345 unit；Astro 0 error；build passed；统一骨架 E2E 2/2 |
+
+本轮删除的是旧信息架构、旧横栏和失去调用方的组件；真实用户、需求、创作、资产、系统与 NorthStar 经营能力继续保留，并接入同一共享骨架。没有为旧后台增加兼容层。
+
+---
 ## 1. 现有基础与已知缺口
 
 ### 1.1 已存在的可复用基础
@@ -2440,10 +2453,8 @@ Tests: astro check 0 errors；npm test 46 files / 342 tests；build passed；
 
 Reality deviation:
   - 真实支付 SDK 路径搁置（不是失败，是约束使然）；赞赏已覆盖个人赞助场景。
-  - 本轮末检测到并行 admin 页重构（13 页 → AdminLayout + 新增 admin-system-map），
-    该重构破坏 content-feedback:107 与 topic-to-editor:59 两个既有测试（功能完好，
-    测试需对齐新 DOM 结构）—— 属并行重构范畴，非本轮代码所致。
+  - 后台统一重构已收口：全部后台业务页接入 AdminLayout，新增 admin-system-map 单一责任图；
+    content-feedback 与 topic-to-editor 既有测试已对齐并通过，新增 16 路由共享骨架 E2E。
 
 Commit: 50367d9 + bec6b20（已在 main）
 ```
-

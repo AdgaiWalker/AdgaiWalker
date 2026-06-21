@@ -10,7 +10,6 @@ import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { readSessionPayload } from '@/lib/account-auth';
 import { findAllObjectGrants } from '@/conversation/store';
-import type { ObjectGrant } from '@/stores/ports';
 
 if (!isAdmin(Astro.request)) {
   return Astro.redirect('/login');
@@ -35,18 +34,8 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
 ];
 ---
 
-<Base title="授权管理 — Walker">
+<AdminLayout active="/admin/grants" title="访问控制" subtitle="对象级授权、角色模板与操作责任">
   <main class="admin-main">
-    <header class="admin-bar">
-      <h1>Contributor 授权</h1>
-      <nav class="admin-nav">
-        <a href="/admin">仪表盘</a>
-        <a href="/admin/accounts">账号</a>
-        <a href="/admin/invite-codes">邀请码</a>
-        <a href="/admin/grants" aria-current="page">授权</a>
-        <a href="/">站点</a>
-      </nav>
-    </header>
 
     <p class="hint">对象级授权让 <code>role=user</code> 的协作者受限访问特定资源（不开放整个后台）。授权按 username + 资源类型 + 资源 ID（<code>*</code> 表全部）+ 动作；可设过期时间。所有决策进操作审计。</p>
 

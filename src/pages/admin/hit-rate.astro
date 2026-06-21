@@ -1,4 +1,5 @@
 ---
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 // /admin/hit-rate — 内容命中率仪表盘，需认证
 import { isAdmin } from '@/lib/admin-auth';
 import { getRecentNeedCases, getTopicCandidates, findRecentContentFeedback } from '@/conversation/store';
@@ -61,94 +62,62 @@ const summariesWithSignal = outcomeSummaries.filter(
 const contentByHref = new Map(contents.map(c => [c.href, c]));
 ---
 
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>内容命中率 — Walker</title>
-  <style>
+<AdminLayout active="/admin/hit-rate" domain="creation" title="内容命中" subtitle="区分已解决、部分解决、卡住与尚无信号">
+<style is:global>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fafaf9; color: #1c1917; }
-    .admin-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; position: sticky; top: 0; z-index: 100; }
-    .admin-bar-left { display: flex; align-items: center; gap: 0.75rem; }
-    .admin-bar-logo { font-size: 1rem; font-weight: 800; color: #c4704a; }
-    .admin-bar-badge { padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(196,112,74,0.1); color: #c4704a; font-size: 0.68rem; font-weight: 700; }
-    .admin-bar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .admin-bar-link { color: #78716c; text-decoration: none; font-size: 0.82rem; font-weight: 650; }
-    .admin-bar-link:hover, .admin-bar-link.active { color: #1c1917; }
-    .logout-btn { padding: 0.35rem 0.75rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: transparent; color: #78716c; font-size: 0.78rem; font-weight: 650; cursor: pointer; }
-    .admin-main { max-width: 62rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: transparent; color: var(--adm-text); }
+     .admin-main { max-width: 1180px; margin: 0 auto; }
     .admin-welcome { margin-bottom: 1.25rem; }
     .admin-welcome h1 { font-size: 1.5rem; font-weight: 850; margin-bottom: 0.35rem; }
-    .admin-welcome p { color: #78716c; font-size: 0.88rem; line-height: 1.6; }
+    .admin-welcome p { color: var(--adm-text-dim); font-size: 0.88rem; line-height: 1.6; }
     .hit-list { display: grid; gap: 0.75rem; }
     .hit-row { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem; }
     .hit-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 0.7rem; }
-    .hit-title { color: #1c1917; text-decoration: none; font-size: 0.98rem; font-weight: 850; line-height: 1.45; }
-    .hit-title:hover { color: #c4704a; }
+    .hit-title { color: var(--adm-text); text-decoration: none; font-size: 0.98rem; font-weight: 850; line-height: 1.45; }
+    .hit-title:hover { color: var(--adm-brand-strong); }
     .hit-rate { color: #065f46; font-size: 0.9rem; font-weight: 850; white-space: nowrap; }
-    .hit-rate.empty { color: #a8a29e; }
+    .hit-rate.empty { color: var(--adm-text-faint); }
     .hit-bar { display: flex; height: 0.7rem; overflow: hidden; border-radius: 999px; background: #e7e5e4; margin-bottom: 0.65rem; }
     .hit-bar-resolved { background: #16a34a; }
     .hit-bar-stuck { background: #f59e0b; }
-    .hit-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; color: #78716c; font-size: 0.75rem; }
+    .hit-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; color: var(--adm-text-dim); font-size: 0.75rem; }
     .hit-chip { padding: 0.18rem 0.5rem; border-radius: 999px; background: #f5f5f4; color: #57534e; font-weight: 750; }
-    .empty { text-align: center; padding: 3rem 1rem; color: #a8a29e; border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--adm-text-faint); border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
     .view-switch { display: inline-flex; gap: 0.3rem; padding: 0.25rem; margin-bottom: 1.25rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; background: #fff; flex-wrap: wrap; }
-    .view-switch a { padding: 0.4rem 0.7rem; border-radius: 8px; color: #78716c; text-decoration: none; font-size: 0.78rem; font-weight: 750; }
-    .view-switch a.active { background: rgba(196,112,74,0.1); color: #c4704a; }
+    .view-switch a { padding: 0.4rem 0.7rem; border-radius: 8px; color: var(--adm-text-dim); text-decoration: none; font-size: 0.78rem; font-weight: 750; }
+    .view-switch a.active { background: rgba(53,191,171,0.1); color: var(--adm-brand-strong); }
     .hit-chip.dim { background: rgba(124,58,237,0.08); color: #7c3aed; }
     .lb-list { display: grid; gap: 0.5rem; }
     .lb-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.65rem 0.9rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; }
-    .lb-rank { width: 1.6rem; text-align: center; font-weight: 850; color: #a8a29e; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
-    .lb-rank.top { color: #c4704a; }
-    .lb-title { flex: 1; color: #1c1917; text-decoration: none; font-size: 0.9rem; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .lb-title:hover { color: #c4704a; }
-    .lb-count { font-weight: 850; color: #c4704a; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; flex-shrink: 0; }
-    .lb-path { font-size: 0.7rem; color: #a8a29e; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .lb-rank { width: 1.6rem; text-align: center; font-weight: 850; color: var(--adm-text-faint); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .lb-rank.top { color: var(--adm-brand-strong); }
+    .lb-title { flex: 1; color: var(--adm-text); text-decoration: none; font-size: 0.9rem; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-title:hover { color: var(--adm-brand-strong); }
+    .lb-count { font-weight: 850; color: var(--adm-brand-strong); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; flex-shrink: 0; }
+    .lb-path { font-size: 0.7rem; color: var(--adm-text-faint); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
     /* P1-C02：双信号结果分组 —— 需求匹配与内容阅读分开解释 */
     .outcome-groups { display: grid; gap: 0.6rem; margin-bottom: 0.5rem; }
-    .outcome-group { padding: 0.6rem 0.75rem; border-radius: 8px; background: #fafaf9; border: 1px solid rgba(0,0,0,0.04); }
+    .outcome-group { padding: 0.6rem 0.75rem; border-radius: 8px; background: transparent; border: 1px solid rgba(0,0,0,0.04); }
     .outcome-label { font-size: 0.7rem; font-weight: 750; color: #57534e; margin-bottom: 0.4rem; }
     .outcome-body { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-    .outcome-null { font-size: 0.78rem; color: #a8a29e; }
+    .outcome-null { font-size: 0.78rem; color: var(--adm-text-faint); }
     .feedback-details { margin-top: 0.65rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; overflow: hidden; }
     .feedback-details summary { cursor: pointer; padding: 0.65rem 0.8rem; color: #57534e; font-size: 0.78rem; font-weight: 800; list-style-position: inside; }
     .feedback-details[open] summary { border-bottom: 1px solid rgba(0,0,0,0.05); }
-    .feedback-privacy { padding: 0 0.8rem 0.65rem; color: #a8a29e; font-size: 0.72rem; line-height: 1.6; }
+    .feedback-privacy { padding: 0 0.8rem 0.65rem; color: var(--adm-text-faint); font-size: 0.72rem; line-height: 1.6; }
     .feedback-list { display: grid; gap: 0.5rem; padding: 0 0.8rem 0.8rem; }
-    .feedback-item { padding: 0.65rem; border-radius: 8px; background: #fafaf9; border: 1px solid rgba(0,0,0,0.04); }
+    .feedback-item { padding: 0.65rem; border-radius: 8px; background: transparent; border: 1px solid rgba(0,0,0,0.04); }
     .feedback-item-head { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.35rem; }
     .feedback-note { color: #44403c; font-size: 0.8rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .feedback-note.empty-note { color: #a8a29e; }
+    .feedback-note.empty-note { color: var(--adm-text-faint); }
     @media (max-width: 760px) {
-      .admin-bar { flex-direction: column; align-items: flex-start; }
       .admin-main { padding: 1.25rem 1rem 3rem; }
       .hit-head { flex-direction: column; }
       .lb-row { flex-wrap: wrap; }
       .lb-path { order: 5; width: 100%; }
     }
   </style>
-</head>
-<body>
-  <div class="admin-bar">
-    <div class="admin-bar-left">
-      <span class="admin-bar-logo">Walker</span>
-      <span class="admin-bar-badge">Admin</span>
-    </div>
-    <div class="admin-bar-right">
-      <a href="/admin" class="admin-bar-link">仪表盘</a>
-      <a href="/admin/insights" class="admin-bar-link">洞察</a>
-      <a href="/admin/hit-rate" class="admin-bar-link active">命中率</a>
-      <a href="/admin/topics" class="admin-bar-link">选题池</a>
-      <a href="/admin/review?view=clusters" class="admin-bar-link">需求复盘</a>
-      <a href="/" class="admin-bar-link">查看站点</a>
-      <button class="logout-btn" id="logout-btn">登出</button>
-    </div>
-  </div>
-
-  <main class="admin-main">
+<main class="admin-main">
     <section class="admin-welcome">
       <h1>内容反馈台</h1>
       <p>已发布内容的服务反馈全景：哪些真解决了问题，哪些还让人卡着，哪些更受点赞。</p>
@@ -300,12 +269,4 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
       )
     )}
   </main>
-
-  <script>
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-      await fetch('/api/admin/auth', { method: 'DELETE' });
-      window.location.href = '/admin/login';
-    });
-  </script>
-</body>
-</html>
+</AdminLayout>

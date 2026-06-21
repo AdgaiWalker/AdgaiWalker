@@ -1,67 +1,14 @@
 ---
 import { Icon } from 'astro-icon/components';
+import AdminDocument from '@/layouts/AdminDocument.astro';
 import '@/styles/admin.css';
 import '@/styles/admin-pilot.css';
 import { getAdminSystemStatus, type AdminSystemHealth } from './admin-shell-state';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: string;
-  disabled?: boolean;
-  badge?: number;
-}
-
-interface NavDomain extends NavItem {
-  id: 'workbench' | 'needs' | 'creation' | 'assets' | 'system';
-}
-
-const DOMAINS: NavDomain[] = [
-  { id: 'workbench', label: '工作台', href: '/admin', icon: 'house' },
-  { id: 'needs', label: '需求', href: '/admin/review', icon: 'circle-dot' },
-  { id: 'creation', label: '创作', href: '/admin/content', icon: 'pen-line' },
-  { id: 'assets', label: '资产', href: '/admin/assets', icon: 'package' },
-  { id: 'system', label: '系统', href: '/admin/ai-gateway', icon: 'settings-2' },
-];
-
-const SECONDARY: Record<NavDomain['id'], NavItem[]> = {
-  workbench: [
-    { label: '今日', href: '/admin', icon: 'sun' },
-    { label: '决定', href: '/admin?view=decisions', icon: 'list-checks' },
-    { label: '动作', href: '/admin?view=actions', icon: 'play-circle' },
-    { label: '结果', href: '/admin/outcomes', icon: 'circle-check' },
-  ],
-  needs: [
-    { label: '用户', href: '/admin/accounts', icon: 'users' },
-    { label: '需求收件箱', href: '/admin/review', icon: 'inbox' },
-    { label: '需求分析', href: '/admin/insights', icon: 'scan-search' },
-    { label: '选题', href: '/admin/topics', icon: 'notebook-pen' },
-  ],
-  creation: [
-    { label: '内容', href: '/admin/content', icon: 'files' },
-    { label: '创作简报', href: '/admin/brief', icon: 'file-pen-line' },
-    { label: '内容命中', href: '/admin/hit-rate', icon: 'target' },
-    { label: '功能决策', href: '/admin/insights', icon: 'split' },
-  ],
-  assets: [
-    { label: '资产总览', href: '/admin/assets', icon: 'layout-dashboard' },
-    { label: '经验', href: '/admin/experiences', icon: 'notebook-tabs' },
-    { label: '规则', href: '/admin/rules', icon: 'git-branch' },
-    { label: 'Skill', href: '/admin/skills', icon: 'sparkles' },
-    { label: '学习任务', href: '/admin/assets?view=learning', icon: 'graduation-cap' },
-  ],
-  system: [
-    { label: 'AI Gateway', href: '/admin/ai-gateway', icon: 'activity' },
-    { label: '访问控制', href: '/admin/grants', icon: 'shield-check' },
-    { label: '邀请码', href: '/admin/invite-codes', icon: 'ticket-check' },
-    { label: '系统事件', href: '/admin/incidents', icon: 'triangle-alert' },
-    { label: '外观与媒体', href: '/admin/appearance', icon: 'image' },
-  ],
-};
+import { ADMIN_MODULES, ADMIN_SECONDARY_NAV, resolveAdminModule, type AdminModuleId, type AdminNavItem } from '@/lib/admin-system-map';
 
 interface Props {
   active?: string;
-  domain?: NavDomain['id'];
+  domain?: AdminModuleId;
   title: string;
   subtitle?: string;
   immersive?: boolean;
@@ -90,17 +37,10 @@ const {
 
 const systemStatus = getAdminSystemStatus(systemHealth, systemHealthCheckedAt);
 
-const inferredDomain =
-  active === '/admin' ? 'workbench' :
-  ['/admin/outcomes'].some(path => active.startsWith(path)) ? 'workbench' :
-  ['/admin/accounts', '/admin/review', '/admin/insights', '/admin/topics'].some(path => active.startsWith(path)) ? 'needs' :
-  ['/admin/content', '/admin/brief', '/admin/hit-rate'].some(path => active.startsWith(path)) ? 'creation' :
-  ['/admin/experiences', '/admin/rules', '/admin/skills', '/admin/assets'].some(path => active.startsWith(path)) ? 'assets' :
-  'system';
-const activeDomain = domain ?? inferredDomain;
+const activeDomain = domain ?? resolveAdminModule(active);
 
-const currentDomain = DOMAINS.find(item => item.id === activeDomain)!;
-const currentItems = SECONDARY[activeDomain].map(item => {
+const currentDomain = ADMIN_MODULES.find(item => item.id === activeDomain)!;
+const currentItems = ADMIN_SECONDARY_NAV[activeDomain].map(item => {
   if (item.href === '/admin') return { ...item, badge: navCounts.today };
   if (item.href === '/admin?view=decisions') return { ...item, badge: navCounts.decisions };
   if (item.href === '/admin?view=actions') return { ...item, badge: navCounts.actions };
@@ -111,7 +51,7 @@ const currentItems = SECONDARY[activeDomain].map(item => {
 });
 const currentPath = Astro.url.pathname;
 const currentView = Astro.url.searchParams.get('view');
-const isSecondaryActive = (item: NavItem) => {
+const isSecondaryActive = (item: AdminNavItem) => {
   const [path, search = ''] = item.href.split('?');
   const view = new URLSearchParams(search).get('view');
   if (view || path === currentPath) {
@@ -121,6 +61,7 @@ const isSecondaryActive = (item: NavItem) => {
 };
 ---
 
+<AdminDocument title={`${title} — Walker 后台`}>
 <div class="adm-root">
   <div class="adm-atmosphere" aria-hidden="true"></div>
   <div class="adm-shell">
@@ -130,7 +71,7 @@ const isSecondaryActive = (item: NavItem) => {
       </a>
 
       <nav class="adm-domain-nav">
-        {DOMAINS.map(item => {
+        {ADMIN_MODULES.map(item => {
           const isActive = item.id === activeDomain;
           return (
             <a class:list={['adm-domain-link', { 'is-active': isActive }]} href={item.href} aria-current={isActive ? 'page' : undefined} data-admin-primary={item.id}>
@@ -245,6 +186,7 @@ const isSecondaryActive = (item: NavItem) => {
   </dialog>
 </div>
 
+</AdminDocument>
 <script>
   import { registerLifecycle } from '@/scripts/with-lifecycle';
 

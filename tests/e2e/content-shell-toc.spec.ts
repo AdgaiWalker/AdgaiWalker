@@ -113,6 +113,14 @@ test.describe('H0 桌面 TOC（1440 宽）', () => {
     const content = page.locator('.reading-content');
 
     await expect(sidebar).toBeVisible();
+    // 布局测量需等字体加载 + GSAP 入场动画落定，否则负载下读到过渡态尺寸（flake）。
+    await page.evaluate(() => (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts?.ready);
+    await expect(content).toBeVisible();
+    // 等正文宽度稳定（入场动画结束 → 接近 max-width 700）
+    await expect.poll(async () => {
+      const box = await content.boundingBox();
+      return box ? Math.round(box.width) : 0;
+    }, { timeout: 5000 }).toBeGreaterThan(600);
     const sidebarBox = await sidebar.boundingBox();
     const contentBox = await content.boundingBox();
     expect(sidebarBox).toBeTruthy();

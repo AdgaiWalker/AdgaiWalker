@@ -5,7 +5,7 @@
  * 基本信息 + 画像锚点 + 在线会话 + 提过的需求 + 操作（改角色/重置/封禁/删除）。
  * 删除仅 owner、不能删自己。
  */
-import Base from '@/layouts/Base.astro';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
 import { isAdmin } from '@/lib/admin-auth';
 import { readSessionPayload } from '@/lib/account-auth';
 import { createUserContextService } from '@/services/user-context.service';
@@ -54,7 +54,7 @@ try {
 }
 ---
 
-<Base title={`账号 · ${username} — iwalk.pro`}>
+<AdminLayout active="/admin/accounts" domain="needs" title={username || '用户详情'} subtitle="身份、需求、会话与访问状态">
   <main class="detail-wrap">
     <a href="/admin/accounts" class="back">← 账号列表</a>
 
@@ -132,15 +132,15 @@ try {
       <p class="err">加载失败</p>
     )}
   </main>
-</Base>
+</AdminLayout>
 
 <style>
-  .detail-wrap { max-width: 720px; margin: 0 auto; padding: 2rem 1rem 4rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .detail-wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
   .back { color: var(--color-parchment-dim, #64748b); text-decoration: none; font-size: 0.88rem; }
   .detail-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
   .detail-head h1 { margin: 0; font-size: 1.5rem; color: var(--color-parchment, #1a2325); }
   .me { font-size: 0.85rem; color: var(--color-parchment-dim, #888); font-weight: 400; }
-  .card { padding: 1.2rem 1.4rem; border-radius: 12px; }
+  .card { padding: 1.2rem 1.4rem; border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); background: var(--adm-surface); box-shadow: 0 16px 46px rgba(39,62,58,.08); }
   .card h2 { margin: 0 0 0.8rem; font-size: 1rem; color: var(--color-parchment, #1a2325); }
   .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem; margin: 0; }
   .info-grid dt { color: var(--color-parchment-dim, #64748b); font-size: 0.82rem; }
