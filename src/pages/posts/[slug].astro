@@ -138,15 +138,16 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     {/* 就地编辑器（预渲染隐藏，admin 进入编辑态时激活） */}
     <InlineEditor slug={entry.id} mode="inline" />
 
+    {/* P3-A 隐私告知：本页匿名统计阅读深度（读到哪/是否读完）用于改进内容。
+        不采集 IP/身份；浏览器开启 DoNotTrack 即不采集。
+        先告知再采集（放在 BlockFeedback 之前），符合隐私原则。 */}
+    <aside class="telemetry-privacy-note" aria-label="阅读统计隐私告知">
+      匿名统计阅读深度以改进内容；不采集身份，浏览器开启「禁止追踪」即关闭。
+    </aside>
+
     {/* 内容反馈（P1-B02）—— 正文结束后采集"有用 / 需补充 / 已过时"明确信号，
         与底部 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈 */}
     <BlockFeedback contentId={entry.id} />
-
-    {/* P3-A 隐私告知：本页匿名统计阅读深度（读到哪/是否读完）用于改进内容。
-        不采集 IP/身份；浏览器开启 DoNotTrack 即不采集。 */}
-    <p class="telemetry-privacy-note">
-      匿名统计阅读深度以改进内容；不采集身份，浏览器开启「禁止追踪」即关闭。
-    </p>
 
 	    {/* 相关资源 */}
     {resources.length > 0 && (
@@ -274,13 +275,14 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     opacity: 0.7;
   }
 
-  /* P3-A 阅读遥测隐私告知：轻量、不阻断 */
+  /* P3-A 阅读遥测隐私告知：轻量、不阻断。
+     不加 opacity——parchment-dim 自身 ~4.57:1 过 WCAG AA，
+     叠 opacity:0.6 会把有效对比度拉到 ~2.7:1，跌破 AA 4.5:1 阈值。 */
   .telemetry-privacy-note {
     margin: 0.75rem 0 2rem;
     font-size: 0.72rem;
     line-height: 1.5;
     color: var(--color-parchment-dim);
-    opacity: 0.6;
     font-family: var(--font-mono);
   }
 

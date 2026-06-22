@@ -42,6 +42,7 @@ const support = await getSupportConfig();
         <label>外链文案 <input type="text" name="externalLabel" placeholder="通过爱发电支持我" value={support?.externalLabel ?? ''} /></label>
         <label class="full">赞赏文案（为什么支持） <textarea name="blurb" rows="2" placeholder="如果内容对你有帮助，请我喝杯咖啡。">{support?.blurb ?? ''}</textarea></label>
         <button type="submit" class="btn-primary">保存赞赏设置</button>
+        <span id="support-saved" class="saved-tip" role="status" aria-live="polite"></span>
         <a href="/support" target="_blank" class="preview-link">预览 /support →</a>
       </form>
     </section>
@@ -59,25 +60,31 @@ const support = await getSupportConfig();
         </form>
       ) : <p class="hint">开启 NorthStar 后可发布。</p>}
 
+      {!enabled && offers.length > 0 && <p class="ns-off-hint">NorthStar 未开启，仅可查看历史。</p>}
+
+      {offers.length === 0 && enabled && <p class="empty">暂无 offer，发布第一件商品/服务开始。</p>}
+
       {offers.length > 0 && (
-        <table class="data-table">
-          <thead><tr><th>标题</th><th>类型</th><th>标价</th><th>状态</th><th></th></tr></thead>
-          <tbody>
-            {offers.map(o => (
-              <tr data-offer-id={o.offerId}>
-                <td>{o.title}<span class="sub">{o.description}</span></td>
-                <td><code>{o.kind}</code></td>
-                <td>{o.priceCents / 100} {o.currency}</td>
-                <td>{o.status === 'active' ? '上架' : '已下架'}</td>
-                <td>
-                  <button class="mini-btn" data-offer-toggle={o.offerId} data-status={o.status === 'active' ? 'unlisted' : 'active'}>
-                    {o.status === 'active' ? '下架' : '上架'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>标题</th><th>类型</th><th>标价</th><th>状态</th><th></th></tr></thead>
+            <tbody>
+              {offers.map(o => (
+                <tr data-offer-id={o.offerId}>
+                  <td>{o.title}<span class="sub">{o.description}</span></td>
+                  <td><code>{o.kind}</code></td>
+                  <td>{o.priceCents / 100} {o.currency}</td>
+                  <td>{o.status === 'active' ? '上架' : '已下架'}</td>
+                  <td>
+                    <button class="mini-btn" data-offer-toggle={o.offerId} data-status={o.status === 'active' ? 'unlisted' : 'active'} disabled={!enabled}>
+                      {o.status === 'active' ? '下架' : '上架'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
 
@@ -86,30 +93,35 @@ const support = await getSupportConfig();
       {orders.length === 0 ? (
         <p class="empty">暂无订单。开启 NorthStar + 发布 offer 后，可在此创建测试订单走通支付链路（合成 provider）。</p>
       ) : (
-        <table class="data-table">
-          <thead><tr><th>买家</th><th>offer</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>
-            {orders.map(o => (
-              <tr data-order-id={o.orderId}>
-                <td>{o.buyerHandle}</td>
-                <td><code>{o.offerId.slice(0, 12)}</code></td>
-                <td>{o.totalCents / 100} {o.currency}</td>
-                <td><span class={`status status-${o.status}`}>{o.status}</span></td>
-                <td class="order-actions">
-                  {o.status === 'created' && <button class="mini-btn" data-order-action="pay">支付</button>}
-                  {o.status === 'paid' && <button class="mini-btn" data-order-action="fulfill">履约</button>}
-                  {(o.status === 'paid' || o.status === 'fulfilled') && <button class="mini-btn warn" data-order-action="refund">退款</button>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          {!enabled && <p class="ns-off-hint">NorthStar 未开启，仅可查看历史。</p>}
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>买家</th><th>offer</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                {orders.map(o => (
+                  <tr data-order-id={o.orderId}>
+                    <td>{o.buyerHandle}</td>
+                    <td><code>{o.offerId.slice(0, 12)}</code></td>
+                    <td>{o.totalCents / 100} {o.currency}</td>
+                    <td><span class={`status status-${o.status}`}>{o.status}</span></td>
+                    <td class="order-actions">
+                      {o.status === 'created' && <button class="mini-btn" data-order-action="pay" disabled={!enabled}>支付</button>}
+                      {o.status === 'paid' && <button class="mini-btn" data-order-action="fulfill" disabled={!enabled}>履约</button>}
+                      {(o.status === 'paid' || o.status === 'fulfilled') && <button class="mini-btn warn" data-order-action="refund" disabled={!enabled}>退款</button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       <p class="hint">支付走 DevSyntheticPaymentProvider（不真实收费，验证状态机）。真实支付商接入后替换为官方 SDK 适配器。</p>
     </section>
   </div>
 
-  <style>
+  <style>
     .ns-status { padding: 0.7rem 1rem; border-radius: 10px; font-size: 0.82rem; margin-bottom: 1.25rem; }
     .ns-status.on { background: rgba(6,95,70,0.1); color: #065f46; }
     .ns-status.off { background: rgba(120,113,108,0.12); color: #57534e; }
@@ -125,6 +137,9 @@ const support = await getSupportConfig();
     .support-form input, .support-form textarea { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
     .support-form .btn-primary { grid-column: 1 / -1; justify-self: start; }
     .preview-link { grid-column: 1 / -1; justify-self: start; font-size: 0.8rem; color: var(--color-brand, #35bfab); text-decoration: none; }
+    .saved-tip { font-size: 0.78rem; color: #065f46; align-self: center; opacity: 0; transition: opacity 0.3s ease; }
+    .saved-tip.show { opacity: 1; }
+    .saved-tip.error { color: #9a3412; }
     .btn-primary { padding: 0.45rem 1rem; border: none; border-radius: 8px; background: var(--color-brand, #35bfab); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     .data-table th { text-align: left; font-size: 0.72rem; color: var(--color-parchment-dim, #78716c); padding: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
@@ -140,7 +155,16 @@ const support = await getSupportConfig();
     .mini-btn.warn { border-color: rgba(154,52,18,0.3); color: #9a3412; }
     .empty, .hint { color: var(--color-parchment-dim, #78716c); font-size: 0.82rem; }
     .empty { padding: 1rem 0; }
-    @media (max-width: 640px) { .offer-form { grid-template-columns: 1fr; } }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ns-off-hint { padding: 0.45rem 0.8rem; border-radius: 8px; background: rgba(120,113,108,0.12); color: #57534e; font-size: 0.78rem; margin-bottom: 0.75rem; }
+    .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 640px) {
+      .offer-form { grid-template-columns: 1fr; }
+      .support-form { grid-template-columns: 1fr; }
+      .data-table { font-size: 0.76rem; }
+      .data-table th { font-size: 0.68rem; padding: 0.4rem 0.35rem; }
+      .data-table td { padding: 0.4rem 0.35rem; }
+    }
   </style>
 
   <script is:inline>
@@ -149,7 +173,18 @@ const support = await getSupportConfig();
 
     document.getElementById('support-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
+      const form = e.target;
+      const savedTip = document.getElementById('support-saved');
+      let savedTimer = null;
+      const showTip = (msg, isError) => {
+        if (!savedTip) { tell(msg); return; }
+        savedTip.textContent = msg;
+        savedTip.classList.toggle('error', !!isError);
+        savedTip.classList.add('show');
+        if (savedTimer) clearTimeout(savedTimer);
+        savedTimer = setTimeout(() => savedTip.classList.remove('show'), isError ? 4000 : 2500);
+      };
+      const fd = new FormData(form);
       const payload = {
         wechatQrUrl: fd.get('wechatQrUrl'),
         alipayQrUrl: fd.get('alipayQrUrl'),
@@ -159,7 +194,18 @@ const support = await getSupportConfig();
       };
       const res = await fetch('/api/admin/support', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok) await tell('赞赏设置已保存'); else await tell(data.error || '保存失败');
+      if (res.ok && data.ok) {
+        // 成功后同步表单回显（防止后续重复保存时与服务器不一致）
+        if (data.config) {
+          ['wechatQrUrl', 'alipayQrUrl', 'externalUrl', 'externalLabel', 'blurb'].forEach((k) => {
+            const el = form.elements.namedItem(k);
+            if (el && data.config[k] != null) el.value = data.config[k];
+          });
+        }
+        showTip('已保存');
+      } else {
+        showTip(data.error || '保存失败', true);
+      }
     });
 
     document.getElementById('offer-form')?.addEventListener('submit', async (e) => {

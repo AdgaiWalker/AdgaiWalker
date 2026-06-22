@@ -53,6 +53,7 @@ export const ADMIN_SECONDARY_NAV: Readonly<Record<AdminModuleId, readonly AdminN
     { label: '邀请码', href: '/admin/invite-codes', icon: 'ticket-check' },
     { label: '系统事件', href: '/admin/incidents', icon: 'triangle-alert' },
     { label: '外观与媒体', href: '/admin/appearance', icon: 'image' },
+    { label: 'NorthStar', href: '/admin/northstar', icon: 'compass' },
   ],
 } as const;
 

@@ -97,6 +97,10 @@ button, input, textarea { font: inherit; }
 .adm-main { min-width: 0; height: calc(100vh - 24px); border-radius: 27px; overflow: hidden; display: flex; flex-direction: column; }
 .adm-main.is-immersive { background: rgba(251, 252, 252, .68); }
 .adm-topbar { min-height: 92px; padding: 20px clamp(24px, 3vw, 45px); background: transparent; border-bottom: 1px solid var(--adm-border-soft); display: flex; align-items: center; }
+/* 顶栏标题容器（admin.css 清理后漏迁，AdminLayout 用此 class 布局标题 + 副标题） */
+.adm-topbar-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* 等宽数字字体（ai-gateway/LogRow 等依赖） */
+.adm-mono { font-family: var(--adm-font-mono); font-variant-numeric: tabular-nums; }
 .adm-topbar-title { color: var(--adm-text); font: 680 clamp(22px, 2vw, 28px)/1.2 var(--adm-font-ui); letter-spacing: -.035em; }
 .adm-topbar-sub { color: var(--adm-text-faint); font: 11px/1.5 var(--adm-font-ui); margin-top: 5px; }
 .adm-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 9px; }

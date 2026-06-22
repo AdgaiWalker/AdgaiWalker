@@ -241,6 +241,15 @@ const navCounts = {
 const storageModeInfo = resolveStorageMode({ hasRedis: Boolean(getRedis()) });
 const storageModeLabel = storageModeInfo === 'memory-development' ? '开发内存模式（重启丢失）' : storageModeInfo === 'redis' ? 'Redis 持久化' : '存储不可用';
 const showDemoScenario = import.meta.env.DEV;
+
+// P4：AI 来源 proposal 过期后退出今日投影（getTodayProjection 已过滤），
+// 但过期的草稿仍是真实事件——在 UI 上点出"今日投影已排除 N 项 AI 草案"，避免静默消失。
+// persistedWorkItems 已是过滤后结果，这里从过滤前的活跃 proposal 列表统计。
+const nowIso = new Date().toISOString();
+const allActiveProposals = await workbenchService.list({ status: 'proposal', limit: 50 });
+const expiredCount = allActiveProposals.filter(
+  item => item.status === 'proposal' && typeof item.expiresAt === 'string' && item.expiresAt < nowIso,
+).length;
 ---
 
 <AdminLayout
@@ -324,7 +333,7 @@ const showDemoScenario = import.meta.env.DEV;
             <div class="focus-topline">
               <span class="focus-label"><Icon name={`lucide:${focus.icon}`} width={16} height={16} />当前焦点 · {focus.source}</span>
               {focus.expiresAt && (
-                <span class="focus-expire">AI 草案 · 过期 {new Date(focus.expiresAt).toLocaleDateString('zh-CN')}</span>
+                <span class="focus-expire" role="status">AI 草案 · 过期 {new Date(focus.expiresAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
               )}
               <span class="status-pill">待你决定</span>
             </div>
@@ -492,7 +501,12 @@ const showDemoScenario = import.meta.env.DEV;
         </aside>
       </div>
 
-      <p class="truth-note"><Icon name="lucide:database" width={13} height={13} />7 天内记录 {stats.totalCases} 条需求；决定/行动/结果存储于 {storageModeLabel}；未采集的数据不会显示成指标。</p>
+      <p class="truth-note"><Icon name="lucide:database" width={13} height={13} />7 天内记录 {stats.totalCases} 条需求；决定/行动/结果存储于 {storageModeLabel}；未采集的数据不会显示成指标。{expiredCount > 0 && <span>· 今日投影已排除 {expiredCount} 项过期的 AI 草案</span>}</p>
+
+      <nav class="workbench-quicklinks" aria-label="快捷入口">
+        <a href="/admin/grants"><Icon name="lucide:shield-check" width={14} height={14} />访问控制</a>
+        <a href="/admin/northstar"><Icon name="lucide:compass" width={14} height={14} />NorthStar</a>
+      </nav>
 
       {showDemoScenario && <section class="demo-scenario" data-demo-scenario>
         <div>
@@ -1061,6 +1075,9 @@ const showDemoScenario = import.meta.env.DEV;
   .detail-primary { height: 43px; border: 0; border-radius: 12px; color: white; background: var(--adm-brand-strong); cursor: pointer; font-size: 11px; font-weight: 700; box-shadow: 0 9px 24px rgba(20,158,139,.18); }
   .detail-footer a { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--adm-text-faint); text-decoration: none; font-size: 9px; }
   .truth-note { margin: 16px 2px 0; display: flex; align-items: center; gap: 6px; color: var(--adm-text-faint); font-size: 9px; }
+  .workbench-quicklinks { margin: 10px 2px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .workbench-quicklinks a { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border: 1px solid var(--adm-border); border-radius: 999px; color: var(--adm-text-dim); background: rgba(255,255,255,.62); text-decoration: none; font-size: 10px; font-weight: 650; transition: color .18s ease, border-color .18s ease, background .18s ease; }
+  .workbench-quicklinks a:hover { color: var(--adm-brand-strong); border-color: rgba(53,191,171,.36); background: rgba(255,255,255,.9); }
   .demo-scenario { margin-top: 14px; padding: 15px 17px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px dashed rgba(20,158,139,.36); border-radius: 17px; background: rgba(53,191,171,.07); color: var(--adm-text-dim); }
   .demo-scenario strong { display: block; color: var(--adm-brand-strong); font-size: 12px; }
   .demo-scenario p { margin: 4px 0 0; max-width: 620px; color: var(--adm-text-faint); font-size: 10px; line-height: 1.6; }
