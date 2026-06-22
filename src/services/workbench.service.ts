@@ -16,7 +16,6 @@ import { randomUUID } from 'node:crypto';
 import { getRedis } from '@/conversation/store';
 import type { StorageMode } from '@/lib/storage-mode';
 import type {
-  EvidenceRef,
   WorkItem,
   WorkItemAction,
   WorkItemHistoryEntry,
@@ -27,6 +26,15 @@ import type {
 import { createWorkItemStore } from '@/stores/work-item.store';
 import { resolveStorageMode } from '@/lib/storage-mode';
 
+// domain/workitem 纯函数模块（GC5：零 IO 依赖）
+// state-machine（canTransition）/ rules（hasSufficientEvidence / filterExpiredProposals）
+// 已搬迁至 @/domain/workitem，service 层只做 IO 编排与状态写入。
+import {
+  canTransition,
+  filterExpiredProposals,
+  hasSufficientEvidence,
+} from '@/domain/workitem';
+
 import type {
   CreateActionInput,
   CreateProposalInput,
@@ -36,7 +44,6 @@ import type {
   WorkbenchResult,
   WorkbenchServicePort,
 } from './interfaces';
-import type { WorkItemActionType, WorkItemOutcomeResult } from '@/stores/ports';
 
 const WORKITEM_ID_PREFIX = 'wi';
 
@@ -54,11 +61,6 @@ function expiryFromDays(days: number): string {
   return d.toISOString();
 }
 
-/** P4：proposal 是否已过期（仅 proposal 状态有过期概念；过期不删除，只退出活跃投影） */
-function isProposalExpired(item: WorkItem, now = nowIso()): boolean {
-  return item.status === 'proposal' && typeof item.expiresAt === 'string' && item.expiresAt < now;
-}
-
 function makeId(prefix: string): string {
   return `${prefix}_${randomUUID()}`;
 }
@@ -72,33 +74,12 @@ function isMemoryDevelopment(): boolean {
   return resolveStorageMode({ hasRedis: Boolean(getRedis()) }) === 'memory-development';
 }
 
-/** 是否进入 pending 的证据完整性判断：至少一条非 unverified 证据 */
-function hasSufficientEvidence(evidenceRefs: EvidenceRef[]): boolean {
-  return evidenceRefs.some(ref => ref.qualityStatus !== 'unverified' && ref.summary.trim().length > 0);
-}
-
 function fail<T = void>(code: WorkbenchResult['code'], message: string): WorkbenchResult<T> {
   return { ok: false, code, message };
 }
 
 function ok<T>(data: T): WorkbenchResult<T> {
   return { ok: true, code: 'ok', data };
-}
-
-/** 状态迁移白名单 —— 禁止跳跃式迁移，便于审计与回放 */
-const ALLOWED_TRANSITIONS: Record<WorkItemStatus, WorkItemStatus[]> = {
-  proposal: ['pending', 'accepted', 'rejected', 'paused'],
-  pending: ['accepted', 'rejected', 'paused', 'proposal'],
-  accepted: ['acting', 'paused', 'rejected'],
-  rejected: [],
-  paused: ['pending', 'proposal', 'rejected'],
-  acting: ['awaiting-verification', 'resolved', 'paused'],
-  'awaiting-verification': ['resolved', 'acting', 'paused'],
-  resolved: [],
-};
-
-function canTransition(from: WorkItemStatus, to: WorkItemStatus): boolean {
-  return ALLOWED_TRANSITIONS[from].includes(to);
 }
 
 function appendHistory(
@@ -457,7 +438,9 @@ export class WorkbenchService implements WorkbenchServicePort {
   async getTodayProjection(options?: { limit?: number }): Promise<WorkItem[]> {
     const items = await this.repository.listActive({ limit: options?.limit ?? 30 });
     // P4：过期的 AI/无证据 proposal 不进入"今日"投影（保留在存储供审计，不删除）
-    return items.filter(item => !isProposalExpired(item));
+    // 纯函数 isProposalExpired / filterExpiredProposals 已抽到 domain/workitem/rules（GC5：零 IO），
+    // service 层负责从 nowIso()（IO 边界）取当前时间传入。
+    return filterExpiredProposals(items, nowIso());
   }
 
   async list(options?: Parameters<WorkbenchServicePort['list']>[0]): Promise<WorkItem[]> {
@@ -489,62 +472,10 @@ export function __workbenchIsMemoryDevelopment(): boolean {
 // ---------------------------------------------------------------------------
 // P1-E02：Outcome → 下一步候选动作建议
 //
-// 候选动作不自动执行；只生成"建议"，由 Walker 决定是否创建新 Decision/Action。
-// 映射来自综合实施方案 P1-E02 表格：
-//   useful 且边界稳定     → 保持，观察是否形成 Experience/Rule 候选
-//   needs-more           → 补案例、边界、步骤或常见问题（update-content）
-//   outdated             → 复核时效性，更新或下线（update-content）
-//   mixed(partial)       → 按用户场景拆分内容或补适用边界（create-content）
-//   insufficient(inconclusive) → 延长观察或创建 LearningRequest
+// 实现已搬迁至 `@/domain/workitem/suggest-next-action`（纯函数，零 IO 依赖）。
+// 此处 re-export 保持调用方 `import { suggestNextAction } from '@/services/workbench.service'`
+// 零改动（5 处调用方：workbench.service.test.ts + outcomes 页 + outcomes API + suggestNextAction 单测）。
 // ---------------------------------------------------------------------------
 
-export interface NextActionSuggestion {
-  /** 建议的动作类型（用于创建新 Action） */
-  suggestedActionType: WorkItemActionType;
-  /** 给 Walker 看的建议说明 */
-  reason: string;
-  /** 建议的预期结果文案（用于预填 Action.expectedOutcome） */
-  suggestedExpectedOutcome: string;
-}
-
-/**
- * 根据已记录的 Outcome 结果派生下一步候选动作。
- * 纯函数，不读取存储、不产生副作用；只产出建议。
- */
-export function suggestNextAction(input: {
-  result: WorkItemOutcomeResult;
-  outcomeSummary: string;
-}): NextActionSuggestion | null {
-  switch (input.result) {
-    case 'successful':
-      // 保持，观察是否形成 Experience/Rule 候选
-      return {
-        suggestedActionType: 'evaluate-asset',
-        reason: '内容有效且边界稳定。观察是否形成可复用的 Experience / Rule 候选，沉淀为资产。',
-        suggestedExpectedOutcome: '评估该内容是否值得沉淀为 Experience 或 Rule 候选',
-      };
-    case 'partial':
-      // mixed：按用户场景拆分内容或补适用边界
-      return {
-        suggestedActionType: 'create-content',
-        reason: '结果部分有效。不同用户场景可能需要拆分内容，或补充适用边界说明。',
-        suggestedExpectedOutcome: '按用户场景拆分内容或补充适用边界',
-      };
-    case 'failed':
-      // 明确失败：复核方向
-      return {
-        suggestedActionType: 'update-content',
-        reason: '内容未能解决问题。需要复核方向、重写或重新定位，再决定更新还是下线。',
-        suggestedExpectedOutcome: '复核内容方向，决定更新或下线',
-      };
-    case 'inconclusive':
-      // 证据不足：延长观察或创建 LearningRequest
-      return {
-        suggestedActionType: 'create-learning-request',
-        reason: '结果不足以判断。延长观察，或创建 LearningRequest 补充实践 / 反例 / 访谈。',
-        suggestedExpectedOutcome: '补充实践、反例或访谈证据后再判断',
-      };
-    default:
-      return null;
-  }
-}
+export type { NextActionSuggestion } from '@/domain/workitem';
+export { suggestNextAction } from '@/domain/workitem';
