@@ -4,9 +4,9 @@
  * 单页长卷叙事：Hero → 简介 → 时间轴 → Bento Grid → Pipeline → Footer
  * 使用 FullscreenLayout
  */
-import FullscreenLayout from '../../layouts/FullscreenLayout.astro';
-import LikeCounter from '../../components/LikeCounter.astro';
-import SectionHeader from '../../components/about/SectionHeader.astro';
+import FullscreenLayout from '@/layouts/FullscreenLayout.astro';
+import LikeCounter from '@/components/LikeCounter.astro';
+import SectionHeader from '@/components/about/SectionHeader.astro';
 import { Icon } from 'astro-icon/components';
 import { Image } from 'astro:assets';
 import avatar from '/public/images/秋知（我的头像）.jpg';
@@ -281,7 +281,7 @@ const needCategoryLabels: Record<string, string> = {
           </div>
           <div class="cta-qr-col">
             <div class="cta-qr-wrapper">
-              <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促群二维码" class="cta-qr-img" loading="lazy" />
+              <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促群二维码" class="cta-qr-img" width="140" height="140" loading="lazy" />
               <p class="cta-qr-label">扫码加入点子共促</p>
             </div>
           </div>
@@ -636,16 +636,21 @@ const needCategoryLabels: Record<string, string> = {
   }
 
   /* ---- Uptime Counter ---- */
+  // 时间换算常量（client scope；与服务端 shared/constants.ts 同值）
+  const MS_PER_SECOND = 1000;
+  const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+  const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+  const MS_PER_DAY = 24 * MS_PER_HOUR;
   function initUptimeCounter() {
     const el = document.getElementById('site-uptime');
     if (!el) return;
     const launch = new Date('2026-05-02T00:00:00+08:00');
     const update = () => {
       const diff = Date.now() - launch.getTime();
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
+      const d = Math.floor(diff / MS_PER_DAY);
+      const h = Math.floor((diff % MS_PER_DAY) / MS_PER_HOUR);
+      const m = Math.floor((diff % MS_PER_HOUR) / MS_PER_MINUTE);
+      const s = Math.floor((diff % MS_PER_MINUTE) / MS_PER_SECOND);
       el.textContent = `SYSTEM ONLINE: ${d}D ${h}H ${m}M ${s}S`;
     };
     update();

@@ -137,7 +137,7 @@ function makeWorkItem(id: string, status: WorkItemStatus): WorkItem {
 }
 
 function stateIndexIds(redis: FakeRedis, status: WorkItemStatus): string[] {
-  return redis.lists.get(`match:workitems:by-state:${status}`) ?? [];
+  return redis.lists.get(`admin:workitems:by-state:${status}`) ?? [];
 }
 
 describe('saveWorkItem Redis 状态索引完整性', () => {
@@ -239,14 +239,14 @@ describe('saveWorkItem MULTI 事务原子性（P0-B02）', () => {
     const ops = redis.multiCommands;
     // 只有一个 set（实体），证明单事务
     expect(ops.filter(op => op.startsWith('set:'))).toHaveLength(1);
-    expect(ops[0]).toBe('set:match:workitem:wi-tx');
+    expect(ops[0]).toBe('set:admin:workitem:wi-tx');
     // 包含旧状态索引 lrem（pending）与新状态索引 lrem+lpush（accepted）
-    expect(ops).toContain('lrem:match:workitems:by-state:pending');
-    expect(ops).toContain('lrem:match:workitems:by-state:accepted');
-    expect(ops).toContain('lpush:match:workitems:by-state:accepted');
+    expect(ops).toContain('lrem:admin:workitems:by-state:pending');
+    expect(ops).toContain('lrem:admin:workitems:by-state:accepted');
+    expect(ops).toContain('lpush:admin:workitems:by-state:accepted');
     // 命令顺序：旧状态 lrem 必须在新状态 lrem/lpush 之前（幂等 defense-in-depth）
-    const oldIdx = ops.indexOf('lrem:match:workitems:by-state:pending');
-    const newPush = ops.indexOf('lpush:match:workitems:by-state:accepted');
+    const oldIdx = ops.indexOf('lrem:admin:workitems:by-state:pending');
+    const newPush = ops.indexOf('lpush:admin:workitems:by-state:accepted');
     expect(oldIdx).toBeLessThan(newPush);
     expect(oldIdx).toBeGreaterThan(-1);
   });
@@ -256,10 +256,10 @@ describe('saveWorkItem MULTI 事务原子性（P0-B02）', () => {
     await saveWorkItem(item);
 
     const ops = redis.multiCommands;
-    expect(ops).toContain('set:match:workitem:wi-new');
-    expect(ops).toContain('lpush:match:workitems');
-    expect(ops).toContain('lpush:match:workitems:active');
-    expect(ops).toContain('lpush:match:workitems:by-state:proposal');
+    expect(ops).toContain('set:admin:workitem:wi-new');
+    expect(ops).toContain('lpush:admin:workitems');
+    expect(ops).toContain('lpush:admin:workitems:active');
+    expect(ops).toContain('lpush:admin:workitems:by-state:proposal');
   });
 });
 

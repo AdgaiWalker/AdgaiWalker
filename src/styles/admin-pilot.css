@@ -233,3 +233,26 @@ button, input, textarea { font: inherit; }
 .adm-page-welcome { margin-bottom: 1.25rem; }
 .adm-page-welcome h1 { font-size: 1.5rem; font-weight: 850; margin-bottom: 0.35rem; }
 .adm-page-welcome p { color: var(--adm-text-dim); font-size: 0.88rem; line-height: 1.6; }
+
+/* ---------- 通用 utility ---------- */
+/* 仅供屏幕阅读器使用；admin 页面通用无障碍工具类 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* admin 卡片表面（用 admin token 覆盖前台 .panel-glass，统一三页重复定义） */
+.adm-card {
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-card);
+  background: var(--adm-surface);
+  box-shadow: 0 16px 46px rgba(39, 62, 58, 0.08);
+}

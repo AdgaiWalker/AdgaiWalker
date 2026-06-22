@@ -4,20 +4,17 @@
  * 展示 Ferry 生态系统：理论、方法论、技能/产品、经验回流
  * 数据来自 ferry-ecosystem.ts + content collection (series: Ferry计划)
  */
-import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import SidebarLayout from '@/layouts/SidebarLayout.astro';
 import { Icon } from 'astro-icon/components';
-import { getCollection } from 'astro:content';
 import { ferryTree, flattenFerryTree, groupByRole } from '@/data/ferry-ecosystem';
-import { isPublicContentData } from '@/knowledge/content';
+import { getFerrySeriesEntries } from '@/knowledge/content';
 import type { FerryNode } from '@/data/ferry-ecosystem';
 import { buildPostPath } from '@/shared/routes';
 
 export const prerender = true;
 
 // 获取 Ferry 计划系列的内容条目
-const ferryEntries = (await getCollection('log', ({ data }) =>
-  isPublicContentData(data) && data.series === 'Ferry计划'
-)).sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0));
+const ferryEntries = await getFerrySeriesEntries();
 
 const { trunk, branch, fruit } = groupByRole();
 
@@ -29,7 +26,7 @@ const roleConfig: Record<string, { label: string; icon: string; color: string; b
   fruit:  { label: '果 · 经验',   icon: 'lucide:sparkles',    color: 'text-rose-400',    bg: 'bg-rose-400/10 border-rose-400/20' },
 };
 
-function renderNode(node: FerryNode, depth: number = 0) {
+function prepareFerryNode(node: FerryNode, depth: number = 0) {
   const config = roleConfig[node.role] ?? roleConfig.root;
   const entry = ferryEntries.find(e => e.id === node.contentSlug);
   const href = entry ? buildPostPath(entry.id) : node.url ?? '#';
@@ -66,7 +63,7 @@ function renderNode(node: FerryNode, depth: number = 0) {
 
     {/* ===== 2. 根 — Ferry 理论 ===== */}
     {(() => {
-      const root = renderNode(ferryTree);
+      const root = prepareFerryNode(ferryTree);
       return (
         <section class="ferry-section">
           <div class="ferry-section-header">
@@ -115,7 +112,7 @@ function renderNode(node: FerryNode, depth: number = 0) {
 
     {/* ===== 3. 干 — 方法论 ===== */}
     {trunk.map(node => {
-      const r = renderNode(node);
+      const r = prepareFerryNode(node);
       return (
         <section class="ferry-section">
           <div class="ferry-section-header">
@@ -155,7 +152,7 @@ function renderNode(node: FerryNode, depth: number = 0) {
         </div>
         <div class="space-y-3">
           {branch.map(node => {
-            const r = renderNode(node);
+            const r = prepareFerryNode(node);
             return (
               <a
                 href={r.href}

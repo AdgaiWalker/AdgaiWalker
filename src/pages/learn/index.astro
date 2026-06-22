@@ -1,7 +1,6 @@
 ---
-import Base from '../../layouts/Base.astro';
-import { getCollection } from 'astro:content';
-import { getPublishedThoughts, getFrequentTags, isPublicContentData } from '@/knowledge/content';
+import Base from '@/layouts/Base.astro';
+import { getPublishedThoughts, getFrequentTags, getPublishedLearnGuides } from '@/knowledge/content';
 import { buildLearnGuidePath, buildLearnTrackPath, buildPostPath } from '@/shared/routes';
 import { formatDateCompact } from '@/shared/format';
 import { Icon } from 'astro-icon/components';
@@ -13,7 +12,7 @@ import {
   type LearningLayer,
   type LearningTrack,
 } from '@/data/learning-tracks';
-import '../../styles/learn.css';
+import '@/styles/learn.css';
 
 export const prerender = true;
 
@@ -36,7 +35,7 @@ const years = Object.keys(groupedLogs).map(Number).sort((a, b) => b - a);
 const frequentTags = getFrequentTags(allLogs, 2);
 
 // ── Tab 3: 帮你学 ──
-const learnTools = await getCollection('log', ({ data }) => isPublicContentData(data) && data.type === 'learn');
+const learnTools = await getPublishedLearnGuides();
 
 // ── Tab 路由 ──
 const rawTab = Astro.url.searchParams.get('tab') || 'tracks';
@@ -205,7 +204,7 @@ const currentTab = rawTab === 'journal' ? 'tracks' : rawTab;
               <h3 class="tool-title-clean">{tool.data.title}</h3>
               <p class="tool-desc-clean">{tool.data.description}</p>
             </div>
-            <span class="tool-arrow-chevron">&#8250;</span>
+            <Icon name="lucide:chevron-right" width={20} height={20} class="tool-arrow-chevron" />
           </a>
         ))}
       </div>

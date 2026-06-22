@@ -5,13 +5,13 @@ import {
   needCategoryLabels,
   type NeedCategory,
 } from '@/profiles/resource-index';
-import {
-  getTopicCandidateByClusterKey,
-  getUnprocessedNeedCases,
-  markNeedCasesTopicProcessed,
-  saveTopicCandidates,
-} from '@/conversation/store';
-import type { NeedCase, TopicCandidate, TopicRoleDistribution } from '@/stores/ports';
+import type {
+  NeedCase,
+  NeedCaseRepositoryPort,
+  TopicCandidate,
+  TopicCandidateRepositoryPort,
+  TopicRoleDistribution,
+} from '@/stores/ports';
 
 function normalizeNeed(text: string): string {
   return text
@@ -150,38 +150,51 @@ function mergeCandidate(existing: TopicCandidate, incoming: TopicCandidate): Top
   };
 }
 
-/** 规则聚类（默认，无外部模型依赖） */
-export async function processPendingNeedCases(limit = 50): Promise<{
-  processed: number;
-  createdTopics: number;
-  candidates: TopicCandidate[];
-}> {
-  const cases = await getUnprocessedNeedCases(limit);
-  if (cases.length === 0) {
-    return { processed: 0, createdTopics: 0, candidates: [] };
-  }
+export interface InsightService {
+  processPendingNeedCases(limit?: number): Promise<{
+    processed: number;
+    createdTopics: number;
+    candidates: TopicCandidate[];
+  }>;
+}
 
-  const clusters = new Map<string, NeedCase[]>();
-  for (const needCase of cases) {
-    const key = makeClusterKey(needCase);
-    const list = clusters.get(key) ?? [];
-    list.push(needCase);
-    clusters.set(key, list);
-  }
+export function createInsightService(deps: {
+  needCaseStore: NeedCaseRepositoryPort;
+  topicStore: TopicCandidateRepositoryPort;
+}): InsightService {
+  return {
+    async processPendingNeedCases(limit = 50) {
+      const cases = await deps.needCaseStore.findUnprocessedForTopics(limit);
+      if (cases.length === 0) {
+        return { processed: 0, createdTopics: 0, candidates: [] };
+      }
 
-  const candidates: TopicCandidate[] = [];
-  for (const [key, cases] of clusters.entries()) {
-    const incoming = createCandidate(cases, key);
-    const existing = await getTopicCandidateByClusterKey(key);
-    const candidate = existing ? mergeCandidate(existing, incoming) : incoming;
-    candidates.push(candidate);
-  }
+      const clusters = new Map<string, NeedCase[]>();
+      for (const needCase of cases) {
+        const key = makeClusterKey(needCase);
+        const list = clusters.get(key) ?? [];
+        list.push(needCase);
+        clusters.set(key, list);
+      }
 
-  await saveTopicCandidates(candidates);
-  for (const candidate of candidates) {
-    const clusteredCases = clusters.get(candidate.clusterKey) ?? [];
-    await markNeedCasesTopicProcessed(clusteredCases.map(c => c.needCaseId), candidate.topicId);
-  }
+      const candidates: TopicCandidate[] = [];
+      for (const [key, cases] of clusters.entries()) {
+        const incoming = createCandidate(cases, key);
+        const existing = await deps.topicStore.findByClusterKey(key);
+        const candidate = existing ? mergeCandidate(existing, incoming) : incoming;
+        candidates.push(candidate);
+      }
 
-  return { processed: cases.length, createdTopics: candidates.length, candidates };
+      await deps.topicStore.saveAll(candidates);
+      for (const candidate of candidates) {
+        const clusteredCases = clusters.get(candidate.clusterKey) ?? [];
+        await deps.needCaseStore.markTopicProcessed(
+          clusteredCases.map(c => c.needCaseId),
+          candidate.topicId,
+        );
+      }
+
+      return { processed: cases.length, createdTopics: candidates.length, candidates };
+    },
+  };
 }

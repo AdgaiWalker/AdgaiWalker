@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
-import { isAdmin } from '@/lib/admin-auth';
-import { getRedis } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
+import { getRedis } from '@/stores/redis-client';
+
+const sessionStore = createSessionStore();
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -11,7 +14,7 @@ function jsonResponse(data: unknown, status = 200): Response {
 
 /** GET /api/admin/conversations — 管理员查看所有对话 */
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) {
+  if (!await isAdminAsync(request, sessionStore)) {
     return jsonResponse({ error: '未授权。' }, 401);
   }
 

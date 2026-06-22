@@ -6,7 +6,8 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isOwner } from '@/lib/admin-auth';
+import { isOwnerAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
 import { readSessionId } from '@/lib/account-auth';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
@@ -17,6 +18,7 @@ import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 import type { AccountRole } from '@/stores/ports';
 
+const sessionStore = createSessionStore();
 const accountService = createAccountService();
 const userContextService = createUserContextService({
   sessionStore: createSessionStore(),
@@ -34,7 +36,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isOwner(request)) {
+  if (!await isOwnerAsync(request, sessionStore)) {
     return json({ ok: false, reason: '仅站主可指派角色。' }, 403);
   }
 
@@ -45,7 +47,8 @@ export const POST: APIRoute = async ({ request }) => {
   let body: { username?: unknown; role?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'account.role.update' });
     return json({ ok: false, reason: '请求格式不正确。' }, 400);
   }
 

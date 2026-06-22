@@ -13,10 +13,16 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { resolveAdminActor } from '@/lib/admin-actor';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
 import { isNorthStarEnabled } from '@/lib/northstar-range';
 import { createNorthStarService } from '@/services/northstar.service';
-import { findNorthStarOffer, findRecentNorthStarOrders } from '@/conversation/store';
+import { findNorthStarOffer, findRecentNorthStarOrders } from '@/stores/northstar.store';
+
+const sessionStore = createSessionStore();
 
 export const prerender = false;
 
@@ -37,17 +43,17 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const orders = await findRecentNorthStarOrders(100);
   return json({ orders, count: orders.length, northstarEnabled: isNorthStarEnabled() });
 };
 
 export const POST: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   if (!isNorthStarEnabled()) return json({ error: 'NorthStar 经营范围未开启。', code: 'northstar-disabled' }, 409);
   const action = url.searchParams.get('action') ?? 'create';
   let body: Record<string, unknown>;
-  try { body = await request.json(); } catch { return json({ error: '请求格式错误。' }, 400); }
+  try { body = await request.json(); } catch (error) { captureException(error, { action: 'order.transition' }); return json({ error: '请求格式错误。' }, 400); }
 
   const svc = createNorthStarService();
 
@@ -66,6 +72,16 @@ export const POST: APIRoute = async ({ request, url }) => {
 
   const orderId = typeof body.orderId === 'string' ? body.orderId : '';
   if (!orderId) return json({ error: 'orderId 不能为空。' }, 400);
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'order.transition',
+    targetType: 'order',
+    targetId: orderId,
+    reason: '订单状态流转涉及交易履约。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
 
   if (action === 'pay') {
     const result = await svc.startPayment(orderId);

@@ -10,9 +10,11 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
 import { createWorkbenchService } from '@/services/workbench.service';
+import { createSessionStore } from '@/stores/session.store';
 import type {
   EvidenceRef,
   WorkItemPriorityBand,
@@ -20,6 +22,8 @@ import type {
 } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_QUEUES: WorkItemQueue[] = ['user-demand', 'walker-thesis', 'system-event', 'ai-asset'];
 const VALID_BANDS: WorkItemPriorityBand[] = ['now', 'week', 'observe', 'insufficient', 'blocked'];
@@ -65,12 +69,13 @@ function parseEvidenceRef(raw: unknown): EvidenceRef | null {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'decisions.create' });
     return json({ error: '请求格式错误。' }, 400);
   }
 

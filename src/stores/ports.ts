@@ -352,6 +352,18 @@ export interface TopicCandidate {
   producedContentSlug?: string;
 }
 
+export interface TopicCandidateRepositoryPort {
+  findAll(options?: { status?: TopicCandidateStatus; limit?: number }): Promise<TopicCandidate[]>;
+  findById(topicId: string): Promise<TopicCandidate | null>;
+  findByClusterKey(clusterKey: string): Promise<TopicCandidate | null>;
+  updateStatus(
+    topicId: string,
+    status: TopicCandidateStatus,
+    options?: { producedContentSlug?: string },
+  ): Promise<TopicCandidate | null>;
+  saveAll(candidates: TopicCandidate[]): Promise<void>;
+}
+
 // ---------------------------------------------------------------------------
 // 经验事件（U10 经验验证系统：原始事件采集 → 复盘 → 模式 → 方法成熟度）
 // ---------------------------------------------------------------------------
@@ -1119,4 +1131,27 @@ export interface SupportConfig {
 export interface SupportConfigRepositoryPort {
   get(): Promise<SupportConfig | null>;
   save(config: SupportConfig): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// 限流（RateLimit）
+//
+// Redis INCR + EXPIRE 实现的滑动窗口计数器，支持内存降级。
+// match.ts 用此 Port 控制每用户日限 / 分钟限 / 全局日限。
+// ---------------------------------------------------------------------------
+
+export interface RateLimitCheckResult {
+  allowed: boolean;
+  current: number;
+}
+
+export interface RateLimitPort {
+  /**
+   * 原子递增计数器并判断是否在窗口内超限。
+   * @param key        Redis key（含命名空间）
+   * @param windowSec  窗口秒数（首次递增时设置 TTL）
+   * @param limit      窗口内允许的最大次数
+   * @returns current = 递增后的当前计数；allowed = current <= limit
+   */
+  checkAndIncrement(key: string, windowSec: number, limit: number): Promise<RateLimitCheckResult>;
 }

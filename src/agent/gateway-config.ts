@@ -8,7 +8,7 @@
  * Key: ai-gateway:config (hash)
  */
 
-import { getRedis } from '@/conversation/store';
+import { getRedis } from '@/stores/redis-client';
 
 // ===== 服务商预设 =====
 

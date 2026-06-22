@@ -1,9 +1,12 @@
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { createIncidentStore } from '@/stores/incident.store';
+import { createSessionStore } from '@/stores/session.store';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 /**
  * GET /api/admin/incidents — 未解决的安全事件/失败降级记录（Incident）。
@@ -13,7 +16,7 @@ export const prerender = false;
  * admin only。
  */
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) {
+  if (!await isAdminAsync(request, sessionStore)) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },

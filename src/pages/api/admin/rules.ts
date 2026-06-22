@@ -1,11 +1,15 @@
 import type { APIRoute } from 'astro';
 import { randomUUID } from 'node:crypto';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { saveRuleCandidate, findRecentRuleCandidates, updateRuleStatus } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
+import { captureException } from '@/lib/sentry';
+import { saveRuleCandidate, findRecentRuleCandidates, updateRuleStatus } from '@/stores/rule-candidate.store';
 import type { RuleCandidate, RuleStatus } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_STATUSES = new Set<RuleStatus>(['observed', 'candidate', 'validated', 'stable', 'retired']);
 
@@ -18,7 +22,7 @@ function json(data: unknown, status = 200): Response {
 
 /** GET /api/admin/rules — 规则候选列表（admin 复盘 + 评测用） */
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: 'unauthorized' }, 401);
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get('limit') ?? 100)));
   const rules = await findRecentRuleCandidates(limit);
   return json({ rules });
@@ -26,11 +30,11 @@ export const GET: APIRoute = async ({ request, url }) => {
 
 /** POST /api/admin/rules — 创建/更新规则候选；?action=status 时切换状态 */
 export const POST: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: 'unauthorized' }, 401);
 
   if (url.searchParams.get('action') === 'status') {
     let body: { ruleId?: string; status?: string; note?: string };
-    try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+    try { body = await request.json(); } catch (error) { captureException(error, { action: 'rules.status' }); return json({ error: 'invalid' }, 400); }
     if (!body.ruleId || !VALID_STATUSES.has(body.status as RuleStatus)) {
       return json({ error: 'ruleId/status 必填' }, 400);
     }
@@ -39,7 +43,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   }
 
   let body: Partial<RuleCandidate> & { ruleId?: string };
-  try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+  try { body = await request.json(); } catch (error) { captureException(error, { action: 'rules.create' }); return json({ error: 'invalid' }, 400); }
 
   // 更新现有规则时保留原始字段（避免部分更新覆盖 createdAt / 正反例 / 来源）
   const existing = body.ruleId

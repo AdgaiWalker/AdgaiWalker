@@ -9,11 +9,15 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
 import { createWorkbenchService } from '@/services/workbench.service';
+import { createSessionStore } from '@/stores/session.store';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const STATUS_BY_CODE: Record<string, number> = {
   ok: 200,
@@ -33,7 +37,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const PATCH: APIRoute = async ({ request, params }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const id = params.id;
   if (!id) return json({ error: '缺少工作项 ID。' }, 400);
@@ -41,7 +45,8 @@ export const PATCH: APIRoute = async ({ request, params }) => {
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'decisions.update' });
     return json({ error: '请求格式错误。' }, 400);
   }
 

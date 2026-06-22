@@ -29,14 +29,14 @@ const runId = `s0_${Date.now()}_${randomUUID().slice(0, 8)}`;
 const workItemId = `wi_${runId}`;
 const feedbackId = `cf_${runId}`;
 // 注意：键名必须与 src/conversation/store.ts 中生产代码定义完全一致。
-// WorkItem 走 `match:workitem*` / `match:workitems*` 前缀（store.ts:944-949）。
+// WorkItem 走 `admin:workitem*` / `admin:workitems*` 前缀（store.ts:944-949）。
 // ContentFeedback 走 `content-feedback:*` 前缀，无 `match:`（store.ts:1111-1120）。
 // 早期版本误用 `match:content-feedback:*` 与 `by-content:` 段，会让脚本写到 app 永远不读的命名空间，
 // 即使有真实 Redis 凭据也只是自写自读"假通过"，违背脚本"防本地内存冒充生产等价"的初衷。
-const workItemKey = `match:workitem:${workItemId}`;
+const workItemKey = `admin:workitem:${workItemId}`;
 const feedbackKey = `content-feedback:event:${feedbackId}`;
-const workItemsList = 'match:workitems';
-const workItemsActiveList = 'match:workitems:active';
+const workItemsList = 'admin:workitems';
+const workItemsActiveList = 'admin:workitems:active';
 const feedbackRecent = 'content-feedback:recent';
 const contentFeedbackByContent = `content-feedback:content:s0-production-check`;
 

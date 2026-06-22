@@ -1,6 +1,13 @@
 import type { APIRoute } from 'astro';
 
-import { processPendingNeedCases } from '@/agent/insight';
+import { createInsightService } from '@/agent/insight';
+import { createNeedCaseStore } from '@/stores/need-case.store';
+import { createTopicStore } from '@/stores/topic.store';
+
+const insightService = createInsightService({
+  needCaseStore: createNeedCaseStore(),
+  topicStore: createTopicStore(),
+});
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -48,7 +55,7 @@ async function readLimitFromBody(request: Request): Promise<number> {
 }
 
 async function runProcess(limit: number): Promise<Response> {
-  const result = await processPendingNeedCases(limit);
+  const result = await insightService.processPendingNeedCases(limit);
   return jsonResponse(result);
 }
 

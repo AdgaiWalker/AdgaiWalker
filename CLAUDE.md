@@ -32,7 +32,9 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **Giscus 评论**：`PUBLIC_GISCUS_REPO` / `PUBLIC_GISCUS_REPO_ID` / `PUBLIC_GISCUS_CATEGORY` / `PUBLIC_GISCUS_CATEGORY_ID`。未配置时评论组件不渲染。
 - **AI 匹配（可选）**：通过 AI Gateway 配置（服务商 API key、`baseUrl`、`model`），配置存 Redis hash `ai-gateway:config`，在 `/admin/ai-gateway` 管理页维护（预设 DeepSeek / OpenAI / Anthropic / 自定义）。未配置时仅使用本地规则匹配，不调用模型、不产生费用。`ANTHROPIC_API_KEY` 仍作为 `src/agent/gateway.ts` 的运行时 fallback 被读取（`config.apiKey || import.meta.env.ANTHROPIC_API_KEY`）；建议只在 `/admin/ai-gateway` 配置 key，不依赖环境变量。
 - **Admin 内容编辑**：`GITHUB_TOKEN`。供 `/api/admin/content/[slug]` 回写内容到 GitHub。
-- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。内容反馈（`/api/content-feedback`，60s/5 次）与阅读遥测（`/api/content-telemetry`，60s/20 次）限流在 `lib/rate-limiter.ts`。**`effectiveMax` 环境感知**：生产严格按 config.max；开发/测试（!PROD）放宽 ×50（所有测试/开发机共享同一来源 IP，跨用例合法提交不该撞上单访客限流）。
+- **限流**：`MATCH_DAILY_LIMIT`（默认 20）、`MATCH_MINUTE_LIMIT`（默认 5）、`MATCH_GLOBAL_DAILY_LIMIT`（默认 1000）。`MATCH_RATE_LIMIT_SALT`（IP 哈希限流盐值，缺省时用内部默认值）。内容反馈（`/api/content-feedback`，60s/5 次）与阅读遥测（`/api/content-telemetry`，60s/20 次）限流在 `lib/rate-limiter.ts`。**`effectiveMax` 环境感知**：生产严格按 config.max；开发/测试（!PROD）放宽 ×50（所有测试/开发机共享同一来源 IP，跨用例合法提交不该撞上单访客限流）。
+- **批处理认证**：`MATCH_PROCESS_SECRET`。供 cron 触发 `/api/match-process`（需求聚类生成 TopicCandidate）时 Bearer 认证。
+- **MCP（可选）**：`MCP_ENABLE_PRIVATE_INSIGHTS`。设为 `true` 时 MCP server 的 `walker_insights` 工具返回需求洞察数据；缺省时该工具返回错误提示，不暴露私有数据。
 - **NorthStar 经营开关（P5）**：`NORTHSTAR_ENABLED`（可选，默认 `false`）。仅 Walker 决定开启经营（订单/支付）时设 `true`；关闭时 `NorthStarService` 所有写操作返回 `northstar-disabled`，个人闭环完整运行。真实支付商（Stripe/支付宝）凭据与合规属 Human Gate，需另行配置生产 `PaymentProviderPort`（默认 `DevSyntheticPaymentProvider` 不真实收费）。
 - **注册门票**：`INVITE_CODES`（可选，env 一次性种子）+ 后台 `/admin/invite-codes` 生成的 managed 码（`stores/managed-invite-code.store.ts`，Redis 持久化，默认一人一码）。`/api/auth/register` 校验+消费（env/managed 都认，managed 记 usedBy 追踪谁用了哪个码）。
 - ⚠️ **`vercel env pull` 不导出加密 secret 真实值**：`KV_*`、`CRON_SECRET`、`COOKIE_SECRET`、`GITHUB_TOKEN` 等拉到本地 `.env` 都是空——本地连不上生产 Redis、也拿不到 CRON 鉴权。需连 Redis 时走 Upstash 控制台或部署到 Vercel 运行时。另：**生产 Redis 经 Vercel KV 集成接入（实际变量 `KV_REST_API_URL` / `KV_REST_API_TOKEN`）**，`like.store.ts` 与 `conversation/store.ts` 的 `getRedis()` 同时兼容 `UPSTASH_*` 前缀，任一存在即可。
@@ -61,7 +63,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 ### 渲染与部署
 
 - **输出模式**：`output: 'server'`，通过 `@astrojs/vercel` 适配器部署。
-- **预渲染**：启用 `prerender = true` 的页面包括：首页、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/projects/ferry`、`/content`、`/learn`、`/learn/guide/[level]/[tool]`、`/about`、`/404`、`/index.json`、`/graph.json`、`/llms.txt`、`/walker-style.md`、`/admin/login`；其余（如 `/api/*`、`/rss.xml`）及除登录外的全部 `/admin/*` 页面为服务端动态渲染（请求期 `isAdmin()` 鉴权）。旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
+- **预渲染**：启用 `prerender = true` 的页面包括：首页、`/posts`、`/posts/[slug]`、`/tools`、`/ideas`、`/projects`、`/projects/ferry`、`/content`、`/learn`、`/learn/guide/[level]/[tool]`、`/about`、`/404`、`/index.json`、`/graph.json`、`/llms.txt`、`/walker-style.md`；其余（如 `/api/*`、`/rss.xml`）及除登录外的全部 `/admin/*` 页面为服务端动态渲染（请求期 `isAdmin()` 鉴权）。旧动态路由 `/ai/[slug]`、`/life/[slug]` 保留为服务端 301 跳转。
 - **图片服务**：Vercel Image Optimization 已启用，`@astrojs/vercel` adapter 配置了 `imageService` 和图片尺寸。
 - **性能配置**：Astro `prefetch.defaultStrategy = 'hover'`，并启用 `experimental.svgo`。
 - **构建流程**：`astro build` → `pagefind --site dist/client --output-path .vercel/output/static/pagefind`。
@@ -109,7 +111,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/support` | 赞赏/支持页（P5 个人收款码：微信/支付宝赞赏码 QR + 可选外链，SSR 读 SupportConfig） | Base |
 | `/about?tab=site` | 关于站（Tab 切换） | FullscreenLayout |
 | `/admin` | 工作台（服务端投影 WorkItem + NeedCase + 站主主张 + 系统事件；去 localStorage 业务状态） | Admin（AdminLayout） |
-| `/login` | 统一登录/注册（用户 + owner 同入口） | Base |
+| `/login` | 统一登录/注册（用户 + owner 同入口） | FullscreenLayout |
 | `/admin/login` | 重定向到 /login（owner 账号登录入口） | Admin（独立样式） |
 | `/admin/accounts` | 账号管理（列表/搜索/重置/封禁/改角色） | Admin（独立样式） |
 | `/admin/accounts/[username]` | 单用户详情（基本信息/会话/需求/操作含删除） | Admin（独立样式） |
@@ -176,7 +178,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/admin/accounts/delete` | 删账号级联（会话+画像+需求脱敏，仅 owner） | owner |
 | `/api/admin/invite-codes` | 邀请码 GET 列表 / POST 生成(owner) / DELETE | owner |
 | `/api/admin/invite-codes/disable` | 禁用邀请码（owner） | owner |
-| `/api/profile` | 用户画像读写（personaAnchor 锚点） | invited 会话 |
+| `/api/profile` | 用户画像读写（personaAnchor 锚点） | user 会话 |
 | `/api/stats` | 公开统计（匹配总数/内容数/类别分布） | 无 |
 | `/api/insights` | 洞察数据 + 选题操作 | admin cookie / CRON_SECRET |
 | `/api/like` | 文章点赞（Redis→内存降级，0 起步真实计数） | 无（IP 限流） |
@@ -194,7 +196,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 | `/api/admin/rules` | 规则候选池 CRUD（observed → candidate → validated → stable → retired） | admin cookie |
 | `/api/admin/skills` | Skill 候选 CRUD（candidate → admitted → demoted-to-method） | admin cookie |
 | `/api/admin/experience-events` | 经验事件采集与查询（U10） | admin cookie |
-| `/api/profile/delete-request` | 用户画像删除请求（标记 `deleteRequestedAt` 软删除） | invited 会话 |
+| `/api/profile/delete-request` | 用户画像删除请求（标记 `deleteRequestedAt` 软删除） | user 会话 |
 | `/api/search-events` | 记录搜索无结果查询（内容缺口信号，fire-and-forget） | 无 |
 
 以下旧路由保留为 301 重定向（定义在 `astro.config.mjs`）：
@@ -240,6 +242,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`LikeCounter.astro`**：点赞按钮组件，客户端调 `/api/like` 接口。计数与降级逻辑在 `src/stores/like.store.ts`（`LikeStore` 接口 + 内存/Upstash 实现 + `createLikeStore()` 工厂）：有 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`（优先）或 `KV_REST_API_URL` / `KV_REST_API_TOKEN`（降级备选，Vercel 自动注入）时用 Redis `incr` 原子自增（修旧 read-then-write 并发丢赞）；否则或 Redis 运行时异常走内存降级（dev 无 Redis 也能真点真涨，重启丢失）。**0 起步真实计数，不再有写死的假基数**。`/api/like` 是 HTTP 薄层（路径白名单 + 每 IP 每路径 60s 冷却 + 单页 999999 上限）。
 - **`BlockFeedback.astro`**（`blocks/`）：内容阅读结果反馈组件（P1-B），位于正文结束后、评论前。三档明确信号（有用/需补充/已过时），需补充/已过时展开可选说明，提交到 `/api/content-feedback`。成功显示"已收到"不显示伪造统计；失败保留表单可重试；localStorage 仅防同浏览器重复提示（不作成功证据）；noscript 降级；aria-live + 键盘 + 44px 点击区。与 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈。
 - **`AdminLayout.astro`**（`admin/`）：后台共享壳（一级模块导航 + 二级上下文导航 + 个人菜单 + 系统健康侧栏）。Props 含 `systemHealth`（healthy/degraded/unavailable/unknown）+ `systemHealthCheckedAt`（最近检查时间），由各页用 `deriveAdminSystemHealth` 从真实事实推导后传入。客户端交互用 `registerLifecycle` + AbortController 单次注册。
+- **`AuthChip.astro`**（`auth/`）：身份芯片（右上角登录/用户菜单），自检测 `walker-session` cookie 状态，显示登录/用户头像入口。配套脚本 `src/scripts/auth-chip.ts` 负责会话刷新与登出逻辑。
 - **About 页面组件**（`about/`）：`SectionHeader.astro`（通用 section 标题组件）。关于我 / 关于站两个 Tab 的内容直接内联在 `about/index.astro`，无独立 `AboutSiteTab.astro` 组件。
 - **`AdminEditBar.astro`**（`admin/`）：管理员浮动编辑栏组件，自检测 admin cookie，仅在文章详情页 `posts/[slug].astro` 中注入。「编辑」按钮触发就地编辑态（不跳页），「历史」按钮打开版本历史 modal，「删除」直调 DELETE API。脚本内 import `inline-editor.ts` + 初始化 `version-history.ts`。
 - **就地编辑组件**（`admin/`）：`InlineEditor.astro`（编辑器骨架：正文/预览/元数据三 tab + 工具栏，预渲染隐藏 admin 激活）、`MetadataForm.astro`（frontmatter 结构化表单 + raw YAML 兜底，`data-field` 控件）、`VersionHistory.astro`（版本时间线 modal + jsdiff）。就地模式挂 `/posts/[slug]`（接管 `#article-body`），独立模式挂 `/admin/content/edit`（新建/brief）。
@@ -332,6 +335,7 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`ai-utils.ts`**：AI 响应解析工具。从容错文本中提取 JSON（`extractLikelyJson`、`safeParseJsonObject`），类型守卫和数组规范化。
 - **`insight.ts`**：需求洞察。从 NeedCase 需求事件中聚类，生成 `TopicCandidate`（选题候选，含 clusterKey、density、roleDistribution、优先级）。批处理接口 `processPendingNeedCases()`：同簇合并、回写 NeedCase `topicCandidateId`。
 - **`privacy.ts`**：隐私护盾。PII 脱敏（邮箱、手机号、密钥、联系方式、身份证）、文本压缩、未成年人判断（`isMinorAudience`）。被 PerceptionService 和对话 API 调用。
+- **`tools-manifest.ts`**：六模块 Tools 清单单一真相源，定义各模块暴露的工具函数签名与元数据。配套单测 `tools-manifest.test.ts`。
 
 #### services/（应用服务层 — 编排 + 业务服务）
 
@@ -340,8 +344,8 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`interfaces.ts`**：业务层端口。定义 `MatchingServicePort`、`VisibilityServicePort`（角色 `public`/`user`/`admin` × 可见性 `public`/`draft`/`private`/`admin-only`）、`UserContextServicePort`、`AccountServicePort`（注册/登录/登出/改密/重置/封禁/owner bootstrap）、`UserProfileServicePort`（按 username）、`AgentOrchestratorPort`、`PerceptionServicePort`、`FeedbackServicePort`、`AdminReviewServicePort`、`SafetyServicePort`、`WorkbenchServicePort`（WorkItem 决策聚合：createProposal/requestDecision/decide/createAction/updateAction/recordOutcome/overridePriority/getTodayProjection/list）、`ContentFeedbackServicePort`（公开内容反馈：submit/findByContent/findByTopic/findRecent）、`AssetServicePort`（资产晋升：promote/getSupportingEvidence/recentPromotions/createLearningRequest/listLearningRequests/fulfillLearningRequest）。所有 service 返回机器可读 code（`WorkbenchResult`/`ContentFeedbackResult`/`AssetResult`），API 层据此映射 HTTP 状态，不靠中文文案判断。
 - **`agent-orchestrator.service.ts`**：`/api/match` 的业务核心（取代旧 `question.service.ts`）。按六模块生命周期编排 `handleNeed`：`perceive`（PerceptionService）→ `planRecommendation`（本地匹配 + 模型增强 + 字段挑选）→ `persistSession`（会话/统计/消息）→ `buildAgentRecommendation` + `safetyFlags` → `recordNeedCase`（生成 + 保存 NeedCase，失败降级记 Incident）→ `buildResponsePayload`。AI 失败降级本地规则；NeedCase 保存失败不阻断用户响应。对外 `handleNeed` 签名稳定，内部拆为命名步骤函数。
 - **`perception.service.ts`**：六模块之 Perception。消息截断、逐条 PII 脱敏 + 压缩、最新需求提取、未成年标记，经 `PerceptionServicePort` 暴露。
-- **`user-context.service.ts`**：汇总身份（`admin`/`invited`/`public`）+ invited 会话 + 画像为 `UserContext`。
-- **`invite-access.service.ts`**：邀请码验证准入（`verifyAndAdmit`）。
+- **`user-context.service.ts`**：汇总身份（`admin`/`user`/`public`）+ user 会话 + 画像为 `UserContext`。
+- **`account.service.ts`**：账号核心服务。注册（邀请码门控）、登录（用户名+scrypt 密码+建会话）、登出（撤销会话+清 cookie）、改密、封禁/解封、owner bootstrap（仅首次凭 ADMIN_PASSWORD 建 owner）。被 `/api/auth/*`、`/api/admin/accounts/*` 引用。
 - **`profile.service.ts`**：用户画像读写删除（`personaAnchor` 锚点，零 PII，写入前过 `redactSensitiveText`）。
 - **`safety.service.ts`**：输入评估 + Incident 事件记录。
 - **`feedback.service.ts`**：反馈保存并回写 NeedCase 的 `feedbackStatus`。
@@ -353,16 +357,19 @@ npx astro check    # Astro 类型检查（改任何 .ts 后必跑；build/build:
 - **`content-feedback.service.ts`**：内容阅读反馈业务编排（P1-A）。验证 contentId 对应真实公开内容（不存在→content-not-found），sourceTopicId 从内容元数据派生（忽略客户端传入），note 走 `redactSensitiveText` + `compactText` 限长脱敏，写入 `ContentFeedbackEvent`。生产缺 Redis 返回 storage-unavailable 不静默丢反馈。
 - **`asset.service.ts`**：资产统一晋升链路（P2-B）。`promote` 把统一 `AssetLifecycleStage` 映射回 Experience/Rule/Skill 各自本地枚举并回写，同时记录 `AssetEvidenceLink`（来源 Outcome/Experience + Walker 批准 + 理由 + 单调 seq）。注册 Skill 前 `missing-evidence` 守护；`createLearningRequest`/`fulfillLearningRequest` 处理证据不足补证；`getSupportingEvidence`/`recentPromotions` 反查支撑来源。
 - **`matching.service.ts`** / **`visibility.service.ts`**：本地匹配（`matchNeed`）/ 可见性判断（`canSee`、`redactNeedCase`、`filterStats`）。
+- **`northstar.service.ts`**：NorthStar 经营服务（订单状态机 created→paying→paid→fulfilled/refunded；门控 `isNorthStarEnabled()`，关闭时所有写返回 `northstar-disabled`）。
+- **`appearance.service.ts`**：后台外观配置服务（主题/布局/媒体设置读写，扩展了系统外观管理能力）。
+- **`content-telemetry.service.ts`**：阅读深度遥测编排（验证 readerToken、防重复、TTL 缓存、`content_progress`/`content_complete` 事件写入）。
 
 #### stores/（数据仓储端口层）
 
 - **`ports.ts`**：数据层端口。定义 `AuthState`（`public`/`user`/`admin`）、`UserAccount`（用户名+scrypt 密码哈希，零 PII）/`AccountRepositoryPort`、`UserSession`/`SessionRepositoryPort`、`NeedCase`（核心业务对象，带 `username` 归属）、`MatchSession`、`ConversationMessage`、`MatchFeedbackType`（8 种）、`TopicCandidate`、`InviteCode`、`UserProfile`（按 username）、`Incident`、`PublicStats`、`WorkItem`（后台决策聚合根：evidenceRefs/decision/actions/outcomes/history，状态机 proposal→...→resolved，来源队列 user-demand/walker-thesis/system-event/ai-asset）/`WorkItemRepositoryPort`、`ContentFeedbackEvent`（内容阅读反馈，signal useful/needs-more/outdated）/`ContentFeedbackRepositoryPort`、`AssetKind`/`AssetLifecycleStage`/`normalizeAssetStage`/`AssetEvidenceLink`/`AssetEvidenceLinkRepositoryPort`（资产生命周期统一映射 + 晋升证据链）、`LearningRequest`/`LearningRequestRepositoryPort`（证据不足补证任务）等接口及对应 RepositoryPort；`MatchSessionRepositoryPort` 含 `createSessionId`/`saveMessages`/`incrementStats`（会话生命周期收口）。上层只依赖这些接口。
-- **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`**（env 种子 + Redis 用量）/ **`managed-invite-code.store.ts`**（后台生成的邀请码，Redis `auth:invite-code:*` + `auth:invite-codes` 集合，generate/list/disable/delete/recordUsedBy）/ **`account.store.ts`**（UserAccount，Redis `auth:account:*` + SETNX 占名 + updateRole/delete）/ **`session.store.ts`**（UserSession，Redis `auth:session:*` + user→session 索引，listByUsername/killAllByUsername）/ **`user-profile.store.ts`** / **`incident.store.ts`** / **`work-item.store.ts`**（WorkItem，Redis `match:workitem:*` + 活跃列表 + 状态索引）/ **`content-feedback.store.ts`**（ContentFeedback，Redis `content-feedback:*` + 按内容/选题索引）/ **`asset-evidence-link.store.ts`**（AssetEvidenceLink，Redis `asset-link:*` + 按资产索引 + 单调 seq）/ **`learning-request.store.ts`**（LearningRequest，Redis `learning-request:*` + 按状态索引）：各仓储的工厂实现（account/session/managed-invite 自包含 Redis+内存，其余委托 `conversation/store.ts`）。
+- **`match-session.store.ts`** / **`need-case.store.ts`** / **`feedback.store.ts`** / **`invite-code.store.ts`**（env 种子 + Redis 用量）/ **`managed-invite-code.store.ts`**（后台生成的邀请码，Redis `auth:invite-code:*` + `auth:invite-codes` 集合，generate/list/disable/delete/recordUsedBy）/ **`account.store.ts`**（UserAccount，Redis `auth:account:*` + SETNX 占名 + updateRole/delete）/ **`session.store.ts`**（UserSession，Redis `auth:session:*` + user→session 索引，listByUsername/killAllByUsername）/ **`user-profile.store.ts`** / **`incident.store.ts`** / **`work-item.store.ts`**（WorkItem，Redis `admin:workitem:*` + 活跃列表 + 状态索引）/ **`content-feedback.store.ts`**（ContentFeedback，Redis `content-feedback:*` + 按内容/选题索引）/ **`asset-evidence-link.store.ts`**（AssetEvidenceLink，Redis `asset-link:*` + 按资产索引 + 单调 seq）/ **`learning-request.store.ts`**（LearningRequest，Redis `learning-request:*` + 按状态索引）：各仓储的工厂实现（account/session/managed-invite 自包含 Redis+内存，其余委托 `conversation/store.ts`）。
 - **`like.store.ts`**：点赞计数仓储（独立于 conversation/store）。`LikeStore` 接口 + `InMemoryLikeStore`（Map 计数 + 时间戳冷却）+ `UpstashLikeStore`（Redis `incr` 原子自增、`set ex` 冷却，运行时异常降级内存）+ `createLikeStore()` 工厂（有 KV/UPSTASH 凭据用 Upstash，否则内存）。**0 起步真实计数，无写死假基数**。被 `/api/like` 调用。
 
 #### conversation/（存储实现层）
 
-- **`store.ts`**：Redis + 内存降级的存储实现。管理 `MatchSession`、`NeedCase`（取代旧 DemandEvent）、`TopicCandidate`、`MatchFeedbackEvent`、`ConversationMessage`、`InvitedSession`、`UserProfile`、`Incident`、`WorkItem`（match:workitem:*）、`ContentFeedbackEvent`（content-feedback:*）、`AssetEvidenceLink`（asset-link:*）、`LearningRequest`（learning-request:*）生命周期，导出 `getRedis()`、`createSessionId()`、`saveConversationMessages()`、`getNeedCaseStats()`（取代旧 `getDemandStats`）、`getTopicCandidates()`、`saveNeedCase()`、`redactNeedCasesBySession()`、`saveWorkItem/listWorkItems/listActiveWorkItems`、`saveContentFeedback/findContentFeedbackByContent/findRecentContentFeedback`、`saveAssetEvidenceLink/findAssetEvidenceLinks`、`saveLearningRequest/findLearningRequestsByStatus` 等。被 `stores/` 仓储委托调用，也被 MCP server 和 `/api/match-feedback`（`saveMatchFeedback`）直接引用。
+- **`store.ts`**：Redis + 内存降级的存储实现。管理 `MatchSession`、`NeedCase`（取代旧 DemandEvent）、`TopicCandidate`、`MatchFeedbackEvent`、`ConversationMessage`、`UserProfile`、`Incident`、`WorkItem`（admin:workitem:*）、`ContentFeedbackEvent`（content-feedback:*）、`AssetEvidenceLink`（asset-link:*）、`LearningRequest`（learning-request:*）生命周期，导出 `getRedis()`、`createSessionId()`、`saveConversationMessages()`、`getNeedCaseStats()`（取代旧 `getDemandStats`）、`getTopicCandidates()`、`saveNeedCase()`、`redactNeedCasesByUsername()`、`saveWorkItem/listWorkItems/listActiveWorkItems`、`saveContentFeedback/findContentFeedbackByContent/findRecentContentFeedback`、`saveAssetEvidenceLink/findAssetEvidenceLinks`、`saveLearningRequest/findLearningRequestsByStatus` 等。被 `stores/` 仓储委托调用，也被 MCP server 和 `/api/match-feedback`（`saveMatchFeedback`）直接引用。
 
 #### shared/（共享工具）
 

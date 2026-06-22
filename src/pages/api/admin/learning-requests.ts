@@ -9,11 +9,15 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
+import { captureException } from '@/lib/sentry';
 import { createAssetService } from '@/services/asset.service';
 import type { LearningRequest } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_GAPS: LearningRequest['evidenceGap'][] = ['practice', 'counter-example', 'interview', 'outcome', 'boundary'];
 const VALID_STATUSES: LearningRequest['status'][] = ['open', 'in-progress', 'fulfilled', 'dropped'];
@@ -26,7 +30,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const statusParam = url.searchParams.get('status');
   const status = statusParam && VALID_STATUSES.includes(statusParam as LearningRequest['status'])
     ? (statusParam as LearningRequest['status'])
@@ -37,12 +41,13 @@ export const GET: APIRoute = async ({ request, url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'learning-requests.create' });
     return json({ error: '请求格式错误。' }, 400);
   }
 
@@ -70,12 +75,13 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const PATCH: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'learning-requests.fulfill' });
     return json({ error: '请求格式错误。' }, 400);
   }
 

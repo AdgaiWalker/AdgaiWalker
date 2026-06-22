@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { createCandidate, processPendingNeedCases } from '@/agent/insight';
-import { getNeedCaseById, saveNeedCase } from '@/conversation/store';
+import { createCandidate, createInsightService } from '@/agent/insight';
+import { createNeedCaseStore, getNeedCaseById, saveNeedCase } from '@/stores/need-case.store';
+import { createTopicStore } from '@/stores/topic.store';
 import type { NeedCase } from '@/stores/ports';
+
+const insightService = createInsightService({
+  needCaseStore: createNeedCaseStore(),
+  topicStore: createTopicStore(),
+});
 
 function createNeedCase(overrides: Partial<NeedCase>): NeedCase {
   const now = new Date().toISOString();
@@ -82,7 +88,7 @@ describe('Topic insight clustering', () => {
     await saveNeedCase(first);
     await saveNeedCase(second);
 
-    const result = await processPendingNeedCases(2);
+    const result = await insightService.processPendingNeedCases(2);
 
     expect(result.processed).toBe(2);
     expect(result.candidates[0]?.topicId).toBeTruthy();

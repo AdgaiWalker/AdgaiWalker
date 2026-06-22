@@ -57,7 +57,7 @@ export const prerender = true;
         {communities.map(community => (
           <div class:list={['community-row', community.featured && 'community-featured']}>
             {community.qrCode ? (
-              <img src={community.qrCode} alt={`${community.name} 二维码`} class="qr-code" loading="lazy" />
+              <img src={community.qrCode} alt={`${community.name} 二维码`} class="qr-code" width="120" height="120" loading="lazy" />
             ) : community.blogger ? (
               <a href="#bloggers" class="community-blogger">
                 <Icon name="lucide:user-plus" width={13} height={13} />
@@ -86,7 +86,7 @@ export const prerender = true;
         {aiResources.map(resource => (
           <div class="resource-item">
             {resource.qrCode && (
-              <img src={resource.qrCode} alt={`${resource.name} 二维码`} class="qr-code" loading="lazy" />
+              <img src={resource.qrCode} alt={`${resource.name} 二维码`} class="qr-code" width="120" height="120" loading="lazy" />
             )}
             <div class="resource-detail">
               <div class="resource-top">
@@ -169,7 +169,7 @@ export const prerender = true;
         {bloggers.map(blogger => blogger.url ? (
           <a href={blogger.url} target="_blank" rel="noopener noreferrer" class="blogger-item panel-glass no-underline">
             {blogger.avatar ? (
-              <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" loading="lazy" />
+              <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" width="56" height="56" loading="lazy" />
             ) : (
               <div class="blogger-avatar-placeholder">{blogger.initial}</div>
             )}
@@ -184,7 +184,7 @@ export const prerender = true;
         ) : (
           <div class="blogger-item panel-glass">
             {blogger.avatar ? (
-              <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" loading="lazy" />
+              <img src={blogger.avatar} alt={blogger.name} class="blogger-avatar" width="56" height="56" loading="lazy" />
             ) : (
               <div class="blogger-avatar-placeholder">{blogger.initial}</div>
             )}
@@ -489,39 +489,46 @@ export const prerender = true;
   }
 </style>
 
-<script>
-  function initSectionNav() {
-    const tabs = document.querySelectorAll<HTMLAnchorElement>('.section-nav-tab');
-    const sections = document.querySelectorAll<HTMLElement>('.resource-section');
-    if (!tabs.length || !sections.length) return;
+  <script>
+    import { registerLifecycle } from '@/scripts/with-lifecycle';
 
-    // 点击跳转
-    tabs.forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        e.preventDefault();
-        const id = tab.getAttribute('data-target');
-        const target = document.getElementById(id || '');
-        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    function initSectionNav(): (() => void) | void {
+      const tabs = document.querySelectorAll<HTMLAnchorElement>('.section-nav-tab');
+      const sections = document.querySelectorAll<HTMLElement>('.resource-section');
+      if (!tabs.length || !sections.length) return;
+
+      const abort = new AbortController();
+      const { signal } = abort;
+
+      // 点击跳转
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = tab.getAttribute('data-target');
+          const target = document.getElementById(id || '');
+          target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, { signal });
       });
-    });
 
-    // 滚动高亮
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          tabs.forEach(t => t.classList.remove('is-active'));
-          const activeTab = document.querySelector(`.section-nav-tab[data-target="${entry.target.id}"]`);
-          activeTab?.classList.add('is-active');
-        }
-      });
-    }, { rootMargin: '-20% 0px -60% 0px' });
+      // 滚动高亮
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            tabs.forEach(t => t.classList.remove('is-active'));
+            const activeTab = document.querySelector(`.section-nav-tab[data-target="${entry.target.id}"]`);
+            activeTab?.classList.add('is-active');
+          }
+        });
+      }, { rootMargin: '-20% 0px -60% 0px' });
 
-    sections.forEach(s => observer.observe(s));
+      sections.forEach(s => observer.observe(s));
 
-    // 清理
-    document.addEventListener('astro:before-swap', () => observer.disconnect(), { once: true });
-  }
+      // registerLifecycle 在 astro:page-load / astro:before-swap 统一触发清理
+      return () => {
+        observer.disconnect();
+        abort.abort();
+      };
+    }
 
-  initSectionNav();
-  document.addEventListener('astro:page-load', initSectionNav);
-</script>
+    registerLifecycle(initSectionNav);
+  </script>

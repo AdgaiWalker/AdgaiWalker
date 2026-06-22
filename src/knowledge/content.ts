@@ -68,6 +68,19 @@ export async function getPublishedLearningPosts() {
   return all.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
+/** 获取公开学习指南（用于 /learn 的“帮你学”和指南详情页）。 */
+export async function getPublishedLearnGuides() {
+  return sortByDateDescending(await getCollection('log', ({ data }) =>
+    isPublicContentData(data) && data.type === 'learn'
+  ));
+}
+
+export async function getFerrySeriesEntries() {
+  return (await getCollection('log', ({ data }) =>
+    isPublicContentData(data) && data.series === 'Ferry计划'
+  )).sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0));
+}
+
 /** 获取思考类文章（用于 /learn?tab=thoughts）— 只取深度文章，排除项目/点子/资源/教程 */
 const THOUGHT_EXCLUDED_FORMS = new Set(['resource', 'project', 'idea', 'lesson']);
 export async function getPublishedThoughts() {
