@@ -12,12 +12,17 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
 import { createAssetService } from '@/services/asset.service';
 import type { AssetKind, AssetLifecycleStage, SkillEvalCase } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_KINDS: AssetKind[] = ['experience', 'rule', 'skill'];
 const VALID_STAGES: AssetLifecycleStage[] = ['observed', 'candidate', 'validated', 'stable', 'retired'];
@@ -71,12 +76,13 @@ function parseSkillRegistration(body: Record<string, unknown>) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'asset.promote' });
     return json({ error: '请求格式错误。' }, 400);
   }
 
@@ -101,6 +107,14 @@ export const POST: APIRoute = async ({ request }) => {
     : [];
 
   const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'asset.promote',
+    targetType: body.assetKind as string,
+    targetId: body.assetId,
+    reason: 'Skill 准入会改资产生命周期，准入到 admitted 即对外发布能力。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
   const service = createAssetService();
   const result = await service.promote({
     assetKind: body.assetKind as AssetKind,

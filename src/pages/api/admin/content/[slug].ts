@@ -1,10 +1,12 @@
 import type { APIRoute } from 'astro';
 import matter from 'gray-matter';
 import { ContentStoreError } from '@/lib/admin-content-store';
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
-import { getTopicCandidateById, updateTopicCandidateStatus } from '@/conversation/store';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
+import { getTopicCandidateById, updateTopicCandidateStatus } from '@/stores/topic.store';
 import { resolveContentVisibility } from '@/knowledge/visibility';
 import {
   jsonResponse,
@@ -14,6 +16,7 @@ import {
   getContentId,
 } from '@/lib/admin-content-helpers';
 
+const sessionStore = createSessionStore();
 const MAX_CONTENT_BYTES = 100_000;
 const VALID_VISIBILITIES = new Set(['public', 'draft', 'private']);
 
@@ -25,7 +28,7 @@ function storeErrorResponse(error: unknown, fallback: string): Response {
 }
 
 export const GET: APIRoute = async ({ params, request }) => {
-  if (!isAdmin(request)) return jsonResponse({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return jsonResponse({ error: '未授权。' }, 401);
 
   const slug = params.slug;
   if (!slug || !validateSlug(slug)) return jsonResponse({ error: '无效的 slug。' }, 400);
@@ -35,12 +38,13 @@ export const GET: APIRoute = async ({ params, request }) => {
     const file = await getContentStore().read(path);
     return jsonResponse({ slug, content: file.content, sha: file.sha, name: file.name });
   } catch (error) {
+    captureException(error, { action: 'content.read' });
     return storeErrorResponse(error, '文件不存在。');
   }
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
-  if (!isAdmin(request)) return jsonResponse({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return jsonResponse({ error: '未授权。' }, 401);
 
   const slug = params.slug;
   if (!slug || !validateSlug(slug)) return jsonResponse({ error: '无效的 slug。' }, 400);
@@ -103,12 +107,13 @@ export const PUT: APIRoute = async ({ params, request }) => {
       message: body.create ? '已创建，约 60s 后自动部署。' : '已提交，约 60s 后自动部署。',
     });
   } catch (error) {
+    captureException(error, { action: 'content.write' });
     return storeErrorResponse(error, '保存失败。');
   }
 };
 
 export const PATCH: APIRoute = async ({ params, request }) => {
-  if (!isAdmin(request)) return jsonResponse({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return jsonResponse({ error: '未授权。' }, 401);
 
   const slug = params.slug;
   if (!slug || !validateSlug(slug)) return jsonResponse({ error: '无效的 slug。' }, 400);
@@ -148,12 +153,13 @@ export const PATCH: APIRoute = async ({ params, request }) => {
     }
     return jsonResponse({ ok: true, slug, visibility, sha: result.sha });
   } catch (error) {
+    captureException(error, { action: 'content.set-visibility' });
     return storeErrorResponse(error, '保存失败。');
   }
 };
 
 export const DELETE: APIRoute = async ({ params, request }) => {
-  if (!isAdmin(request)) return jsonResponse({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return jsonResponse({ error: '未授权。' }, 401);
 
   const slug = params.slug;
   if (!slug || !validateSlug(slug)) return jsonResponse({ error: '无效的 slug。' }, 400);
@@ -175,6 +181,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
     await store.delete(path, file.sha, `content: delete ${slug}`);
     return jsonResponse({ ok: true, slug });
   } catch (error) {
+    captureException(error, { action: 'content.delete' });
     return storeErrorResponse(error, '删除失败。');
   }
 };

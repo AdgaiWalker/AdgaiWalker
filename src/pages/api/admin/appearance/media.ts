@@ -5,9 +5,12 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { createSessionStore } from '@/stores/session.store';
 import { createAppearanceService } from '@/services/appearance.service';
+
+const sessionStore = createSessionStore();
 
 export const prerender = false;
 
@@ -24,7 +27,7 @@ const CODE_STATUS: Record<string, number> = {
 };
 
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const assetId = url.searchParams.get('assetId');
   if (!assetId) return json({ error: 'assetId 不能为空。' }, 400);
 

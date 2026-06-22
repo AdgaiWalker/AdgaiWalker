@@ -35,9 +35,9 @@ const { default: IORedis } = await import('ioredis');
 // 一致性由 src/scripts/verify-production-storage-keys.test.ts 锁定（该测试同时校验本脚本使用的
 // 原版 verify-production-storage.mjs），因此本脚本与生产代码不会漂移。
 const WORKITEM_REDIS_KEYS = {
-  workItem: (id) => `match:workitem:${id}`,
-  list: 'match:workitems',
-  activeList: 'match:workitems:active',
+  workItem: (id) => `admin:workitem:${id}`,
+  list: 'admin:workitems',
+  activeList: 'admin:workitems:active',
 };
 const CONTENT_FEEDBACK_REDIS_KEYS = {
   event: (id) => `content-feedback:event:${id}`,

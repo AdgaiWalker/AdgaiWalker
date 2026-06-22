@@ -9,9 +9,13 @@ import { randomUUID } from 'node:crypto';
 
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { saveTopicCandidates } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
+import { saveTopicCandidates } from '@/stores/topic.store';
 import type { TopicCandidate } from '@/stores/ports';
+
+const sessionStore = createSessionStore();
 
 const MAX_TEXT_LENGTH = 200;
 
@@ -23,12 +27,13 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权' }, 401);
 
   let body: { text?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'inspiration.create' });
     return json({ error: '请求格式不正确' }, 400);
   }
 

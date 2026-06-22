@@ -1,18 +1,16 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/conversation/store';
 import { isPublicContentData } from '@/knowledge/content';
 import { needCategoryLabels } from '@/profiles/resource-index';
 
 export const GET: APIRoute = async () => {
-  const url = import.meta.env.UPSTASH_REDIS_REST_URL ?? import.meta.env.KV_REST_API_URL;
-  const token = import.meta.env.UPSTASH_REDIS_REST_TOKEN ?? import.meta.env.KV_REST_API_TOKEN;
+  const redis = getRedis();
 
   let matchCount = 0;
   const categoryCounts: Array<{ id: string; count: number }> = [];
 
-  if (url && token) {
-    const redis = new Redis({ url, token });
+  if (redis) {
     const total = await redis.get<number>('match:stats:total');
     matchCount = total ?? 0;
 

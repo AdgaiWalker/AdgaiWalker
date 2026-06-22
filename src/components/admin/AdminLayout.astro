@@ -36,10 +36,10 @@ const {
 
 const systemStatus = getAdminSystemStatus(systemHealth, systemHealthCheckedAt);
 
-const activeDomain = domain ?? resolveAdminModule(active);
+const activeModuleId = domain ?? resolveAdminModule(active);
 
-const currentDomain = ADMIN_MODULES.find(item => item.id === activeDomain)!;
-const currentItems = ADMIN_SECONDARY_NAV[activeDomain].map(item => {
+const activeModule = ADMIN_MODULES.find(item => item.id === activeModuleId)!;
+const currentItems = ADMIN_SECONDARY_NAV[activeModuleId].map(item => {
   if (item.href === '/admin') return { ...item, badge: navCounts.today };
   if (item.href === '/admin?view=decisions') return { ...item, badge: navCounts.decisions };
   if (item.href === '/admin?view=actions') return { ...item, badge: navCounts.actions };
@@ -71,7 +71,7 @@ const isSecondaryActive = (item: AdminNavItem) => {
 
       <nav class="adm-domain-nav">
         {ADMIN_MODULES.map(item => {
-          const isActive = item.id === activeDomain;
+          const isActive = item.id === activeModuleId;
           return (
             <a class:list={['adm-domain-link', { 'is-active': isActive }]} href={item.href} aria-current={isActive ? 'page' : undefined} data-admin-primary={item.id}>
               <Icon name={`lucide:${item.icon}`} width={22} height={22} />
@@ -82,7 +82,7 @@ const isSecondaryActive = (item: AdminNavItem) => {
       </nav>
 
       <button class="adm-owner" type="button" aria-label="打开个人菜单" data-profile-toggle aria-expanded="false">
-        <img src="/images/秋知（我的头像）.jpg" alt="Walker" />
+        <img src="/images/秋知（我的头像）.jpg" alt="Walker" width="48" height="48" />
       </button>
       <div class="adm-profile-menu" data-profile-menu hidden>
         <strong>Walker</strong>
@@ -91,7 +91,7 @@ const isSecondaryActive = (item: AdminNavItem) => {
       </div>
     </aside>
 
-    <aside class="adm-context-sidebar" id="admin-context-sidebar" aria-label={`${currentDomain.label}二级导航`}>
+    <aside class="adm-context-sidebar" id="admin-context-sidebar" aria-label={`${activeModule.label}二级导航`}>
       <div class="adm-scope">
         <button type="button" data-scope-toggle aria-expanded="false">
           <span class="adm-scope-icon"><Icon name="lucide:orbit" width={17} height={17} /></span>
@@ -106,8 +106,8 @@ const isSecondaryActive = (item: AdminNavItem) => {
       </div>
 
       <div class="adm-context-heading">
-        <Icon name={`lucide:${currentDomain.icon}`} width={18} height={18} />
-        <span>{currentDomain.label}</span>
+        <Icon name={`lucide:${activeModule.icon}`} width={18} height={18} />
+        <span>{activeModule.label}</span>
       </div>
       <nav class="adm-context-nav">
         {currentItems.map(item => {

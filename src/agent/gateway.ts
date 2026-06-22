@@ -237,7 +237,7 @@ async function getConfig(): Promise<import('./gateway-config').GatewayConfig> {
 
 // ===== 调用日志 =====
 
-import { getRedis } from '@/conversation/store';
+import { getRedis } from '@/stores/redis-client';
 
 const LOG_KEY = 'ai-gateway:logs';
 

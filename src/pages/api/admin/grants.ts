@@ -12,12 +12,17 @@
 import type { APIRoute } from 'astro';
 import { randomUUID } from 'node:crypto';
 
-import { isOwner } from '@/lib/admin-auth';
+import { isOwnerAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
-import { findAllObjectGrants, findObjectGrantsByGrantee, saveObjectGrant, revokeObjectGrant } from '@/conversation/store';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
+import { findAllObjectGrants, findObjectGrantsByGrantee, saveObjectGrant, revokeObjectGrant } from '@/stores/object-grant.store';
 import type { ObjectGrant } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_RESOURCE_TYPES = new Set(['content', 'workitem', 'skill', 'insights', 'hit-rate', 'northstar']);
 const VALID_ACTIONS = new Set(['read', 'write', 'comment', 'review', 'evaluate']);
@@ -30,7 +35,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isOwner(request)) return json({ error: '仅站主可管理授权。' }, 403);
+  if (!await isOwnerAsync(request, sessionStore)) return json({ error: '仅站主可管理授权。' }, 403);
   const grantee = url.searchParams.get('grantee');
   const grants = grantee
     ? await findObjectGrantsByGrantee(grantee)
@@ -39,9 +44,9 @@ export const GET: APIRoute = async ({ request, url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isOwner(request)) return json({ error: '仅站主可管理授权。' }, 403);
+  if (!await isOwnerAsync(request, sessionStore)) return json({ error: '仅站主可管理授权。' }, 403);
   let body: Record<string, unknown>;
-  try { body = await request.json(); } catch { return json({ error: '请求格式错误。' }, 400); }
+  try { body = await request.json(); } catch (error) { captureException(error, { action: 'grant.save' }); return json({ error: '请求格式错误。' }, 400); }
 
   const grantee = typeof body.grantee === 'string' ? body.grantee.trim() : '';
   const resourceType = typeof body.resourceType === 'string' ? body.resourceType : '';
@@ -58,6 +63,14 @@ export const POST: APIRoute = async ({ request }) => {
 
   const expiresAt = typeof body.expiresAt === 'string' && body.expiresAt ? body.expiresAt : undefined;
   const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'grant.save',
+    targetType: 'grant',
+    targetId: grantee,
+    reason: '对象级授权改变权限边界，默认拒绝原则下的显式放行。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
   const grant: ObjectGrant = {
     grantId: `og_${randomUUID()}`,
     grantee,
@@ -74,9 +87,18 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, url }) => {
-  if (!isOwner(request)) return json({ error: '仅站主可管理授权。' }, 403);
+  if (!await isOwnerAsync(request, sessionStore)) return json({ error: '仅站主可管理授权。' }, 403);
   const grantId = url.searchParams.get('grantId');
   if (!grantId) return json({ error: 'grantId 不能为空。' }, 400);
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'grant.revoke',
+    targetType: 'grant',
+    targetId: grantId,
+    reason: '对象级授权改变权限边界，默认拒绝原则下的显式放行。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
   await revokeObjectGrant(grantId);
   return json({ ok: true });
 };

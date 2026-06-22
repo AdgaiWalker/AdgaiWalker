@@ -17,7 +17,8 @@
     "verify:production-storage:local": "node scripts/verify-production-storage-local.mjs",
     "verify:production-media-storage": "node scripts/verify-production-media-storage.mjs",
     "verify:production-media-storage:local": "node scripts/verify-production-media-storage-local.mjs",
-    "astro": "astro"
+    "astro": "astro",
+    "check:content-fields": "node scripts/check-content-fields.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

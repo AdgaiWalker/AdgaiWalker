@@ -3,9 +3,14 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
 import { createAppearanceService } from '@/services/appearance.service';
+
+const sessionStore = createSessionStore();
 
 export const prerender = false;
 
@@ -26,17 +31,17 @@ const CODE_STATUS: Record<string, number> = {
 };
 
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const owner = await resolveAdminActor(request);
   const state = await createAppearanceService().getState(owner);
   return json({ ok: true, ...state });
 };
 
 export const PATCH: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const owner = await resolveAdminActor(request);
   let body: Record<string, unknown>;
-  try { body = await request.json(); } catch { return json({ error: '请求格式错误。' }, 400); }
+  try { body = await request.json(); } catch (error) { captureException(error, { action: 'appearance.patch' }); return json({ error: '请求格式错误。' }, 400); }
   const result = await createAppearanceService().saveTheme(owner, {
     name: typeof body.name === 'string' ? body.name : undefined,
     accent: body.accent === 'walker-jade' || body.accent === 'aurora' || body.accent === 'sunset' || body.accent === 'mint' ? body.accent : undefined,
@@ -50,7 +55,7 @@ export const PATCH: APIRoute = async ({ request }) => {
 };
 
 export const POST: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const owner = await resolveAdminActor(request);
   const action = url.searchParams.get('action');
   const service = createAppearanceService();
@@ -60,7 +65,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     return json({ ok: true, theme: result.data });
   }
   let form: FormData;
-  try { form = await request.formData(); } catch { return json({ error: '请使用 multipart/form-data 上传媒体文件。' }, 400); }
+  try { form = await request.formData(); } catch (error) { captureException(error, { action: 'appearance.media-upload' }); return json({ error: '请使用 multipart/form-data 上传媒体文件。' }, 400); }
   const file = form.get('file');
   if (!(file instanceof File)) return json({ error: '请选择要上传的媒体文件。' }, 400);
   const result = await service.addMedia(owner, {
@@ -74,10 +79,18 @@ export const POST: APIRoute = async ({ request, url }) => {
 };
 
 export const DELETE: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const owner = await resolveAdminActor(request);
   const assetId = url.searchParams.get('assetId');
   if (!assetId) return json({ error: 'assetId 不能为空。' }, 400);
+  const audit = await requireHighRiskAudit({
+    actor: owner,
+    action: 'media.delete',
+    targetType: 'media-asset',
+    targetId: assetId,
+    reason: '删除媒体资产不可逆。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
   const result = await createAppearanceService().removeMedia(owner, assetId);
   if (!result.ok) return json({ error: result.message, code: result.code }, CODE_STATUS[result.code] ?? 400);
   return json({ ok: true });

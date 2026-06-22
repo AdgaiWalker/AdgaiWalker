@@ -1,11 +1,15 @@
 import type { APIRoute } from 'astro';
 import { randomUUID } from 'node:crypto';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { saveExperienceEvent, findRecentExperienceEvents, updateExperienceEvent } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
+import { captureException } from '@/lib/sentry';
+import { saveExperienceEvent, findRecentExperienceEvents, updateExperienceEvent } from '@/stores/experience-event.store';
 import type { ExperienceEvent, ExperienceFeedbackResult } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_RESULTS = new Set<ExperienceFeedbackResult>(['success', 'failure', 'no-feedback', 'pending']);
 
@@ -22,12 +26,12 @@ function json(data: unknown, status = 200): Response {
  * admin only。
  */
 export const POST: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: 'unauthorized' }, 401);
 
   // ?action=update — 复盘 / 模式标记 / 成熟度 / 反馈结果更新
   if (url.searchParams.get('action') === 'update') {
     let body: { experienceId?: string; reflection?: string; patternMarked?: boolean; maturity?: string; feedbackResult?: string };
-    try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+    try { body = await request.json(); } catch (error) { captureException(error, { action: 'experience-events.update' }); return json({ error: 'invalid' }, 400); }
     if (!body.experienceId) return json({ error: 'experienceId 必填' }, 400);
     const patch: { reflection?: string; patternMarked?: boolean; maturity?: ExperienceEvent['maturity']; feedbackResult?: ExperienceFeedbackResult } = {};
     if (typeof body.reflection === 'string') patch.reflection = body.reflection.slice(0, 2000);
@@ -52,7 +56,8 @@ export const POST: APIRoute = async ({ request, url }) => {
   };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'experience-events.create' });
     return json({ error: 'invalid' }, 400);
   }
 
@@ -87,7 +92,7 @@ export const POST: APIRoute = async ({ request, url }) => {
  * GET /api/admin/experience-events — 经验事件列表（admin 复盘用）。
  */
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: 'unauthorized' }, 401);
 
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') ?? 50)));
   const events = await findRecentExperienceEvents(limit);

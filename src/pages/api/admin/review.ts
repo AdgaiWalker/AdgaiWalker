@@ -9,12 +9,16 @@
 
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { getTopicCandidates } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
+import { getTopicCandidates } from '@/stores/topic.store';
 import { createAdminReviewService } from '@/services/admin-review.service';
 import { createFeedbackStore } from '@/stores/feedback.store';
 import { createNeedCaseStore } from '@/stores/need-case.store';
 import type { AdminReviewStatus } from '@/stores/ports';
+
+const sessionStore = createSessionStore();
 
 const adminReviewService = createAdminReviewService({
   needCaseStore: createNeedCaseStore(),
@@ -31,7 +35,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) {
+  if (!await isAdminAsync(request, sessionStore)) {
     return json({ error: '未授权。' }, 401);
   }
 
@@ -54,14 +58,15 @@ export const GET: APIRoute = async ({ request, url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) {
+  if (!await isAdminAsync(request, sessionStore)) {
     return json({ error: '未授权。' }, 401);
   }
 
   let body: { needCaseId?: unknown; status?: unknown; note?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'review.update' });
     return json({ error: '请求格式不正确。' }, 400);
   }
 

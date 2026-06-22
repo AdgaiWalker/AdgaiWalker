@@ -115,6 +115,9 @@ const nickname = userContext.profile?.nickname ?? '';
   import { registerLifecycle } from '@/scripts/with-lifecycle';
 
   registerLifecycle(() => {
+  const abort = new AbortController();
+  const { signal } = abort;
+
   function msg(el: HTMLElement, text: string, ok: boolean) {
     el.textContent = text;
     el.classList.toggle('ok', ok);
@@ -138,7 +141,7 @@ const nickname = userContext.profile?.nickname ?? '';
       else { msg(profileMsg, json.error || '保存失败', false); }
     } catch { msg(profileMsg, '网络错误', false); }
     finally { if (btn) btn.disabled = false; }
-  });
+  }, { signal });
 
   // 改密
   const pwForm = document.querySelector<HTMLFormElement>('[data-form=password]');
@@ -156,7 +159,7 @@ const nickname = userContext.profile?.nickname ?? '';
       else { msg(pwMsg, json.reason || '改密失败', false); }
     } catch { msg(pwMsg, '网络错误', false); }
     finally { if (btn) btn.disabled = false; }
-  });
+  }, { signal });
 
   // 删除
   document.getElementById('delete-btn')?.addEventListener('click', async () => {
@@ -166,6 +169,7 @@ const nickname = userContext.profile?.nickname ?? '';
       if (res.ok) { alert('已提交删除请求，站主会处理。'); window.location.href = '/login'; }
       else { const j = await res.json(); alert(j.error || '请求失败'); }
     } catch { alert('网络错误'); }
-  });
+  }, { signal });
+  return () => abort.abort();
   });
 </script>

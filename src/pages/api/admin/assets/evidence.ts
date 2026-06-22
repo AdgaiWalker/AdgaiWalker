@@ -6,11 +6,14 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
 import { createAssetService } from '@/services/asset.service';
 import type { AssetKind } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_KINDS: AssetKind[] = ['experience', 'rule', 'skill'];
 
@@ -22,7 +25,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const kind = url.searchParams.get('kind');
   const assetId = url.searchParams.get('assetId');

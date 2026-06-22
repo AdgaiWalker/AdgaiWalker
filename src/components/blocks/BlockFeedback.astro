@@ -231,11 +231,13 @@ const { contentId } = Astro.props;
 </style>
 
 <script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
   type Signal = 'useful' | 'needs-more' | 'outdated';
   const SIGNALS: Signal[] = ['useful', 'needs-more', 'outdated'];
   const DONE_KEY_PREFIX = 'walker-feedback-done:';
 
-  function setupBlockFeedback(root: HTMLElement) {
+  function setupBlockFeedback(root: HTMLElement, abortSignal: AbortSignal) {
     const contentId = root.dataset.contentId;
     if (!contentId) return;
 
@@ -271,7 +273,7 @@ const { contentId } = Astro.props;
       if (noteWrap) noteWrap.hidden = !(sig === 'needs-more' || sig === 'outdated');
     };
 
-    signalInputs().forEach(input => input.addEventListener('change', updateSubmitState));
+    signalInputs().forEach(input => input.addEventListener('change', updateSubmitState, { signal: abortSignal }));
 
     const setStatus = (text: string, isError = false) => {
       status.textContent = text;
@@ -332,18 +334,19 @@ const { contentId } = Astro.props;
       }
     };
 
-    submit.addEventListener('click', submitFeedback);
+    submit.addEventListener('click', submitFeedback, { signal: abortSignal });
     redo?.addEventListener('click', () => {
       doneView.hidden = true;
       form.hidden = false;
       resetForm();
-    });
+    }, { signal: abortSignal });
   }
 
   function initAll() {
-    document.querySelectorAll<HTMLElement>('[data-block-feedback]').forEach(setupBlockFeedback);
+    const abort = new AbortController();
+    document.querySelectorAll<HTMLElement>('[data-block-feedback]').forEach(root => setupBlockFeedback(root, abort.signal));
+    return () => abort.abort();
   }
 
-  initAll();
-  document.addEventListener('astro:page-load', initAll);
+  registerLifecycle(initAll);
 </script>

@@ -5,11 +5,11 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
-import { getNeedCasesByUsername } from '@/conversation/store';
+import { getNeedCasesByUsername } from '@/stores/need-case.store';
 
 const accountStore = createAccountStore();
 const sessionStore = createSessionStore();
@@ -23,7 +23,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request, params }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const username = (params.username as string | undefined)?.trim();
   if (!username) return json({ error: '缺少用户名。' }, 400);
 

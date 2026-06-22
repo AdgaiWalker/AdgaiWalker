@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/lib/admin-auth', () => ({
+  isAdminAsync: vi.fn().mockResolvedValue(true),
+}));
+
 import { signSessionToken } from '@/lib/account-auth';
 
 const service = {

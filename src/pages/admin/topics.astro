@@ -230,6 +230,13 @@ function creationHint(topic: TopicCandidate): string {
   </div>
 
   <script>
+    import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+    registerLifecycle(() => {
+    const abort = new AbortController();
+    const { signal } = abort;
+    const noticeTimers: number[] = [];
+
     const actionDialog = document.querySelector<HTMLDialogElement>('[data-topic-action-dialog]');
     const actionDialogForm = document.querySelector<HTMLFormElement>('[data-topic-dialog-form]');
     const actionDialogTitle = document.querySelector<HTMLElement>('[data-topic-dialog-title]');
@@ -241,7 +248,8 @@ function creationHint(topic: TopicCandidate): string {
       if (!notice) return;
       notice.textContent = message;
       notice.hidden = false;
-      window.setTimeout(() => { notice.hidden = true; }, 4200);
+      const timer = window.setTimeout(() => { notice.hidden = true; }, 4200);
+      noticeTimers.push(timer);
     }
 
     function requestReason(options: { title: string; description: string; initial: string }): Promise<string | null> {
@@ -253,11 +261,13 @@ function creationHint(topic: TopicCandidate): string {
       actionDialogReason.focus();
 
       return new Promise(resolve => {
+        const cancelButton = document.querySelector('[data-topic-dialog-cancel]');
         const finish = (value: string | null) => {
           actionDialogForm.removeEventListener('submit', submitHandler);
           actionDialog?.removeEventListener('cancel', cancelHandler);
-          document.querySelector('[data-topic-dialog-cancel]')?.removeEventListener('click', cancelHandler);
-          actionDialog.close();
+          cancelButton?.removeEventListener('click', cancelHandler);
+          signal.removeEventListener('abort', abortHandler);
+          if (actionDialog.open) actionDialog.close();
           resolve(value);
         };
         const submitHandler = (event: Event) => {
@@ -269,9 +279,11 @@ function creationHint(topic: TopicCandidate): string {
           event.preventDefault();
           finish(null);
         };
-        actionDialogForm.addEventListener('submit', submitHandler);
-        actionDialog.addEventListener('cancel', cancelHandler);
-        document.querySelector('[data-topic-dialog-cancel]')?.addEventListener('click', cancelHandler);
+        const abortHandler = () => finish(null);
+        actionDialogForm.addEventListener('submit', submitHandler, { signal });
+        actionDialog.addEventListener('cancel', cancelHandler, { signal });
+        cancelButton?.addEventListener('click', cancelHandler, { signal });
+        signal.addEventListener('abort', abortHandler, { once: true });
       });
     }
 
@@ -282,7 +294,7 @@ function creationHint(topic: TopicCandidate): string {
         document.querySelectorAll('.tab-panel').forEach(item => item.classList.remove('active'));
         btn.classList.add('active');
         document.querySelector(`[data-panel="${tab}"]`)?.classList.add('active');
-      });
+      }, { signal });
     });
 
     document.querySelectorAll('.topic-btn[data-action]').forEach(btn => {
@@ -376,7 +388,7 @@ function creationHint(topic: TopicCandidate): string {
         } catch {
           showNotice('网络异常，请重试。');
         }
-      });
+      }, { signal });
     });
 
     // P1-D03：派生非内容 Action —— 改功能 / 证据不足（学习请求）。
@@ -457,7 +469,7 @@ function creationHint(topic: TopicCandidate): string {
         } catch {
           showNotice('网络异常，请重试。');
         }
-      });
+      }, { signal });
     });
 
     const input = document.getElementById('inspiration-input') as HTMLInputElement | null;
@@ -483,8 +495,14 @@ function creationHint(topic: TopicCandidate): string {
         if (submit) submit.disabled = false;
       }
     }
-    submit?.addEventListener('click', submitInspiration);
-    input?.addEventListener('keydown', event => { if (event.key === 'Enter') submitInspiration(); });
+    submit?.addEventListener('click', submitInspiration, { signal });
+    input?.addEventListener('keydown', event => { if (event.key === 'Enter') submitInspiration(); }, { signal });
 
+    return () => {
+      abort.abort();
+      noticeTimers.forEach(timer => window.clearTimeout(timer));
+      if (actionDialog?.open) actionDialog.close();
+    };
+    });
   </script>
 </AdminLayout>

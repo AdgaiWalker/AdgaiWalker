@@ -1,10 +1,14 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "astro",
   "buildCommand": "npm run build",
   "crons": [
     {
-      "path": "/api/match-process?limit=50",
-      "schedule": "0 18 * * *"
+      "path": "/api/match-process",
+      "schedule": "0 * * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/match.ts": { "maxDuration": 60 }
+  }
 }
