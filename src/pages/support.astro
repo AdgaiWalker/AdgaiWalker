@@ -35,14 +35,16 @@ const hasExternal = Boolean(config?.externalUrl);
           <div class="qr-row">
             {config?.wechatQrUrl && (
               <figure class="qr-card wechat">
-                <img src={config.wechatQrUrl} alt="微信赞赏码" loading="lazy" />
+                <img src={config.wechatQrUrl} alt="微信赞赏码" loading="lazy" onerror="this.style.display='none'; this.parentElement.querySelector('.qr-fallback')?.style.removeProperty('display')" />
+                <span class="qr-fallback" style="display:none">二维码暂时不可用，请用下方外链</span>
                 <figcaption>微信赞赏</figcaption>
                 <span class="qr-hint">长按或扫码</span>
               </figure>
             )}
             {config?.alipayQrUrl && (
               <figure class="qr-card alipay">
-                <img src={config.alipayQrUrl} alt="支付宝收款码" loading="lazy" />
+                <img src={config.alipayQrUrl} alt="支付宝收款码" loading="lazy" onerror="this.style.display='none'; this.parentElement.querySelector('.qr-fallback')?.style.removeProperty('display')" />
+                <span class="qr-fallback" style="display:none">二维码暂时不可用，请用下方外链</span>
                 <figcaption>支付宝</figcaption>
                 <span class="qr-hint">长按或扫码</span>
               </figure>
@@ -80,11 +82,17 @@ const hasExternal = Boolean(config?.externalUrl);
   .qr-card.wechat figcaption { color: #07c160; }
   .qr-card.alipay figcaption { color: #1677ff; }
   .qr-hint { font-size: 0.72rem; color: var(--color-parchment-dim, #a8a29e); }
+  .qr-fallback { width: 180px; min-height: 180px; box-sizing: border-box; padding: 1rem; background: #f3f4f6; color: #57534e; font-size: 0.78rem; line-height: 1.5; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-align: center; }
   .external-link { display: inline-block; padding: 0.65rem 1.5rem; border-radius: 999px; background: var(--color-brand, #35bfab); color: #fff; text-decoration: none; font-weight: 700; font-size: 0.9rem; }
   .external-link:hover { filter: brightness(1.05); }
   .support-empty { margin-top: 2.5rem; padding: 2rem 1rem; color: var(--color-parchment-dim, #a8a29e); font-size: 0.88rem; border: 1px dashed rgba(0,0,0,0.1); border-radius: 14px; }
   .support-foot { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(0,0,0,0.06); }
   .support-foot p { font-size: 0.8rem; color: var(--color-parchment-dim, #a8a29e); margin: 0 0 0.75rem; }
   .back-home { font-size: 0.82rem; color: var(--color-brand, #35bfab); text-decoration: none; }
-  @media (max-width: 480px) { .qr-card img { width: 150px; height: 150px; } }
+  @media (max-width: 480px) {
+    .support-page { padding: 2rem 1rem 4rem; }
+    .qr-card { padding: 0.6rem 0.6rem 0.5rem; }
+    .qr-card img { width: 150px; height: 150px; }
+    .qr-fallback { width: 150px; min-height: 150px; }
+  }
 </style>

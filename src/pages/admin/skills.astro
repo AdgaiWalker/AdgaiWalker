@@ -53,7 +53,7 @@ function formatTime(iso: string): string {
 ---
 
 <AdminLayout active="/admin/skills" domain="assets" title="Skill" subtitle="候选、准入、暂停、回滚与调用边界">
-<style>
+<style>
 
     .stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .stat-chip { padding: 0.55rem 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; min-width: 5.5rem; }
@@ -99,12 +99,14 @@ function formatTime(iso: string): string {
     #admit-form input[type="text"], #admit-form textarea { padding: 0.45rem 0.6rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
     .eval-fieldset { border: 1px solid rgba(0,0,0,0.12); border-radius: 9px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
     .eval-fieldset legend { font-size: 0.78rem; color: #57534e; padding: 0 0.4rem; }
-    .eval-fieldset label { flex-direction: row; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
-    .eval-fieldset label input[type="text"] { flex: 1; min-width: 120px; }
+    .eval-fieldset .eval-row { display: flex; flex-direction: column; gap: 0.25rem; }
+    .eval-fieldset .eval-row label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: #57534e; }
+    .eval-fieldset .eval-row label input[type="text"] { width: 100%; }
+    #admit-error { margin: 0; padding: 0.5rem 0.7rem; border-radius: 7px; background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.25); color: #b91c1c; font-size: 0.8rem; }
     #admit-form .dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
     #admit-form .dialog-actions button { padding: 0.45rem 0.9rem; border-radius: 7px; border: 1px solid rgba(0,0,0,0.15); background: transparent; cursor: pointer; font-size: 0.82rem; }
     #admit-form .dialog-actions .btn-primary { background: #0f766e; color: #fff; border-color: transparent; }
-    @media (max-width: 760px) {
+    @media (max-width: 760px) {
       .form-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -170,7 +172,7 @@ function formatTime(iso: string): string {
                 {skill.validationCriteria && <div><span class="meta-label">验证标准：</span>{skill.validationCriteria}</div>}
                 {skill.sourceExperienceIds.length > 0 && <div><span class="meta-label">来源经验：</span>{skill.sourceExperienceIds.map(id => id.slice(0, 8)).join('、')}</div>}
               </div>
-              <div class="skill-foot">
+              <div class="skill-foot" role="group" aria-label="Skill 操作">
                 {skill.admissionStatus === 'candidate' && (
                   <>
                     <button class="btn btn-primary" data-action="admit">准入注册</button>
@@ -200,20 +202,33 @@ function formatTime(iso: string): string {
     )}
 
     {/* P4 准入注册 modal：收集 boundary/反例/evalSet（守护要求，skills 页不再旁路） */}
-    <dialog id="admit-modal" class="walker-dialog">
+    <dialog id="admit-modal" class="walker-dialog" aria-labelledby="admit-title" aria-describedby="admit-hint">
       <form method="dialog" id="admit-form" data-skill-id="">
-        <h3>准入注册 Skill</h3>
-        <p class="dialog-hint">注册前必须界定边界、反例与可回放验证集（spec §12.7/§28 护栏）。</p>
+        <h3 id="admit-title">准入注册 Skill</h3>
+        <p id="admit-hint" class="dialog-hint">注册前必须界定边界、反例与可回放验证集（spec §12.7/§28 护栏）。</p>
         <label>适用边界（问题域）<input type="text" name="applicableBoundary" required placeholder="这个 Skill 解决什么" /></label>
         <label>失败边界（非问题域）<input type="text" name="failureBoundary" required placeholder="什么情况不应使用" /></label>
         <label>反例（每行一条，至少 1 条）<textarea name="negativeExamples" rows="2" required placeholder="不应触发该 Skill 的输入"></textarea></label>
         <fieldset class="eval-fieldset">
           <legend>可回放验证集（四类各填一条）</legend>
-          <label>正常输入 <input type="text" name="eval-normal" required placeholder="输入" /><input type="text" name="eval-normal-out" required placeholder="期望输出" /></label>
-          <label>边界输入 <input type="text" name="eval-boundary" required placeholder="输入" /><input type="text" name="eval-boundary-out" required placeholder="期望输出" /></label>
-          <label>拒绝输入 <input type="text" name="eval-reject" required placeholder="输入" /><input type="text" name="eval-reject-out" required placeholder="期望输出" /></label>
-          <label>失败路径 <input type="text" name="eval-failure" required placeholder="输入" /><input type="text" name="eval-failure-out" required placeholder="期望输出" /></label>
+          <div class="eval-row">
+            <label>正常输入<input type="text" name="eval-normal" required placeholder="输入" /></label>
+            <label>正常期望输出<input type="text" name="eval-normal-out" required placeholder="期望输出" /></label>
+          </div>
+          <div class="eval-row">
+            <label>边界输入<input type="text" name="eval-boundary" required placeholder="输入" /></label>
+            <label>边界期望输出<input type="text" name="eval-boundary-out" required placeholder="期望输出" /></label>
+          </div>
+          <div class="eval-row">
+            <label>拒绝输入<input type="text" name="eval-reject" required placeholder="输入" /></label>
+            <label>拒绝期望输出<input type="text" name="eval-reject-out" required placeholder="期望输出" /></label>
+          </div>
+          <div class="eval-row">
+            <label>失败输入<input type="text" name="eval-failure" required placeholder="输入" /></label>
+            <label>失败期望输出<input type="text" name="eval-failure-out" required placeholder="期望输出" /></label>
+          </div>
         </fieldset>
+        <p id="admit-error" role="alert" aria-live="assertive" hidden></p>
         <div class="dialog-actions">
           <button type="button" value="cancel" data-action="cancel-admit">取消</button>
           <button type="submit" class="btn btn-primary" value="admit">确认准入注册</button>
@@ -250,10 +265,14 @@ function formatTime(iso: string): string {
           // P4：准入注册需收集 boundary/反例/evalSet（不再旁路守护）。打开 modal。
           const modal = document.getElementById('admit-modal');
           const form = document.getElementById('admit-form');
+          const errNode = document.getElementById('admit-error');
           if (modal && form && typeof modal.showModal === 'function') {
             form.dataset.skillId = skillId;
             form.reset();
+            if (errNode) { errNode.textContent = ''; errNode.hidden = true; }
             modal.showModal();
+            // 显式聚焦首个输入框，便于键盘与屏幕阅读器
+            setTimeout(() => form.querySelector('input[name="applicableBoundary"]')?.focus(), 0);
           }
         } else if (action === 'demote') {
           const { ok, data } = await post('/api/admin/skills?action=admission', { skillId, admissionStatus: 'demoted-to-method' });
@@ -271,7 +290,7 @@ function formatTime(iso: string): string {
           const reason = window.WalkerAdminUI?.prompt
             ? await window.WalkerAdminUI.prompt({ title: action === 'pause' ? '暂停 Skill' : '恢复 Skill', message: '请填理由（写进审计）', placeholder: '理由' })
             : window.prompt(action === 'pause' ? '暂停理由' : '恢复理由');
-          if (!reason) return;
+          if (!reason) { await tell('已取消'); return; }
           const { ok, data } = await post('/api/admin/skills?action=' + action, { skillId, reason });
           if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         } else if (action === 'rollback') {
@@ -283,7 +302,7 @@ function formatTime(iso: string): string {
           const reason = window.WalkerAdminUI?.prompt
             ? await window.WalkerAdminUI.prompt({ title: '回滚理由', message: '为什么回滚', placeholder: '理由' })
             : window.prompt('回滚理由');
-          if (!reason) return;
+          if (!reason) { await tell('已取消'); return; }
           const { ok, data } = await post('/api/admin/skills?action=rollback', { skillId, toVersion, reason });
           if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
         }
@@ -296,7 +315,10 @@ function formatTime(iso: string): string {
     admitForm?.addEventListener('submit', async (e) => {
       const submitter = (e.submitter && e.submitter.value) ? e.submitter.value : '';
       if (submitter !== 'admit') return; // 取消不处理
+      // method="dialog" 会绕过原生 required，显式校验
+      if (!admitForm.reportValidity()) { e.preventDefault(); return; }
       e.preventDefault();
+      const errNode = document.getElementById('admit-error');
       const fd = new FormData(admitForm);
       const skillId = admitForm.dataset.skillId;
       if (!skillId) return;
@@ -316,10 +338,20 @@ function formatTime(iso: string): string {
           negativeExamples, evalSet,
         },
       });
-      admitModal?.close();
-      if (ok && data.ok) window.location.reload();
-      else await tell(data.error || '准入注册失败');
+      if (ok && data.ok) {
+        admitModal?.close();
+        window.location.reload();
+      } else {
+        // 失败：保留 modal 与用户输入，错误写入 alert 节点 + toast
+        const msg = data.error || '准入注册失败';
+        if (errNode) { errNode.textContent = msg; errNode.hidden = false; }
+        await tell(msg);
+      }
     });
-    document.querySelector('#admit-form [data-action="cancel-admit"]')?.addEventListener('click', () => admitModal?.close());
+    document.querySelector('#admit-form [data-action="cancel-admit"]')?.addEventListener('click', () => {
+      const errNode = document.getElementById('admit-error');
+      if (errNode) { errNode.textContent = ''; errNode.hidden = true; }
+      admitModal?.close();
+    });
   </script>
 </AdminLayout>

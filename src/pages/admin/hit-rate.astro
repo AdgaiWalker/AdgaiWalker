@@ -63,7 +63,7 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
 ---
 
 <AdminLayout active="/admin/hit-rate" domain="creation" title="内容命中" subtitle="区分已解决、部分解决、卡住与尚无信号">
-<style>
+<style>
     .hit-list { display: grid; gap: 0.75rem; }
     .hit-row { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem; }
     .hit-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: 0.7rem; }
@@ -92,7 +92,7 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
     /* P1-C02：双信号结果分组 —— 需求匹配与内容阅读分开解释 */
     .outcome-groups { display: grid; gap: 0.6rem; margin-bottom: 0.5rem; }
     .outcome-group { padding: 0.6rem 0.75rem; border-radius: 8px; background: transparent; border: 1px solid rgba(0,0,0,0.04); }
-    .outcome-label { font-size: 0.7rem; font-weight: 750; color: #57534e; margin-bottom: 0.4rem; }
+    .outcome-label { font-size: 0.7rem; font-weight: 750; color: #57534e; margin: 0 0 0.4rem; }
     .outcome-body { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .outcome-null { font-size: 0.78rem; color: var(--adm-text-faint); }
     .feedback-details { margin-top: 0.65rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; overflow: hidden; }
@@ -104,7 +104,7 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
     .feedback-item-head { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.35rem; }
     .feedback-note { color: #44403c; font-size: 0.8rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
     .feedback-note.empty-note { color: var(--adm-text-faint); }
-    @media (max-width: 760px) {
+    @media (max-width: 760px) {
       .hit-head { flex-direction: column; }
       .lb-row { flex-wrap: wrap; }
       .lb-path { order: 5; width: 100%; }
@@ -135,7 +135,7 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
               <article class="hit-row">
                 <div class="hit-head">
                   <a class="hit-title" href={row.href}>{row.title}</a>
-                  <div class={`hit-rate ${row.rate === null ? 'empty' : ''}`}>{row.rate === null ? '暂无反馈' : `${row.rate}% resolved`}</div>
+                  <strong class={`hit-rate ${row.rate === null ? 'empty' : ''}`}>{row.rate === null ? '暂无反馈' : `${row.rate}% resolved`}</strong>
                 </div>
                 <div class="hit-bar" aria-label={`resolved ${row.resolved}, stuck ${row.stuck}`}>
                   <div class="hit-bar-resolved" style={`width:${resolvedPct}%`} />
@@ -174,38 +174,44 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
               </div>
               <div class="outcome-groups">
                 <div class="outcome-group">
-                  <div class="outcome-label">需求匹配结果（NeedCase 反馈）</div>
+                  <h3 class="outcome-label">需求匹配结果（NeedCase 反馈）</h3>
                   <div class="outcome-body">
                     {summary.matchOutcome.rate === null
                       ? <span class="outcome-null">暂无匹配反馈</span>
-                      : <span class="hit-rate">{summary.matchOutcome.rate}% 解决</span>}
-                    <span class="hit-chip">样本 {summary.matchOutcome.totalCases}</span>
-                    <span class="hit-chip">已反馈 {summary.matchOutcome.responded}</span>
-                    <span class="hit-chip">解决 {summary.matchOutcome.resolved}</span>
-                    <span class="hit-chip">未解决 {summary.matchOutcome.unresolved}</span>
+                      : <>
+                          <strong class="hit-rate">{summary.matchOutcome.rate}% 解决</strong>
+                          <span class="hit-chip">样本 {summary.matchOutcome.totalCases}</span>
+                          <span class="hit-chip">已反馈 {summary.matchOutcome.responded}</span>
+                          <span class="hit-chip">解决 {summary.matchOutcome.resolved}</span>
+                          <span class="hit-chip">未解决 {summary.matchOutcome.unresolved}</span>
+                        </>}
                   </div>
                 </div>
                 <div class="outcome-group">
-                  <div class="outcome-label">内容阅读结果（访客明确反馈）</div>
+                  <h3 class="outcome-label">内容阅读结果（访客明确反馈）</h3>
                   <div class="outcome-body">
                     {summary.contentOutcome.usefulRate === null
                       ? <span class="outcome-null">暂无内容反馈</span>
-                      : <span class="hit-rate">{summary.contentOutcome.usefulRate}% 有用</span>}
-                    <span class="hit-chip">反馈 {summary.contentOutcome.totalFeedback}</span>
-                    <span class="hit-chip">有用 {summary.contentOutcome.useful}</span>
-                    <span class="hit-chip">需补充 {summary.contentOutcome.needsMore}</span>
-                    <span class="hit-chip">已过时 {summary.contentOutcome.outdated}</span>
+                      : <>
+                          <strong class="hit-rate">{summary.contentOutcome.usefulRate}% 有用</strong>
+                          <span class="hit-chip">反馈 {summary.contentOutcome.totalFeedback}</span>
+                          <span class="hit-chip">有用 {summary.contentOutcome.useful}</span>
+                          <span class="hit-chip">需补充 {summary.contentOutcome.needsMore}</span>
+                          <span class="hit-chip">已过时 {summary.contentOutcome.outdated}</span>
+                        </>}
                   </div>
                 </div>
                 <div class="outcome-group">
-                  <div class="outcome-label">阅读深度（匿名遥测，P3-A）</div>
+                  <h3 class="outcome-label">阅读深度（匿名遥测，P3-A）</h3>
                   <div class="outcome-body">
                     {summary.readingOutcome.completionRate === null
                       ? <span class="outcome-null">暂无阅读信号</span>
-                      : <span class="hit-rate">{summary.readingOutcome.completionRate}% 读完</span>}
-                    <span class="hit-chip">读者 {summary.readingOutcome.uniqueReaders}</span>
-                    <span class="hit-chip">读完 {summary.readingOutcome.completed}</span>
-                    <span class="hit-chip">有进度 {summary.readingOutcome.withProgressSignal}</span>
+                      : <>
+                          <strong class="hit-rate">{summary.readingOutcome.completionRate}% 读完</strong>
+                          <span class="hit-chip">读者 {summary.readingOutcome.uniqueReaders}</span>
+                          <span class="hit-chip">读完 {summary.readingOutcome.completed}</span>
+                          <span class="hit-chip">有进度 {summary.readingOutcome.withProgressSignal}</span>
+                        </>}
                   </div>
                 </div>
               </div>

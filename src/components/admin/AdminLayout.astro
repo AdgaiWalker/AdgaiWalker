@@ -170,7 +170,7 @@ const isSecondaryActive = (item: AdminNavItem) => {
       <div>
         <span class="adm-ui-dialog-kicker" data-admin-ui-kicker>需要确认</span>
         <h2 data-admin-ui-title>确认操作</h2>
-        <p data-admin-ui-message></p>
+        <p data-admin-ui-message aria-live="polite"></p>
       </div>
       <label class="adm-ui-dialog-input" data-admin-ui-input-wrap hidden>
         <span data-admin-ui-input-label>补充说明</span>
@@ -245,6 +245,8 @@ const isSecondaryActive = (item: AdminNavItem) => {
       cancelText?: string;
       tone?: WalkerAdminDialogTone;
     }) => new Promise<string | boolean | null>(resolve => {
+      // 关闭后焦点回归触发元素（a11y）
+      const trigger = document.activeElement as HTMLElement | null;
       if (!dialog || !form || !title || !message || !confirm || !cancel || !inputWrap || !input || !textarea) {
         resolve(options.mode === 'confirm' ? false : options.mode === 'prompt' ? null : true);
         return;
@@ -277,6 +279,8 @@ const isSecondaryActive = (item: AdminNavItem) => {
         cleanup();
         if (dialog.open) dialog.close();
         resolve(value);
+        // 关闭后焦点回归触发元素（a11y）
+        window.setTimeout(() => trigger?.focus?.(), 0);
       };
       const onSubmit = (event: SubmitEvent) => {
         event.preventDefault();

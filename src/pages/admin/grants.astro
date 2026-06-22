@@ -49,7 +49,7 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
             <button type="button" class="tpl-btn" data-template={JSON.stringify(t.grants)}>{t.role}</button>
           ))}
         </div>
-        <p class="tpl-desc" id="tpl-desc">点模板查看说明。</p>
+        <p class="tpl-desc" id="tpl-desc" role="status" aria-live="polite">点模板查看说明。</p>
 
         <form id="grant-form">
           <label>被授权用户名 <input type="text" name="grantee" required placeholder="contributor-username" /></label>
@@ -77,27 +77,29 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
       {grants.length === 0 ? (
         <p class="empty">暂无授权。协作者被邀请后，在此为其配置受限访问。</p>
       ) : (
-        <table class="grant-table">
-          <thead><tr><th>用户</th><th>资源</th><th>动作</th><th>过期</th><th>理由</th><th>授权人</th><th></th></tr></thead>
-          <tbody>
-            {grants.map(g => (
-              <tr data-grant-id={g.grantId}>
-                <td>{g.grantee}</td>
-                <td><code>{g.resourceType}:{g.resourceId}</code></td>
-                <td>{g.actions.join(', ')}</td>
-                <td>{g.expiresAt ? new Date(g.expiresAt).toLocaleDateString('zh-CN') : '—'}</td>
-                <td class="reason">{g.reason}</td>
-                <td>{g.grantedBy}</td>
-                <td>{canManage && <button class="revoke-btn" data-revoke={g.grantId}>撤销</button>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="grant-table">
+            <thead><tr><th>用户</th><th>资源</th><th>动作</th><th>过期</th><th>理由</th><th>授权人</th>{canManage && <th></th>}</tr></thead>
+            <tbody>
+              {grants.map(g => (
+                <tr data-grant-id={g.grantId}>
+                  <td>{g.grantee}</td>
+                  <td><code>{g.resourceType}:{g.resourceId}</code></td>
+                  <td>{g.actions.join(', ')}</td>
+                  <td>{g.expiresAt ? new Date(g.expiresAt).toLocaleDateString('zh-CN') : '—'}</td>
+                  <td class="reason">{g.reason}</td>
+                  <td>{g.grantedBy}</td>
+                  {canManage && <td><button class="revoke-btn" data-revoke={g.grantId}>撤销</button></td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   </div>
 
-  <style>
+  <style>
     .hint { font-size: 0.82rem; color: var(--color-parchment-dim, #78716c); line-height: 1.6; }
     .hint code { background: rgba(0,0,0,0.05); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
     .create-section, .list-section { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: 0 16px 46px rgba(39,62,58,.08); }
@@ -113,6 +115,7 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
     #grant-form input, #grant-form select { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
     #grant-form .btn-primary { grid-column: 1 / -1; justify-self: start; padding: 0.5rem 1.1rem; border: none; border-radius: 8px; background: var(--color-brand, #35bfab); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
     .empty { color: var(--color-parchment-dim, #a8a29e); padding: 1.5rem 0; text-align: center; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .grant-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     .grant-table th { text-align: left; font-size: 0.72rem; color: var(--color-parchment-dim, #78716c); padding: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
     .grant-table td { padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
@@ -120,7 +123,12 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
     .grant-table code { background: rgba(0,0,0,0.05); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.82em; }
     .revoke-btn { padding: 0.25rem 0.6rem; border: 1px solid rgba(154,52,18,0.3); border-radius: 6px; background: rgba(154,52,18,0.06); color: #9a3412; cursor: pointer; font-size: 0.76rem; }
     .revoke-btn:hover { background: rgba(154,52,18,0.14); }
-    @media (max-width: 640px) { #grant-form { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      #grant-form { grid-template-columns: 1fr; }
+      .grant-table { font-size: 0.76rem; }
+      .grant-table th { font-size: 0.68rem; padding: 0.4rem 0.35rem; }
+      .grant-table td { padding: 0.4rem 0.35rem; }
+    }
   </style>
 
   <script is:inline>
@@ -150,19 +158,28 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
     });
     document.getElementById('grant-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
-      const body = {
-        grantee: fd.get('grantee'),
-        resourceType: fd.get('resourceType'),
-        resourceId: fd.get('resourceId'),
-        actions: fd.get('actions').split(',').map((s) => s.trim()).filter(Boolean),
-        reason: fd.get('reason'),
-      };
-      const exp = fd.get('expiresAt');
-      if (exp) body.expiresAt = new Date(exp).toISOString();
-      const res = await fetch('/api/admin/grants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok) { window.location.reload(); } else { await tell(data.error || '创建失败'); }
+      const form = e.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.setAttribute('aria-busy', 'true'); }
+      try {
+        const fd = new FormData(form);
+        const body = {
+          grantee: fd.get('grantee'),
+          resourceType: fd.get('resourceType'),
+          resourceId: fd.get('resourceId'),
+          actions: fd.get('actions').split(',').map((s) => s.trim()).filter(Boolean),
+          reason: fd.get('reason'),
+        };
+        const exp = fd.get('expiresAt');
+        if (exp) body.expiresAt = new Date(exp).toISOString();
+        const res = await fetch('/api/admin/grants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) { window.location.reload(); } else { await tell(data.error || '创建失败'); }
+      } catch (err) {
+        await tell('创建失败');
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.removeAttribute('aria-busy'); }
+      }
     });
     document.querySelectorAll('.revoke-btn').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -170,7 +187,8 @@ const ROLE_TEMPLATES: { role: string; grants: { resourceType: string; resourceId
         const ok = window.WalkerAdminUI?.confirm ? await window.WalkerAdminUI.confirm({ title: '撤销授权', message: '确定撤销此授权？', danger: true }) : true;
         if (!ok) return;
         const res = await fetch('/api/admin/grants?grantId=' + encodeURIComponent(id), { method: 'DELETE' });
-        if (res.ok) window.location.reload(); else await tell('撤销失败');
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) window.location.reload(); else await tell(data.error || '撤销失败');
       });
     });
   </script>
