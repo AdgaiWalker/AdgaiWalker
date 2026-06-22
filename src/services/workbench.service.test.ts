@@ -669,3 +669,92 @@ describe('WorkbenchService 安全网（domain 剥离前行为固化）', () => {
     expect(result.code).toBe('not-found');
   });
 });
+
+describe('WorkbenchService.list 默认过滤过期 proposal（BUG #3 修复）', () => {
+  beforeEach(() => __resetMemoryWorkItems());
+  afterEach(() => __resetMemoryWorkItems());
+
+  /** 直接改内存里的 expiresAt 为过去，模拟过期 proposal（沿用 getTodayProjection 测试手法） */
+  async function expireInMemory(workItemId: string): Promise<void> {
+    const { listWorkItems, saveWorkItem } = await import('@/conversation/store');
+    const items = await listWorkItems();
+    const target = items.find(w => w.workItemId === workItemId);
+    if (target) {
+      await saveWorkItem({ ...target, expiresAt: '2020-01-01T00:00:00.000Z' });
+    }
+  }
+
+  it('默认过滤掉已过期的 proposal（与 getTodayProjection 行为一致）', async () => {
+    const svc = createWorkbenchService();
+    // 1. 过期的 AI proposal（queue=ai-asset 写入 expiresAt）
+    const expired = await svc.createProposal({
+      queue: 'ai-asset',
+      title: '过期 AI 提案',
+      summary: '已过期应被默认过滤',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence({ qualityStatus: 'unverified', summary: '弱' })],
+      actor: 'ai',
+    });
+    expect(expired.data?.expiresAt).toBeTruthy();
+    await expireInMemory(expired.data!.workItemId);
+
+    // 2. 未过期的 proposal（user-demand 无 expiresAt）
+    const active = await svc.createProposal({
+      queue: 'user-demand',
+      title: '活跃提案',
+      summary: '应保留',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+
+    const items = await svc.list();
+    const ids = items.map(w => w.workItemId);
+    expect(ids).toContain(active.data!.workItemId);
+    expect(ids).not.toContain(expired.data!.workItemId); // 过期被过滤
+  });
+
+  it('includeExpiredProposals:true 返回全部（审计场景）', async () => {
+    const svc = createWorkbenchService();
+    const expired = await svc.createProposal({
+      queue: 'ai-asset',
+      title: '过期 AI 提案',
+      summary: '审计场景应可见',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence({ qualityStatus: 'unverified', summary: '弱' })],
+      actor: 'ai',
+    });
+    await expireInMemory(expired.data!.workItemId);
+
+    const active = await svc.createProposal({
+      queue: 'user-demand',
+      title: '活跃提案',
+      summary: '应保留',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+
+    const items = await svc.list({ includeExpiredProposals: true });
+    const ids = items.map(w => w.workItemId);
+    expect(ids).toContain(active.data!.workItemId);
+    expect(ids).toContain(expired.data!.workItemId); // 审计场景可见
+  });
+
+  it('list 带过滤参数时仍过滤过期 proposal（组合不破坏默认）', async () => {
+    const svc = createWorkbenchService();
+    const expired = await svc.createProposal({
+      queue: 'ai-asset',
+      title: '过期 AI 提案',
+      summary: 'x',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence({ qualityStatus: 'unverified', summary: '弱' })],
+      actor: 'ai',
+    });
+    await expireInMemory(expired.data!.workItemId);
+
+    // 按 status=proposal 过滤，过期项仍应被默认过滤掉
+    const items = await svc.list({ status: 'proposal' });
+    expect(items.find(w => w.workItemId === expired.data!.workItemId)).toBeUndefined();
+  });
+});

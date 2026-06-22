@@ -444,7 +444,11 @@ export class WorkbenchService implements WorkbenchServicePort {
   }
 
   async list(options?: Parameters<WorkbenchServicePort['list']>[0]): Promise<WorkItem[]> {
-    return this.repository.list(options);
+    const items = await this.repository.list(options);
+    // BUG #3 修复：默认过滤过期 proposal，与 getTodayProjection 行为一致；
+    // 过期 proposal 仍保留在存储供审计，仅在默认列表视图退出活跃投影。
+    // 审计场景显式传 includeExpiredProposals:true 查看全部。
+    return options?.includeExpiredProposals ? items : filterExpiredProposals(items, nowIso());
   }
 
   /**
