@@ -17,3 +17,10 @@ export { ALLOWED_TRANSITIONS, canTransition } from './state-machine';
 export { hasSufficientEvidence, isProposalExpired, filterExpiredProposals } from './rules';
 export { suggestNextAction } from './suggest-next-action';
 export type { NextActionSuggestion } from './suggest-next-action';
+// Task 3：4 个 apply 函数（纯，deps 注入，统一调 canTransition）
+export {
+  applyCreateProposal,
+  applyRequestDecision,
+  applyDecide,
+  applyCreateAction,
+} from './apply';
