@@ -498,3 +498,263 @@ describe('WorkbenchService P4 AI proposal 安全护栏', () => {
     expect(result.code).toBe('invalid-input');
   });
 });
+
+describe('WorkbenchService 安全网（domain 剥离前行为固化）', () => {
+  beforeEach(() => __resetMemoryWorkItems());
+  afterEach(() => __resetMemoryWorkItems());
+
+  it('requestDecision happy path：proposal(证据完整)→ pending，写一条 proposal→pending 历史', async () => {
+    const svc = createWorkbenchService();
+    // 证据完整但不 requestDecision，确保初始状态停在 proposal（而非直接 pending）
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: 'requestDecision happy',
+      summary: '稍后请求决定',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+    expect(created.data?.status).toBe('proposal');
+    const id = created.data!.workItemId;
+
+    const result = await svc.requestDecision(id, 'walker');
+    expect(result.ok).toBe(true);
+    expect(result.data?.status).toBe('pending');
+    expect(result.data?.decision.outcome).toBe('pending');
+
+    // 末条历史应是 proposal→pending 的 status-change，理由来自 requestDecision 内固定文案
+    const final = await svc.findById(id);
+    const lastEntry = final?.history[final.history.length - 1];
+    expect(lastEntry?.kind).toBe('status-change');
+    expect(lastEntry?.fromStatus).toBe('proposal');
+    expect(lastEntry?.toStatus).toBe('pending');
+    expect(lastEntry?.actor).toBe('walker');
+    expect(lastEntry?.reason).toBe('请求 Walker 决定');
+  });
+
+  it('decide 从 paused 出发：paused→accepted 被 ALLOWED_TRANSITIONS 拒绝（invalid-transition）', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: 'paused 出发',
+      summary: '先暂缓再尝试接受',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+    const id = created.data!.workItemId;
+
+    // proposal → paused（outcome=paused，在白名单 proposal→paused 内）
+    const paused = await svc.decide(id, { outcome: 'paused', reason: '先放一放', actor: 'walker' });
+    expect(paused.data?.status).toBe('paused');
+
+    // ALLOWED_TRANSITIONS.paused = ['pending','proposal','rejected']，不含 accepted
+    const accepted = await svc.decide(id, { outcome: 'accepted', reason: '现在想接受', actor: 'walker' });
+    expect(accepted.ok).toBe(false);
+    expect(accepted.code).toBe('invalid-transition');
+  });
+
+  it('decide 从 proposal 出发：proposal→accepted 允许（证据完整时）', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: 'proposal 直接受',
+      summary: '不经过 pending 直接 decide',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+    expect(created.data?.status).toBe('proposal');
+    const id = created.data!.workItemId;
+
+    const accepted = await svc.decide(id, { outcome: 'accepted', reason: '证据充分直接接受', actor: 'walker' });
+    expect(accepted.ok).toBe(true);
+    expect(accepted.data?.status).toBe('accepted');
+    expect(accepted.data?.decision.outcome).toBe('accepted');
+    expect(accepted.data?.decision.decidedBy).toBe('walker');
+    // 这条历史应是 decision-updated：proposal→accepted
+    const entry = accepted.data?.history[accepted.data!.history.length - 1];
+    expect(entry?.kind).toBe('decision-updated');
+    expect(entry?.fromStatus).toBe('proposal');
+    expect(entry?.toStatus).toBe('accepted');
+  });
+
+  it('updateAction 非 completed 路径：不推 WorkItem 状态，只记 action-updated 历史', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: 'updateAction 非 completed',
+      summary: '行动状态流转',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      requestDecision: true,
+      actor: 'ai',
+    });
+    const id = created.data!.workItemId;
+    await svc.decide(id, { outcome: 'accepted', reason: '接受', actor: 'walker' });
+    const actionRes = await svc.createAction(id, {
+      actionType: 'create-content',
+      targetType: 'content',
+      expectedOutcome: '产出一篇教程',
+      actor: 'walker',
+    });
+    const actionId = actionRes.data!.actions[0].actionId;
+    // createAction 后 WorkItem=acting，action.status=authorized
+    expect(actionRes.data?.status).toBe('acting');
+    expect(actionRes.data?.actions[0].status).toBe('authorized');
+
+    // authorized → in-progress：WorkItem 仍应停留在 acting（不变）
+    const toInProgress = await svc.updateAction(id, actionId, {
+      status: 'in-progress',
+      actor: 'walker',
+      reason: '开始动笔',
+    });
+    expect(toInProgress.ok).toBe(true);
+    expect(toInProgress.data?.status).toBe('acting');
+    expect(toInProgress.data?.actions[0].status).toBe('in-progress');
+    const lastInProgress = toInProgress.data?.history[toInProgress.data!.history.length - 1];
+    expect(lastInProgress?.kind).toBe('action-updated');
+    expect((lastInProgress?.detail as { from?: string; to?: string })?.from).toBe('authorized');
+    expect((lastInProgress?.detail as { from?: string; to?: string })?.to).toBe('in-progress');
+
+    // in-progress → blocked：WorkItem 仍是 acting
+    const toBlocked = await svc.updateAction(id, actionId, {
+      status: 'blocked',
+      actor: 'walker',
+      reason: '卡在素材不足',
+    });
+    expect(toBlocked.ok).toBe(true);
+    expect(toBlocked.data?.status).toBe('acting');
+    expect(toBlocked.data?.actions[0].status).toBe('blocked');
+    const lastBlocked = toBlocked.data?.history[toBlocked.data!.history.length - 1];
+    expect(lastBlocked?.kind).toBe('action-updated');
+
+    // blocked → cancelled：WorkItem 仍是 acting（cancelled 不推 WorkItem 状态）
+    const toCancelled = await svc.updateAction(id, actionId, {
+      status: 'cancelled',
+      actor: 'walker',
+      reason: '放弃此行动',
+    });
+    expect(toCancelled.ok).toBe(true);
+    expect(toCancelled.data?.status).toBe('acting');
+    expect(toCancelled.data?.actions[0].status).toBe('cancelled');
+    const lastCancelled = toCancelled.data?.history[toCancelled.data!.history.length - 1];
+    expect(lastCancelled?.kind).toBe('action-updated');
+
+    // 全程没有出现 awaiting-verification 这个 status-change（那是 completed 专属）
+    const final = await svc.findById(id);
+    const awaitEntry = final?.history.find(h => h.toStatus === 'awaiting-verification');
+    expect(awaitEntry).toBeUndefined();
+  });
+
+  it('updateAction actionId 不存在 → not-found', async () => {
+    const svc = createWorkbenchService();
+    const created = await svc.createProposal({
+      queue: 'user-demand',
+      title: 'updateAction not-found',
+      summary: '行动不存在',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      requestDecision: true,
+      actor: 'ai',
+    });
+    const id = created.data!.workItemId;
+    await svc.decide(id, { outcome: 'accepted', reason: '接受', actor: 'walker' });
+
+    const result = await svc.updateAction(id, 'wa_missing', {
+      status: 'in-progress',
+      actor: 'walker',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('not-found');
+  });
+});
+
+describe('WorkbenchService.list 默认过滤过期 proposal（BUG #3 修复）', () => {
+  beforeEach(() => __resetMemoryWorkItems());
+  afterEach(() => __resetMemoryWorkItems());
+
+  /** 直接改内存里的 expiresAt 为过去，模拟过期 proposal（沿用 getTodayProjection 测试手法） */
+  async function expireInMemory(workItemId: string): Promise<void> {
+    const { listWorkItems, saveWorkItem } = await import('@/conversation/store');
+    const items = await listWorkItems();
+    const target = items.find(w => w.workItemId === workItemId);
+    if (target) {
+      await saveWorkItem({ ...target, expiresAt: '2020-01-01T00:00:00.000Z' });
+    }
+  }
+
+  it('默认过滤掉已过期的 proposal（与 getTodayProjection 行为一致）', async () => {
+    const svc = createWorkbenchService();
+    // 1. 过期的 AI proposal（queue=ai-asset 写入 expiresAt）
+    const expired = await svc.createProposal({
+      queue: 'ai-asset',
+      title: '过期 AI 提案',
+      summary: '已过期应被默认过滤',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence({ qualityStatus: 'unverified', summary: '弱' })],
+      actor: 'ai',
+    });
+    expect(expired.data?.expiresAt).toBeTruthy();
+    await expireInMemory(expired.data!.workItemId);
+
+    // 2. 未过期的 proposal（user-demand 无 expiresAt）
+    const active = await svc.createProposal({
+      queue: 'user-demand',
+      title: '活跃提案',
+      summary: '应保留',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+
+    const items = await svc.list();
+    const ids = items.map(w => w.workItemId);
+    expect(ids).toContain(active.data!.workItemId);
+    expect(ids).not.toContain(expired.data!.workItemId); // 过期被过滤
+  });
+
+  it('includeExpiredProposals:true 返回全部（审计场景）', async () => {
+    const svc = createWorkbenchService();
+    const expired = await svc.createProposal({
+      queue: 'ai-asset',
+      title: '过期 AI 提案',
+      summary: '审计场景应可见',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence({ qualityStatus: 'unverified', summary: '弱' })],
+      actor: 'ai',
+    });
+    await expireInMemory(expired.data!.workItemId);
+
+    const active = await svc.createProposal({
+      queue: 'user-demand',
+      title: '活跃提案',
+      summary: '应保留',
+      priorityBand: 'now',
+      evidenceRefs: [makeEvidence()],
+      actor: 'ai',
+    });
+
+    const items = await svc.list({ includeExpiredProposals: true });
+    const ids = items.map(w => w.workItemId);
+    expect(ids).toContain(active.data!.workItemId);
+    expect(ids).toContain(expired.data!.workItemId); // 审计场景可见
+  });
+
+  it('list 带过滤参数时仍过滤过期 proposal（组合不破坏默认）', async () => {
+    const svc = createWorkbenchService();
+    const expired = await svc.createProposal({
+      queue: 'ai-asset',
+      title: '过期 AI 提案',
+      summary: 'x',
+      priorityBand: 'week',
+      evidenceRefs: [makeEvidence({ qualityStatus: 'unverified', summary: '弱' })],
+      actor: 'ai',
+    });
+    await expireInMemory(expired.data!.workItemId);
+
+    // 按 status=proposal 过滤，过期项仍应被默认过滤掉
+    const items = await svc.list({ status: 'proposal' });
+    expect(items.find(w => w.workItemId === expired.data!.workItemId)).toBeUndefined();
+  });
+});

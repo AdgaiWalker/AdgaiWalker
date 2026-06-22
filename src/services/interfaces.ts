@@ -353,11 +353,15 @@ export interface WorkbenchServicePort {
   findById(workItemId: string): Promise<WorkItem | null>;
   /** 今日投影：待决定 / 执行中 / 待验证 / 已验证 等队列 */
   getTodayProjection(options?: { limit?: number }): Promise<WorkItem[]>;
-  /** 按队列/状态过滤列表 */
+  /** 按队列/状态过滤列表。
+   *  默认过滤过期 proposal（与 getTodayProjection 一致，修 BUG #3）；
+   *  审计场景传 includeExpiredProposals:true 查看全部。 */
   list(options?: {
     queue?: WorkItemQueue;
     status?: WorkItemStatus | WorkItemStatus[];
     limit?: number;
+    /** 审计场景：显式要求返回过期 proposal（默认 false 过滤） */
+    includeExpiredProposals?: boolean;
   }): Promise<WorkItem[]>;
 }
 
