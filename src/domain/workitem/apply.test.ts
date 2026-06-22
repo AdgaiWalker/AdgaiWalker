@@ -1092,8 +1092,24 @@ describe('applyUpdateAction', () => {
     });
   });
 
-  describe('BUG #1 回归：history.fromStatus 是真实源（不恒 acting）', () => {
-    it('从 acting 完成：fromStatus === acting', () => {
+  // -------------------------------------------------------------------------
+  // 诚实化说明（Task 4 Fix I-1）：
+  //
+  // 原始 BUG #1 是 service L334 的回溯式三元
+  //   `item.status === 'awaiting-verification' ? 'acting' : item.status`
+  // 在 item.status 已被改写成 'awaiting-verification' 后恒取 'acting'。
+  //
+  // 但 BUG #4 收紧 canTransition 后，'acting' 是唯一合法的 'awaiting-verification' 源
+  // （state-machine 白名单）。而对 'acting' 源，bug 版三元也返回 'acting'（正确值）。
+  // 因此：把修复回退成 bug 版本，下面这些用例【仍绿】——它们不真正区分 bug 与 fix，
+  // 只守护『fromStatus 在顶部捕获、不回溯改写后状态』的实现约定。
+  //
+  // 即：BUG #1 在 BUG #4 收紧后，于合法路径下结构性不可达。
+  // 合法路径下无法构造出"bug 与 fix 产生不同 fromStatus"的反例
+  // （任何非 acting 源都会被 BUG #4 守卫挡在 history 构造之前），故不补区分性用例。
+  // -------------------------------------------------------------------------
+  describe('fromStatus 顶部捕获约定（updateAction completed）', () => {
+    it('从 acting 完成：fromStatus === acting（顶部捕获的真实源）', () => {
       const item = makeActingWorkItem({ status: 'acting' });
       const result = applyUpdateAction(
         item,
@@ -1109,13 +1125,13 @@ describe('applyUpdateAction', () => {
       expect(statusChange.toStatus).toBe('awaiting-verification');
     });
 
-    it('从 awaiting-verification 再次 completed：fromStatus === awaiting-verification（不是恒 acting）', () => {
-      // 关键反例：service L334 的 bug 是"fromStatus 恒为 acting 或当前状态"，
-      // 修复后必须如实反映源状态。awaiting-verification → awaiting-verification 是合法自反迁移吗？
-      // 不是——canTransition('awaiting-verification', 'awaiting-verification') 返回 false（白名单不含自迁移）。
-      // 所以这个用例测的是：合法源 acting 真实捕获，不被回溯式 bug 改写。
-      // 这里覆盖 paused 源：paused→awaiting-verification 会被 BUG #4 守卫拒绝（invalid-transition），
-      // 不会进入 history 构造，所以 BUG #1 的"不恒 acting"主要靠 acting/awaiting-verification 源验证。
+    it('fromStatus 顶部捕获：不为 awaiting-verification（目标态）', () => {
+      // 此用例不区分 BUG #1 的 bug 与 fix 版本（合法源恒为 acting，三元与捕获同值），
+      // 只守护『history.fromStatus 记录的是迁移前状态、不是迁移后目标态』的约定。
+      // canTransition('awaiting-verification', 'awaiting-verification') 返回 false
+      // （白名单不含自迁移），所以无法在合法路径上以 awaiting-verification 为源触发 completed。
+      // paused/resolved 等非 acting 源会被 BUG #4 守卫拒绝（invalid-transition），
+      // 不进入 history 构造，故没有合法反例能区分 bug 与 fix。
       const item = makeActingWorkItem({ status: 'acting' });
       const result = applyUpdateAction(
         item,
@@ -1125,7 +1141,7 @@ describe('applyUpdateAction', () => {
       );
       expect(result.ok).toBe(true);
       if (!result.ok) return;
-      // fromStatus 必须等于迁移前真实状态 acting（不是回溯式 bug 的恒等判断）
+      // fromStatus 必须等于迁移前真实状态 acting（不是迁移后目标态 awaiting-verification）
       expect(result.workItem.history[0]!.fromStatus).toBe('acting');
       expect(result.workItem.history[0]!.fromStatus).not.toBe('awaiting-verification');
     });
