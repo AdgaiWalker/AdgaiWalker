@@ -6,6 +6,9 @@
 import type { APIRoute } from 'astro';
 
 import { createSessionId, sessionCookie, signSessionToken } from '@/lib/account-auth';
+import { createSessionStore } from '@/stores/session.store';
+
+const sessionStore = createSessionStore();
 
 function json(data: unknown, status = 200, headers?: HeadersInit): Response {
   return new Response(JSON.stringify(data), {
@@ -24,8 +27,18 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ ok: false, reason: '此入口仅在本机开发环境可用。' }, 404);
   }
 
+  const sid = `local-preview:${createSessionId()}`;
+  const now = new Date();
+  await sessionStore.create({
+    sessionId: sid,
+    username: 'local-preview',
+    role: 'owner',
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+  });
+
   const token = signSessionToken({
-    sid: `local-preview:${createSessionId()}`,
+    sid,
     role: 'owner',
     iat: Math.floor(Date.now() / 1000),
   });

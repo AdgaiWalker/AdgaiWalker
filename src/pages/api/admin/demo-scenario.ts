@@ -5,14 +5,14 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
 import { createWorkbenchService } from '@/services/workbench.service';
-import {
-  __deleteMemoryContentFeedbackByPrefix,
-  __deleteMemoryWorkItemsByTitlePrefix,
-  saveContentFeedback,
-} from '@/conversation/store';
+import { __deleteMemoryWorkItemsByTitlePrefix } from '@/stores/work-item.store';
+import { __deleteMemoryContentFeedbackByPrefix, saveContentFeedback } from '@/stores/content-feedback.store';
 import type { ContentFeedbackEvent, EvidenceRef } from '@/stores/ports';
+
+const sessionStore = createSessionStore();
 
 export const prerender = false;
 
@@ -30,8 +30,8 @@ function isLoopback(request: Request): boolean {
   return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '[::1]' || hostname === '::1';
 }
 
-function guard(request: Request): Response | null {
-  if (!isAdmin(request)) return json({ ok: false, error: '未授权。' }, 401);
+async function guard(request: Request): Promise<Response | null> {
+  if (!await isAdminAsync(request, sessionStore)) return json({ ok: false, error: '未授权。' }, 401);
   if (!import.meta.env.DEV || !isLoopback(request)) {
     return json({ ok: false, error: '演示场景仅本机开发环境可用。' }, 404);
   }
@@ -55,7 +55,8 @@ function demoEvidence(sourceId: string, summary: string): EvidenceRef {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const blocked = guard(request);
+  if (import.meta.env.PROD) return json({ ok: false, reason: '演示场景仅开发可用。' }, 404);
+  const blocked = await guard(request);
   if (blocked) return blocked;
 
   const now = new Date().toISOString();
@@ -105,7 +106,8 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const DELETE: APIRoute = async ({ request }) => {
-  const blocked = guard(request);
+  if (import.meta.env.PROD) return json({ ok: false, reason: '演示场景仅开发可用。' }, 404);
+  const blocked = await guard(request);
   if (blocked) return blocked;
   const workItems = __deleteMemoryWorkItemsByTitlePrefix('【模拟数据】');
   const feedback = __deleteMemoryContentFeedbackByPrefix(DEMO_PREFIX);

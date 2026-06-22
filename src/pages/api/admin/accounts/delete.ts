@@ -5,7 +5,8 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isOwner } from '@/lib/admin-auth';
+import { isOwnerAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
 import { readSessionId } from '@/lib/account-auth';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
@@ -15,6 +16,7 @@ import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 
+const sessionStore = createSessionStore();
 const accountService = createAccountService();
 const userContextService = createUserContextService({
   sessionStore: createSessionStore(),
@@ -30,7 +32,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isOwner(request)) {
+  if (!await isOwnerAsync(request, sessionStore)) {
     return json({ ok: false, reason: '仅站主可删账号。' }, 403);
   }
 
@@ -39,7 +41,8 @@ export const POST: APIRoute = async ({ request }) => {
   let body: { username?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'account.delete' });
     return json({ ok: false, reason: '请求格式不正确。' }, 400);
   }
 

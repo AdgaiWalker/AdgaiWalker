@@ -1,7 +1,9 @@
 import type { APIRoute } from 'astro';
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
 import {
   PROVIDER_PRESETS,
   type GatewayConfig,
@@ -15,6 +17,8 @@ import {
 } from '@/agent/gateway-config';
 import { readGatewayLogs } from '@/agent/gateway';
 
+const sessionStore = createSessionStore();
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -24,7 +28,7 @@ function json(data: unknown, status = 200): Response {
 
 /** GET — 读取配置 + 统计 + 日志 + 预设 */
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const [config, stats, logs, history] = await Promise.all([
     getGatewayConfig(),
@@ -44,12 +48,13 @@ export const GET: APIRoute = async ({ request }) => {
 
 /** PUT — 更新配置 */
 export const PUT: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'gateway.config.update' });
     return json({ error: '请求格式错误。' }, 400);
   }
 
@@ -119,12 +124,13 @@ export const PUT: APIRoute = async ({ request }) => {
 
 /** POST — 测试连接 */
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'gateway.config.test' });
     return json({ error: '请求格式错误。' }, 400);
   }
 
@@ -148,7 +154,7 @@ export const POST: APIRoute = async ({ request }) => {
 
 /** PATCH — 撤销 */
 export const PATCH: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const actor = await resolveAdminActor(request);
   const audit = await requireHighRiskAudit({
@@ -169,7 +175,7 @@ export const PATCH: APIRoute = async ({ request }) => {
 
 /** DELETE — 重置 */
 export const DELETE: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const actor = await resolveAdminActor(request);
   const audit = await requireHighRiskAudit({

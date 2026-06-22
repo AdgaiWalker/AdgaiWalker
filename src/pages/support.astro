@@ -32,19 +32,19 @@ const hasExternal = Boolean(config?.externalUrl);
     {hasQr || hasExternal ? (
       <section class="support-body">
         {hasQr && (
-          <div class="qr-row">
+          <div class="qr-row" data-qr-row>
             {config?.wechatQrUrl && (
               <figure class="qr-card wechat">
-                <img src={config.wechatQrUrl} alt="微信赞赏码" loading="lazy" onerror="this.style.display='none'; this.parentElement.querySelector('.qr-fallback')?.style.removeProperty('display')" />
-                <span class="qr-fallback" style="display:none">二维码暂时不可用，请用下方外链</span>
+                <img src={config.wechatQrUrl} alt="微信赞赏码" width="180" height="180" loading="lazy" data-qr-img />
+                <span class="qr-fallback" hidden>二维码暂时不可用，请用下方外链</span>
                 <figcaption>微信赞赏</figcaption>
                 <span class="qr-hint">长按或扫码</span>
               </figure>
             )}
             {config?.alipayQrUrl && (
               <figure class="qr-card alipay">
-                <img src={config.alipayQrUrl} alt="支付宝收款码" loading="lazy" onerror="this.style.display='none'; this.parentElement.querySelector('.qr-fallback')?.style.removeProperty('display')" />
-                <span class="qr-fallback" style="display:none">二维码暂时不可用，请用下方外链</span>
+                <img src={config.alipayQrUrl} alt="支付宝收款码" width="180" height="180" loading="lazy" data-qr-img />
+                <span class="qr-fallback" hidden>二维码暂时不可用，请用下方外链</span>
                 <figcaption>支付宝</figcaption>
                 <span class="qr-hint">长按或扫码</span>
               </figure>
@@ -96,3 +96,19 @@ const hasExternal = Boolean(config?.externalUrl);
     .qr-fallback { width: 150px; min-height: 150px; }
   }
 </style>
+
+<script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  registerLifecycle(() => {
+    const row = document.querySelector('[data-qr-row]');
+    if (!row) return;
+    row.querySelectorAll<HTMLImageElement>('[data-qr-img]').forEach(img => {
+      img.addEventListener('error', () => {
+        img.hidden = true;
+        const fallback = img.parentElement?.querySelector<HTMLElement>('.qr-fallback');
+        if (fallback) fallback.hidden = false;
+      });
+    });
+  });
+</script>

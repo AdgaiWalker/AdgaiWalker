@@ -9,11 +9,11 @@
 import { createHash } from 'node:crypto';
 
 import type { InviteCode, InviteCodeRepositoryPort } from './ports';
-import { getRedis } from '@/conversation/store';
+import { getRedis } from '@/stores/redis-client';
 
 function usageKey(code: string): string {
   const hash = createHash('sha256').update(code).digest('hex').slice(0, 24);
-  return `match:invite-code:usage:${hash}`;
+  return `auth:invite-code:usage:${hash}`;
 }
 
 export function createInviteCodeStore(): InviteCodeRepositoryPort {

@@ -7,16 +7,18 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin, isOwner } from '@/lib/admin-auth';
+import { isAdminAsync, isOwnerAsync } from '@/lib/admin-auth';
 import { readSessionId } from '@/lib/account-auth';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
 import { createManagedInviteCodeStore } from '@/stores/managed-invite-code.store';
 import { createUserContextService } from '@/services/user-context.service';
 import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
 
+const sessionStore = createSessionStore();
 const store = createManagedInviteCodeStore();
 const userContextService = createUserContextService({
   sessionStore: createSessionStore(),
@@ -32,20 +34,21 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const codes = await store.listAll();
   return json({ codes });
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isOwner(request)) return json({ ok: false, reason: '仅站主可生成邀请码。' }, 403);
+  if (!await isOwnerAsync(request, sessionStore)) return json({ ok: false, reason: '仅站主可生成邀请码。' }, 403);
 
   const me = await userContextService.resolve({ sessionId: readSessionId(request), isAdmin: false });
 
   let body: { label?: unknown; count?: unknown; maxUses?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'invite-code.generate' });
     return json({ ok: false, reason: '请求格式不正确。' }, 400);
   }
 
@@ -68,12 +71,13 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const DELETE: APIRoute = async ({ request }) => {
-  if (!isOwner(request)) return json({ ok: false, reason: '仅站主可删除邀请码。' }, 403);
+  if (!await isOwnerAsync(request, sessionStore)) return json({ ok: false, reason: '仅站主可删除邀请码。' }, 403);
 
   let body: { code?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'invite-code.delete' });
     return json({ ok: false, reason: '请求格式不正确。' }, 400);
   }
 

@@ -1,15 +1,15 @@
 ---
-import Base from '../../../../layouts/Base.astro';
+import Base from '@/layouts/Base.astro';
 import { Icon } from 'astro-icon/components';
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import { learnLevels } from '@/data/learn-data';
-import { isPublicContentData } from '@/knowledge/content';
-import '../../../../styles/learn.css';
+import { getPublishedLearnGuides } from '@/knowledge/content';
+import '@/styles/learn.css';
 
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const activeGuides = await getCollection('log', ({ data }) => isPublicContentData(data) && data.type === 'learn');
+  const activeGuides = await getPublishedLearnGuides();
   return activeGuides.map((guide) => ({
     params: { level: guide.data.level || '入门', tool: guide.id },
     props: { guide },

@@ -1,10 +1,16 @@
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { getRecentNeedCases, getTopicCandidates, findRecentContentFeedback, findRecentContentTelemetry } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
+import { getRecentNeedCases } from '@/stores/need-case.store';
+import { getTopicCandidates } from '@/stores/topic.store';
+import { findRecentContentFeedback } from '@/stores/content-feedback.store';
+import { findRecentContentTelemetry } from '@/stores/content-telemetry.store';
 import { getPublishedContentItems } from '@/knowledge/content';
 import { buildContentOutcomeSummaries, calculateContentHitRates } from '@/services/hit-rate.service';
 import type { ContentFeedbackEvent, ContentTelemetryEvent } from '@/stores/ports';
+
+const sessionStore = createSessionStore();
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -14,7 +20,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const [contents, topics, needCases, contentFeedback, contentTelemetry] = await Promise.all([
     getPublishedContentItems(),

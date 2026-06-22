@@ -4,9 +4,12 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isOwner } from '@/lib/admin-auth';
+import { isOwnerAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
 import { createManagedInviteCodeStore } from '@/stores/managed-invite-code.store';
 
+const sessionStore = createSessionStore();
 const store = createManagedInviteCodeStore();
 
 function json(data: unknown, status = 200): Response {
@@ -17,12 +20,13 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isOwner(request)) return json({ ok: false, reason: '仅站主可禁用邀请码。' }, 403);
+  if (!await isOwnerAsync(request, sessionStore)) return json({ ok: false, reason: '仅站主可禁用邀请码。' }, 403);
 
   let body: { code?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'invite-code.disable' });
     return json({ ok: false, reason: '请求格式不正确。' }, 400);
   }
 

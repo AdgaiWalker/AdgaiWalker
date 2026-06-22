@@ -9,12 +9,16 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
 import { createWorkbenchService } from '@/services/workbench.service';
+import { createSessionStore } from '@/stores/session.store';
 import type { WorkItemActionType } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_ACTION_TYPES: WorkItemActionType[] = [
   'create-content', 'update-content', 'change-feature',
@@ -39,12 +43,13 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'actions.create' });
     return json({ error: '请求格式错误。' }, 400);
   }
 

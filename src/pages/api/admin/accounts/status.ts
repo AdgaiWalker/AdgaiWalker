@@ -5,12 +5,15 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { resolveAdminActor } from '@/lib/admin-actor';
 import { createAccountService } from '@/services/account.service';
+import { createSessionStore } from '@/stores/session.store';
 import type { AccountStatus } from '@/stores/ports';
 
+const sessionStore = createSessionStore();
 const accountService = createAccountService();
 
 function json(data: unknown, status = 200): Response {
@@ -21,13 +24,14 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) {
+  if (!await isAdminAsync(request, sessionStore)) {
     return json({ ok: false, reason: '未授权。' }, 401);
   }
   let body: { username?: unknown; status?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureException(error, { action: 'account.status.update' });
     return json({ ok: false, reason: '请求格式不正确。' }, 400);
   }
   const { username, status } = body;

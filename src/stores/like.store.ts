@@ -9,7 +9,8 @@
  *
  * 路径合法性校验在 API 薄层（api/like.ts）做，store 假定 path 已校验。
  */
-import { Redis } from '@upstash/redis';
+import type { Redis } from '@upstash/redis';
+import { getRedis } from '@/conversation/store';
 
 /** 单页点赞上限 */
 const MAX_COUNT = 999_999;
@@ -107,16 +108,10 @@ let cached: LikeStore | undefined;
 
 export function createLikeStore(): LikeStore {
   if (cached) return cached;
-  const env = import.meta.env as Record<string, string | undefined>;
-  const url = env.UPSTASH_REDIS_REST_URL ?? env.KV_REST_API_URL;
-  const token = env.UPSTASH_REDIS_REST_TOKEN ?? env.KV_REST_API_TOKEN;
-  if (url && token) {
-    try {
-      cached = new UpstashLikeStore(new Redis({ url, token }));
-      return cached;
-    } catch {
-      // 构造失败 → 落到内存
-    }
+  const redis = getRedis();
+  if (redis) {
+    cached = new UpstashLikeStore(redis);
+    return cached;
   }
   cached = memoryStore;
   return cached;

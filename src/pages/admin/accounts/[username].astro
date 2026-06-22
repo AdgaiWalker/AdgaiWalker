@@ -12,6 +12,7 @@ import { createUserContextService } from '@/services/user-context.service';
 import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
+import { roleLabel } from '@/shared/account-labels';
 
 if (!isAdmin(Astro.request)) {
   return Astro.redirect('/login');
@@ -37,7 +38,6 @@ interface DetailData {
   sessions: { sessionId: string; createdAt: string; expiresAt: string }[];
   needCases: { needCaseId: string; needSummary: string; feedbackStatus: string; adminReviewStatus: string; createdAt: string }[];
 }
-const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
 
 const origin = Astro.url.origin;
 let detail: DetailData | null = null;
@@ -68,7 +68,7 @@ try {
           <span class={`badge status-${detail.account.status}`}>{detail.account.status}</span>
         </header>
 
-        <section class="panel-glass card">
+        <section class="adm-card">
           <h2>基本信息</h2>
           <dl class="info-grid">
             <dt>角色</dt><dd>{roleLabel(detail.account.role)}</dd>
@@ -80,7 +80,7 @@ try {
           </dl>
         </section>
 
-        <section class="panel-glass card">
+        <section class="adm-card">
           <h2>在线会话（{detail.sessions.length}）</h2>
           {detail.sessions.length === 0 ? (
             <p class="muted">无在线会话。</p>
@@ -93,7 +93,7 @@ try {
           )}
         </section>
 
-        <section class="panel-glass card">
+        <section class="adm-card">
           <h2>提过的需求（{detail.needCases.length}）</h2>
           {detail.needCases.length === 0 ? (
             <p class="muted">还没有需求记录。</p>
@@ -110,7 +110,7 @@ try {
           )}
         </section>
 
-        <section class="panel-glass card actions-card">
+        <section class="adm-card actions-card">
           <h2>操作</h2>
           <div class="actions" data-username={detail.account.username}>
             <button class="btn" data-action="reset">重置密码</button>
@@ -140,7 +140,6 @@ try {
   .detail-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
   .detail-head h1 { margin: 0; font-size: 1.5rem; color: var(--color-parchment, #1a2325); }
   .me { font-size: 0.85rem; color: var(--color-parchment-dim, #888); font-weight: 400; }
-  .card { padding: 1.2rem 1.4rem; border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); background: var(--adm-surface); box-shadow: 0 16px 46px rgba(39,62,58,.08); }
   .card h2 { margin: 0 0 0.8rem; font-size: 1rem; color: var(--color-parchment, #1a2325); }
   .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem; margin: 0; }
   .info-grid dt { color: var(--color-parchment-dim, #64748b); font-size: 0.82rem; }
@@ -168,14 +167,16 @@ try {
 
 <script>
   import { registerLifecycle } from '@/scripts/with-lifecycle';
+  import { roleLabel } from '@/shared/account-labels';
+  import { confirmAdminAction, notifyAdminResult } from '@/scripts/admin-dialog';
 
   registerLifecycle(() => {
+    const abort = new AbortController();
+    const { signal } = abort;
+
     const actions = document.querySelector<HTMLElement>('.actions');
-    if (!actions) return;
+    if (!actions) return () => abort.abort();
     const username = actions.dataset.username ?? '';
-    const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
-    const ask = (message: string, title = '确认账号操作') => window.WalkerAdminUI?.confirm({ title, message, tone: 'danger', confirmText: '确认执行' }) ?? Promise.resolve(false);
-    const tell = (message: string, title = '操作结果') => window.WalkerAdminUI?.notify({ title, message }) ?? Promise.resolve();
 
     actions.addEventListener('click', async (e) => {
       const btn = e.target as HTMLButtonElement;
@@ -183,29 +184,31 @@ try {
       const action = btn.dataset.action;
 
       if (action === 'reset') {
-        if (!(await ask(`确定重置 ${username} 的密码？新临时密码只会显示一次。`))) return;
+        if (!(await confirmAdminAction(`确定重置 ${username} 的密码？新临时密码只会显示一次。`))) return;
         const res = await fetch('/api/admin/accounts/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
         const j = await res.json();
-        if (res.ok && j.ok) await tell(`${username} 的新临时密码（仅显示一次）：\n${j.newPassword}`, '临时密码');
-        else await tell(j.reason || '重置失败');
+        if (res.ok && j.ok) await notifyAdminResult(`${username} 的新临时密码（仅显示一次）：\n${j.newPassword}`, { title: '临时密码' });
+        else await notifyAdminResult(j.reason || '重置失败');
       } else if (action === 'toggle-status') {
         const next = btn.dataset.status === 'banned' ? 'active' : 'banned';
-        if (!(await ask(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？该操作会影响其后台访问。`))) return;
+        if (!(await confirmAdminAction(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？该操作会影响其后台访问。`))) return;
         const res = await fetch('/api/admin/accounts/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, status: next }) });
         if (res.ok) window.location.reload();
-        else { const j = await res.json(); await tell(j.reason || '失败'); }
+        else { const j = await res.json(); await notifyAdminResult(j.reason || '失败'); }
       } else if (action === 'set-role') {
         const role = btn.dataset.role ?? '';
-        if (!(await ask(`确定将 ${username} 设为「${roleLabel(role)}」？需重新登录生效。`))) return;
+        if (!(await confirmAdminAction(`确定将 ${username} 设为「${roleLabel(role)}」？需重新登录生效。`))) return;
         const res = await fetch('/api/admin/accounts/role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, role }) });
         if (res.ok) window.location.reload();
-        else { const j = await res.json(); await tell(j.reason || '失败'); }
+        else { const j = await res.json(); await notifyAdminResult(j.reason || '失败'); }
       } else if (action === 'delete') {
-        if (!(await ask(`确定删除账号 ${username}？会撤销其会话、删画像、脱敏其需求记录，不可恢复。`, '删除账号'))) return;
+        if (!(await confirmAdminAction(`确定删除账号 ${username}？会撤销其会话、删画像、脱敏其需求记录，不可恢复。`, { title: '删除账号' }))) return;
         const res = await fetch('/api/admin/accounts/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
         if (res.ok) window.location.href = '/admin/accounts';
-        else { const j = await res.json(); await tell(j.reason || '删除失败'); }
+        else { const j = await res.json(); await notifyAdminResult(j.reason || '删除失败'); }
       }
-    });
+    }, { signal });
+
+    return () => abort.abort();
   });
 </script>

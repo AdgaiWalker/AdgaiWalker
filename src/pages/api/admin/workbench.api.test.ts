@@ -4,9 +4,18 @@
  * 覆盖：未授权访问、非法 body、非法状态迁移、正常完整迁移、存储不可用（通过 service 单测覆盖）。
  * 直接调用路由处理函数，注入 admin 会话 cookie 模拟登录态。
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __resetMemoryWorkItems } from '@/conversation/store';
+vi.mock('@/lib/admin-auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/admin-auth')>();
+  return {
+    ...actual,
+    isAdminAsync: vi.fn(async (request: Request) => actual.isAdmin(request)),
+    isOwnerAsync: vi.fn(async (request: Request) => actual.isOwner(request)),
+  };
+});
+
+import { __resetMemoryWorkItems } from '@/stores/work-item.store';
 import { signSessionToken } from '@/lib/account-auth';
 
 import { GET as workbenchGet } from './workbench';

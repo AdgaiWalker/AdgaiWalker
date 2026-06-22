@@ -5,9 +5,11 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { createAccountService } from '@/services/account.service';
+import { createSessionStore } from '@/stores/session.store';
 
+const sessionStore = createSessionStore();
 const accountService = createAccountService();
 
 function json(data: unknown, status = 200): Response {
@@ -18,7 +20,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) {
+  if (!await isAdminAsync(request, sessionStore)) {
     return json({ error: '未授权。' }, 401);
   }
   const accounts = await accountService.listAccounts();

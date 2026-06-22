@@ -12,6 +12,7 @@ import { createUserContextService } from '@/services/user-context.service';
 import { createAccountStore } from '@/stores/account.store';
 import { createSessionStore } from '@/stores/session.store';
 import { createUserProfileStore } from '@/stores/user-profile.store';
+import { roleLabel } from '@/shared/account-labels';
 
 if (!isAdmin(Astro.request)) {
   return Astro.redirect('/login');
@@ -39,7 +40,6 @@ interface AccountView {
   lastLoginAt?: string;
   inviteCodeHash?: string;
 }
-const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
 
 const origin = Astro.url.origin;
 let accounts: AccountView[] = [];
@@ -59,7 +59,7 @@ try {
 <AdminLayout active="/admin/accounts" title="用户" subtitle="身份、访问状态与最近活动">
   <main class="accounts-wrap">
 
-    <section class="panel-glass">
+    <section class="adm-card">
       {accounts.length === 0 ? (
         <p class="empty">还没有注册账号。</p>
       ) : (
@@ -131,7 +131,6 @@ try {
   .accounts-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
   .accounts-head h1 { font-size: 1.4rem; margin: 0; color: var(--color-parchment, #1a2325); }
   .back { color: var(--color-parchment-dim, #64748b); text-decoration: none; font-size: 0.9rem; }
-  .panel-glass { padding: 1.25rem; border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); background: var(--adm-surface); box-shadow: 0 16px 46px rgba(39,62,58,.08); }
   .empty { color: var(--color-parchment-dim, #888); }
   .hint { margin: 1rem 0 0; font-size: 0.78rem; color: var(--color-parchment-dim, #888); }
   .accounts-toolbar { margin-bottom: 0.75rem; }
@@ -166,15 +165,17 @@ try {
 
 <script>
   import { registerLifecycle } from '@/scripts/with-lifecycle';
+  import { roleLabel } from '@/shared/account-labels';
+  import { confirmAdminAction, notifyAdminResult } from '@/scripts/admin-dialog';
 
   registerLifecycle(() => {
+    const abort = new AbortController();
+    const { signal } = abort;
+
     const dialog = document.getElementById('reset-dialog') as HTMLDialogElement | null;
     const resetUsername = document.getElementById('reset-username');
     const resetPassword = document.getElementById('reset-password');
     const copyBtn = document.getElementById('copy-btn');
-    const roleLabel = (r: string) => (r === 'owner' ? '站主' : r === 'admin' ? '管理员' : '用户');
-    const ask = (message: string, title = '确认账号操作') => window.WalkerAdminUI?.confirm({ title, message, tone: 'danger', confirmText: '确认执行' }) ?? Promise.resolve(false);
-    const tell = (message: string, title = '操作结果') => window.WalkerAdminUI?.notify({ title, message }) ?? Promise.resolve();
 
     document.querySelectorAll<HTMLTableSectionElement>('tbody').forEach((tbody) => {
       tbody.addEventListener('click', async (e) => {
@@ -186,7 +187,7 @@ try {
         const action = target.dataset.action;
 
         if (action === 'reset') {
-          if (!(await ask(`确定重置 ${username} 的密码？新临时密码只会显示一次。`))) return;
+          if (!(await confirmAdminAction(`确定重置 ${username} 的密码？新临时密码只会显示一次。`))) return;
           const res = await fetch('/api/admin/accounts/reset', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }),
           });
@@ -196,33 +197,33 @@ try {
             resetPassword.textContent = json.newPassword ?? '';
             dialog.showModal();
           } else {
-            await tell(json.reason || '重置失败。');
+            await notifyAdminResult(json.reason || '重置失败。');
           }
         } else if (action === 'toggle-status') {
           const current = target.dataset.status;
           const next = current === 'banned' ? 'active' : 'banned';
-          if (!(await ask(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？该操作会影响其后台访问。`))) return;
+          if (!(await confirmAdminAction(`确定${next === 'banned' ? '封禁' : '解封'} ${username}？该操作会影响其后台访问。`))) return;
           const res = await fetch('/api/admin/accounts/status', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, status: next }),
           });
           if (res.ok) window.location.reload();
-          else { const j = await res.json(); await tell(j.reason || '操作失败。'); }
+          else { const j = await res.json(); await notifyAdminResult(j.reason || '操作失败。'); }
         } else if (action === 'set-role') {
           const role = target.dataset.role ?? '';
-          if (!(await ask(`确定将 ${username} 设为「${roleLabel(role)}」？该用户需重新登录才生效。`))) return;
+          if (!(await confirmAdminAction(`确定将 ${username} 设为「${roleLabel(role)}」？该用户需重新登录才生效。`))) return;
           const res = await fetch('/api/admin/accounts/role', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, role }),
           });
           if (res.ok) window.location.reload();
-          else { const j = await res.json(); await tell(j.reason || '操作失败。'); }
+          else { const j = await res.json(); await notifyAdminResult(j.reason || '操作失败。'); }
         }
-      });
+      }, { signal });
     });
 
     copyBtn?.addEventListener('click', async () => {
       const text = resetPassword?.textContent ?? '';
       try { await navigator.clipboard.writeText(text); copyBtn.textContent = '已复制'; } catch { /* ignore */ }
-    });
+    }, { signal });
 
     const search = document.getElementById('accounts-search') as HTMLInputElement | null;
     search?.addEventListener('input', () => {
@@ -231,6 +232,10 @@ try {
         const name = (row.dataset.username ?? '').toLowerCase();
         row.style.display = (!q || name.includes(q)) ? '' : 'none';
       });
-    });
+    }, { signal });
+    return () => {
+      abort.abort();
+      if (dialog?.open) dialog.close();
+    };
   });
 </script>

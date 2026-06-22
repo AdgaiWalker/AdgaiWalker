@@ -11,11 +11,14 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { createWorkbenchService, suggestNextAction } from '@/services/workbench.service';
+import { createSessionStore } from '@/stores/session.store';
 import type { WorkItem, WorkItemQueue, WorkItemStatus } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_QUEUES: WorkItemQueue[] = ['user-demand', 'walker-thesis', 'system-event', 'ai-asset'];
 const VALID_STATUSES: WorkItemStatus[] = [
@@ -43,7 +46,7 @@ function summarizeActiveItems(items: WorkItem[]) {
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const view = url.searchParams.get('view') ?? 'today';
   const queueParam = url.searchParams.get('queue');

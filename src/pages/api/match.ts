@@ -12,13 +12,13 @@
 import { createHash } from 'node:crypto';
 
 import type { APIRoute } from 'astro';
-import { Redis } from '@upstash/redis';
 
 import { createAgentOrchestrator } from '@/services/agent-orchestrator.service';
 import { createSafetyService } from '@/services/safety.service';
 import { createUserContextService } from '@/services/user-context.service';
 import { isAdmin } from '@/lib/admin-auth';
 import { readSessionId } from '@/lib/account-auth';
+import { createRateLimitStore } from '@/stores/rate-limit.store';
 import { createAccountStore } from '@/stores/account.store';
 import { createIncidentStore } from '@/stores/incident.store';
 import { createMatchSessionStore } from '@/stores/match-session.store';
@@ -39,6 +39,8 @@ const agentOrchestrator = createAgentOrchestrator({
   safetyService: createSafetyService({ incidentStore: createIncidentStore() }),
 });
 
+const rateLimiter = createRateLimitStore();
+
 const DAILY_LIMIT = Number(import.meta.env.MATCH_DAILY_LIMIT ?? 20);
 const MINUTE_LIMIT = Number(import.meta.env.MATCH_MINUTE_LIMIT ?? 5);
 const FALLBACK_DAILY_LIMIT = 5;
@@ -49,19 +51,6 @@ const MAX_TOTAL_CHARS = 4_800;
 const MAX_SOURCE_PAGE_LENGTH = 120;
 const GLOBAL_DAILY_LIMIT = Number(import.meta.env.MATCH_GLOBAL_DAILY_LIMIT ?? 1_000);
 const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-const memoryLimiter = new Map<string, { dailyCount: number; minuteCount: number; dayResetAt: number; minuteResetAt: number }>();
-const memoryGlobalLimiter = { dailyCount: 0, dayResetAt: 0 };
-let cachedRedis: Redis | null | undefined;
-
-function getRedis(): Redis | null {
-  if (cachedRedis !== undefined) return cachedRedis;
-  const url = import.meta.env.UPSTASH_REDIS_REST_URL ?? import.meta.env.KV_REST_API_URL;
-  const token = import.meta.env.UPSTASH_REDIS_REST_TOKEN ?? import.meta.env.KV_REST_API_TOKEN;
-  if (!url || !token) { cachedRedis = null; return cachedRedis; }
-  try { cachedRedis = new Redis({ url, token }); } catch { cachedRedis = null; }
-  return cachedRedis;
-}
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -114,42 +103,19 @@ function validateBody(body: unknown): body is MatchRequestBody {
 }
 
 async function checkRateLimit(subject: string): Promise<{ allowed: boolean; remaining: number }> {
-  const now = Date.now();
-  const redis = getRedis();
+  const dailyLimit = Number(import.meta.env.MATCH_DAILY_LIMIT ?? DAILY_LIMIT);
+  const effectiveDailyLimit = import.meta.env.UPSTASH_REDIS_REST_URL ? dailyLimit : FALLBACK_DAILY_LIMIT;
 
-  if (!redis) {
-    if (now > memoryGlobalLimiter.dayResetAt) {
-      memoryGlobalLimiter.dailyCount = 1;
-      memoryGlobalLimiter.dayResetAt = now + 86_400_000;
-    } else { memoryGlobalLimiter.dailyCount += 1; }
+  const [daily, minute, global] = await Promise.all([
+    rateLimiter.checkAndIncrement('match:limit:day:' + subject, 86_400, effectiveDailyLimit),
+    rateLimiter.checkAndIncrement('match:limit:minute:' + subject, 60, MINUTE_LIMIT),
+    rateLimiter.checkAndIncrement('match:limit:global:day', 86_400, GLOBAL_DAILY_LIMIT),
+  ]);
 
-    const entry = memoryLimiter.get(subject);
-    if (!entry || now > entry.dayResetAt) {
-      memoryLimiter.set(subject, { dailyCount: 1, minuteCount: 1, dayResetAt: now + 86_400_000, minuteResetAt: now + 60_000 });
-      return { allowed: memoryGlobalLimiter.dailyCount <= GLOBAL_DAILY_LIMIT, remaining: Math.max(0, Math.min(FALLBACK_DAILY_LIMIT - 1, GLOBAL_DAILY_LIMIT - memoryGlobalLimiter.dailyCount)) };
-    }
-    const minuteCount = now > entry.minuteResetAt ? 1 : entry.minuteCount + 1;
-    const next = { ...entry, dailyCount: entry.dailyCount + 1, minuteCount, minuteResetAt: now > entry.minuteResetAt ? now + 60_000 : entry.minuteResetAt };
-    memoryLimiter.set(subject, next);
-    return {
-      allowed: next.dailyCount <= FALLBACK_DAILY_LIMIT && next.minuteCount <= MINUTE_LIMIT && memoryGlobalLimiter.dailyCount <= GLOBAL_DAILY_LIMIT,
-      remaining: Math.max(0, Math.min(FALLBACK_DAILY_LIMIT - next.dailyCount, GLOBAL_DAILY_LIMIT - memoryGlobalLimiter.dailyCount)),
-    };
-  }
-
-  try {
-    const dailyKey = 'match:limit:day:' + subject;
-    const minuteKey = 'match:limit:minute:' + subject;
-    const globalKey = 'match:limit:global:day';
-    const [dailyCount, minuteCount, globalCount] = await Promise.all([redis.incr(dailyKey), redis.incr(minuteKey), redis.incr(globalKey)]);
-    if (dailyCount === 1) await redis.expire(dailyKey, 86_400);
-    if (minuteCount === 1) await redis.expire(minuteKey, 60);
-    if (globalCount === 1) await redis.expire(globalKey, 86_400);
-    return {
-      allowed: dailyCount <= DAILY_LIMIT && minuteCount <= MINUTE_LIMIT && globalCount <= GLOBAL_DAILY_LIMIT,
-      remaining: Math.max(0, Math.min(DAILY_LIMIT - dailyCount, GLOBAL_DAILY_LIMIT - globalCount)),
-    };
-  } catch { return { allowed: true, remaining: 0 }; }
+  return {
+    allowed: daily.allowed && minute.allowed && global.allowed,
+    remaining: Math.max(0, Math.min(dailyLimit - daily.current, GLOBAL_DAILY_LIMIT - global.current)),
+  };
 }
 
 export const POST: APIRoute = async ({ request }) => {

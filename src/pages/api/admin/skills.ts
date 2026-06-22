@@ -1,12 +1,18 @@
 import type { APIRoute } from 'astro';
 import { randomUUID } from 'node:crypto';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { saveSkillCandidate, findRecentSkillCandidates, updateSkillAdmission, updateSkillRegistration } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { createSessionStore } from '@/stores/session.store';
+import { captureException } from '@/lib/sentry';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
+import { saveSkillCandidate, findRecentSkillCandidates, updateSkillAdmission, updateSkillRegistration } from '@/stores/skill-candidate.store';
 import { createAssetService, validateSkillRegistration } from '@/services/asset.service';
 import type { SkillCandidate, SkillAdmissionStatus, SkillAdmissionSnapshot } from '@/stores/ports';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 const VALID_ADMISSION = new Set<SkillAdmissionStatus>(['candidate', 'admitted', 'demoted-to-method']);
 const VALID_EVAL_CATEGORIES = new Set(['normal', 'boundary', 'reject', 'failure']);
@@ -20,7 +26,7 @@ function json(data: unknown, status = 200): Response {
 
 /** GET /api/admin/skills — Skill 候选列表（admin 准入判断 + 方法卡用） */
 export const GET: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: 'unauthorized' }, 401);
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get('limit') ?? 100)));
   const skills = await findRecentSkillCandidates(limit);
   return json({ skills });
@@ -28,14 +34,20 @@ export const GET: APIRoute = async ({ request, url }) => {
 
 /** POST /api/admin/skills — 创建/更新 Skill 候选；?action=admission 时切换准入状态 */
 export const POST: APIRoute = async ({ request, url }) => {
-  if (!isAdmin(request)) return json({ error: 'unauthorized' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: 'unauthorized' }, 401);
 
   if (url.searchParams.get('action') === 'admission') {
     let body: { skillId?: string; admissionStatus?: string; skillRegistration?: Record<string, unknown> };
-    try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+    try { body = await request.json(); } catch (error) { captureException(error, { action: 'skills.admission' }); return json({ error: 'invalid' }, 400); }
     if (!body.skillId || !VALID_ADMISSION.has(body.admissionStatus as SkillAdmissionStatus)) {
       return json({ error: 'skillId/admissionStatus 必填' }, 400);
     }
+    const actor = await resolveAdminActor(request);
+    const audit = await requireHighRiskAudit({
+      actor, action: 'skill.admission', targetType: 'skill', targetId: body.skillId,
+      reason: '切换 Skill 准入状态改变能力发布边界。'
+    });
+    if (!audit.ok) return json({ ok:false, reason:audit.reason, code:audit.code }, audit.status);
     // P4 守护（防旁路）：准入到 admitted 必须有 boundary/反例/evalSet。
     // 与 /api/admin/assets/promote 共用 validateSkillRegistration，确保 skills 页这条路径不被绕过。
     if (body.admissionStatus === 'admitted') {
@@ -90,7 +102,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   const actionLifecycle = url.searchParams.get('action');
   if (actionLifecycle === 'pause' || actionLifecycle === 'resume' || actionLifecycle === 'rollback') {
     let body: { skillId?: string; reason?: string; toVersion?: number };
-    try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+    try { body = await request.json(); } catch (error) { captureException(error, { action: 'skills.lifecycle' }); return json({ error: 'invalid' }, 400); }
     if (!body.skillId) return json({ error: 'skillId 必填' }, 400);
     if (!body.reason?.trim()) return json({ error: 'reason 必填' }, 400);
     const svc = createAssetService();
@@ -103,7 +115,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   }
 
   let body: Partial<SkillCandidate> & { skillId?: string };
-  try { body = await request.json(); } catch { return json({ error: 'invalid' }, 400); }
+  try { body = await request.json(); } catch (error) { captureException(error, { action: 'skills.create' }); return json({ error: 'invalid' }, 400); }
 
   // 更新现有 Skill 时保留原始字段（避免版本迭代等部分更新覆盖定义域/输入条件/输出形态/准入状态）
   const existing = body.skillId

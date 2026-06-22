@@ -10,10 +10,13 @@
 
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { captureException } from '@/lib/sentry';
 import { clearSessionCookie, readSessionId } from '@/lib/account-auth';
 import { createAccountService } from '@/services/account.service';
+import { createSessionStore } from '@/stores/session.store';
 
+const sessionStore = createSessionStore();
 const accountService = createAccountService();
 
 function json(data: unknown, status = 200, headers?: HeadersInit): Response {
@@ -27,7 +30,7 @@ function json(data: unknown, status = 200, headers?: HeadersInit): Response {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  return json({ admin: isAdmin(request) });
+  return json({ admin: await isAdminAsync(request, sessionStore) });
 };
 
 export const DELETE: APIRoute = async ({ request }) => {
@@ -35,7 +38,8 @@ export const DELETE: APIRoute = async ({ request }) => {
   if (sessionId) {
     try {
       await accountService.logout(sessionId);
-    } catch {
+    } catch (error) {
+      captureException(error, { action: 'admin.logout' });
       /* 登出失败仍清 cookie */
     }
   }

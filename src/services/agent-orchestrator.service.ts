@@ -524,19 +524,25 @@ export function createAgentOrchestrator(deps: OrchestratorDeps): AgentOrchestrat
   const perceptionService = deps.perceptionService ?? createPerceptionService();
   return {
     async handleNeed(input): Promise<NeedCaseHandleResult> {
+      const t0 = performance.now();
       const audienceGroup = input.audienceGroup as AudienceGroup | undefined;
       const aiStage = input.aiStage as AiStage | undefined;
 
       // 1. perceive — 截断、PII 脱敏、压缩、未成年标记
+      const t1 = performance.now();
       const perceived = perceptionService.perceive({
         messages: input.messages,
         audienceGroup,
       });
+      const tPerceive = performance.now() - t1;
 
       // 2. plan — 本地匹配 + 模型增强 + 字段挑选
+      const t2 = performance.now();
       const plan = await planRecommendation({ perceived, audienceGroup, aiStage });
+      const tPlan = performance.now() - t2;
 
       // 3. persist — 会话 + 统计 + 对话消息（fire-and-forget）
+      const t3 = performance.now();
       const sessionId = input.sessionId || input.userContext.sessionId || deps.sessionStore.createSessionId();
       const session = await persistSession({
         sessionStore: deps.sessionStore,
@@ -549,8 +555,10 @@ export function createAgentOrchestrator(deps: OrchestratorDeps): AgentOrchestrat
         aiStage,
         plan,
       });
+      const tPersist = performance.now() - t3;
 
       // 4. safety flags + recommendation 快照
+      const t4 = performance.now();
       const safetyFlags: SafetyFlags = {
         piiDetected: perceived.latestNeedRedacted.piiDetected,
         piiRemoved: perceived.latestNeedRedacted.piiDetected,
@@ -560,8 +568,10 @@ export function createAgentOrchestrator(deps: OrchestratorDeps): AgentOrchestrat
         consentForTopic: session.consentForTopic,
       };
       const agentRecommendation = buildAgentRecommendation(plan);
+      const tSafety = performance.now() - t4;
 
       // 5. record NeedCase（仅在用户同意 + recommendation/compliance 模式）
+      const t5 = performance.now();
       let needCaseId: string | undefined;
       const shouldRecord = session.consentForTopic
         && (plan.localMatch.responseMode === 'recommendation' || plan.localMatch.responseMode === 'compliance');
@@ -581,14 +591,33 @@ export function createAgentOrchestrator(deps: OrchestratorDeps): AgentOrchestrat
           agentRecommendation,
         });
       }
+      const tRecord = performance.now() - t5;
 
       // 6. respond — 组装返回载荷
+      const t6 = performance.now();
       const responsePayload = buildResponsePayload({
         plan,
         agentRecommendation,
         safetyFlags,
         isMinorContext: perceived.isMinorContext,
       });
+      const tRespond = performance.now() - t6;
+
+      const totalMs = performance.now() - t0;
+      if (import.meta.env.PROD || import.meta.env.DEV) {
+        console.log(JSON.stringify({
+          event: 'match_latency',
+          sessionId,
+          totalMs: Math.round(totalMs),
+          perceiveMs: Math.round(tPerceive),
+          planMs: Math.round(tPlan),
+          persistMs: Math.round(tPersist),
+          safetyMs: Math.round(tSafety),
+          recordMs: Math.round(tRecord),
+          respondMs: Math.round(tRespond),
+          fallbackUsed: plan.fallbackUsed,
+        }));
+      }
 
       return {
         needCaseId,

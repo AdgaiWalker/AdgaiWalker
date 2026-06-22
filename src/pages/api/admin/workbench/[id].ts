@@ -5,10 +5,13 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
+import { isAdminAsync } from '@/lib/admin-auth';
 import { createWorkbenchService } from '@/services/workbench.service';
+import { createSessionStore } from '@/stores/session.store';
 
 export const prerender = false;
+
+const sessionStore = createSessionStore();
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -18,7 +21,7 @@ function json(data: unknown, status = 200): Response {
 }
 
 export const GET: APIRoute = async ({ request, params }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
 
   const id = params.id;
   if (!id) return json({ error: '缺少工作项 ID。' }, 400);

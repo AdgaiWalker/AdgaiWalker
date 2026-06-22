@@ -10,9 +10,15 @@
  */
 import type { APIRoute } from 'astro';
 
-import { isAdmin } from '@/lib/admin-auth';
-import { getSupportConfig, saveSupportConfig } from '@/conversation/store';
+import { isAdminAsync } from '@/lib/admin-auth';
+import { resolveAdminActor } from '@/lib/admin-actor';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { captureException } from '@/lib/sentry';
+import { createSessionStore } from '@/stores/session.store';
+import { getSupportConfig, saveSupportConfig } from '@/stores/support-config.store';
 import type { SupportConfig } from '@/stores/ports';
+
+const sessionStore = createSessionStore();
 
 export const prerender = false;
 
@@ -28,15 +34,15 @@ function asString(v: unknown): string | undefined {
 }
 
 export const GET: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   const config = await getSupportConfig();
   return json({ config: config ?? { updatedAt: '' } });
 };
 
 export const PUT: APIRoute = async ({ request }) => {
-  if (!isAdmin(request)) return json({ error: '未授权。' }, 401);
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
   let body: Record<string, unknown>;
-  try { body = await request.json(); } catch { return json({ error: '请求格式错误。' }, 400); }
+  try { body = await request.json(); } catch (error) { captureException(error, { action: 'support.config' }); return json({ error: '请求格式错误。' }, 400); }
 
   // 简单 URL 校验（只校验 http(s) 前缀，不抓取）
   const validateUrl = (v: string | undefined): string | undefined => {
@@ -53,6 +59,15 @@ export const PUT: APIRoute = async ({ request }) => {
     blurb: asString(body.blurb),
     updatedAt: new Date().toISOString(),
   };
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'support.config',
+    targetType: 'support-config',
+    targetId: 'global',
+    reason: '赞赏码配置涉及收款二维码，改变对外收款入口。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
   await saveSupportConfig(config);
   return json({ ok: true, config });
 };

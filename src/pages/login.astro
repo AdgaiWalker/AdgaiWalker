@@ -16,7 +16,7 @@ const showDevPreview = import.meta.env.DEV;
     <section class="auth-stage">
       <aside class="auth-context">
         <a href="/" class="auth-brand" aria-label="返回 Walker 首页">
-          <img src="/favicon.svg" alt="" />
+          <img src="/favicon.svg" alt="" width="35" height="35" />
           <span>Walker</span>
         </a>
         <div class="auth-context-copy">
@@ -237,6 +237,9 @@ const showDevPreview = import.meta.env.DEV;
   import { registerLifecycle } from '@/scripts/with-lifecycle';
 
   registerLifecycle(() => {
+    const abort = new AbortController();
+    const { signal } = abort;
+
     const tabs = document.querySelectorAll<HTMLButtonElement>('[data-tab]');
     const forms = document.querySelectorAll<HTMLFormElement>('.auth-form[data-form]');
     tabs.forEach(tab => tab.addEventListener('click', () => {
@@ -246,12 +249,12 @@ const showDevPreview = import.meta.env.DEV;
         item.setAttribute('aria-selected', String(active));
       });
       forms.forEach(form => { if (form.dataset.form !== 'setup') form.hidden = form.dataset.form !== tab.dataset.tab; });
-    }));
+    }, { signal }));
 
     document.querySelectorAll<HTMLButtonElement>('[data-anchor]').forEach(button => button.addEventListener('click', () => {
       const input = document.querySelector<HTMLInputElement>('[data-form="register"] input[name="personaAnchor"]');
       if (input) { input.value = button.dataset.anchor || ''; input.focus(); }
-    }));
+    }, { signal }));
 
     document.querySelectorAll<HTMLButtonElement>('[data-password-toggle]').forEach(button => button.addEventListener('click', () => {
       const input = button.closest('.input-shell')?.querySelector<HTMLInputElement>('input');
@@ -263,7 +266,7 @@ const showDevPreview = import.meta.env.DEV;
       const hiddenIcon = button.querySelector<SVGElement>('[data-icon-hidden]');
       visibleIcon?.classList.toggle('is-hidden', show);
       hiddenIcon?.classList.toggle('is-hidden', !show);
-    }));
+    }, { signal }));
 
     async function submitForm(form: HTMLFormElement, url: string, errorEl: HTMLElement) {
       const data = Object.fromEntries(new FormData(form).entries());
@@ -292,7 +295,7 @@ const showDevPreview = import.meta.env.DEV;
     const bindForm = (name: string, url: string) => {
       const form = document.querySelector<HTMLFormElement>(`[data-form="${name}"]`);
       const error = document.querySelector<HTMLElement>(`[data-error="${name}"]`);
-      form?.addEventListener('submit', event => { event.preventDefault(); if (error) void submitForm(form, url, error); });
+      form?.addEventListener('submit', event => { event.preventDefault(); if (error) void submitForm(form, url, error); }, { signal });
     };
     bindForm('login', '/api/auth/login');
     bindForm('register', '/api/auth/register');
@@ -311,11 +314,13 @@ const showDevPreview = import.meta.env.DEV;
         button.disabled = false;
         button.innerHTML = original;
       }
-    });
+    }, { signal });
 
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
       window.location.reload();
-    });
+    }, { signal });
+
+    return () => abort.abort();
   });
 </script>
