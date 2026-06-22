@@ -16,7 +16,10 @@ import {
   applyCreateAction,
   applyCreateProposal,
   applyDecide,
+  applyOverridePriority,
+  applyRecordOutcome,
   applyRequestDecision,
+  applyUpdateAction,
 } from './apply';
 
 import type { WorkItemDeps } from './types';
@@ -867,5 +870,833 @@ describe('history fromStatus 真实性（Agent B 盲点专项）', () => {
     expect(statusChange.fromStatus).toBe('accepted');
     expect(statusChange.toStatus).toBe('acting');
     expect(statusChange.fromStatus).not.toBe(statusChange.toStatus);
+  });
+});
+
+// ===========================================================================
+// Task 4：applyUpdateAction
+// ===========================================================================
+
+describe('applyUpdateAction', () => {
+  /** 构造一个 acting 状态的 WorkItem，带一条 authorized action（典型 in-flight 场景）。*/
+  function makeActingWorkItem(over: Partial<WorkItem> = {}): WorkItem {
+    return makeProposalWorkItem({
+      status: 'acting',
+      actions: [
+        {
+          actionId: 'wa_existing',
+          actionType: 'create-content',
+          targetType: 'content',
+          assignee: 'walker',
+          status: 'authorized',
+          expectedOutcome: '产出一篇指南',
+          reversible: true,
+          createdAt: '2025-12-30T00:00:00.000Z',
+          updatedAt: '2025-12-30T00:00:00.000Z',
+        },
+      ],
+      ...over,
+    });
+  }
+
+  describe('happy path', () => {
+    it('acting + action→completed：写 status-change(from=acting) + action-updated 两条', () => {
+      const deps = makeDepsSequential();
+      const item = makeActingWorkItem();
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', reason: '草稿完成', actor: 'walker' },
+        deps,
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const w = result.workItem;
+      // WorkItem 状态迁移 acting → awaiting-verification
+      expect(w.status).toBe('awaiting-verification');
+      expect(w.updatedAt).toBe(FIXED_NOW);
+
+      // action 字段更新
+      expect(w.actions).toHaveLength(1);
+      expect(w.actions[0]!.status).toBe('completed');
+      expect(w.actions[0]!.updatedAt).toBe(FIXED_NOW);
+
+      // history 两条：status-change + action-updated
+      expect(w.history).toHaveLength(2);
+
+      const statusChange = w.history[0]!;
+      expect(statusChange.historyId).toBe('wh_1');
+      // BUG #1：fromStatus 是顶部捕获的真实源 'acting'，不是回溯式三元
+      expect(statusChange.fromStatus).toBe('acting');
+      expect(statusChange.toStatus).toBe('awaiting-verification');
+      expect(statusChange.kind).toBe('status-change');
+      expect(statusChange.actor).toBe('walker');
+      expect(statusChange.reason).toBe('草稿完成');
+
+      const actionUpdated = w.history[1]!;
+      expect(actionUpdated.historyId).toBe('wh_2');
+      // action-updated 顶层 fromStatus/toStatus 用 WorkItem 迁移后状态（对照 applyCreateAction 模式）
+      expect(actionUpdated.fromStatus).toBe('awaiting-verification');
+      expect(actionUpdated.toStatus).toBe('awaiting-verification');
+      expect(actionUpdated.kind).toBe('action-updated');
+      expect(actionUpdated.detail).toEqual({
+        actionId: 'wa_existing',
+        from: 'authorized', // action 层改写前
+        to: 'completed',    // action 层改写后
+      });
+    });
+
+    it('acting + action→in-progress：不触发状态迁移，只写 action-updated 一条', () => {
+      const item = makeActingWorkItem();
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'in-progress', actor: 'walker' },
+        makeDeps(),
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const w = result.workItem;
+      expect(w.status).toBe('acting'); // 无迁移
+      expect(w.actions[0]!.status).toBe('in-progress');
+      expect(w.history).toHaveLength(1);
+      expect(w.history[0]!.kind).toBe('action-updated');
+      expect(w.history[0]!.fromStatus).toBe('acting');
+      expect(w.history[0]!.toStatus).toBe('acting');
+      expect(w.history[0]!.detail).toEqual({
+        actionId: 'wa_existing',
+        from: 'authorized',
+        to: 'in-progress',
+      });
+    });
+
+    it('awaiting-verification + action→completed：状态不变（无迁移），只写 action-updated', () => {
+      // 已在待验证（第二个 action 完成）：无状态迁移，不走 canTransition
+      const item = makeActingWorkItem({
+        status: 'awaiting-verification',
+        actions: [
+          {
+            actionId: 'wa_existing',
+            actionType: 'create-content',
+            targetType: 'content',
+            assignee: 'walker',
+            status: 'awaiting-verification',
+            expectedOutcome: 'x',
+            reversible: true,
+            createdAt: FIXED_NOW,
+            updatedAt: FIXED_NOW,
+          },
+        ],
+      });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.status).toBe('awaiting-verification');
+      // 不写 status-change（无迁移），只写 action-updated
+      expect(result.workItem.history).toHaveLength(1);
+      expect(result.workItem.history[0]!.kind).toBe('action-updated');
+    });
+
+    it('input.targetId 透传到 action（更新 targetId）', () => {
+      const item = makeActingWorkItem();
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'in-progress', targetId: 'slug-99', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.actions[0]!.targetId).toBe('slug-99');
+    });
+  });
+
+  describe('信任边界失败', () => {
+    it('actionId 找不到 → not-found', () => {
+      const item = makeActingWorkItem();
+      const result = applyUpdateAction(
+        item,
+        'wa_nonexistent',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('not-found');
+      expect(result.message).toContain('行动');
+    });
+
+    it('paused + action→completed → invalid-transition（BUG #4 收紧：非法源拒绝）', () => {
+      // 之前 service 会静默接受 paused→awaiting-verification（从 paused 直接跳过 acting）
+      const item = makeActingWorkItem({ status: 'paused' });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+      expect(result.message).toContain('paused');
+      expect(result.message).toContain('awaiting-verification');
+    });
+
+    it('accepted + action→completed → invalid-transition（BUG #4 收紧）', () => {
+      // accepted 还未 createAction 推进到 acting，不能直接跳到 awaiting-verification
+      const item = makeActingWorkItem({ status: 'accepted' });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+
+    it('proposal + action→completed → invalid-transition（BUG #4 收紧）', () => {
+      const item = makeActingWorkItem({ status: 'proposal' });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+
+    it('resolved（终态）+ action→completed → invalid-transition', () => {
+      const item = makeActingWorkItem({ status: 'resolved' });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+  });
+
+  describe('BUG #1 回归：history.fromStatus 是真实源（不恒 acting）', () => {
+    it('从 acting 完成：fromStatus === acting', () => {
+      const item = makeActingWorkItem({ status: 'acting' });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const statusChange = result.workItem.history[0]!;
+      expect(statusChange.kind).toBe('status-change');
+      expect(statusChange.fromStatus).toBe('acting');
+      expect(statusChange.toStatus).toBe('awaiting-verification');
+    });
+
+    it('从 awaiting-verification 再次 completed：fromStatus === awaiting-verification（不是恒 acting）', () => {
+      // 关键反例：service L334 的 bug 是"fromStatus 恒为 acting 或当前状态"，
+      // 修复后必须如实反映源状态。awaiting-verification → awaiting-verification 是合法自反迁移吗？
+      // 不是——canTransition('awaiting-verification', 'awaiting-verification') 返回 false（白名单不含自迁移）。
+      // 所以这个用例测的是：合法源 acting 真实捕获，不被回溯式 bug 改写。
+      // 这里覆盖 paused 源：paused→awaiting-verification 会被 BUG #4 守卫拒绝（invalid-transition），
+      // 不会进入 history 构造，所以 BUG #1 的"不恒 acting"主要靠 acting/awaiting-verification 源验证。
+      const item = makeActingWorkItem({ status: 'acting' });
+      const result = applyUpdateAction(
+        item,
+        'wa_existing',
+        { status: 'completed', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      // fromStatus 必须等于迁移前真实状态 acting（不是回溯式 bug 的恒等判断）
+      expect(result.workItem.history[0]!.fromStatus).toBe('acting');
+      expect(result.workItem.history[0]!.fromStatus).not.toBe('awaiting-verification');
+    });
+  });
+
+  it('纯函数：不修改入参 current（actions / history 都不 mutate 原数组）', () => {
+    const item = makeActingWorkItem();
+    const actionsSnapshot = item.actions.map(a => ({ ...a }));
+    const historySnapshot = [...item.history];
+    const statusSnapshot = item.status;
+    applyUpdateAction(
+      item,
+      'wa_existing',
+      { status: 'completed', actor: 'walker' },
+      makeDeps(),
+    );
+    expect(item.status).toBe(statusSnapshot);
+    expect(item.history).toEqual(historySnapshot);
+    expect(item.actions).toEqual(actionsSnapshot);
+    expect(item.actions[0]!.status).toBe('authorized');
+  });
+});
+
+// ===========================================================================
+// Task 4：applyRecordOutcome
+// ===========================================================================
+
+describe('applyRecordOutcome', () => {
+  /** 构造一个 awaiting-verification 状态的 WorkItem，带一条 completed action。*/
+  function makeAwaitingWorkItem(over: Partial<WorkItem> = {}): WorkItem {
+    return makeProposalWorkItem({
+      status: 'awaiting-verification',
+      actions: [
+        {
+          actionId: 'wa_done',
+          actionType: 'create-content',
+          targetType: 'content',
+          targetId: 'slug-1',
+          assignee: 'walker',
+          status: 'completed',
+          expectedOutcome: '产出一篇指南',
+          reversible: true,
+          createdAt: '2025-12-30T00:00:00.000Z',
+          updatedAt: '2025-12-31T00:00:00.000Z',
+        },
+      ],
+      ...over,
+    });
+  }
+
+  describe('happy path', () => {
+    it('awaiting-verification + completed action → resolved，写 outcome-recorded', () => {
+      const deps = makeDepsSequential();
+      const item = makeAwaitingWorkItem();
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'successful',
+          summary: '指南发布，3 条 useful 反馈',
+          evidenceRefs: [makeEvidence()],
+          actor: 'walker',
+          nextDecisionSuggested: true,
+        },
+        deps,
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const w = result.workItem;
+      expect(w.status).toBe('resolved');
+      expect(w.updatedAt).toBe(FIXED_NOW);
+
+      // outcome 字段完整断言
+      expect(w.outcomes).toHaveLength(1);
+      const outcome = w.outcomes[0]!;
+      expect(outcome.outcomeId).toBe('wo_1');
+      expect(outcome.actionId).toBe('wa_done');
+      expect(outcome.result).toBe('successful');
+      expect(outcome.summary).toBe('指南发布，3 条 useful 反馈');
+      expect(outcome.evidenceRefs).toHaveLength(1);
+      expect(outcome.observedAt).toBe(FIXED_NOW);
+      expect(outcome.nextDecisionSuggested).toBe(true);
+
+      // history 一条 outcome-recorded
+      expect(w.history).toHaveLength(1);
+      const entry = w.history[0]!;
+      expect(entry.historyId).toBe('wh_2'); // wo_1 先消耗，historyId 从 wh_2 起
+      expect(entry.fromStatus).toBe('awaiting-verification'); // 迁移前真实状态
+      expect(entry.toStatus).toBe('resolved');
+      expect(entry.kind).toBe('outcome-recorded');
+      expect(entry.actor).toBe('walker');
+      expect(entry.reason).toContain('successful');
+      expect(entry.detail).toEqual({ outcomeId: 'wo_1', result: 'successful' });
+    });
+
+    it('acting + completed action → resolved（合法迁移，fromStatus=acting）', () => {
+      // acting → resolved 也是合法迁移（白名单含 acting→resolved）
+      const item = makeAwaitingWorkItem({ status: 'acting' });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'failed',
+          summary: '方向错了',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.status).toBe('resolved');
+      expect(result.workItem.history[0]!.fromStatus).toBe('acting');
+    });
+
+    it('action.status=awaiting-verification 也能记录结果（action 层信任边界允许）', () => {
+      const item = makeAwaitingWorkItem({
+        actions: [
+          {
+            actionId: 'wa_pending',
+            actionType: 'create-content',
+            targetType: 'content',
+            assignee: 'walker',
+            status: 'awaiting-verification',
+            expectedOutcome: 'x',
+            reversible: true,
+            createdAt: FIXED_NOW,
+            updatedAt: FIXED_NOW,
+          },
+        ],
+      });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_pending',
+          result: 'partial',
+          summary: '部分达成',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.status).toBe('resolved');
+    });
+
+    it('summary 被 trim；nextDecisionSuggested 默认 undefined', () => {
+      const item = makeAwaitingWorkItem();
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'inconclusive',
+          summary: '  结论模糊  ',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.outcomes[0]!.summary).toBe('结论模糊');
+      expect(result.workItem.outcomes[0]!.nextDecisionSuggested).toBeUndefined();
+    });
+  });
+
+  describe('信任边界失败', () => {
+    it('summary 空 → invalid-input', () => {
+      const item = makeAwaitingWorkItem();
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'successful',
+          summary: '   ',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-input');
+      expect(result.message).toContain('摘要');
+    });
+
+    it('actionId 找不到 → not-found', () => {
+      const item = makeAwaitingWorkItem();
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_missing',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('not-found');
+    });
+
+    it('action.status=authorized（未执行） → invalid-transition（action 层信任边界）', () => {
+      const item = makeAwaitingWorkItem({
+        actions: [
+          {
+            actionId: 'wa_authorized',
+            actionType: 'create-content',
+            targetType: 'content',
+            assignee: 'walker',
+            status: 'authorized',
+            expectedOutcome: 'x',
+            reversible: true,
+            createdAt: FIXED_NOW,
+            updatedAt: FIXED_NOW,
+          },
+        ],
+      });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_authorized',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+      expect(result.message).toContain('已执行');
+    });
+
+    it('action.status=blocked → invalid-transition', () => {
+      const item = makeAwaitingWorkItem({
+        actions: [
+          {
+            actionId: 'wa_blocked',
+            actionType: 'create-content',
+            targetType: 'content',
+            assignee: 'walker',
+            status: 'blocked',
+            expectedOutcome: 'x',
+            reversible: true,
+            createdAt: FIXED_NOW,
+            updatedAt: FIXED_NOW,
+          },
+        ],
+      });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_blocked',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+  });
+
+  describe('BUG #4 回归（收紧）：非法源 → resolved 被 invalid-transition 拒绝', () => {
+    it('paused → resolved → invalid-transition', () => {
+      const item = makeAwaitingWorkItem({ status: 'paused' });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+      expect(result.message).toContain('paused');
+      expect(result.message).toContain('resolved');
+    });
+
+    it('accepted → resolved → invalid-transition（必须先 acting/awaiting-verification）', () => {
+      const item = makeAwaitingWorkItem({ status: 'accepted' });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+
+    it('proposal → resolved → invalid-transition', () => {
+      const item = makeAwaitingWorkItem({ status: 'proposal' });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+
+    it('resolved → resolved → invalid-transition（终态，且 action 已用过）', () => {
+      const item = makeAwaitingWorkItem({ status: 'resolved' });
+      const result = applyRecordOutcome(
+        item,
+        {
+          actionId: 'wa_done',
+          result: 'successful',
+          summary: 'x',
+          evidenceRefs: [],
+          actor: 'walker',
+        },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-transition');
+    });
+  });
+
+  it('纯函数：不修改入参 current', () => {
+    const item = makeAwaitingWorkItem();
+    const outcomesSnapshot = [...item.outcomes];
+    const historySnapshot = [...item.history];
+    const statusSnapshot = item.status;
+    applyRecordOutcome(
+      item,
+      {
+        actionId: 'wa_done',
+        result: 'successful',
+        summary: 'x',
+        evidenceRefs: [],
+        actor: 'walker',
+      },
+      makeDeps(),
+    );
+    expect(item.status).toBe(statusSnapshot);
+    expect(item.outcomes).toEqual(outcomesSnapshot);
+    expect(item.history).toEqual(historySnapshot);
+  });
+});
+
+// ===========================================================================
+// Task 4：applyOverridePriority
+// ===========================================================================
+
+describe('applyOverridePriority', () => {
+  describe('happy path', () => {
+    it('now → week：写 priority-override，priorityReasons append（不抹原依据）', () => {
+      const deps = makeDepsSequential();
+      const item = makeProposalWorkItem({
+        status: 'pending',
+        priorityBand: 'now',
+        priorityReasons: ['原排序：紧急'],
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'week', reason: '重新评估后降级', actor: 'walker' },
+        deps,
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      const w = result.workItem;
+      expect(w.priorityBand).toBe('week');
+      expect(w.updatedAt).toBe(FIXED_NOW);
+
+      // priorityReasons append（不抹原依据）
+      expect(w.priorityReasons).toEqual(['原排序：紧急', '人工覆盖：重新评估后降级']);
+
+      // history 一条 priority-override
+      expect(w.history).toHaveLength(1);
+      const entry = w.history[0]!;
+      expect(entry.historyId).toBe('wh_1');
+      // BUG #2：kind 是 'priority-override'，不是 'status-change'
+      expect(entry.kind).toBe('priority-override');
+      // fromStatus/toStatus 自反（这不是状态迁移）
+      expect(entry.fromStatus).toBe('pending');
+      expect(entry.toStatus).toBe('pending');
+      expect(entry.actor).toBe('walker');
+      expect(entry.reason).toContain('now');
+      expect(entry.reason).toContain('week');
+      expect(entry.reason).toContain('重新评估后降级');
+      expect(entry.detail).toEqual({ override: true, fromBand: 'now', toBand: 'week' });
+    });
+
+    it('week → now：合法升级', () => {
+      const item = makeProposalWorkItem({
+        status: 'proposal',
+        priorityBand: 'week',
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'now', reason: '紧急', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.priorityBand).toBe('now');
+      expect(result.workItem.history[0]!.detail).toEqual({
+        override: true,
+        fromBand: 'week',
+        toBand: 'now',
+      });
+    });
+
+    it('observe → now：合法升级（跨多带）', () => {
+      const item = makeProposalWorkItem({
+        priorityBand: 'observe',
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'now', reason: '提级', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.priorityBand).toBe('now');
+    });
+
+    it('status 不变（仅 priority 变更）—— fromStatus===toStatus 自反', () => {
+      const item = makeProposalWorkItem({
+        status: 'acting',
+        priorityBand: 'now',
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'week', reason: '降级', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.status).toBe('acting'); // 不变
+      expect(result.workItem.history[0]!.fromStatus).toBe('acting');
+      expect(result.workItem.history[0]!.toStatus).toBe('acting');
+    });
+  });
+
+  describe('信任边界失败', () => {
+    it('reason 空 → invalid-input', () => {
+      const item = makeProposalWorkItem({ priorityBand: 'now' });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'week', reason: '   ', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-input');
+      expect(result.message).toContain('理由');
+    });
+
+    it('fromBand === toBand → invalid-input（同带无需覆盖）', () => {
+      const item = makeProposalWorkItem({ priorityBand: 'now' });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'now', reason: '同带', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-input');
+      expect(result.message).toContain('相同');
+    });
+
+    it('AI + now（目标）+ 无证据 → invalid-input（P4 护栏，与创建时一致）', () => {
+      const item = makeProposalWorkItem({
+        queue: 'ai-asset',
+        priorityBand: 'week',
+        evidenceRefs: [makeEvidence({ qualityStatus: 'unverified' })],
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'now', reason: '提级', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe('invalid-input');
+      expect(result.message).toContain('立即处理');
+    });
+
+    it('AI + now（目标）+ 有证据 → 通过（护栏不误伤有证据的 AI 草案）', () => {
+      const item = makeProposalWorkItem({
+        queue: 'ai-asset',
+        priorityBand: 'week',
+        evidenceRefs: [makeEvidence()],
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'now', reason: '提级', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it('AI + week（目标，非 now）+ 无证据 → 通过（非 now 不受护栏）', () => {
+      const item = makeProposalWorkItem({
+        queue: 'ai-asset',
+        priorityBand: 'observe',
+        evidenceRefs: [makeEvidence({ qualityStatus: 'unverified' })],
+      });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'week', reason: '微调', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+    });
+  });
+
+  describe('BUG #2 回归：history.kind === priority-override', () => {
+    it('覆盖时 history[0].kind 严格等于 priority-override（不是 status-change）', () => {
+      const item = makeProposalWorkItem({ priorityBand: 'now' });
+      const result = applyOverridePriority(
+        item,
+        { priorityBand: 'week', reason: '降级', actor: 'walker' },
+        makeDeps(),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.workItem.history[0]!.kind).toBe('priority-override');
+      expect(result.workItem.history[0]!.kind).not.toBe('status-change');
+    });
+  });
+
+  it('纯函数：不修改入参 current', () => {
+    const item = makeProposalWorkItem({
+      priorityBand: 'now',
+      priorityReasons: ['原'],
+    });
+    const bandSnapshot = item.priorityBand;
+    const reasonsSnapshot = [...item.priorityReasons];
+    const historySnapshot = [...item.history];
+    applyOverridePriority(
+      item,
+      { priorityBand: 'week', reason: 'x', actor: 'walker' },
+      makeDeps(),
+    );
+    expect(item.priorityBand).toBe(bandSnapshot);
+    expect(item.priorityReasons).toEqual(reasonsSnapshot);
+    expect(item.history).toEqual(historySnapshot);
   });
 });

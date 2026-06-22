@@ -857,7 +857,8 @@ export interface WorkItemHistoryEntry {
     | 'action-added'
     | 'action-updated'
     | 'outcome-recorded'
-    | 'decision-updated';
+    | 'decision-updated'
+    | 'priority-override';
   /** 结构化补充（如新增 evidence 的 id、action 的 id） */
   detail?: Record<string, unknown>;
 }

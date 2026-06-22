@@ -71,11 +71,17 @@ export type WorkItemDomainResult =
 /**
  * 领域层失败 code（与 service 层 `WorkbenchResultCode` 保持可透传的子集对齐）
  *
- * 只列 apply 函数会在领域层判定出的失败；IO 相关（storage-unavailable / not-found）
+ * 只列 apply 函数会在领域层判定出的失败；IO 相关（storage-unavailable）
  * 由 service/repository 层负责，不进领域层。
+ *
+ * `not-found` 用于领域层可判定的"结构缺失"——例如 `applyUpdateAction` /
+ * `applyRecordOutcome` 在已加载的 WorkItem 内找不到指定 actionId（这不是 IO 缺失，
+ * 而是"给定的 actionId 不属于这个 WorkItem"的结构校验失败）。
+ * WorkItem 自身的 not-found（按 workItemId 查存储 miss）仍由 service/repository 负责。
  */
 export type WorkItemDomainErrorCode =
   | 'invalid-input'
   | 'invalid-transition'
   | 'missing-evidence'
-  | 'missing-expected-outcome';
+  | 'missing-expected-outcome'
+  | 'not-found';
