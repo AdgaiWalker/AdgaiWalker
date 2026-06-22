@@ -28,6 +28,24 @@ NorthStar = 长期社区网络方向，不直接塞进当前个人站
 - astro-icon + Iconify（lucide）
 - MCP server
 - Vitest（单元测试）
+- marked / js-yaml / diff（就地编辑）
+
+## 访问模型与账号系统
+
+站点采用分层访问模型：
+
+- **public**：公开内容，任何人可见
+- **user**：注册用户，可管理个人画像/改密/删号
+- **admin**：管理员，可访问后台决策系统
+- **owner**：站主，可指派角色/删账号/管理系统
+
+账号认证基于 `walker-session` cookie（HMAC 签名，密钥 `COOKIE_SECRET`，30 天有效）。注册走邀请码门票 + 用户名 + scrypt 密码（零 PII）。主要页面：
+
+- `/login` — 统一登录/注册入口（用户注册 + owner 登录同入口）
+- `/account` — 用户自助（改密/画像/删号）
+- `/admin/accounts` — 后台用户管理（列表/搜索/改角色/封禁/删除）
+- `/admin/invite-codes` — 邀请码管理（生成/禁用/追踪）
+- `/api/auth/*` — 注册/登录/登出/改密/owner bootstrap API
 
 ## 本地运行
 
