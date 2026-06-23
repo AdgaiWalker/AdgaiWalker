@@ -79,6 +79,16 @@ const { contentId } = Astro.props;
     <button type="button" class="bf-redo" data-bf-redo>再提一条</button>
   </div>
 
+  <div class="bf-next-actions" data-bf-next-actions hidden aria-label="接下来">
+    <p class="bf-next-title">接下来你想做什么？</p>
+    <div class="bf-next-buttons">
+      <a href="/ideas" class="bf-next-btn">
+        <Icon name="lucide:lightbulb" width={14} height={14} />
+        我有相关点子
+      </a>
+    </div>
+  </div>
+
   <noscript>
     <p class="bf-noscript">启用 JavaScript 后可直接提交反馈；否则请通过评论区留言。</p>
   </noscript>
@@ -225,6 +235,45 @@ const { contentId } = Astro.props;
   }
   .bf-noscript { margin: 0.6rem 0 0; font-size: 0.78rem; color: var(--color-parchment-dim); opacity: 0.7; }
 
+  .bf-next-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 8%, transparent);
+  }
+  .bf-next-actions[hidden] { display: none; }
+  .bf-next-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    margin: 0 0 0.7rem;
+  }
+  .bf-next-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .bf-next-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
+    background: transparent;
+    color: var(--color-parchment-dim);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .bf-next-btn:hover {
+    border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+    color: var(--color-brand);
+    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
+  }
+
   @media (max-width: 480px) {
     .bf-options { grid-template-columns: 1fr; }
   }
@@ -250,6 +299,7 @@ const { contentId } = Astro.props;
     const doneView = root.querySelector<HTMLElement>('[data-bf-done]');
     const doneNote = root.querySelector<HTMLElement>('[data-bf-done-note]');
     const redo = root.querySelector<HTMLButtonElement>('[data-bf-redo]');
+    const nextActions = root.querySelector<HTMLElement>('[data-bf-next-actions]');
     if (!form || !submit || !status || !doneView) return;
 
     // 同浏览器防重复提示：已提交过的内容显示"已收到"占位（不作为成功证据）
@@ -326,6 +376,7 @@ const { contentId } = Astro.props;
         localStorage.setItem(DONE_KEY_PREFIX + contentId, 'true');
         form.hidden = true;
         doneView.hidden = false;
+        if (nextActions) nextActions.hidden = false;
         if (doneNote) doneNote.textContent = '';
       } catch {
         submit.disabled = false;
@@ -337,6 +388,7 @@ const { contentId } = Astro.props;
     submit.addEventListener('click', submitFeedback, { signal: abortSignal });
     redo?.addEventListener('click', () => {
       doneView.hidden = true;
+      if (nextActions) nextActions.hidden = true;
       form.hidden = false;
       resetForm();
     }, { signal: abortSignal });

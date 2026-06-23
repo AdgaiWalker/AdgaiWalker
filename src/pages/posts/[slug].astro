@@ -1,4 +1,4 @@
-﻿---
+---
 /**
  * /posts/[slug] — 统一文章详情页
  * 沉浸式阅读：内容直接浮在空间里
@@ -26,6 +26,8 @@ import { formatDateLocale } from '@/shared/format';
 import { render, type CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
+import { resolveLayout, getContentLabel, getDomainLabel, getStatusSymbol } from '@/knowledge/block-types';
+import DianZiWordmark from '../../components/DianZiWordmark.astro';
 
 export const prerender = true;
 
@@ -76,17 +78,31 @@ const seriesNext = hasSeries && currentSeriesIndex < seriesEntries.length - 1 ? 
 
 // 相关推荐：基于 tags 重叠度匹配，排除自身，取前 3 篇
 const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
+
+// 布局模板：优先读 frontmatter 的 layout 字段，没有则回退到 form 映射
+const layout = resolveLayout(entry.data.layout, entry.data.form);
+const contentLabel = getContentLabel(entry.data.form, entry.data.intent);
+const domainLabel = getDomainLabel(entry.data.domain);
+const statusInfo = getStatusSymbol(entry.data.status);
+
+// 拼装社交分享的带前缀摘要，支持 3 秒判断
+const ogDesc = [
+  entry.data.form ? `[${contentLabel.label}${domainLabel ? ` · ${domainLabel}` : ''}]` : '',
+  entry.data.summary ?? entry.data.description ?? description
+].filter(Boolean).join(' ');
 ---
 
 	<ContentShell
 	  title={`${entry.data.title} — Walker`}
 	  description={description}
 	  ogTitle={entry.data.title}
-	  ogDescription={entry.data.summary ?? entry.data.description ?? description}
+	  ogDescription={ogDesc}
 	  ogImage={ogImage ?? '/images/hero-bg.png'}
 	  canonicalUrl={Astro.url.href}
 	  headings={headings}
 	  contentId={entry.id}
+	  layout={layout}
+	  form={entry.data.form}
 	>
     {/* 面包屑 — 方向感 */}
     <div class="article-breadcrumb">
@@ -100,17 +116,28 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
       <span class="breadcrumb-reading-time">{readingTime} 分钟</span>
     </div>
 
+    {/* 内容声明栏 — 3 秒判断「这篇跟我有没有关系」 */}
+    <div class="content-declaration">
+      <span class="declaration-type">
+        <span class="declaration-emoji">{contentLabel.emoji}</span>
+        {contentLabel.label}
+      </span>
+      {domainLabel && (
+        <span class="declaration-sep">·</span>
+        <span class="declaration-domain">{domainLabel}</span>
+      )}
+      {entry.data.status && (
+        <span class="declaration-sep">·</span>
+        <span class="declaration-status-wrap">
+          <DianZiWordmark status={entry.data.status} className="declaration-wordmark-size" />
+        </span>
+      )}
+    </div>
+
     {/* 标题 — 文章的门面 */}
     <h1 class="article-title" data-pagefind-meta="title">
       {entry.data.title}
     </h1>
-
-    {/* 标签 — 身份 */}
-    <div class="article-tags">
-      {entry.data.tags.map((tag: string) => (
-        <span class="article-tag">{tag}</span>
-      ))}
-    </div>
 
     {/* 封面图 */}
     {coverImage && (
@@ -220,14 +247,14 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
       </section>
     )}
 
-    {/* 相关推荐 — 继续阅读的路径 */}
+    {/* 相关推荐 — 继续阅读的路径（aside slot：immersive 回流底部 / media 右侧栏） */}
     {relatedPosts.length > 0 && (
-      <section class="article-section">
+      <section slot="aside" class="article-section article-section--aside">
         <h2 class="section-heading">
           <Icon name="lucide:sparkles" width={20} height={20} class="section-icon" />
           继续阅读
         </h2>
-        <div class="related-grid">
+        <div class="related-grid related-grid--aside">
           {relatedPosts.map(post => (
             <a href={buildPostPath(post.id)} class="related-card group/rc">
               <div class="related-card-title group-hover/rc:text-brand transition-colors">{post.title}</div>
@@ -248,17 +275,33 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     {/* 评论区 — 反馈闭环 */}
     <GiscusWidget />
 
+    {/* 标签 — 文末标注主题 */}
+    {entry.data.tags.length > 0 && (
+      <div class="article-tags-end">
+        {entry.data.tags.map((tag: string) => (
+          <span class="article-tag-end">#{tag}</span>
+        ))}
+      </div>
+    )}
+
     {/* 底部 — 阅读结束 */}
     <footer class="article-footer">
       <a href={POSTS} class="footer-back">
         <Icon name="lucide:arrow-left" width={14} height={14} />
         返回文章
       </a>
+
+      {/* 生产资料所有权：一等公民的 Markdown 导出 */}
+      <a href={`/api/posts/${entry.id}/export`} class="footer-export" title="将这篇内容作为生产资料导出为 Markdown 手稿">
+        <Icon name="lucide:download" width={13} height={13} />
+        <span>导出 Markdown</span>
+      </a>
+
       <div class="footer-like">
         <LikeCounter pagePath={buildPostPath(entry.id)} />
       </div>
     </footer>
-  <AdminEditBar slug={entry.id} visibility={entry.data.visibility ?? (entry.data.published ? 'public' : 'draft')} />
+  <AdminEditBar slug={entry.id} visibility={entry.data.visibility ?? (entry.data.published ? 'public' : 'draft')} layout={layout} />
   <VersionHistory />
 	</ContentShell>
 
@@ -312,6 +355,54 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     font-size: 0.7rem;
   }
 
+  /* ===== 内容声明栏 ===== */
+  .content-declaration {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-parchment-dim);
+  }
+
+  .declaration-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brand) 15%, transparent);
+    font-weight: 700;
+    color: var(--color-brand);
+  }
+
+  .declaration-emoji {
+    font-size: 0.85rem;
+  }
+
+  .declaration-sep {
+    opacity: 0.3;
+  }
+
+  .declaration-domain {
+    opacity: 0.7;
+  }
+
+  .declaration-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    opacity: 0.7;
+  }
+
+  .status-symbol {
+    font-weight: 800;
+    color: var(--color-brand);
+    letter-spacing: -0.05em;
+  }
+
   /* ===== 标题 ===== */
   .article-title {
     font-size: clamp(2rem, 5vw, 3.2rem);
@@ -322,22 +413,21 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     margin-bottom: 1rem;
   }
 
-  /* ===== 标签 ===== */
-  .article-tags {
+  /* ===== 标签（文末） ===== */
+  .article-tags-end {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-bottom: 2.5rem;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 8%, transparent);
   }
 
-  .article-tag {
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
+  .article-tag-end {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
     color: var(--color-parchment-dim);
-    opacity: 0.6;
-    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
+    opacity: 0.5;
   }
 
   /* ===== 封面 ===== */
@@ -584,9 +674,40 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     color: var(--color-brand);
   }
 
+  .footer-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.1s ease;
+    cursor: pointer;
+  }
+
+  .footer-export:hover {
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+  }
+
+  .footer-export:active {
+    transform: scale(0.97);
+  }
+
   .footer-like {
     transform: scale(1.1);
     transform-origin: right center;
+  }
+
+  .declaration-wordmark-size {
+    font-size: 0.72rem !important;
+    display: inline-flex;
+    align-items: flex-end;
+  }
+
+  .declaration-status-wrap {
+    display: inline-flex;
+    align-items: center;
   }
 
   /* ===== 相关推荐 ===== */
@@ -638,6 +759,16 @@ const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
     font-family: var(--font-mono);
     color: var(--color-parchment-dim);
     opacity: 0.5;
+  }
+
+  /* media 模式右侧栏：推荐卡片纵向单列 */
+  .related-grid--aside {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .article-section--aside {
+    margin-top: 0;
   }
 
   /* ===== 响应式 ===== */

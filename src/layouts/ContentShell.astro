@@ -16,6 +16,7 @@
 import Base from './Base.astro';
 import TableOfContents from '../components/article/TableOfContents.astro';
 import { Icon } from 'astro-icon/components';
+import type { ReadingLayout } from '@/knowledge/block-types';
 
 interface Heading {
   depth: number;
@@ -36,22 +37,29 @@ interface Props {
   feedback?: boolean;
   /** 内容 slug；用于阅读深度遥测（P3-A）。不传则不采集。 */
   contentId?: string;
+  /** 阅读布局模板：immersive 单栏居中（默认）/ media 双栏主内容+右侧推荐 */
+  layout?: ReadingLayout;
+  /** 内容形式（form），用于 CSS 微调阅读体验 */
+  form?: string;
 }
 
 const {
+  layout = 'immersive' as ReadingLayout,
   headings,
   hasToc: _hasToc,
   feedback = false,
   contentId = '',
+  form = '',
   ...seoProps
 } = Astro.props;
 const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
-const hasToc = _hasToc ?? tocItems.length > 0;
+// media 模式隐藏 TOC：视频内容不需要章节导航，右侧栏已被推荐占用
+const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
 ---
 
 <Base {...seoProps} pureMode={false}>
   <!-- 沉浸式阅读区域 -->
-  <div class="reading-space" id="reading-space" data-content-id={contentId}>
+  <div class="reading-space" id="reading-space" data-content-id={contentId} data-form={form}>
     <!-- 左边缘提示区 — 侧边栏幽灵 -->
     <div class="sidebar-ghost-hint" id="sidebar-ghost-hint" aria-hidden="true"></div>
 
@@ -61,20 +69,42 @@ const hasToc = _hasToc ?? tocItems.length > 0;
       <span class="reading-progress-pct" id="reading-progress-pct"></span>
     </div>
 
-    <!-- 内容 — 单栏居中，块自声明宽度 -->
-    <div class="reading-content">
-      <article data-pagefind-body>
-        <slot />
-      </article>
+    <!-- 内容 — 按 layout 切换排列方式 -->
+    {layout === 'media' ? (
+      <div class="reading-content reading-content--media">
+        <main class="media-main">
+          <article data-pagefind-body>
+            <slot />
+          </article>
 
-      <!-- 反馈带：真实 ContentFeedback 合同接入后由反馈组件填充 -->
-      {feedback && (
-        <div class="feedback-strip" id="feedback-strip">
-          <!-- BlockLike → 点赞 -->
-          <!-- BlockFeedback → 「有用吗」三按钮 -->
-        </div>
-      )}
-    </div>
+          {feedback && (
+            <div class="feedback-strip" id="feedback-strip">
+              <!-- BlockLike → 点赞 -->
+              <!-- BlockFeedback → 「有用吗」三按钮 -->
+            </div>
+          )}
+        </main>
+        <aside class="media-aside" aria-label="相关推荐">
+          <slot name="aside" />
+        </aside>
+      </div>
+    ) : (
+      <div class="reading-content">
+        <article data-pagefind-body>
+          <slot />
+        </article>
+
+        {feedback && (
+          <div class="feedback-strip" id="feedback-strip">
+            <!-- BlockLike → 点赞 -->
+            <!-- BlockFeedback → 「有用吗」三按钮 -->
+          </div>
+        )}
+
+        {/* aside slot 回流到主内容流底部（沉浸式模式推荐在底部） */}
+        <slot name="aside" />
+      </div>
+    )}
 
     <!-- TOC 侧边栏 — fixed 在文章右侧空白区，不挤文章；可折叠 -->
     {hasToc && (
@@ -123,6 +153,24 @@ const hasToc = _hasToc ?? tocItems.length > 0;
     z-index: 1;
     display: flex;
     flex-direction: column;
+  }
+
+  /* ===== media 模式：双栏 grid（主内容 + 右侧推荐） ===== */
+  .reading-content--media {
+    max-width: 1200px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .media-main {
+    min-width: 0; /* 防止 grid 子项溢出 */
+  }
+  .media-aside {
+    position: sticky;
+    top: 6rem;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
   }
 
   /* 块宽度等级（global：block 组件可能在 prose 内嵌套） */
@@ -327,8 +375,35 @@ const hasToc = _hasToc ?? tocItems.length > 0;
   }
 
   /* ===== 响应式 ===== */
+  /* media 模式窄屏退回单栏：推荐移到底部 */
+  @media (max-width: 900px) {
+    .reading-content--media {
+      grid-template-columns: 1fr;
+    }
+    .media-aside {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+
   @media (max-width: 640px) {
     .reading-content { padding: 5.5rem 1rem 4rem; }
+  }
+
+  /* ===== Form-specific reading adjustments ===== */
+  [data-form="note"] .reading-content,
+  [data-form="diary"] .reading-content,
+  [data-form="rant"] .reading-content {
+    --cs-width-normal: 600px;
+  }
+
+  [data-form="lesson"] .reading-content {
+    --cs-width-normal: 760px;
+  }
+
+  [data-form="lesson"] .reading-progress {
+    opacity: 1;
   }
 
 </style>

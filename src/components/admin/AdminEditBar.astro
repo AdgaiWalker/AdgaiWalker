@@ -5,18 +5,18 @@
 interface Props {
   slug?: string;
   visibility?: string;
+  layout?: string;
 }
 
-const { slug = '', visibility = '' } = Astro.props;
+const { slug = '', visibility = '', layout = '' } = Astro.props;
 ---
 
 {slug && (
-  <div class="admin-topbar" id="admin-edit-bar" data-slug={slug} data-visibility={visibility} hidden>
-    <div class="atb-brand">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-      <span>管理</span>
-    </div>
-    <div class="atb-actions">
+  <div class="admin-topbar" id="admin-edit-bar" data-slug={slug} data-visibility={visibility} data-layout={layout} hidden>
+    <button class="atb-toggle" id="admin-toggle-btn" type="button" aria-label="管理工具" aria-expanded="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></svg>
+    </button>
+    <div class="atb-actions" id="admin-actions">
       <button class="atb-btn" id="admin-edit-btn" type="button">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         编辑
@@ -32,6 +32,14 @@ const { slug = '', visibility = '' } = Astro.props;
           <option value="public">public · 公开</option>
           <option value="draft">draft · 草稿</option>
           <option value="private">private · 私密</option>
+        </select>
+      </label>
+      <span class="atb-sep"></span>
+      <label class="atb-layout">
+        <span class="atb-vis-label">布局</span>
+        <select id="admin-layout-select">
+          <option value="immersive">沉浸式</option>
+          <option value="media">媒体型</option>
         </select>
       </label>
       <span class="atb-sep"></span>
@@ -61,14 +69,27 @@ const { slug = '', visibility = '' } = Astro.props;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     color: #1c1917;
   }
-  .atb-brand {
-    display: flex; align-items: center; gap: 0.3rem;
-    font-size: 0.72rem; font-weight: 800; color: #c4704a;
-    letter-spacing: 0.03em;
-    padding-right: 0.4rem;
-    border-right: 1px solid rgba(0,0,0,0.08);
+  .atb-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 8px;
+    background: #fff;
+    color: #c4704a;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
   }
-  .atb-actions { display: flex; align-items: center; gap: 0.25rem; }
+  .atb-toggle:hover { background: #f5f5f4; border-color: rgba(0,0,0,0.14); }
+  .admin-topbar.expanded .atb-toggle { background: #f5f5f4; color: #1c1917; }
+  .atb-actions {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .admin-topbar.expanded .atb-actions { display: flex; }
   .atb-btn {
     display: inline-flex; align-items: center; gap: 0.3rem;
     padding: 0.32rem 0.7rem;
@@ -86,7 +107,8 @@ const { slug = '', visibility = '' } = Astro.props;
   .atb-sep { width: 1px; height: 18px; background: rgba(0,0,0,0.08); margin: 0 0.1rem; }
   .atb-visibility { display: inline-flex; align-items: center; gap: 0.35rem; }
   .atb-vis-label { font-size: 0.7rem; color: #78716c; font-weight: 600; }
-  #admin-visibility-select {
+  #admin-visibility-select,
+  #admin-layout-select {
     padding: 0.28rem 0.5rem;
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 6px;
@@ -130,7 +152,7 @@ const { slug = '', visibility = '' } = Astro.props;
       const data = await res.json();
       if (!signal.aborted && data.admin) {
         bar.hidden = false;
-        document.body.style.paddingTop = '46px';
+        document.body.style.paddingTop = '44px';
       }
     } catch { /* ignore */ }
   }
@@ -146,14 +168,23 @@ const { slug = '', visibility = '' } = Astro.props;
 
     const slug = bar.dataset.slug;
     const visibility = bar.dataset.visibility || 'public';
+    const toggleBtn = document.getElementById('admin-toggle-btn');
     const editBtn = document.getElementById('admin-edit-btn');
     const historyBtn = document.getElementById('admin-history-btn');
     const deleteBtn = document.getElementById('admin-delete-btn') as HTMLButtonElement | null;
     const visSelect = document.getElementById('admin-visibility-select') as HTMLSelectElement | null;
+    const layoutSelect = document.getElementById('admin-layout-select') as HTMLSelectElement | null;
     const status = document.getElementById('admin-status');
     if (!slug) return;
 
+    // 展开/折叠工具栏
+    toggleBtn?.addEventListener('click', () => {
+      const expanded = bar.classList.toggle('expanded');
+      toggleBtn.setAttribute('aria-expanded', String(expanded));
+    }, { signal });
+
     if (visSelect) visSelect.value = visibility;
+    if (layoutSelect) layoutSelect.value = bar.dataset.layout || 'immersive';
 
     editBtn?.addEventListener('click', () => enterInlineEditor(slug), { signal });
     historyBtn?.addEventListener('click', () => {
@@ -178,6 +209,37 @@ const { slug = '', visibility = '' } = Astro.props;
           if (signal.aborted) return;
           if (res.ok && data.ok) {
             status.textContent = `已切换为 ${next}，约 60s 后生效`;
+            status.className = 'atb-status visible success';
+          } else {
+            status.textContent = data.error || '切换失败';
+            status.className = 'atb-status visible error';
+          }
+        } catch {
+          if (signal.aborted) return;
+          status.textContent = '网络错误';
+          status.className = 'atb-status visible error';
+        }
+      }, { signal });
+    }
+
+    if (layoutSelect) {
+      layoutSelect.addEventListener('change', async () => {
+        const next = layoutSelect.value;
+        if (!status) return;
+        status.textContent = '切换布局...';
+        status.className = 'atb-status visible';
+        try {
+          const res = await fetch(`/api/admin/content/${encodeURIComponent(slug)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ layout: next }),
+            signal,
+          });
+          if (res.status === 401) { window.location.href = '/admin/login'; return; }
+          const data = await res.json();
+          if (signal.aborted) return;
+          if (res.ok && data.ok) {
+            status.textContent = `布局已切换为「${next === 'media' ? '媒体型' : '沉浸式'}」，约 60s 后生效`;
             status.className = 'atb-status visible success';
           } else {
             status.textContent = data.error || '切换失败';

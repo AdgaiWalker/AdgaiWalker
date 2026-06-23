@@ -11,6 +11,7 @@ const log = defineCollection({
     tags: z.array(z.string()),
     type: z.enum(['knowledge', 'tool', 'idea', 'project', 'community', 'learn']),
     form: z.enum(['article', 'note', 'diary', 'rant', 'gallery', 'video', 'recipe', 'calligraphy', 'resource', 'project', 'idea', 'lesson']).optional(),
+    layout: z.enum(['immersive', 'media']).optional(),
     domain: z.enum(['ai', 'coding', 'product', 'philosophy', 'life', 'cooking', 'calligraphy', 'reading', 'travel', 'emotion', 'community']).optional(),
     intent: z.enum(['think', 'record', 'teach', 'share', 'verify', 'showcase', 'reflect', 'connect', 'vent']).optional(),
     valueMode: z.enum(['utility', 'existence', 'both']).optional(),

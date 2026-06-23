@@ -9,6 +9,7 @@
  */
 import type { SessionRepositoryPort } from '@/stores/ports';
 import { readSessionPayload } from './account-auth';
+import { getRedis } from '@/stores/redis-client';
 
 /** 同步判定当前请求是否有后台权限（cookie-only：role=admin 或 owner） */
 export function isAdmin(request: Request): boolean {
@@ -21,6 +22,15 @@ export function isOwner(request: Request): boolean {
   return readSessionPayload(request)?.role === 'owner';
 }
 
+/**
+ * DEV 模式无 Redis 时，dev server 重启 / HMR 热重载会清空内存会话 Map，
+ * 但浏览器 cookie 仍在（30 天 Max-Age）。此时签名 cookie 通过即放行，
+ * 避免本地开发每次重启都要重新登录。生产环境仍走 Redis 会话校验。
+ */
+function devFallback(): boolean {
+  return import.meta.env.DEV && import.meta.env.MODE !== 'test' && !getRedis();
+}
+
 /** 异步判定后台权限：cookie 签名通过 + role=admin/owner + 会话未被撤销 */
 export async function isAdminAsync(
   request: Request,
@@ -29,7 +39,8 @@ export async function isAdminAsync(
   const payload = readSessionPayload(request);
   if (!payload) return false;
   if (payload.role !== 'admin' && payload.role !== 'owner') return false;
-  return sessionStore.isValid(payload.sid);
+  if (await sessionStore.isValid(payload.sid)) return true;
+  return devFallback();
 }
 
 /** 异步判定站主：cookie 签名通过 + role=owner + 会话未被撤销 */
@@ -39,5 +50,6 @@ export async function isOwnerAsync(
 ): Promise<boolean> {
   const payload = readSessionPayload(request);
   if (!payload || payload.role !== 'owner') return false;
-  return sessionStore.isValid(payload.sid);
+  if (await sessionStore.isValid(payload.sid)) return true;
+  return devFallback();
 }

@@ -19,6 +19,7 @@ import {
 const sessionStore = createSessionStore();
 const MAX_CONTENT_BYTES = 100_000;
 const VALID_VISIBILITIES = new Set(['public', 'draft', 'private']);
+const VALID_LAYOUTS: Set<string> = new Set(['immersive', 'media']);
 
 function storeErrorResponse(error: unknown, fallback: string): Response {
   if (error instanceof ContentStoreError) {
@@ -118,7 +119,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   const slug = params.slug;
   if (!slug || !validateSlug(slug)) return jsonResponse({ error: '无效的 slug。' }, 400);
 
-  let body: { visibility?: unknown };
+  let body: { visibility?: unknown; layout?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -126,8 +127,18 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   }
 
   const visibility = body.visibility;
-  if (typeof visibility !== 'string' || !VALID_VISIBILITIES.has(visibility)) {
+  const layout = body.layout;
+  const hasVisibility = visibility !== undefined;
+  const hasLayout = layout !== undefined;
+
+  if (!hasVisibility && !hasLayout) {
+    return jsonResponse({ error: '需要提供 visibility 或 layout 字段。' }, 400);
+  }
+  if (hasVisibility && (typeof visibility !== 'string' || !VALID_VISIBILITIES.has(visibility))) {
     return jsonResponse({ error: '无效的可见性。' }, 400);
+  }
+  if (hasLayout && (typeof layout !== 'string' || !VALID_LAYOUTS.has(layout))) {
+    return jsonResponse({ error: '无效的布局。' }, 400);
   }
 
   const path = getPath(slug);
@@ -135,25 +146,32 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   try {
     const file = await store.read(path);
     const parsed = matter(file.content);
-    const nextContent = matter.stringify(parsed.content, {
-      ...parsed.data,
-      visibility,
-      published: visibility === 'public',
-    });
+    const nextData: Record<string, unknown> = { ...parsed.data };
+    const messages: string[] = [];
+    if (hasVisibility) {
+      nextData.visibility = visibility;
+      nextData.published = visibility === 'public';
+      messages.push(visibility);
+    }
+    if (hasLayout) {
+      nextData.layout = layout;
+      messages.push(`layout:${layout}`);
+    }
+    const nextContent = matter.stringify(parsed.content, nextData);
     const result = await store.write({
       path,
-      message: `content: set ${slug} ${visibility}`,
+      message: `content: set ${slug} ${messages.join(' ')}`,
       content: nextContent,
       sha: file.sha,
     });
-    if (visibility === 'public' && typeof parsed.data.sourceTopicId === 'string') {
+    if (hasVisibility && visibility === 'public' && typeof parsed.data.sourceTopicId === 'string') {
       await updateTopicCandidateStatus(parsed.data.sourceTopicId, 'produced', {
         producedContentSlug: getContentId(slug),
       });
     }
-    return jsonResponse({ ok: true, slug, visibility, sha: result.sha });
+    return jsonResponse({ ok: true, slug, ...(hasVisibility ? { visibility } : {}), ...(hasLayout ? { layout } : {}), sha: result.sha });
   } catch (error) {
-    captureException(error, { action: 'content.set-visibility' });
+    captureException(error, { action: 'content.patch' });
     return storeErrorResponse(error, '保存失败。');
   }
 };

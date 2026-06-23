@@ -4,6 +4,7 @@ import { buildPostPath } from '@/shared/routes';
 import { getPublishedPosts, getFrequentTags } from '@/knowledge/content';
 import { formatDateCompact } from '@/shared/format';
 import { Icon } from 'astro-icon/components';
+import { getContentLabel, getStatusSymbol } from '@/knowledge/block-types';
 
 export const prerender = true;
 
@@ -77,24 +78,39 @@ const frequentTags = getFrequentTags(allLogs, 2);
 
           <div class="reveal panel-glass rounded-2xl overflow-hidden border border-[var(--color-nav-border)]">
             <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
-              {groupedLogs[year].map(log => (
-                <a href={buildPostPath(log.id)} class="log-item group flex flex-col gap-1 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
-                  <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
-                    <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateCompact(log.data.date)}</time>
-                    <div class="flex-1 min-w-0">
-                      <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90">{log.data.title}</h3>
+              {groupedLogs[year].map(log => {
+                const contentLabel = getContentLabel(log.data.form, log.data.intent);
+                const statusSymbol = log.data.status ? getStatusSymbol(log.data.status)?.symbol : '';
+
+                return (
+                  <a href={buildPostPath(log.id)} class="log-item group flex flex-col gap-1 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6">
+                      <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateCompact(log.data.date)}</time>
+                      <div class="flex-1 min-w-0">
+                        <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90 flex items-center gap-2">
+                          {statusSymbol && (
+                            <span class="timeline-status-symbol" title={log.data.status}>
+                              {statusSymbol}
+                            </span>
+                          )}
+                          <span class="timeline-form-badge">
+                            {contentLabel.emoji} {contentLabel.label}
+                          </span>
+                          <span class="timeline-title-text">{log.data.title}</span>
+                        </h3>
+                      </div>
+                      <div class="flex items-center gap-2 shrink-0">
+                        {log.data.tags.slice(0, 2).map((tag: string) => (
+                          <span class="text-[11px] font-mono text-parchment-dim bg-brand/5 border border-brand/10 px-2 py-0.5 rounded-md opacity-80">#{tag}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                      {log.data.tags.slice(0, 2).map((tag: string) => (
-                        <span class="text-[11px] font-mono text-parchment-dim bg-brand/5 border border-brand/10 px-2 py-0.5 rounded-md opacity-80">#{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                  {log.data.summary && (
-                    <p class="log-summary">{log.data.summary}</p>
-                  )}
-                </a>
-              ))}
+                    {log.data.summary && (
+                      <p class="log-summary">{log.data.summary}</p>
+                    )}
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -198,6 +214,36 @@ const frequentTags = getFrequentTags(allLogs, 2);
     .timeline-shell {
       max-width: none;
     }
+  }
+
+  /* ===== 列表页元数据与状态微标 ===== */
+  .timeline-status-symbol {
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    font-weight: 800;
+    font-size: 0.88rem;
+    margin-right: 0.1rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .timeline-form-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    opacity: 0.45;
+    margin-right: 0.3rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .timeline-title-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>
 
