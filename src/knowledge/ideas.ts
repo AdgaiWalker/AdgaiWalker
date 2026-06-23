@@ -11,6 +11,7 @@ export interface RenderedIdeaCard {
   entry: IdeaEntry;
   Content: RenderedIdeaContent;
   demandSignal: number;
+  collaboratorCount?: number;
 }
 
 export const PUBLIC_DEMAND_SIGNAL_MIN = 5;

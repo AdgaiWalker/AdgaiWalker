@@ -11,6 +11,7 @@ import type { render } from 'astro:content';
 
 import { getNeedCaseStats, type NeedCaseStats } from '@/conversation/store';
 import { getPublishedIdeas } from '@/knowledge/content';
+import { getCollaboratorCountByContent } from '@/stores/collaborator.store';
 import {
   getDemandSignal,
   sortIdeasByStatusAndDate,
@@ -60,11 +61,15 @@ export function createIdeasService(deps: IdeasServiceDeps = {}): IdeasService {
       const sortedIdeas = sortIdeasByStatusAndDate(ideas);
       const renderedIdeas = await Promise.all(
         sortedIdeas.map(async (entry) => {
-          const { Content } = await renderEntry(entry);
+          const [contentResult, collaboratorCount] = await Promise.all([
+            renderEntry(entry),
+            getCollaboratorCountByContent(entry.id),
+          ]);
           return {
             entry,
-            Content,
+            Content: contentResult.Content,
             demandSignal: getDemandSignal(entry, demandStats),
+            collaboratorCount,
           };
         }),
       );

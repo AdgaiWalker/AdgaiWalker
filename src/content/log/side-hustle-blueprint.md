@@ -9,6 +9,7 @@ tags:
   - 产品
 type: project
 form: project
+layout: immersive
 domain: product
 intent: share
 valueMode: utility

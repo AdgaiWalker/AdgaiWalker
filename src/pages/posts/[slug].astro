@@ -257,9 +257,14 @@ const ogDesc = [
               <textarea id="collab-suggestion" name="suggestion" placeholder="如：第一步可以建立静态草稿，或者我对此有不同的实现路径..." rows={4} required maxLength={400}></textarea>
             </div>
             <div class="collab-form-status" id="collab-form-status" hidden></div>
-            <button type="submit" class="collab-submit-btn" id="collab-submit-btn">
-              <span>确认靠近</span>
-            </button>
+            <div class="collab-actions-row">
+              <button type="submit" class="collab-submit-btn" id="collab-submit-btn">
+                <span>确认靠近</span>
+              </button>
+              <a href={`/posts/${entry.id}/canvas`} class="collab-canvas-link-btn" id="collab-canvas-link-btn">
+                <span>进入共创画布</span>
+              </a>
+            </div>
           </form>
         </div>
       </dialog>
@@ -1216,9 +1221,14 @@ const ogDesc = [
     border: 1px solid rgba(239, 68, 68, 0.2);
   }
 
-  .collab-submit-btn {
+  .collab-actions-row {
+    display: flex;
+    gap: 0.75rem;
     margin-top: 0.5rem;
-    width: 100%;
+  }
+
+  .collab-submit-btn {
+    flex: 1;
     padding: 0.75rem;
     border-radius: 0.75rem;
     border: none;
@@ -1238,6 +1248,30 @@ const ogDesc = [
   .collab-submit-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .collab-canvas-link-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 30%, transparent);
+    background: transparent;
+    color: var(--color-parchment);
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .collab-canvas-link-btn:hover {
+    border-color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 8%, transparent);
   }
 </style>
 

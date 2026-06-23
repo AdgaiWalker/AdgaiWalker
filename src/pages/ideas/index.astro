@@ -1,4 +1,4 @@
-﻿---
+---
 import SidebarLayout from '../../layouts/SidebarLayout.astro';
 import { STATUS_LABELS, SITE_EMAIL } from '@/shared/constants';
 import { Icon } from 'astro-icon/components';
@@ -64,7 +64,7 @@ const statusLabel = STATUS_LABELS;
       <div class="tabletop-ambient-glow"></div>
       
       <div class="card-grid" id="ideas-grid">
-        {renderedIdeas.map(({ entry, Content, demandSignal }) => {
+        {renderedIdeas.map(({ entry, Content, demandSignal, collaboratorCount = 0 }) => {
           const status = entry.data.status || 'thinking';
           const isThinking = status === 'thinking';
 
@@ -104,6 +104,12 @@ const statusLabel = STATUS_LABELS;
                           <span class="status-indicator"></span>
                           {statusLabel[status] ?? status}
                         </span>
+                        {collaboratorCount > 0 && (
+                          <span class="collab-count-badge" title={`${collaboratorCount} 位同频者靠近`}>
+                            <Icon name="lucide:users" width={10} height={10} />
+                            {collaboratorCount}人靠近
+                          </span>
+                        )}
                         {demandSignal >= PUBLIC_DEMAND_SIGNAL_MIN && (
                           <span class="demand-signal-badge">
                             <Icon name="lucide:activity" width={10} height={10} />
@@ -427,6 +433,19 @@ const statusLabel = STATUS_LABELS;
     background: rgba(56, 189, 248, 0.1);
     color: rgb(56, 189, 248);
     border: 1px solid rgba(56, 189, 248, 0.2);
+  }
+
+  .collab-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.62rem;
+    font-weight: 750;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(110, 91, 255, 0.1);
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    border: 1px solid rgba(110, 91, 255, 0.2);
   }
 
   .card-title {
