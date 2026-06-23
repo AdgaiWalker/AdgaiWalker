@@ -16,6 +16,17 @@ aiUsePolicy:
   readable: true
   citable: true
   actionable: false
+aiInsights:
+  insight: "以极客的 CLI 命令面板来装载管理个人的 MCP 技能卡牌，是面向高阶开发者和 AI 共创的最佳效率工具。"
+  opportunities:
+    - "完美融合 MCP (Model Context Protocol) 开放标准，极具开发者生态潜力"
+    - "卡牌装载的隐喻相比传统表单更具游戏感和掌控感"
+  risks:
+    - "对于非技术背景的普通用户，CLI 命令行和槽位概念存在一定心智障碍"
+  steps:
+    - "定义卡牌槽位与 CLI 命令行协议的映射规范"
+    - "实现单机版 MCP 卡牌加载及 mock 执行输出"
+    - "对接社区 Plaza，支持拉取他人分享的技能卡牌"
 ---
 
 一个cli 交互面板，面向企业人群做固定的事。在命令面板，放几个skill槽和mcp槽，工具市场按钮导航。idea源于小时候玩西普大陆，一款4399卡牌打怪升级游戏。

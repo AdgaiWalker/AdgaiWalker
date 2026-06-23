@@ -46,6 +46,12 @@ const log = defineCollection({
     series: z.string().optional(),
     seriesOrder: z.number().optional(),
     status: z.enum(['thinking', 'validating', 'building', 'verified', 'archived']).optional(),
+    aiInsights: z.object({
+      insight: z.string().optional(),
+      opportunities: z.array(z.string()).optional(),
+      risks: z.array(z.string()).optional(),
+      steps: z.array(z.string()).optional(),
+    }).optional(),
     rating: z.number().min(1).max(5).optional(),
     url: z.url().optional(),
     qrCode: z.string().optional(),
