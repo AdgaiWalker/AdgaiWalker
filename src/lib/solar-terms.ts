@@ -221,12 +221,12 @@ const solarTermsMap: Record<string, SolarTermData> = {
     themeType: SUMMER_BASE.themeType,
     colors: {
       ...SUMMER_BASE,
-      orb1: 'rgba(14, 165, 233, 0.14)',
-      orb2: 'rgba(0, 229, 255, 0.12)',
-      orb3: 'rgba(56, 189, 248, 0.10)',
-      orb4: 'rgba(255, 214, 10, 0.10)',
-      brand: '#0284C7',
-      brandSecondary: '#38BDF8',
+      orb1: 'rgba(120, 158, 159, 0.14)',
+      orb2: 'rgba(163, 194, 195, 0.12)',
+      orb3: 'rgba(120, 158, 159, 0.10)',
+      orb4: 'rgba(224, 224, 224, 0.08)',
+      brand: '#789E9F', // 天青瓷
+      brandSecondary: '#A3C2C3',
     }
   },
   '小暑': {
