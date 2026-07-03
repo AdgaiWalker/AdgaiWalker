@@ -39,7 +39,7 @@
 /* ========================================================== */
 
 /* 1. 点子 (Dianzi Light - 克制紫 · 暖白) — 默认主题 */
-body.theme-dianzi, body:not([class*="theme-"]) {
+body.theme-dianzi {
   --color-brand: #6E5BFF;        /* 克制紫 */
   --color-brand-glow: rgba(110, 91, 255, 0.12);
   --color-brand-secondary: #8EA7FF; /* 辅助蓝紫 */

@@ -104,7 +104,7 @@ const isHome = Astro.url.pathname === '/';
       stOrb3: term.colors.orb3,
       stOrb4: term.colors.orb4,
     }}>
-      body.theme-solar-term {
+      body.theme-solar-term, body:not([class*="theme-"]) {
         --color-brand: var(--stBrand);
         --color-brand-glow: var(--stBrandGlow);
         --color-brand-secondary: var(--stBrandSecondary);

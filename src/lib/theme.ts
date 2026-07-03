@@ -1,4 +1,4 @@
-export const THEMES = ['solar-term', 'dianzi', 'nature', 'aurora', 'sunset', 'mint'] as const;
+export const THEMES = ['solar-term', 'nature', 'aurora', 'sunset', 'mint'] as const;
 export type ThemeName = typeof THEMES[number];
 
 /** 从 localStorage 读取已保存的主题名 */
