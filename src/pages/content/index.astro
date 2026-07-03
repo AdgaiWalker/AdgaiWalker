@@ -16,6 +16,9 @@ export const prerender = true;
 const allItems = await getPublishedContentItems();
 
 const activeSpace: ContentSpace = 'all';
+// P3-U6：视图切换 —— 流式（默认，单列时间线）vs 网格（紧凑卡片墙）
+// SSR 阶段不读 URL（ prerender 静态生成），客户端按 ?view= 切换，避免 hydration 闪烁用 data-default-view 兜底
+const defaultView = 'stream';
 
 /** 排除 'all' 的具体空间（图例 + 归属计算共用） */
 const concreteSpaces = contentSpaces.filter(
@@ -51,11 +54,17 @@ for (const spaces of itemSpaces.values()) {
 
     <ContentFilterTabs activeSpace={activeSpace} counts={counts} />
 
-    <p class="active-space-note" data-active-space-note aria-live="polite">
-      当前显示：全部内容。
-    </p>
+    <div class="view-toolbar" data-view-toolbar>
+      <p class="active-space-note" data-active-space-note aria-live="polite">
+        当前显示：全部内容。
+      </p>
+      <div class="view-switcher" role="group" aria-label="视图切换">
+        <button class="view-btn is-active" data-view="stream" type="button" aria-pressed="true">流式</button>
+        <button class="view-btn" data-view="grid" type="button" aria-pressed="false">网格</button>
+      </div>
+    </div>
 
-    <div class="stream-list" aria-label="内容流">
+    <div class="stream-list" data-view-list data-default-view={defaultView} aria-label="内容流">
       {allItems.map((item) => (
         <ContentStreamItem item={item} spaces={itemSpaces.get(item.id) ?? []} />
       ))}
@@ -89,6 +98,29 @@ for (const spaces of itemSpaces.values()) {
   .active-space-note { margin: 0.5rem 0 1rem; color: var(--color-muted, #a8a29e); font-size: 0.78rem; }
 
   .stream-list { margin-top: 0.5rem; }
+
+  /* P3-U6：视图工具栏与切换器 */
+  .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0.5rem 0 0.25rem; }
+  .view-toolbar .active-space-note { margin: 0; }
+  .view-switcher { display: inline-flex; gap: 0.2rem; padding: 0.2rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: rgba(255,255,255,0.6); }
+  .view-btn { padding: 0.3rem 0.7rem; border: 0; background: transparent; color: var(--color-muted, #a8a29e); font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; font-family: var(--font-cjk, 'Noto Sans SC'), sans-serif; }
+  .view-btn:hover { color: var(--color-text-muted, #78716c); }
+  .view-btn.is-active { background: var(--color-brand, #c4704a); color: #fff; }
+
+  /* 网格视图：紧凑卡片墙，复用 stream-item 但重排为多列 */
+  [data-view-list][data-mode="grid"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.8rem; margin-top: 0.8rem; }
+  [data-view-list][data-mode="grid"] :global(.stream-item) { border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: rgba(255,255,255,0.5); overflow: hidden; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  [data-view-list][data-mode="grid"] :global(.stream-item:hover) { box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-1px); }
+  [data-view-list][data-mode="grid"] :global(.stream-link) { flex-direction: column; gap: 0.5rem; padding: 0.9rem; height: 100%; box-sizing: border-box; }
+  [data-view-list][data-mode="grid"] :global(.stream-dot) { margin-top: 0; }
+  [data-view-list][data-mode="grid"] :global(.stream-title) { font-size: 0.95rem; }
+  [data-view-list][data-mode="grid"] :global(.stream-blurb) { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  [data-view-list][data-mode="grid"] :global(.stream-meta) { flex-wrap: wrap; gap: 0.35rem; }
+  [data-view-list][data-mode="grid"] :global(.stream-author-meta) { width: 100%; }
+
+  body.theme-aurora .view-switcher,
+  body.theme-sunset .view-switcher,
+  body.theme-mint .view-switcher { background: rgba(0,0,0,0.2); }
 
   .empty-state { padding: 3rem 1rem; text-align: center; color: var(--color-muted, #a8a29e); font-size: 0.9rem; }
 
@@ -146,13 +178,45 @@ for (const spaces of itemSpaces.values()) {
     if (emptyState) emptyState.toggleAttribute('hidden', visibleCount > 0);
   }
 
+  // P3-U6：视图切换 —— 流式 / 网格，URL 参数 ?view= 持久化，popstate 同步
+  const VALID_VIEWS = new Set(['stream', 'grid']);
+  function getRequestedView() {
+    const v = new URLSearchParams(location.search).get('view');
+    return v && VALID_VIEWS.has(v) ? v : 'stream';
+  }
+  function applyView() {
+    const view = getRequestedView();
+    const list = document.querySelector<HTMLElement>('[data-view-list]');
+    if (list) list.dataset.mode = view;
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-view]')) {
+      const isActive = btn.dataset.view === view;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    }
+  }
+  function bindViewSwitcher(signal: AbortSignal) {
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-view]')) {
+      btn.addEventListener('click', () => {
+        const v = btn.dataset.view;
+        if (!v || !VALID_VIEWS.has(v)) return;
+        const url = new URL(location.href);
+        if (v === 'stream') url.searchParams.delete('view');
+        else url.searchParams.set('view', v);
+        history.pushState({}, '', url);
+        applyView();
+      }, { signal });
+    }
+  }
+
   function initContentFilter() {
     contentAbort?.abort();
     contentAbort = new AbortController();
     const { signal } = contentAbort;
 
     updateContentFilter();
-    window.addEventListener('popstate', () => { updateContentFilter(); }, { signal });
+    applyView();
+    bindViewSwitcher(signal);
+    window.addEventListener('popstate', () => { updateContentFilter(); applyView(); }, { signal });
   }
 
   initContentFilter();
