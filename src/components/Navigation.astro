@@ -42,7 +42,6 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
 
 <script>
   import '../scripts/sidebar-state';
-  import { applyTheme, cycleTheme } from '../lib/theme';
 
   let navAbort: AbortController | null = null;
 
@@ -79,14 +78,7 @@ const normalizedPath = currentPath.replace(/\/$/, '') || '/';
     desktopSearchBtn?.addEventListener('click', triggerSearch, { signal });
     mobileSearchBtn?.addEventListener('click', triggerSearch, { signal });
 
-    // --- (c) 全站多主题自适应换肤控制 ---
-    const themeBtn = document.getElementById('nav-theme-toggle');
-    const mobileThemeBtn = document.getElementById('mobile-theme-toggle');
 
-    applyTheme();
-
-    themeBtn?.addEventListener('click', () => cycleTheme(), { signal });
-    mobileThemeBtn?.addEventListener('click', () => cycleTheme(), { signal });
 
     // --- (d) Liquid Sliding Indicator 液态滑动高亮指示器 ---
     const containers = document.querySelectorAll('.nav-links-container');
