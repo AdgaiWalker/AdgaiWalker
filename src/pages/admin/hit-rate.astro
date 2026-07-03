@@ -11,6 +11,7 @@ import {
   FEEDBACK_LABEL,
   FEEDBACK_DIMENSIONS,
 } from '@/services/hit-rate.service';
+import { getSearchMisses } from '@/stores/search.store';
 import type { ContentFeedbackEvent } from '@/stores/ports';
 
 export const prerender = false;
@@ -19,18 +20,22 @@ if (!isAdmin(Astro.request)) {
   return Astro.redirect('/admin/login');
 }
 
+// P1-D01：搜索缺口视图 —— 高频无结果查询即内容缺口信号，访客搜不到 = 该写
 const view = Astro.url.searchParams.get('view') === 'popular'
   ? 'popular'
   : Astro.url.searchParams.get('view') === 'outcome'
     ? 'outcome'
-    : 'matrix';
+    : Astro.url.searchParams.get('view') === 'gaps'
+      ? 'gaps'
+      : 'matrix';
 
-const [contents, topics, needCases, likeLeaderboard, contentFeedback] = await Promise.all([
+const [contents, topics, needCases, likeLeaderboard, contentFeedback, searchMisses] = await Promise.all([
   getPublishedContentItems(),
   getTopicCandidates({ limit: 500 }),
   getRecentNeedCases(2000),
   getLikeLeaderboard(100),
   findRecentContentFeedback(undefined, 2000),
+  getSearchMisses(50),
 ]);
 
 const hitRates = calculateContentHitRates({ contents, topics, needCases });
@@ -104,6 +109,16 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
     .feedback-item-head { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.35rem; }
     .feedback-note { color: #44403c; font-size: 0.8rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
     .feedback-note.empty-note { color: var(--adm-text-faint); }
+    /* P1-D01：内容缺口 —— 高频无结果查询 = 该写但还没写的选题信号 */
+    .gap-intro { font-size: 0.82rem; color: var(--adm-text-dim); margin: 0 0 0.8rem; line-height: 1.7; }
+    .gap-list { display: grid; gap: 0.5rem; }
+    .gap-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.65rem 0.9rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; }
+    .gap-query { flex: 1; min-width: 0; color: var(--adm-text); font-size: 0.9rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+    .gap-count { font-weight: 850; color: #c2410c; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; flex-shrink: 0; }
+    .gap-last { font-size: 0.7rem; color: var(--adm-text-faint); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .gap-actions { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .gap-actions a { font-size: 0.78rem; color: var(--adm-brand-strong); text-decoration: none; padding: 0.4rem 0.7rem; border: 1px solid rgba(53,191,171,0.3); border-radius: 8px; font-weight: 700; }
+    .gap-actions a:hover { background: rgba(53,191,171,0.08); }
     @media (max-width: 760px) {
       .hit-head { flex-direction: column; }
       .lb-row { flex-wrap: wrap; }
@@ -120,6 +135,7 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
       <a href="/admin/hit-rate?view=matrix" class={view === 'matrix' ? 'active' : ''}>反馈矩阵（{hitRates.length}）</a>
       <a href="/admin/hit-rate?view=outcome" class={view === 'outcome' ? 'active' : ''}>双信号结果（{summariesWithSignal.length}）</a>
       <a href="/admin/hit-rate?view=popular" class={view === 'popular' ? 'active' : ''}>热门内容（{likeLeaderboard.length}）</a>
+      <a href="/admin/hit-rate?view=gaps" class={view === 'gaps' ? 'active' : ''}>内容缺口（{searchMisses.length}）</a>
     </nav>
 
     {view === 'matrix' ? (
@@ -248,8 +264,9 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
           ))}
         </section>
       )
-    ) : (
-      likeLeaderboard.length === 0 ? (
+    ) : view === 'popular' ? (
+      // popular 视图：点赞排行
+      (likeLeaderboard.length === 0 ? (
         <div class="empty">还没有点赞数据（Redis 未配置或无点赞记录）。点赞会在访问内容页时累加。</div>
       ) : (
         <section class="lb-list">
@@ -265,7 +282,32 @@ const contentByHref = new Map(contents.map(c => [c.href, c]));
             );
           })}
         </section>
-      )
+      ))
+    ) : (
+      // P1-D01：内容缺口 —— 访客搜了但搜不到的查询，按频率聚合，高频 = 该写但还没写
+      (searchMisses.length === 0 ? (
+        <div class="empty">还没有搜索无结果记录（Redis 未配置或访客还没产生无结果搜索）。<br />访客在搜索框输入但没有命中的关键词会聚合在这里，作为内容缺口信号。</div>
+      ) : (
+        <section>
+          <p class="gap-intro">
+            以下是访客搜索但未命中的查询，按频率排序。高频查询意味着站内缺少对应内容——<strong>这正是选题信号</strong>。
+            点击「生成简报」可把该查询直接带入选题流程。
+          </p>
+          <div class="gap-list">
+            {searchMisses.map((miss) => (
+              <div class="gap-row">
+                <span class="gap-query" title={miss.query}>{miss.query}</span>
+                <span class="gap-count">搜 {miss.count} 次</span>
+                <span class="gap-last">最近 {new Date(miss.lastSeen).toLocaleDateString('zh-CN')}</span>
+              </div>
+            ))}
+          </div>
+          <div class="gap-actions">
+            <a href="/admin/topics?inspiration=">把高频缺口带入选题池 →</a>
+            <a href="/admin/review?view=list">查看需求复盘 →</a>
+          </div>
+        </section>
+      ))
     )}
   </div>
 </AdminLayout>
