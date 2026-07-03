@@ -1,9 +1,9 @@
-export const THEMES = ['solar-term', 'nature', 'aurora', 'sunset', 'mint'] as const;
+export const THEMES = ['solar-term'] as const;
 export type ThemeName = typeof THEMES[number];
 
 /** 从 localStorage 读取已保存的主题名 */
 export function getSavedTheme(): ThemeName {
-  return (localStorage.getItem('walker-theme') as ThemeName) ?? 'solar-term';
+  return 'solar-term';
 }
 
 /** 将指定主题应用到 body（清除旧主题类，添加新类） */
