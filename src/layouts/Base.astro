@@ -3,6 +3,7 @@ import HeadCommon from '../components/shared/HeadCommon.astro';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
 import { Icon } from 'astro-icon/components';
+import { getSolarTerm } from '../lib/solar-terms';
 import '../styles/global.css';
 
 interface Props {
@@ -38,6 +39,8 @@ const {
   brandColor,
   brandSecondaryColor,
 } = Astro.props;
+
+const term = getSolarTerm(new Date());
 
 const bodyStyles = [
   brandColor ? `--color-brand: ${brandColor};` : '',
@@ -85,10 +88,45 @@ const isHome = Astro.url.pathname === '/';
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
 
+    {/* 注入二十四节气「时令共振」主题全局 CSS 变量 */}
+    <style is:global define:vars={{
+      stBrand: term.colors.brand,
+      stBrandGlow: `${term.colors.brand}20`,
+      stBrandSecondary: term.colors.brandSecondary,
+      stBg: term.colors.bg,
+      stCard: term.colors.card,
+      stBorder: term.colors.border,
+      stParchment: term.colors.parchment,
+      stParchmentDim: term.colors.parchmentDim,
+      stMistBg: term.colors.mistBg,
+      stOrb1: term.colors.orb1,
+      stOrb2: term.colors.orb2,
+      stOrb3: term.colors.orb3,
+      stOrb4: term.colors.orb4,
+    }}>
+      body.theme-solar-term {
+        --color-brand: var(--stBrand);
+        --color-brand-glow: var(--stBrandGlow);
+        --color-brand-secondary: var(--stBrandSecondary);
+        --color-bg: var(--stBg);
+        --color-card: var(--stCard);
+        --color-border: var(--stBorder);
+        --color-parchment: var(--stParchment);
+        --color-parchment-dim: var(--stParchmentDim);
+        --color-mist-bg: var(--stMistBg);
+        --orb-color-1: var(--stOrb1);
+        --orb-color-2: var(--stOrb2);
+        --orb-color-3: var(--stOrb3);
+        --orb-color-4: var(--stOrb4);
+        background-color: var(--stBg);
+        color: var(--stParchment);
+      }
+    </style>
   </head>
   <body 
-    class:list={["min-h-screen flex flex-col", theme ? `theme-${theme}` : "theme-dianzi", pureMode ? "reading-mode" : "", hideNav ? "fullscreen-layout" : ""]}
+    class:list={["min-h-screen flex flex-col", theme ? `theme-${theme}` : "theme-solar-term", pureMode ? "reading-mode" : "", hideNav ? "fullscreen-layout" : ""]}
     data-page-theme={theme}
+    data-theme-type={term.themeType}
     style={bodyStyles || undefined}
   >
     {/* 全局环境背景层：自适应晶莹底色，搭载细微噪声格网纹理与光晕 */}

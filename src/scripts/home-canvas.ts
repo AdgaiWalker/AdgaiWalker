@@ -1,5 +1,5 @@
 import { registerLifecycle } from './with-lifecycle';
-
+import { applyTheme, cycleTheme } from '../lib/theme';
 import { gsap } from 'gsap';
 
 let dragFrame = 0;
@@ -200,7 +200,21 @@ function initDraggables(signal: AbortSignal) {
   document.addEventListener('touchend', onDragEnd, { signal });
 }
 
+function initThemeToggle(signal: AbortSignal) {
+  // 应用已保存的主题
+  applyTheme();
 
+  // 目录卡主题切换按钮
+  const canvasToggle = document.getElementById('canvas-theme-toggle');
+  if (canvasToggle) {
+    canvasToggle.addEventListener('click', () => cycleTheme(), { signal });
+  }
+
+  // 监听其他来源的主题变更
+  document.addEventListener('walker-theme-change', ((e: CustomEvent) => {
+    applyTheme(e.detail);
+  }) as EventListener, { signal });
+}
 
 // =========================================
 // Spark! 抽点子盲盒 — 已迁移至 GreetingCard
@@ -213,7 +227,7 @@ function initHomeInteractions() {
   autoFitScale();
   window.addEventListener('resize', autoFitScale, { signal });
   initDraggables(signal);
-
+  initThemeToggle(signal);
   initStatusReactions(signal);
   initClickRipple(signal);
 
