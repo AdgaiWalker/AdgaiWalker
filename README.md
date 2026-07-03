@@ -89,6 +89,7 @@ npm run test
 - 代码与真实实现：本仓库
 - 当前 PRD、plan、todo、architecture、current-state：`.agents/skills/walker-northstar/references/`
 - 归档、ADR、额外材料：`docs/`
+- API 契约文档（67 端点，基于代码核实）：`docs/api/`
 
 `.agents/` 默认不进入本仓库版本管理，它由独立的 `walker-northstar-skill` 仓库保护。
 
