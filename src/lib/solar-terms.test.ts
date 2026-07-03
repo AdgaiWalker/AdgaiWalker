@@ -6,7 +6,7 @@ describe('二十四节气自适应色彩计算测试', () => {
     // 夏至通常在 6 月 21 - 22 日
     const summerSolstice = getSolarTerm(new Date(2026, 5, 22)); // Month = 5 (Jun)
     expect(summerSolstice.name).toBe('夏至');
-    expect(summerSolstice.colors.brand).toBe('#0284C7'); // 默认夏日蓝色
+    expect(summerSolstice.colors.brand).toBe('#35BFAB'); // 翡翠青色
 
     // 冬至通常在 12 月 21 - 22 日
     const winterSolstice = getSolarTerm(new Date(2026, 11, 22)); // Month = 11 (Dec)
