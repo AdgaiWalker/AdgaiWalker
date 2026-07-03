@@ -9,6 +9,6 @@
     }
   ],
   "functions": {
-    "api/match.ts": { "maxDuration": 60 }
+    "index": { "maxDuration": 60 }
   }
 }
