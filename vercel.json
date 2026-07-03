@@ -7,8 +7,5 @@
       "path": "/api/match-process",
       "schedule": "0 2 * * *"
     }
-  ],
-  "functions": {
-    "index": { "maxDuration": 60 }
-  }
+  ]
 }
