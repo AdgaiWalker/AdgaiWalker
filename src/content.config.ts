@@ -16,6 +16,19 @@ const log = defineCollection({
     intent: z.enum(['think', 'record', 'teach', 'share', 'verify', 'showcase', 'reflect', 'connect', 'vent']).optional(),
     valueMode: z.enum(['utility', 'existence', 'both']).optional(),
     
+    // 创作者自定义设置字段
+    theme: z.enum(['nature', 'aurora', 'sunset', 'mint', 'dianzi']).optional(),
+    brandColor: z.string().optional(),
+    brandSecondaryColor: z.string().optional(),
+    collaborative: z.boolean().optional(),
+    showAi: z.boolean().optional(),
+    signature: z.string().optional(),
+    stamp: z.string().optional(),
+    author: z.string().optional(),
+    location: z.string().optional(),
+    environment: z.string().optional(),
+    action: z.string().optional(),
+    
     // 学习指南专属元数据字段
     emoji: z.string().optional(),
     subtitle: z.string().optional(),

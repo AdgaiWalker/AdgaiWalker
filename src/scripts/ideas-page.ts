@@ -1,4 +1,4 @@
-﻿import { gsap } from 'gsap';
+import { gsap } from 'gsap';
 
 export function mountIdeasPage(root: HTMLElement) {
   let ideasAbort: AbortController | null = null;
@@ -154,7 +154,7 @@ export function mountIdeasPage(root: HTMLElement) {
       const flipAction = target.closest('.flip-btn-action');
       const clickBody = target.closest('.card-front');
       const isUnblurred = !container.classList.contains('is-blurred');
-      const isInteractiveChild = target.closest('.card-tag') || target.closest('.status-badge') || target.closest('a');
+      const isInteractiveChild = target.closest('.card-tag') || target.closest('.status-badge') || target.closest('a') || target.closest('.reaction-buttons-bar') || target.closest('[data-help-overlay]');
       const wantsFlip = flipAction || (clickBody && !isInteractiveChild);
       const inner = container.querySelector('.card-inner') as HTMLElement;
 
@@ -376,6 +376,131 @@ export function mountIdeasPage(root: HTMLElement) {
     history.replaceState(null, '', location.pathname);
   }
 
+  function setupReactionsAndHelp(signal: AbortSignal) {
+    const grid = root.querySelector('#ideas-grid');
+    if (!grid) return;
+
+    grid.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      
+      const helpTrigger = target.closest('.help-btn-trigger');
+      if (helpTrigger) {
+        const container = helpTrigger.closest('.card-container') as HTMLElement;
+        const overlay = container?.querySelector('[data-help-overlay]') as HTMLElement;
+        if (overlay) {
+          overlay.hidden = false;
+          e.stopPropagation();
+          return;
+        }
+      }
+
+      const closeHelp = target.closest('[data-close-help]');
+      if (closeHelp) {
+        const overlay = closeHelp.closest('[data-help-overlay]') as HTMLElement;
+        if (overlay) {
+          overlay.hidden = true;
+          e.stopPropagation();
+          return;
+        }
+      }
+
+      const reactionBtn = target.closest('.reaction-btn:not(.help-btn-trigger)');
+      if (reactionBtn) {
+        const type = reactionBtn.getAttribute('data-reaction-type');
+        const container = reactionBtn.closest('.card-container') as HTMLElement;
+        const ideaId = container?.dataset.id;
+        if (!type || !ideaId) return;
+
+        e.stopPropagation();
+
+        if (reactionBtn.classList.contains('is-loading')) return;
+        reactionBtn.classList.add('is-loading');
+
+        try {
+          const res = await fetch(`/api/ideas/${ideaId}/reactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const countEl = reactionBtn.querySelector('[data-count]');
+            if (countEl) {
+              countEl.textContent = data.count.toString();
+            }
+            reactionBtn.classList.add('is-active');
+            
+            gsap.fromTo(reactionBtn, { scale: 0.95 }, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
+          }
+        } catch (err) {
+          console.error('Failed to post reaction:', err);
+        } finally {
+          reactionBtn.classList.remove('is-loading');
+        }
+        return;
+      }
+    }, { signal });
+
+    grid.addEventListener('submit', async (e) => {
+      const form = (e.target as HTMLElement).closest('[data-help-form]') as HTMLFormElement;
+      if (!form) return;
+
+      e.preventDefault();
+      const ideaId = form.getAttribute('data-idea-id');
+      if (!ideaId) return;
+
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const initialText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中...';
+
+      const formData = new FormData(form);
+      const payload = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        helpType: formData.get('helpType'),
+        note: formData.get('note'),
+      };
+
+      try {
+        const res = await fetch(`/api/ideas/${ideaId}/help`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          submitBtn.textContent = '提交成功！';
+          form.reset();
+
+          const container = form.closest('.card-container') as HTMLElement;
+          const helpCountEl = container?.querySelector('.help-btn-trigger [data-count]');
+          if (helpCountEl) {
+            const currentCount = parseInt(helpCountEl.textContent || '0', 10);
+            helpCountEl.textContent = (currentCount + 1).toString();
+          }
+
+          setTimeout(() => {
+            const overlay = form.closest('[data-help-overlay]') as HTMLElement;
+            if (overlay) overlay.hidden = true;
+            submitBtn.disabled = false;
+            submitBtn.textContent = initialText;
+          }, 1000);
+        } else {
+          submitBtn.textContent = '提交失败';
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = initialText;
+          }, 2000);
+        }
+      } catch (err) {
+        console.error('Failed to submit helper interest:', err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = initialText;
+      }
+    }, { signal });
+  }
+
   // 挂载初始与生命周期
   function setup() {
     ideasAbort?.abort();
@@ -388,6 +513,7 @@ export function mountIdeasPage(root: HTMLElement) {
 
     updateIdeasFilter();
     setupCardGSAP(signal);
+    setupReactionsAndHelp(signal);
     setupFilterRouting(signal);
     window.addEventListener('popstate', updateIdeasFilter, { signal });
 
@@ -412,5 +538,3 @@ export function mountIdeasPage(root: HTMLElement) {
     }
   };
 }
-
-

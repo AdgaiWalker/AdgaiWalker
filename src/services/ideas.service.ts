@@ -7,11 +7,10 @@
  */
 
 import type { CollectionEntry } from 'astro:content';
-import type { render } from 'astro:content';
-
 import { getNeedCaseStats, type NeedCaseStats } from '@/conversation/store';
 import { getPublishedIdeas } from '@/knowledge/content';
 import { getCollaboratorCountByContent } from '@/stores/collaborator.store';
+import { createIdeaReactionStore } from '@/stores/idea-reaction.store';
 import {
   getDemandSignal,
   sortIdeasByStatusAndDate,
@@ -23,7 +22,7 @@ export type { IdeaEntry, RenderedIdeaCard } from '@/knowledge/ideas';
 
 export interface IdeasPageData {
   ideas: IdeaEntry[];
-  renderedIdeas: RenderedIdeaCard[];
+  renderedIdeas: (RenderedIdeaCard & { isCommunity: boolean; reactions?: any })[];
 }
 
 export interface IdeasService {
@@ -39,7 +38,7 @@ export interface IdeasServiceDeps {
   /** 注入替代实现，便于测试；生产留空走 content 集合。 */
   fetchIdeas?: () => Promise<IdeaEntry[]>;
   /** 注入替代实现，便于测试；生产留空走 astro:content render。 */
-  renderEntry?: (entry: IdeaEntry) => Promise<{ Content: RenderedIdeaCard['Content'] }>;
+  renderEntry?: (entry: IdeaEntry) => Promise<{ Content: any }>;
 }
 
 export function createIdeasService(deps: IdeasServiceDeps = {}): IdeasService {
@@ -53,23 +52,51 @@ export function createIdeasService(deps: IdeasServiceDeps = {}): IdeasService {
 
   return {
     async getIdeasPageData(): Promise<IdeasPageData> {
-      const [ideas, demandStats] = await Promise.all([
+      const reactionStore = createIdeaReactionStore();
+      
+      const [staticIdeas, communityIdeasRaw, demandStats] = await Promise.all([
         fetchIdeas(),
+        reactionStore.listCommunityIdeas(),
         fetchDemandStats({ days }),
       ]);
 
-      const sortedIdeas = sortIdeasByStatusAndDate(ideas);
+      const communityIdeas: IdeaEntry[] = communityIdeasRaw.map(item => ({
+        id: item.id,
+        collection: 'log' as const,
+        data: {
+          title: item.title,
+          summary: item.summary,
+          date: new Date(item.date),
+          tags: item.tags,
+          status: item.status,
+          type: 'idea' as const,
+          form: 'idea' as const,
+          aiStructure: item.aiStructure,
+        },
+        body: item.rawInput,
+      }));
+
+      const allIdeas = [...staticIdeas, ...communityIdeas];
+      const sortedIdeas = sortIdeasByStatusAndDate(allIdeas);
+
       const renderedIdeas = await Promise.all(
         sortedIdeas.map(async (entry) => {
-          const [contentResult, collaboratorCount] = await Promise.all([
-            renderEntry(entry),
+          const isCommunity = entry.id.startsWith('community-idea-');
+          const [contentResult, collaboratorCount, reactions] = await Promise.all([
+            isCommunity
+              ? null
+              : renderEntry(entry),
             getCollaboratorCountByContent(entry.id),
+            reactionStore.getReactions(entry.id),
           ]);
+
           return {
             entry,
-            Content: contentResult.Content,
+            Content: contentResult ? contentResult.Content : null,
+            isCommunity,
             demandSignal: getDemandSignal(entry, demandStats),
             collaboratorCount,
+            reactions,
           };
         }),
       );

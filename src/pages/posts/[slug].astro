@@ -85,6 +85,12 @@ const contentLabel = getContentLabel(entry.data.form, entry.data.intent);
 const domainLabel = getDomainLabel(entry.data.domain);
 const statusInfo = getStatusSymbol(entry.data.status);
 
+// 创作者及落款时空元数据（带默认 fallback 支撑通用化）
+const author = entry.data.author || entry.data.signature || 'Walker';
+const location = entry.data.location || entry.data.stamp;
+const environment = entry.data.environment;
+const action = entry.data.action || '落笔于';
+
 // 拼装社交分享的带前缀摘要，支持 3 秒判断
 const ogDesc = [
   entry.data.form ? `[${contentLabel.label}${domainLabel ? ` · ${domainLabel}` : ''}]` : '',
@@ -103,6 +109,9 @@ const ogDesc = [
 	  contentId={entry.id}
 	  layout={layout}
 	  form={entry.data.form}
+	  theme={entry.data.theme}
+	  brandColor={entry.data.brandColor}
+	  brandSecondaryColor={entry.data.brandSecondaryColor}
 	>
     {/* 面包屑 — 方向感 */}
     <div class="article-breadcrumb">
@@ -111,26 +120,26 @@ const ogDesc = [
         文章
       </a>
       <span class="breadcrumb-sep">/</span>
-      <time class="breadcrumb-date">{formatDateLocale(entry.data.date)}</time>
-      <span class="breadcrumb-sep">·</span>
-      <span class="breadcrumb-reading-time">{readingTime} 分钟</span>
+      <span class="breadcrumb-reading-time">{readingTime} 分钟阅读</span>
     </div>
 
     {/* 内容声明栏 — 3 秒判断「这篇跟我有没有关系」 */}
     <div class="content-declaration">
-      <span class="declaration-type">
-        <span class="declaration-emoji">{contentLabel.emoji}</span>
-        {contentLabel.label}
-      </span>
+      <span class="declaration-label">{contentLabel.label}</span>
       {domainLabel && (
         <span class="declaration-sep">·</span>
-        <span class="declaration-domain">{domainLabel}</span>
+        <span class="declaration-label">{domainLabel}</span>
       )}
       {entry.data.status && (
         <span class="declaration-sep">·</span>
         <span class="declaration-status-wrap">
-          <DianZiWordmark status={entry.data.status} className="declaration-wordmark-size" />
+          <DianZiWordmark status={entry.data.status} />
         </span>
+      )}
+      {entry.data.form === 'idea' && (
+        <a href={`/posts/${entry.id}/canvas`} class="declaration-canvas-link">
+          进入画布 →
+        </a>
       )}
     </div>
 
@@ -138,6 +147,41 @@ const ogDesc = [
     <h1 class="article-title" data-pagefind-meta="title">
       {entry.data.title}
     </h1>
+
+    {/* 创作者落款时空区 — 有质感的、分开展示的元数据栏 */}
+    <div class="oriental-meta-chips reveal">
+      {/* 1. 作者 */}
+      <div class="meta-chip chip-author">
+        <Icon name="lucide:user" width={12} height={12} class="chip-icon text-brand" />
+        <span class="chip-label">创作者</span>
+        <span class="chip-value">{author}</span>
+      </div>
+
+      {/* 2. 地点与动作 */}
+      {location && (
+        <div class="meta-chip chip-location">
+          <Icon name="lucide:map-pin" width={12} height={12} class="chip-icon text-amber-500" />
+          <span class="chip-label">{action}</span>
+          <span class="chip-value font-medium">{location}</span>
+        </div>
+      )}
+
+      {/* 3. 环境与氛围 */}
+      {environment && (
+        <div class="meta-chip chip-environment">
+          <Icon name="lucide:moon" width={12} height={12} class="chip-icon text-indigo-400" />
+          <span class="chip-label">环境</span>
+          <span class="chip-value">{environment}</span>
+        </div>
+      )}
+      
+      {/* 4. 时间 */}
+      <div class="meta-chip chip-time">
+        <Icon name="lucide:calendar" width={12} height={12} class="chip-icon text-emerald-500" />
+        <span class="chip-label">发布于</span>
+        <span class="chip-value">{formatDateLocale(entry.data.date)}</span>
+      </div>
+    </div>
 
     {/* 封面图 */}
     {coverImage && (
@@ -162,25 +206,25 @@ const ogDesc = [
       <Content components={components} />
     </div>
 
+
+
     {/* 就地编辑器（预渲染隐藏，admin 进入编辑态时激活） */}
     <InlineEditor slug={entry.id} mode="inline" />
 
-    {entry.data.aiInsights && (
-      <div class="ai-insights-panel reveal">
-        <div class="ai-insights-header">
-          <Icon name="lucide:sparkles" width={16} height={16} class="ai-insights-sparkle" />
-          <span class="ai-insights-title">AI 洞察与评估</span>
-        </div>
+    {entry.data.aiInsights && entry.data.showAi !== false && (
+      <div class="insights-inline reveal">
+        <hr class="insights-divider" />
+        <h3 class="insights-heading">洞察</h3>
         
         {entry.data.aiInsights.insight && (
-          <p class="ai-insights-desc">{entry.data.aiInsights.insight}</p>
+          <p class="insights-desc">{entry.data.aiInsights.insight}</p>
         )}
         
-        <div class="ai-insights-grid">
+        <div class="insights-grid">
           {entry.data.aiInsights.opportunities && entry.data.aiInsights.opportunities.length > 0 && (
-            <div class="ai-insight-section">
-              <span class="ai-insight-sec-title">💡 机会</span>
-              <ul class="ai-insight-list">
+            <div class="insight-section">
+              <span class="insight-sec-title">机会</span>
+              <ul class="insight-list">
                 {entry.data.aiInsights.opportunities.map((item: string) => (
                   <li>{item}</li>
                 ))}
@@ -189,9 +233,9 @@ const ogDesc = [
           )}
           
           {entry.data.aiInsights.risks && entry.data.aiInsights.risks.length > 0 && (
-            <div class="ai-insight-section">
-              <span class="ai-insight-sec-title">⚠️ 风险</span>
-              <ul class="ai-insight-list">
+            <div class="insight-section">
+              <span class="insight-sec-title">风险</span>
+              <ul class="insight-list">
                 {entry.data.aiInsights.risks.map((item: string) => (
                   <li>{item}</li>
                 ))}
@@ -200,9 +244,9 @@ const ogDesc = [
           )}
           
           {entry.data.aiInsights.steps && entry.data.aiInsights.steps.length > 0 && (
-            <div class="ai-insight-section ai-insight-section--full">
-              <span class="ai-insight-sec-title">🎯 推荐落地路径</span>
-              <ol class="ai-insight-steps">
+            <div class="insight-section insight-section--full">
+              <span class="insight-sec-title">推荐落地路径</span>
+              <ol class="insight-steps">
                 {entry.data.aiInsights.steps.map((item: string, idx: number) => (
                   <li>
                     <span class="step-num">{idx + 1}</span>
@@ -227,47 +271,58 @@ const ogDesc = [
         与底部 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈 */}
     <BlockFeedback contentId={entry.id} />
 
-    {entry.data.form === 'idea' && (
-      <div class="collab-entry-bar reveal" id="collab-entry-bar" data-content-id={entry.id}>
-        <div class="collab-entry-info">
-          <span class="collab-pulse-dot"></span>
-          <span class="collab-entry-text" id="collab-count-text">正在加载同频者数据...</span>
+    {((entry.data.collaborative === true) || (entry.data.form === 'idea' && entry.data.collaborative !== false)) && (
+      <div class="nls-co-create-hub reveal">
+        <div class="collab-dots-interactive" id="collab-dots-interactive">
+          <span class="collab-dot-main">●</span>
+          <span class="collab-dot-sub">°</span>
+          <div class="collab-ripple" id="collab-ripple"></div>
         </div>
-        <button type="button" class="collab-join-btn" id="collab-join-btn">
-          <Icon name="lucide:arrow-right" width={14} height={14} class="collab-btn-icon" />
-          靠近这个想法
-        </button>
-      </div>
-
-      <dialog class="collab-dialog" id="collab-dialog">
-        <div class="collab-dialog-content">
-          <div class="collab-dialog-header">
-            <h3 class="collab-dialog-title">靠近这个点子</h3>
-            <button type="button" class="collab-dialog-close" id="collab-dialog-close" aria-label="关闭">
-              <Icon name="lucide:x" width={18} height={18} />
+        <p class="collab-invite">这个点子正在寻找同频者。</p>
+        
+        <div class="hub-collab-bar" id="collab-entry-bar" data-content-id={entry.id}>
+          <div class="hub-actions">
+            <a href={`/posts/${entry.id}/canvas`} class="hub-btn hub-btn-primary">
+              进入共创画布
+            </a>
+            <button type="button" class="hub-btn hub-btn-secondary" id="collab-join-btn">
+              靠近这个想法
             </button>
           </div>
-          <form class="collab-form" id="collab-form">
-            <div class="collab-form-group">
-              <label for="collab-role">我的技能身份</label>
-              <input type="text" id="collab-role" name="role" placeholder="如：前端开发 / UI 设计 / 深度体验者" required maxLength={80} />
-            </div>
-            <div class="collab-form-group">
-              <label for="collab-suggestion">我对此的第一步行动建议</label>
-              <textarea id="collab-suggestion" name="suggestion" placeholder="如：第一步可以建立静态草稿，或者我对此有不同的实现路径..." rows={4} required maxLength={400}></textarea>
-            </div>
-            <div class="collab-form-status" id="collab-form-status" hidden></div>
-            <div class="collab-actions-row">
-              <button type="submit" class="collab-submit-btn" id="collab-submit-btn">
-                <span>确认靠近</span>
-              </button>
-              <a href={`/posts/${entry.id}/canvas`} class="collab-canvas-link-btn" id="collab-canvas-link-btn">
-                <span>进入共创画布</span>
-              </a>
-            </div>
-          </form>
         </div>
-      </dialog>
+
+        <span class="collab-count" id="collab-count-text">正在加载同频者数据...</span>
+
+        <dialog class="collab-dialog" id="collab-dialog">
+          <div class="collab-dialog-content">
+            <div class="collab-dialog-header">
+              <h3 class="collab-dialog-title">靠近这个点子</h3>
+              <button type="button" class="collab-dialog-close" id="collab-dialog-close" aria-label="关闭">
+                <Icon name="lucide:x" width={18} height={18} />
+              </button>
+            </div>
+            <form class="collab-form" id="collab-form">
+              <div class="collab-form-group">
+                <label for="collab-role">我的技能身份</label>
+                <input type="text" id="collab-role" name="role" placeholder="如：前端开发 / UI 设计 / 深度体验者" required maxLength={80} />
+              </div>
+              <div class="collab-form-group">
+                <label for="collab-suggestion">我对此的第一步行动建议</label>
+                <textarea id="collab-suggestion" name="suggestion" placeholder="如：第一步可以建立静态草稿，或者我对此有不同的实现路径..." rows={4} required maxLength={400}></textarea>
+              </div>
+              <div class="collab-form-status" id="collab-form-status" hidden></div>
+              <div class="collab-actions-row">
+                <button type="submit" class="collab-submit-btn" id="collab-submit-btn">
+                  <span>确认靠近</span>
+                </button>
+                <a href={`/posts/${entry.id}/canvas`} class="collab-canvas-link-btn" id="collab-canvas-link-btn">
+                  <span>进入共创画布</span>
+                </a>
+              </div>
+            </form>
+          </div>
+        </dialog>
+      </div>
     )}
 
 	    {/* 相关资源 */}
@@ -382,7 +437,7 @@ const ogDesc = [
     <footer class="article-footer">
       <a href={POSTS} class="footer-back">
         <Icon name="lucide:arrow-left" width={14} height={14} />
-        返回文章
+        返回列表
       </a>
 
       {/* 生产资料所有权：一等公民的 Markdown 导出 */}
@@ -410,6 +465,51 @@ const ogDesc = [
     font-size: 0.78rem;
     color: var(--color-parchment-dim);
     opacity: 0.7;
+  }
+
+  /* ===== 创作者落款时空区 ===== */
+  .oriental-meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: -1rem 0 2rem;
+  }
+
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    background: color-mix(in srgb, var(--color-parchment-dim) 3%, transparent);
+    font-size: 0.72rem;
+    line-height: 1;
+    color: var(--color-parchment-dim);
+    transition: all 0.2s ease;
+  }
+
+  .meta-chip:hover {
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 4%, transparent);
+  }
+
+  .chip-icon {
+    opacity: 0.8;
+  }
+
+  .chip-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.55;
+    margin-right: 0.15rem;
+  }
+
+  .chip-value {
+    color: var(--color-parchment);
+    font-weight: 500;
   }
 
   /* P3-A 阅读遥测隐私告知：轻量、不阻断。
@@ -453,48 +553,44 @@ const ogDesc = [
   .content-declaration {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     font-family: var(--font-mono);
     font-size: 0.75rem;
     color: var(--color-parchment-dim);
+    width: 100%;
   }
 
-  .declaration-type {
+  .declaration-label {
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+  }
+
+  .declaration-canvas-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-brand) 15%, transparent);
     font-weight: 700;
-    color: var(--color-brand);
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-left: auto;
+    font-size: 0.75rem;
   }
 
-  .declaration-emoji {
-    font-size: 0.85rem;
+  .declaration-canvas-link:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .declaration-sep {
     opacity: 0.3;
   }
 
-  .declaration-domain {
-    opacity: 0.7;
-  }
-
-  .declaration-status {
+  .declaration-status-wrap {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    opacity: 0.7;
-  }
-
-  .status-symbol {
-    font-weight: 800;
-    color: var(--color-brand);
-    letter-spacing: -0.05em;
   }
 
   /* ===== 标题 ===== */
@@ -877,227 +973,156 @@ const ogDesc = [
     }
   }
 
-  /* ===== AI 洞察面板 ===== */
-  .ai-insights-panel {
-    margin: 2.5rem 0 2rem;
-    padding: 1.5rem;
-    border: 1px dashed rgba(110, 91, 255, 0.25);
+  /* ===== NLS 共创空间 (NLS Co-creation Hub) ===== */
+  .nls-co-create-hub {
+    margin: 4rem 0 3rem;
+    padding: 2.5rem 1.75rem;
+    border: 1px solid var(--color-border);
     border-radius: 1.25rem;
-    background: linear-gradient(135deg, rgba(110, 91, 255, 0.03) 0%, rgba(142, 167, 255, 0.02) 100%);
-    box-shadow: 0 4px 30px rgba(110, 91, 255, 0.02);
+    background: color-mix(in srgb, var(--color-parchment-dim) 1.5%, transparent);
     position: relative;
-    overflow: hidden;
-  }
-  
-  .ai-insights-panel::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(110, 91, 255, 0.02) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .ai-insights-header {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.85rem;
+    text-align: center;
+  }
+
+  /* 引力圆点交互 */
+  .collab-dots-interactive {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
-    z-index: 1;
+    margin-bottom: 0.75rem;
+    height: 24px;
+    width: 60px;
   }
 
-  .ai-insights-sparkle {
-    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+  .collab-dot-main {
+    font-size: 1.4rem;
+    color: var(--color-brand);
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), color 0.4s;
+    line-height: 1;
   }
 
-  .ai-insights-title {
-    font-size: 0.88rem;
-    font-weight: 750;
-    color: var(--color-parchment);
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+  .collab-dot-sub {
+    font-size: 0.9rem;
+    color: var(--color-brand);
+    margin-left: 20px;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    opacity: 0.45;
+    line-height: 1;
   }
 
-  .ai-insights-desc {
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: var(--color-parchment-dim);
-    margin: 0 0 1.2rem;
-    position: relative;
-    z-index: 1;
+  .collab-dots-interactive.attracted .collab-dot-sub {
+    margin-left: 7px;
+    opacity: 1;
+    transform: scale(1.3);
   }
 
-  .ai-insights-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.2rem;
-    position: relative;
-    z-index: 1;
+  .collab-dots-interactive.merged .collab-dot-sub {
+    margin-left: 2px;
+    opacity: 1;
+    transform: scale(1);
   }
 
-  @media (max-width: 640px) {
-    .ai-insights-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+  .collab-ripple {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--color-brand);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1);
+    top: 50%;
+    left: 50%;
+    margin-top: -4px;
+    margin-left: -4px;
+  }
+
+  .animate-ripple {
+    animation: ripple-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes ripple-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(12);
+      opacity: 0;
+      border-width: 0.5px;
     }
   }
 
-  .ai-insight-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .ai-insight-section--full {
-    grid-column: 1 / -1;
-    border-top: 1px dashed rgba(255, 255, 255, 0.08);
-    padding-top: 1rem;
-    margin-top: 0.2rem;
-  }
-
-  .ai-insight-sec-title {
-    font-size: 0.78rem;
-    font-weight: 700;
+  .collab-invite {
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--color-parchment);
+    margin: 0 0 1.5rem;
+    line-height: 1.5;
   }
 
-  .ai-insight-list {
-    margin: 0;
-    padding-left: 1.1rem;
-    list-style-type: disc;
-    font-size: 0.78rem;
-    line-height: 1.6;
-    color: var(--color-parchment-dim);
-  }
-  
-  .ai-insight-list li {
-    margin-bottom: 0.35rem;
-  }
-
-  .ai-insight-steps {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  .hub-collab-bar {
+    width: 100%;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .hub-actions {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
   }
 
-  .ai-insight-steps li {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    font-size: 0.78rem;
-    line-height: 1.5;
-    color: var(--color-parchment-dim);
-  }
-
-  .step-num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: rgba(110, 91, 255, 0.15);
-    color: var(--brand-purple, var(--color-brand, #6E5BFF));
-    font-size: 0.65rem;
-    font-weight: 800;
-    font-family: var(--font-mono);
-    flex-shrink: 0;
-    margin-top: 0.1rem;
-  }
-
-  .step-text {
-    flex: 1;
-  }
-
-  /* ===== 协作入口栏 (Collaboration Entry Bar) ===== */
-  .collab-entry-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    margin: 2.5rem 0 2rem;
-    padding: 1rem 1.5rem;
-    border-radius: 1rem;
-    background: var(--color-inner-bg);
-    border: 1px solid var(--color-border);
-    box-shadow: 0 4px 20px var(--color-inner-shadow);
-  }
-
   @media (max-width: 640px) {
-    .collab-entry-bar {
+    .hub-actions {
       flex-direction: column;
-      align-items: stretch;
-      gap: 1rem;
-      padding: 1.25rem;
+    }
+    .hub-actions .hub-btn {
+      width: 100%;
     }
   }
 
-  .collab-entry-info {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-  }
-
-  .collab-pulse-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: var(--brand-purple, var(--color-brand, #6E5BFF));
-    animation: collab-ping 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-  }
-
-  @keyframes collab-ping {
-    0% { transform: scale(0.9); opacity: 1; }
-    50% { transform: scale(1.6); opacity: 0.4; }
-    100% { transform: scale(0.9); opacity: 1; }
-  }
-
-  .collab-entry-text {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-parchment);
-  }
-
-  .collab-join-btn {
+  .hub-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    padding: 0.55rem 1.1rem;
-    border-radius: 0.75rem;
-    border: 1px solid var(--brand-purple, var(--color-brand, #6E5BFF));
-    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 10%, transparent);
-    color: var(--color-parchment);
-    font-size: 0.82rem;
-    font-weight: 750;
+    padding: 0.45rem 1rem;
+    border-radius: 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: all 0.2s;
+    text-decoration: none;
+    text-align: center;
+    box-sizing: border-box;
   }
 
-  .collab-join-btn:hover {
+  .hub-btn-primary {
     background: var(--brand-purple, var(--color-brand, #6E5BFF));
     color: #ffffff;
-    box-shadow: 0 0 15px rgba(110, 91, 255, 0.4);
-    transform: translateY(-2px);
+    border: 1px solid transparent;
   }
 
-  .collab-join-btn:active {
-    transform: translateY(0);
+  .hub-btn-primary:hover {
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 85%, #ffffff);
+    box-shadow: 0 4px 12px rgba(110, 91, 255, 0.25);
   }
 
-  .collab-btn-icon {
-    transition: transform 0.25s ease;
+  .hub-btn-secondary {
+    background: transparent;
+    color: var(--color-parchment-dim);
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
   }
 
-  .collab-join-btn:hover .collab-btn-icon {
-    transform: translateX(3px);
+  .hub-btn-secondary:hover {
+    border-color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 5%, transparent);
   }
 
   /* ===== 靠近弹窗 (Collaboration Dialog) ===== */
@@ -1290,6 +1315,17 @@ const ogDesc = [
     const form = document.getElementById('collab-form') as HTMLFormElement | null;
     const formStatus = document.getElementById('collab-form-status');
     const submitBtn = document.getElementById('collab-submit-btn');
+    
+    const interactiveDots = document.getElementById('collab-dots-interactive');
+    const ripple = document.getElementById('collab-ripple');
+
+    // 0. 引力悬浮动效
+    joinBtn?.addEventListener('mouseenter', () => {
+      interactiveDots?.classList.add('attracted');
+    });
+    joinBtn?.addEventListener('mouseleave', () => {
+      interactiveDots?.classList.remove('attracted');
+    });
 
     // 1. 获取同频者数据
     async function loadCollaboratorCount() {
@@ -1358,11 +1394,24 @@ const ogDesc = [
           formStatus.className = 'collab-form-status status-success';
           form.reset();
           
+          // 触发合并和涟漪动画
+          if (interactiveDots) {
+            interactiveDots.classList.remove('attracted');
+            interactiveDots.classList.add('merged');
+          }
+          if (ripple) {
+            ripple.classList.add('animate-ripple');
+          }
+          
           setTimeout(() => {
             dialog?.close();
             formStatus.hidden = true;
             loadCollaboratorCount();
-          }, 1500);
+            
+            // 重置动画状态
+            interactiveDots?.classList.remove('merged');
+            ripple?.classList.remove('animate-ripple');
+          }, 1800);
         } else {
           formStatus.textContent = result.error || '靠近失败，请稍后再试。';
           formStatus.className = 'collab-form-status status-error';

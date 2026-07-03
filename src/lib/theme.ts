@@ -1,14 +1,15 @@
-export const THEMES = ['nature', 'aurora', 'sunset', 'mint'] as const;
+export const THEMES = ['solar-term', 'dianzi', 'nature', 'aurora', 'sunset', 'mint'] as const;
 export type ThemeName = typeof THEMES[number];
 
 /** 从 localStorage 读取已保存的主题名 */
 export function getSavedTheme(): ThemeName {
-  return (localStorage.getItem('walker-theme') as ThemeName) ?? 'nature';
+  return (localStorage.getItem('walker-theme') as ThemeName) ?? 'solar-term';
 }
 
 /** 将指定主题应用到 body（清除旧主题类，添加新类） */
 export function applyTheme(name?: ThemeName): ThemeName {
-  const theme = name ?? getSavedTheme();
+  const pageTheme = document.body.getAttribute('data-page-theme') as ThemeName | null;
+  const theme = pageTheme ?? name ?? getSavedTheme();
   document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
   document.body.classList.add(`theme-${theme}`);
   return theme;

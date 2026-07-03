@@ -3,11 +3,8 @@ import { expect, test, type Page } from 'playwright/test';
 /**
  * 内容反馈 E2E（P1-B03）
  *
- * 覆盖：打开真实文章 → 提交 useful → 提交 needs-more + note → 模拟 API 503 后保留表单 → 键盘完成 → 手机宽度无溢出。
- * 前置：需要 dev server（playwright.config.ts 自动起）+ 至少一篇公开文章。
- *
- * 注意：radio input 视觉隐藏（opacity:0），用 label click 触发；
- *       DONE 防重复标记在脚本加载时读取，需在 goto 前清掉再 reload。
+ * 极简反馈即时化适配：
+ * - 覆盖：打开文章 → 提交 useful 即时反馈 → 提交 needs-more + note 抽屉展开与提交 → 503 报错保留输入。
  */
 
 const FIXED_POST = '/posts/side-hustle-blueprint';
@@ -23,7 +20,6 @@ async function loginAsOwner(page: Page): Promise<void> {
 }
 
 async function openFeedbackFresh(page: Page): Promise<void> {
-  // 先清 localStorage 再导航，避免上一次测试的 DONE 标记隐藏表单
   await page.addInitScript((id) => {
     try { localStorage.removeItem(`walker-feedback-done:${id}`); } catch { /* ignore */ }
   }, CONTENT_ID);
@@ -35,26 +31,27 @@ test('提交 useful 反馈后显示已收到', async ({ page }) => {
   await openFeedbackFresh(page);
   const feedback = page.locator('[data-block-feedback]');
 
-  await feedback.locator('label.bf-option:has(input[value="useful"])').click();
-  await expect(feedback.locator('[data-bf-submit]')).toBeEnabled();
-  await feedback.locator('[data-bf-submit]').click();
+  await feedback.locator('[data-signal="useful"]').click();
 
-  await expect(feedback.locator('[data-bf-done]')).toBeVisible();
-  await expect(feedback.locator('[data-bf-done]')).toContainText('已收到');
+  await expect(feedback.locator('[data-bf-success]')).toBeVisible();
+  await expect(feedback.locator('[data-bf-success]')).toContainText('已收到');
 });
 
 test('提交 needs-more 带说明，note 框在选 needs-more 后展开', async ({ page }) => {
   await openFeedbackFresh(page);
   const feedback = page.locator('[data-block-feedback]');
+  const drawer = feedback.locator('[data-bf-note-drawer]');
+  
   // 初始 note 框隐藏
-  await expect(feedback.locator('[data-bf-note-wrap]')).toBeHidden();
+  await expect(drawer).toBeHidden();
   // 选 needs-more 后展开
-  await feedback.locator('label.bf-option:has(input[value="needs-more"])').click();
-  await expect(feedback.locator('[data-bf-note-wrap]')).toBeVisible();
+  await feedback.locator('[data-signal="needs-more"]').click();
+  await expect(drawer).toBeVisible();
+  
   await feedback.locator('[data-bf-note]').fill('缺少一个具体的例子');
-  await feedback.locator('[data-bf-submit]').click();
+  await feedback.locator('[data-bf-note-submit]').click();
 
-  await expect(feedback.locator('[data-bf-done]')).toBeVisible();
+  await expect(feedback.locator('[data-bf-success]')).toBeVisible();
 });
 
 test('API 失败时保留表单与已填内容，可重试', async ({ page }) => {
@@ -66,30 +63,27 @@ test('API 失败时保留表单与已填内容，可重试', async ({ page }) =>
   );
 
   const feedback = page.locator('[data-block-feedback]');
-  await feedback.locator('label.bf-option:has(input[value="outdated"])').click();
-  await feedback.locator('[data-bf-note]').fill('链接已失效');
-  await feedback.locator('[data-bf-submit]').click();
+  await feedback.locator('[data-signal="outdated"]').click();
+  
+  const input = feedback.locator('[data-bf-note]');
+  await input.fill('链接已失效');
+  await feedback.locator('[data-bf-note-submit]').click();
 
-  // 失败时状态显示错误，表单与已填内容保留
+  // 失败时状态显示错误，且保留原有状态
   await expect(feedback.locator('[data-bf-status]')).toContainText('提交失败');
-  await expect(feedback.locator('input[value="outdated"]')).toBeChecked();
-  await expect(feedback.locator('[data-bf-note]')).toHaveValue('链接已失效');
-  await expect(feedback.locator('[data-bf-submit]')).toBeEnabled();
+  await expect(feedback.locator('[data-signal="outdated"]')).toHaveClass(/active/);
+  await expect(input).toHaveValue('链接已失效');
 });
 
 test('键盘可完成整个反馈流程', async ({ page }) => {
   await openFeedbackFresh(page);
   const feedback = page.locator('[data-block-feedback]');
-  // 用键盘聚焦 useful 选项并选中
-  await feedback.locator('input[value="useful"]').focus();
-  await page.keyboard.press('Space');
-  await expect(feedback.locator('[data-bf-submit]')).toBeEnabled();
-  // 用键盘提交
-  await feedback.locator('[data-bf-submit]').focus();
+  
+  // 用键盘聚焦 useful 按钮并回车
+  await feedback.locator('[data-signal="useful"]').focus();
   await page.keyboard.press('Enter');
-  // done 依赖 POST /api/content-feedback 往返。历史上全量套件下 admin-workbench + 本 spec
-  // 共享 IP 限流桶曾导致 429（已由 rate-limiter dev 放宽修复）；仍给宽超时应对 dev server 延迟。
-  await expect(feedback.locator('[data-bf-done]')).toBeVisible({ timeout: 15_000 });
+  
+  await expect(feedback.locator('[data-bf-success]')).toBeVisible({ timeout: 15_000 });
 });
 
 test('手机宽度反馈区无水平溢出', async ({ page }) => {
@@ -121,8 +115,7 @@ test('后台命中率可打开原始反馈列表，说明默认已脱敏', async
   const details = page.locator(`[data-feedback-details="${CONTENT_ID}"]`).first();
   await expect(details).toBeVisible();
   await details.locator('summary').click();
-  // 等 <details> 真正进入 [open] 态（summary click 在某些渲染下不立即 toggle），
-  // 再校验内部隐私元素可见 + 脱敏标记。
+  
   await expect(details).toHaveAttribute('open', '');
   await expect(details.locator('.feedback-privacy')).toBeVisible();
   await expect(details).toContainText('[邮箱已隐藏]');

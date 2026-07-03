@@ -3,6 +3,7 @@ import HeadCommon from '../components/shared/HeadCommon.astro';
 import Navigation from '../components/Navigation.astro';
 import Footer from '../components/Footer.astro';
 import { Icon } from 'astro-icon/components';
+import { getSolarTerm } from '../lib/solar-terms';
 import '../styles/global.css';
 
 interface Props {
@@ -18,6 +19,9 @@ interface Props {
   hideNav?: boolean;
   /** 隐藏页脚（全屏页使用） */
   hideFooter?: boolean;
+  theme?: string;
+  brandColor?: string;
+  brandSecondaryColor?: string;
 }
 
 const {
@@ -31,7 +35,22 @@ const {
   pureMode = false,
   hideNav = false,
   hideFooter = false,
+  theme,
+  brandColor,
+  brandSecondaryColor,
 } = Astro.props;
+
+const term = getSolarTerm(new Date());
+
+const bodyStyles = [
+  brandColor ? `--color-brand: ${brandColor};` : '',
+  brandSecondaryColor ? `--color-brand-secondary: ${brandSecondaryColor};` : '',
+  brandColor ? `--color-brand-glow: ${brandColor}20;` : '',
+  brandColor ? `--orb-color-1: ${brandColor}14;` : '',
+  brandColor ? `--orb-color-2: ${brandColor}12;` : '',
+  brandColor ? `--orb-color-3: ${brandColor}10;` : '',
+  brandColor ? `--orb-color-4: ${brandColor}08;` : '',
+].filter(Boolean).join(' ');
 
 const isHome = Astro.url.pathname === '/';
 ---
@@ -68,8 +87,48 @@ const isHome = Astro.url.pathname === '/';
     
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
+
+    {/* 注入二十四节气「时令共振」主题全局 CSS 变量 */}
+    <style is:global define:vars={{
+      stBrand: term.colors.brand,
+      stBrandGlow: `${term.colors.brand}20`,
+      stBrandSecondary: term.colors.brandSecondary,
+      stBg: term.colors.bg,
+      stCard: term.colors.card,
+      stBorder: term.colors.border,
+      stParchment: term.colors.parchment,
+      stParchmentDim: term.colors.parchmentDim,
+      stMistBg: term.colors.mistBg,
+      stOrb1: term.colors.orb1,
+      stOrb2: term.colors.orb2,
+      stOrb3: term.colors.orb3,
+      stOrb4: term.colors.orb4,
+    }}>
+      body.theme-solar-term {
+        --color-brand: var(--stBrand);
+        --color-brand-glow: var(--stBrandGlow);
+        --color-brand-secondary: var(--stBrandSecondary);
+        --color-bg: var(--stBg);
+        --color-card: var(--stCard);
+        --color-border: var(--stBorder);
+        --color-parchment: var(--stParchment);
+        --color-parchment-dim: var(--stParchmentDim);
+        --color-mist-bg: var(--stMistBg);
+        --orb-color-1: var(--stOrb1);
+        --orb-color-2: var(--stOrb2);
+        --orb-color-3: var(--stOrb3);
+        --orb-color-4: var(--stOrb4);
+        background-color: var(--stBg);
+        color: var(--stParchment);
+      }
+    </style>
   </head>
-  <body class:list={["min-h-screen flex flex-col", pureMode ? "reading-mode" : "", hideNav ? "fullscreen-layout" : ""]}>
+  <body 
+    class:list={["min-h-screen flex flex-col", theme ? `theme-${theme}` : "theme-solar-term", pureMode ? "reading-mode" : "", hideNav ? "fullscreen-layout" : ""]}
+    data-page-theme={theme}
+    data-theme-type={term.themeType}
+    style={bodyStyles || undefined}
+  >
     {/* 全局环境背景层：自适应晶莹底色，搭载细微噪声格网纹理与光晕 */}
     <div class="fixed inset-0 -z-20 overflow-hidden bg-transparent" aria-hidden="true">
       {/* 极弱极细格线网纹 */}
@@ -83,7 +142,7 @@ const isHome = Astro.url.pathname === '/';
       <div class="glow-orb" id="orb-3"></div>
       <div class="glow-orb" id="orb-4"></div>
       {/* 模糊雾罩，过滤光晕边缘，实现晶莹朦胧感 */}
-      <div id="mist-overlay" class="absolute inset-0 z-0 pointer-events-none backdrop-blur-[120px] saturate-[140%] transition-all duration-1000"></div>
+      <div id="mist-overlay" class="absolute inset-0 z-0 pointer-events-none backdrop-blur-[160px] saturate-[140%] transition-all duration-1000"></div>
     </div>
     
     {/* 鼠标跟随光晕 */}

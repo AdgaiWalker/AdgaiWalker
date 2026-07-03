@@ -4,6 +4,7 @@ import AuthChip from '../auth/AuthChip.astro';
 import { Icon } from 'astro-icon/components';
 import { CONTENT, ABOUT, LEARN, TOOLS, IDEAS, PROJECTS, buildPostPath } from '@/shared/routes';
 import type { CollectionEntry } from 'astro:content';
+import { getSolarTerm } from '@/lib/solar-terms';
 
 interface Props {
   recentLogs: CollectionEntry<'log'>[];
@@ -14,6 +15,8 @@ interface Props {
 
 const { recentLogs, featuredLog, recentPosts, recentIdeas } = Astro.props;
 const traceLog = featuredLog || recentLogs[0];
+
+const term = getSolarTerm(new Date());
 ---
 
 <div id="canvas-container" class="fixed inset-0 overflow-hidden select-none pointer-events-auto z-0 flex items-center justify-center">
@@ -22,7 +25,14 @@ const traceLog = featuredLog || recentLogs[0];
   <AuthChip variant="pill" />
 
 
-  <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex justify-center items-center">
+  <div id="desktop-canvas" class="absolute w-[820px] pointer-events-none transition-transform duration-300 origin-center flex flex-col items-center gap-6">
+    <!-- 季节性诗意横幅 -->
+    <div class="seasonal-announcement pointer-events-auto pop-in" style="animation-delay: 0s;">
+      <span class="seasonal-term">{term.name} · {term.english}</span>
+      <span class="seasonal-sep">•</span>
+      <span class="seasonal-poetic">{term.poetic}</span>
+    </div>
+
     <div class="grid grid-cols-[280px_400px] justify-center gap-6 items-start w-full relative pb-4 pointer-events-auto px-4">
 
       <!-- 左栏：身份条 + 快速入口 + 最近文章 -->
@@ -106,13 +116,7 @@ const traceLog = featuredLog || recentLogs[0];
 </div>
 
 <style>
-  /* 画布内 panel-glass 亮色主题 */
-  :global(body:not(.theme-aurora):not(.theme-sunset):not(.theme-mint)) #canvas-container :global(.panel-glass) {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(32px);
-    border: 1.5px solid rgba(255, 255, 255, 0.9);
-    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+
 
 
   .pop-in {
@@ -299,7 +303,7 @@ const traceLog = featuredLog || recentLogs[0];
     transition: box-shadow 0.35s ease, transform 0.35s ease;
   }
   .draggable-card:hover {
-    box-shadow: 0 8px 32px rgba(53, 191, 171, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 8px 32px color-mix(in srgb, var(--color-brand) 8%, transparent), 0 2px 12px rgba(0, 0, 0, 0.04);
   }
 
   @keyframes ripple-out {
@@ -311,7 +315,7 @@ const traceLog = featuredLog || recentLogs[0];
     width: 200px;
     height: 200px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(53, 191, 171, 0.18) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-brand) 18%, transparent) 0%, transparent 70%);
     pointer-events: none;
     z-index: 50;
     animation: ripple-out 0.55s ease-out forwards;
@@ -407,6 +411,40 @@ const traceLog = featuredLog || recentLogs[0];
   .quick-link span {
     font-size: 0.6rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* ===== 季节性诗意横幅 ===== */
+  .seasonal-announcement {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 18px;
+    border-radius: 99px;
+    background: var(--color-inner-bg, rgba(255, 255, 255, 0.4));
+    border: 1px solid var(--color-border, rgba(0, 0, 0, 0.04));
+    backdrop-filter: blur(16px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
+    margin-bottom: -4px;
+  }
+  .seasonal-term {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--color-brand);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .seasonal-sep {
+    font-size: 0.7rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.35;
+  }
+  .seasonal-poetic {
+    font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-parchment-dim);
     letter-spacing: 0.04em;
   }
 

@@ -41,6 +41,9 @@ interface Props {
   layout?: ReadingLayout;
   /** 内容形式（form），用于 CSS 微调阅读体验 */
   form?: string;
+  theme?: string;
+  brandColor?: string;
+  brandSecondaryColor?: string;
 }
 
 const {
@@ -50,6 +53,9 @@ const {
   feedback = false,
   contentId = '',
   form = '',
+  theme,
+  brandColor,
+  brandSecondaryColor,
   ...seoProps
 } = Astro.props;
 const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
@@ -57,7 +63,7 @@ const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
 const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
 ---
 
-<Base {...seoProps} pureMode={false}>
+<Base {...seoProps} pureMode={false} theme={theme} brandColor={brandColor} brandSecondaryColor={brandSecondaryColor}>
   <!-- 沉浸式阅读区域 -->
   <div class="reading-space" id="reading-space" data-content-id={contentId} data-form={form}>
     <!-- 左边缘提示区 — 侧边栏幽灵 -->
@@ -106,27 +112,26 @@ const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
       </div>
     )}
 
-    <!-- TOC 侧边栏 — fixed 在文章右侧空白区，不挤文章；可折叠 -->
+    <!-- TOC 侧边栏与展开按钮包装器 — absolute 定位，内部 sticky 齐平内容 -->
     {hasToc && (
-      <aside class="toc-sidebar" id="toc-sidebar" aria-label="文章目录">
-        <div class="toc-sidebar-inner">
-          <div class="toc-sidebar-header">
-            <span class="toc-sidebar-title">本文目录</span>
-            <button class="toc-collapse-btn" id="toc-collapse-btn" type="button" aria-label="收起目录">
-              <Icon name="lucide:chevrons-right" width={15} height={15} />
-            </button>
+      <div class="toc-wrapper">
+        <aside class="toc-sidebar" id="toc-sidebar" aria-label="文章目录">
+          <div class="toc-sidebar-inner">
+            <div class="toc-sidebar-header">
+              <span class="toc-sidebar-title">本文目录</span>
+              <button class="toc-collapse-btn" id="toc-collapse-btn" type="button" aria-label="收起目录">
+                <Icon name="lucide:chevrons-right" width={15} height={15} />
+              </button>
+            </div>
+            <TableOfContents headings={headings} instanceId="ghost" />
           </div>
-          <TableOfContents headings={headings} instanceId="ghost" />
-        </div>
-      </aside>
-    )}
+        </aside>
 
-    <!-- TOC 折叠后的展开按钮（贴在 TOC 原位置） -->
-    {hasToc && (
-      <button class="toc-expand-btn" id="toc-expand-btn" type="button" aria-label="展开目录" hidden>
-        <Icon name="lucide:chevrons-left" width={15} height={15} />
-        <span class="toc-expand-label">目录</span>
-      </button>
+        <button class="toc-expand-btn" id="toc-expand-btn" type="button" aria-label="展开目录" hidden>
+          <Icon name="lucide:chevrons-left" width={15} height={15} />
+          <span class="toc-expand-label">目录</span>
+        </button>
+      </div>
     )}
   </div>
 </Base>
@@ -196,18 +201,31 @@ const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
     border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
   }
 
-  /* ===== TOC 侧边栏 — fixed 在文章右侧空白区，不挤文章 ===== */
-  /* 文章 max-width 700px 居中，右边缘 = 视口中心 + 350px */
-  /* TOC 放在文章右边缘 + 1.5rem 间距处 */
-  .toc-sidebar {
-    position: fixed;
-    top: 6rem;
+  /* ===== TOC 侧边栏包装器 — absolute 定位，不挤文章 ===== */
+  .toc-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
     left: calc(50% + var(--cs-toc-offset));
+    width: 200px;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* 窄屏：TOC包装器和展开按钮全部隐藏（屏幕放不下） */
+  @media (max-width: 1180px) {
+    .toc-wrapper { display: none !important; }
+  }
+
+  .toc-sidebar {
+    position: sticky;
+    top: 6rem;
+    margin-top: 15.5rem;
     width: 200px;
     max-height: calc(100vh - 8rem);
     overflow-y: auto;
-    z-index: 20;
     transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: auto;
   }
   .toc-sidebar.is-collapsed {
     opacity: 0;
@@ -258,9 +276,9 @@ const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
 
   /* 展开按钮 — TOC 折叠后，贴在 TOC 原位置（文章右边） */
   .toc-expand-btn {
-    position: fixed;
+    position: sticky;
     top: 6rem;
-    left: calc(50% + var(--cs-toc-offset));
+    margin-top: 15.5rem;
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -273,11 +291,11 @@ const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
-    z-index: 20;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    pointer-events: auto;
   }
   .toc-expand-btn:hover {
     color: var(--color-brand);
@@ -286,11 +304,6 @@ const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
   }
   .toc-expand-btn[hidden] { display: none; }
   .toc-expand-label { line-height: 1; }
-
-  /* 窄屏：TOC + 按钮全部隐藏（屏幕放不下） */
-  @media (max-width: 1180px) {
-    .toc-sidebar, .toc-expand-btn { display: none !important; }
-  }
   /* ===== 左边缘提示区 ===== */
   .sidebar-ghost-hint {
     position: fixed;

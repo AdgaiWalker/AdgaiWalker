@@ -7,7 +7,7 @@ import { createIdeasService } from '@/services/ideas.service';
 import { formatDateCompact } from '@/shared/format';
 import { buildPostPath } from '@/shared/routes';
 
-export const prerender = true;
+export const prerender = false;
 
 const { ideas, renderedIdeas } = await createIdeasService().getIdeasPageData();
 const statusLabel = STATUS_LABELS;
@@ -24,10 +24,14 @@ const statusLabel = STATUS_LABELS;
 >
   <div class="space-y-6" data-ideas-page>
     <!-- 简短说明与引导 -->
-    <div class="intro-description panel-glass p-5 rounded-2xl border border-border">
-      <p class="text-xs sm:text-sm text-parchment-dim leading-relaxed">
-        💡 <strong>冒出来的想法，开放给所有人。</strong> 这里是我正在构思或推动的小项目与创意点子。如果你看中了哪张卡牌，欢迎加入讨论、一起动手让它落地。<strong>有点子，先动手，再开口。</strong>
+    <div class="intro-description panel-glass p-5 rounded-2xl border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <p class="text-xs sm:text-sm text-parchment-dim leading-relaxed max-w-2xl">
+        💡 <strong>让你的点子被看见、被回应。</strong> 这里不仅有我的规划，也欢迎你发布灵感。AI 整理提效，遇见需要它的人。<strong>有点子，先动手，再开口。</strong>
       </p>
+      <a href="/ideas/new" class="new-idea-btn shrink-0">
+        <Icon name="lucide:plus" width={14} height={14} />
+        我有新点子
+      </a>
     </div>
 
     <!-- 状态筛选标签栏 -->
@@ -64,7 +68,7 @@ const statusLabel = STATUS_LABELS;
       <div class="tabletop-ambient-glow"></div>
       
       <div class="card-grid" id="ideas-grid">
-        {renderedIdeas.map(({ entry, Content, demandSignal, collaboratorCount = 0 }) => {
+        {renderedIdeas.map(({ entry, Content, demandSignal, collaboratorCount = 0, isCommunity, reactions }) => {
           const status = entry.data.status || 'thinking';
           const isThinking = status === 'thinking';
 
@@ -110,6 +114,12 @@ const statusLabel = STATUS_LABELS;
                             {collaboratorCount}人靠近
                           </span>
                         )}
+                        {reactions && (reactions.need > 0 || reactions.thought_before > 0) && (
+                          <span class="reactions-count-badge" title={`${reactions.need}人需要，${reactions.thought_before}人想过`}>
+                            <Icon name="lucide:flame" width={10} height={10} />
+                            {reactions.need + reactions.thought_before} 引力
+                          </span>
+                        )}
                         {demandSignal >= PUBLIC_DEMAND_SIGNAL_MIN && (
                           <span class="demand-signal-badge">
                             <Icon name="lucide:activity" width={10} height={10} />
@@ -150,35 +160,94 @@ const statusLabel = STATUS_LABELS;
 
                 <!-- 背面 (详情) -->
                 <div class="card-face card-back">
-                  <div class="card-back-container">
+                  <div class="card-back-container relative">
                     <!-- 背面头部 -->
                     <div class="card-back-header">
                       <div class="flex-1 min-w-0">
-                        <span class="text-[9px] font-mono tracking-widest text-brand uppercase">IDEA DETAILS / 深度规划</span>
+                        <span class="text-[9px] font-mono tracking-widest text-brand uppercase">
+                          {isCommunity ? "COMMUNITY IDEA / 社区提报" : "IDEA DETAILS / 深度规划"}
+                        </span>
                         <h4 class="card-back-title">{entry.data.title}</h4>
                       </div>
                     </div>
 
                     <!-- 详情区域 - 带原生滚动条与视觉淡出指示器 -->
-                    <div class="card-back-scroll-wrapper relative flex-grow overflow-hidden flex flex-col mb-3">
+                    <div class="card-back-scroll-wrapper relative flex-grow overflow-hidden flex flex-col mb-2">
                       <div class="card-back-scroll scrollable-y flex-grow">
                         <div class="prose-mini">
-                          <Content />
+                          {isCommunity ? (
+                            <Content aiStructure={entry.data.aiStructure} />
+                          ) : (
+                            <Content />
+                          )}
                         </div>
                       </div>
                       <div class="scroll-fade-overlay pointer-events-none"></div>
                     </div>
 
+                    {/* 我能帮表单抽屉 overlay */}
+                    <div class="help-form-overlay" data-help-overlay hidden>
+                      <form class="help-form" data-help-form data-idea-id={entry.id}>
+                        <div class="help-form-header">
+                          <span class="text-xs font-bold text-brand">🤝 提报合作意向</span>
+                          <button type="button" class="close-help-btn" data-close-help>&times;</button>
+                        </div>
+                        <div class="space-y-2 mt-2">
+                          <input type="text" placeholder="你的名字" required name="name" class="help-input" />
+                          <input type="email" placeholder="电子邮箱" required name="email" class="help-input" />
+                          <select name="helpType" required class="help-input select-input">
+                            <option value="" disabled selected>选择你的擅长领域...</option>
+                            <option value="tech">💻 编程/技术</option>
+                            <option value="design">🎨 设计/视觉</option>
+                            <option value="operation">📢 运营/增长</option>
+                            <option value="content">✍️ 内容/文案</option>
+                            <option value="other">💡 其它支持</option>
+                          </select>
+                          <textarea placeholder="你想怎么帮？(简短描述)" required name="note" class="help-textarea" rows="2"></textarea>
+                          <button type="submit" class="help-submit-btn">
+                            确认提交
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* 互动反应按钮栏 */}
+                    <div class="reaction-buttons-bar" data-idea-id={entry.id}>
+                      <button type="button" class="reaction-btn" data-reaction-type="need" title="我需要这个点子变成现实">
+                        <span>💡 我需要</span>
+                        <span class="reaction-count" data-count="need">{reactions?.need || 0}</span>
+                      </button>
+                      <button type="button" class="reaction-btn" data-reaction-type="thought_before" title="我也曾想过这个方案">
+                        <span>👍 我也想过</span>
+                        <span class="reaction-count" data-count="thought_before">{reactions?.thought_before || 0}</span>
+                      </button>
+                      <button type="button" class="reaction-btn help-btn-trigger" data-reaction-type="can_help" title="我愿意提供能力支持共创">
+                        <span>🤝 我能帮</span>
+                        <span class="reaction-count" data-count="can_help">{reactions?.can_help || 0}</span>
+                      </button>
+                    </div>
+
                     <!-- 底部返回与连结 -->
                     <div class="card-back-footer">
-                      <button type="button" class="flip-back-btn">
-                        <Icon name="lucide:arrow-left" width={12} height={12} />
-                        返回牌面
-                      </button>
-                      <a href={buildPostPath(entry.id)} class="read-full-link">
-                        阅读全文
-                        <Icon name="lucide:arrow-up-right" width={12} height={12} />
-                      </a>
+                      {isCommunity ? (
+                        <div class="canvas-direct-link opacity-50 cursor-not-allowed">社区提报点子</div>
+                      ) : (
+                        <a href={`/posts/${entry.id}/canvas`} class="canvas-direct-link">
+                          进入共创画布
+                        </a>
+                      )}
+                      <div class="card-back-footer-row">
+                        <button type="button" class="flip-back-btn">
+                          返回
+                        </button>
+                        {isCommunity ? (
+                          <div class="read-full-link opacity-50">无全文</div>
+                        ) : (
+                          <a href={buildPostPath(entry.id)} class="read-full-link">
+                            阅读全文 →
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -315,20 +384,27 @@ const statusLabel = STATUS_LABELS;
 
   /* ------------------- Card Front 正面 (全息毛玻璃) ------------------- */
   .card-front {
-    background: var(--color-card);
-    backdrop-filter: blur(40px) saturate(200%);
-    -webkit-backdrop-filter: blur(40px) saturate(200%);
-    border: 1px solid var(--color-border);
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.06);
     cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   }
 
   .card-container:hover .card-front {
     /* transform: translateY(-12px) rotate(0.8deg); */ /* GSAP 接管 */
-    border-color: rgba(var(--color-brand-rgb), 0.45);
+    border-color: var(--color-brand);
     box-shadow: 
-      inset 0 1px 3px rgba(255, 255, 255, 0.15),
-      0 20px 40px -8px var(--color-brand-glow),
-      0 8px 16px -4px rgba(0, 0, 0, 0.2);
+      0 6px 20px rgba(110, 91, 255, 0.08),
+      0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+
+  body.theme-aurora .card-front,
+  body.theme-sunset .card-front,
+  body.theme-mint .card-front {
+    background: var(--color-card);
+    backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid var(--color-border);
+    box-shadow: none;
   }
 
   body.theme-aurora .card-container:hover .card-front,
@@ -645,10 +721,39 @@ const statusLabel = STATUS_LABELS;
 
   .card-back-footer {
     display: flex;
-    align-items: center;
-    gap: 0.65rem;
+    flex-direction: column;
+    gap: 0.5rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--color-border);
+  }
+
+  .card-back-footer-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .canvas-direct-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.65rem;
+    background: var(--color-brand);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 850;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .canvas-direct-link:hover {
+    background: var(--color-brand-secondary, color-mix(in srgb, var(--color-brand) 85%, #ffffff));
+    box-shadow: 0 4px 12px var(--color-brand-glow);
   }
 
   .flip-back-btn {
@@ -682,18 +787,20 @@ const statusLabel = STATUS_LABELS;
     flex: 1;
     padding: 0.45rem 0.7rem;
     border-radius: 0.65rem;
-    background: var(--color-brand);
-    color: #ffffff;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-parchment-dim);
     font-size: 0.72rem;
-    font-weight: 800;
+    font-weight: 700;
     text-decoration: none;
     transition: all 0.2s ease;
     text-align: center;
   }
 
   .read-full-link:hover {
-    background: var(--color-brand-secondary);
-    box-shadow: 0 4px 12px var(--color-brand-glow);
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+    background: var(--color-brand-glow);
   }
 
   /* ------------------- Accessibility Focus Rings (无障碍焦点环) ------------------- */
@@ -1078,6 +1185,172 @@ const statusLabel = STATUS_LABELS;
       width: 100px;
       height: 100px;
     }
+  }
+
+  /* ===== 我有新点子按钮 ===== */
+  .new-idea-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1.25rem;
+    border-radius: 999px;
+    background: var(--color-brand);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px var(--color-brand-glow);
+  }
+  .new-idea-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px var(--color-brand-glow);
+    opacity: 0.95;
+  }
+
+  /* 引力微章 */
+  .reactions-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brand) 20%, transparent);
+    color: var(--color-brand);
+    font-size: 0.65rem;
+    font-weight: 800;
+  }
+
+  /* 互动按钮栏 */
+  .reaction-buttons-bar {
+    display: flex;
+    gap: 0.35rem;
+    margin-bottom: 0.65rem;
+    position: relative;
+    z-index: 10;
+  }
+  .reaction-btn {
+    flex: 1;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0.4rem 0.2rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--color-parchment-dim) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+    color: var(--color-parchment-dim);
+    font-size: 0.62rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .reaction-btn:hover {
+    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+    color: var(--color-brand);
+  }
+  .reaction-btn.is-active {
+    background: color-mix(in srgb, var(--color-brand) 12%, transparent);
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+  .reaction-count {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 800;
+    opacity: 0.8;
+  }
+
+  /* 帮手表单遮罩层 */
+  .help-form-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--color-card);
+    backdrop-filter: blur(16px);
+    border-radius: inherit;
+    z-index: 50;
+    padding: 1.25rem;
+    box-sizing: border-box;
+    animation: fade-in 0.2s ease;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .help-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.35rem;
+  }
+  .close-help-btn {
+    font-size: 1.2rem;
+    line-height: 1;
+    color: var(--color-parchment-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .close-help-btn:hover {
+    color: var(--color-parchment);
+  }
+  .help-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.35rem;
+    border: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-parchment-dim) 4%, transparent);
+    color: var(--color-parchment);
+    font-size: 0.72rem;
+    margin-bottom: 0.35rem;
+  }
+  .help-input:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    background: var(--color-card);
+  }
+  .select-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 0.8em;
+  }
+  .help-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.35rem;
+    border: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-parchment-dim) 4%, transparent);
+    color: var(--color-parchment);
+    font-size: 0.72rem;
+    resize: none;
+    margin-bottom: 0.45rem;
+  }
+  .help-textarea:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    background: var(--color-card);
+  }
+  .help-submit-btn {
+    width: 100%;
+    padding: 0.45rem;
+    border-radius: 0.35rem;
+    border: none;
+    background: var(--color-brand);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  .help-submit-btn:hover {
+    opacity: 0.9;
   }
 </style>
 

@@ -10,6 +10,10 @@ form: article
 domain: philosophy
 intent: record
 valueMode: existence
+author: "Walker"
+action: "书于"
+location: "行舟"
+environment: "夜雨"
 related: [我的畏惧也是动力, 渡论构建]
 aiUsePolicy:
   level: AI-2

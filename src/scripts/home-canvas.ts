@@ -101,7 +101,7 @@ function initDraggables(signal: AbortSignal) {
       
       gsap.to(activeItem, {
         scale: 1.045,
-        boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.35), 0 10px 22px -8px rgba(0, 0, 0, 0.2), 0 0 20px rgba(53, 191, 171, 0.15)',
+        boxShadow: '0 30px 60px -12px rgba(0, 0, 0, 0.35), 0 10px 22px -8px rgba(0, 0, 0, 0.2), 0 0 20px var(--color-brand-glow)',
         duration: 0.3,
         ease: 'power2.out'
       });
@@ -178,7 +178,7 @@ function initDraggables(signal: AbortSignal) {
       skewX: 0,
       rotate: 0,
       scale: 1.0,
-      boxShadow: '0 8px 32px rgba(53, 191, 171, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04)',
+      boxShadow: '0 8px 32px var(--color-brand-glow), 0 2px 12px rgba(0, 0, 0, 0.04)',
       duration: 0.85,
       ease: 'power3.out', // beautiful decaying damping easing
       onComplete: () => {

@@ -48,15 +48,15 @@ const sparksJson = JSON.stringify(sparks);
   <!-- 头像与气泡区域 -->
   <div class="relative flex flex-col items-center mb-4 shrink-0">
     <!-- 悬停气泡 -->
-    <div class="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 scale-75 opacity-0 pointer-events-none z-30 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg transition-all duration-300 ease-out w-max max-w-[240px] sm:max-w-[280px] text-center" id="reaction-bubble" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border: 1.5px solid var(--color-brand, #35bfab); box-shadow: 0 10px 25px -5px var(--color-brand-glow); transition-property: opacity, transform;">
-      <span class="text-[12.5px] font-body font-bold leading-normal inline-block transition-all duration-300" id="reaction-text" style="color: var(--color-brand, #35bfab);">探索中</span>
-      <div class="absolute bottom-[-5.5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-r border-b" id="reaction-arrow" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border-color: var(--color-brand, #35bfab);"></div>
+    <div class="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 scale-75 opacity-0 pointer-events-none z-30 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg transition-all duration-300 ease-out w-max max-w-[240px] sm:max-w-[280px] text-center" id="reaction-bubble" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border: 1.5px solid var(--color-brand); box-shadow: 0 10px 25px -5px var(--color-brand-glow); transition-property: opacity, transform;">
+      <span class="text-[12.5px] font-body font-bold leading-normal inline-block transition-all duration-300" id="reaction-text" style="color: var(--color-brand);">探索中</span>
+      <div class="absolute bottom-[-5.5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-r border-b" id="reaction-arrow" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border-color: var(--color-brand);"></div>
     </div>
 
     <!-- 头像 -->
-    <div class="avatar-ring w-[84px] h-[84px] rounded-full flex items-center justify-center relative overflow-hidden border-2 shadow-[0_4px_16px_rgba(53,191,171,0.06)] shrink-0 transition-all duration-500" id="avatar-ring" style="border-color: var(--color-border, #ffffff);">
+    <div class="avatar-ring w-[84px] h-[84px] rounded-full flex items-center justify-center relative overflow-hidden border-2 shadow-[0_4px_16px_var(--color-brand-glow)] shrink-0 transition-all duration-500" id="avatar-ring" style="border-color: var(--color-border, #ffffff);">
       <Image src={avatar} alt="秋知" width={84} height={84} class="w-full h-full object-cover transition-transform duration-500" id="avatar-img" />
-      <div class="absolute inset-0 rounded-full opacity-0 transition-opacity duration-500 pointer-events-none" id="avatar-glow" style="background: radial-gradient(circle at 50% 50%, rgba(53,191,171,0.25) 0%, transparent 70%);"></div>
+      <div class="absolute inset-0 rounded-full opacity-0 transition-opacity duration-500 pointer-events-none" id="avatar-glow" style="background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-brand) 25%, transparent) 0%, transparent 70%);"></div>
     </div>
   </div>
 
@@ -64,13 +64,13 @@ const sparksJson = JSON.stringify(sparks);
   <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-[40px] z-20" id="particle-container"></div>
 
   <!-- 动态问候语 -->
-  <div class="text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-1.5 transition-all duration-500" id="greeting-time-tag" style="color: var(--color-brand, #35bfab);">
+  <div class="text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-1.5 transition-all duration-500" id="greeting-time-tag" style="color: var(--color-brand);">
     GOOD MORNING
   </div>
 
   <!-- 问候语内容 -->
   <h2 class="font-heading text-parchment text-[17px] font-medium leading-relaxed tracking-wide transition-opacity duration-300" id="greeting-heading">
-    我是<span class="font-bold text-[20px] mx-1" style="color: var(--color-brand, #35bfab);">秋知</span>，很高兴认识你！
+    我是<span class="font-bold text-[20px] mx-1" style="color: var(--color-brand);">秋知</span>，很高兴认识你！
   </h2>
 
   <div class="mt-2 max-w-[200px]">
@@ -100,8 +100,8 @@ const sparksJson = JSON.stringify(sparks);
       <span class="social-label">抖音</span>
     </a>
     <a href={`mailto:${SITE_EMAIL}`} class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="Email">
-      <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(53,191,171,0.08);">
-        <Icon name="lucide:mail" width={14} height={14} style="color: var(--color-brand, #35bfab);" />
+      <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: color-mix(in srgb, var(--color-brand) 8%, transparent);">
+        <Icon name="lucide:mail" width={14} height={14} style="color: var(--color-brand);" />
       </span>
       <span class="social-label">邮箱</span>
     </a>
@@ -111,7 +111,7 @@ const sparksJson = JSON.stringify(sparks);
 <style>
   /* 悬停：头像光晕 + 微放大 */
   .greeting-card:hover .avatar-ring {
-    box-shadow: 0 0 24px rgba(53, 191, 171, 0.2), 0 0 48px rgba(53, 191, 171, 0.08);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand) 20%, transparent), 0 0 48px color-mix(in srgb, var(--color-brand) 8%, transparent);
   }
   .greeting-card:hover #avatar-glow { opacity: 1; }
   .greeting-card:hover #avatar-img { transform: scale(1.06); }
@@ -174,9 +174,9 @@ const sparksJson = JSON.stringify(sparks);
   :global(.spark-meteor) {
     position: absolute;
     width: 3.5px; height: 90px;
-    background: linear-gradient(to bottom, rgba(53, 191, 171, 0.95), transparent);
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--color-brand) 95%, transparent), transparent);
     transform: rotate(-45deg);
-    filter: drop-shadow(0 0 6px rgba(53, 191, 171, 0.8));
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-brand) 80%, transparent));
     animation: meteor-slide 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
     will-change: transform, opacity;
   }

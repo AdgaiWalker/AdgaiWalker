@@ -38,8 +38,40 @@
 /* ========== 统一自适应多主题变量系统 (亮色/暗色自适应) ========== */
 /* ========================================================== */
 
-/* 1. 默认流光霜雾 (Nature Light - 柔和白玉) */
-body, body.theme-nature {
+/* 1. 点子 (Dianzi Light - 克制紫 · 暖白) — 默认主题 */
+body.theme-dianzi, body:not([class*="theme-"]) {
+  --color-brand: #6E5BFF;        /* 克制紫 */
+  --color-brand-glow: rgba(110, 91, 255, 0.12);
+  --color-brand-secondary: #8EA7FF; /* 辅助蓝紫 */
+  --color-parchment: #111111;      /* 主文字 */
+  --color-parchment-dim: #6B7280;  /* 辅助文字 */
+  --color-card: #FFFFFF;
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-bg: #F7F7F5;            /* 暖白背景 */
+  
+  --orb-color-1: rgba(110, 91, 255, 0.12);
+  --orb-color-2: rgba(142, 167, 255, 0.1);
+  --orb-color-3: rgba(247, 247, 245, 0.5);
+  --orb-color-4: rgba(110, 91, 255, 0.06);
+
+  /* 内嵌框样式变量 */
+  --color-inner-bg: rgba(255, 255, 255, 0.6);
+  --color-inner-border: rgba(0, 0, 0, 0.04);
+  --color-inner-shadow: rgba(0, 0, 0, 0.03);
+  --color-nav-bg: rgba(247, 247, 245, 0.9);
+  --color-nav-border: rgba(0, 0, 0, 0.06);
+
+  /* 音乐播放器变量 */
+  --color-player-icon-bg: rgba(110, 91, 255, 0.08);
+  --color-player-icon-text: #6E5BFF;
+  --color-player-btn-bg: #ffffff;
+  --color-player-btn-text: #6E5BFF;
+  --color-player-btn-border: rgba(0, 0, 0, 0.04);
+  --color-mist-bg: rgba(251, 251, 248, 0.45);
+}
+
+/* 2. 流光霜雾 (Nature Light - 柔和白玉) */
+body.theme-nature {
   --color-brand: #35bfab; /* 翡翠青 */
   --color-brand-glow: rgba(53, 191, 171, 0.15);
   --color-brand-secondary: #1fc9e7;
@@ -67,6 +99,7 @@ body, body.theme-nature {
   --color-player-btn-bg: #ffffff;
   --color-player-btn-text: #35bfab;
   --color-player-btn-border: rgba(0, 0, 0, 0.04);
+  --color-mist-bg: rgba(251, 251, 248, 0.45);
 }
 
 /* 2. 极光霓虹 (Aurora Dark - 极光黑曜石) */
@@ -98,6 +131,7 @@ body.theme-aurora {
   --color-player-btn-bg: rgba(255, 255, 255, 0.9);
   --color-player-btn-text: #d946ef;
   --color-player-btn-border: rgba(255, 255, 255, 0.2);
+  --color-mist-bg: rgba(7, 6, 20, 0.5);
 }
 
 /* 3. 落日余晖 (Sunset Dark - 暖铜黑曜石) */
@@ -129,6 +163,7 @@ body.theme-sunset {
   --color-player-btn-bg: rgba(255, 255, 255, 0.9);
   --color-player-btn-text: #f97316;
   --color-player-btn-border: rgba(255, 255, 255, 0.2);
+  --color-mist-bg: rgba(18, 9, 6, 0.5);
 }
 
 /* 4. 数码薄荷 (Mint Dark - 翡翠黑曜石) */
@@ -160,6 +195,7 @@ body.theme-mint {
   --color-player-btn-bg: rgba(255, 255, 255, 0.9);
   --color-player-btn-text: #10b981;
   --color-player-btn-border: rgba(255, 255, 255, 0.2);
+  --color-mist-bg: rgba(4, 15, 12, 0.5);
 }
 
 /* ========== 全局基础样式 ========== */
@@ -206,7 +242,7 @@ body.theme-mint {
   }
 
   ::selection {
-    background-color: rgba(53, 191, 171, 0.3);
+    background-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
     color: var(--color-parchment);
   }
 }
@@ -238,14 +274,13 @@ body.theme-mint {
 }
 
 @keyframes glow-breathe {
-
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(53, 191, 171, 0.1);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand) 10%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 20px rgba(53, 191, 171, 0.25);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--color-brand) 25%, transparent);
   }
 }
 
@@ -391,7 +426,7 @@ body.theme-mint .panel-glass:hover {
   z-index: 0;
   pointer-events: none;
   background: var(--color-brand-glow);
-  border: 1px solid rgba(53, 191, 171, 0.22);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 22%, transparent);
   border-radius: 10px;
   /* 极其平滑的弹性滑动，回弹系数为 cubic-bezier(0.25, 1, 0.5, 1.2) */
   transition: 
@@ -436,7 +471,7 @@ body.theme-mint .nav-active-indicator {
 /* ========== 内发光 ========== */
 
 .glow-cyan {
-  box-shadow: inset 0 0 20px rgba(53, 191, 171, 0.08);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--color-brand) 8%, transparent);
 }
 
 /* ========== 左侧彩色指示条 ========== */
@@ -738,7 +773,7 @@ body.theme-mint .nav-active-indicator {
   border-radius: 50%;
   pointer-events: none;
   z-index: -5;
-  background: radial-gradient(circle, rgba(53, 191, 171, 0.07) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-brand) 7%, transparent) 0%, transparent 70%);
   transform: translate(-50%, -50%);
   transition: left 0.3s ease-out, top 0.3s ease-out, opacity 0.4s ease;
   will-change: left, top;
@@ -760,9 +795,9 @@ body.theme-mint .nav-active-indicator {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #35bfab;
+  background: var(--color-brand);
   animation: bio-pulse 2s ease-in-out infinite;
-  box-shadow: 0 0 6px rgba(53, 191, 171, 0.4);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-brand) 40%, transparent);
 }
 
 /* ========== 快捷键提示样式 ========== */
@@ -1216,7 +1251,7 @@ body.theme-mint .nav-active-indicator {
   color: var(--color-parchment) !important;
   font-style: italic;
   position: relative;
-  box-shadow: inset 0 0 16px rgba(53, 191, 171, 0.03);
+  box-shadow: inset 0 0 16px color-mix(in srgb, var(--color-brand) 3%, transparent);
 }
 
 .prose-walker blockquote p {
@@ -1231,7 +1266,7 @@ body.theme-mint .nav-active-indicator {
   padding: 0.2rem 0.45rem;
   border-radius: 6px;
   background: var(--color-brand-glow) !important;
-  border: 1.2px solid rgba(53, 191, 171, 0.22) !important;
+  border: 1.2px solid color-mix(in srgb, var(--color-brand) 22%, transparent) !important;
   color: var(--color-brand) !important;
 }
 
@@ -1323,7 +1358,7 @@ body.theme-mint .prose-walker :not(pre) > code {
   background: var(--color-card-hover, var(--color-card));
   border-color: var(--color-brand-glow);
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(53, 191, 171, 0.12);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--color-brand) 12%, transparent);
 }
 
 /* ========== 全局 Orbs 流光背景 (Global Background Orbs) ========== */
@@ -1378,23 +1413,7 @@ body.theme-mint .prose-walker :not(pre) > code {
 }
 
 #mist-overlay {
-  background: rgba(251, 251, 248, 0.45);
-}
-
-body.theme-aurora #mist-overlay {
-  background: rgba(7, 6, 20, 0.5) !important;
-}
-
-body.theme-sunset #mist-overlay {
-  background: rgba(18, 9, 6, 0.5) !important;
-}
-
-body.theme-mint #mist-overlay {
-  background: rgba(4, 15, 12, 0.5) !important;
-}
-
-body.theme-custom #mist-overlay {
-  background: rgba(251, 251, 248, 0.45) !important;
+  background: var(--color-mist-bg, rgba(251, 251, 248, 0.45)) !important;
 }
 
 @keyframes subtle-drift-1 {
@@ -1445,3 +1464,75 @@ body.fullscreen-layout {
   --color-nav-border: rgba(255, 255, 255, 0.08) !important;
 }
 
+
+/* ========== 物理介质肌理 (Medium Physical Textures) ========== */
+.medium-paper, [data-form="diary"], [data-form="rant"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 0.015 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)'/%3E%3C/svg%3E") !important;
+}
+.medium-silk, [data-form="calligraphy"], [data-form="recipe"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M0 0h20v1H0zm0 0v20h1V0z' fill='rgba(0,0,0,0.015)'/%3E%3C/svg%3E"), 
+                    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 0.012 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)'/%3E%3C/svg%3E") !important;
+}
+.medium-grid, [data-form="project"], [data-form="lesson"] {
+  background-image: radial-gradient(color-mix(in srgb, var(--color-brand) 10%, transparent) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+.medium-dianzi, [data-form="idea"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 0.02 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)'/%3E%3C/svg%3E") !important;
+}
+
+/* ========== 中式落款印记样式 ========== */
+.oriental-signature-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 4rem 0 2rem;
+  font-family: 'Noto Serif SC', var(--font-cjk);
+  user-select: none;
+}
+
+.oriental-signature-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.85rem;
+  color: var(--color-parchment-dim);
+  opacity: 0.85;
+  letter-spacing: 0.2em;
+  line-height: 1.4;
+  height: 6rem;
+}
+
+.oriental-stamp-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.78rem;
+  color: var(--color-parchment-dim);
+  opacity: 0.65;
+  letter-spacing: 0.15em;
+  line-height: 1.4;
+  height: 7.5rem;
+  margin-right: 0.5rem;
+}
+
+.oriental-stamp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 2px solid #d64040;
+  color: #d64040;
+  font-size: 1.1rem;
+  font-weight: 900;
+  font-family: 'Noto Serif SC', var(--font-cjk);
+  background: color-mix(in srgb, #d64040 3%, transparent);
+  border-radius: 2px;
+  box-shadow: inset 0 0 4px rgba(214, 64, 64, 0.2), 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  /* 斑驳破损做旧效果 */
+  mask-image: radial-gradient(circle at 10% 20%, black 1px, transparent 1px),
+              radial-gradient(circle at 80% 40%, black 1.5px, transparent 1.5px),
+              linear-gradient(to right, black 95%, transparent 95%);
+  mask-size: 4px 4px, 5px 5px, 100% 100%;
+}

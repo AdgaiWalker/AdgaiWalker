@@ -33,6 +33,12 @@ export interface ContentItem {
   previousVersion?: string;
   series?: string;
   seriesOrder?: number;
+  signature?: string;
+  stamp?: string;
+  author?: string;
+  location?: string;
+  environment?: string;
+  action?: string;
 }
 
 export interface ContentSpaceMeta {
@@ -202,6 +208,12 @@ export function toContentItem(entry: LogEntry): ContentItem {
     previousVersion: entry.data.previousVersion,
     series: entry.data.series,
     seriesOrder: entry.data.seriesOrder,
+    signature: entry.data.signature,
+    stamp: entry.data.stamp,
+    author: entry.data.author,
+    location: entry.data.location,
+    environment: entry.data.environment,
+    action: entry.data.action,
   };
 }
 

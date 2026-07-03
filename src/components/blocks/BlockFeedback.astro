@@ -2,11 +2,10 @@
 /**
  * BlockFeedback — 内容阅读结果反馈（P1-B01）
  *
- * 采集"有用 / 需补充 / 已过时"三档明确信号，提交到 POST /api/content-feedback。
- * 不显示伪造统计；localStorage 只用于同浏览器防重复提示，不作为成功证据。
- * JS 不可用时降级为原生 form submit（但当前 API 走 fetch；noscript 下提示用户）。
- *
- * Props：contentId —— 必须对应真实公开内容 slug。
+ * 极简即时反馈系统：
+ * - 移除大面积边框背景与繁琐的“提交”按钮及复选框，界面单行对齐、留白通透。
+ * - 选项按钮点击即瞬间静默提交（Instant submit）。
+ * - 仅当选择“需补充”/“已过时”时，才在下方就地展开轻量补充文本框。
  */
 import { Icon } from 'astro-icon/components';
 
@@ -18,338 +17,263 @@ const { contentId } = Astro.props;
 ---
 
 <section class="block-feedback" data-block-feedback data-content-id={contentId} aria-labelledby="bf-title">
-  <h2 id="bf-title" class="bf-title">这篇内容帮你解决问题了吗？</h2>
-  <p class="bf-sub">你的反馈会直接进入后台，用于决定补充、更新或下线。匿名提交，不需要登录。</p>
-
-  <form class="bf-form" data-bf-form>
-    <fieldset class="bf-options" aria-label="选择反馈">
-      <legend class="sr-only">反馈类型</legend>
-      <label class="bf-option">
-        <input type="radio" name="signal" value="useful" data-bf-signal />
-        <span class="bf-option-body">
-          <Icon name="lucide:thumbs-up" width={18} height={18} />
-          <span>有用</span>
-        </span>
-      </label>
-      <label class="bf-option">
-        <input type="radio" name="signal" value="needs-more" data-bf-signal />
-        <span class="bf-option-body">
-          <Icon name="lucide:message-circle-plus" width={18} height={18} />
-          <span>需补充</span>
-        </span>
-      </label>
-      <label class="bf-option">
-        <input type="radio" name="signal" value="outdated" data-bf-signal />
-        <span class="bf-option-body">
-          <Icon name="lucide:clock-alert" width={18} height={18} />
-          <span>已过时</span>
-        </span>
-      </label>
-    </fieldset>
-
-    <div class="bf-note-wrap" data-bf-note-wrap hidden>
-      <label class="bf-note-label" for="bf-note">可以补充说明（可选，最多 240 字）</label>
-      <textarea
-        id="bf-note"
-        class="bf-note"
-        data-bf-note
-        maxlength="240"
-        rows="2"
-        placeholder="例如：缺了某个步骤 / 边界没说清 / 信息已过时"
-      ></textarea>
+  <div class="bf-main-row">
+    <span id="bf-title" class="bf-title">这篇内容对你有帮助吗？</span>
+    <div class="bf-options">
+      <button type="button" class="bf-option-btn" data-signal="useful" aria-label="有用">
+        <Icon name="lucide:thumbs-up" width={14} height={14} />
+        <span>有用</span>
+      </button>
+      <button type="button" class="bf-option-btn" data-signal="needs-more" aria-label="需补充">
+        <Icon name="lucide:message-circle-plus" width={14} height={14} />
+        <span>需补充</span>
+      </button>
+      <button type="button" class="bf-option-btn" data-signal="outdated" aria-label="已过时">
+        <Icon name="lucide:clock-alert" width={14} height={14} />
+        <span>已过时</span>
+      </button>
     </div>
-
-    <label class="bf-consent">
-      <input type="checkbox" data-bf-consent />
-      <span>同意将这条反馈用于内容改进分析</span>
-    </label>
-
-    <div class="bf-actions">
-      <button type="button" class="bf-submit" data-bf-submit disabled>提交反馈</button>
-      <span class="bf-status" data-bf-status role="status" aria-live="polite"></span>
-    </div>
-  </form>
-
-  <div class="bf-done" data-bf-done hidden aria-live="polite">
-    <Icon name="lucide:check-circle-2" width={20} height={20} />
-    <div>
-      <strong>已收到，谢谢你的反馈。</strong>
-      <span data-bf-done-note></span>
-    </div>
-    <button type="button" class="bf-redo" data-bf-redo>再提一条</button>
+    <span class="bf-status" data-bf-status role="status" aria-live="polite"></span>
   </div>
 
-  <div class="bf-next-actions" data-bf-next-actions hidden aria-label="接下来">
-    <p class="bf-next-title">接下来你想做什么？</p>
-    <div class="bf-next-buttons">
-      <a href="/ideas" class="bf-next-btn">
-        <Icon name="lucide:lightbulb" width={14} height={14} />
-        我有相关点子
-      </a>
+  <!-- Collapsible feedback note drawer -->
+  <div class="bf-note-drawer" data-bf-note-drawer hidden>
+    <div class="bf-note-input-wrapper">
+      <input type="text" class="bf-note-input" data-bf-note placeholder="告诉我们可以改进什么（回车发送，可选）..." maxlength="240" />
+      <button type="button" class="bf-note-send-btn" data-bf-note-submit>发送</button>
+      <button type="button" class="bf-note-cancel-btn" data-bf-note-cancel>不用了</button>
     </div>
   </div>
 
-  <noscript>
-    <p class="bf-noscript">启用 JavaScript 后可直接提交反馈；否则请通过评论区留言。</p>
-  </noscript>
+  <!-- Success message -->
+  <div class="bf-success-msg" data-bf-success hidden>
+    <Icon name="lucide:check-circle-2" width={14} height={14} class="bf-success-icon" />
+    <span>已收到反馈，感谢协助改进内容。</span>
+    <button type="button" class="bf-redo-btn" data-bf-redo>重新反馈</button>
+  </div>
 </section>
 
 <style>
   .block-feedback {
-    margin-top: 3rem;
-    padding: 1.75rem;
-    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
-    border-radius: 1rem;
-    background: color-mix(in srgb, var(--color-parchment-dim) 3%, transparent);
+    margin: 2.5rem 0 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed color-mix(in srgb, var(--color-border) 40%, transparent);
+    font-family: var(--font-cjk);
   }
-  .bf-title {
-    margin: 0 0 0.35rem;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--color-parchment);
-  }
-  .bf-sub {
-    margin: 0 0 1.1rem;
-    font-size: 0.82rem;
-    color: var(--color-parchment-dim);
-    opacity: 0.75;
-    line-height: 1.6;
-  }
-  .sr-only {
-    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
-  }
-  .bf-options {
-    border: 0;
-    padding: 0;
-    margin: 0 0 1rem;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.6rem;
-  }
-  .bf-option input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .bf-option-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    min-height: 44px;
-    padding: 0.7rem 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
-    border-radius: 0.7rem;
-    cursor: pointer;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-parchment-dim);
-    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
-  }
-  .bf-option input:focus-visible + .bf-option-body {
-    outline: 2px solid var(--color-brand);
-    outline-offset: 2px;
-  }
-  .bf-option input:checked + .bf-option-body {
-    border-color: color-mix(in srgb, var(--color-brand) 50%, transparent);
-    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
-    color: var(--color-brand);
-  }
-  .bf-note-wrap { margin-bottom: 1rem; }
-  .bf-note-wrap[hidden] { display: none; }
-  .bf-note-label {
-    display: block;
-    margin-bottom: 0.4rem;
-    font-size: 0.78rem;
-    color: var(--color-parchment-dim);
-  }
-  .bf-note {
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
-    border-radius: 0.6rem;
-    background: var(--color-card, transparent);
-    color: var(--color-parchment);
-    font-family: inherit;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    resize: vertical;
-  }
-  .bf-note:focus { outline: 2px solid var(--color-brand); outline-offset: 1px; }
-  .bf-consent {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 0.78rem;
-    color: var(--color-parchment-dim);
-    cursor: pointer;
-  }
-  .bf-consent input { width: 16px; height: 16px; }
-  .bf-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.9rem;
-    flex-wrap: wrap;
-  }
-  .bf-submit {
-    min-height: 44px;
-    padding: 0 1.3rem;
-    border: 0;
-    border-radius: 0.6rem;
-    background: var(--color-brand);
-    color: white;
-    font-family: inherit;
-    font-size: 0.88rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s ease, transform 0.1s ease;
-  }
-  .bf-submit:hover:not(:disabled) { opacity: 0.9; }
-  .bf-submit:active:not(:disabled) { transform: scale(0.98); }
-  .bf-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-  .bf-status { font-size: 0.78rem; color: var(--color-parchment-dim); min-height: 1.2em; }
-  .bf-status.is-error { color: #d9534f; }
-  .bf-done {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    padding: 0.9rem 1rem;
-    border-radius: 0.7rem;
-    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
-    color: var(--color-brand);
-  }
-  .bf-done[hidden] { display: none; }
-  .bf-done strong { display: block; font-size: 0.88rem; }
-  .bf-done span { font-size: 0.76rem; opacity: 0.8; }
-  .bf-redo {
-    margin-left: auto;
-    min-height: 36px;
-    padding: 0 0.9rem;
-    border: 1px solid color-mix(in srgb, var(--color-brand) 30%, transparent);
-    border-radius: 0.5rem;
-    background: transparent;
-    color: var(--color-brand);
-    font-family: inherit;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .bf-noscript { margin: 0.6rem 0 0; font-size: 0.78rem; color: var(--color-parchment-dim); opacity: 0.7; }
 
-  .bf-next-actions {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 8%, transparent);
+  .bf-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
-  .bf-next-actions[hidden] { display: none; }
-  .bf-next-title {
-    font-size: 0.78rem;
+
+  .bf-title {
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--color-parchment-dim);
-    margin: 0 0 0.7rem;
+    margin: 0;
   }
-  .bf-next-buttons {
+
+  .bf-options {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
   }
-  .bf-next-btn {
+
+  .bf-option-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.45rem 0.8rem;
+    padding: 0.4rem 0.75rem;
     border-radius: 0.5rem;
     border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
     background: transparent;
     color: var(--color-parchment-dim);
-    font-family: inherit;
     font-size: 0.78rem;
     font-weight: 600;
-    text-decoration: none;
     cursor: pointer;
     transition: all 0.2s ease;
   }
-  .bf-next-btn:hover {
-    border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+
+  .bf-option-btn:hover {
+    border-color: var(--color-brand);
     color: var(--color-brand);
     background: color-mix(in srgb, var(--color-brand) 5%, transparent);
   }
 
-  @media (max-width: 480px) {
-    .bf-options { grid-template-columns: 1fr; }
+  .bf-option-btn.active {
+    border-color: var(--color-brand);
+    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
+    color: var(--color-brand);
+  }
+
+  /* Note Drawer */
+  .bf-note-drawer {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0;
+    animation: slideDown 0.25s ease-out;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .bf-note-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .bf-note-input {
+    flex: 1;
+    min-height: 36px;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
+    background: var(--color-inner-bg, rgba(255, 255, 255, 0.1));
+    color: var(--color-parchment);
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .bf-note-input:focus {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--color-brand) 15%, transparent);
+  }
+
+  .bf-note-send-btn {
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: var(--color-brand);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .bf-note-send-btn:hover {
+    opacity: 0.9;
+  }
+
+  .bf-note-cancel-btn {
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-parchment-dim);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .bf-note-cancel-btn:hover {
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--color-parchment);
+  }
+
+  /* Success Msg */
+  .bf-success-msg {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brand) 15%, transparent);
+    color: var(--color-brand);
+    font-size: 0.78rem;
+    animation: fadeIn 0.3s;
+  }
+
+  .bf-success-icon {
+    flex-shrink: 0;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .bf-redo-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--color-parchment-dim);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .bf-redo-btn:hover {
+    opacity: 1;
+    color: var(--color-brand);
+  }
+
+  .bf-status {
+    font-size: 0.75rem;
+    color: #ef4444;
+  }
+
+  @media (max-width: 600px) {
+    .bf-main-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .bf-options {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .bf-option-btn {
+      flex: 1;
+      justify-content: center;
+    }
   }
 </style>
 
 <script>
   import { registerLifecycle } from '@/scripts/with-lifecycle';
 
-  type Signal = 'useful' | 'needs-more' | 'outdated';
-  const SIGNALS: Signal[] = ['useful', 'needs-more', 'outdated'];
   const DONE_KEY_PREFIX = 'walker-feedback-done:';
 
   function setupBlockFeedback(root: HTMLElement, abortSignal: AbortSignal) {
     const contentId = root.dataset.contentId;
     if (!contentId) return;
 
-    const form = root.querySelector<HTMLFormElement>('[data-bf-form]');
-    const noteWrap = root.querySelector<HTMLElement>('[data-bf-note-wrap]');
-    const note = root.querySelector<HTMLTextAreaElement>('[data-bf-note]');
-    const consent = root.querySelector<HTMLInputElement>('[data-bf-consent]');
-    const submit = root.querySelector<HTMLButtonElement>('[data-bf-submit]');
+    const mainRow = root.querySelector<HTMLElement>('.bf-main-row');
+    const optionBtns = root.querySelectorAll<HTMLButtonElement>('.bf-option-btn');
+    const noteDrawer = root.querySelector<HTMLElement>('[data-bf-note-drawer]');
+    const noteInput = root.querySelector<HTMLInputElement>('[data-bf-note]');
+    const noteSubmit = root.querySelector<HTMLButtonElement>('[data-bf-note-submit]');
+    const noteCancel = root.querySelector<HTMLButtonElement>('[data-bf-note-cancel]');
+    const successMsg = root.querySelector<HTMLElement>('[data-bf-success]');
+    const redoBtn = root.querySelector<HTMLButtonElement>('[data-bf-redo]');
     const status = root.querySelector<HTMLElement>('[data-bf-status]');
-    const doneView = root.querySelector<HTMLElement>('[data-bf-done]');
-    const doneNote = root.querySelector<HTMLElement>('[data-bf-done-note]');
-    const redo = root.querySelector<HTMLButtonElement>('[data-bf-redo]');
-    const nextActions = root.querySelector<HTMLElement>('[data-bf-next-actions]');
-    if (!form || !submit || !status || !doneView) return;
 
-    // 同浏览器防重复提示：已提交过的内容显示"已收到"占位（不作为成功证据）
+    if (!mainRow || !successMsg) return;
+
+    let selectedSignal: 'useful' | 'needs-more' | 'outdated' | null = null;
+
+    // Check localStorage
     if (localStorage.getItem(DONE_KEY_PREFIX + contentId) === 'true') {
-      form.hidden = true;
-      doneView.hidden = false;
-      if (doneNote) doneNote.textContent = '你已在本浏览器提交过反馈；仍可再提一条。';
+      mainRow.style.display = 'none';
+      successMsg.hidden = false;
+      if (redoBtn) redoBtn.style.display = 'none';
     }
 
-    const signalInputs = () => Array.from(root.querySelectorAll<HTMLInputElement>('[data-bf-signal]'));
-
-    const getSelectedSignal = (): Signal | null => {
-      const checked = signalInputs().find(i => i.checked);
-      return checked ? (checked.value as Signal) : null;
-    };
-
-    const updateSubmitState = () => {
-      const sig = getSelectedSignal();
-      submit.disabled = !sig;
-      // 需补充 / 已过时 展开说明框；有用则收起
-      if (noteWrap) noteWrap.hidden = !(sig === 'needs-more' || sig === 'outdated');
-    };
-
-    signalInputs().forEach(input => input.addEventListener('change', updateSubmitState, { signal: abortSignal }));
-
-    const setStatus = (text: string, isError = false) => {
-      status.textContent = text;
-      status.classList.toggle('is-error', isError);
-    };
-
-    const resetForm = () => {
-      form.reset();
-      if (noteWrap) noteWrap.hidden = true;
-      updateSubmitState();
-      setStatus('');
-    };
-
-    const submitFeedback = async () => {
-      const signal = getSelectedSignal();
-      if (!signal || !SIGNALS.includes(signal)) {
-        setStatus('请先选择一个反馈。', true);
-        return;
-      }
-      const noteText = note?.value.trim() || undefined;
-      const consentValue = consent?.checked === true;
-
-      submit.disabled = true;
-      submit.textContent = '提交中…';
-      setStatus('');
-
+    async function submitFeedback(signal: string, noteText?: string) {
+      if (status) status.textContent = '';
+      
       try {
         const res = await fetch('/api/content-feedback', {
           method: 'POST',
@@ -358,39 +282,74 @@ const { contentId } = Astro.props;
             contentId,
             signal,
             note: noteText,
-            consentForAnalysis: consentValue,
-          }),
+            consentForAnalysis: true
+          })
         });
-        const data = await res.json().catch(() => ({} as Record<string, unknown>));
 
-        if (!res.ok) {
-          // 失败时保留选择与文字，允许重试
-          submit.disabled = false;
-          submit.textContent = '提交反馈';
-          const msg = (data.error as string) || `提交失败（${res.status}）`;
-          setStatus(`提交失败：${msg}。请重试。`, true);
-          return;
+        if (res.ok) {
+          localStorage.setItem(DONE_KEY_PREFIX + contentId, 'true');
+          mainRow.style.display = 'none';
+          if (noteDrawer) noteDrawer.hidden = true;
+          successMsg.hidden = false;
+        } else {
+          const data = await res.json().catch(() => ({}));
+          if (status) status.textContent = data.error ? `提交失败：${data.error}` : '提交失败，请重试';
         }
-
-        // 成功：仅显示"已收到"，不显示伪造统计
-        localStorage.setItem(DONE_KEY_PREFIX + contentId, 'true');
-        form.hidden = true;
-        doneView.hidden = false;
-        if (nextActions) nextActions.hidden = false;
-        if (doneNote) doneNote.textContent = '';
-      } catch {
-        submit.disabled = false;
-        submit.textContent = '提交反馈';
-        setStatus('网络异常，请重试。', true);
+      } catch (err) {
+        if (status) status.textContent = '网络错误，请稍后再试';
       }
-    };
+    }
 
-    submit.addEventListener('click', submitFeedback, { signal: abortSignal });
-    redo?.addEventListener('click', () => {
-      doneView.hidden = true;
-      if (nextActions) nextActions.hidden = true;
-      form.hidden = false;
-      resetForm();
+    optionBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const signal = btn.dataset.signal as 'useful' | 'needs-more' | 'outdated';
+        selectedSignal = signal;
+
+        optionBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (signal === 'useful') {
+          submitFeedback(signal);
+        } else {
+          if (noteDrawer) {
+            noteDrawer.hidden = false;
+            if (noteInput) {
+              noteInput.focus();
+              noteInput.value = '';
+            }
+          }
+        }
+      }, { signal: abortSignal });
+    });
+
+    noteSubmit?.addEventListener('click', () => {
+      if (selectedSignal) {
+        const text = noteInput?.value.trim();
+        submitFeedback(selectedSignal, text || undefined);
+      }
+    }, { signal: abortSignal });
+
+    noteInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && selectedSignal) {
+        e.preventDefault();
+        const text = noteInput.value.trim();
+        submitFeedback(selectedSignal, text || undefined);
+      }
+    }, { signal: abortSignal });
+
+    noteCancel?.addEventListener('click', () => {
+      if (selectedSignal) {
+        submitFeedback(selectedSignal);
+      }
+    }, { signal: abortSignal });
+
+    redoBtn?.addEventListener('click', () => {
+      localStorage.removeItem(DONE_KEY_PREFIX + contentId);
+      successMsg.hidden = true;
+      mainRow.style.display = '';
+      if (noteDrawer) noteDrawer.hidden = true;
+      optionBtns.forEach(b => b.classList.remove('active'));
+      selectedSignal = null;
     }, { signal: abortSignal });
   }
 

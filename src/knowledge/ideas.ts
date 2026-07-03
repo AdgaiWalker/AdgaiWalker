@@ -4,14 +4,34 @@ import type { render } from 'astro:content';
 import type { NeedCaseStats } from '@/conversation/store';
 import { STATUS_WEIGHT } from '@/shared/constants';
 
-export type IdeaEntry = CollectionEntry<'log'>;
-export type RenderedIdeaContent = Awaited<ReturnType<typeof render>>['Content'];
+export type IdeaEntry = CollectionEntry<'log'> | {
+  id: string;
+  collection: 'log';
+  data: {
+    title: string;
+    date: Date;
+    tags: string[];
+    status: 'thinking' | 'validating' | 'building' | 'verified' | 'archived';
+    type: 'idea';
+    form: 'idea';
+    summary?: string;
+    [key: string]: any;
+  };
+  body?: string;
+};
+export type RenderedIdeaContent = any;
 
 export interface RenderedIdeaCard {
   entry: IdeaEntry;
-  Content: RenderedIdeaContent;
+  Content: any;
   demandSignal: number;
   collaboratorCount?: number;
+  reactions?: {
+    need: number;
+    thought_before: number;
+    can_help: number;
+    favorite: number;
+  };
 }
 
 export const PUBLIC_DEMAND_SIGNAL_MIN = 5;

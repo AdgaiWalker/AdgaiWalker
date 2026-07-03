@@ -233,9 +233,9 @@ const isActiveHref = (href: string) => {
   }
 
   .nav-link-active {
-    background: rgba(53, 191, 171, 0.14);
-    border-color: rgba(53, 191, 171, 0.22);
-    color: #178f80;
+    background: color-mix(in srgb, var(--color-brand) 14%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand) 22%, transparent);
+    color: var(--color-brand);
     font-weight: 700;
   }
 
@@ -246,7 +246,7 @@ const isActiveHref = (href: string) => {
 
   .nav-link-active .nav-link-icon,
   .nav-link:hover .nav-link-icon {
-    color: #35bfab;
+    color: var(--color-brand);
   }
 
   .nav-link-main {

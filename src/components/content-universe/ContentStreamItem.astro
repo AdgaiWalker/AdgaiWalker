@@ -16,6 +16,11 @@ const month = String(item.date.getMonth() + 1).padStart(2, '0');
 const day = String(item.date.getDate()).padStart(2, '0');
 const dateLabel = `${month}.${day}`;
 const summary = item.summary ?? '';
+
+const authorVal = item.author || item.signature || 'Walker';
+const locVal = item.location || item.stamp;
+const actVal = item.action || '落笔于';
+const envVal = item.environment;
 ---
 
 <article class="stream-item" data-spaces={spaces.join(' ')}>
@@ -26,6 +31,10 @@ const summary = item.summary ?? '';
       <div class:list={["stream-meta", { fresh: isFresh }]}>
         <span class="stream-date">{dateLabel}{isFresh && <span class="fresh-tag">新</span>}</span>
         <span class="stream-form">{formLabels[item.form]}</span>
+        <span class="stream-author-meta">
+          <span class="mr-2">✍️ {authorVal}</span>
+          {locVal && <span>📍 {actVal}{locVal}{envVal && ` · ${envVal}`}</span>}
+        </span>
       </div>
       {summary && <p class="stream-blurb">{summary}</p>}
     </div>
@@ -68,6 +77,9 @@ const summary = item.summary ?? '';
   }
   .stream-form { font-size: 0.74rem; color: rgba(168,162,158,0.95); }
   .stream-form::before { content: '·'; margin-right: 0.5rem; color: rgba(168,162,158,0.6); }
+
+  .stream-author-meta { font-size: 0.74rem; color: rgba(120,113,108,0.65); display: inline-flex; align-items: center; }
+  .stream-author-meta::before { content: '·'; margin-right: 0.5rem; margin-left: 0.5rem; color: rgba(168,162,158,0.6); }
 
   .stream-blurb { margin: 0.4rem 0 0; font-size: 0.85rem; line-height: 1.6; color: rgba(120,113,108,0.8); }
 

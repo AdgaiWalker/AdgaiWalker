@@ -1,16 +1,10 @@
 ---
 /**
- * DianZiWordmark.astro — 「点子」动态字标组件
+ * DianZiWordmark.astro — 「点子」双星状态指示器
  *
- * 哲学意图：
- * - 将「点」字底部的四点（灬）异化为点子生命周期状态的动态投影。
- * - 使用“占”字作为上半部，配合底部动态 SVG 渲染四点，完美适配任何字号，绝无字体排版漂移。
- *
- * 状态映射：
- * - thinking   (● ○ ○ ○): 第一点亮，其余空心微光
- * - validating (● ° ○ ○): 第二点微亮（天线探测信号）
- * - building   (● ° •° ○): 第三点为双星公转系统
- * - verified   (● ° •° ◉): 第四点为同心圆，且向外散发淡紫色微光涟漪波纹
+ * 视觉提纯：
+ * - 剔除复杂的多星 SVG 与文字，仅使用纯 CSS 圆点 ●  ° 表示核心概念。
+ * - 依靠两点的间距 (thinking/validating/building/verified/archived) 表达想法被靠近与实现的过程。
  */
 
 interface Props {
@@ -21,229 +15,118 @@ interface Props {
 const { status = 'thinking', className = '' } = Astro.props;
 ---
 
-<div class={`dianzi-wordmark-container ${className}`} data-status={status} aria-label={`点子 (状态: ${status})`}>
-  <div class="word-dian">
-    <span class="char-zhan">占</span>
-    <!-- 底部 灬 动态四星系统 SVG -->
-    <svg class="dots-svg" viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Dot 1: 原始点子 ● -->
-      <circle class="dot dot-1" cx="15" cy="12" r="5" />
-
-      <!-- Dot 2: 探测伴星 ° -->
-      <circle class="dot dot-2-outer" cx="38" cy="12" r="4.5" />
-      <circle class="dot dot-2-inner" cx="38" cy="12" r="1.5" />
-
-      <!-- Dot 3: 双星共创 •° -->
-      <g class="dot-3-group">
-        <circle class="dot dot-3-a" cx="62" cy="12" r="2.5" />
-        <circle class="dot dot-3-b" cx="68" cy="8" r="1.5" />
-      </g>
-
-      <!-- Dot 4: 成果涟漪 ◉ -->
-      <g class="dot-4-group">
-        <!-- 涟漪环（动画触发） -->
-        <circle class="dot-4-ripple" cx="88" cy="12" r="8" />
-        <!-- 同心圆外环 -->
-        <circle class="dot dot-4-outer" cx="88" cy="12" r="5" />
-        <!-- 同心圆内实心 -->
-        <circle class="dot dot-4-inner" cx="88" cy="12" r="2" />
-      </g>
-    </svg>
-  </div>
-  <span class="char-zi">子</span>
+<div class={`dianzi-dots-indicator ${className}`} data-status={status} aria-label={`点子状态: ${status}`}>
+  <span class="dot-main"></span>
+  <span class="dot-sub"></span>
 </div>
 
 <style>
-  .dianzi-wordmark-container {
+  .dianzi-dots-indicator {
     display: inline-flex;
-    align-items: flex-end;
-    gap: 0.1em;
-    font-family: var(--font-serif), Georgia, serif;
-    font-size: 1.8rem;
-    color: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    user-select: none;
-    line-height: 1;
-  }
-
-  .word-dian {
-    display: inline-flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
     position: relative;
+    height: 1.25rem;
+    font-family: var(--font-mono);
+    user-select: none;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
-  .char-zhan {
-    line-height: 0.95;
-    padding-bottom: 0.15em;
+  .dot-main, .dot-sub {
+    display: inline-block;
+    border-radius: 50%;
+    background-color: var(--color-brand, #6E5BFF);
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
-  .char-zi {
-    line-height: 0.95;
-    /* 配合 NLS 品牌“子”字横画渐隐感 */
-    background: linear-gradient(90deg, currentColor 75%, transparent 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  /* 主点 ● */
+  .dot-main {
+    width: 6px;
+    height: 6px;
   }
 
-  /* ===== SVG 灬 布局 ===== */
-  .dots-svg {
-    width: 1.1em; /* 宽度随字标尺寸自动缩放 */
-    height: 0.26em;
-    margin-top: -0.1em;
-    overflow: visible;
+  /* 伴星 ° */
+  .dot-sub {
+    width: 3px;
+    height: 3px;
+    opacity: 0.7;
+    margin-left: 12px; /* 默认间距 */
   }
 
-  /* ===== 基础星点样式 ===== */
-  .dot {
-    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  /* ===== 状态变动规则 ===== */
+
+  /* 1. thinking (构思中): ●             ° (远距离，伴星黯淡) */
+  [data-status="thinking"] .dot-sub {
+    margin-left: 20px;
+    opacity: 0.35;
+    background-color: var(--color-parchment-dim);
+  }
+  [data-status="thinking"] .dot-main {
+    background-color: var(--color-parchment-dim);
+    opacity: 0.6;
   }
 
-  /* 默认低透空心 */
-  .dot-1 {
-    fill: currentColor;
-    opacity: 0.25;
-  }
-  .dot-2-outer {
-    stroke: currentColor;
-    stroke-width: 1;
-    opacity: 0.2;
-    fill: none;
-  }
-  .dot-2-inner {
-    fill: currentColor;
-    opacity: 0;
-  }
-  .dot-3-a {
-    fill: currentColor;
-    opacity: 0.25;
-  }
-  .dot-3-b {
-    stroke: currentColor;
-    stroke-width: 0.75;
-    fill: none;
-    opacity: 0.2;
-  }
-  .dot-4-outer {
-    stroke: currentColor;
-    stroke-width: 1;
-    fill: none;
-    opacity: 0.2;
-  }
-  .dot-4-inner {
-    fill: currentColor;
-    opacity: 0;
-  }
-  .dot-4-ripple {
-    stroke: var(--brand-purple, var(--color-brand, #6E5BFF));
-    stroke-width: 1;
-    fill: none;
-    opacity: 0;
-    transform-origin: 88px 12px;
-  }
-
-  /* ===== 状态激活规则 ===== */
-
-  /* 1. thinking: ● ○ ○ ○ */
-  [data-status="thinking"] .dot-1 {
-    fill: var(--brand-purple, var(--color-brand, #6E5BFF));
-    opacity: 1;
-    filter: drop-shadow(0 0 2px rgba(110, 91, 255, 0.4));
-  }
-
-  /* 2. validating: ● ° ○ ○ */
-  [data-status="validating"] .dot-1 {
-    fill: var(--brand-purple, var(--color-brand, #6E5BFF));
+  /* 2. validating (验证中): ●        ° (靠近中，伴星亮起) */
+  [data-status="validating"] .dot-sub {
+    margin-left: 12px;
     opacity: 0.8;
   }
-  [data-status="validating"] .dot-2-outer {
-    stroke: var(--brand-blue, var(--color-brand, #8EA7FF));
-    opacity: 1;
-  }
-  [data-status="validating"] .dot-2-inner {
-    fill: var(--brand-blue, var(--color-brand, #8EA7FF));
-    opacity: 1;
+  [data-status="validating"] .dot-main {
+    opacity: 0.85;
   }
 
-  /* 3. building: ● ° •° ○ */
-  [data-status="building"] .dot-1 {
-    fill: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    opacity: 0.7;
-  }
-  [data-status="building"] .dot-2-outer {
-    stroke: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    opacity: 0.7;
-  }
-  [data-status="building"] .dot-3-a {
-    fill: var(--brand-purple, var(--color-brand, #6E5BFF));
+  /* 3. building (实现中): ●   ° (极近，呼吸动效) */
+  [data-status="building"] .dot-sub {
+    margin-left: 6px;
     opacity: 1;
+    animation: sub-breathe 2s ease-in-out infinite;
   }
-  [data-status="building"] .dot-3-b {
-    stroke: var(--brand-purple, var(--color-brand, #6E5BFF));
-    fill: var(--brand-purple, var(--color-brand, #6E5BFF));
-    opacity: 1;
-  }
-  /* 双星公转动效 */
-  [data-status="building"] .dot-3-group {
-    transform-origin: 65px 11px;
-    animation: orbit 3.5s linear infinite;
+  [data-status="building"] .dot-main {
+    animation: main-breathe 2s ease-in-out infinite;
   }
 
-  /* 4. verified: ● ° •° ◉ */
-  [data-status="verified"] .dot-1 {
-    fill: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    opacity: 0.6;
-  }
-  [data-status="verified"] .dot-2-outer {
-    stroke: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    opacity: 0.6;
-  }
-  [data-status="verified"] .dot-3-a,
-  [data-status="verified"] .dot-3-b {
-    fill: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    stroke: var(--nls-text-main, var(--color-parchment, #E8E8ED));
-    opacity: 0.6;
-  }
-  [data-status="verified"] .dot-4-outer {
-    stroke: var(--brand-purple, var(--color-brand, #6E5BFF));
+  /* 4. verified (已完成): ●° (合并微光) */
+  [data-status="verified"] .dot-sub {
+    margin-left: 2px;
     opacity: 1;
+    box-shadow: 0 0 8px var(--color-brand);
   }
-  [data-status="verified"] .dot-4-inner {
-    fill: var(--brand-purple, var(--color-brand, #6E5BFF));
-    opacity: 1;
-  }
-  /* 涟漪波纹动画 */
-  [data-status="verified"] .dot-4-ripple {
-    animation: ripple-out 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  [data-status="verified"] .dot-main {
+    box-shadow: 0 0 10px var(--color-brand);
   }
 
-  /* archived: 全部暗淡 */
-  [data-status="archived"] .dot {
-    opacity: 0.15;
+  /* 5. archived (已归档): ○  ° (主点空心，全部暗淡) */
+  [data-status="archived"] .dot-main {
+    background-color: transparent;
+    border: 1px solid var(--color-parchment-dim);
+    opacity: 0.3;
+  }
+  [data-status="archived"] .dot-sub {
+    margin-left: 12px;
+    background-color: var(--color-parchment-dim);
+    opacity: 0.3;
   }
 
-  /* ===== Keyframes ===== */
-  @keyframes orbit {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @keyframes ripple-out {
-    0% {
-      r: 4.5px;
-      opacity: 0.8;
-      stroke-width: 1.5;
+  /* ===== 呼吸动画 ===== */
+  @keyframes main-breathe {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 2px var(--color-brand-glow);
     }
     50% {
-      opacity: 0.4;
+      transform: scale(1.15);
+      box-shadow: 0 0 8px var(--color-brand-glow);
     }
-    100% {
-      r: 16px;
-      opacity: 0;
-      stroke-width: 0.5;
+  }
+
+  @keyframes sub-breathe {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    50% {
+      transform: scale(1.3);
+      opacity: 1;
     }
   }
 </style>

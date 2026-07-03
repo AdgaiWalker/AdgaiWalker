@@ -5,6 +5,7 @@ import { getPublishedPosts, getFrequentTags } from '@/knowledge/content';
 import { formatDateCompact } from '@/shared/format';
 import { Icon } from 'astro-icon/components';
 import { getContentLabel, getStatusSymbol } from '@/knowledge/block-types';
+import DianZiWordmark from '../../components/DianZiWordmark.astro';
 
 export const prerender = true;
 
@@ -80,7 +81,6 @@ const frequentTags = getFrequentTags(allLogs, 2);
             <div class="flex flex-col divide-y divide-[var(--color-nav-border)]">
               {groupedLogs[year].map(log => {
                 const contentLabel = getContentLabel(log.data.form, log.data.intent);
-                const statusSymbol = log.data.status ? getStatusSymbol(log.data.status)?.symbol : '';
 
                 return (
                   <a href={buildPostPath(log.id)} class="log-item group flex flex-col gap-1 px-5 py-4 transition-all no-underline" data-tags={log.data.tags.join(',')}>
@@ -88,13 +88,11 @@ const frequentTags = getFrequentTags(allLogs, 2);
                       <time class="text-parchment-dim font-mono text-sm shrink-0 w-16 opacity-60">{formatDateCompact(log.data.date)}</time>
                       <div class="flex-1 min-w-0">
                         <h3 class="text-parchment text-[15px] font-body truncate group-hover:text-brand transition-colors opacity-90 flex items-center gap-2">
-                          {statusSymbol && (
-                            <span class="timeline-status-symbol" title={log.data.status}>
-                              {statusSymbol}
-                            </span>
+                          {log.data.status && (
+                            <DianZiWordmark status={log.data.status} className="scale-75 origin-left shrink-0" />
                           )}
                           <span class="timeline-form-badge">
-                            {contentLabel.emoji} {contentLabel.label}
+                            {contentLabel.label}
                           </span>
                           <span class="timeline-title-text">{log.data.title}</span>
                         </h3>
@@ -108,6 +106,27 @@ const frequentTags = getFrequentTags(allLogs, 2);
                     {log.data.summary && (
                       <p class="log-summary">{log.data.summary}</p>
                     )}
+                    {(() => {
+                      const authorVal = log.data.author || log.data.signature || 'Walker';
+                      const locVal = log.data.location || log.data.stamp;
+                      const actVal = log.data.action || '落笔于';
+                      const envVal = log.data.environment;
+                      
+                      return (
+                        <div class="timeline-log-meta flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-parchment-dim opacity-75">
+                          <span class="flex items-center gap-1 shrink-0">
+                            <Icon name="lucide:user" width={11} height={11} />
+                            {authorVal}
+                          </span>
+                          {locVal && (
+                            <span class="flex items-center gap-1 truncate">
+                              <Icon name="lucide:map-pin" width={11} height={11} />
+                              {actVal}{locVal}{envVal && ` · ${envVal}`}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </a>
                 );
               })}
@@ -228,15 +247,18 @@ const frequentTags = getFrequentTags(allLogs, 2);
 
   .timeline-form-badge {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.65rem;
+    font-weight: 700;
     color: var(--color-parchment-dim);
-    opacity: 0.45;
-    margin-right: 0.3rem;
+    margin-right: 0.4rem;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 0.15rem;
+    padding: 0.08rem 0.35rem;
+    border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
+    background: transparent;
+    text-transform: uppercase;
   }
 
   .timeline-title-text {

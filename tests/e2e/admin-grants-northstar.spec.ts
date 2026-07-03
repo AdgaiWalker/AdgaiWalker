@@ -38,7 +38,7 @@ test.describe('Contributor RBAC 授权管理页', () => {
     await page.locator('input[name="reason"]').fill('E2E 测试授权');
     await page.locator('#grant-form button[type="submit"]').click();
     // 创建后 reload，列表含该 grant
-    await expect(page.getByText('e2e-contributor')).toBeVisible();
+    await expect(page.getByText('e2e-contributor').first()).toBeVisible();
     // 撤销
     const revokeBtn = page.locator('.revoke-btn').first();
     await revokeBtn.click();
