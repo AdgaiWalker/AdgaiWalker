@@ -58,58 +58,57 @@
 | `POST /api/posts/{slug}/canvas` | 真实 slug | ✅ 200 `{ok:true}`(写入成功) |
 | `GET/POST /api/posts/{slug}/collaborate` | 真实 slug | ✅ GET 200 `{count:0}`;**POST 限流第 4 次 429**(max=3 生效) |
 
-### 🔴 发现 3 个真实 Bug
+### 🔴 发现的真实 Bug 与误报纠正
 
-#### Bug 1(高):content collection 的 `entry.id` 全小写化,导致大小写敏感的链接/查询失效
+> **纠正说明(2026-07-04 二次核实)**:初版报告列了 3 个 bug,经本地 dev server 拿 stack trace + node fetch(纯 UTF-8)二次核实后,**Bug 3 是误报,Bug 1 影响范围缩小,Bug 2 是真 bug 且已修复**。误报根因:Windows GBK 终端的 curl 把中文编码成 GBK 字节,导致服务端 UTF-8 匹配失败。生产前端浏览器发 UTF-8,不受此影响。
 
-**根因**:Astro 6 用 `glob()` loader(`src/content.config.ts`),`entry.id` 是文件名的**全小写**形式,而非原始文件名。
+#### ~~Bug 3(误报)~~:`/api/content-feedback` 404
 
-**证据**(`index.json` 返回的真实 id):
-| 文件名 | entry.id(glob loader) | title |
-| --- | --- | --- |
-| `CC入门.md` | `cc入门` | CC入门 |
-| `Walker启航.md` | `walker启航` | (presumed) |
-| `CLI命令面板.md` | `cli命令面板` | CLI 命令面板 |
-| `卡牌桌.md` | `卡牌桌` | 卡牌桌(纯中文不受影响) |
+**初版判断**:对所有 contentId 返回 404,反馈闭环断裂。
+
+**二次核实**:**这是误报**。用 `node fetch`(绕过 GBK 终端,发纯 UTF-8)测试,本地和生产均返回 **201 成功**:
+```
+node -e "fetch('https://www.iwalk.pro/api/content-feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contentId:'卡牌桌',signal:'useful'})}).then(r=>r.json()).then(console.log)"
+// → { ok:true, feedbackId:'cf_eefd8414-...' }
+```
+**根因**:Windows Git Bash 终端用 GBK 编码 curl 请求体,中文 `卡牌桌` 变成 GBK 字节,服务端 UTF-8 `item.id` 匹配失败。代码本身完全正常。
+
+**教训**:在 Windows 中文终端用 curl 测试含中文 body 的 API 不可靠,必须用 `node fetch` 或显式 UTF-8 编码的 body 文件。本报告其他 curl 结果中,凡涉及中文 body 的都需用此方式重新核实(已核实 content-feedback;search-events/ideas 的英文 body 不受影响)。
+
+#### Bug 1(中,影响范围缩小):`entry.id` 全小写化
+
+**根因**:Astro 6 `glob()` loader(`src/content.config.ts`)把 `entry.id` 设为文件名的全小写形式。`CC入门.md` → `cc入门`。
 
 **验证**:
-- `/posts/cc入门` → 200 ✅
-- `/posts/CC入门` → 404 ❌(原始文件名大小写失效)
-- `/posts/walker启航` → 200 ✅
-- `/posts/Walker启航` → 404 ❌
+- `/posts/cc入门` → 200,`/posts/CC入门` → 404
+- `/posts/walker启航` → 200,`/posts/Walker启航` → 404
 
-**影响范围**:
-- 静态页面路由 `getStaticPaths` 用 `entry.id`(小写)→ 生成的 URL 是小写
-- 但站内任何用**文件名原始大小写**或 **title** 作链接的地方,会指向 404
-- 需要审计 `buildPostPath`、`LikeCounter` 的 path 生成、`BlockFeedback` 的 contentId 传递
+**影响范围(已核实,比初版判断小)**:
+- ✅ **站内链接全部正确**:`posts/[slug].astro` 的 `getStaticPaths`、`buildPostPath`、`buildInternalHref`、`LikeCounter`、`BlockFeedback`、`InlineEditor`、canvas 链接**全部用 `entry.id`**(小写),站内导航不会触发 404
+- ❌ **仅影响外部书签/分享链接**:如果有人记住了 `iwalk.pro/posts/CC入门`(原始大小写),会 404
+- 纯中文 slug(`卡牌桌`、`未来已经在来了`)不受影响,因为没有 ASCII 字母可小写化
 
-**严重度**:高——影响含英文/数字开头的中文 slug(CC入门、CLI命令面板、Walker启航、Codex入门),纯中文 slug 不受影响。
+**严重度调整**:从"高"降为"中"。不是功能性故障,是 SEO/外部链接体验问题。**修复需权衡**:改 loader 影响面巨大;加 redirect 中间件(原始大小写 → 小写)是更稳的方案,但属增强项,非紧急。
 
-#### Bug 2(高):`/api/posts/{slug}/export` 对所有 slug 返回 500
+#### Bug 2(高,已修复):`/api/posts/{slug}/export` 对中文 slug 返回 500
 
-**现象**:即使 slug 正确(`卡牌桌` 小写、页面 200),export 仍 500。
+**根因(已通过本地 stack trace 确认)**:`export.ts:50` 的 `Content-Disposition: attachment; filename="${slug}.md"` —— slug 含中文时,HTTP header 值(ByteString)不允许非 ASCII 字符(码点 > 255),抛 `TypeError: Cannot convert argument to a ByteString`。
 
-**Vercel 日志**:`λ GET /api/posts/%E5%8D%A1%E7%89%8C%E6%A1%8C/export 500 Failed to…`(被截断)
+完整 stack:
+```
+Failed to export markdown: TypeError: Cannot convert argument to a ByteString
+because the character at index 22 has a value of 21345 which is greater than 255.
+    at new Response (... export.ts:46:12)
+```
 
-**代码位置**:`src/pages/api/posts/[slug]/export.ts:21` `getEntry('log', slug)` 或第 30-43 行 frontmatter 拼装抛异常。
+**修复**(commit 待提交):用 RFC 5987 的 `filename*=UTF-8''<percent-encoded>` 格式,并保留 ASCII fallback:
+```ts
+const asciiFallback = /^[\x20-\x7E]+$/.test(slug) ? slug : 'export';
+const filenameStar = encodeURIComponent(slug);
+'Content-Disposition': `attachment; filename="${asciiFallback}.md"; filename*=UTF-8''${filenameStar}.md`
+```
 
-**怀疑根因**(需进一步确认):
-- `getEntry('log', slug)` 在 SSR 端点(prerender=false)里调用,可能受 glob loader 的 id 小写化影响,或 SSR 运行时 content collection 不可用
-- `entry.data.date.toISOString()`——如果某些内容的 date 不是 Date 对象
-- 第 37 行 `entry.data.tags.map(...)`——如果 tags 为 undefined(虽然 schema 必填)
-
-**修复建议**:在 `catch` 块里把 `error.message` 返回到响应体(至少 debug 阶段),或用 Vercel logs 看完整 error。
-
-#### Bug 3(中):`/api/content-feedback` 对所有 contentId 返回 404
-
-**现象**:`content-feedback` 用 `getPublishedContentItems()` 然后 `items.find(item => item.id === input.contentId)`(service 第 55 行)。即使 `contentId` 用小写 `cc入门`,仍 404。
-
-**怀疑根因**:
-- `getPublishedContentItems()` 在 SSR 运行时的 `item.id` 格式,可能和 `index.json` 端点(prerender=true)返回的不同
-- 或 `contentId` 校验需要带 `/posts/` 前缀,但文档和前端 `BlockFeedback.astro` 传的是纯 slug
-- 需要在 service 里加日志确认 `items[0].id` 的真实值
-
-**影响**:访客在文章页点"有用/需补充/已过时"反馈,全部静默失败(404 返回到前端),反馈数据收不上来。这直接破坏了 hit-rate 反馈闭环。
+**验证**:本地 `卡牌桌` → 200,fallback=`export.md`,filename*=UTF-8 编码正确;英文 slug 仍正常。
 
 ## 四、Admin API 域 — 阻塞
 
@@ -132,18 +131,19 @@
 ### 联调价值
 本次联调在**不修改任何代码**的前提下,通过真实请求发现了 3 个文档无法察觉的 bug,并核实了生产环境配置健康度。API 文档(11 文件)的契约描述与实际行为基本一致,唯一漂移是 content collection id 的运行时行为。
 
-### 紧急修复建议(按优先级)
+### 紧急修复建议(按优先级,已按二次核实更新)
 
-1. **P0 — Bug 3 content-feedback 404**:反馈闭环完全断裂,访客反馈收不上来,hit-rate 仪表盘无数据。**先在 `content-feedback.service.ts:55` 加日志确认 `item.id` 真实值,然后修正匹配逻辑**。
+1. **✅ Bug 2 export 500 — 已修复**:RFC 5987 filename* 编码。待部署 Vercel 后生效。
 
-2. **P0 — Bug 2 export 500**:导出功能完全不可用。**先把 `catch` 块的 error.message 透传到响应,跑一次拿真实错误,再修**。
+2. **⚠️ Bug 1 id 小写化 — 降级为增强项**:站内链接一致(全用 entry.id),仅外部书签受影响。若要修,加 redirect 中间件把原始大小写重定向到小写,非紧急。
 
-3. **P1 — Bug 1 id 小写化**:影响英文/数字开头的中文 slug。**审计所有用文件名/title 生成链接或查询的地方,统一改用 `entry.id`**。
+3. **~~Bug 3 content-feedback 404~~ — 误报,已纠正**:代码正常,是测试方法(GBK 终端)的问题。
 
 4. **P1 — 配置补齐**:Vercel 补配 `MATCH_PROCESS_SECRET`(cron 才能跑)、评估是否需要 `BLOB_READ_WRITE_TOKEN`。
 
 5. **P2 — 清理疑似遗留**:确认 `SUPABASE_*` 变量是否还在用,不用则删。
 
 ### 下一步
+- 部署 export 修复到 Vercel(push 后自动触发)
 - 提供一个 owner 测试账号 → 补齐 admin 域联调
-- 或授权我修 P0 的两个 bug(content-feedback + export)
+- 评估是否需要为 Bug 1 加 redirect 中间件

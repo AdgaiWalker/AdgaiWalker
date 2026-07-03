@@ -42,12 +42,15 @@ export const GET: APIRoute = async ({ params }) => {
       .filter(line => line !== null)
       .join('\n');
 
-    // 触发下载响应
+    // 触发下载响应。filename 含中文时，HTTP header（ByteString）不允许非 ASCII，
+    // 需用 RFC 5987 的 filename*=UTF-8''<percent-encoded> 形式，并保留 ASCII fallback。
+    const asciiFallback = /^[\x20-\x7E]+$/.test(slug) ? slug : 'export';
+    const filenameStar = encodeURIComponent(slug);
     return new Response(frontmatter, {
       status: 200,
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${slug}.md"`,
+        'Content-Disposition': `attachment; filename="${asciiFallback}.md"; filename*=UTF-8''${filenameStar}.md`,
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
