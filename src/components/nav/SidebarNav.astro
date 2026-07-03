@@ -52,14 +52,8 @@ const isActiveHref = (href: string) => {
     </button>
   </div>
 
-  <div class="flex-1 px-3 pb-4 relative">
-    <!-- 行人行迹路径轨道线 -->
-    <div class="sidebar-trail-track" aria-hidden="true">
-      <div class="sidebar-trail-progress"></div>
-      <div class="sidebar-trail-dot"></div>
-    </div>
-
-    <div class="flex flex-col gap-5 relative z-10">
+  <div class="flex-1 px-3 pb-4">
+    <div class="flex flex-col gap-5">
       {navGroups.map((group) => (
         <div class="flex flex-col">
           {group.title && (
@@ -364,77 +358,4 @@ const isActiveHref = (href: string) => {
     }
   }
 
-  /* ===== 行人行迹路径线样式 ===== */
-  .sidebar-trail-track {
-    position: absolute;
-    left: 33px; /* 对齐导航图标垂直中轴线 */
-    top: 1.5rem;
-    bottom: 2rem;
-    width: 2px;
-    background-image: linear-gradient(to bottom, var(--color-border) 50%, transparent 50%);
-    background-size: 2px 8px; /* 虚线效果 */
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .sidebar-trail-progress {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 2px;
-    height: 0%;
-    background: var(--color-brand);
-    box-shadow: 0 0 8px var(--color-brand);
-    transition: height 0.15s cubic-bezier(0.25, 1, 0.5, 1);
-  }
-
-  .sidebar-trail-dot {
-    position: absolute;
-    left: -3px;
-    top: 0%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-brand);
-    box-shadow: 0 0 10px var(--color-brand);
-    transform: translateY(-50%);
-    transition: top 0.15s cubic-bezier(0.25, 1, 0.5, 1);
-  }
-
-  /* 折叠侧边栏时隐藏路径轨线 */
-  :global(html[data-sidebar-collapsed]) :global(#main-nav) .sidebar-trail-track {
-    display: none !important;
-  }
 </style>
-
-<script>
-  function initSidebarTrail() {
-    const progressEl = document.querySelector<HTMLElement>('.sidebar-trail-progress');
-    const dotEl = document.querySelector<HTMLElement>('.sidebar-trail-dot');
-    if (!progressEl || !dotEl) return;
-
-    let scrollPercent = 0;
-    function updateTrail() {
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (docHeight <= 0) {
-        progressEl.style.height = '0%';
-        dotEl.style.top = '0%';
-        return;
-      }
-      scrollPercent = window.scrollY / docHeight;
-      const heightPercent = Math.min(Math.max(scrollPercent * 100, 0), 100);
-      progressEl.style.height = `${heightPercent}%`;
-      dotEl.style.top = `${heightPercent}%`;
-    }
-
-    // 监听滚动与页面高度变化
-    window.addEventListener('scroll', updateTrail, { passive: true });
-    window.addEventListener('resize', updateTrail, { passive: true });
-    
-    // 初始化计算一次
-    updateTrail();
-  }
-
-  // 支持 Astro ViewTransitions 路由跳转生命周期
-  document.addEventListener('astro:page-load', initSidebarTrail);
-</script>

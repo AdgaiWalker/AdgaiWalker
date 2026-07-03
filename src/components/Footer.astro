@@ -3,6 +3,10 @@
  * Footer — 导航 + 版权
  */
 import { HOME, POSTS, TOOLS, IDEAS, ABOUT } from '@/shared/routes';
+import { getSolarTerm } from '@/lib/solar-terms';
+
+const term = getSolarTerm();
+const termHighlight = `${term.name} · ${term.poetic.split(/[，,]/)[0]}`;
 ---
 <footer class="py-10 flex flex-col items-center justify-center gap-3 opacity-30 hover:opacity-60 transition-opacity duration-500">
   <nav class="flex items-center gap-4 text-[11px] font-body tracking-wide text-parchment">
@@ -20,7 +24,8 @@ import { HOME, POSTS, TOOLS, IDEAS, ABOUT } from '@/shared/routes';
     <span class="opacity-30">·</span>
     <a href="/rss.xml">RSS</a>
   </nav>
-  <div class="text-[11px] font-body tracking-widest text-parchment uppercase">
-    &copy; {new Date().getFullYear()} Walker · 行过万里水路
+  <div class="flex flex-col items-center gap-1 text-[11px] font-body tracking-widest text-parchment uppercase">
+    <div>&copy; {new Date().getFullYear()} Walker · 行过万里水路</div>
+    <div class="text-[9px] font-mono opacity-50 tracking-wider normal-case">{termHighlight}</div>
   </div>
 </footer>

@@ -91,21 +91,64 @@ const isHome = Astro.url.pathname === '/';
     <!-- 昼夜交替自适应控制 (Diurnal Cycle Switcher) -->
     <script is:inline>
       (function() {
+        var pts = [
+          { t: 0, bg: [225, 20, 10], txt: [225, 15, 80], dim: [225, 10, 50], card: [18, 22, 33, 0.7], border: [255, 255, 255, 0.08], glow: 'radial-gradient(circle at 80% 20%, rgba(147, 197, 253, 0.06), transparent 50%)' },
+          { t: 4.5, bg: [230, 25, 8], txt: [230, 20, 80], dim: [230, 15, 50], card: [15, 20, 32, 0.65], border: [255, 255, 255, 0.08], glow: 'linear-gradient(to top, rgba(249, 115, 22, 0.08) 0%, transparent 60%)' },
+          { t: 6.5, bg: [220, 15, 92], txt: [220, 25, 15], dim: [220, 15, 54], card: [255, 255, 255, 0.7], border: [17, 17, 17, 0.06], glow: 'radial-gradient(circle at 50% 120%, rgba(254, 240, 138, 0.08), transparent 70%)' },
+          { t: 12, bg: [45, 18, 96], txt: [45, 10, 7], dim: [45, 10, 54], card: [255, 255, 255, 0.7], border: [17, 17, 17, 0.06], glow: 'none' },
+          { t: 17.5, bg: [30, 25, 92], txt: [30, 30, 12], dim: [30, 20, 50], card: [255, 255, 255, 0.72], border: [17, 17, 17, 0.06], glow: 'linear-gradient(to bottom, rgba(251, 146, 60, 0.08) 0%, transparent 60%)' },
+          { t: 22, bg: [225, 20, 12], txt: [225, 15, 82], dim: [225, 10, 52], card: [18, 22, 33, 0.7], border: [255, 255, 255, 0.08], glow: 'radial-gradient(circle at 80% 20%, rgba(147, 197, 253, 0.06), transparent 50%)' },
+          { t: 24, bg: [225, 20, 10], txt: [225, 15, 80], dim: [225, 10, 50], card: [18, 22, 33, 0.7], border: [255, 255, 255, 0.08], glow: 'radial-gradient(circle at 80% 20%, rgba(147, 197, 253, 0.06), transparent 50%)' }
+        ];
+
+        function lerp(a, b, f) { return a + (b - a) * f; }
+        function lerpHue(h1, h2, f) {
+          var diff = h2 - h1;
+          if (diff > 180) diff -= 360;
+          else if (diff < -180) diff += 360;
+          return (h1 + diff * f + 360) % 360;
+        }
+        function lerpColor(c1, c2, f) {
+          return [lerpHue(c1[0], c2[0], f), lerp(c1[1], c2[1], f), lerp(c1[2], c2[2], f)];
+        }
+        function lerpArray(a, b, f) {
+          return a.map(function(v, i) { return lerp(v, b[i], f); });
+        }
+
         function updateDiurnalTheme() {
-          const hour = new Date().getHours();
-          const isNight = hour < 6 || hour >= 18;
-          if (isNight) {
-            document.documentElement.classList.add('theme-dark');
-            document.documentElement.classList.remove('theme-light');
-            document.body?.classList.add('theme-dark');
-            document.body?.classList.remove('theme-light');
-          } else {
-            document.documentElement.classList.add('theme-light');
-            document.documentElement.classList.remove('theme-dark');
-            document.body?.classList.add('theme-light');
-            document.body?.classList.remove('theme-dark');
+          var now = new Date();
+          var t = now.getHours() + now.getMinutes() / 60;
+          var pt1 = pts[0], pt2 = pts[0];
+          for (var i = 0; i < pts.length - 1; i++) {
+            if (t >= pts[i].t && t <= pts[i+1].t) {
+              pt1 = pts[i];
+              pt2 = pts[i+1];
+              break;
+            }
+          }
+          var f = (t - pt1.t) / (pt2.t - pt1.t);
+          
+          var bg = lerpColor(pt1.bg, pt2.bg, f);
+          var txt = lerpColor(pt1.txt, pt2.txt, f);
+          var dim = lerpColor(pt1.dim, pt2.dim, f);
+          var card = lerpArray(pt1.card, pt2.card, f);
+          var border = lerpArray(pt1.border, pt2.border, f);
+          var glow = f < 0.5 ? pt1.glow : pt2.glow;
+
+          var root = document.documentElement;
+          root.style.setProperty('--color-bg', 'hsl(' + bg[0].toFixed(1) + ',' + bg[1].toFixed(1) + '%,' + bg[2].toFixed(1) + '%)');
+          root.style.setProperty('--color-parchment', 'hsl(' + txt[0].toFixed(1) + ',' + txt[1].toFixed(1) + '%,' + txt[2].toFixed(1) + '%)');
+          root.style.setProperty('--color-parchment-dim', 'hsl(' + dim[0].toFixed(1) + ',' + dim[1].toFixed(1) + '%,' + dim[2].toFixed(1) + '%)');
+          root.style.setProperty('--color-card', 'rgba(' + Math.round(card[0]) + ',' + Math.round(card[1]) + ',' + Math.round(card[2]) + ',' + card[3].toFixed(2) + ')');
+          root.style.setProperty('--color-border', 'rgba(' + Math.round(border[0]) + ',' + Math.round(border[1]) + ',' + Math.round(border[2]) + ',' + border[3].toFixed(2) + ')');
+          root.style.setProperty('--ambient-glow', glow);
+          
+          if (document.body) {
+            document.body.style.backgroundColor = 'var(--color-bg)';
+            document.body.style.color = 'var(--color-parchment)';
           }
         }
+
         updateDiurnalTheme();
         document.addEventListener('astro:page-load', updateDiurnalTheme);
       })();
@@ -156,6 +199,8 @@ const isHome = Astro.url.pathname === '/';
     <div class="fixed inset-0 -z-20 overflow-hidden bg-transparent" aria-hidden="true">
       {/* 极弱极细格线网纹 */}
       <div class="absolute inset-0 opacity-[0.015] pointer-events-none" style="background-image: radial-gradient(#000 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
+      {/* 昼夜环境微光 (Ambient Light) */}
+      <div class="absolute inset-0 pointer-events-none transition-all duration-1000" id="diurnal-ambient-glow" style="background: var(--ambient-glow, none);"></div>
     </div>
     
     {/* 全局 Orbs 流光自适应背景 — 搭载 transition:persist 跨页面无缝留存 */}
