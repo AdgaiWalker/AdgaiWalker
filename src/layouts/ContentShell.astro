@@ -356,13 +356,15 @@ const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
     right: 0;
     height: 2px;
     z-index: 40;
-    background: transparent;
+    background-image: linear-gradient(to right, var(--color-border) 50%, transparent 50%);
+    background-size: 8px 2px; /* 水平虚线行迹轨道 */
     pointer-events: none;
   }
   .reading-progress-bar {
     height: 100%;
     width: 0%;
-    background: color-mix(in srgb, var(--color-brand) 60%, transparent);
+    background: var(--color-brand);
+    box-shadow: 0 0 6px var(--color-brand);
     transition: width 0.1s linear;
   }
   .reading-progress-pct {

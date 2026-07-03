@@ -88,6 +88,29 @@ const isHome = Astro.url.pathname === '/';
     <!-- 传递 pureMode 给环境脚本 -->
     <meta name="env-pure-mode" content={pureMode ? "true" : "false"} />
 
+    <!-- 昼夜交替自适应控制 (Diurnal Cycle Switcher) -->
+    <script is:inline>
+      (function() {
+        function updateDiurnalTheme() {
+          const hour = new Date().getHours();
+          const isNight = hour < 6 || hour >= 18;
+          if (isNight) {
+            document.documentElement.classList.add('theme-dark');
+            document.documentElement.classList.remove('theme-light');
+            document.body?.classList.add('theme-dark');
+            document.body?.classList.remove('theme-light');
+          } else {
+            document.documentElement.classList.add('theme-light');
+            document.documentElement.classList.remove('theme-dark');
+            document.body?.classList.add('theme-light');
+            document.body?.classList.remove('theme-dark');
+          }
+        }
+        updateDiurnalTheme();
+        document.addEventListener('astro:page-load', updateDiurnalTheme);
+      })();
+    </script>
+
     {/* 注入二十四节气「时令共振」主题全局 CSS 变量 */}
     <style is:global define:vars={{
       stBrand: term.colors.brand,

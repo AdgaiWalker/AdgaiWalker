@@ -37,42 +37,42 @@ const transitionDays = [
 // 共享的季节基础模板
 const SPRING_BASE = {
   themeType: 'light' as const,
-  bg: '#FCFAF6', // 宣纸温白
-  card: 'rgba(255, 255, 255, 0.72)', // 轻薄玉白
-  border: 'rgba(0, 0, 0, 0.05)',
-  parchment: '#1B2521', // 深墨灰
-  parchmentDim: '#5A6763', // 浅苔绿灰
-  mistBg: 'rgba(250, 249, 245, 0.45)',
+  bg: '#F7F6F2', // 点子温暖沙白
+  card: 'rgba(255, 255, 255, 0.7)', 
+  border: 'rgba(17, 17, 17, 0.06)',
+  parchment: '#111111', // 点子主文字炭黑
+  parchmentDim: '#8A8A8A', // 点子中性灰
+  mistBg: 'rgba(247, 246, 242, 0.45)',
 };
 
 const SUMMER_BASE = {
   themeType: 'light' as const,
-  bg: '#F1F5F6', // 冰川凉白
-  card: 'rgba(255, 255, 255, 0.8)', // 极净冰白
-  border: 'rgba(0, 0, 0, 0.04)',
-  parchment: '#121822', // 深蓝灰
-  parchmentDim: '#515B69', // 浅雾蓝灰
-  mistBg: 'rgba(241, 245, 246, 0.45)',
+  bg: '#F7F6F2', // 点子温暖沙白
+  card: 'rgba(255, 255, 255, 0.7)',
+  border: 'rgba(17, 17, 17, 0.06)',
+  parchment: '#111111', // 点子主文字炭黑
+  parchmentDim: '#8A8A8A', // 点子中性灰
+  mistBg: 'rgba(247, 246, 242, 0.45)',
 };
 
 const AUTUMN_BASE = {
   themeType: 'light' as const,
-  bg: '#F7F4EE', // 燕麦沙白
-  card: 'rgba(255, 255, 255, 0.68)', // 浅沙磨砂
-  border: 'rgba(0, 0, 0, 0.05)',
-  parchment: '#241D17', // 深焦糖褐
-  parchmentDim: '#635B54', // 浅茶灰
-  mistBg: 'rgba(247, 244, 238, 0.45)',
+  bg: '#F7F6F2', // 点子温暖沙白
+  card: 'rgba(255, 255, 255, 0.7)',
+  border: 'rgba(17, 17, 17, 0.06)',
+  parchment: '#111111', // 点子主文字炭黑
+  parchmentDim: '#8A8A8A', // 点子中性灰
+  mistBg: 'rgba(247, 246, 242, 0.45)',
 };
 
 const WINTER_BASE = {
   themeType: 'dark' as const,
-  bg: '#0A0E1A', // 深夜极地黑
-  card: 'rgba(20, 28, 48, 0.65)', // 黑曜石玻璃
+  bg: '#090A0F', // 点子深夜极暗黑
+  card: 'rgba(18, 19, 26, 0.7)', 
   border: 'rgba(255, 255, 255, 0.08)',
-  parchment: '#F3F4F6', // 雪霰白
-  parchmentDim: '#94A3B8', // 烟灰蓝
-  mistBg: 'rgba(10, 14, 26, 0.5)',
+  parchment: '#E8E8ED', // 点子暗色纸张文本
+  parchmentDim: '#86868B', // 点子辅助暗色文本
+  mistBg: 'rgba(9, 10, 15, 0.5)',
 };
 
 const solarTermsMap: Record<string, SolarTermData> = {
