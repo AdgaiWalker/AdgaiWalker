@@ -2,16 +2,20 @@
  * Support Media Storage — 赞赏码图片公开存储
  *
  * 赞赏码是公开展示给 /support 访客的小图,与 appearance 的 owner-only 私有背景媒体职责分离。
- * 存到 public/uploads/support/,Astro 静态服务,访客直接公开可读。
- * 不接 Vercel Blob(赞赏码是小图,本地 public 足够,无需 BLOB token)。
+ *
+ * 双模式存储:
+ * - dev/test:写入 public/uploads/support/(本地磁盘可写,Astro 静态服务)
+ * - 生产:上传到 Vercel Blob(access: 'public',公开 URL,访客直接 <img src>)
+ *   (Vercel 函数文件系统只读,public/ 目录不可写,必须用对象存储)
  *
  * 与 admin-media-storage 的区别:
- * - appearance 媒体:owner 可见,走 /api/admin/appearance/media 受保护读取
- * - support 媒体:公开可读,直接 /uploads/support/... 静态 URL
+ * - appearance 媒体:owner 可见,access: 'private',需受保护读取
+ * - support 媒体:公开可读,access: 'public',直接静态 URL
  */
 import { randomUUID } from 'node:crypto';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { put as blobPut, del as blobDel } from '@vercel/blob';
 
 const SUPPORT_ROOT = path.resolve(process.cwd(), 'public', 'uploads', 'support');
 const SUPPORT_PUBLIC_BASE = '/uploads/support';
@@ -33,33 +37,46 @@ const MIME_TO_EXT: Record<string, string> = {
 export interface SavedSupportMedia {
   /** 公开可读 URL,直接用于 <img src> */
   publicUrl: string;
-  /** 存储相对路径(相对 SUPPORT_ROOT) */
+  /** Blob 存储路径(Blob 模式)或本地相对路径(本地模式),用于删除 */
   storageKey: string;
+  /** 存储模式标识,决定删除逻辑 */
+  storageBackend: 'local' | 'blob';
 }
 
-/**
- * 保存赞赏码图片到 public/uploads/support/。
- * 文件名用 UUID,扩展名由 mimeType 决定(不信客户端 filename)。
- */
-export async function saveSupportMedia(mimeType: string, bytes: Uint8Array): Promise<SavedSupportMedia> {
+/** 判断当前运行环境 */
+function currentEnvironment(): string {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV) return process.env.NODE_ENV;
+  return 'production';
+}
+
+/** 是否走 Vercel Blob(生产 + 有 token) */
+function shouldUseBlob(): boolean {
+  const env = currentEnvironment();
+  const isDevLike = env === 'development' || env === 'test';
+  if (isDevLike) return false;
+  return Boolean(typeof process !== 'undefined' && process.env?.BLOB_READ_WRITE_TOKEN);
+}
+
+/** 业务错误,带 code + http status,API 层据此映射响应码 */
+export class SupportMediaError extends Error {
+  readonly code: string;
+  readonly status: number;
+  constructor(code: string, message: string, status: number) {
+    super(message);
+    this.name = 'SupportMediaError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
+function validateImage(mimeType: string, bytes: Uint8Array): string {
   if (!ALLOWED_MIME.has(mimeType)) {
     throw new SupportMediaError('unsupported-media', `不支持的图片类型:${mimeType}。支持 png/jpeg/webp/gif。`, 415);
   }
   if (bytes.byteLength > SUPPORT_MEDIA_MAX_BYTES) {
     throw new SupportMediaError('too-large', `图片过大(${(bytes.byteLength / 1024 / 1024).toFixed(1)}MB),上限 5MB。`, 413);
   }
-
-  const ext = MIME_TO_EXT[mimeType] ?? '';
-  const storageKey = `${randomUUID()}${ext}`;
-  const target = resolveSafePath(storageKey);
-
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, bytes);
-
-  return {
-    publicUrl: `${SUPPORT_PUBLIC_BASE}/${storageKey}`,
-    storageKey,
-  };
+  return MIME_TO_EXT[mimeType] ?? '';
 }
 
 /**
@@ -75,36 +92,67 @@ function resolveSafePath(storageKey: string): string {
 }
 
 /**
- * 从 publicUrl 反解 storageKey(用于删除)。
- * publicUrl 形如 /uploads/support/<uuid>.png,提取出 <uuid>.png。
- * 不匹配则返回 null(比如外部图床 URL,不是本站存的,无需删文件)。
+ * 保存赞赏码图片。
+ * - dev/test:写入 public/uploads/support/<uuid>.<ext>
+ * - 生产:上传到 Vercel Blob(公开访问)
  */
-export function storageKeyFromPublicUrl(publicUrl: string): string | null {
-  if (!publicUrl.startsWith(SUPPORT_PUBLIC_BASE + '/')) return null;
-  const key = publicUrl.slice(SUPPORT_PUBLIC_BASE.length + 1);
-  // 仅允许 UUID.扩展名 格式,防路径穿越
-  return /^[a-f0-9-]+\.(png|jpe?g|webp|gif)$/i.test(key) ? key : null;
+export async function saveSupportMedia(mimeType: string, bytes: Uint8Array): Promise<SavedSupportMedia> {
+  const ext = validateImage(mimeType, bytes);
+
+  if (shouldUseBlob()) {
+    // 生产:Vercel Blob 公开上传
+    const storageKey = `support/${randomUUID()}${ext}`;
+    const blob = await blobPut(storageKey, Buffer.from(bytes), {
+      access: 'public',
+      contentType: mimeType,
+      addRandomSuffix: false,
+    });
+    return {
+      publicUrl: blob.url,
+      storageKey: blob.pathname,
+      storageBackend: 'blob',
+    };
+  }
+
+  // dev/test:本地文件系统(生产 Vercel 函数文件系统只读,走不到这里)
+  const env = currentEnvironment();
+  const isDevLike = env === 'development' || env === 'test';
+  if (!isDevLike) {
+    throw new SupportMediaError(
+      'storage-unavailable',
+      '生产环境需要配置 BLOB_READ_WRITE_TOKEN 才能上传图片。Vercel 函数文件系统只读。',
+      503,
+    );
+  }
+
+  const storageKey = `${randomUUID()}${ext}`;
+  const target = resolveSafePath(storageKey);
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, bytes);
+  return {
+    publicUrl: `${SUPPORT_PUBLIC_BASE}/${storageKey}`,
+    storageKey,
+    storageBackend: 'local',
+  };
 }
 
 /**
- * 删除赞赏码图片文件。文件不存在不报错(force: true)。
- * 外部图床 URL(storageKey 解析为 null)直接跳过,不抛错。
+ * 删除赞赏码图片。
+ * - 本地文件:从磁盘删除(force:true,不存在不报错)
+ * - Vercel Blob:调用 blob.del
+ * - 外部图床 URL(非本站存的):跳过,不报错
  */
-export async function removeSupportMedia(publicUrl: string): Promise<void> {
-  const storageKey = storageKeyFromPublicUrl(publicUrl);
-  if (!storageKey) return; // 外部 URL 或无效,无需删本地文件
-  const target = resolveSafePath(storageKey);
-  await rm(target, { force: true });
-}
-
-/** 业务错误,带 code + http status,API 层据此映射响应码 */
-export class SupportMediaError extends Error {
-  readonly code: string;
-  readonly status: number;
-  constructor(code: string, message: string, status: number) {
-    super(message);
-    this.name = 'SupportMediaError';
-    this.code = code;
-    this.status = status;
+export async function removeSupportMedia(saved: { publicUrl: string; storageBackend: string; storageKey: string }): Promise<void> {
+  if (saved.storageBackend === 'blob') {
+    if (shouldUseBlob()) {
+      await blobDel(saved.publicUrl).catch(() => { /* 不存在不报错 */ });
+    }
+    return;
   }
+
+  // 本地模式:仅删 UUID.扩展名 格式的本地文件
+  const key = saved.storageKey;
+  if (!/^[a-f0-9-]+\.(png|jpe?g|webp|gif)$/i.test(key)) return;
+  const target = resolveSafePath(key);
+  await rm(target, { force: true });
 }

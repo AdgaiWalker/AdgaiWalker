@@ -15,7 +15,7 @@ import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { captureException } from '@/lib/sentry';
-import { saveSupportMedia, removeSupportMedia, SupportMediaError, SUPPORT_MEDIA_MAX_BYTES } from '@/lib/support-media-storage';
+import { saveSupportMedia, removeSupportMedia, SupportMediaError } from '@/lib/support-media-storage';
 import { createSessionStore } from '@/stores/session.store';
 import { getSupportConfig, saveSupportConfig } from '@/stores/support-config.store';
 import type { SupportConfig } from '@/stores/ports';
@@ -139,11 +139,36 @@ export const DELETE: APIRoute = async ({ request }) => {
   };
   await saveSupportConfig(config);
 
-  // 2. 删磁盘文件(本站存的才删;外部图床 URL 跳过)
+  // 2. 删存储文件(本站存的才删;外部图床 URL 跳过)
   if (urlToRemove) {
-    try { await removeSupportMedia(urlToRemove); }
-    catch (error) { captureException(error, { action: 'support.media.delete' }); /* 删文件失败不阻断配置清除 */ }
+    const saved = inferSavedFromUrl(urlToRemove);
+    if (saved) {
+      try { await removeSupportMedia(saved); }
+      catch (error) { captureException(error, { action: 'support.media.delete' }); /* 删文件失败不阻断配置清除 */ }
+    }
   }
 
   return json({ ok: true, field });
 };
+
+/**
+ * 从 publicUrl 反推存储信息,用于删除。
+ * - Blob URL:形如 https://xxx.public.blob.vercel-storage.com/support/<uuid>.<ext>
+ * - 本地 URL:形如 /uploads/support/<uuid>.<ext>
+ * - 外部 URL:其他,返回 null(删不到)
+ */
+function inferSavedFromUrl(publicUrl: string): { publicUrl: string; storageBackend: 'local' | 'blob'; storageKey: string } | null {
+  // Blob URL(含 vercel-storage.com 或 https 开头且不是本地路径)
+  if (/^https?:\/\/.*vercel-storage\.com\//.test(publicUrl)) {
+    const pathname = new URL(publicUrl).pathname.replace(/^\//, '');
+    return { publicUrl, storageBackend: 'blob', storageKey: pathname };
+  }
+  // 本地 URL
+  if (publicUrl.startsWith('/uploads/support/')) {
+    const key = publicUrl.slice('/uploads/support/'.length);
+    if (/^[a-f0-9-]+\.(png|jpe?g|webp|gif)$/i.test(key)) {
+      return { publicUrl, storageBackend: 'local', storageKey: key };
+    }
+  }
+  return null; // 外部图床,删不到
+}
