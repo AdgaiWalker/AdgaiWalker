@@ -34,17 +34,52 @@ const support = await getSupportConfig();
 
     <section class="block">
       <h2>赞赏设置（个人收款码）</h2>
-      <p class="hint">展示你的微信/支付宝个人赞赏码 + 可选外链到 <a href="/support" target="_blank">/support</a>。个人收款码无需商户号、无需营业执照，访客扫码付。QR 图片先在 <a href="/admin/appearance">外观与媒体</a> 上传，把返回的图片地址填到下方。</p>
-      <form id="support-form" class="support-form">
-        <label class="full">微信赞赏码图片地址 <input type="url" name="wechatQrUrl" placeholder="https://…" value={support?.wechatQrUrl ?? ''} /></label>
-        <label class="full">支付宝收款码图片地址 <input type="url" name="alipayQrUrl" placeholder="https://…" value={support?.alipayQrUrl ?? ''} /></label>
-        <label class="full">外链（爱发电/Ko-fi，可选） <input type="url" name="externalUrl" placeholder="https://afdian.net/…" value={support?.externalUrl ?? ''} /></label>
-        <label>外链文案 <input type="text" name="externalLabel" placeholder="通过爱发电支持我" value={support?.externalLabel ?? ''} /></label>
-        <label class="full">赞赏文案（为什么支持） <textarea name="blurb" rows="2" placeholder="如果内容对你有帮助，请我喝杯咖啡。">{support?.blurb ?? ''}</textarea></label>
-        <button type="submit" class="btn-primary">保存赞赏设置</button>
-        <span id="support-saved" class="saved-tip" role="status" aria-live="polite"></span>
-        <a href="/support" target="_blank" class="preview-link">预览 /support →</a>
-      </form>
+      <p class="hint">展示你的微信/支付宝个人赞赏码 + 可选外链到 <a href="/support" target="_blank">/support</a>。个人收款码无需商户号、无需营业执照，访客扫码付。</p>
+
+      <div class="qr-upload-grid">
+        <div class="qr-upload-card" data-field="wechat">
+          <div class="qr-upload-head">微信赞赏码</div>
+          <div class="qr-preview" data-qr-preview={support?.wechatQrUrl ?? ''}>
+            {support?.wechatQrUrl
+              ? <img src={support.wechatQrUrl} alt="微信赞赏码" data-qr-img />
+              : <span class="qr-placeholder">未上传</span>}
+          </div>
+          <div class="qr-dropzone" data-dropzone="wechat" tabindex="0" role="button" aria-label="上传微信赞赏码">
+            <span class="dropzone-hint">📎 选择文件<br/>或<strong>粘贴 Ctrl+V</strong> / 拖拽图片到此</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file-input="wechat" hidden />
+            <span class="qr-status" data-qr-status="wechat" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="qr-upload-card" data-field="alipay">
+          <div class="qr-upload-head">支付宝收款码</div>
+          <div class="qr-preview" data-qr-preview={support?.alipayQrUrl ?? ''}>
+            {support?.alipayQrUrl
+              ? <img src={support.alipayQrUrl} alt="支付宝收款码" data-qr-img />
+              : <span class="qr-placeholder">未上传</span>}
+          </div>
+          <div class="qr-dropzone" data-dropzone="alipay" tabindex="0" role="button" aria-label="上传支付宝收款码">
+            <span class="dropzone-hint">📎 选择文件<br/>或<strong>粘贴 Ctrl+V</strong> / 拖拽图片到此</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file-input="alipay" hidden />
+            <span class="qr-status" data-qr-status="alipay" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
+
+      <details class="advanced-url">
+        <summary>高级:手动填 URL(外部图床)</summary>
+        <form id="support-form" class="support-form">
+          <label class="full">微信赞赏码 URL <input type="url" name="wechatQrUrl" placeholder="https://…" value={support?.wechatQrUrl ?? ''} /></label>
+          <label class="full">支付宝收款码 URL <input type="url" name="alipayQrUrl" placeholder="https://…" value={support?.alipayQrUrl ?? ''} /></label>
+          <label class="full">外链（爱发电/Ko-fi，可选） <input type="url" name="externalUrl" placeholder="https://afdian.net/…" value={support?.externalUrl ?? ''} /></label>
+          <label>外链文案 <input type="text" name="externalLabel" placeholder="通过爱发电支持我" value={support?.externalLabel ?? ''} /></label>
+          <label class="full">赞赏文案（为什么支持） <textarea name="blurb" rows="2" placeholder="如果内容对你有帮助，请我喝杯咖啡。">{support?.blurb ?? ''}</textarea></label>
+          <button type="submit" class="btn-primary">保存</button>
+          <span id="support-saved" class="saved-tip" role="status" aria-live="polite"></span>
+        </form>
+      </details>
+
+      <a href="/support" target="_blank" class="preview-link">预览 /support →</a>
     </section>
 
     <section class="block">
@@ -136,6 +171,26 @@ const support = await getSupportConfig();
     .support-form label.full { grid-column: 1 / -1; }
     .support-form input, .support-form textarea { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
     .support-form .btn-primary { grid-column: 1 / -1; justify-self: start; }
+    /* 赞赏码上传卡片 */
+    .qr-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .qr-upload-card { border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 0.85rem; background: rgba(255,255,255,0.5); }
+    .qr-upload-head { font-size: 0.82rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--adm-text, #1c1917); }
+    .qr-preview { width: 100%; aspect-ratio: 1; max-width: 160px; margin: 0 auto 0.6rem; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f4; border: 1px dashed rgba(0,0,0,0.1); }
+    .qr-preview img { width: 100%; height: 100%; object-fit: contain; }
+    .qr-placeholder { font-size: 0.78rem; color: var(--adm-text-faint, #a8a29e); }
+    .qr-dropzone { cursor: pointer; border: 1.5px dashed rgba(53,191,171,0.4); border-radius: 10px; padding: 0.8rem; text-align: center; transition: all 0.15s ease; background: rgba(53,191,171,0.03); }
+    .qr-dropzone:hover, .qr-dropzone:focus-visible { border-color: var(--color-brand, #35bfab); background: rgba(53,191,171,0.08); outline: none; }
+    .qr-dropzone.drag-over { border-color: var(--color-brand, #35bfab); background: rgba(53,191,171,0.15); transform: scale(1.01); }
+    .dropzone-hint { font-size: 0.76rem; color: var(--adm-text-dim, #57534e); line-height: 1.6; display: block; }
+    .dropzone-hint strong { color: var(--color-brand, #35bfab); }
+    .qr-status { display: block; margin-top: 0.4rem; font-size: 0.74rem; min-height: 1em; }
+    .qr-status.uploading { color: #1d4ed8; }
+    .qr-status.success { color: #065f46; }
+    .qr-status.error { color: #9a3412; }
+    .advanced-url { margin-top: 0.5rem; padding: 0.6rem 0.8rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; background: rgba(0,0,0,0.02); }
+    .advanced-url summary { cursor: pointer; font-size: 0.78rem; color: var(--adm-text-dim, #78716c); font-weight: 700; }
+    .advanced-url[open] summary { margin-bottom: 0.6rem; }
+    .advanced-url .support-form { margin-top: 0.5rem; }
     .preview-link { grid-column: 1 / -1; justify-self: start; font-size: 0.8rem; color: var(--color-brand, #35bfab); text-decoration: none; }
     .saved-tip { font-size: 0.78rem; color: #065f46; align-self: center; opacity: 0; transition: opacity 0.3s ease; }
     .saved-tip.show { opacity: 1; }
@@ -161,6 +216,8 @@ const support = await getSupportConfig();
     @media (max-width: 640px) {
       .offer-form { grid-template-columns: 1fr; }
       .support-form { grid-template-columns: 1fr; }
+      .qr-upload-grid { grid-template-columns: 1fr; }
+      .qr-preview { max-width: 140px; }
       .data-table { font-size: 0.76rem; }
       .data-table th { font-size: 0.68rem; padding: 0.4rem 0.35rem; }
       .data-table td { padding: 0.4rem 0.35rem; }
@@ -170,6 +227,95 @@ const support = await getSupportConfig();
   <script is:inline>
     const tell = (m) => window.WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
     const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then((r) => r.json().then((d) => ({ ok: r.ok, data: d })));
+
+    // === 赞赏码上传:文件选择 + 粘贴 + 拖拽,三种方式统一走 uploadFile ===
+    const VALID_FIELDS = ['wechat', 'alipay'];
+
+    async function uploadQrFile(file, field) {
+      if (!VALID_FIELDS.includes(field)) return;
+      if (!file || !file.type.startsWith('image/')) {
+        tell('只支持图片文件(png/jpeg/webp/gif)');
+        return;
+      }
+      const statusEl = document.querySelector('[data-qr-status="' + field + '"]');
+      const previewEl = document.querySelector('[data-qr-preview]');
+      const card = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
+
+      if (statusEl) { statusEl.textContent = '上传中…'; statusEl.className = 'qr-status uploading'; }
+
+      const fd = new FormData();
+      fd.append('field', field);
+      fd.append('file', file);
+      try {
+        const res = await fetch('/api/admin/support-upload', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok && data.url) {
+          // 更新预览图
+          const cardPreview = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
+          if (cardPreview) {
+            cardPreview.innerHTML = '<img src="' + data.url + '" alt="' + (field === 'wechat' ? '微信赞赏码' : '支付宝收款码') + '" data-qr-img />';
+          }
+          // 同步到高级 URL 输入框(保持一致)
+          const urlInput = document.querySelector('#support-form [name="' + (field === 'wechat' ? 'wechatQrUrl' : 'alipayQrUrl') + '"]');
+          if (urlInput) urlInput.value = data.url;
+          if (statusEl) { statusEl.textContent = '已上传'; statusEl.className = 'qr-status success'; }
+          tell((field === 'wechat' ? '微信' : '支付宝') + '赞赏码已上传');
+        } else {
+          if (statusEl) { statusEl.textContent = data.error || '上传失败'; statusEl.className = 'qr-status error'; }
+          tell(data.error || '上传失败');
+        }
+      } catch (err) {
+        if (statusEl) { statusEl.textContent = '网络错误'; statusEl.className = 'qr-status error'; }
+        tell('上传失败:网络错误');
+      }
+    }
+
+    // 文件选择(dropzone 点击 → 触发隐藏 file input)
+    document.querySelectorAll('[data-dropzone]').forEach((zone) => {
+      const field = zone.dataset.dropzone;
+      const fileInput = document.querySelector('[data-file-input="' + field + '"]');
+      zone.addEventListener('click', (e) => {
+        if (e.target === fileInput) return;
+        fileInput && fileInput.click();
+      });
+      zone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput && fileInput.click(); }
+      });
+      if (fileInput) {
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files && fileInput.files[0]) uploadQrFile(fileInput.files[0], field);
+          fileInput.value = '';
+        });
+      }
+      // 拖拽
+      zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) uploadQrFile(file, field);
+      });
+    });
+
+    // 粘贴(全局监听,根据剪贴板图片自动判断 field:聚焦哪个 dropzone 就传哪个)
+    let activeField = null;
+    document.querySelectorAll('[data-dropzone]').forEach((zone) => {
+      zone.addEventListener('focus', () => { activeField = zone.dataset.dropzone; });
+      zone.addEventListener('blur', () => { if (activeField === zone.dataset.dropzone) activeField = null; });
+    });
+    document.addEventListener('paste', (e) => {
+      if (!activeField) return;
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) { e.preventDefault(); uploadQrFile(file, activeField); }
+          return;
+        }
+      }
+    });
 
     document.getElementById('support-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
