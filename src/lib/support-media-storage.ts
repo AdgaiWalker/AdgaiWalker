@@ -10,7 +10,7 @@
  * - support 媒体:公开可读,直接 /uploads/support/... 静态 URL
  */
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const SUPPORT_ROOT = path.resolve(process.cwd(), 'public', 'uploads', 'support');
@@ -51,13 +51,7 @@ export async function saveSupportMedia(mimeType: string, bytes: Uint8Array): Pro
 
   const ext = MIME_TO_EXT[mimeType] ?? '';
   const storageKey = `${randomUUID()}${ext}`;
-  const target = path.resolve(SUPPORT_ROOT, storageKey);
-
-  // 路径越界守卫:确保 target 在 SUPPORT_ROOT 内
-  const root = path.resolve(SUPPORT_ROOT);
-  if (target !== root && !target.startsWith(root + path.sep)) {
-    throw new SupportMediaError('invalid-path', '存储路径异常。', 400);
-  }
+  const target = resolveSafePath(storageKey);
 
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, bytes);
@@ -66,6 +60,41 @@ export async function saveSupportMedia(mimeType: string, bytes: Uint8Array): Pro
     publicUrl: `${SUPPORT_PUBLIC_BASE}/${storageKey}`,
     storageKey,
   };
+}
+
+/**
+ * 路径越界守卫:确保解析后的路径在 SUPPORT_ROOT 内,返回绝对路径。
+ */
+function resolveSafePath(storageKey: string): string {
+  const resolved = path.resolve(SUPPORT_ROOT, storageKey);
+  const root = path.resolve(SUPPORT_ROOT);
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw new SupportMediaError('invalid-path', '存储路径异常。', 400);
+  }
+  return resolved;
+}
+
+/**
+ * 从 publicUrl 反解 storageKey(用于删除)。
+ * publicUrl 形如 /uploads/support/<uuid>.png,提取出 <uuid>.png。
+ * 不匹配则返回 null(比如外部图床 URL,不是本站存的,无需删文件)。
+ */
+export function storageKeyFromPublicUrl(publicUrl: string): string | null {
+  if (!publicUrl.startsWith(SUPPORT_PUBLIC_BASE + '/')) return null;
+  const key = publicUrl.slice(SUPPORT_PUBLIC_BASE.length + 1);
+  // 仅允许 UUID.扩展名 格式,防路径穿越
+  return /^[a-f0-9-]+\.(png|jpe?g|webp|gif)$/i.test(key) ? key : null;
+}
+
+/**
+ * 删除赞赏码图片文件。文件不存在不报错(force: true)。
+ * 外部图床 URL(storageKey 解析为 null)直接跳过,不抛错。
+ */
+export async function removeSupportMedia(publicUrl: string): Promise<void> {
+  const storageKey = storageKeyFromPublicUrl(publicUrl);
+  if (!storageKey) return; // 外部 URL 或无效,无需删本地文件
+  const target = resolveSafePath(storageKey);
+  await rm(target, { force: true });
 }
 
 /** 业务错误,带 code + http status,API 层据此映射响应码 */

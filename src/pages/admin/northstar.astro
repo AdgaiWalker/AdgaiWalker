@@ -39,10 +39,11 @@ const support = await getSupportConfig();
       <div class="qr-upload-grid">
         <div class="qr-upload-card" data-field="wechat">
           <div class="qr-upload-head">微信赞赏码</div>
-          <div class="qr-preview" data-qr-preview={support?.wechatQrUrl ?? ''}>
+          <div class="qr-preview-wrap" data-qr-preview={support?.wechatQrUrl ?? ''}>
             {support?.wechatQrUrl
               ? <img src={support.wechatQrUrl} alt="微信赞赏码" data-qr-img />
               : <span class="qr-placeholder">未上传</span>}
+            {support?.wechatQrUrl && <button class="qr-delete" data-qr-delete="wechat" title="删除微信赞赏码" aria-label="删除微信赞赏码">✕</button>}
           </div>
           <div class="qr-dropzone" data-dropzone="wechat" tabindex="0" role="button" aria-label="上传微信赞赏码">
             <span class="dropzone-hint">📎 选择文件<br/>或<strong>粘贴 Ctrl+V</strong> / 拖拽图片到此</span>
@@ -53,10 +54,11 @@ const support = await getSupportConfig();
 
         <div class="qr-upload-card" data-field="alipay">
           <div class="qr-upload-head">支付宝收款码</div>
-          <div class="qr-preview" data-qr-preview={support?.alipayQrUrl ?? ''}>
+          <div class="qr-preview-wrap" data-qr-preview={support?.alipayQrUrl ?? ''}>
             {support?.alipayQrUrl
               ? <img src={support.alipayQrUrl} alt="支付宝收款码" data-qr-img />
               : <span class="qr-placeholder">未上传</span>}
+            {support?.alipayQrUrl && <button class="qr-delete" data-qr-delete="alipay" title="删除支付宝收款码" aria-label="删除支付宝收款码">✕</button>}
           </div>
           <div class="qr-dropzone" data-dropzone="alipay" tabindex="0" role="button" aria-label="上传支付宝收款码">
             <span class="dropzone-hint">📎 选择文件<br/>或<strong>粘贴 Ctrl+V</strong> / 拖拽图片到此</span>
@@ -175,12 +177,16 @@ const support = await getSupportConfig();
     .qr-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
     .qr-upload-card { border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 0.85rem; background: rgba(255,255,255,0.5); }
     .qr-upload-head { font-size: 0.82rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--adm-text, #1c1917); }
-    .qr-preview { width: 100%; aspect-ratio: 1; max-width: 160px; margin: 0 auto 0.6rem; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f4; border: 1px dashed rgba(0,0,0,0.1); }
-    .qr-preview img { width: 100%; height: 100%; object-fit: contain; }
+    .qr-preview-wrap { position: relative; width: 100%; aspect-ratio: 1; max-width: 160px; margin: 0 auto 0.6rem; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f4; border: 1px dashed rgba(0,0,0,0.1); }
+    .qr-preview-wrap img { width: 100%; height: 100%; object-fit: contain; }
     .qr-placeholder { font-size: 0.78rem; color: var(--adm-text-faint, #a8a29e); }
+    .qr-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(154,52,18,0.85); color: #fff; cursor: pointer; font-size: 0.72rem; line-height: 1; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s ease; }
+    .qr-preview-wrap:hover .qr-delete { opacity: 1; }
+    .qr-delete:hover { background: #9a3412; }
     .qr-dropzone { cursor: pointer; border: 1.5px dashed rgba(53,191,171,0.4); border-radius: 10px; padding: 0.8rem; text-align: center; transition: all 0.15s ease; background: rgba(53,191,171,0.03); }
     .qr-dropzone:hover, .qr-dropzone:focus-visible { border-color: var(--color-brand, #35bfab); background: rgba(53,191,171,0.08); outline: none; }
     .qr-dropzone.drag-over { border-color: var(--color-brand, #35bfab); background: rgba(53,191,171,0.15); transform: scale(1.01); }
+    .qr-dropzone.uploading { pointer-events: none; opacity: 0.5; cursor: wait; }
     .dropzone-hint { font-size: 0.76rem; color: var(--adm-text-dim, #57534e); line-height: 1.6; display: block; }
     .dropzone-hint strong { color: var(--color-brand, #35bfab); }
     .qr-status { display: block; margin-top: 0.4rem; font-size: 0.74rem; min-height: 1em; }
@@ -224,98 +230,152 @@ const support = await getSupportConfig();
     }
   </style>
 
+  <script>
+    import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+    // === 赞赏码上传:文件选择 + 粘贴 + 拖拽 ===
+    // 用 registerLifecycle 确保每次页面加载(View Transitions 导航)都重新绑定,
+    // 不能用 is:inline —— 那样导航过来时脚本不重跑,DOM 元素绑不上事件。
+    registerLifecycle(() => {
+      const tell = (m: string) => (window as any).WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
+      const VALID_FIELDS = ['wechat', 'alipay'];
+
+      async function uploadQrFile(file: File, field: string) {
+        if (!VALID_FIELDS.includes(field)) return;
+        if (!file || !file.type.startsWith('image/')) {
+          tell('只支持图片文件(png/jpeg/webp/gif)');
+          return;
+        }
+        const statusEl = document.querySelector<HTMLElement>('[data-qr-status="' + field + '"]');
+        const zone = document.querySelector<HTMLElement>('[data-dropzone="' + field + '"]');
+        if (statusEl) { statusEl.textContent = '上传中…'; statusEl.className = 'qr-status uploading'; }
+        zone?.classList.add('uploading'); // 上传中禁用 dropzone,防重复点击
+
+        const fd = new FormData();
+        fd.append('field', field);
+        fd.append('file', file);
+        try {
+          const res = await fetch('/api/admin/support-upload', { method: 'POST', body: fd });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok && data.url) {
+            // 更新预览图(保留删除按钮)
+            const cardPreview = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
+            if (cardPreview) {
+              cardPreview.innerHTML = '<img src="' + data.url + '" alt="' + (field === 'wechat' ? '微信赞赏码' : '支付宝收款码') + '" data-qr-img /><button class="qr-delete" data-qr-delete="' + field + '" title="删除" aria-label="删除">✕</button>';
+            }
+            const urlInput = document.querySelector<HTMLInputElement>('#support-form [name="' + (field === 'wechat' ? 'wechatQrUrl' : 'alipayQrUrl') + '"]');
+            if (urlInput) urlInput.value = data.url;
+            if (statusEl) { statusEl.textContent = '已上传'; statusEl.className = 'qr-status success'; }
+            tell((field === 'wechat' ? '微信' : '支付宝') + '赞赏码已上传');
+          } else {
+            if (statusEl) { statusEl.textContent = data.error || '上传失败'; statusEl.className = 'qr-status error'; }
+            tell(data.error || '上传失败');
+          }
+        } catch (err) {
+          if (statusEl) { statusEl.textContent = '网络错误'; statusEl.className = 'qr-status error'; }
+          tell('上传失败:网络错误');
+        } finally {
+          zone?.classList.remove('uploading'); // 恢复
+        }
+      }
+
+      // 删除赞赏码
+      async function deleteQr(field: string) {
+        const label = field === 'wechat' ? '微信赞赏码' : '支付宝收款码';
+        const statusEl = document.querySelector<HTMLElement>('[data-qr-status="' + field + '"]');
+        try {
+          const res = await fetch('/api/admin/support-upload', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ field }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok) {
+            const cardPreview = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
+            if (cardPreview) cardPreview.innerHTML = '<span class="qr-placeholder">未上传</span>';
+            const urlInput = document.querySelector<HTMLInputElement>('#support-form [name="' + (field === 'wechat' ? 'wechatQrUrl' : 'alipayQrUrl') + '"]');
+            if (urlInput) urlInput.value = '';
+            if (statusEl) { statusEl.textContent = '已删除'; statusEl.className = 'qr-status success'; }
+            tell(label + '已删除');
+          } else {
+            if (statusEl) { statusEl.textContent = data.error || '删除失败'; statusEl.className = 'qr-status error'; }
+            tell(data.error || '删除失败');
+          }
+        } catch (err) {
+          if (statusEl) { statusEl.textContent = '网络错误'; statusEl.className = 'qr-status error'; }
+          tell('删除失败:网络错误');
+        }
+      }
+
+      // 删除按钮事件(事件委托,因为按钮在上传后会重新插入)
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const delBtn = target.closest('[data-qr-delete]') as HTMLElement | null;
+        if (delBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const field = delBtn.dataset.qrDelete;
+          if (field) deleteQr(field);
+        }
+      });
+
+      // 文件选择 + 拖拽(dropzone)
+      const zones = document.querySelectorAll<HTMLElement>('[data-dropzone]');
+      zones.forEach((zone) => {
+        const field = zone.dataset.dropzone;
+        const fileInput = document.querySelector<HTMLInputElement>('[data-file-input="' + field + '"]');
+        zone.addEventListener('click', (e) => {
+          if (e.target === fileInput) return;
+          fileInput && fileInput.click();
+        });
+        zone.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput && fileInput.click(); }
+        });
+        if (fileInput) {
+          fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files[0]) uploadQrFile(fileInput.files[0], field ?? '');
+            fileInput.value = '';
+          });
+        }
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) uploadQrFile(file, field ?? '');
+        });
+      });
+
+      // 粘贴(聚焦 dropzone 时 Ctrl+V)
+      let activeField: string | null = null;
+      zones.forEach((zone) => {
+        const field = zone.dataset.dropzone ?? '';
+        zone.addEventListener('focus', () => { activeField = field; });
+        zone.addEventListener('blur', () => { if (activeField === field) activeField = null; });
+      });
+      const onPaste = (e: ClipboardEvent) => {
+        if (!activeField) return;
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        for (const item of items) {
+          if (item.type && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file) { e.preventDefault(); uploadQrFile(file, activeField); }
+            return;
+          }
+        }
+      };
+      document.addEventListener('paste', onPaste);
+
+      // cleanup:页面切换时移除全局 paste 监听
+      return () => document.removeEventListener('paste', onPaste);
+    });
+  </script>
+
   <script is:inline>
     const tell = (m) => window.WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
     const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then((r) => r.json().then((d) => ({ ok: r.ok, data: d })));
-
-    // === 赞赏码上传:文件选择 + 粘贴 + 拖拽,三种方式统一走 uploadFile ===
-    const VALID_FIELDS = ['wechat', 'alipay'];
-
-    async function uploadQrFile(file, field) {
-      if (!VALID_FIELDS.includes(field)) return;
-      if (!file || !file.type.startsWith('image/')) {
-        tell('只支持图片文件(png/jpeg/webp/gif)');
-        return;
-      }
-      const statusEl = document.querySelector('[data-qr-status="' + field + '"]');
-      const previewEl = document.querySelector('[data-qr-preview]');
-      const card = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
-
-      if (statusEl) { statusEl.textContent = '上传中…'; statusEl.className = 'qr-status uploading'; }
-
-      const fd = new FormData();
-      fd.append('field', field);
-      fd.append('file', file);
-      try {
-        const res = await fetch('/api/admin/support-upload', { method: 'POST', body: fd });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok && data.url) {
-          // 更新预览图
-          const cardPreview = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
-          if (cardPreview) {
-            cardPreview.innerHTML = '<img src="' + data.url + '" alt="' + (field === 'wechat' ? '微信赞赏码' : '支付宝收款码') + '" data-qr-img />';
-          }
-          // 同步到高级 URL 输入框(保持一致)
-          const urlInput = document.querySelector('#support-form [name="' + (field === 'wechat' ? 'wechatQrUrl' : 'alipayQrUrl') + '"]');
-          if (urlInput) urlInput.value = data.url;
-          if (statusEl) { statusEl.textContent = '已上传'; statusEl.className = 'qr-status success'; }
-          tell((field === 'wechat' ? '微信' : '支付宝') + '赞赏码已上传');
-        } else {
-          if (statusEl) { statusEl.textContent = data.error || '上传失败'; statusEl.className = 'qr-status error'; }
-          tell(data.error || '上传失败');
-        }
-      } catch (err) {
-        if (statusEl) { statusEl.textContent = '网络错误'; statusEl.className = 'qr-status error'; }
-        tell('上传失败:网络错误');
-      }
-    }
-
-    // 文件选择(dropzone 点击 → 触发隐藏 file input)
-    document.querySelectorAll('[data-dropzone]').forEach((zone) => {
-      const field = zone.dataset.dropzone;
-      const fileInput = document.querySelector('[data-file-input="' + field + '"]');
-      zone.addEventListener('click', (e) => {
-        if (e.target === fileInput) return;
-        fileInput && fileInput.click();
-      });
-      zone.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput && fileInput.click(); }
-      });
-      if (fileInput) {
-        fileInput.addEventListener('change', () => {
-          if (fileInput.files && fileInput.files[0]) uploadQrFile(fileInput.files[0], field);
-          fileInput.value = '';
-        });
-      }
-      // 拖拽
-      zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
-      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-      zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('drag-over');
-        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (file) uploadQrFile(file, field);
-      });
-    });
-
-    // 粘贴(全局监听,根据剪贴板图片自动判断 field:聚焦哪个 dropzone 就传哪个)
-    let activeField = null;
-    document.querySelectorAll('[data-dropzone]').forEach((zone) => {
-      zone.addEventListener('focus', () => { activeField = zone.dataset.dropzone; });
-      zone.addEventListener('blur', () => { if (activeField === zone.dataset.dropzone) activeField = null; });
-    });
-    document.addEventListener('paste', (e) => {
-      if (!activeField) return;
-      const items = e.clipboardData && e.clipboardData.items;
-      if (!items) return;
-      for (const item of items) {
-        if (item.type && item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) { e.preventDefault(); uploadQrFile(file, activeField); }
-          return;
-        }
-      }
-    });
 
     document.getElementById('support-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();

@@ -15,7 +15,7 @@ import { isAdminAsync } from '@/lib/admin-auth';
 import { resolveAdminActor } from '@/lib/admin-actor';
 import { requireHighRiskAudit } from '@/lib/admin-audit';
 import { captureException } from '@/lib/sentry';
-import { saveSupportMedia, SupportMediaError, SUPPORT_MEDIA_MAX_BYTES } from '@/lib/support-media-storage';
+import { saveSupportMedia, removeSupportMedia, SupportMediaError, SUPPORT_MEDIA_MAX_BYTES } from '@/lib/support-media-storage';
 import { createSessionStore } from '@/stores/session.store';
 import { getSupportConfig, saveSupportConfig } from '@/stores/support-config.store';
 import type { SupportConfig } from '@/stores/ports';
@@ -97,4 +97,53 @@ export const POST: APIRoute = async ({ request }) => {
     captureException(error, { action: 'support.media.upload' });
     return json({ error: '上传失败,请重试。' }, 500);
   }
+};
+
+/**
+ * DELETE /api/admin/support-upload —— 删除赞赏码
+ *
+ * 清空 SupportConfig 对应字段(wechat|alipay),并删除磁盘上的图片文件。
+ * 外部图床 URL(非本站存的)只清配置,不删文件(删不到)。
+ */
+export const DELETE: APIRoute = async ({ request }) => {
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
+
+  let body: { field?: string };
+  try { body = await request.json(); } catch { return json({ error: '请求格式错误。' }, 400); }
+
+  const field = body.field;
+  if (field !== 'wechat' && field !== 'alipay') {
+    return json({ error: 'field 必须是 wechat 或 alipay。' }, 400);
+  }
+
+  // 审计前置(删除改变对外收款入口,与上传同级风险)
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'support.media.delete',
+    targetType: 'support-config',
+    targetId: 'global',
+    reason: '删除赞赏码图片,改变对外收款入口。',
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
+
+  const existing = await getSupportConfig();
+  const urlToRemove = field === 'wechat' ? existing?.wechatQrUrl : existing?.alipayQrUrl;
+
+  // 1. 清空配置字段
+  const config: SupportConfig = {
+    ...existing,
+    wechatQrUrl: field === 'wechat' ? undefined : existing?.wechatQrUrl,
+    alipayQrUrl: field === 'alipay' ? undefined : existing?.alipayQrUrl,
+    updatedAt: new Date().toISOString(),
+  };
+  await saveSupportConfig(config);
+
+  // 2. 删磁盘文件(本站存的才删;外部图床 URL 跳过)
+  if (urlToRemove) {
+    try { await removeSupportMedia(urlToRemove); }
+    catch (error) { captureException(error, { action: 'support.media.delete' }); /* 删文件失败不阻断配置清除 */ }
+  }
+
+  return json({ ok: true, field });
 };
