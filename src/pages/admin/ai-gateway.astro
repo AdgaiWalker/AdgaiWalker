@@ -1,0 +1,360 @@
+---
+// /admin/ai-gateway — AI Gateway 服务健康台（spec §4.5）
+// 监控仪表页模板：健康概览 + 调用趋势 + 服务商/预算卡 + 调用日志。
+//
+// P0-A02：本页所有数字必须来自真实 stats 或显式标记为「未接入」。
+// 不写死成本、不把零调用伪装成 100% 成功率、不模拟降级时刻。
+import { isAdmin } from '@/lib/admin-auth';
+import { getGatewayConfig, PROVIDER_PRESETS, getGatewayStats } from '@/agent/gateway-config';
+import { readGatewayLogs } from '@/agent/gateway';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import HealthMetric from '@/components/admin/HealthMetric.astro';
+import LogRow from '@/components/admin/LogRow.astro';
+import { deriveAdminSystemHealth } from '@/components/admin/admin-shell-state';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const config = await getGatewayConfig();
+const stats = await getGatewayStats();
+const logs = await readGatewayLogs(50);
+const checkedAt = new Date().toISOString();
+
+const currentProvider = PROVIDER_PRESETS.find(p => p.id === config.provider);
+
+// §4.5 健康概览：成功率/延迟/QPS —— 零调用一律显示「未知」，不假装 100%
+const totalCalls = stats.totalCalls;
+const successRate: number | null = totalCalls > 0 ? Math.round((stats.aiCalls / totalCalls) * 100) : null;
+const degraded = stats.fallbackCalls > 0;
+const avgLatency = stats.avgLatencyMs;
+const latencyHigh = avgLatency > 1500;
+// 今日调用总数（hourlyDistribution 聚合）。原变量名 todayQps 与标签"/min"语义不符，已正名。
+const todayCalls = stats.hourlyDistribution.reduce((s, h) => s + h.count, 0);
+
+// 24h 柱状图数据：用 hourlyDistribution（0-23 时）
+const hourly = stats.hourlyDistribution.length > 0
+  ? stats.hourlyDistribution
+  : Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0 }));
+const hourMax = Math.max(1, ...hourly.map(h => h.count));
+// 真实降级小时集合：从已读日志按 timestamp 的 hour 聚合 mode!=ai 的记录。
+// 不再用 `h.hour % 7 === 0` 模拟降级分布。
+const degradedHours = new Set<number>();
+for (const log of logs) {
+  if (log.mode === 'ai' || !log.timestamp) continue;
+  degradedHours.add(new Date(log.timestamp).getHours());
+}
+
+// 降级最近时间：从真实日志里找最近一条非 ai 记录，不写死「2h 前」
+const lastFallbackLog = logs.find(l => l.mode === 'fallback' || l.mode === 'blocked');
+const lastFallbackRel = lastFallbackLog?.timestamp ? relTime(lastFallbackLog.timestamp) : null;
+
+// LogRow 映射
+function modeOf(m: string): 'ai' | 'fallback' | 'blocked' {
+  return m === 'ai' ? 'ai' : m === 'fallback' ? 'fallback' : 'blocked';
+}
+function statusOf(m: string): 'success' | 'degraded' | 'failed' {
+  if (m === 'ai') return 'success';
+  if (m === 'blocked') return 'failed';
+  return 'degraded';
+}
+function fmtTime(ts: any): string {
+  if (!ts) return '--:--';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+function relTime(ts: any): string {
+  if (!ts) return '';
+  const diff = Date.now() - new Date(ts).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return '刚刚';
+  if (min < 60) return `${min}分钟前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}小时前`;
+  return `${Math.floor(hr / 24)}天前`;
+}
+
+const showRows = logs.slice(0, 5);
+const degradedActive = degraded;
+
+// 系统健康由真实事实推导，零数据落 unknown，缺配置落 unavailable
+const gatewayConfigured = Boolean(config.apiKey) && Boolean(config.provider);
+const systemHealth = deriveAdminSystemHealth({
+  configured: gatewayConfigured,
+  stats,
+});
+
+const subtitle = '访客提问/匹配的命脉 · 服务健康台';
+---
+<AdminLayout
+    active="/admin/ai-gateway"
+    title="AI Gateway"
+    subtitle={subtitle}
+    systemHealth={systemHealth}
+    systemHealthCheckedAt={checkedAt}
+  >
+    <Fragment slot="actions">
+      <button class="adm-btn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>服务商配置
+      </button>
+    </Fragment>
+    {/* §4.5 状态灯胶囊（顶栏副信息区下方独立一行） */}
+    {degradedActive && (
+      <div class="adm-gw-statuspill adm-tag adm-tag-bad adm-tag-pill">
+        <span class="adm-tag-dot"></span>降级中{lastFallbackRel ? ` · ${lastFallbackRel}` : ''}
+      </div>
+    )}
+
+    {/* §4.5 健康概览（4 个 HealthMetric 横向） */}
+    <div class="adm-gw-health">
+      <HealthMetric
+        label="成功率"
+        value={successRate === null ? '--' : successRate}
+        unit={successRate === null ? '' : '%'}
+        icon={degraded ? 'triangle-alert' : successRate === null ? 'help-circle' : 'check'}
+        iconKind={degraded ? 'bad' : successRate === null ? 'neutral' : 'good'}
+        trend={successRate === null
+          ? '尚无调用记录，无法计算成功率'
+          : degraded
+            ? `↓${Math.max(0, 100 - successRate)}% · 降级 ${stats.fallbackCalls} 次`
+            : '↑ 稳定'}
+        trendKind={successRate === null ? 'neutral' : degraded ? 'bad' : 'good'}
+      />
+      <HealthMetric
+        label="平均延迟"
+        value={totalCalls > 0 ? (avgLatency / 1000).toFixed(1) : '--'}
+        unit={totalCalls > 0 ? 's' : ''}
+        icon={latencyHigh ? 'clock' : 'zap'}
+        iconKind={latencyHigh ? 'warn' : totalCalls > 0 ? 'good' : 'neutral'}
+        trend={totalCalls === 0 ? '尚无调用记录' : latencyHigh ? '↑ 偏高' : '正常区间'}
+        trendKind={totalCalls === 0 ? 'neutral' : latencyHigh ? 'warn' : 'good'}
+      />
+      <HealthMetric
+        label="今日调用"
+        value={todayCalls}
+        unit="次"
+        icon="trending-up"
+        iconKind={todayCalls > 0 ? 'good' : 'neutral'}
+        trend={todayCalls > 0 ? '近 24 小时聚合' : '尚无调用记录'}
+        trendKind={todayCalls > 0 ? 'good' : 'neutral'}
+      />
+      <HealthMetric
+        label="降级次数"
+        value={stats.fallbackCalls + stats.blockedCalls}
+        unit="次"
+        icon={degraded ? 'triangle-alert' : 'shield-check'}
+        iconKind={degraded ? 'bad' : 'good'}
+        trend={degraded ? '存在 fallback / blocked 调用' : '无降级记录'}
+        trendKind={degraded ? 'bad' : 'good'}
+      />
+    </div>
+
+    {/* §4.5 中段（两列） */}
+    <div class="adm-gw-mid">
+      {/* 左：调用趋势 · 近 24 小时（24 根柱） */}
+      <div class="adm-gw-chart adm-card">
+        <div class="adm-gw-chart-head">
+          <span class="adm-gw-chart-title">调用趋势 · 近 24 小时</span>
+          <div class="adm-gw-chart-legend">
+            <span class="adm-gw-legend-item"><span class="adm-gw-legend-dot" style="background:var(--adm-brand)"></span>AI 调用</span>
+            <span class="adm-gw-legend-item"><span class="adm-gw-legend-dot" style="background:var(--adm-bad)"></span>降级时刻</span>
+          </div>
+        </div>
+        <div class="adm-gw-bars">
+          {hourly.map((h) => {
+            const heightPct = Math.round((h.count / hourMax) * 100);
+            const isDegraded = h.count > 0 && degradedHours.has(h.hour);
+            return (
+              <div class="adm-gw-bar-col" title={`${h.hour}:00 · ${h.count} 次`}>
+                <div class="adm-gw-bar-track">
+                  <div
+                    class="adm-gw-bar-fill"
+                    style={`height:${Math.max(heightPct, h.count > 0 ? 6 : 0)}%;background:${isDegraded ? 'var(--adm-bad)' : 'var(--adm-brand)'}`}
+                  ></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div class="adm-gw-bar-axis">
+          <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+        </div>
+      </div>
+
+      {/* 右两卡 */}
+      <div class="adm-gw-side">
+        {/* 服务商卡 */}
+        <div class="adm-gw-provider adm-card">
+          <div class="adm-gw-provider-head">
+            <span class="adm-gw-provider-logo">{(currentProvider?.name ?? config.provider).slice(0, 2)}</span>
+            <div class="adm-gw-provider-info">
+              <div class="adm-gw-provider-name">{currentProvider?.name ?? config.provider} · {config.model}</div>
+              <div class="adm-gw-provider-url">{config.baseUrl || 'baseUrl 未配置'}</div>
+            </div>
+            <span class:list={['adm-tag', 'adm-tag-pill', gatewayConfigured ? 'adm-tag-good' : 'adm-tag-warn']}>
+              <span class="adm-tag-dot"></span>{gatewayConfigured ? '已配置' : '缺 API Key'}
+            </span>
+          </div>
+          <div class="adm-gw-provider-fallback">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            降级兜底：本地规则匹配（AI 不可用时启用）
+          </div>
+        </div>
+
+        {/* 预算与限流卡 —— P0-A02：成本/限流/熔断均无后端实现，显示「未接入」，不写死假数字 */}
+        <div class="adm-gw-budget adm-card">
+          <div class="adm-gw-budget-head">
+            <span class="adm-gw-chart-title">预算与限流</span>
+          </div>
+          <div class="adm-gw-cost">
+            <div class="adm-gw-cost-top">
+              <span>本月成本</span>
+              <span class="adm-mono adm-gw-na">未接入</span>
+            </div>
+            <div class="adm-gw-cost-bar">
+              <div class="adm-gw-cost-fill" style="width:0%;background:var(--adm-neutral)"></div>
+            </div>
+            <p class="adm-gw-na-note">后端尚未记录调用成本。接入成本聚合前不显示预算占用。</p>
+          </div>
+          <div class="adm-gw-thresholds">
+            <div class="adm-gw-th-row">
+              <span class="adm-gw-th-label">单日成本上限</span>
+              <span class="adm-mono adm-gw-na">未配置</span>
+            </div>
+            <div class="adm-gw-th-row">
+              <span class="adm-gw-th-label">单访客频率限制</span>
+              <span class="adm-mono adm-gw-na">未配置</span>
+            </div>
+            <div class="adm-gw-th-row">
+              <span class="adm-gw-th-label">熔断阈值</span>
+              <span class="adm-mono adm-gw-na">未实现</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* §4.5 调用日志（底部） */}
+    <section class="adm-gw-logs">
+      <div class="adm-gw-logs-head">
+        <div>
+          <span class="adm-gw-chart-title">最近调用记录</span>
+          <span class="adm-gw-logs-sub">降级行标红 · 点可看详情</span>
+        </div>
+        <a class="adm-btn adm-btn-sm" href="/admin/insights">全部日志</a>
+      </div>
+      {/* 表头 */}
+      <div class="adm-log adm-log-head">
+        <div class="adm-log-cell adm-log-time">时间</div>
+        <div class="adm-log-cell adm-log-mode">模式</div>
+        <div class="adm-log-cell adm-log-query">访客提问</div>
+        <div class="adm-log-cell adm-log-lat">延迟</div>
+        <div class="adm-log-cell adm-log-status">状态</div>
+      </div>
+      <div class="adm-gw-logs-list">
+        {showRows.length > 0 ? showRows.map((log) => (
+          <LogRow
+            time={fmtTime(log.timestamp)}
+            timeRel={relTime(log.timestamp)}
+            mode={modeOf(log.mode)}
+            query={log.route}
+            latency={`${(log.latencyMs / 1000).toFixed(1)}s`}
+            status={statusOf(log.mode)}
+          />
+        )) : (
+          <div class="adm-gw-logs-empty">暂无调用记录</div>
+        )}
+      </div>
+    </section>
+  </AdminLayout>
+<style is:global>
+  .adm-gw-statuspill { align-self: flex-start; }
+
+  /* 健康概览 4 卡 */
+  .adm-gw-health {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  /* 中段两列 */
+  .adm-gw-mid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* 调用趋势图 */
+  .adm-gw-chart { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-chart-head { display: flex; align-items: center; justify-content: space-between; }
+  .adm-gw-chart-title { font-size: 14px; font-weight: 700; color: var(--adm-text); }
+  .adm-gw-chart-legend { display: flex; gap: 12px; }
+  .adm-gw-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--adm-text-dim); }
+  .adm-gw-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  .adm-gw-bars {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 3px;
+    height: 140px;
+    align-items: end;
+  }
+  .adm-gw-bar-col { height: 100%; display: flex; align-items: flex-end; }
+  .adm-gw-bar-track { width: 100%; height: 100%; display: flex; align-items: flex-end; }
+  .adm-gw-bar-fill { width: 100%; border-radius: 2px 2px 0 0; min-height: 0; transition: height 0.2s ease; }
+  .adm-gw-bar-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--adm-text-faint); font-family: var(--adm-font-mono); }
+
+  /* 右侧两卡 */
+  .adm-gw-side { display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-provider { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-provider-head { display: flex; align-items: center; gap: 12px; }
+  .adm-gw-provider-logo {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: #000; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; flex-shrink: 0;
+    font-family: var(--adm-font-mono);
+  }
+  .adm-gw-provider-info { flex: 1; min-width: 0; }
+  .adm-gw-provider-name { font-size: 13px; font-weight: 700; color: var(--adm-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .adm-gw-provider-url { font-size: 11px; color: var(--adm-text-faint); }
+  .adm-gw-provider-fallback {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px;
+    background: var(--adm-bg);
+    border: 1px solid var(--adm-border-soft);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--adm-text-dim);
+  }
+  .adm-gw-provider-fallback svg { color: var(--adm-warn); flex-shrink: 0; }
+
+  /* 预算卡 */
+  .adm-gw-budget { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .adm-gw-cost { display: flex; flex-direction: column; gap: 8px; }
+  .adm-gw-cost-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--adm-text); }
+  .adm-gw-cost-bar { height: 8px; background: var(--adm-border-soft); border-radius: 4px; overflow: visible; position: relative; }
+  .adm-gw-cost-fill { height: 100%; border-radius: 4px; }
+  .adm-gw-na { color: var(--adm-text-faint); }
+  .adm-gw-na-note { margin: 0; font-size: 11px; line-height: 1.6; color: var(--adm-text-faint); }
+
+  .adm-gw-thresholds { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--adm-border-soft); }
+  .adm-gw-th-row { display: flex; justify-content: space-between; font-size: 12px; }
+  .adm-gw-th-label { color: var(--adm-text-dim); }
+
+  /* 日志 */
+  .adm-gw-logs { display: flex; flex-direction: column; gap: 10px; }
+  .adm-gw-logs-head { display: flex; align-items: center; justify-content: space-between; }
+  .adm-gw-logs-head > div { display: flex; flex-direction: column; gap: 2px; }
+  .adm-gw-logs-sub { font-size: 12px; color: var(--adm-text-faint); }
+  .adm-gw-logs-list { display: flex; flex-direction: column; gap: 6px; }
+  .adm-gw-logs-empty { padding: 24px; text-align: center; color: var(--adm-text-faint); font-size: 13px; }
+
+  @media (max-width: 1100px) {
+    .adm-gw-health { grid-template-columns: repeat(2, 1fr); }
+    .adm-gw-mid { grid-template-columns: 1fr; }
+  }
+</style>

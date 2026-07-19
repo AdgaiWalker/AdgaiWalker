@@ -1,0 +1,218 @@
+---
+import { Icon } from 'astro-icon/components';
+/**
+ * LikeCounter — 文章页点赞按钮 (Upstash Redis 版)
+ * 爱心粒子爆裂 + 果冻弹性动画，localStorage 防重复
+ */
+interface Props {
+  pagePath: string;
+}
+
+const { pagePath } = Astro.props;
+const FALLBACK_COUNT = 0;
+---
+
+<div class="like-wrapper pointer-events-auto relative">
+  <button
+    class="like-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[var(--color-inner-bg)] text-[var(--color-parchment-dim)] border border-[var(--color-border)] hover:bg-[var(--color-brand-glow)] hover:text-[var(--color-brand)] hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer overflow-visible"
+    type="button"
+    data-like-counter
+    data-page-path={pagePath}
+    data-fallback-count={FALLBACK_COUNT}
+    aria-label="喜欢这个页面"
+    id="main-like-btn"
+  >
+    <!-- 爱心图标 (未点击描边，点击后实心) -->
+    <span class="like-icon flex items-center justify-center text-[#ff6b8a] transition-all duration-300 pointer-events-none">
+      <span class="heart-outline block">
+        <Icon name="lucide:heart" width={14} height={14} class="stroke-[2.5]" />
+      </span>
+      <span class="heart-filled hidden">
+        <Icon name="lucide:heart" width={14} height={14} class="fill-[#ff6b8a] stroke-[#ff6b8a]" />
+      </span>
+    </span>
+
+    <!-- 计数值 -->
+    <span class="text-[11.5px] font-body font-bold text-parchment/65 leading-none transition-colors pointer-events-none" data-like-count>{FALLBACK_COUNT}</span>
+  </button>
+</div>
+
+<style is:global>
+  /* ========================================= */
+  /* 点赞粒子爆裂与消散动画 */
+  /* ========================================= */
+  .like-bounce {
+    animation: like-pop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.35) !important;
+  }
+  @keyframes like-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+
+  .like-particle {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    width: 14px;
+    height: 14px;
+    will-change: transform, opacity;
+  }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+
+  let likesAbort: AbortController | null = null;
+
+  function cleanupLikes() {
+    likesAbort?.abort();
+    likesAbort = null;
+    gsap.killTweensOf('.like-particle');
+    document.querySelectorAll('.like-particle').forEach((particle) => particle.remove());
+  }
+
+  async function fetchCount(pagePath: string, fallbackCount: number, signal: AbortSignal): Promise<number> {
+    try {
+      const res = await fetch(`/api/like?path=${encodeURIComponent(pagePath)}`, { signal });
+      if (!res.ok) return fallbackCount;
+      const data = await res.json();
+      return data.count ?? fallbackCount;
+    } catch {
+      return fallbackCount;
+    }
+  }
+
+  async function incrementCount(pagePath: string, fallbackCount: number, signal: AbortSignal): Promise<number> {
+    try {
+      const res = await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: pagePath }),
+        signal,
+      });
+      if (!res.ok) return fallbackCount + 1;
+      const data = await res.json();
+      return data.count ?? fallbackCount + 1;
+    } catch {
+      return fallbackCount + 1;
+    }
+  }
+
+  // 动态创建粉色小爱心爆裂粒子 — GSAP 驱动
+  function spawnLikeParticles(clientX: number, clientY: number) {
+    const particleCount = 8;
+    const heartSVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff6b8a"/></svg>`;
+    const colors = ['#ff6b8a', '#ff8fa3', '#ffb3c1', '#e05780'];
+
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'like-particle';
+      particle.style.left = `${clientX - 7}px`;
+      particle.style.top = `${clientY - 7}px`;
+      particle.style.color = colors[i % colors.length];
+      particle.innerHTML = heartSVG;
+      document.body.appendChild(particle);
+
+      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+      const dist = 25 + Math.random() * 30;
+      const tx = Math.cos(angle) * dist;
+      const ty = Math.sin(angle) * dist - 10; // 偏上飘
+      const duration = 0.5 + Math.random() * 0.3;
+
+      gsap.fromTo(particle,
+        { opacity: 1, scale: 0.5, x: 0, y: 0 },
+        {
+          opacity: 0,
+          scale: 0.8 + Math.random() * 0.3,
+          x: tx,
+          y: ty,
+          rotation: (Math.random() - 0.5) * 60,
+          duration,
+          ease: 'power2.out',
+          onComplete: () => particle.remove(),
+        },
+      );
+    }
+  }
+
+  function fetchAndDisplayCount(
+    button: HTMLButtonElement,
+    pagePath: string,
+    fallbackCount: number,
+    signal: AbortSignal,
+  ) {
+    const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+    const setCount = (count: number) => {
+      if (!signal.aborted && countEl) countEl.textContent = String(count);
+    };
+    fetchCount(pagePath, fallbackCount, signal).then(setCount).catch(() => setCount(fallbackCount));
+  }
+
+  function markAsLiked(
+    button: HTMLButtonElement,
+    outlineIcon: HTMLElement | null,
+    filledIcon: HTMLElement | null,
+  ) {
+    button.disabled = true;
+    button.classList.add('liked');
+    button.style.boxShadow = '0 0 16px rgba(255, 107, 138, 0.12)';
+    button.style.borderColor = 'rgba(255, 107, 138, 0.2)';
+    button.style.background = 'rgba(255, 107, 138, 0.08)';
+    button.style.color = 'var(--color-brand)';
+    if (outlineIcon) outlineIcon.classList.add('hidden');
+    if (filledIcon) filledIcon.classList.remove('hidden');
+  }
+
+  const setupLikes = async () => {
+    cleanupLikes();
+    likesAbort = new AbortController();
+    const { signal } = likesAbort;
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-like-counter]');
+
+    buttons.forEach(async (button) => {
+      const pagePath = button.dataset.pagePath ?? '/';
+      const fallbackCount = Number(button.dataset.fallbackCount ?? '0');
+      const outlineIcon = button.querySelector<HTMLElement>('.heart-outline');
+      const filledIcon = button.querySelector<HTMLElement>('.heart-filled');
+      const storageKey = `walker-liked:${pagePath}`;
+
+      if (localStorage.getItem(storageKey) === 'true') {
+        markAsLiked(button, outlineIcon, filledIcon);
+      }
+
+      // 从 KV 拉取真实计数
+      fetchAndDisplayCount(button, pagePath, fallbackCount, signal);
+
+      button.addEventListener('click', async (e) => {
+        if (localStorage.getItem(storageKey) === 'true') {
+          markAsLiked(button, outlineIcon, filledIcon);
+          return;
+        }
+
+        // 爆裂粒子
+        spawnLikeParticles(e.clientX, e.clientY);
+
+        button.disabled = true;
+        try {
+          const finalCount = await incrementCount(pagePath, fallbackCount, signal);
+          if (signal.aborted) return;
+          const countEl = button.querySelector<HTMLElement>('[data-like-count]');
+          if (countEl) countEl.textContent = String(finalCount);
+          localStorage.setItem(storageKey, 'true');
+          markAsLiked(button, outlineIcon, filledIcon);
+
+          button.classList.add('like-bounce');
+          button.addEventListener('animationend', () => {
+            button.classList.remove('like-bounce');
+          }, { once: true, signal });
+        } catch {
+          if (!signal.aborted) button.disabled = false;
+        }
+      }, { signal });
+    });
+  };
+
+  document.addEventListener('astro:page-load', setupLikes);
+  document.addEventListener('astro:before-swap', cleanupLikes);
+</script>

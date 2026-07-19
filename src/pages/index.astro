@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import HomeCanvas from '../components/home/HomeCanvas.astro';
+import { getPublishedPosts, getPublishedIdeas } from '@/knowledge/content';
+
+export const prerender = true;
+
+const TEMP_SPARKS = [
+  { title: "开发一个可以将猫咪喵喵声自动翻译成拍立得卡通日记的 APP！", slug: null, isReal: false },
+  { title: "做一款 VSCode 插件：当你的代码写出 Bug 时，自动播放悲伤的萨克斯风！", slug: null, isReal: false },
+  { title: "构建一个 AI 虚拟老板：每天早晨用极其温柔的声线催你写代码，并提供心理按摩！", slug: null, isReal: false },
+  { title: "设计一款智能水杯：AI 会根据你今天敲键盘的次数和写 Bug 的频率，强行提醒你喝咖啡！", slug: null, isReal: false },
+  { title: "打造一款 AI 梦境发生器：晚上输入你想梦到的场景，AI 自动为你脑补一段催眠故事！", slug: null, isReal: false },
+  { title: "做个 AI 厨艺拯救者：拍一下冰箱里剩下的烂西红柿和半盒豆腐，AI 自动生成一道米其林级别的黑暗料理菜谱！", slug: null, isReal: false },
+  { title: "开发一款 AI 宠物社交机器人：让你的猫在网上和隔壁的狗通过 GPT 聊天，甚至能网恋！", slug: null, isReal: false },
+  { title: "做一款'键盘侠净化器'：用 AI 自动把你写在终端里的脏话脏代码注释重写成高雅的古典诗词！", slug: null, isReal: false },
+  { title: "开发一款'滑板AI跟拍仪'：用 AI 动作捕捉算法，自动在滑板腾空那一瞬间抓拍出最帅的侧脸！", slug: null, isReal: false },
+  { title: "做一款'睡眠AI监控器'：通过 AI 分析你晚上的呼噜声，自动编排出一首舒缓的白噪音钢琴曲！", slug: null, isReal: false },
+];
+
+const recentLogs = (await getPublishedPosts()).filter(post => post.data.type === 'knowledge');
+const featuredLog = recentLogs.find(post => post.data.featured) || recentLogs[0];
+const recentPosts = recentLogs.slice(0, 3);
+const realIdeas = (await getPublishedIdeas()).map(idea => ({
+  title: idea.data.title,
+  slug: idea.id,
+  isReal: true,
+}));
+const recentIdeas = [...realIdeas, ...TEMP_SPARKS];
+---
+
+<Base title="Walker — 行过万里水路">
+  <HomeCanvas recentLogs={recentLogs} featuredLog={featuredLog} recentPosts={recentPosts} recentIdeas={recentIdeas} />
+
+
+  <script>
+    import '../scripts/home-canvas';
+    import '../scripts/home-entrance';
+  </script>
+</Base>

@@ -1,0 +1,72 @@
+# build output
+dist/
+.vercel/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.tmp-dev*.log
+
+# environment variables
+.env
+.env.production
+
+# gateway local config (contains API key)
+.gateway-config.json
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+*.swp
+*.swo
+.gstack/
+
+# Playwright
+.playwright-mcp/
+.playwright-cli/
+output/playwright/
+
+# dev server 日志（output/ 下仅 design-qa.md 等文档需要跟踪）
+output/*.log
+
+# Codex / dev tooling temp artifacts
+.codex-dev-server*.log
+.codex-doctor-tmp.json
+.codex-*.tmp
+.tmp-unify.cjs
+
+# Obsidian
+.obsidian/
+.claude/worktrees/
+
+# Local agents and temp files
+.agents/
+.claudian/
+.lighthouse/
+screenshot-*
+wiki-auth-qr.png
+*.pid
+
+# Skills lock file (managed by superpowers)
+skills-lock.json
+public/pagefind/
+
+.vercel
+.idea/
+
+# dev server 日志
+.astro-dev.log
+dev-server.log
+
+# Playwright test output (transient)
+test-results/

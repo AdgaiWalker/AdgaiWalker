@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "astro",
+  "buildCommand": "npm run build",
+  "crons": [
+    {
+      "path": "/api/match-process",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

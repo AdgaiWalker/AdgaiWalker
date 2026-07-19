@@ -1,0 +1,503 @@
+﻿---
+import { Icon } from 'astro-icon/components';
+import { getSearchModalData } from '@/knowledge/navigation';
+
+const { items: navItems, pages } = await getSearchModalData();
+const navPanelData = JSON.stringify({ items: navItems, pages }).replace(/</g, '\\u003c');
+---
+
+<!-- 构建时注入全站导航数据 -->
+<script is:inline type="application/json" id="nav-panel-data" set:html={navPanelData} />
+
+<!-- 快速导航面板 -->
+<div id="search-modal" hidden aria-hidden="true">
+  <div id="search-backdrop" class="np-backdrop"></div>
+  <div class="np-wrap">
+    <div class="np-panel">
+      <div class="np-input-row">
+        <Icon name="lucide:search" width={18} height={18} class="np-input-icon" />
+        <input id="np-input" type="text" placeholder="探索这片海域..." class="np-input" autocomplete="off" />
+        <kbd class="np-esc">ESC</kbd>
+      </div>
+      <div id="np-results" class="np-results"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ===== Overlay ===== */
+  #search-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    animation: np-in 0.18s ease-out;
+  }
+
+  .np-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
+  }
+
+  .np-wrap {
+    position: relative;
+    z-index: 10;
+    max-width: 34rem;
+    margin: 12vh auto 0;
+    padding: 0 1rem;
+  }
+
+  .np-panel {
+    border-radius: 1rem;
+    border: 1px solid var(--color-nav-border);
+    background: var(--color-bg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
+  }
+
+  /* ===== Input ===== */
+  .np-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--color-nav-border);
+  }
+
+  .np-input-icon {
+    color: var(--color-parchment-dim);
+    opacity: 0.45;
+    flex-shrink: 0;
+  }
+
+  .np-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-parchment);
+    font-size: 0.95rem;
+    font-family: var(--font-body);
+  }
+
+  .np-input::placeholder {
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+  }
+
+  .np-esc {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-nav-border);
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+
+  /* ===== Results ===== */
+  .np-results {
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    flex: 1;
+    overscroll-behavior: contain;
+  }
+
+  /* 分组标题 */
+  :global(.np-group) {
+    padding: 0.4rem 1.25rem 0.15rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-parchment-dim);
+    opacity: 0.4;
+  }
+
+  /* 条目 */
+  :global(.np-item) {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 1.25rem;
+    text-decoration: none;
+    color: var(--color-parchment);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  :global(.np-item:hover),
+  :global(.np-item.active) {
+    background: color-mix(in srgb, var(--color-parchment) 5%, transparent);
+  }
+
+  :global(.np-item.active) {
+    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
+  }
+
+  /* 类型标签 */
+  :global(.np-badge) {
+    font-size: 0.58rem;
+    font-weight: 600;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+  }
+
+  :global(.np-badge--思考) {
+    background: color-mix(in srgb, var(--color-brand) 10%, transparent);
+    color: var(--color-brand);
+  }
+
+  :global(.np-badge--资源) {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+
+  :global(.np-badge--点子) {
+    background: rgba(167, 139, 250, 0.1);
+    color: #a78bfa;
+  }
+
+  :global(.np-badge--项目) {
+    background: rgba(52, 211, 153, 0.1);
+    color: #34d399;
+  }
+
+  :global(.np-badge--学习) {
+    background: rgba(56, 189, 248, 0.1);
+    color: #38bdf8;
+  }
+
+  :global(.np-badge--其他) {
+    background: color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    color: var(--color-parchment-dim);
+  }
+
+  /* 标题 */
+  :global(.np-title) {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 标签 */
+  :global(.np-tags) {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  :global(.np-tag) {
+    font-size: 0.55rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    opacity: 0.35;
+  }
+
+  /* 箭头 */
+  :global(.np-arrow) {
+    color: var(--color-parchment-dim);
+    opacity: 0;
+    transition: opacity 0.1s;
+    font-size: 0.75rem;
+  }
+
+  :global(.np-item:hover .np-arrow),
+  :global(.np-item.active .np-arrow) {
+    opacity: 0.45;
+  }
+
+  /* 空状态 */
+  :global(.np-empty) {
+    padding: 2.5rem 0;
+    text-align: center;
+    color: var(--color-parchment-dim);
+    opacity: 0.35;
+    font-size: 0.85rem;
+  }
+
+  /* 快捷跳转 */
+  :global(.np-quick) {
+    padding: 0.65rem 1.25rem 0.75rem;
+    border-top: 1px solid var(--color-nav-border);
+  }
+
+  :global(.np-quick-label) {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-parchment-dim);
+    opacity: 0.35;
+    margin-bottom: 0.4rem;
+  }
+
+  :global(.np-quick-links) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  :global(.np-quick-link) {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-nav-border);
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: all 0.12s;
+  }
+
+  :global(.np-quick-link:hover),
+  :global(.np-quick-link.active) {
+    border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+    color: var(--color-brand);
+    background: color-mix(in srgb, var(--color-brand) 6%, transparent);
+  }
+
+  /* ===== Animation ===== */
+  @keyframes np-in {
+    from { opacity: 0; transform: scale(0.97) translateY(-6px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* ===== Mobile ===== */
+  @media (max-width: 640px) {
+    .np-wrap { margin-top: 6vh; padding: 0 0.5rem; }
+    .np-panel { max-height: 82vh; border-radius: 0.75rem; }
+    :global(.np-tags) { display: none; }
+  }
+</style>
+
+<script>
+  let abort: AbortController | null = null;
+
+  interface NavPanelItem {
+    title: string;
+    tags: string[];
+    href: string;
+    type: string;
+  }
+
+  interface NavPanelPage {
+    label: string;
+    href: string;
+  }
+
+  function parseNavPanelData(dataEl: HTMLElement): { items: NavPanelItem[]; pages: NavPanelPage[] } {
+    const data = JSON.parse(dataEl.textContent || '{}') as Partial<{
+      items: NavPanelItem[];
+      pages: NavPanelPage[];
+    }>;
+
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      pages: Array.isArray(data.pages) ? data.pages : [],
+    };
+  }
+
+  function createTextElement(tagName: string, className: string, text: string): HTMLElement {
+    const el = document.createElement(tagName);
+    el.className = className;
+    el.textContent = text;
+    return el;
+  }
+
+  function createResultItem(item: NavPanelItem): HTMLAnchorElement {
+    const link = document.createElement('a');
+    link.href = item.href;
+    link.className = 'np-item';
+
+    const badge = createTextElement('span', `np-badge np-badge--${item.type}`, item.type);
+    const title = createTextElement('span', 'np-title', item.title);
+    const tags = document.createElement('span');
+    tags.className = 'np-tags';
+    item.tags.slice(0, 2).forEach((tag) => {
+      tags.appendChild(createTextElement('span', 'np-tag', `#${tag}`));
+    });
+    const arrow = createTextElement('span', 'np-arrow', '→');
+
+    link.append(badge, title, tags, arrow);
+    return link;
+  }
+
+  function createQuickLink(page: NavPanelPage): HTMLAnchorElement {
+    const link = document.createElement('a');
+    link.href = page.href;
+    link.className = 'np-quick-link';
+    link.textContent = page.label;
+    return link;
+  }
+
+  function init() {
+    abort?.abort();
+    abort = new AbortController();
+    const { signal } = abort;
+
+    const dataEl = document.getElementById('nav-panel-data');
+    if (!dataEl) return;
+    const { items, pages } = parseNavPanelData(dataEl);
+
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('np-input') as HTMLInputElement;
+    const results = document.getElementById('np-results');
+    const backdrop = document.getElementById('search-backdrop');
+
+    let activeIdx = -1;
+    let flatLinks: HTMLElement[] = [];
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    signal.addEventListener('abort', () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      document.body.style.overflow = '';
+    }, { once: true });
+
+    // ===== Open / Close =====
+    function open() {
+      if (!modal) return;
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+      input?.focus();
+      document.body.style.overflow = 'hidden';
+      activeIdx = -1;
+      render(items);
+    }
+
+    function close() {
+      if (!modal) return;
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      if (input) input.value = '';
+      document.body.style.overflow = '';
+    }
+
+    backdrop?.addEventListener('click', close, { signal });
+    document.addEventListener('walker:open-search', () => open(), { signal });
+
+    // ===== Keyboard =====
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        modal?.hidden ? open() : close();
+        return;
+      }
+      if (e.key === 'Escape' && !modal?.hidden) { close(); return; }
+      if (modal?.hidden) return;
+
+      flatLinks = Array.from(results?.querySelectorAll<HTMLElement>('.np-item, .np-quick-link') ?? []);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = activeIdx < flatLinks.length - 1 ? activeIdx + 1 : 0;
+        highlight();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = activeIdx > 0 ? activeIdx - 1 : flatLinks.length - 1;
+        highlight();
+      } else if (e.key === 'Enter' && activeIdx >= 0) {
+        e.preventDefault();
+        flatLinks[activeIdx]?.click();
+      }
+    }, { signal });
+
+    function highlight() {
+      flatLinks.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+      flatLinks[activeIdx]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    // ===== Render =====
+    // 记录无结果搜索（session 级去重，keepalive 发送，失败静默）
+    const recordedMisses = new Set<string>();
+    function recordSearchMiss(rawQuery: string) {
+      const q = rawQuery.trim().slice(0, 50);
+      if (!q || recordedMisses.has(q)) return;
+      recordedMisses.add(q);
+      fetch('/api/search-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+        keepalive: true,
+      }).catch(() => { /* fire-and-forget */ });
+    }
+
+    function render(list: NavPanelItem[]) {
+      if (!results) return;
+
+      const fragment = document.createDocumentFragment();
+
+      if (list.length === 0) {
+        const currentQuery = input?.value.trim() ?? '';
+        if (currentQuery) recordSearchMiss(currentQuery);
+        fragment.appendChild(createTextElement('div', 'np-empty', `没有找到「${currentQuery}」相关的记录`));
+      } else {
+        // 按类型分组
+        const groups: Record<string, NavPanelItem[]> = {};
+        for (const item of list) {
+          (groups[item.type] ??= []).push(item);
+        }
+        for (const [type, group] of Object.entries(groups)) {
+          fragment.appendChild(createTextElement('div', 'np-group', type));
+          for (const item of group) {
+            fragment.appendChild(createResultItem(item));
+          }
+        }
+      }
+
+      // 快捷跳转
+      const quick = document.createElement('div');
+      quick.className = 'np-quick';
+      quick.appendChild(createTextElement('div', 'np-quick-label', '快捷跳转'));
+
+      const quickLinks = document.createElement('div');
+      quickLinks.className = 'np-quick-links';
+      pages.forEach((page) => quickLinks.appendChild(createQuickLink(page)));
+      quick.appendChild(quickLinks);
+      fragment.appendChild(quick);
+
+      results.replaceChildren(fragment);
+      activeIdx = -1;
+      flatLinks = Array.from(results.querySelectorAll<HTMLElement>('.np-item, .np-quick-link'));
+    }
+
+    // ===== Filter =====
+    input?.addEventListener('input', () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        const q = input.value.trim().toLowerCase();
+        if (!q) { render(items); return; }
+        render(items.filter((it) =>
+          it.title.toLowerCase().includes(q) ||
+          it.tags.some((t) => t.toLowerCase().includes(q))
+        ));
+      }, 80);
+    }, { signal });
+
+    // 点击结果后关闭面板
+    results?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) close();
+    }, { signal });
+  }
+
+  init();
+  document.addEventListener('astro:page-load', init);
+  document.addEventListener('astro:before-swap', () => { abort?.abort(); abort = null; });
+</script>
+

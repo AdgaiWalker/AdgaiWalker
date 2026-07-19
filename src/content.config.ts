@@ -1,0 +1,93 @@
+import { defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
+
+const log = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/log' }),
+  schema: ({ image }) => z.object({
+    title: z.string(),
+    date: z.date(),
+    updated: z.date().optional(),
+    tags: z.array(z.string()),
+    type: z.enum(['knowledge', 'tool', 'idea', 'project', 'community', 'learn']),
+    form: z.enum(['article', 'note', 'diary', 'rant', 'gallery', 'video', 'recipe', 'calligraphy', 'resource', 'project', 'idea', 'lesson']).optional(),
+    layout: z.enum(['immersive', 'media']).optional(),
+    domain: z.enum(['ai', 'coding', 'product', 'philosophy', 'life', 'cooking', 'calligraphy', 'reading', 'travel', 'emotion', 'community']).optional(),
+    intent: z.enum(['think', 'record', 'teach', 'share', 'verify', 'showcase', 'reflect', 'connect', 'vent']).optional(),
+    valueMode: z.enum(['utility', 'existence', 'both']).optional(),
+    
+    // 创作者自定义设置字段
+    theme: z.enum(['nature', 'aurora', 'sunset', 'mint', 'dianzi']).optional(),
+    brandColor: z.string().optional(),
+    brandSecondaryColor: z.string().optional(),
+    collaborative: z.boolean().optional(),
+    showAi: z.boolean().optional(),
+    signature: z.string().optional(),
+    stamp: z.string().optional(),
+    author: z.string().optional(),
+    location: z.string().optional(),
+    environment: z.string().optional(),
+    action: z.string().optional(),
+    
+    // 学习指南专属元数据字段
+    emoji: z.string().optional(),
+    subtitle: z.string().optional(),
+    level: z.enum(['入门', '学徒', '专家']).optional(),
+    yValue: z.string().optional(),
+    graduation: z.string().optional(),
+    safetyNote: z.string().optional(),
+    shareAction: z.string().optional(),
+
+    aiUsePolicy: z.object({
+      level: z.enum(['AI-0', 'AI-1', 'AI-2', 'AI-3', 'AI-4']).default('AI-2'),
+      readable: z.boolean().default(true),
+      citable: z.boolean().default(true),
+      actionable: z.boolean().default(false),
+      reason: z.string().optional(),
+    }).optional(),
+    related: z.array(z.string()).default([]),
+    published: z.boolean().default(true),
+    visibility: z.enum(['public', 'draft', 'private']).optional(),
+    featured: z.boolean().optional(),
+    summary: z.string().optional(),
+    description: z.string().optional(),
+    sourceTopicId: z.string().optional(),
+    cover: z.union([image(), z.url()]).optional(),
+    category: z.string().optional(),
+    version: z.number().optional(),
+    previousVersion: z.string().optional(),
+    series: z.string().optional(),
+    seriesOrder: z.number().optional(),
+    status: z.enum(['thinking', 'validating', 'building', 'verified', 'archived']).optional(),
+    aiInsights: z.object({
+      insight: z.string().optional(),
+      opportunities: z.array(z.string()).optional(),
+      risks: z.array(z.string()).optional(),
+      steps: z.array(z.string()).optional(),
+    }).optional(),
+    rating: z.number().min(1).max(5).optional(),
+    url: z.url().optional(),
+    qrCode: z.string().optional(),
+    communities: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      qrCode: z.string(),
+      badge: z.string(),
+      tag: z.string(),
+    })).optional(),
+    /** @deprecated 不再使用；视频通过 body 内的 BlockVideo 组件嵌入。保留字段仅为兼容，新增内容不应填写。 */
+    videos: z.array(z.object({
+      platform: z.enum(['bilibili', 'douyin', 'xiaohongshu', 'youtube', 'github', 'zhihu']),
+      url: z.url(),
+      title: z.string().optional(),
+    })).default([]),
+    resources: z.array(z.object({
+      name: z.string(),
+      url: z.url(),
+      type: z.enum(['tool', 'feishu', 'github', 'website', 'download']),
+      description: z.string().optional(),
+    })).default([]),
+  }),
+});
+
+export const collections = { log };

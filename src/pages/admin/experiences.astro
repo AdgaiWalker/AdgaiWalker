@@ -1,0 +1,262 @@
+---
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+// /admin/experiences — 经验验证系统（U10）：原始事件采集 → 复盘 → 模式识别 → 方法成熟度
+// 服务端渲染，需认证。经验事件保真记录用户原话，复盘后标记模式，成熟度推进到 Skill 候选。
+import { isAdmin } from '@/lib/admin-auth';
+import { findRecentExperienceEvents } from '@/conversation/store';
+import type { ExperienceFeedbackResult } from '@/stores/ports';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/admin/login');
+}
+
+const events = await findRecentExperienceEvents(500);
+
+const FEEDBACK_LABEL: Record<ExperienceFeedbackResult, string> = {
+  success: '成功',
+  failure: '失败',
+  'no-feedback': '无反馈',
+  pending: '待反馈',
+};
+const FEEDBACK_COLOR: Record<ExperienceFeedbackResult, { color: string; bg: string }> = {
+  success: { color: '#065f46', bg: 'rgba(6,95,70,0.1)' },
+  failure: { color: '#b91c1c', bg: 'rgba(185,28,28,0.1)' },
+  'no-feedback': { color: '#854d0e', bg: 'rgba(133,77,14,0.1)' },
+  pending: { color: 'var(--adm-text-dim)', bg: 'rgba(120,113,108,0.1)' },
+};
+const MATURITY_FLOW = ['material', 'embryo', 'stable-method', 'skill-candidate', 'skill'] as const;
+const MATURITY_LABEL: Record<string, string> = {
+  material: '素材',
+  embryo: '方法雏形',
+  'stable-method': '稳定方法',
+  'skill-candidate': 'Skill 候选',
+  skill: '正式 Skill',
+};
+const SOURCES = ['直播', '对话', '教程反馈', '网站', '其他'];
+
+// 模式分析：按来源 / 反馈 / 成熟度聚类
+const bySource = new Map<string, number>();
+const byFeedback = new Map<ExperienceFeedbackResult, number>();
+const byMaturity = new Map<string, number>();
+for (const ev of events) {
+  bySource.set(ev.source, (bySource.get(ev.source) ?? 0) + 1);
+  byFeedback.set(ev.feedbackResult, (byFeedback.get(ev.feedbackResult) ?? 0) + 1);
+  const m = ev.maturity ?? 'material';
+  byMaturity.set(m, (byMaturity.get(m) ?? 0) + 1);
+}
+const patternEvents = events.filter(ev => ev.patternMarked);
+const successRate = events.length > 0
+  ? events.filter(ev => ev.feedbackResult === 'success').length / events.length
+  : 0;
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
+
+
+---
+
+<AdminLayout active="/admin/experiences" domain="assets" title="经验" subtitle="记录真实事件、行动、结果与反例">
+<style>
+    .stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .stat-chip { padding: 0.55rem 0.85rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; background: #fff; min-width: 5.5rem; }
+    .stat-chip-label { font-size: 0.7rem; color: var(--adm-text-dim); font-weight: 700; margin-bottom: 0.15rem; }
+    .stat-chip-value { font-size: 1.25rem; font-weight: 850; }
+
+    .panel { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+    .panel h2 { font-size: 0.92rem; font-weight: 850; margin-bottom: 0.75rem; color: #44403c; }
+    .cluster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; }
+    .cluster-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0.65rem; background: transparent; border-radius: 7px; font-size: 0.8rem; }
+    .cluster-row .count { font-weight: 850; color: var(--adm-brand-strong); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    textarea, input[type=text], select { width: 100%; padding: 0.5rem 0.7rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-size: 0.85rem; font-family: inherit; background: #fff; color: var(--adm-text); resize: vertical; }
+    textarea:focus, input:focus, select:focus { outline: 2px solid rgba(53,191,171,0.25); border-color: rgba(53,191,171,0.4); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.4rem 0.8rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; background: transparent; color: #57534e; text-decoration: none; font-size: 0.78rem; font-weight: 750; cursor: pointer; }
+    .btn:hover { background: transparent; }
+    .btn-primary { background: rgba(53,191,171,0.1); border-color: rgba(53,191,171,0.22); color: var(--adm-brand-strong); }
+    .btn-primary:hover { background: rgba(53,191,171,0.16); }
+
+    .exp-list { display: grid; gap: 0.8rem; }
+    .exp-card { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; padding: 1rem 1.1rem; }
+    .exp-card.pattern { border-color: rgba(53,191,171,0.3); box-shadow: 0 0 0 1px rgba(53,191,171,0.08); }
+    .exp-head { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+    .badge { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; }
+    .exp-quote { color: var(--adm-text); font-size: 0.95rem; font-weight: 700; line-height: 1.55; padding: 0.6rem 0.8rem; border-left: 3px solid var(--adm-brand-strong); background: transparent; border-radius: 0 8px 8px 0; margin-bottom: 0.65rem; }
+    .exp-meta { display: grid; gap: 0.35rem; color: #57534e; font-size: 0.78rem; line-height: 1.55; }
+    .meta-label { color: var(--adm-text-faint); font-weight: 800; }
+    .exp-time { margin-left: auto; color: var(--adm-text-faint); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+    .exp-foot { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; margin-top: 0.85rem; }
+    .reflection-edit { display: none; grid-column: 1 / -1; margin-top: 0.5rem; }
+    .reflection-edit.visible { display: block; }
+    .maturity-select { width: auto; padding: 0.3rem 0.5rem; font-size: 0.75rem; }
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--adm-text-faint); border: 1px dashed rgba(0,0,0,0.08); border-radius: 12px; background: #fff; }
+    @media (max-width: 760px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+<div class="adm-page">
+    <section class="adm-page-welcome">
+      <h1>经验验证</h1>
+      <p>保真记录每次帮助用户/自己的原始场景，复盘对比初步判断与结果，识别反复出现的模式，成熟度推进到 Skill 候选。</p>
+    </section>
+
+    <div class="stat-row">
+      <div class="stat-chip"><div class="stat-chip-label">事件总数</div><div class="stat-chip-value">{events.length}</div></div>
+      <div class="stat-chip"><div class="stat-chip-label">成功</div><div class="stat-chip-value">{byFeedback.get('success') ?? 0}</div></div>
+      <div class="stat-chip"><div class="stat-chip-label">已识别模式</div><div class="stat-chip-value">{patternEvents.length}</div></div>
+      <div class="stat-chip"><div class="stat-chip-label">成功率</div><div class="stat-chip-value">{Math.round(successRate * 100)}%</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>模式分析</h2>
+      <div class="cluster-grid">
+        <div>
+          <div class="meta-label" style="font-size:0.72rem;margin-bottom:0.4rem;">按来源</div>
+          {[...bySource.entries()].sort((a, b) => b[1] - a[1]).map(([src, n]) => (
+            <div class="cluster-row"><span>{src}</span><span class="count">{n}</span></div>
+          ))}
+        </div>
+        <div>
+          <div class="meta-label" style="font-size:0.72rem;margin-bottom:0.4rem;">按反馈结果</div>
+          {([...byFeedback.entries()] as [ExperienceFeedbackResult, number][]).sort((a, b) => b[1] - a[1]).map(([fb, n]) => (
+            <div class="cluster-row"><span>{FEEDBACK_LABEL[fb]}</span><span class="count">{n}</span></div>
+          ))}
+        </div>
+        <div>
+          <div class="meta-label" style="font-size:0.72rem;margin-bottom:0.4rem;">按成熟度</div>
+          {MATURITY_FLOW.map(m => byMaturity.get(m) ? (
+            <div class="cluster-row"><span>{MATURITY_LABEL[m]}</span><span class="count">{byMaturity.get(m)}</span></div>
+          ) : null)}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>记录新经验</h2>
+      <form id="new-exp-form">
+        <div class="form-grid">
+          <select name="source">
+            {SOURCES.map(s => <option value={s}>{s}</option>)}
+          </select>
+          <select name="feedbackResult">
+            <option value="pending">待反馈</option>
+            <option value="success">成功</option>
+            <option value="failure">失败</option>
+            <option value="no-feedback">无反馈</option>
+          </select>
+          <textarea name="rawQuote" rows="2" class="full" placeholder="用户/自己的原话（保真，不总结）" required></textarea>
+          <input type="text" name="surfaceNeed" placeholder="表层需求（可选）" />
+          <input type="text" name="initialHypothesis" placeholder="当时初步判断（可推翻）" />
+          <input type="text" name="helpAction" class="full" placeholder="给出的帮助动作（文章/方法/工具/Skill/教程）" />
+        </div>
+        <div style="margin-top:0.6rem;">
+          <button type="submit" class="btn btn-primary">记录</button>
+        </div>
+      </form>
+    </div>
+
+    {events.length === 0 ? (
+      <div class="empty">还没有经验事件。从直播、对话或教程反馈里记录第一手场景。</div>
+    ) : (
+      <section class="exp-list">
+        {events.map(ev => {
+          const cfg = FEEDBACK_COLOR[ev.feedbackResult];
+          return (
+            <article class={`exp-card ${ev.patternMarked ? 'pattern' : ''}`} data-exp-id={ev.experienceId} data-pattern={ev.patternMarked ? '1' : '0'}>
+              <div class="exp-head">
+                <span class="badge" style={`background:${cfg.bg};color:${cfg.color}`}>{FEEDBACK_LABEL[ev.feedbackResult]}</span>
+                <span class="badge" style="background:#f5f5f4;color:#57534e">{ev.source}</span>
+                {ev.maturity && <span class="badge" style="background:rgba(124,58,237,0.1);color:#7c3aed">{MATURITY_LABEL[ev.maturity]}</span>}
+                {ev.patternMarked && <span class="badge" style="background:rgba(53,191,171,0.12);color:var(--adm-brand-strong)">★ 已识别模式</span>}
+                <span class="exp-time">{formatTime(ev.createdAt)}</span>
+              </div>
+              <div class="exp-quote">{ev.rawQuote}</div>
+              <div class="exp-meta">
+                {ev.surfaceNeed && <div><span class="meta-label">表层需求：</span>{ev.surfaceNeed}</div>}
+                {ev.initialHypothesis && <div><span class="meta-label">初步判断：</span>{ev.initialHypothesis}</div>}
+                {ev.helpAction && <div><span class="meta-label">帮助动作：</span>{ev.helpAction}</div>}
+                {ev.reflection && <div><span class="meta-label">复盘：</span>{ev.reflection}</div>}
+              </div>
+              <div class="exp-foot">
+                <button class="btn" data-action="pattern">{ev.patternMarked ? '取消模式标记' : '标记为模式'}</button>
+                <button class="btn" data-toggle="reflection">写复盘</button>
+                <select class="maturity-select" data-action="maturity">
+                  <option value="">成熟度…</option>
+                  {MATURITY_FLOW.map(m => <option value={m} selected={ev.maturity === m}>{MATURITY_LABEL[m]}</option>)}
+                </select>
+                {ev.maturity === 'skill-candidate' && <a class="btn btn-primary" href={`/admin/skills?fromExperience=${ev.experienceId}`}>转为 Skill 候选</a>}
+              </div>
+              <div class="reflection-edit" data-reflection-edit={ev.experienceId}>
+                <textarea rows="2" data-reflection-input={ev.experienceId} placeholder="对比初步判断与最终结果：哪里对了，哪里错了，下次怎么改">{ev.reflection ?? ''}</textarea>
+                <div style="margin-top:0.4rem;"><button class="btn btn-primary" data-action="reflection" data-id={ev.experienceId}>保存复盘</button></div>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+    )}
+  </div>
+
+  <script is:inline>
+    const post = (url, body) => fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    }).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
+    const tell = (message) => window.WalkerAdminUI?.notify({ title: '操作结果', message }) ?? Promise.resolve();
+
+    document.getElementById('new-exp-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = Object.fromEntries(fd.entries());
+      payload.rawQuote = (payload.rawQuote || '').toString().trim();
+      if (!payload.rawQuote) return;
+      const { ok, data } = await post('/api/admin/experience-events', payload);
+      if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
+    });
+
+    document.querySelectorAll('[data-toggle="reflection"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.exp-card');
+        card?.querySelector('.reflection-edit')?.classList.toggle('visible');
+      });
+    });
+
+    document.querySelectorAll('.btn[data-action]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.exp-card');
+        const expId = card?.dataset.expId;
+        const action = btn.dataset.action;
+        if (!expId || !action) return;
+        if (action === 'pattern') {
+          const next = card.dataset.pattern !== '1';
+          const { ok, data } = await post('/api/admin/experience-events?action=update', { experienceId: expId, patternMarked: next });
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+        } else if (action === 'reflection') {
+          const input = document.querySelector(`[data-reflection-input="${expId}"]`);
+          const reflection = (input?.value || '').toString().trim();
+          if (!reflection) return;
+          const { ok, data } = await post('/api/admin/experience-events?action=update', { experienceId: expId, reflection });
+          if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="maturity"]').forEach((sel) => {
+      sel.addEventListener('change', async () => {
+        const card = sel.closest('.exp-card');
+        const expId = card?.dataset.expId;
+        const maturity = sel.value;
+        if (!expId || !maturity) return;
+        const { ok, data } = await post('/api/admin/experience-events?action=update', { experienceId: expId, maturity });
+        if (ok && data.ok) window.location.reload(); else await tell(data.error || '保存失败');
+      });
+    });
+  </script>
+</AdminLayout>

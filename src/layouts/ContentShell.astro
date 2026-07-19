@@ -1,0 +1,531 @@
+---
+/**
+ * ContentShell.astro — 统一块阅读容器
+ *
+ * 不预设布局模式。不探测第一块类型。块自声明宽度等级，
+ * 容器只提供阅读基础设施（进度、TOC、反馈）和宽度 CSS 环境。
+ *
+ * Props：
+ *   headings   — 文章 heading 数组（用于 TOC）
+ *   hasToc     — 是否有目录内容
+ *   feedback   — 是否渲染反馈插槽容器；真实反馈合同接入前默认关闭
+ *
+ * Slot：整篇文章内容（标题、标签、封面、正文、配套视频/资源/版本/评论）
+ */
+
+import Base from './Base.astro';
+import TableOfContents from '../components/article/TableOfContents.astro';
+import { Icon } from 'astro-icon/components';
+import type { ReadingLayout } from '@/knowledge/block-types';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  canonicalUrl?: string;
+  themeColor?: string;
+  headings: Heading[];
+  hasToc?: boolean;
+  feedback?: boolean;
+  /** 内容 slug；用于阅读深度遥测（P3-A）。不传则不采集。 */
+  contentId?: string;
+  /** 阅读布局模板：immersive 单栏居中（默认）/ media 双栏主内容+右侧推荐 */
+  layout?: ReadingLayout;
+  /** 内容形式（form），用于 CSS 微调阅读体验 */
+  form?: string;
+  theme?: string;
+  brandColor?: string;
+  brandSecondaryColor?: string;
+}
+
+const {
+  layout = 'immersive' as ReadingLayout,
+  headings,
+  hasToc: _hasToc,
+  feedback = false,
+  contentId = '',
+  form = '',
+  theme,
+  brandColor,
+  brandSecondaryColor,
+  ...seoProps
+} = Astro.props;
+const tocItems = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+// media 模式隐藏 TOC：视频内容不需要章节导航，右侧栏已被推荐占用
+const hasToc = layout === 'media' ? false : (_hasToc ?? tocItems.length > 0);
+---
+
+<Base {...seoProps} pureMode={false} theme={theme} brandColor={brandColor} brandSecondaryColor={brandSecondaryColor}>
+  <!-- 沉浸式阅读区域 -->
+  <div class="reading-space" id="reading-space" data-content-id={contentId} data-form={form}>
+    <!-- 左边缘提示区 — 侧边栏幽灵 -->
+    <div class="sidebar-ghost-hint" id="sidebar-ghost-hint" aria-hidden="true"></div>
+
+    <!-- 阅读进度条 -->
+    <div class="reading-progress" id="reading-progress" aria-hidden="true">
+      <div class="reading-progress-bar" id="reading-progress-bar"></div>
+      <span class="reading-progress-pct" id="reading-progress-pct"></span>
+    </div>
+
+    <!-- 内容 — 按 layout 切换排列方式 -->
+    {layout === 'media' ? (
+      <div class="reading-content reading-content--media">
+        <main class="media-main">
+          <article data-pagefind-body>
+            <slot />
+          </article>
+
+          {feedback && (
+            <div class="feedback-strip" id="feedback-strip">
+              <!-- BlockLike → 点赞 -->
+              <!-- BlockFeedback → 「有用吗」三按钮 -->
+            </div>
+          )}
+        </main>
+        <aside class="media-aside" aria-label="相关推荐">
+          <slot name="aside" />
+        </aside>
+      </div>
+    ) : (
+      <div class="reading-content">
+        <article data-pagefind-body>
+          <slot />
+        </article>
+
+        {feedback && (
+          <div class="feedback-strip" id="feedback-strip">
+            <!-- BlockLike → 点赞 -->
+            <!-- BlockFeedback → 「有用吗」三按钮 -->
+          </div>
+        )}
+
+        {/* aside slot 回流到主内容流底部（沉浸式模式推荐在底部） */}
+        <slot name="aside" />
+      </div>
+    )}
+
+    <!-- TOC 侧边栏与展开按钮包装器 — absolute 定位，内部 sticky 齐平内容 -->
+    {hasToc && (
+      <div class="toc-wrapper">
+        <aside class="toc-sidebar" id="toc-sidebar" aria-label="文章目录">
+          <div class="toc-sidebar-inner">
+            <div class="toc-sidebar-header">
+              <span class="toc-sidebar-title">本文目录</span>
+              <button class="toc-collapse-btn" id="toc-collapse-btn" type="button" aria-label="收起目录">
+                <Icon name="lucide:chevrons-right" width={15} height={15} />
+              </button>
+            </div>
+            <TableOfContents headings={headings} instanceId="ghost" />
+          </div>
+        </aside>
+
+        <button class="toc-expand-btn" id="toc-expand-btn" type="button" aria-label="展开目录" hidden>
+          <Icon name="lucide:chevrons-left" width={15} height={15} />
+          <span class="toc-expand-label">目录</span>
+        </button>
+      </div>
+    )}
+  </div>
+</Base>
+
+<style>
+  /* ===== 内容 — 块宽由块自身声明（CSS 变量级联） ===== */
+  .reading-space {
+    --cs-width-full: 1000px;
+    --cs-width-normal: 700px;
+    --cs-width-narrow: 600px;
+    --cs-toc-offset: calc(var(--cs-width-normal) / 2 + 0.75rem);
+
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* 单栏居中阅读 — 文章始终居中，不被 TOC 挤占 */
+  .reading-content {
+    width: 100%;
+    max-width: var(--cs-width-normal);
+    margin: 0 auto;
+    padding: 6rem 1.5rem 8rem;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== media 模式：双栏 grid（主内容 + 右侧推荐） ===== */
+  .reading-content--media {
+    max-width: 1200px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .media-main {
+    min-width: 0; /* 防止 grid 子项溢出 */
+  }
+  .media-aside {
+    position: sticky;
+    top: 6rem;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+  }
+
+  /* 块宽度等级（global：block 组件可能在 prose 内嵌套） */
+  :global(.cs-block) {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  :global(.cs-block--full) {
+    max-width: var(--cs-width-full);
+  }
+  :global(.cs-block--normal) {
+    max-width: var(--cs-width-normal);
+  }
+  :global(.cs-block--narrow) {
+    max-width: var(--cs-width-narrow);
+  }
+
+  /* ===== 反馈带 ===== */
+  .feedback-strip {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+  }
+
+  /* ===== TOC 侧边栏包装器 — absolute 定位，不挤文章 ===== */
+  .toc-wrapper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% + var(--cs-toc-offset));
+    width: 200px;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* 窄屏：TOC包装器和展开按钮全部隐藏（屏幕放不下） */
+  @media (max-width: 1180px) {
+    .toc-wrapper { display: none !important; }
+  }
+
+  .toc-sidebar {
+    position: sticky;
+    top: 6rem;
+    margin-top: 15.5rem;
+    width: 200px;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: auto;
+  }
+  .toc-sidebar.is-collapsed {
+    opacity: 0;
+    transform: translateX(20px);
+    pointer-events: none;
+  }
+  .toc-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .toc-sidebar-inner {
+    padding: 0 0 0 1rem;
+    border-left: 1px solid var(--color-nav-border);
+  }
+  .toc-sidebar-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .toc-sidebar::-webkit-scrollbar { width: 2px; }
+  .toc-sidebar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
+    border-radius: 2px;
+  }
+
+  /* 折叠按钮 — 贴在 TOC 左边缘（文章和 TOC 之间） */
+  .toc-collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-parchment-dim);
+    padding: 2px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+  .toc-collapse-btn:hover {
+    color: var(--color-brand);
+    opacity: 1;
+  }
+
+  /* 展开按钮 — TOC 折叠后，贴在 TOC 原位置（文章右边） */
+  .toc-expand-btn {
+    position: sticky;
+    top: 6rem;
+    margin-top: 15.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-parchment-dim);
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    pointer-events: auto;
+  }
+  .toc-expand-btn:hover {
+    color: var(--color-brand);
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .toc-expand-btn[hidden] { display: none; }
+  .toc-expand-label { line-height: 1; }
+  /* ===== 左边缘提示区 ===== */
+  .sidebar-ghost-hint {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    width: 24px;
+    height: 80px;
+    transform: translateY(-50%);
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 29;
+  }
+  .sidebar-ghost-hint::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 40px;
+    background: color-mix(in srgb, var(--color-brand) 15%, transparent);
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  .sidebar-ghost-hint::after {
+    content: '导航';
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    font-family: var(--font-mono, monospace);
+    color: var(--color-brand);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .sidebar-ghost-hint:hover::before { opacity: 0.8; }
+  .sidebar-ghost-hint:hover::after { opacity: 0.7; }
+  :global(html:not([data-sidebar-hidden])) .sidebar-ghost-hint { opacity: 0; }
+
+  /* ===== 阅读进度条 ===== */
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 40;
+    background: transparent;
+    pointer-events: none;
+  }
+  .reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--color-brand);
+    transition: width 0.1s linear;
+  }
+  .reading-progress-pct {
+    position: fixed;
+    top: 5px;
+    font-family: var(--font-mono, monospace);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-brand);
+    opacity: 0;
+    transition: opacity 0.2s ease, left 0.1s linear;
+    pointer-events: none;
+  }
+
+  /* ===== 幽灵侧边栏 ===== */
+  :global(html[data-sidebar-hidden]) :global(#main-nav) {
+    width: 0 !important;
+    min-width: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, width 0.3s ease;
+  }
+
+  /* ===== 响应式 ===== */
+  /* media 模式窄屏退回单栏：推荐移到底部 */
+  @media (max-width: 900px) {
+    .reading-content--media {
+      grid-template-columns: 1fr;
+    }
+    .media-aside {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .reading-content { padding: 5.5rem 1rem 4rem; }
+  }
+
+  /* ===== Form-specific reading adjustments ===== */
+  [data-form="note"] .reading-content,
+  [data-form="diary"] .reading-content,
+  [data-form="rant"] .reading-content {
+    --cs-width-normal: 600px;
+  }
+
+  [data-form="lesson"] .reading-content {
+    --cs-width-normal: 760px;
+  }
+
+  [data-form="lesson"] .reading-progress {
+    opacity: 1;
+  }
+
+</style>
+
+<script>
+  import '../scripts/toc-highlight';
+  import { applyTocCollapsedState, readTocCollapsedState } from '../scripts/toc-collapse-state';
+  import { resetContentTelemetryState, trackReadingProgress } from '../scripts/content-telemetry';
+
+  let articleAbort: AbortController | null = null;
+  let ghostSidebarObserver: MutationObserver | null = null;
+  let ghostSidebarHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearArticleTimers() {
+    if (ghostSidebarHideTimer !== null) { clearTimeout(ghostSidebarHideTimer); ghostSidebarHideTimer = null; }
+  }
+
+  function initReadingProgress(signal: AbortSignal) {
+    const bar = document.getElementById('reading-progress-bar');
+    const pct = document.getElementById('reading-progress-pct');
+    const readingSpace = document.getElementById('reading-space');
+    const contentId = readingSpace?.dataset.contentId ?? '';
+    if (!bar) return;
+
+    const update = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+      const widthPct = progress * 100;
+      bar.style.width = `${widthPct}%`;
+      if (pct) {
+        if (progress > 0.05 && progress < 0.99) {
+          pct.textContent = `${Math.round(widthPct)}%`;
+          pct.style.left = `${widthPct}%`;
+          pct.style.opacity = '0.7';
+        } else { pct.style.opacity = '0'; }
+      }
+      // P3-A：把已算好的 progress 喂给遥测 beacon（不新增滚动监听，内部步进去重）
+      if (contentId) trackReadingProgress(contentId, progress);
+    };
+    window.addEventListener('scroll', update, { passive: true, signal });
+    update();
+  }
+
+  function initGhostSidebar(signal: AbortSignal) {
+    const root = document.documentElement;
+    root.setAttribute('data-sidebar-collapsed', '');
+    root.setAttribute('data-sidebar-hidden', '');
+
+    ghostSidebarObserver = new MutationObserver(() => {
+      if (!root.hasAttribute('data-sidebar-collapsed')) { root.removeAttribute('data-sidebar-hidden'); }
+    });
+    ghostSidebarObserver.observe(root, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] });
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      const inLeftZone = e.clientX < 60;
+      if (ghostSidebarHideTimer !== null) { clearTimeout(ghostSidebarHideTimer); ghostSidebarHideTimer = null; }
+      if (inLeftZone && root.hasAttribute('data-sidebar-collapsed')) { root.removeAttribute('data-sidebar-hidden'); }
+      else if (!inLeftZone && root.hasAttribute('data-sidebar-collapsed')) {
+        ghostSidebarHideTimer = setTimeout(() => {
+          ghostSidebarHideTimer = null;
+          if (root.hasAttribute('data-sidebar-collapsed')) { root.setAttribute('data-sidebar-hidden', ''); }
+        }, 600);
+      }
+    }, { signal });
+  }
+
+  function initTocCollapse(signal: AbortSignal) {
+    const sidebar = document.getElementById('toc-sidebar');
+    const collapseBtn = document.getElementById('toc-collapse-btn');
+    const expandBtn = document.getElementById('toc-expand-btn');
+    if (!sidebar || !collapseBtn || !expandBtn) return;
+
+    const elements = { sidebar, collapseButton: collapseBtn, expandButton: expandBtn };
+    applyTocCollapsedState(elements, readTocCollapsedState(localStorage), localStorage);
+
+    collapseBtn.addEventListener('click', () => {
+      applyTocCollapsedState(elements, true, localStorage);
+    }, { signal });
+
+    expandBtn.addEventListener('click', () => {
+      applyTocCollapsedState(elements, false, localStorage);
+    }, { signal });
+  }
+
+  function initArticleScripts() {
+    articleAbort?.abort();
+    ghostSidebarObserver?.disconnect();
+    ghostSidebarObserver = null;
+    clearArticleTimers();
+    articleAbort = new AbortController();
+    const { signal } = articleAbort;
+
+    // P3-A：每次页面（重新）加载重置遥测触发状态
+    resetContentTelemetryState();
+
+    initTocCollapse(signal);
+    initGhostSidebar(signal);
+    initReadingProgress(signal);
+  }
+
+  initArticleScripts();
+  document.addEventListener('astro:page-load', initArticleScripts);
+  document.addEventListener('astro:before-swap', () => {
+    articleAbort?.abort();
+    articleAbort = null;
+    ghostSidebarObserver?.disconnect();
+    ghostSidebarObserver = null;
+    clearArticleTimers();
+    document.documentElement.removeAttribute('data-sidebar-hidden');
+  });
+</script>

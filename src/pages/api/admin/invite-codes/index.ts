@@ -1,0 +1,99 @@
+/**
+ * /api/admin/invite-codes — 后台邀请码管理
+ *
+ * GET    list（admin+owner 可看）
+ * POST   generate { label, count, maxUses }（仅 owner）→ 返回生成的码（仅显示一次）
+ * DELETE delete { code }（仅 owner）
+ */
+import type { APIRoute } from 'astro';
+
+import { isAdminAsync, isOwnerAsync } from '@/lib/admin-auth';
+import { readSessionId } from '@/lib/account-auth';
+import { requireHighRiskAudit } from '@/lib/admin-audit';
+import { resolveAdminActor } from '@/lib/admin-actor';
+import { captureException } from '@/lib/sentry';
+import { createManagedInviteCodeStore } from '@/stores/managed-invite-code.store';
+import { createUserContextService } from '@/services/user-context.service';
+import { createAccountStore } from '@/stores/account.store';
+import { createSessionStore } from '@/stores/session.store';
+import { createUserProfileStore } from '@/stores/user-profile.store';
+
+const sessionStore = createSessionStore();
+const store = createManagedInviteCodeStore();
+const userContextService = createUserContextService({
+  sessionStore: createSessionStore(),
+  accountStore: createAccountStore(),
+  profileStore: createUserProfileStore(),
+});
+
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+export const GET: APIRoute = async ({ request }) => {
+  if (!await isAdminAsync(request, sessionStore)) return json({ error: '未授权。' }, 401);
+  const codes = await store.listAll();
+  return json({ codes });
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  if (!await isOwnerAsync(request, sessionStore)) return json({ ok: false, reason: '仅站主可生成邀请码。' }, 403);
+
+  const me = await userContextService.resolve({ sessionId: readSessionId(request), isAdmin: false });
+
+  let body: { label?: unknown; count?: unknown; maxUses?: unknown };
+  try {
+    body = await request.json();
+  } catch (error) {
+    captureException(error, { action: 'invite-code.generate' });
+    return json({ ok: false, reason: '请求格式不正确。' }, 400);
+  }
+
+  const label = typeof body.label === 'string' && body.label.trim() ? body.label.trim() : '通用';
+  const count = Math.max(1, Math.min(Number(body.count) || 1, 500));
+  const maxUses = Math.max(1, Number(body.maxUses) || 1);
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'invite-code.generate',
+    targetType: 'invite-code',
+    reason: `生成 ${count} 个邀请码。`,
+    detail: { label, count, maxUses },
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
+
+  const created = await store.generate({ label, count, maxUses, createdBy: me.username ?? 'owner' });
+  return json({ ok: true, codes: created.map((c) => c.code) });
+};
+
+export const DELETE: APIRoute = async ({ request }) => {
+  if (!await isOwnerAsync(request, sessionStore)) return json({ ok: false, reason: '仅站主可删除邀请码。' }, 403);
+
+  let body: { code?: unknown };
+  try {
+    body = await request.json();
+  } catch (error) {
+    captureException(error, { action: 'invite-code.delete' });
+    return json({ ok: false, reason: '请求格式不正确。' }, 400);
+  }
+
+  const code = typeof body.code === 'string' ? body.code : '';
+  if (!code) return json({ ok: false, reason: '请指定邀请码。' }, 400);
+
+  const actor = await resolveAdminActor(request);
+  const audit = await requireHighRiskAudit({
+    actor,
+    action: 'invite-code.delete',
+    targetType: 'invite-code',
+    reason: '删除邀请码会立即移除该身份入口。',
+    detail: { codeHashSuffix: code.slice(-4) },
+  });
+  if (!audit.ok) return json({ ok: false, reason: audit.reason, code: audit.code }, audit.status);
+
+  await store.delete(code);
+  return json({ ok: true });
+};

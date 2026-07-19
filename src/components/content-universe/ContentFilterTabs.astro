@@ -1,0 +1,83 @@
+---
+import { contentSpaces, type ContentSpace } from '@/knowledge/content-model';
+import { buildContentSpacePath, CONTENT } from '@/shared/routes';
+
+interface Props {
+  activeSpace: ContentSpace;
+  counts: Record<ContentSpace, number>;
+}
+
+const { activeSpace, counts } = Astro.props;
+
+function getSpaceHref(space: ContentSpace) {
+  return space === 'all' ? CONTENT : buildContentSpacePath(space);
+}
+---
+
+<nav class="content-filter-tabs" aria-label="内容宇宙筛选">
+  {contentSpaces.map((space) => {
+    const isActive = space.id === activeSpace;
+    const count = counts[space.id] ?? 0;
+
+    return (
+      <a
+        href={getSpaceHref(space.id)}
+        class:list={['filter-tab', { 'is-active': isActive, 'is-empty': count === 0 }]}
+        aria-current={isActive ? 'page' : undefined}
+        data-space={space.id}
+      >
+        <span class="tab-label">{space.label}</span>
+        <span class="tab-count" aria-label={`${space.label}共 ${count} 条`}>{count}</span>
+      </a>
+    );
+  })}
+</nav>
+
+<style>
+  .content-filter-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.1rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .filter-tab {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.15rem 0;
+    border: 0;
+    border-bottom: 1.5px solid transparent;
+    background: transparent;
+    color: var(--color-muted, #a8a29e);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .filter-tab:hover {
+    color: var(--color-text-muted, #78716c);
+  }
+
+  .filter-tab.is-active {
+    color: var(--color-heading, #2a2522);
+    border-bottom-color: var(--color-brand, #c4704a);
+  }
+
+  .tab-count {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.7rem;
+    color: rgba(168, 162, 158, 0.85);
+    font-weight: 600;
+  }
+
+  .filter-tab.is-active .tab-count {
+    color: var(--color-brand, #c4704a);
+  }
+
+  .filter-tab.is-empty {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+</style>

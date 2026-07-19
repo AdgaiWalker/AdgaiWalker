@@ -1,0 +1,326 @@
+---
+import FullscreenLayout from '@/layouts/FullscreenLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { readSessionPayload } from '@/lib/account-auth';
+import { createAccountStore } from '@/stores/account.store';
+
+const session = readSessionPayload(Astro.request);
+const needsBootstrap = !(await createAccountStore().exists());
+const showDevPreview = import.meta.env.DEV;
+---
+
+<FullscreenLayout title="进入 Walker">
+  <main class="walker-auth-page">
+    <div class="auth-atmosphere" aria-hidden="true"></div>
+
+    <section class="auth-stage">
+      <aside class="auth-context">
+        <a href="/" class="auth-brand" aria-label="返回 Walker 首页">
+          <img src="/favicon.svg" alt="" width="35" height="35" />
+          <span>Walker</span>
+        </a>
+        <div class="auth-context-copy">
+          <span class="context-label">个人创作系统</span>
+          <h1>从具体问题，<br />进入下一步行动。</h1>
+          <p>后台只呈现需要判断、处理或验证的事项。AI 负责整理和提出草案，最终决定由你完成。</p>
+        </div>
+        <ul class="auth-principles">
+          <li><Icon name="lucide:circle-dot" width={16} height={16} /><span>需求与站主主张分开记录</span></li>
+          <li><Icon name="lucide:list-checks" width={16} height={16} /><span>每个信号都通向具体动作</span></li>
+          <li><Icon name="lucide:shield-check" width={16} height={16} /><span>发布、删除与权限始终由人授权</span></li>
+        </ul>
+        <span class="context-status"><i></i>{showDevPreview ? '本地开发环境' : 'iwalk.pro'}</span>
+      </aside>
+
+      <div class="auth-panel">
+        <div class="auth-panel-top">
+          <a href="/" aria-label="返回首页"><Icon name="lucide:arrow-left" width={17} height={17} /></a>
+          <span>{session ? '当前身份' : needsBootstrap ? '首次进入' : '身份验证'}</span>
+        </div>
+
+        {session ? (
+          <section class="auth-state">
+            <span class="state-icon"><Icon name="lucide:circle-check" width={25} height={25} /></span>
+            <span class="auth-eyebrow">已经准备好</span>
+            <h2>欢迎回来</h2>
+            <p>当前身份：{session.role === 'owner' ? '站主' : session.role === 'admin' ? '管理员' : '用户'}</p>
+            <div class="auth-actions">
+              <a class="auth-button is-primary" href={session.role === 'user' ? '/tools' : '/admin'}>
+                {session.role === 'user' ? '进入功能页' : '进入后台'}
+                <Icon name="lucide:arrow-right" width={17} height={17} />
+              </a>
+              <button class="auth-button is-secondary" id="logout-btn" type="button">退出当前身份</button>
+            </div>
+          </section>
+        ) : needsBootstrap ? (
+          <section class="auth-state bootstrap-state">
+            <span class="auth-eyebrow">Walker 后台</span>
+            <h2>{showDevPreview ? '先查看，再决定如何配置' : '创建站主账号'}</h2>
+            <p>{showDevPreview ? '本地预览不会创建账号或写入数据库。正式部署前，再配置站主账号。' : '这是唯一一次初始化。创建后，本页面会自动切换为普通登录。'}</p>
+
+            {showDevPreview && (
+              <button class="auth-button is-primary preview-button" type="button" data-dev-preview>
+                <Icon name="lucide:scan-eye" width={18} height={18} />
+                直接预览后台
+                <Icon name="lucide:arrow-right" width={17} height={17} />
+              </button>
+            )}
+
+            <details class="setup-disclosure" open={!showDevPreview}>
+              <summary>
+                <span><Icon name="lucide:key-round" width={16} height={16} />配置正式站主账号</span>
+                <Icon class="summary-arrow" name="lucide:chevron-down" width={16} height={16} />
+              </summary>
+              <form class="auth-form setup-form" data-form="setup" autocomplete="off">
+                <label class="field">
+                  <span>部署密钥</span>
+                  <span class="input-shell"><Icon name="lucide:lock-keyhole" width={17} height={17} /><input type="password" name="adminPassword" required placeholder="ADMIN_PASSWORD" /></span>
+                </label>
+                <label class="field">
+                  <span>站主用户名</span>
+                  <span class="input-shell"><Icon name="lucide:user-round" width={17} height={17} /><input type="text" name="ownerUsername" required autocomplete="username" placeholder="例如 Walker" /></span>
+                </label>
+                <label class="field">
+                  <span>站主密码</span>
+                  <span class="input-shell"><Icon name="lucide:lock" width={17} height={17} /><input type="password" name="ownerPassword" required minlength="8" autocomplete="new-password" placeholder="至少 8 位" /><button type="button" data-password-toggle aria-label="显示密码"><Icon name="lucide:eye" width={17} height={17} data-icon-visible /><Icon name="lucide:eye-off" width={17} height={17} data-icon-hidden class="is-hidden" /></button></span>
+                </label>
+                <p class="auth-error" data-error="setup" hidden></p>
+                <button class="auth-button is-secondary setup-submit" type="submit">创建账号并进入</button>
+              </form>
+            </details>
+            {showDevPreview && <small class="preview-note"><Icon name="lucide:monitor" width={13} height={13} />预览入口只在 127.0.0.1 / localhost 的开发服务显示。</small>}
+          </section>
+        ) : (
+          <section class="auth-state sign-in-state">
+            <span class="auth-eyebrow">欢迎回来</span>
+            <h2>进入 Walker</h2>
+            <p>站主和受邀用户使用同一个入口。</p>
+
+            <div class="auth-tabs" role="tablist" aria-label="登录或注册">
+              <button class="is-active" data-tab="login" type="button" role="tab" aria-selected="true">登录</button>
+              <button data-tab="register" type="button" role="tab" aria-selected="false">使用邀请码注册</button>
+            </div>
+
+            <form class="auth-form" data-form="login" autocomplete="on">
+              <label class="field">
+                <span>用户名</span>
+                <span class="input-shell"><Icon name="lucide:user-round" width={17} height={17} /><input type="text" name="username" required autocomplete="username" placeholder="输入用户名" /></span>
+              </label>
+              <label class="field">
+                <span>密码</span>
+                <span class="input-shell"><Icon name="lucide:lock" width={17} height={17} /><input type="password" name="password" required autocomplete="current-password" placeholder="输入密码" /><button type="button" data-password-toggle aria-label="显示密码"><Icon name="lucide:eye" width={17} height={17} data-icon-visible /><Icon name="lucide:eye-off" width={17} height={17} data-icon-hidden class="is-hidden" /></button></span>
+              </label>
+              <p class="auth-error" data-error="login" hidden></p>
+              <button class="auth-button is-primary" type="submit">登录并继续<Icon name="lucide:arrow-right" width={17} height={17} /></button>
+            </form>
+
+            <form class="auth-form" data-form="register" hidden autocomplete="on">
+              <label class="field">
+                <span>邀请码</span>
+                <span class="input-shell"><Icon name="lucide:ticket-check" width={17} height={17} /><input type="text" name="inviteCode" required placeholder="输入邀请码" /></span>
+              </label>
+              <label class="field">
+                <span>用户名</span>
+                <span class="input-shell"><Icon name="lucide:user-round" width={17} height={17} /><input type="text" name="username" required autocomplete="username" placeholder="2–20 位中英文、数字或下划线" /></span>
+              </label>
+              <label class="field">
+                <span>密码</span>
+                <span class="input-shell"><Icon name="lucide:lock" width={17} height={17} /><input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="至少 8 位" /><button type="button" data-password-toggle aria-label="显示密码"><Icon name="lucide:eye" width={17} height={17} data-icon-visible /><Icon name="lucide:eye-off" width={17} height={17} data-icon-hidden class="is-hidden" /></button></span>
+              </label>
+              <label class="field">
+                <span>一句话说明你是谁 <small>可选</small></span>
+                <span class="input-shell"><Icon name="lucide:message-circle" width={17} height={17} /><input type="text" name="personaAnchor" maxlength="10" placeholder="不超过 10 个字" /></span>
+              </label>
+              <div class="persona-options" aria-label="身份快速选择">
+                <button type="button" data-anchor="学生">学生</button>
+                <button type="button" data-anchor="上班族">上班族</button>
+                <button type="button" data-anchor="自由职业">自由职业</button>
+                <button type="button" data-anchor="想做副业">想做副业</button>
+              </div>
+              <label class="consent"><input type="checkbox" name="consent" required /><span>同意 Walker 记录需求，用于改进选题与功能</span></label>
+              <p class="auth-error" data-error="register" hidden></p>
+              <button class="auth-button is-primary" type="submit">注册并继续<Icon name="lucide:arrow-right" width={17} height={17} /></button>
+            </form>
+          </section>
+        )}
+      </div>
+    </section>
+  </main>
+</FullscreenLayout>
+
+<style>
+  :global(body.fullscreen-layout) { background: #edf3f2 !important; color: #18201f; }
+  :global(body:has(.walker-auth-page) .fullscreen-nav) { display: none; }
+  .walker-auth-page { min-height: 100vh; padding: 22px; display: grid; place-items: center; position: relative; isolation: isolate; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Noto Sans SC', system-ui, sans-serif; }
+  .auth-atmosphere { position: fixed; inset: -12px; z-index: -2; background: #edf3f2 url('/images/hero-bg.png') center/cover no-repeat; opacity: .18; filter: saturate(.48) brightness(1.75) blur(3px); }
+  .walker-auth-page::before { content: ''; position: fixed; inset: 0; z-index: -1; background: rgba(247,250,249,.69); }
+  .auth-stage { width: min(1080px, 100%); min-height: min(720px, calc(100vh - 44px)); display: grid; grid-template-columns: minmax(300px, .82fr) minmax(430px, 1.18fr); border: 1px solid rgba(255,255,255,.85); border-radius: 34px; overflow: hidden; background: rgba(250,252,251,.62); box-shadow: 0 30px 90px rgba(38,61,57,.13), inset 0 1px 0 rgba(255,255,255,.8); backdrop-filter: blur(30px) saturate(1.15); -webkit-backdrop-filter: blur(30px) saturate(1.15); }
+  .auth-context { padding: clamp(34px, 5vw, 62px); display: flex; flex-direction: column; border-right: 1px solid rgba(39,62,58,.08); background: rgba(234,242,240,.55); }
+  .auth-brand { display: inline-flex; align-items: center; gap: 11px; align-self: flex-start; color: #18201f; text-decoration: none; font-size: 20px; font-weight: 740; letter-spacing: -.03em; }
+  .auth-brand img { width: 35px; height: 35px; }
+  .auth-context-copy { margin-block: auto; padding-block: 54px; }
+  .context-label, .auth-eyebrow { display: block; color: #149e8b; font-size: 11px; font-weight: 720; letter-spacing: .04em; }
+  .auth-context h1 { max-width: 410px; margin: 17px 0 18px; font-size: clamp(31px, 4.2vw, 49px); line-height: 1.16; letter-spacing: -.055em; font-weight: 720; }
+  .auth-context-copy p { max-width: 380px; margin: 0; color: #65716f; font-size: 13px; line-height: 1.8; }
+  .auth-principles { list-style: none; margin: 0 0 38px; padding: 0; display: grid; gap: 14px; }
+  .auth-principles li { display: flex; align-items: center; gap: 10px; color: #586461; font-size: 11px; }
+  .auth-principles svg { color: #149e8b; }
+  .context-status { display: inline-flex; align-items: center; gap: 8px; color: #8b9593; font-size: 10px; }
+  .context-status i { width: 7px; height: 7px; border-radius: 50%; background: #35bfab; box-shadow: 0 0 0 4px rgba(53,191,171,.12); }
+  .auth-panel { min-width: 0; padding: clamp(30px, 5vw, 62px); display: flex; flex-direction: column; background: rgba(255,255,255,.56); }
+  .auth-panel-top { display: flex; align-items: center; justify-content: space-between; color: #919b99; font-size: 10px; font-weight: 630; }
+  .auth-panel-top a { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #697572; background: rgba(255,255,255,.55); border: 1px solid rgba(39,62,58,.08); text-decoration: none; }
+  .auth-state { width: 100%; max-width: 460px; margin: auto; padding-block: 44px; }
+  .state-icon { width: 52px; height: 52px; margin-bottom: 24px; display: grid; place-items: center; border-radius: 17px; color: #149e8b; background: rgba(53,191,171,.12); }
+  .auth-state h2 { margin: 11px 0 10px; color: #18201f; font-size: clamp(28px, 3vw, 38px); line-height: 1.18; letter-spacing: -.045em; font-weight: 720; }
+  .auth-state > p { margin: 0 0 30px; color: #66716f; font-size: 12px; line-height: 1.75; }
+  .auth-button { width: 100%; min-height: 52px; padding: 0 17px; border-radius: 15px; border: 1px solid rgba(39,62,58,.11); display: flex; align-items: center; justify-content: center; gap: 9px; color: #56625f; background: rgba(255,255,255,.62); text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 690; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+  .auth-button:hover { transform: translateY(-1px); background: rgba(255,255,255,.9); box-shadow: 0 9px 27px rgba(38,61,57,.08); }
+  .auth-button.is-primary { color: white; background: #149e8b; border-color: #149e8b; box-shadow: 0 12px 30px rgba(20,158,139,.19); }
+  .auth-button.is-primary:hover { background: #108d7c; }
+  .auth-button:disabled { opacity: .5; cursor: progress; transform: none; }
+  .preview-button { margin-bottom: 17px; display: grid; grid-template-columns: 20px 1fr 20px; }
+  .preview-note { margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; color: #909a98; font-size: 9px; }
+  .setup-disclosure { margin-top: 4px; border-top: 1px solid rgba(39,62,58,.08); border-bottom: 1px solid rgba(39,62,58,.08); }
+  .setup-disclosure summary { min-height: 53px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #66716f; cursor: pointer; list-style: none; font-size: 11px; font-weight: 650; }
+  .setup-disclosure summary::-webkit-details-marker { display: none; }
+  .setup-disclosure summary span { display: flex; align-items: center; gap: 8px; }
+  .setup-disclosure[open] .summary-arrow { transform: rotate(180deg); }
+  .setup-form { padding: 8px 0 20px; }
+  .setup-submit { margin-top: 4px; }
+  .auth-tabs { display: grid; grid-template-columns: .72fr 1.28fr; gap: 5px; padding: 4px; margin-bottom: 25px; border-radius: 14px; background: rgba(40,63,59,.055); }
+  .auth-tabs button { min-height: 38px; border: 0; border-radius: 11px; color: #88928f; background: transparent; cursor: pointer; font-size: 10px; font-weight: 650; }
+  .auth-tabs button.is-active { color: #149e8b; background: rgba(255,255,255,.84); box-shadow: 0 4px 14px rgba(39,62,58,.07); }
+  .auth-form { display: grid; gap: 15px; }
+  .auth-form[hidden] { display: none; }
+  .field { display: grid; gap: 7px; }
+  .field > span:first-child { color: #687472; font-size: 10px; font-weight: 650; }
+  .field > span small { color: #a1aaa8; font-weight: 500; }
+  .input-shell { min-height: 49px; padding: 0 13px; display: grid; grid-template-columns: 21px minmax(0,1fr) auto; align-items: center; gap: 7px; border: 1px solid rgba(39,62,58,.11); border-radius: 14px; color: #96a09e; background: rgba(255,255,255,.6); transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+  .input-shell:focus-within { color: #149e8b; border-color: rgba(53,191,171,.66); background: rgba(255,255,255,.9); box-shadow: 0 0 0 4px rgba(53,191,171,.09); }
+  .input-shell input { min-width: 0; width: 100%; height: 46px; padding: 0; border: 0; outline: 0; color: #18201f; background: transparent; font-size: 12px; }
+  .input-shell input::placeholder { color: #a1aaa8; }
+  .input-shell > button { width: 32px; height: 32px; border: 0; display: grid; place-items: center; color: #929c9a; background: transparent; cursor: pointer; }
+  .input-shell > button svg { grid-area: 1 / 1; }
+  .input-shell > button svg.is-hidden { display: none; }
+  .persona-options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -7px; }
+  .persona-options button { padding: 5px 8px; border: 1px solid rgba(39,62,58,.09); border-radius: 999px; color: #7b8784; background: rgba(255,255,255,.48); cursor: pointer; font-size: 9px; }
+  .persona-options button:hover { color: #149e8b; border-color: rgba(53,191,171,.38); }
+  .consent { display: flex; align-items: center; gap: 8px; color: #77817f; font-size: 9px; }
+  .consent input { accent-color: #149e8b; }
+  .auth-error { margin: -3px 0 0; color: #bc4854; font-size: 10px; }
+  .auth-actions { display: grid; gap: 9px; }
+
+  @media (max-width: 900px) {
+    .walker-auth-page { padding: 14px; overflow: auto; }
+    .auth-stage { width: min(590px, 100%); min-height: calc(100vh - 28px); grid-template-columns: 1fr; }
+    .auth-context { padding: 25px 27px; border-right: 0; border-bottom: 1px solid rgba(39,62,58,.08); background: rgba(238,244,243,.58); }
+    .auth-context-copy, .auth-principles { display: none; }
+    .auth-brand { font-size: 17px; }.auth-brand img { width: 30px; height: 30px; }
+    .context-status { position: absolute; right: 42px; top: 40px; }
+    .auth-panel { padding: 27px; }
+    .auth-state { padding-block: 34px; }
+  }
+  @media (max-width: 520px) {
+    .walker-auth-page { padding: 0; display: block; }
+    .auth-stage { min-height: 100vh; border: 0; border-radius: 0; box-shadow: none; }
+    .auth-context { padding: 21px 22px; }.context-status { right: 23px; top: 31px; }
+    .auth-panel { padding: 22px; }.auth-panel-top { margin-bottom: 18px; }
+    .auth-state { padding-block: 20px; }.auth-state h2 { font-size: 28px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-button, .input-shell { transition: none; }
+  }
+</style>
+
+<script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  registerLifecycle(() => {
+    const abort = new AbortController();
+    const { signal } = abort;
+
+    const tabs = document.querySelectorAll<HTMLButtonElement>('[data-tab]');
+    const forms = document.querySelectorAll<HTMLFormElement>('.auth-form[data-form]');
+    tabs.forEach(tab => tab.addEventListener('click', () => {
+      tabs.forEach(item => {
+        const active = item === tab;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-selected', String(active));
+      });
+      forms.forEach(form => { if (form.dataset.form !== 'setup') form.hidden = form.dataset.form !== tab.dataset.tab; });
+    }, { signal }));
+
+    document.querySelectorAll<HTMLButtonElement>('[data-anchor]').forEach(button => button.addEventListener('click', () => {
+      const input = document.querySelector<HTMLInputElement>('[data-form="register"] input[name="personaAnchor"]');
+      if (input) { input.value = button.dataset.anchor || ''; input.focus(); }
+    }, { signal }));
+
+    document.querySelectorAll<HTMLButtonElement>('[data-password-toggle]').forEach(button => button.addEventListener('click', () => {
+      const input = button.closest('.input-shell')?.querySelector<HTMLInputElement>('input');
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      button.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      const visibleIcon = button.querySelector<SVGElement>('[data-icon-visible]');
+      const hiddenIcon = button.querySelector<SVGElement>('[data-icon-hidden]');
+      visibleIcon?.classList.toggle('is-hidden', show);
+      hiddenIcon?.classList.toggle('is-hidden', !show);
+    }, { signal }));
+
+    async function submitForm(form: HTMLFormElement, url: string, errorEl: HTMLElement) {
+      const data = Object.fromEntries(new FormData(form).entries());
+      delete (data as Record<string, unknown>).consent;
+      errorEl.hidden = true;
+      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      const original = button?.textContent || '';
+      if (button) { button.disabled = true; button.textContent = '正在验证…'; }
+      try {
+        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const result = await response.json();
+        if (response.ok && result.ok) {
+          window.location.href = result.role === 'user' ? '/tools' : '/admin';
+          return;
+        }
+        errorEl.textContent = result.reason || '操作失败，请重试。';
+        errorEl.hidden = false;
+      } catch {
+        errorEl.textContent = '当前无法连接，请稍后重试。';
+        errorEl.hidden = false;
+      } finally {
+        if (button) { button.disabled = false; button.textContent = original; }
+      }
+    }
+
+    const bindForm = (name: string, url: string) => {
+      const form = document.querySelector<HTMLFormElement>(`[data-form="${name}"]`);
+      const error = document.querySelector<HTMLElement>(`[data-error="${name}"]`);
+      form?.addEventListener('submit', event => { event.preventDefault(); if (error) void submitForm(form, url, error); }, { signal });
+    };
+    bindForm('login', '/api/auth/login');
+    bindForm('register', '/api/auth/register');
+    bindForm('setup', '/api/auth/setup');
+
+    document.querySelector<HTMLButtonElement>('[data-dev-preview]')?.addEventListener('click', async event => {
+      const button = event.currentTarget as HTMLButtonElement;
+      button.disabled = true;
+      const original = button.innerHTML;
+      button.textContent = '正在打开后台…';
+      try {
+        const response = await fetch('/api/auth/dev-preview', { method: 'POST' });
+        if (!response.ok) throw new Error('preview unavailable');
+        window.location.href = '/admin';
+      } catch {
+        button.disabled = false;
+        button.innerHTML = original;
+      }
+    }, { signal });
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.reload();
+    }, { signal });
+
+    return () => abort.abort();
+  });
+</script>

@@ -1,0 +1,137 @@
+---
+// InlineEditor — 就地编辑器骨架（预渲染隐藏，客户端激活）
+// Props: slug（就地模式必填；独立模式/新建可为空）
+import MetadataForm from './MetadataForm.astro';
+
+interface Props {
+  slug?: string;
+  mode?: 'inline' | 'standalone';
+  /** P4/独立模式：SSR 预填正文（如简报模板）。作为静态 HTML 渲染进 textarea，
+   *  绕开客户端 <script define:vars> 注入——后者在 ClientRouter swap 时会把 CJK 字节
+   *  误解码成 Latin-1（乱码），导致中文简报内容（如"建议角度"）损坏。 */
+  initialBody?: string;
+}
+
+const { slug = '', mode = 'inline', initialBody = '' } = Astro.props;
+---
+
+<div
+  class={`inline-editor ${mode === 'standalone' ? 'ie-standalone' : ''}`}
+  id="inline-editor"
+  data-slug={slug}
+  data-mode={mode}
+  hidden
+>
+  <div class="ie-toolbar">
+    <div class="ie-tabs">
+      <button class="ie-tab is-active" data-tab="body" type="button">正文</button>
+      <button class="ie-tab" data-tab="preview" type="button">预览</button>
+      <button class="ie-tab" data-tab="meta" type="button">元数据</button>
+    </div>
+    <div class="ie-actions">
+      <button class="ie-btn ie-btn-history" id="ie-history-btn" type="button" hidden>历史</button>
+      <button class="ie-btn ie-btn-cancel" id="ie-cancel-btn" type="button">取消</button>
+      <button class="ie-btn ie-btn-primary" id="ie-save-btn" type="button" disabled>保存</button>
+    </div>
+  </div>
+
+  <div class="ie-pane ie-pane-body is-active" data-pane="body">
+    <textarea class="ie-textarea" id="ie-editor" placeholder="加载中..." disabled>{initialBody}</textarea>
+  </div>
+
+  <div class="ie-pane ie-pane-preview" data-pane="preview">
+    <div class="ie-preview" id="ie-preview"><div class="ie-loading">预览区</div></div>
+  </div>
+
+  <div class="ie-pane ie-pane-meta" data-pane="meta">
+    <MetadataForm />
+  </div>
+
+  <div class="ie-status" id="ie-status">就绪</div>
+</div>
+
+<style>
+  .inline-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: #1c1917;
+  }
+  .ie-standalone { min-height: calc(100vh - 8rem); }
+  .ie-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .ie-tabs { display: flex; gap: 0.25rem; }
+  .ie-tab {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #78716c;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ie-tab.is-active { background: #f5f5f4; color: #1c1917; }
+  .ie-actions { display: flex; gap: 0.4rem; }
+  .ie-btn {
+    padding: 0.35rem 0.85rem;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background: transparent;
+    color: #78716c;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ie-btn:hover { background: #f5f5f4; }
+  .ie-btn-primary { background: #c4704a; color: #fff; border-color: #c4704a; }
+  .ie-btn-primary:hover { background: #b5633f; }
+  .ie-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ie-btn-history { color: #78716c; }
+
+  .ie-pane { display: none; }
+  .ie-pane.is-active { display: flex; flex-direction: column; }
+  .ie-pane-body, .ie-pane-preview { border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; background: #fff; overflow: hidden; min-height: 60vh; }
+  .ie-textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 60vh;
+    padding: 1rem;
+    border: 0;
+    background: transparent;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: #1c1917;
+    resize: vertical;
+    outline: none;
+    tab-size: 2;
+  }
+  .ie-preview { padding: 1rem 1.25rem; overflow-y: auto; }
+  .ie-preview :global(h1) { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.75rem; }
+  .ie-preview :global(h2) { font-size: 1.15rem; font-weight: 800; margin: 1.25rem 0 0.5rem; }
+  .ie-preview :global(h3) { font-size: 1rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+  .ie-preview :global(p) { font-size: 0.9rem; line-height: 1.7; margin: 0 0 0.65rem; }
+  .ie-preview :global(code) { font-family: monospace; padding: 0.15rem 0.35rem; background: rgba(0,0,0,0.05); border-radius: 4px; }
+  .ie-preview :global(pre) { background: #1c1917; color: #e7e5e4; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0 0 0.75rem; }
+  .ie-preview :global(blockquote) { border-left: 3px solid #c4704a; padding-left: 0.85rem; color: #78716c; margin: 0 0 0.65rem; }
+  .ie-preview :global(.mdx-placeholder) { display: inline-block; padding: 0.2rem 0.5rem; border: 1px dashed #c4704a; border-radius: 6px; color: #c4704a; font-size: 0.75rem; font-family: monospace; }
+  .ie-loading { color: #a8a29e; font-size: 0.9rem; }
+  .ie-status { padding: 0.4rem 0.75rem; font-size: 0.75rem; color: #78716c; text-align: center; }
+  .ie-status.error { color: #dc2626; }
+  .ie-status.success { color: #16a34a; }
+
+  .ie-pane-meta { background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 1rem 1.25rem; }
+</style>

@@ -1,0 +1,306 @@
+---
+// /admin/assets — 资产生命周期（P2-B）
+//
+// 统一展示 Experience/Rule/Skill 的晋升活动 + 支撑证据链 + 学习请求（证据不足补证）。
+// 把三类资产映射到统一生命周期 observed→candidate→validated→stable→retired，
+// 每次晋升可查"由哪些 Outcome/Experience 支持 + Walker 批准 + 理由"。
+import { Icon } from 'astro-icon/components';
+import { isAdmin } from '@/lib/admin-auth';
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import { createAssetService } from '@/services/asset.service';
+
+export const prerender = false;
+if (!isAdmin(Astro.request)) return Astro.redirect('/admin/login');
+
+const service = createAssetService();
+const view = Astro.url.searchParams.get('view') === 'learning' ? 'learning' : 'overview';
+const [recentPromotions, learningRequests] = await Promise.all([
+  service.recentPromotions(20),
+  service.listLearningRequests(),
+]);
+const stageLabel: Record<string, string> = {
+  observed: '观察', candidate: '候选', validated: '已验证', stable: '稳定', retired: '退役',
+};
+const stageTone: Record<string, string> = {
+  observed: 'neutral', candidate: 'warn', validated: 'good', stable: 'good', retired: 'bad',
+};
+const kindLabel: Record<string, string> = { experience: '经验', rule: '规则', skill: 'Skill' };
+const gapLabel: Record<string, string> = {
+  practice: '实践', 'counter-example': '反例', interview: '访谈', outcome: '结果', boundary: '边界',
+};
+const statusLabel: Record<string, string> = {
+  open: '待补证', 'in-progress': '进行中', fulfilled: '已完成', dropped: '已放弃',
+};
+
+const openLearning = learningRequests.filter(r => r.status === 'open' || r.status === 'in-progress');
+const fulfilledLearning = learningRequests.filter(r => r.status === 'fulfilled' || r.status === 'dropped');
+---
+
+<AdminLayout
+  active="/admin/assets"
+  title={view === 'learning' ? '学习任务' : '资产生命周期'}
+  subtitle="经验 / 规则 / Skill 统一晋升 + 证据链 + 补证任务"
+>
+  <div class="assets" data-assets>
+    <header class="assets-head">
+      <p>{view === 'learning'
+        ? '这里集中处理证据缺口。完成实践、反例、访谈或结果验证后，记录实际结果。'
+        : <>Experience / Rule / Skill 映射到统一生命周期 <code>observed→candidate→validated→stable→retired</code>。每次晋升记录支撑证据与 Walker 批准；证据不足时只生成学习请求。</>}</p>
+    </header>
+
+    {openLearning.length > 0 && (
+      <section class="asset-section">
+        <h2 class="section-title"><Icon name="lucide:graduation-cap" width={16} height={16} /> 待补证任务（{openLearning.length}）</h2>
+        <p class="section-desc">证据不足时生成 —— 补到 expectedEvidence 程度才算完成，避免把未验证材料注册为能力。</p>
+        <div class="learning-list">
+          {openLearning.map(req => (
+            <article class="learning-card" data-request-id={req.requestId}>
+              <div class="learning-head">
+                <span class="learning-gap">缺{gapLabel[req.evidenceGap]}</span>
+                <span class={`learning-status is-${req.status}`}>{statusLabel[req.status]}</span>
+              </div>
+              <p class="learning-context">{req.context}</p>
+              <p class="learning-expected">期望证据：{req.expectedEvidence}</p>
+              <div class="learning-actions">
+                <button class="learning-btn" type="button" data-fulfill data-id={req.requestId}>
+                  <Icon name="lucide:check" width={14} height={14} /> 标记已补证
+                </button>
+                <span class="learning-status-msg" data-status-msg role="status" aria-live="polite"></span>
+              </div>
+              <form class="learning-inline-form" data-fulfill-form hidden>
+                <label for={`fulfillment-${req.requestId}`}>补证结果</label>
+                <textarea id={`fulfillment-${req.requestId}`} name="fulfillmentNote" rows="3" required placeholder="记录做了什么、结果如何、发现了什么边界"></textarea>
+                <div>
+                  <button type="button" data-fulfill-cancel>取消</button>
+                  <button class="is-primary" type="submit">确认完成</button>
+                </div>
+              </form>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {view === 'overview' && <section class="asset-section">
+      <h2 class="section-title"><Icon name="lucide:trending-up" width={16} height={16} /> 最近晋升（{recentPromotions.length}）</h2>
+      {recentPromotions.length === 0 ? (
+        <div class="asset-empty">
+          <Icon name="lucide:inbox" width={24} height={24} />
+          <span>还没有晋升记录。在工作经验/规则/Skill 页推进资产时，会在此留下证据链。</span>
+        </div>
+      ) : (
+        <div class="promotion-list">
+          {recentPromotions.map(link => (
+            <article class="promotion-card">
+              <div class="promotion-head">
+                <span class="promotion-kind">{kindLabel[link.assetKind]}</span>
+                <span class={`promotion-stage is-${stageTone[link.stage]}`}>{stageLabel[link.stage]}</span>
+                <span class="promotion-id">{link.assetKind}/{link.assetId.slice(0, 12)}</span>
+              </div>
+              <p class="promotion-reason">{link.reason}</p>
+              <div class="promotion-meta">
+                {link.sourceOutcomeIds.length > 0 && <span class="meta-chip">Outcome ×{link.sourceOutcomeIds.length}</span>}
+                {link.sourceExperienceIds.length > 0 && <span class="meta-chip">Experience ×{link.sourceExperienceIds.length}</span>}
+                <span class="meta-chip meta-actor">批准 {link.approvedBy}</span>
+                <span class="meta-chip meta-time">{new Date(link.approvedAt).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <button class="promotion-evidence-btn" type="button" data-view-evidence data-kind={link.assetKind} data-id={link.assetId}>
+                查看支撑证据
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>}
+
+    {fulfilledLearning.length > 0 && (
+      <section class="asset-section">
+        <h2 class="section-title"><Icon name="lucide:archive" width={16} height={16} /> 已完成补证（{fulfilledLearning.length}）</h2>
+        <div class="learning-list">
+          {fulfilledLearning.map(req => (
+            <article class="learning-card is-done">
+              <div class="learning-head">
+                <span class="learning-gap">缺{gapLabel[req.evidenceGap]}</span>
+                <span class={`learning-status is-${req.status}`}>{statusLabel[req.status]}</span>
+              </div>
+              <p class="learning-context">{req.context}</p>
+              {req.fulfillmentNote && <p class="learning-expected">结果：{req.fulfillmentNote}</p>}
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <dialog class="evidence-dialog" data-evidence-dialog>
+      <div class="evidence-dialog-head">
+        <div><small>资产证据</small><h2>支撑证据</h2></div>
+        <button type="button" aria-label="关闭证据面板" data-evidence-close><Icon name="lucide:x" width={18} height={18} /></button>
+      </div>
+      <p class="evidence-dialog-status" data-evidence-status>正在读取证据…</p>
+      <div class="evidence-dialog-list" data-evidence-list></div>
+    </dialog>
+  </div>
+</AdminLayout>
+
+<script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  registerLifecycle(() => {
+    const root = document.querySelector('[data-assets]') as HTMLElement | null;
+    if (!root) return;
+
+    const abort = new AbortController();
+    const { signal } = abort;
+
+    // 完成学习请求
+    root.querySelectorAll<HTMLButtonElement>('[data-fulfill]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        const card = btn.closest<HTMLElement>('.learning-card');
+        const form = card?.querySelector<HTMLFormElement>('[data-fulfill-form]');
+        if (!form) return;
+        form.hidden = false;
+        (form.elements.namedItem('fulfillmentNote') as HTMLTextAreaElement).focus();
+      }, { signal });
+    });
+
+    root.querySelectorAll<HTMLFormElement>('[data-fulfill-form]').forEach(form => {
+      form.querySelector('[data-fulfill-cancel]')?.addEventListener('click', () => { form.hidden = true; }, { signal });
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const card = form.closest<HTMLElement>('.learning-card');
+        const id = card?.dataset.requestId;
+        const noteInput = form.elements.namedItem('fulfillmentNote') as HTMLTextAreaElement;
+        const note = noteInput.value.trim();
+        if (!id || !note) return noteInput.focus();
+        const btn = card.querySelector<HTMLButtonElement>('[data-fulfill]');
+        const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+        const msg = card.querySelector<HTMLElement>('[data-status-msg]');
+        if (submit) submit.disabled = true;
+        try {
+          const res = await fetch('/api/admin/learning-requests', {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ requestId: id, fulfillmentNote: note }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            if (msg) msg.textContent = '失败：' + (err.error || res.status);
+            return;
+          }
+          if (msg) msg.textContent = '已标记完成';
+          if (btn) { btn.disabled = true; btn.textContent = '已完成'; }
+          card.classList.add('is-done');
+          form.hidden = true;
+        } catch {
+          if (msg) msg.textContent = '网络异常，输入已保留';
+        } finally {
+          if (submit) submit.disabled = false;
+        }
+      }, { signal });
+    });
+
+    // 查看支撑证据
+    root.querySelectorAll<HTMLButtonElement>('[data-view-evidence]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const kind = btn.dataset.kind;
+        const id = btn.dataset.id;
+        if (!kind || !id) return;
+        const dialog = root.querySelector<HTMLDialogElement>('[data-evidence-dialog]');
+        const list = root.querySelector<HTMLElement>('[data-evidence-list]');
+        const status = root.querySelector<HTMLElement>('[data-evidence-status]');
+        if (!dialog || !list || !status) return;
+        list.replaceChildren();
+        status.textContent = '正在读取证据…';
+        status.hidden = false;
+        dialog.showModal();
+        try {
+          const res = await fetch('/api/admin/assets/evidence?kind=' + encodeURIComponent(kind) + '&assetId=' + encodeURIComponent(id));
+          const data = await res.json().catch(() => ({ links: [] }));
+          const links = data.links || [];
+          if (!res.ok || links.length === 0) {
+            status.textContent = res.ok ? '该资产暂无支撑证据记录。' : '读取失败：' + (data.error || res.status);
+            return;
+          }
+          status.hidden = true;
+          const stageNames: Record<string, string> = { observed: '观察', candidate: '候选', validated: '已验证', stable: '稳定', retired: '退役' };
+          links.forEach((link: { stage: string; reason: string; sourceOutcomeIds: string[]; sourceExperienceIds: string[]; approvedBy: string; approvedAt: string }) => {
+            const article = document.createElement('article');
+            article.className = 'evidence-dialog-card';
+            const title = document.createElement('strong');
+            title.textContent = (stageNames[link.stage] || link.stage) + ' · ' + link.reason;
+            const meta = document.createElement('p');
+            meta.textContent = 'Outcome ' + link.sourceOutcomeIds.length + ' 条 · Experience ' + link.sourceExperienceIds.length + ' 条 · ' + link.approvedBy + ' 批准 · ' + new Date(link.approvedAt).toLocaleString('zh-CN');
+            article.append(title, meta);
+            list.append(article);
+          });
+        } catch {
+          status.textContent = '网络异常，请稍后重试。';
+        }
+      }, { signal });
+    });
+    root.querySelector('[data-evidence-close]')?.addEventListener('click', () => {
+      root.querySelector<HTMLDialogElement>('[data-evidence-dialog]')?.close();
+    }, { signal });
+
+    return () => abort.abort();
+  });
+</script>
+
+<style>
+  .assets { width: 100%; max-width: 900px; margin: 0 auto; }
+  .assets-head p { margin: 0 0 22px; color: var(--adm-text-dim); font-size: 12px; line-height: 1.7; max-width: 680px; }
+  .assets-head code { font-family: var(--adm-font-mono, monospace); font-size: 10px; padding: 1px 5px; border-radius: 4px; background: var(--adm-brand-soft); color: var(--adm-brand-strong); }
+  .asset-section { margin-bottom: 26px; }
+  .section-title { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; color: var(--adm-text); font: 700 14px/1.3 var(--adm-font-ui); }
+  .section-desc { margin: 0 0 12px; color: var(--adm-text-faint); font-size: 11px; line-height: 1.6; }
+  .asset-empty { padding: 24px; display: grid; justify-items: center; gap: 8px; text-align: center; color: var(--adm-text-faint); border: 1px dashed var(--adm-border); border-radius: 14px; background: rgba(255,255,255,.5); font-size: 11px; }
+  .learning-list, .promotion-list { display: grid; gap: 10px; }
+  .learning-card, .promotion-card { padding: 14px 16px; border: 1px solid var(--adm-border); border-radius: 14px; background: rgba(255,255,255,.78); box-shadow: 0 8px 24px rgba(39,62,58,.05); }
+  .learning-card.is-done { opacity: .65; }
+  .learning-head, .promotion-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .learning-gap { color: var(--adm-brand-strong); font-size: 11px; font-weight: 700; }
+  .learning-status { padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; }
+  .learning-status.is-open { color: var(--adm-warn, #f59e0b); background: rgba(245,158,11,.12); }
+  .learning-status.is-fulfilled { color: var(--adm-good, #16a34a); background: rgba(22,163,74,.12); }
+  .learning-context { margin: 0 0 4px; color: var(--adm-text); font-size: 12px; line-height: 1.6; }
+  .learning-expected { margin: 0; color: var(--adm-text-faint); font-size: 10px; line-height: 1.5; }
+  .learning-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .learning-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border: 0; border-radius: 8px; background: var(--adm-brand-strong); color: #fff; font-size: 10px; font-weight: 700; cursor: pointer; }
+  .learning-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .learning-status-msg { font-size: 10px; color: var(--adm-text-faint); }
+  .learning-inline-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--adm-border-soft); }
+  .learning-inline-form[hidden] { display: none; }
+  .learning-inline-form label { display: block; margin-bottom: 6px; color: var(--adm-text-dim); font-size: 10px; font-weight: 700; }
+  .learning-inline-form textarea { width: 100%; min-height: 76px; resize: vertical; padding: 10px 11px; border: 1px solid var(--adm-border); border-radius: 10px; outline: 0; color: var(--adm-text); background: rgba(246,249,248,.84); font: 11px/1.6 var(--adm-font-ui); }
+  .learning-inline-form textarea:focus { border-color: var(--adm-brand); box-shadow: 0 0 0 3px var(--adm-brand-soft); }
+  .learning-inline-form > div { display: flex; justify-content: flex-end; gap: 7px; margin-top: 9px; }
+  .learning-inline-form button { min-width: 78px; height: 34px; padding: 0 11px; border: 1px solid var(--adm-border); border-radius: 9px; color: var(--adm-text-dim); background: rgba(255,255,255,.7); cursor: pointer; font-size: 10px; font-weight: 700; }
+  .learning-inline-form button.is-primary { color: white; border-color: var(--adm-brand-strong); background: var(--adm-brand-strong); }
+  .promotion-kind { padding: 2px 8px; border-radius: 999px; background: var(--adm-brand-soft); color: var(--adm-brand-strong); font-size: 9px; font-weight: 700; }
+  .promotion-stage { padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; }
+  .promotion-stage.is-good { color: var(--adm-good, #16a34a); background: rgba(22,163,74,.12); }
+  .promotion-stage.is-warn { color: var(--adm-warn, #f59e0b); background: rgba(245,158,11,.12); }
+  .promotion-stage.is-bad { color: var(--adm-bad, #dc2626); background: rgba(220,38,38,.12); }
+  .promotion-stage.is-neutral { color: var(--adm-text-faint); background: rgba(120,113,108,.12); }
+  .promotion-id { color: var(--adm-text-faint); font-family: var(--adm-font-mono, monospace); font-size: 9px; }
+  .promotion-reason { margin: 0 0 8px; color: var(--adm-text-dim); font-size: 12px; line-height: 1.6; }
+  .promotion-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .meta-chip { padding: 2px 7px; border-radius: 999px; background: rgba(120,113,108,.08); color: var(--adm-text-dim); font-size: 9px; }
+  .meta-actor { background: var(--adm-brand-soft); color: var(--adm-brand-strong); }
+  .promotion-evidence-btn { padding: 5px 10px; border: 1px solid var(--adm-border); border-radius: 8px; background: transparent; color: var(--adm-text-dim); font-size: 10px; font-weight: 600; cursor: pointer; }
+  .promotion-evidence-btn:hover { color: var(--adm-brand-strong); border-color: var(--adm-brand); }
+  .evidence-dialog { width: min(560px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 48px)); padding: 22px; border: 1px solid rgba(255,255,255,.92); border-radius: 24px; color: var(--adm-text); background: rgba(249,251,250,.92); box-shadow: 0 30px 90px rgba(31,55,50,.22); backdrop-filter: blur(28px); }
+  .evidence-dialog::backdrop { background: rgba(35,48,45,.22); backdrop-filter: blur(5px); }
+  .evidence-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .evidence-dialog-head small { color: var(--adm-brand-strong); font-size: 9px; font-weight: 700; }
+  .evidence-dialog-head h2 { margin: 3px 0 0; font: 700 20px/1.3 var(--adm-font-ui); }
+  .evidence-dialog-head button { width: 34px; height: 34px; border: 1px solid var(--adm-border); border-radius: 11px; display: grid; place-items: center; color: var(--adm-text-faint); background: rgba(255,255,255,.72); cursor: pointer; }
+  .evidence-dialog-status { margin: 22px 0 0; padding: 18px; border-radius: 14px; color: var(--adm-text-faint); background: rgba(239,244,242,.7); font-size: 11px; text-align: center; }
+  .evidence-dialog-status[hidden] { display: none; }
+  .evidence-dialog-list { display: grid; gap: 9px; margin-top: 20px; overflow: auto; }
+  .evidence-dialog-card { padding: 14px; border: 1px solid var(--adm-border); border-radius: 14px; background: rgba(255,255,255,.7); }
+  .evidence-dialog-card strong { font-size: 12px; line-height: 1.5; }
+  .evidence-dialog-card p { margin: 7px 0 0; color: var(--adm-text-faint); font-size: 10px; line-height: 1.6; }
+</style>

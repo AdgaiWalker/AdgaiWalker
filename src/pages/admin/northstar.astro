@@ -1,0 +1,453 @@
+---
+/**
+ * /admin/northstar — NorthStar 经营管理（P5 spec §14）
+ *
+ * offer（商品/服务/能力）发布 + 订单/支付/履约/退款。NorthStar 默认 OFF：
+ * 关闭时所有写操作返回 northstar-disabled，页面显示开启说明；个人闭环不受影响。
+ * 真实支付商接入属 Human Gate（合成 provider 走通全链路，真实商待凭据）。
+ */
+import AdminLayout from '@/components/admin/AdminLayout.astro';
+import { isAdmin } from '@/lib/admin-auth';
+import { isNorthStarEnabled } from '@/lib/northstar-range';
+import { findAllNorthStarOffers, findRecentNorthStarOrders, getSupportConfig } from '@/conversation/store';
+
+if (!isAdmin(Astro.request)) {
+  return Astro.redirect('/login');
+}
+
+const enabled = isNorthStarEnabled();
+const offers = await findAllNorthStarOffers();
+const orders = await findRecentNorthStarOrders(50);
+const support = await getSupportConfig();
+---
+
+<AdminLayout active="/admin/northstar" domain="system" title="NorthStar" subtitle="公共发布、支持与经营范围">
+  <div class="adm-page">
+
+    <div class={`ns-status ${enabled ? 'on' : 'off'}`}>
+      {enabled ? (
+        <span>● NorthStar 经营范围已开启（<code>NORTHSTAR_ENABLED=true</code>）</span>
+      ) : (
+        <span>○ NorthStar 未开启。个人闭环完整运行；开启需设 <code>NORTHSTAR_ENABLED=true</code>（经营/支付是产品决策，真实支付商凭据属 Human Gate）。</span>
+      )}
+    </div>
+
+    <section class="block">
+      <h2>赞赏设置（个人收款码）</h2>
+      <p class="hint">展示你的微信/支付宝个人赞赏码 + 可选外链到 <a href="/support" target="_blank">/support</a>。个人收款码无需商户号、无需营业执照，访客扫码付。</p>
+
+      <div class="qr-upload-grid">
+        <div class="qr-upload-card" data-field="wechat">
+          <div class="qr-upload-head">微信赞赏码</div>
+          <div class="qr-preview-wrap" data-qr-preview={support?.wechatQrUrl ?? ''}>
+            {support?.wechatQrUrl
+              ? <img src={support.wechatQrUrl} alt="微信赞赏码" data-qr-img />
+              : <span class="qr-placeholder">未上传</span>}
+            {support?.wechatQrUrl && <button class="qr-delete" data-qr-delete="wechat" title="删除微信赞赏码" aria-label="删除微信赞赏码">✕</button>}
+          </div>
+          <div class="qr-dropzone" data-dropzone="wechat" tabindex="0" role="button" aria-label="上传微信赞赏码">
+            <span class="dropzone-hint">📎 选择文件<br/>或<strong>粘贴 Ctrl+V</strong> / 拖拽图片到此</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file-input="wechat" hidden />
+            <span class="qr-status" data-qr-status="wechat" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <div class="qr-upload-card" data-field="alipay">
+          <div class="qr-upload-head">支付宝收款码</div>
+          <div class="qr-preview-wrap" data-qr-preview={support?.alipayQrUrl ?? ''}>
+            {support?.alipayQrUrl
+              ? <img src={support.alipayQrUrl} alt="支付宝收款码" data-qr-img />
+              : <span class="qr-placeholder">未上传</span>}
+            {support?.alipayQrUrl && <button class="qr-delete" data-qr-delete="alipay" title="删除支付宝收款码" aria-label="删除支付宝收款码">✕</button>}
+          </div>
+          <div class="qr-dropzone" data-dropzone="alipay" tabindex="0" role="button" aria-label="上传支付宝收款码">
+            <span class="dropzone-hint">📎 选择文件<br/>或<strong>粘贴 Ctrl+V</strong> / 拖拽图片到此</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file-input="alipay" hidden />
+            <span class="qr-status" data-qr-status="alipay" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+      </div>
+
+      <details class="advanced-url">
+        <summary>高级:手动填 URL(外部图床)</summary>
+        <form id="support-form" class="support-form">
+          <label class="full">微信赞赏码 URL <input type="url" name="wechatQrUrl" placeholder="https://…" value={support?.wechatQrUrl ?? ''} /></label>
+          <label class="full">支付宝收款码 URL <input type="url" name="alipayQrUrl" placeholder="https://…" value={support?.alipayQrUrl ?? ''} /></label>
+          <label class="full">外链（爱发电/Ko-fi，可选） <input type="url" name="externalUrl" placeholder="https://afdian.net/…" value={support?.externalUrl ?? ''} /></label>
+          <label>外链文案 <input type="text" name="externalLabel" placeholder="通过爱发电支持我" value={support?.externalLabel ?? ''} /></label>
+          <label class="full">赞赏文案（为什么支持） <textarea name="blurb" rows="2" placeholder="如果内容对你有帮助，请我喝杯咖啡。">{support?.blurb ?? ''}</textarea></label>
+          <button type="submit" class="btn-primary">保存</button>
+          <span id="support-saved" class="saved-tip" role="status" aria-live="polite"></span>
+        </form>
+      </details>
+
+      <a href="/support" target="_blank" class="preview-link">预览 /support →</a>
+    </section>
+
+    <section class="block">
+      <h2>商品 / 服务 / 能力（{offers.length}）</h2>
+      {enabled ? (
+        <form id="offer-form" class="offer-form">
+          <select name="kind"><option value="service">service</option><option value="product">product</option><option value="capability">capability</option></select>
+          <input type="text" name="title" placeholder="标题（如「30 分钟咨询」）" required />
+          <input type="number" name="priceCents" placeholder="标价（分）" required min="0" />
+          <select name="currency"><option value="CNY">CNY</option><option value="USD">USD</option></select>
+          <input type="text" name="description" placeholder="描述（可选）" class="desc" />
+          <button type="submit" class="btn-primary">发布</button>
+        </form>
+      ) : <p class="hint">开启 NorthStar 后可发布。</p>}
+
+      {!enabled && offers.length > 0 && <p class="ns-off-hint">NorthStar 未开启，仅可查看历史。</p>}
+
+      {offers.length === 0 && enabled && <p class="empty">暂无 offer，发布第一件商品/服务开始。</p>}
+
+      {offers.length > 0 && (
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>标题</th><th>类型</th><th>标价</th><th>状态</th><th></th></tr></thead>
+            <tbody>
+              {offers.map(o => (
+                <tr data-offer-id={o.offerId}>
+                  <td>{o.title}<span class="sub">{o.description}</span></td>
+                  <td><code>{o.kind}</code></td>
+                  <td>{o.priceCents / 100} {o.currency}</td>
+                  <td>{o.status === 'active' ? '上架' : '已下架'}</td>
+                  <td>
+                    <button class="mini-btn" data-offer-toggle={o.offerId} data-status={o.status === 'active' ? 'unlisted' : 'active'} disabled={!enabled}>
+                      {o.status === 'active' ? '下架' : '上架'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+
+    <section class="block">
+      <h2>订单（{orders.length}）</h2>
+      {orders.length === 0 ? (
+        <p class="empty">暂无订单。开启 NorthStar + 发布 offer 后，可在此创建测试订单走通支付链路（合成 provider）。</p>
+      ) : (
+        <>
+          {!enabled && <p class="ns-off-hint">NorthStar 未开启，仅可查看历史。</p>}
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>买家</th><th>offer</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                {orders.map(o => (
+                  <tr data-order-id={o.orderId}>
+                    <td>{o.buyerHandle}</td>
+                    <td><code>{o.offerId.slice(0, 12)}</code></td>
+                    <td>{o.totalCents / 100} {o.currency}</td>
+                    <td><span class={`status status-${o.status}`}>{o.status}</span></td>
+                    <td class="order-actions">
+                      {o.status === 'created' && <button class="mini-btn" data-order-action="pay" disabled={!enabled}>支付</button>}
+                      {o.status === 'paid' && <button class="mini-btn" data-order-action="fulfill" disabled={!enabled}>履约</button>}
+                      {(o.status === 'paid' || o.status === 'fulfilled') && <button class="mini-btn warn" data-order-action="refund" disabled={!enabled}>退款</button>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      <p class="hint">支付走 DevSyntheticPaymentProvider（不真实收费，验证状态机）。真实支付商接入后替换为官方 SDK 适配器。</p>
+    </section>
+  </div>
+
+  <style>
+    .ns-status { padding: 0.7rem 1rem; border-radius: 10px; font-size: 0.82rem; margin-bottom: 1.25rem; }
+    .ns-status.on { background: rgba(6,95,70,0.1); color: #065f46; }
+    .ns-status.off { background: rgba(120,113,108,0.12); color: #57534e; }
+    .ns-status code { background: rgba(0,0,0,0.06); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.85em; }
+    .block { background: var(--adm-surface); border: 1px solid var(--adm-border); border-radius: var(--adm-radius-card); padding: 1.25rem 1.4rem; margin-top: 1.25rem; box-shadow: 0 16px 46px rgba(39,62,58,.08); }
+    .block h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+    .offer-form { display: grid; grid-template-columns: auto 2fr 1fr auto auto; gap: 0.5rem; margin-bottom: 1rem; }
+    .offer-form .desc { grid-column: 1 / -1; }
+    .offer-form input, .offer-form select { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
+    .support-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+    .support-form label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--color-parchment-dim, #57534e); }
+    .support-form label.full { grid-column: 1 / -1; }
+    .support-form input, .support-form textarea { padding: 0.4rem 0.55rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 7px; font-size: 0.85rem; font-family: inherit; }
+    .support-form .btn-primary { grid-column: 1 / -1; justify-self: start; }
+    /* 赞赏码上传卡片 */
+    .qr-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .qr-upload-card { border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 0.85rem; background: rgba(255,255,255,0.5); }
+    .qr-upload-head { font-size: 0.82rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--adm-text, #1c1917); }
+    .qr-preview-wrap { position: relative; width: 100%; aspect-ratio: 1; max-width: 160px; margin: 0 auto 0.6rem; border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f4; border: 1px dashed rgba(0,0,0,0.1); }
+    .qr-preview-wrap img { width: 100%; height: 100%; object-fit: contain; }
+    .qr-placeholder { font-size: 0.78rem; color: var(--adm-text-faint, #a8a29e); }
+    .qr-delete { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(154,52,18,0.85); color: #fff; cursor: pointer; font-size: 0.72rem; line-height: 1; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s ease; }
+    .qr-preview-wrap:hover .qr-delete { opacity: 1; }
+    .qr-delete:hover { background: #9a3412; }
+    .qr-dropzone { cursor: pointer; border: 1.5px dashed rgba(53,191,171,0.4); border-radius: 10px; padding: 0.8rem; text-align: center; transition: all 0.15s ease; background: rgba(53,191,171,0.03); }
+    .qr-dropzone:hover, .qr-dropzone:focus-visible { border-color: var(--color-brand, #35bfab); background: rgba(53,191,171,0.08); outline: none; }
+    .qr-dropzone.drag-over { border-color: var(--color-brand, #35bfab); background: rgba(53,191,171,0.15); transform: scale(1.01); }
+    .qr-dropzone.uploading { pointer-events: none; opacity: 0.5; cursor: wait; }
+    .dropzone-hint { font-size: 0.76rem; color: var(--adm-text-dim, #57534e); line-height: 1.6; display: block; }
+    .dropzone-hint strong { color: var(--color-brand, #35bfab); }
+    .qr-status { display: block; margin-top: 0.4rem; font-size: 0.74rem; min-height: 1em; }
+    .qr-status.uploading { color: #1d4ed8; }
+    .qr-status.success { color: #065f46; }
+    .qr-status.error { color: #9a3412; }
+    .advanced-url { margin-top: 0.5rem; padding: 0.6rem 0.8rem; border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; background: rgba(0,0,0,0.02); }
+    .advanced-url summary { cursor: pointer; font-size: 0.78rem; color: var(--adm-text-dim, #78716c); font-weight: 700; }
+    .advanced-url[open] summary { margin-bottom: 0.6rem; }
+    .advanced-url .support-form { margin-top: 0.5rem; }
+    .preview-link { grid-column: 1 / -1; justify-self: start; font-size: 0.8rem; color: var(--color-brand, #35bfab); text-decoration: none; }
+    .saved-tip { font-size: 0.78rem; color: #065f46; align-self: center; opacity: 0; transition: opacity 0.3s ease; }
+    .saved-tip.show { opacity: 1; }
+    .saved-tip.error { color: #9a3412; }
+    .btn-primary { padding: 0.45rem 1rem; border: none; border-radius: 8px; background: var(--color-brand, #35bfab); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .data-table th { text-align: left; font-size: 0.72rem; color: var(--color-parchment-dim, #78716c); padding: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .data-table td { padding: 0.55rem 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
+    .data-table .sub { display: block; font-size: 0.72rem; color: var(--color-parchment-dim, #a8a29e); }
+    .data-table code { background: rgba(0,0,0,0.05); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.82em; }
+    .status { padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+    .status-created { background: rgba(29,78,216,0.1); color: #1d4ed8; }
+    .status-paying, .status-paid { background: rgba(6,95,70,0.12); color: #065f46; }
+    .status-fulfilled { background: rgba(6,95,70,0.2); color: #064e3b; }
+    .status-refunded, .status-cancelled { background: rgba(154,52,18,0.1); color: #9a3412; }
+    .mini-btn { padding: 0.25rem 0.6rem; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; background: transparent; cursor: pointer; font-size: 0.76rem; }
+    .mini-btn.warn { border-color: rgba(154,52,18,0.3); color: #9a3412; }
+    .empty, .hint { color: var(--color-parchment-dim, #78716c); font-size: 0.82rem; }
+    .empty { padding: 1rem 0; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .ns-off-hint { padding: 0.45rem 0.8rem; border-radius: 8px; background: rgba(120,113,108,0.12); color: #57534e; font-size: 0.78rem; margin-bottom: 0.75rem; }
+    .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 640px) {
+      .offer-form { grid-template-columns: 1fr; }
+      .support-form { grid-template-columns: 1fr; }
+      .qr-upload-grid { grid-template-columns: 1fr; }
+      .qr-preview { max-width: 140px; }
+      .data-table { font-size: 0.76rem; }
+      .data-table th { font-size: 0.68rem; padding: 0.4rem 0.35rem; }
+      .data-table td { padding: 0.4rem 0.35rem; }
+    }
+  </style>
+
+  <script>
+    import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+    // === 赞赏码上传:文件选择 + 粘贴 + 拖拽 ===
+    // 用 registerLifecycle 确保每次页面加载(View Transitions 导航)都重新绑定,
+    // 不能用 is:inline —— 那样导航过来时脚本不重跑,DOM 元素绑不上事件。
+    registerLifecycle(() => {
+      const tell = (m: string) => (window as any).WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
+      const VALID_FIELDS = ['wechat', 'alipay'];
+
+      async function uploadQrFile(file: File, field: string) {
+        if (!VALID_FIELDS.includes(field)) return;
+        if (!file || !file.type.startsWith('image/')) {
+          tell('只支持图片文件(png/jpeg/webp/gif)');
+          return;
+        }
+        const statusEl = document.querySelector<HTMLElement>('[data-qr-status="' + field + '"]');
+        const zone = document.querySelector<HTMLElement>('[data-dropzone="' + field + '"]');
+        if (statusEl) { statusEl.textContent = '上传中…'; statusEl.className = 'qr-status uploading'; }
+        zone?.classList.add('uploading'); // 上传中禁用 dropzone,防重复点击
+
+        const fd = new FormData();
+        fd.append('field', field);
+        fd.append('file', file);
+        try {
+          const res = await fetch('/api/admin/support-upload', { method: 'POST', body: fd });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok && data.url) {
+            // 更新预览图(保留删除按钮)
+            const cardPreview = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
+            if (cardPreview) {
+              cardPreview.innerHTML = '<img src="' + data.url + '" alt="' + (field === 'wechat' ? '微信赞赏码' : '支付宝收款码') + '" data-qr-img /><button class="qr-delete" data-qr-delete="' + field + '" title="删除" aria-label="删除">✕</button>';
+            }
+            const urlInput = document.querySelector<HTMLInputElement>('#support-form [name="' + (field === 'wechat' ? 'wechatQrUrl' : 'alipayQrUrl') + '"]');
+            if (urlInput) urlInput.value = data.url;
+            if (statusEl) { statusEl.textContent = '已上传'; statusEl.className = 'qr-status success'; }
+            tell((field === 'wechat' ? '微信' : '支付宝') + '赞赏码已上传');
+          } else {
+            if (statusEl) { statusEl.textContent = data.error || '上传失败'; statusEl.className = 'qr-status error'; }
+            tell(data.error || '上传失败');
+          }
+        } catch (err) {
+          if (statusEl) { statusEl.textContent = '网络错误'; statusEl.className = 'qr-status error'; }
+          tell('上传失败:网络错误');
+        } finally {
+          zone?.classList.remove('uploading'); // 恢复
+        }
+      }
+
+      // 删除赞赏码
+      async function deleteQr(field: string) {
+        const label = field === 'wechat' ? '微信赞赏码' : '支付宝收款码';
+        const statusEl = document.querySelector<HTMLElement>('[data-qr-status="' + field + '"]');
+        try {
+          const res = await fetch('/api/admin/support-upload', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ field }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok) {
+            const cardPreview = document.querySelector('[data-field="' + field + '"] [data-qr-preview]');
+            if (cardPreview) cardPreview.innerHTML = '<span class="qr-placeholder">未上传</span>';
+            const urlInput = document.querySelector<HTMLInputElement>('#support-form [name="' + (field === 'wechat' ? 'wechatQrUrl' : 'alipayQrUrl') + '"]');
+            if (urlInput) urlInput.value = '';
+            if (statusEl) { statusEl.textContent = '已删除'; statusEl.className = 'qr-status success'; }
+            tell(label + '已删除');
+          } else {
+            if (statusEl) { statusEl.textContent = data.error || '删除失败'; statusEl.className = 'qr-status error'; }
+            tell(data.error || '删除失败');
+          }
+        } catch (err) {
+          if (statusEl) { statusEl.textContent = '网络错误'; statusEl.className = 'qr-status error'; }
+          tell('删除失败:网络错误');
+        }
+      }
+
+      // 删除按钮事件(事件委托,因为按钮在上传后会重新插入)
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const delBtn = target.closest('[data-qr-delete]') as HTMLElement | null;
+        if (delBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const field = delBtn.dataset.qrDelete;
+          if (field) deleteQr(field);
+        }
+      });
+
+      // 文件选择 + 拖拽(dropzone)
+      const zones = document.querySelectorAll<HTMLElement>('[data-dropzone]');
+      zones.forEach((zone) => {
+        const field = zone.dataset.dropzone;
+        const fileInput = document.querySelector<HTMLInputElement>('[data-file-input="' + field + '"]');
+        zone.addEventListener('click', (e) => {
+          if (e.target === fileInput) return;
+          fileInput && fileInput.click();
+        });
+        zone.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput && fileInput.click(); }
+        });
+        if (fileInput) {
+          fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files[0]) uploadQrFile(fileInput.files[0], field ?? '');
+            fileInput.value = '';
+          });
+        }
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) uploadQrFile(file, field ?? '');
+        });
+      });
+
+      // 粘贴(聚焦 dropzone 时 Ctrl+V)
+      let activeField: string | null = null;
+      zones.forEach((zone) => {
+        const field = zone.dataset.dropzone ?? '';
+        zone.addEventListener('focus', () => { activeField = field; });
+        zone.addEventListener('blur', () => { if (activeField === field) activeField = null; });
+      });
+      const onPaste = (e: ClipboardEvent) => {
+        if (!activeField) return;
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        for (const item of items) {
+          if (item.type && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file) { e.preventDefault(); uploadQrFile(file, activeField); }
+            return;
+          }
+        }
+      };
+      document.addEventListener('paste', onPaste);
+
+      // cleanup:页面切换时移除全局 paste 监听
+      return () => document.removeEventListener('paste', onPaste);
+    });
+  </script>
+
+  <script is:inline>
+    const tell = (m) => window.WalkerAdminUI?.notify?.({ title: 'NorthStar', message: m }) ?? Promise.resolve();
+    const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }).then((r) => r.json().then((d) => ({ ok: r.ok, data: d })));
+
+    document.getElementById('support-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const savedTip = document.getElementById('support-saved');
+      let savedTimer = null;
+      const showTip = (msg, isError) => {
+        if (!savedTip) { tell(msg); return; }
+        savedTip.textContent = msg;
+        savedTip.classList.toggle('error', !!isError);
+        savedTip.classList.add('show');
+        if (savedTimer) clearTimeout(savedTimer);
+        savedTimer = setTimeout(() => savedTip.classList.remove('show'), isError ? 4000 : 2500);
+      };
+      const fd = new FormData(form);
+      const payload = {
+        wechatQrUrl: fd.get('wechatQrUrl'),
+        alipayQrUrl: fd.get('alipayQrUrl'),
+        externalUrl: fd.get('externalUrl'),
+        externalLabel: fd.get('externalLabel'),
+        blurb: fd.get('blurb'),
+      };
+      const res = await fetch('/api/admin/support', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        // 成功后同步表单回显（防止后续重复保存时与服务器不一致）
+        if (data.config) {
+          ['wechatQrUrl', 'alipayQrUrl', 'externalUrl', 'externalLabel', 'blurb'].forEach((k) => {
+            const el = form.elements.namedItem(k);
+            if (el && data.config[k] != null) el.value = data.config[k];
+          });
+        }
+        showTip('已保存');
+      } else {
+        showTip(data.error || '保存失败', true);
+      }
+    });
+
+    document.getElementById('offer-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const { ok, data } = await post('/api/admin/northstar/offers', {
+        kind: fd.get('kind'), title: fd.get('title'), priceCents: Number(fd.get('priceCents')),
+        currency: fd.get('currency'), description: fd.get('description'),
+      });
+      if (ok && data.ok) window.location.reload(); else await tell(data.error || '发布失败');
+    });
+
+    document.querySelectorAll('[data-offer-toggle]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.offerToggle;
+        const status = btn.dataset.status;
+        const res = await fetch('/api/admin/northstar/offers?offerId=' + encodeURIComponent(id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+      });
+    });
+
+    document.querySelectorAll('[data-order-action]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const tr = btn.closest('tr');
+        const orderId = tr.dataset.orderId;
+        const action = btn.dataset.orderAction;
+        let body = {};
+        if (action === 'refund') {
+          const reason = window.WalkerAdminUI?.prompt ? await window.WalkerAdminUI.prompt({ title: '退款', message: '退款理由', placeholder: '理由' }) : window.prompt('退款理由');
+          if (!reason) return;
+          body = { reason };
+        }
+        const { ok, data } = await post('/api/admin/northstar/orders?action=' + action, { orderId, ...body });
+        if (ok && data.ok) window.location.reload(); else await tell(data.error || '操作失败');
+      });
+    });
+  </script>
+</AdminLayout>

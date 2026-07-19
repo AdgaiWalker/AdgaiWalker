@@ -1,0 +1,94 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { BlockWidth } from '@/knowledge/block-types';
+
+/**
+ * BlockResource —— 资源链接卡片（P3-B）。
+ *
+ * 把一条外部资源（工具 / 网站 / 下载 / GitHub / 飞书）渲染为带类型图标的可点击卡片，
+ * 比裸 markdown 链接更结构化、更易扫读。用于正文推荐资源处。
+ *
+ * 遵守宽度契约：cs-block--full | normal | narrow。
+ */
+type ResourceType = 'tool' | 'website' | 'download' | 'github' | 'feishu';
+
+const TYPE_ICON: Record<ResourceType, string> = {
+  tool: 'lucide:wrench',
+  website: 'lucide:globe',
+  download: 'lucide:download',
+  github: 'lucide:github',
+  feishu: 'lucide:message-square',
+};
+
+interface Props {
+  href: string;
+  title: string;
+  description?: string;
+  type?: ResourceType;
+  width?: BlockWidth;
+}
+
+const { href, title, description, type = 'website', width = 'normal' } = Astro.props;
+const isExternal = /^https?:\/\//.test(href);
+---
+
+<div class:list={['cs-block', `cs-block--${width}`, 'not-prose']}>
+  <a
+    class="cs-resource panel-glass"
+    href={href}
+    target={isExternal ? '_blank' : undefined}
+    rel={isExternal ? 'noopener noreferrer' : undefined}
+  >
+    <span class="cs-resource-icon">
+      <Icon name={TYPE_ICON[type] ?? TYPE_ICON.website} width={20} height={20} />
+    </span>
+    <span class="cs-resource-body">
+      <span class="cs-resource-title">{title}</span>
+      {description && <span class="cs-resource-desc text-parchment/55">{description}</span>}
+    </span>
+    {isExternal && (
+      <span class="cs-resource-arrow text-parchment/40">
+        <Icon name="lucide:external-link" width={16} height={16} />
+      </span>
+    )}
+  </a>
+</div>
+
+<style>
+  .cs-resource {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    margin: 1.25rem 0;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 12%, transparent);
+    transition: border-color 0.18s ease, transform 0.18s ease;
+    break-inside: avoid;
+  }
+  .cs-resource:hover {
+    border-color: rgb(161 98 7 / 45%);
+    transform: translateY(-1px);
+  }
+  .cs-resource-icon { flex-shrink: 0; color: rgb(161 98 7 / 70%); }
+  .cs-resource-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .cs-resource-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-parchment);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cs-resource-desc {
+    font-size: 0.8rem;
+    margin-top: 0.15rem;
+  }
+  .cs-resource-arrow { flex-shrink: 0; }
+</style>

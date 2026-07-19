@@ -1,0 +1,112 @@
+---
+/**
+ * /projects — 项目页
+ * Ferry 旗舰卡 + 子项卡片
+ */
+import SidebarLayout from '../../layouts/SidebarLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { ferryTree } from '@/data/ferry-ecosystem';
+import { buildPostPath } from '@/shared/routes';
+
+export const prerender = true;
+
+// 提取 Ferry 子项（branch / fruit 类型）
+const ferryItems = (ferryTree.children ?? []).filter(
+  node => node.type === 'skill' || node.type === 'product'
+);
+
+const roleColors: Record<string, { color: string; bg: string }> = {
+  trunk:  { color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  branch: { color: 'text-amber-500',   bg: 'bg-amber-500/10 border-amber-500/20' },
+  fruit:  { color: 'text-rose-400',    bg: 'bg-rose-400/10 border-rose-400/20' },
+};
+
+const statusLabels: Record<string, string> = {
+  building: '建设中',
+  verified: '已完成',
+  archived: '已归档',
+};
+---
+
+<SidebarLayout
+  title="项目 · Walker"
+  description="Ferry — 一个永不停息、持续进化的渡者，直至死亡。"
+  pageTitle="项目"
+  pageSubtitle="Projects"
+  pageIcon="sailboat"
+  itemCount={1 + ferryItems.length}
+  itemUnit="个"
+>
+  <div class="space-y-8">
+    {/* Ferry 旗舰卡 */}
+    <div class="space-y-4" id="projects-list">
+      <a
+        href="/projects/ferry"
+        class="project-item block panel-glass p-5 rounded-2xl transition-all duration-300 hover:border-brand/30 hover:-translate-y-0.5 no-underline"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1.5">
+              <Icon name="lucide:sailboat" width={14} height={14} class="text-brand shrink-0" />
+              <h3 class="text-sm font-bold truncate">Ferry 渡轮</h3>
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                建设中
+              </span>
+            </div>
+            <p class="text-xs text-parchment-dim leading-relaxed line-clamp-2">
+              一个永不停息、持续进化的渡者，直至死亡。f(x)=y · 做减法 · 螺旋进化 · 熵减命令。
+            </p>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="text-[10px] text-parchment-dim/60 font-mono">#Ferry计划</span>
+              <span class="text-[10px] text-parchment-dim/60 font-mono">#AI</span>
+              <span class="text-[10px] text-parchment-dim/60 font-mono">#人机协作</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <Icon name="lucide:chevron-right" width={12} height={12} class="text-parchment-dim/40" />
+          </div>
+        </div>
+      </a>
+    </div>
+
+    {/* Ferry 子项 */}
+    {ferryItems.length > 0 && (
+      <section class="space-y-3">
+        <h3 class="text-xs font-bold text-parchment-dim uppercase tracking-widest">
+          <Icon name="lucide:git-branch" width={12} height={12} class="inline -mt-0.5 mr-1 text-brand" />
+          Ferry 子项
+        </h3>
+        <div class="grid gap-3">
+          {ferryItems.map(item => {
+            const href = item.contentSlug ? buildPostPath(item.contentSlug) : item.url ?? '#';
+            const isExternal = !item.contentSlug && Boolean(item.url);
+            const colors = roleColors[item.role] ?? roleColors.branch;
+            return (
+              <a
+                href={href}
+                {...isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {}}
+                class="sub-item flex items-center gap-3 p-3.5 rounded-xl border border-border/60 panel-glass no-underline transition-all duration-200 hover:border-brand/25 hover:-translate-y-px"
+              >
+                <div class="shrink-0 w-8 h-8 rounded-lg bg-brand/8 border border-brand/15 flex items-center justify-center">
+                  <Icon name="lucide:zap" width={14} height={14} class="text-brand" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold truncate">{item.name}</span>
+                    <span class={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${colors.bg} ${colors.color}`}>
+                      {statusLabels[item.status] ?? item.status}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-parchment-dim leading-relaxed mt-0.5 line-clamp-1">
+                    {item.description}
+                  </p>
+                </div>
+                <Icon name={isExternal ? 'lucide:external-link' : 'lucide:chevron-right'} width={12} height={12} class="shrink-0 text-parchment-dim/40" />
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+  </div>
+</SidebarLayout>

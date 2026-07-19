@@ -1,0 +1,132 @@
+---
+/**
+ * DianZiWordmark.astro — 「点子」双星状态指示器
+ *
+ * 视觉提纯：
+ * - 剔除复杂的多星 SVG 与文字，仅使用纯 CSS 圆点 ●  ° 表示核心概念。
+ * - 依靠两点的间距 (thinking/validating/building/verified/archived) 表达想法被靠近与实现的过程。
+ */
+
+interface Props {
+  status?: 'thinking' | 'validating' | 'building' | 'verified' | 'archived';
+  className?: string;
+}
+
+const { status = 'thinking', className = '' } = Astro.props;
+---
+
+<div class={`dianzi-dots-indicator ${className}`} data-status={status} aria-label={`点子状态: ${status}`}>
+  <span class="dot-main"></span>
+  <span class="dot-sub"></span>
+</div>
+
+<style>
+  .dianzi-dots-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 1.25rem;
+    font-family: var(--font-mono);
+    user-select: none;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .dot-main, .dot-sub {
+    display: inline-block;
+    border-radius: 50%;
+    background-color: var(--color-brand, #6E5BFF);
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  /* 主点 ● */
+  .dot-main {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* 伴星 ° */
+  .dot-sub {
+    width: 3px;
+    height: 3px;
+    opacity: 0.7;
+    margin-left: 12px; /* 默认间距 */
+  }
+
+  /* ===== 状态变动规则 ===== */
+
+  /* 1. thinking (构思中): ●             ° (远距离，伴星黯淡) */
+  [data-status="thinking"] .dot-sub {
+    margin-left: 20px;
+    opacity: 0.35;
+    background-color: var(--color-parchment-dim);
+  }
+  [data-status="thinking"] .dot-main {
+    background-color: var(--color-parchment-dim);
+    opacity: 0.6;
+  }
+
+  /* 2. validating (验证中): ●        ° (靠近中，伴星亮起) */
+  [data-status="validating"] .dot-sub {
+    margin-left: 12px;
+    opacity: 0.8;
+  }
+  [data-status="validating"] .dot-main {
+    opacity: 0.85;
+  }
+
+  /* 3. building (实现中): ●   ° (极近，呼吸动效) */
+  [data-status="building"] .dot-sub {
+    margin-left: 6px;
+    opacity: 1;
+    animation: sub-breathe 2s ease-in-out infinite;
+  }
+  [data-status="building"] .dot-main {
+    animation: main-breathe 2s ease-in-out infinite;
+  }
+
+  /* 4. verified (已完成): ●° (合并微光) */
+  [data-status="verified"] .dot-sub {
+    margin-left: 2px;
+    opacity: 1;
+    box-shadow: 0 0 8px var(--color-brand);
+  }
+  [data-status="verified"] .dot-main {
+    box-shadow: 0 0 10px var(--color-brand);
+  }
+
+  /* 5. archived (已归档): ○  ° (主点空心，全部暗淡) */
+  [data-status="archived"] .dot-main {
+    background-color: transparent;
+    border: 1px solid var(--color-parchment-dim);
+    opacity: 0.3;
+  }
+  [data-status="archived"] .dot-sub {
+    margin-left: 12px;
+    background-color: var(--color-parchment-dim);
+    opacity: 0.3;
+  }
+
+  /* ===== 呼吸动画 ===== */
+  @keyframes main-breathe {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 2px var(--color-brand-glow);
+    }
+    50% {
+      transform: scale(1.15);
+      box-shadow: 0 0 8px var(--color-brand-glow);
+    }
+  }
+
+  @keyframes sub-breathe {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    50% {
+      transform: scale(1.3);
+      opacity: 1;
+    }
+  }
+</style>

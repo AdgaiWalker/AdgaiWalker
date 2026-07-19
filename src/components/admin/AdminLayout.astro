@@ -1,0 +1,318 @@
+---
+import { Icon } from 'astro-icon/components';
+import AdminDocument from '@/layouts/AdminDocument.astro';
+import '@/styles/admin-pilot.css';
+import { getAdminSystemStatus, type AdminSystemHealth } from './admin-shell-state';
+import { ADMIN_MODULES, ADMIN_SECONDARY_NAV, resolveAdminModule, type AdminModuleId, type AdminNavItem } from '@/lib/admin-system-map';
+
+interface Props {
+  active?: string;
+  domain?: AdminModuleId;
+  title: string;
+  subtitle?: string;
+  immersive?: boolean;
+  showBanner?: boolean;
+  bannerTitle?: string;
+  bannerSub?: string;
+  systemHealth?: AdminSystemHealth;
+  /** 系统健康最近一次检查时间（ISO）；用于侧栏显示「最近检查」 */
+  systemHealthCheckedAt?: string;
+  navCounts?: Partial<Record<'today' | 'decisions' | 'actions' | 'outcomes' | 'assetsLearning' | 'incidents', number>>;
+}
+
+const {
+  active = '',
+  domain,
+  title,
+  subtitle = '',
+  immersive = false,
+  showBanner = false,
+  bannerTitle = 'AI Gateway 正在降级',
+  bannerSub = '部分请求已切换备用路径，建议查看系统事件。',
+  systemHealth = 'unknown',
+  systemHealthCheckedAt,
+  navCounts = {},
+} = Astro.props;
+
+const systemStatus = getAdminSystemStatus(systemHealth, systemHealthCheckedAt);
+
+const activeModuleId = domain ?? resolveAdminModule(active);
+
+const activeModule = ADMIN_MODULES.find(item => item.id === activeModuleId)!;
+const currentItems = ADMIN_SECONDARY_NAV[activeModuleId].map(item => {
+  if (item.href === '/admin') return { ...item, badge: navCounts.today };
+  if (item.href === '/admin?view=decisions') return { ...item, badge: navCounts.decisions };
+  if (item.href === '/admin?view=actions') return { ...item, badge: navCounts.actions };
+  if (item.href === '/admin/outcomes') return { ...item, badge: navCounts.outcomes };
+  if (item.href === '/admin/assets?view=learning') return { ...item, badge: navCounts.assetsLearning };
+  if (item.href === '/admin/incidents') return { ...item, badge: navCounts.incidents };
+  return item;
+});
+const currentPath = Astro.url.pathname;
+const currentView = Astro.url.searchParams.get('view');
+const isSecondaryActive = (item: AdminNavItem) => {
+  const [path, search = ''] = item.href.split('?');
+  const view = new URLSearchParams(search).get('view');
+  if (view || path === currentPath) {
+    return path === currentPath && (view ? view === currentView : !currentView);
+  }
+  return item.href !== '#' && (active === path || (path !== '/admin' && active.startsWith(path)));
+};
+---
+
+<AdminDocument title={`${title} — Walker 后台`}>
+<div class="adm-root">
+  <div class="adm-atmosphere" aria-hidden="true"></div>
+  <div class="adm-shell">
+    <aside class="adm-primary-rail" aria-label="主要模块">
+      <a class="adm-brand-mark" href="/admin" aria-label="Walker 后台首页">
+        <span>W</span>
+      </a>
+
+      <nav class="adm-domain-nav">
+        {ADMIN_MODULES.map(item => {
+          const isActive = item.id === activeModuleId;
+          return (
+            <a class:list={['adm-domain-link', { 'is-active': isActive }]} href={item.href} aria-current={isActive ? 'page' : undefined} data-admin-primary={item.id}>
+              <Icon name={`lucide:${item.icon}`} width={22} height={22} />
+              <span>{item.label}</span>
+            </a>
+          );
+        })}
+      </nav>
+
+      <button class="adm-owner" type="button" aria-label="打开个人菜单" data-profile-toggle aria-expanded="false">
+        <img src="/images/秋知（我的头像）.jpg" alt="Walker" width="48" height="48" />
+      </button>
+      <div class="adm-profile-menu" data-profile-menu hidden>
+        <strong>Walker</strong>
+        <a href="/" target="_blank" rel="noreferrer"><Icon name="lucide:external-link" width={15} height={15} />查看前台</a>
+        <button type="button" id="adm-logout"><Icon name="lucide:log-out" width={15} height={15} />退出登录</button>
+      </div>
+    </aside>
+
+    <aside class="adm-context-sidebar" id="admin-context-sidebar" aria-label={`${activeModule.label}二级导航`}>
+      <div class="adm-scope">
+        <button type="button" data-scope-toggle aria-expanded="false">
+          <span class="adm-scope-icon"><Icon name="lucide:orbit" width={17} height={17} /></span>
+          <span><small>当前范围</small><b>Walker · 个人系统</b></span>
+          <Icon name="lucide:chevrons-up-down" width={14} height={14} />
+        </button>
+        <div class="adm-scope-menu" data-scope-menu hidden>
+          <button class="is-selected" type="button"><span>Walker</span><small>个人系统</small><Icon name="lucide:check" width={15} height={15} /></button>
+          <a href="/admin/northstar"><span>NorthStar</span><small>公共与经营范围</small></a>
+          <button type="button" disabled><span>经营系统</span><small>规划中</small></button>
+        </div>
+      </div>
+
+      <div class="adm-context-heading">
+        <Icon name={`lucide:${activeModule.icon}`} width={18} height={18} />
+        <span>{activeModule.label}</span>
+      </div>
+      <nav class="adm-context-nav">
+        {currentItems.map(item => {
+          const isActive = isSecondaryActive(item);
+          return (
+            <a
+              class:list={['adm-context-link', { 'is-active': isActive, 'is-disabled': item.disabled }]}
+              href={item.disabled ? undefined : item.href}
+              aria-current={isActive ? 'page' : undefined}
+              aria-disabled={item.disabled ? 'true' : undefined}
+            >
+              <Icon name={`lucide:${item.icon}`} width={18} height={18} />
+              <span>{item.label}</span>
+              {typeof item.badge === 'number' && item.badge > 0 && <small class="adm-nav-badge">{item.badge}</small>}
+              {item.disabled && <small>稍后</small>}
+            </a>
+          );
+        })}
+      </nav>
+
+      <div class="adm-context-foot">
+        <span class={`is-${systemStatus.tone}`}><i></i>{systemStatus.label}</span>
+        {systemStatus.lastCheckedAt && (
+          <small>最近检查 · {new Date(systemStatus.lastCheckedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
+        )}
+        <a href="/admin/ai-gateway">查看状态<Icon name="lucide:arrow-up-right" width={13} height={13} /></a>
+      </div>
+      <button class="adm-context-close" type="button" aria-label="关闭二级导航" data-context-close><Icon name="lucide:x" width={18} height={18} /></button>
+    </aside>
+
+    <div class:list={['adm-main', { 'is-immersive': immersive }]}>
+      {!immersive && (
+        <header class="adm-topbar">
+          <button class="adm-menu-trigger" type="button" aria-label="打开导航" data-context-open>
+            <Icon name="lucide:menu" width={20} height={20} />
+          </button>
+          <div class="adm-topbar-left">
+            <h1 class="adm-topbar-title">{title}</h1>
+            {subtitle && <div class="adm-topbar-sub">{subtitle}</div>}
+          </div>
+          <div class="adm-topbar-right"><slot name="actions" /></div>
+        </header>
+      )}
+
+      {showBanner && (
+        <div class="adm-banner" role="alert">
+          <Icon name="lucide:triangle-alert" width={18} height={18} />
+          <div><b>{bannerTitle}</b><span>{bannerSub}</span></div>
+          <a href="/admin/incidents">查看事件<Icon name="lucide:arrow-right" width={14} height={14} /></a>
+          <button type="button" aria-label="关闭提醒" data-banner-dismiss><Icon name="lucide:x" width={16} height={16} /></button>
+        </div>
+      )}
+
+      <main class="adm-content"><slot /></main>
+    </div>
+  </div>
+  <button class="adm-shell-backdrop" type="button" aria-label="关闭导航" data-context-close></button>
+  <dialog class="adm-ui-dialog" data-admin-ui-dialog>
+    <form method="dialog" class="adm-ui-dialog-card" data-admin-ui-form>
+      <div>
+        <span class="adm-ui-dialog-kicker" data-admin-ui-kicker>需要确认</span>
+        <h2 data-admin-ui-title>确认操作</h2>
+        <p data-admin-ui-message aria-live="polite"></p>
+      </div>
+      <label class="adm-ui-dialog-input" data-admin-ui-input-wrap hidden>
+        <span data-admin-ui-input-label>补充说明</span>
+        <input data-admin-ui-input />
+        <textarea data-admin-ui-textarea hidden></textarea>
+      </label>
+      <div class="adm-ui-dialog-actions">
+        <button type="button" data-admin-ui-cancel>取消</button>
+        <button class="is-primary" type="submit" data-admin-ui-confirm>确认</button>
+      </div>
+    </form>
+  </dialog>
+</div>
+
+</AdminDocument>
+<script>
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  function bindAdminShell() {
+    const abort = new AbortController();
+    const { signal } = abort;
+    const root = document.querySelector('.adm-root');
+    const previousAdminUI = window.WalkerAdminUI;
+    document.querySelector('[data-context-open]')?.addEventListener('click', () => root?.classList.add('is-context-open'), { signal });
+    document.querySelectorAll('[data-context-close]').forEach(button => button.addEventListener('click', () => root?.classList.remove('is-context-open'), { signal }));
+
+    const bindMenu = (toggleSelector: string, menuSelector: string) => {
+      const toggle = document.querySelector(toggleSelector) as HTMLButtonElement | null;
+      const menu = document.querySelector(menuSelector) as HTMLElement | null;
+      toggle?.addEventListener('click', event => {
+        event.stopPropagation();
+        const willOpen = menu?.hidden ?? false;
+        if (menu) menu.hidden = !willOpen;
+        toggle.setAttribute('aria-expanded', String(willOpen));
+      }, { signal });
+      document.addEventListener('click', event => {
+        if (menu && !menu.hidden && !menu.contains(event.target as Node) && !toggle?.contains(event.target as Node)) {
+          menu.hidden = true;
+          toggle?.setAttribute('aria-expanded', 'false');
+        }
+      }, { signal });
+    };
+    bindMenu('[data-scope-toggle]', '[data-scope-menu]');
+    bindMenu('[data-profile-toggle]', '[data-profile-menu]');
+
+    document.querySelector('[data-banner-dismiss]')?.addEventListener('click', event => (event.currentTarget as HTMLElement).closest('.adm-banner')?.remove(), { signal });
+    document.getElementById('adm-logout')?.addEventListener('click', async () => {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      window.location.href = '/admin/login';
+    }, { signal });
+
+    const dialog = document.querySelector<HTMLDialogElement>('[data-admin-ui-dialog]');
+    const title = document.querySelector<HTMLElement>('[data-admin-ui-title]');
+    const kicker = document.querySelector<HTMLElement>('[data-admin-ui-kicker]');
+    const message = document.querySelector<HTMLElement>('[data-admin-ui-message]');
+    const form = document.querySelector<HTMLFormElement>('[data-admin-ui-form]');
+    const cancel = document.querySelector<HTMLButtonElement>('[data-admin-ui-cancel]');
+    const confirm = document.querySelector<HTMLButtonElement>('[data-admin-ui-confirm]');
+    const inputWrap = document.querySelector<HTMLElement>('[data-admin-ui-input-wrap]');
+    const inputLabel = document.querySelector<HTMLElement>('[data-admin-ui-input-label]');
+    const input = document.querySelector<HTMLInputElement>('[data-admin-ui-input]');
+    const textarea = document.querySelector<HTMLTextAreaElement>('[data-admin-ui-textarea]');
+
+    const runDialog = (options: {
+      mode: 'confirm' | 'prompt' | 'notify';
+      title?: string;
+      message: string;
+      initialValue?: string;
+      placeholder?: string;
+      multiline?: boolean;
+      confirmText?: string;
+      cancelText?: string;
+      tone?: WalkerAdminDialogTone;
+    }) => new Promise<string | boolean | null>(resolve => {
+      // 关闭后焦点回归触发元素（a11y）
+      const trigger = document.activeElement as HTMLElement | null;
+      if (!dialog || !form || !title || !message || !confirm || !cancel || !inputWrap || !input || !textarea) {
+        resolve(options.mode === 'confirm' ? false : options.mode === 'prompt' ? null : true);
+        return;
+      }
+
+      const isPrompt = options.mode === 'prompt';
+      const isNotify = options.mode === 'notify';
+      dialog.classList.toggle('is-danger', options.tone === 'danger');
+      if (kicker) kicker.textContent = options.tone === 'danger' ? '高风险操作' : isNotify ? '操作结果' : '需要确认';
+      title.textContent = options.title || (isNotify ? '提示' : '确认操作');
+      message.textContent = options.message;
+      confirm.textContent = options.confirmText || (isNotify ? '知道了' : '确认');
+      cancel.textContent = options.cancelText || '取消';
+      cancel.hidden = isNotify;
+      inputWrap.hidden = !isPrompt;
+      input.hidden = Boolean(options.multiline);
+      textarea.hidden = !options.multiline;
+      const activeInput = options.multiline ? textarea : input;
+      activeInput.value = options.initialValue || '';
+      activeInput.placeholder = options.placeholder || '';
+      if (inputLabel) inputLabel.textContent = options.title || '补充说明';
+
+      const cleanup = () => {
+        form.removeEventListener('submit', onSubmit);
+        cancel.removeEventListener('click', onCancel);
+        dialog.removeEventListener('cancel', onNativeCancel);
+        dialog.classList.remove('is-danger');
+      };
+      const finish = (value: string | boolean | null) => {
+        cleanup();
+        if (dialog.open) dialog.close();
+        resolve(value);
+        // 关闭后焦点回归触发元素（a11y）
+        window.setTimeout(() => trigger?.focus?.(), 0);
+      };
+      const onSubmit = (event: SubmitEvent) => {
+        event.preventDefault();
+        finish(isPrompt ? activeInput.value.trim() : true);
+      };
+      const onCancel = () => finish(isNotify ? true : isPrompt ? null : false);
+      const onNativeCancel = (event: Event) => {
+        event.preventDefault();
+        onCancel();
+      };
+      form.addEventListener('submit', onSubmit, { signal });
+      cancel.addEventListener('click', onCancel, { signal });
+      dialog.addEventListener('cancel', onNativeCancel, { signal });
+      dialog.showModal();
+      window.setTimeout(() => (isPrompt ? activeInput : confirm).focus(), 0);
+    });
+
+    window.WalkerAdminUI = {
+      confirm: async options => Boolean(await runDialog({ mode: 'confirm', ...options })),
+      prompt: async options => {
+        const value = await runDialog({ mode: 'prompt', ...options });
+        return typeof value === 'string' ? value : null;
+      },
+      notify: async options => { await runDialog({ mode: 'notify', ...options }); },
+    };
+
+    return () => {
+      abort.abort();
+      window.WalkerAdminUI = previousAdminUI;
+      root?.classList.remove('is-context-open');
+    };
+  }
+
+  registerLifecycle(bindAdminShell);
+</script>

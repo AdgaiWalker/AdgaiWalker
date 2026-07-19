@@ -1,0 +1,799 @@
+---
+/**
+ * /about — 关于（重设计版）
+ * 单页长卷叙事：Hero → 简介 → 时间轴 → Bento Grid → Pipeline → Footer
+ * 使用 FullscreenLayout
+ */
+import FullscreenLayout from '@/layouts/FullscreenLayout.astro';
+import LikeCounter from '@/components/LikeCounter.astro';
+import SectionHeader from '@/components/about/SectionHeader.astro';
+import { Icon } from 'astro-icon/components';
+import { Image } from 'astro:assets';
+import avatar from '/public/images/秋知（我的头像）.jpg';
+import stats from '@/data/site-stats.json';
+import { articles, pillars, aiTools, totalCost, costByCategory } from '@/data/site-data';
+import { getNeedCaseStats, getTopicCandidates } from '@/conversation/store';
+import '@/styles/about.css';
+
+export const prerender = true;
+
+const { personalTimeline, siteTimeline } = stats;
+
+// 需求洞察数据（构建时读取）
+const demandStats = await getNeedCaseStats({ days: 30 });
+const topicCandidates = await getTopicCandidates({ limit: 5 });
+
+const needCategoryLabels: Record<string, string> = {
+  coding: 'AI 编程', 'learn-ai': 'AI 入门', writing: '写作', design: '设计',
+  'image-video': '图片视频', office: '办公', cost: '省钱用 AI', idea: '点子落地',
+  automation: '自动化', community: '社群', 'content-navigation': '内容导航',
+};
+---
+
+
+<FullscreenLayout
+  title="关于 — Walker"
+  description="秋知 (Walker) — 用点子连接人与 AI，将想法点石成金。"
+>
+
+  {/* ===== 1. Hero 区域 ===== */}
+  <section class="hero-section" id="hero-section">
+    <div class="hero-bg">
+      <video
+        class="hero-bg-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        poster="/video/A-storyboard-2.mp4"
+      >
+        <source src="/video/A-storyboard-2.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-avatar-wrapper">
+        <div class="hero-avatar-ring">
+          <Image src={avatar} alt="秋知" width={100} height={100} class="hero-avatar-img" />
+        </div>
+      </div>
+      <h1 class="hero-title">Walker</h1>
+      <p class="hero-typing" id="hero-typing" aria-label="用点子连接人与 AI"></p>
+      <p class="hero-sub" id="hero-sub">赋能，不依赖 — 让每个人都能用 AI 解决真实问题</p>
+      <p class="hero-era">一个人 + AI，240 元，从零搭了这整个站。你也可以。</p>
+      <div class="hero-actions" id="hero-actions">
+        <a href="#why-section" class="hero-btn hero-btn--primary">
+          <Icon name="lucide:compass" width={15} height={15} />
+          开始探索
+        </a>
+        <a href="/tools#info-source" class="hero-btn hero-btn--ghost">
+          <Icon name="lucide:users" width={15} height={15} />
+          点子共促
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-scroll-hint" id="scroll-hint">
+      <Icon name="lucide:chevron-down" width={24} height={24} />
+    </div>
+
+    <div class="hero-gradient-bar"></div>
+  </section>
+
+  {/* ===== 2. 关于我 ===== */}
+  <section class="about-bio-section" id="bio-section">
+    <div class="about-container">
+      <SectionHeader title="秋知 Walker" />
+
+      <div class="bio-card panel-glass">
+        <div class="bio-narrative">
+          <p>Walker 不是一个人名，而是一种状态：带着自己的目标，准备出发、正在出发、歇会再出发。</p>
+          <p>空乘专业给了我时间，马哲给了我方法，AI 给了我路。</p>
+          <p>我不是在学 AI，而是在用 AI 解决真实问题。</p>
+        </div>
+
+        <div class="bio-quote">
+          <div class="bio-quote-mark" aria-hidden="true">"</div>
+          <p class="bio-quote-text">哲学家们只是用不同的方式解释世界，问题在于改变世界。</p>
+          <p class="bio-quote-author">—— 马克思</p>
+        </div>
+
+        <div class="bio-gratitude panel-glass">
+          <div class="bio-gratitude-stamp">航行信戳</div>
+          <h4 class="bio-gratitude-title">
+            <Icon name="lucide:heart" width={16} height={16} />
+            致我的引路人与恩师
+          </h4>
+          <p class="bio-gratitude-text">
+            "一路走来，秋芝引我入门，海哥（海拉鲁编程客）带我成长，刘、于二老在迷茫时点醒方向。感谢虽不理解但给予经济支持的亲人。水路万里，停靠因你们而有据可循。"
+          </p>
+        </div>
+
+        <div class="bio-social">
+          <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="social-pill">
+            <Icon name="lucide:github" width={16} height={16} />
+            <span>GitHub</span>
+          </a>
+          <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-pill social-pill--bili">
+            <Icon name="lucide:circle-play" width={16} height={16} />
+            <span>Bilibili</span>
+          </a>
+          <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="social-pill social-pill--xhs">
+            <Icon name="lucide:book-open" width={16} height={16} />
+            <span>小红书</span>
+          </a>
+          <button type="button" class="social-pill social-pill--email" id="copy-email">
+            <Icon name="lucide:mail" width={16} height={16} />
+            <span>Email</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 3. 航行日志 · 时间轴 ===== */}
+  <section class="journey-section" id="journey-section">
+    <div class="about-container">
+      <SectionHeader title="航行日志 · 正在铺的路" />
+
+      {/* 航行者宣言 */}
+      <div class="manifesto panel-glass">
+        <div class="manifesto-inner">
+          <div class="manifesto-icon">
+            <Icon name="lucide:compass" width={20} height={20} />
+          </div>
+          <div>
+            <p class="manifesto-text">" 最好的生活状态是，带着自己的目标，准备出发、正在出发、歇会再出发。 "</p>
+            <p class="manifesto-source">— VOYAGER'S SPIRITUAL MANIFESTO / 航行者宣言</p>
+          </div>
+        </div>
+        <div class="manifesto-states">
+          <div class="manifesto-state">
+            <span class="state-dot state-dot--amber"></span>
+            准备出发
+          </div>
+          <div class="manifesto-state manifesto-state--active">
+            <span class="state-dot state-dot--brand"></span>
+            正在出发
+          </div>
+          <div class="manifesto-state">
+            <span class="state-dot state-dot--emerald"></span>
+            歇会再出发
+          </div>
+        </div>
+      </div>
+
+      {/* 时间轴 */}
+      <div class="timeline-container">
+        <div class="timeline-track" aria-hidden="true"></div>
+        <div class="timeline-progress" id="timeline-progress" aria-hidden="true"></div>
+
+        {personalTimeline.map((item, i) => {
+          const isEven = i % 2 === 0;
+          const hasChildren = item.children && item.children.length > 0;
+          return (
+            <div class:list={['timeline-item', { 'timeline-item--right': !isEven }]}>
+              <div class="timeline-dot">
+                <span class="timeline-dot-core"></span>
+                <span class="timeline-dot-ripple"></span>
+              </div>
+
+              <div class="timeline-date-col">
+                <span class="timeline-date">{item.date}</span>
+              </div>
+
+              <div class="timeline-card-col">
+                <div class="timeline-card panel-glass">
+                  <h4 class="timeline-card-title">
+                    <Icon name={item.icon} width={14} height={14} />
+                    {item.title}
+                  </h4>
+                  {hasChildren ? (
+                    <div class="timeline-children">
+                      {item.children.map((child: { label: string; text: string; href?: string }) => (
+                        <div class="timeline-child">
+                          {child.href ? (
+                            <a href={child.href} target="_blank" rel="noopener noreferrer" class="timeline-child-label">{child.label}</a>
+                          ) : (
+                            <span class="timeline-child-label">{child.label}</span>
+                          )}
+                          <span class="timeline-child-text">{child.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p class="timeline-card-desc">{item.desc}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 4. 航行誓言 · 为什么建 ===== */}
+  <section class="why-section" id="why-section">
+    <div class="about-container">
+      <SectionHeader title="航行誓言 · 为什么建" />
+
+      <div class="why-story panel-glass">
+        <p>从去年（25年）九月开始，我一直在飞书写学习记录，建了好几个知识库。飞书很好用，但 15G 不够用，而且它没法按我的想法长成我想要的样子。</p>
+        <p>后来看到 lvy01 的博客，他的内容就是 his 个人介绍，既是知识库又是名片。还有海哥的博客，像一个小型飞书，但比飞书灵活，足够承载他的内容。</p>
+        <p>我想，我已经会用 AI 编程了，为什么不自己搭一个？</p>
+        <p>对内，沉淀之后能反哺自己——省时间、提效率、保证做事的质量。对外，就是我的个人介绍。也满足我的好奇心：用好奇心去创造，创造出新的东西让自己继续好奇。</p>
+      </div>
+
+      <p class="why-articles-hint">这三篇日志记录了完整的远征来龙去脉</p>
+      <div class="why-articles-grid">
+        {articles.map((a) => (
+          <a href={a.href} class="why-article panel-glass">
+            <Icon name="lucide:file-text" width={14} height={14} class="text-brand" />
+            <div>
+              <h4 class="why-article-title">{a.title}</h4>
+              <p class="why-article-summary">{a.summary}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 5. 赋能 CTA ===== */}
+  <section class="cta-section" id="cta-section">
+    <div class="about-container">
+      <div class="cta-card">
+        <div class="cta-card-inner">
+          <div class="cta-text-col">
+            <h2 class="cta-headline">点子共促 · 一起学 AI</h2>
+            <p class="cta-philosophy">赋能，不依赖。</p>
+            <p class="cta-desc">带着自己的目标来，用 AI 解决你自己的真实问题。这里不教你依赖任何工具，而是帮你学会用工具武装自己。</p>
+            <div class="cta-highlights">
+              <div class="cta-highlight">
+                <Icon name="lucide:lightbulb" width={16} height={16} />
+                <span>点子共创 — 抛出各自的点子，看可行性，有人想一起做就一起做</span>
+              </div>
+              <div class="cta-highlight">
+                <Icon name="lucide:rocket" width={16} height={16} />
+                <span>点子共促 — 带着目的一起学 AI，遇到问题互相交流</span>
+              </div>
+            </div>
+            <div class="cta-actions">
+              <a href="/tools#info-source" class="cta-btn cta-btn--primary">
+                <Icon name="lucide:arrow-right" width={15} height={15} />
+                了解更多
+              </a>
+              <div class="cta-social-row">
+                <a href="https://github.com/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="cta-social-icon" title="GitHub">
+                  <Icon name="lucide:github" width={16} height={16} />
+                </a>
+                <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="cta-social-icon" title="Bilibili">
+                  <Icon name="lucide:circle-play" width={16} height={16} />
+                </a>
+                <a href="https://www.xiaohongshu.com/user/profile/689dd905000000001802921e" target="_blank" rel="noopener noreferrer" class="cta-social-icon" title="小红书">
+                  <Icon name="lucide:book-open" width={16} height={16} />
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="cta-qr-col">
+            <div class="cta-qr-wrapper">
+              <img src="/images/qr/dianzi-gongcu.jpg" alt="点子共促群二维码" class="cta-qr-img" width="140" height="140" loading="lazy" />
+              <p class="cta-qr-label">扫码加入点子共促</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 代安装：给有收入、时间贵的人——文案即受众筛选器 */}
+      <div class="cta-install-note panel-glass">
+        <div class="cta-install-icon">
+          <Icon name="lucide:wrench" width={18} height={18} />
+        </div>
+        <div class="cta-install-body">
+          <h3 class="cta-install-title">没时间自己装？代安装服务</h3>
+          <p class="cta-install-desc">给<strong>有收入、时间贵</strong>的人——用钱换时间，不是用钱省脑子。¥30 起，<a href="https://m.tb.cn/h.RQVGIuk?tk=iR06g25VWil" target="_blank" rel="noopener noreferrer">闲鱼接单</a>。</p>
+          <p class="cta-install-hint">学生朋友建议先看 <a href="/learn">/learn 教程</a>自己装（免费）；真的很急（比如明天交论文）再找我。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 6. 装配舱单 · Bento Grid ===== */}
+  <section class="bento-section" id="bento-section">
+    <div class="about-container">
+      <SectionHeader title="装配舱单 · 这个站是什么" />
+
+      {/* 建站动机 */}
+      <div class="bento-motivation panel-glass">
+        <p>对内是整理思考、沉淀资源、酝酿点子的<strong>前进系统</strong>。</p>
+        <p>对外是给想用 AI 解决真实问题的人的<strong>参考</strong>。</p>
+      </div>
+
+      {/* 四柱 Bento Grid */}
+      <div class="bento-grid">
+        {pillars.map((p) => (
+          <a href={p.route} class="bento-cell panel-glass">
+            <div class="bento-cell-icon">
+              <Icon name={p.icon} width={20} height={20} />
+            </div>
+            <div class="bento-cell-body">
+              <div class="bento-cell-header">
+                <span class="bento-cell-label">{p.label}</span>
+                <span class="bento-cell-hint">{p.hint}</span>
+              </div>
+              <p class="bento-cell-desc">{p.desc}</p>
+            </div>
+            <Icon name="lucide:arrow-right" width={14} height={14} class="bento-cell-arrow" />
+          </a>
+        ))}
+      </div>
+
+      {/* 开源 + 成本 双列 */}
+      <div class="bento-bottom-row">
+        <div class="bento-opensource panel-glass">
+          <Icon name="lucide:github" width={20} height={20} class="text-brand" />
+          <p class="bento-opensource-text">这个站永久免费开源，同更多人同行。</p>
+          <a href="https://github.com/AdgaiWalker/AdgaiWalker" target="_blank" rel="noopener noreferrer" class="bento-opensource-link">
+            查看 GitHub 仓库
+            <Icon name="lucide:external-link" width={12} height={12} />
+          </a>
+        </div>
+
+        <div class="bento-cost panel-glass">
+          <div class="bento-cost-header">
+            <span class="bento-cost-label">总装载荷成本</span>
+            <span class="bento-cost-total">{totalCost} 元</span>
+          </div>
+          <div class="bento-cost-grid">
+            {costByCategory.map(([cat, amount]) => (
+              <div class="bento-cost-item">
+                <span class="bento-cost-cat">{cat}</span>
+                <span class="bento-cost-amount">{amount} 元</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 5. 工具链 Pipeline ===== */}
+  <section class="pipeline-section" id="pipeline-section">
+    <div class="about-container">
+      <SectionHeader title="战舰装配 · 怎么做的" />
+
+      <div class="pipeline-philosophy panel-glass">
+        <p class="pipeline-philosophy-main">因为需要，所以存在。</p>
+        <p class="pipeline-philosophy-sub">我不是先选了一个框架，然后看它能做什么。是我先想清楚这个产品要填补我什么需求，然后 AI 根据我的需求推荐框架。</p>
+      </div>
+
+      {/* AI 工具矩阵 */}
+      <div class="tools-grid">
+        {aiTools.map((t) => (
+          <div class="tool-card panel-glass">
+            <span class="tool-card-dot"></span>
+            <p class="tool-card-name">{t.name}</p>
+            <p class="tool-card-role">{t.role}</p>
+            <span class="tool-card-model">{t.model}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pipeline 管线 */}
+      <div class="pipeline-flow panel-glass">
+        <p class="pipeline-flow-label">星联远征 · 自动装配管线</p>
+        <div class="pipeline-nodes">
+          <div class="pipeline-node">
+            <Icon name="lucide:book-open" width={20} height={20} />
+            <span class="pipeline-node-name">Obsidian</span>
+            <span class="pipeline-node-role">思想沉淀舱</span>
+          </div>
+          <div class="pipeline-connector">
+            <svg width="100%" height="24" overflow="visible">
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-nav-border)" stroke-width="1.5" stroke-dasharray="4 4" />
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" class="pipeline-pulse-line" />
+            </svg>
+          </div>
+          <div class="pipeline-node">
+            <Icon name="lucide:git-compare" width={20} height={20} />
+            <span class="pipeline-node-name">GitHub</span>
+            <span class="pipeline-node-role">中枢集结港</span>
+          </div>
+          <div class="pipeline-connector">
+            <svg width="100%" height="24" overflow="visible">
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-nav-border)" stroke-width="1.5" stroke-dasharray="4 4" />
+              <line x1="0" y1="12" x2="100%" y2="12" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" class="pipeline-pulse-line" />
+            </svg>
+          </div>
+          <div class="pipeline-node">
+            <Icon name="lucide:cloud-lightning" width={20} height={20} />
+            <span class="pipeline-node-name">Vercel</span>
+            <span class="pipeline-node-role">云端启航机</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 开荒星历时间轴 */}
+      <div class="site-timeline panel-glass">
+        <p class="site-timeline-label">开荒星历时间轴</p>
+        <div class="site-timeline-items">
+          {siteTimeline.map((t) => (
+            <div class="site-timeline-item">
+              <span class="site-timeline-date">{t.date}</span>
+              <span class="site-timeline-text">{t.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== 6. Footer ===== */}
+  <footer class="about-footer" id="about-footer">
+    <div class="about-footer-inner">
+      <LikeCounter pagePath="/about" />
+
+      <div class="about-uptime panel-glass">
+        <Icon name="lucide:hourglass" width={14} height={14} class="uptime-icon" />
+        <div class="uptime-text" id="site-uptime"></div>
+      </div>
+
+      <a href="#cta-section" class="about-cta-link">
+        <Icon name="lucide:arrow-up" width={14} height={14} />
+        回到点子共促
+      </a>
+
+      <div class="about-signature">
+        <span class="about-sig-dot"></span>
+        Walker · 行过万里水路
+      </div>
+    </div>
+    {/* ===== 需求洞察 ===== */}
+    <section class="insight-section" id="insight-section">
+      <div class="insight-section-header">
+        <Icon name="lucide:bar-chart-3" width={14} height={14} />
+        <h2>需求洞察</h2>
+        <div class="insight-section-line"></div>
+      </div>
+
+      {demandStats.totalCases === 0 ? (
+        <div class="insight-empty panel-glass">
+          <Icon name="lucide:bar-chart-3" width={28} height={28} class="insight-empty-icon" />
+          <p>暂无需求数据。匹配器上线后，这里会展示用户需求趋势。</p>
+        </div>
+      ) : (
+        <div class="insight-grid">
+          {/* 概览 */}
+          <div class="insight-card panel-glass">
+            <div class="insight-card-title">
+              <Icon name="lucide:activity" width={14} height={14} />
+              概览
+            </div>
+            <div class="insight-stats-row">
+              <div class="insight-stat">
+                <span class="insight-stat-value">{demandStats.totalSessions}</span>
+                <span class="insight-stat-label">会话</span>
+              </div>
+              <div class="insight-stat">
+                <span class="insight-stat-value">{demandStats.totalCases}</span>
+                <span class="insight-stat-label">需求</span>
+              </div>
+              <div class="insight-stat">
+                <span class="insight-stat-value">{(demandStats.codeAgentMisuseRate * 100).toFixed(0)}%</span>
+                <span class="insight-stat-label">代码 Agent 误用率</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 需求分类分布 */}
+          <div class="insight-card panel-glass">
+            <div class="insight-card-title">
+              <Icon name="lucide:pie-chart" width={14} height={14} />
+              需求分类
+            </div>
+            <div class="insight-bars">
+              {Object.entries(demandStats.byCategory)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([cat, count]) => {
+                  const max = Math.max(...Object.values(demandStats.byCategory));
+                  const pct = max > 0 ? (count / max) * 100 : 0;
+                  return (
+                    <div class="insight-bar-row">
+                      <span class="insight-bar-label">{needCategoryLabels[cat] ?? cat}</span>
+                      <div class="insight-bar-track">
+                        <div class="insight-bar-fill" style={`width: ${pct}%`} />
+                      </div>
+                      <span class="insight-bar-count">{count}</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* 选题候选 */}
+          {topicCandidates.length > 0 && (
+            <div class="insight-card panel-glass insight-card-wide">
+              <div class="insight-card-title">
+                <Icon name="lucide:lightbulb" width={14} height={14} />
+                选题候选
+              </div>
+              <div class="insight-topics">
+                {topicCandidates.map(topic => (
+                  <div class="insight-topic-item">
+                    <div class="insight-topic-title">{topic.title}</div>
+                    <div class="insight-topic-meta">
+                      <span class={`insight-priority insight-priority-${topic.priority}`}>
+                        {topic.priority === 'high' ? '高' : topic.priority === 'medium' ? '中' : '低'}
+                      </span>
+                      <span class="insight-topic-count">
+                        <Icon name="lucide:users" width={10} height={10} />
+                        {topic.density} 次提及
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+
+  </footer>
+
+</FullscreenLayout>
+
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import { registerLifecycle } from '@/scripts/with-lifecycle';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  let abort: AbortController | null = null;
+  let uptimeTimer: ReturnType<typeof setInterval> | null = null;
+  let typingTimer: ReturnType<typeof setTimeout> | null = null;
+  let emailCopyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function isAboutPage() {
+    return !!(document.getElementById('hero-section') && document.querySelector('.about-bio-section'));
+  }
+
+  function cleanup() {
+    if (!isAboutPage()) return;
+    abort?.abort();
+    abort = null;
+    if (uptimeTimer !== null) {
+      clearInterval(uptimeTimer);
+      uptimeTimer = null;
+    }
+    if (typingTimer !== null) {
+      clearTimeout(typingTimer);
+      typingTimer = null;
+    }
+    if (emailCopyTimer !== null) {
+      clearTimeout(emailCopyTimer);
+      emailCopyTimer = null;
+    }
+    ScrollTrigger.getAll().forEach(t => t.kill());
+  }
+
+  /* ---- Typing Effect ---- */
+  function initTyping() {
+    const el = document.getElementById('hero-typing');
+    if (!el) return;
+    // Reset state completely
+    el.textContent = '';
+    el.classList.remove('typing-done');
+    if (typingTimer !== null) clearTimeout(typingTimer);
+
+    const text = '用点子连接人与 AI';
+    let i = 0;
+    const type = () => {
+      if (i < text.length) {
+        el.textContent = text.slice(0, i + 1);
+        i++;
+        typingTimer = setTimeout(type, 100 + Math.random() * 60);
+      } else {
+        el.classList.add('typing-done');
+        typingTimer = null;
+      }
+    };
+    typingTimer = setTimeout(type, 800);
+  }
+
+  /* ---- Hero Parallax ---- */
+  function initParallax(signal: AbortSignal) {
+    const hero = document.getElementById('hero-section');
+    const bgVideo = hero?.querySelector('.hero-bg-video') as HTMLElement | null;
+    const heroContent = hero?.querySelector('.hero-content') as HTMLElement | null;
+    const scrollHint = document.getElementById('scroll-hint');
+
+    if (hero) {
+      window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        const heroHeight = hero.offsetHeight;
+        if (scrollY < heroHeight) {
+          if (bgVideo) bgVideo.style.transform = `scale(${1 + scrollY / heroHeight * 0.1}) translateY(${scrollY * 0.3}px)`;
+          if (heroContent) {
+            heroContent.style.opacity = String(1 - scrollY / heroHeight * 1.5);
+            heroContent.style.transform = `translateY(${scrollY * 0.15}px)`;
+          }
+          if (scrollHint) scrollHint.style.opacity = String(Math.max(0, 1 - scrollY / heroHeight * 3));
+        }
+      }, { passive: true, signal });
+
+      scrollHint?.addEventListener('click', () => {
+        document.getElementById('bio-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, { signal });
+    }
+  }
+
+  /* ---- Uptime Counter ---- */
+  // 时间换算常量（client scope；与服务端 shared/constants.ts 同值）
+  const MS_PER_SECOND = 1000;
+  const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+  const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+  const MS_PER_DAY = 24 * MS_PER_HOUR;
+  function initUptimeCounter() {
+    const el = document.getElementById('site-uptime');
+    if (!el) return;
+    const launch = new Date('2026-05-02T00:00:00+08:00');
+    const update = () => {
+      const diff = Date.now() - launch.getTime();
+      const d = Math.floor(diff / MS_PER_DAY);
+      const h = Math.floor((diff % MS_PER_DAY) / MS_PER_HOUR);
+      const m = Math.floor((diff % MS_PER_HOUR) / MS_PER_MINUTE);
+      const s = Math.floor((diff % MS_PER_MINUTE) / MS_PER_SECOND);
+      el.textContent = `SYSTEM ONLINE: ${d}D ${h}H ${m}M ${s}S`;
+    };
+    update();
+    uptimeTimer = setInterval(update, 1000);
+  }
+
+  /* ---- Email Copy ---- */
+  function initEmailCopy(signal: AbortSignal) {
+    const btn = document.getElementById('copy-email');
+    btn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('praxiswalker@gmail.com');
+        const span = btn.querySelector('span');
+        const orig = span?.textContent;
+        if (span) span.textContent = '已复制！';
+        if (emailCopyTimer !== null) clearTimeout(emailCopyTimer);
+        emailCopyTimer = setTimeout(() => {
+          emailCopyTimer = null;
+          if (span && orig) span.textContent = orig;
+        }, 1500);
+      } catch { /* fallback */ }
+    }, { signal });
+  }
+
+  /* ---- GSAP ScrollTrigger Reveals ---- */
+  function initScrollReveal() {
+    // Bio section
+    gsap.fromTo('#bio-section .bio-card',
+      { opacity: 0, y: 50 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: '#bio-section', start: 'top 80%' }
+      }
+    );
+
+    // Manifesto
+    gsap.fromTo('.manifesto',
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: '.manifesto', start: 'top 85%' }
+      }
+    );
+
+    // Timeline items stagger
+    gsap.fromTo('.timeline-item',
+      { opacity: 0, y: 40, scale: 0.96 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.1)', stagger: 0.12,
+        scrollTrigger: { trigger: '.timeline-container', start: 'top 80%' }
+      }
+    );
+
+    // Why section story
+    gsap.fromTo('.why-story',
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        scrollTrigger: { trigger: '.why-story', start: 'top 85%' }
+      }
+    );
+
+    // Why articles stagger
+    gsap.fromTo('.why-article',
+      { opacity: 0, y: 25 },
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', stagger: 0.1,
+        scrollTrigger: { trigger: '.why-articles-grid', start: 'top 85%' }
+      }
+    );
+
+    // Timeline progress line
+    const progressLine = document.getElementById('timeline-progress');
+    if (progressLine) {
+      gsap.fromTo(progressLine,
+        { scaleY: 0 },
+        { scaleY: 1, ease: 'none',
+          scrollTrigger: { trigger: '.timeline-container', start: 'top 60%', end: 'bottom 75%', scrub: 0.5 }
+        }
+      );
+    }
+
+    // CTA section
+    gsap.fromTo('.cta-card',
+      { opacity: 0, y: 50, scale: 0.97 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: '#cta-section', start: 'top 80%' }
+      }
+    );
+
+    // Bento Grid cells stagger
+    gsap.fromTo('.bento-cell',
+      { opacity: 0, y: 30, scale: 0.95 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'power2.out', stagger: 0.1,
+        scrollTrigger: { trigger: '.bento-grid', start: 'top 85%' }
+      }
+    );
+
+    // Bento bottom row
+    gsap.fromTo('.bento-bottom-row > *',
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', stagger: 0.15,
+        scrollTrigger: { trigger: '.bento-bottom-row', start: 'top 85%' }
+      }
+    );
+
+    // Pipeline nodes
+    gsap.fromTo('.pipeline-node',
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)', stagger: 0.2,
+        scrollTrigger: { trigger: '.pipeline-nodes', start: 'top 85%' }
+      }
+    );
+
+    // Tools grid
+    gsap.fromTo('.tool-card',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', stagger: 0.08,
+        scrollTrigger: { trigger: '.tools-grid', start: 'top 85%' }
+      }
+    );
+  }
+
+  /* ---- Hero sub-text fade in ---- */
+  function initHeroFadeIn() {
+    const sub = document.getElementById('hero-sub');
+    const era = document.querySelector('.hero-era') as HTMLElement | null;
+    const actions = document.getElementById('hero-actions');
+    if (sub) gsap.fromTo(sub, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.2, delay: 2.2, ease: 'power2.out' });
+    if (era) gsap.fromTo(era, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.2, delay: 2.8, ease: 'power2.out' });
+    if (actions) gsap.fromTo(actions, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.8, delay: 3.4, ease: 'power2.out' });
+  }
+
+  function initAll() {
+    if (!isAboutPage()) return;
+    cleanup();
+    abort = new AbortController();
+    const { signal } = abort;
+
+    initTyping();
+    initHeroFadeIn();
+    initParallax(signal);
+    initUptimeCounter();
+    initEmailCopy(signal);
+    initScrollReveal();
+
+    return cleanup;
+  }
+
+  registerLifecycle(initAll);
+</script>

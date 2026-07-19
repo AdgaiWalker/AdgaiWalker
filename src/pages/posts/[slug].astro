@@ -1,0 +1,1434 @@
+---
+/**
+ * /posts/[slug] — 统一文章详情页
+ * 沉浸式阅读：内容直接浮在空间里
+ */
+import ContentShell from '../../layouts/ContentShell.astro';
+import BlockPrompt from '../../components/blocks/BlockPrompt.astro';
+import BlockDialogue from '../../components/blocks/BlockDialogue.astro';
+import BlockVideo from '../../components/blocks/BlockVideo.astro';
+import BlockCallout from '../../components/blocks/BlockCallout.astro';
+import BlockResource from '../../components/blocks/BlockResource.astro';
+import BlockStep from '../../components/blocks/BlockStep.astro';
+import BlockFeedback from '../../components/blocks/BlockFeedback.astro';
+import LikeCounter from '../../components/LikeCounter.astro';
+import GiscusWidget from '../../components/GiscusWidget.astro';
+import AdminEditBar from '../../components/admin/AdminEditBar.astro';
+import InlineEditor from '../../components/admin/InlineEditor.astro';
+import VersionHistory from '../../components/admin/VersionHistory.astro';
+import ResourceCard from '../../components/ResourceCard.astro';
+import { POSTS, buildPostPath } from '@/shared/routes';
+import { getPublishedPosts, getVersionChain, getSeriesEntries } from '@/knowledge/content';
+import { getRelatedPosts, summarizeArticleBody } from '@/knowledge/posts';
+import { CHARS_PER_MINUTE_ZH } from '@/shared/constants';
+import { formatDateLocale } from '@/shared/format';
+
+import { render, type CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import { resolveLayout, getContentLabel, getDomainLabel, getStatusSymbol } from '@/knowledge/block-types';
+import DianZiWordmark from '../../components/DianZiWordmark.astro';
+
+export const prerender = true;
+
+	type ArticleResource = CollectionEntry<'log'>['data']['resources'][number];
+
+	export async function getStaticPaths() {
+  const entries = await getPublishedPosts();
+
+  return entries.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry, allEntries: entries },
+  }));
+}
+
+const { entry, allEntries } = Astro.props;
+
+if (!entry) {
+  return Astro.redirect('/404');
+}
+
+const { Content, headings } = await render(entry);
+
+const components = { BlockPrompt, BlockDialogue, BlockVideo, BlockCallout, BlockResource, BlockStep };
+
+const rawBody = entry.body || '';
+const { description, readingTime } = summarizeArticleBody(rawBody, CHARS_PER_MINUTE_ZH);
+const coverImage = entry.data.cover;
+const ogImage = typeof coverImage === 'string' ? coverImage : coverImage?.src;
+
+const resources = entry.data.resources || [];
+
+// 版本链 & 系列导航
+const versionChain = allEntries ? getVersionChain(allEntries, entry.id) : [];
+const hasVersion = versionChain.length > 0;
+
+const seriesName = entry.data.series;
+const seriesEntries = seriesName && allEntries
+  ? getSeriesEntries(allEntries, seriesName).map(e => ({
+      id: e.id,
+      title: e.data.title,
+      order: e.data.seriesOrder ?? 0,
+    }))
+  : [];
+const currentSeriesIndex = seriesEntries.findIndex(e => e.id === entry.id);
+const hasSeries = seriesEntries.length > 1; // 系列只有 1 篇时不显示导航
+const seriesPrev = hasSeries && currentSeriesIndex > 0 ? seriesEntries[currentSeriesIndex - 1] : null;
+const seriesNext = hasSeries && currentSeriesIndex < seriesEntries.length - 1 ? seriesEntries[currentSeriesIndex + 1] : null;
+
+// 相关推荐：基于 tags 重叠度匹配，排除自身，取前 3 篇
+const relatedPosts = allEntries ? getRelatedPosts(entry, allEntries) : [];
+
+// 布局模板：优先读 frontmatter 的 layout 字段，没有则回退到 form 映射
+const layout = resolveLayout(entry.data.layout, entry.data.form);
+const contentLabel = getContentLabel(entry.data.form, entry.data.intent);
+const domainLabel = getDomainLabel(entry.data.domain);
+const statusInfo = getStatusSymbol(entry.data.status);
+
+// 创作者及落款时空元数据（带默认 fallback 支撑通用化）
+const author = entry.data.author || entry.data.signature || 'Walker';
+const location = entry.data.location || entry.data.stamp;
+const environment = entry.data.environment;
+const action = entry.data.action || '落笔于';
+
+// 拼装社交分享的带前缀摘要，支持 3 秒判断
+const ogDesc = [
+  entry.data.form ? `[${contentLabel.label}${domainLabel ? ` · ${domainLabel}` : ''}]` : '',
+  entry.data.summary ?? entry.data.description ?? description
+].filter(Boolean).join(' ');
+---
+
+	<ContentShell
+	  title={`${entry.data.title} — Walker`}
+	  description={description}
+	  ogTitle={entry.data.title}
+	  ogDescription={ogDesc}
+	  ogImage={ogImage ?? '/images/hero-bg.png'}
+	  canonicalUrl={Astro.url.href}
+	  headings={headings}
+	  contentId={entry.id}
+	  layout={layout}
+	  form={entry.data.form}
+	  theme={entry.data.theme}
+	  brandColor={entry.data.brandColor}
+	  brandSecondaryColor={entry.data.brandSecondaryColor}
+	>
+    {/* 面包屑 — 方向感 */}
+    <div class="article-breadcrumb">
+      <a href={POSTS} class="breadcrumb-link">
+        <Icon name="lucide:arrow-left" width={14} height={14} />
+        文章
+      </a>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-reading-time">{readingTime} 分钟阅读</span>
+    </div>
+
+    {/* 内容声明栏 — 3 秒判断「这篇跟我有没有关系」 */}
+    <div class="content-declaration">
+      <span class="declaration-label">{contentLabel.label}</span>
+      {domainLabel && (
+        <span class="declaration-sep">·</span>
+        <span class="declaration-label">{domainLabel}</span>
+      )}
+      {entry.data.status && (
+        <span class="declaration-sep">·</span>
+        <span class="declaration-status-wrap">
+          <DianZiWordmark status={entry.data.status} />
+        </span>
+      )}
+      {entry.data.form === 'idea' && (
+        <a href={`/posts/${entry.id}/canvas`} class="declaration-canvas-link">
+          进入画布 →
+        </a>
+      )}
+    </div>
+
+    {/* 标题 — 文章的门面 */}
+    <h1 class="article-title" data-pagefind-meta="title">
+      {entry.data.title}
+    </h1>
+
+    {/* 创作者落款时空区 — 有质感的、分开展示的元数据栏 */}
+    <div class="oriental-meta-chips reveal">
+      {/* 1. 作者 */}
+      <div class="meta-chip chip-author">
+        <Icon name="lucide:user" width={12} height={12} class="chip-icon text-brand" />
+        <span class="chip-label">创作者</span>
+        <span class="chip-value">{author}</span>
+      </div>
+
+      {/* 2. 地点与动作 */}
+      {location && (
+        <div class="meta-chip chip-location">
+          <Icon name="lucide:map-pin" width={12} height={12} class="chip-icon text-amber-500" />
+          <span class="chip-label">{action}</span>
+          <span class="chip-value font-medium">{location}</span>
+        </div>
+      )}
+
+      {/* 3. 环境与氛围 */}
+      {environment && (
+        <div class="meta-chip chip-environment">
+          <Icon name="lucide:moon" width={12} height={12} class="chip-icon text-indigo-400" />
+          <span class="chip-label">环境</span>
+          <span class="chip-value">{environment}</span>
+        </div>
+      )}
+      
+      {/* 4. 时间 */}
+      <div class="meta-chip chip-time">
+        <Icon name="lucide:calendar" width={12} height={12} class="chip-icon text-emerald-500" />
+        <span class="chip-label">发布于</span>
+        <span class="chip-value">{formatDateLocale(entry.data.date)}</span>
+      </div>
+    </div>
+
+    {/* 封面图 */}
+    {coverImage && (
+      <div class="article-cover">
+        {typeof coverImage === 'string' ? (
+          <Image src={coverImage} alt={entry.data.title} width={1280} height={549} class="cover-img" />
+        ) : (
+          <Image src={coverImage} alt={entry.data.title} class="cover-img" />
+        )}
+      </div>
+    )}
+
+    {/* 摘要 */}
+    {entry.data.summary && (
+      <div class="article-summary reveal">
+        {entry.data.summary}
+      </div>
+    )}
+
+    {/* 正文 — 内容即主角 */}
+    <div class="prose prose-walker max-w-none break-words" id="article-body">
+      <Content components={components} />
+    </div>
+
+
+
+    {/* 就地编辑器（预渲染隐藏，admin 进入编辑态时激活） */}
+    <InlineEditor slug={entry.id} mode="inline" />
+
+    {entry.data.aiInsights && entry.data.showAi !== false && (
+      <div class="insights-inline reveal">
+        <hr class="insights-divider" />
+        <h3 class="insights-heading">洞察</h3>
+        
+        {entry.data.aiInsights.insight && (
+          <p class="insights-desc">{entry.data.aiInsights.insight}</p>
+        )}
+        
+        <div class="insights-grid">
+          {entry.data.aiInsights.opportunities && entry.data.aiInsights.opportunities.length > 0 && (
+            <div class="insight-section">
+              <span class="insight-sec-title">机会</span>
+              <ul class="insight-list">
+                {entry.data.aiInsights.opportunities.map((item: string) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {entry.data.aiInsights.risks && entry.data.aiInsights.risks.length > 0 && (
+            <div class="insight-section">
+              <span class="insight-sec-title">风险</span>
+              <ul class="insight-list">
+                {entry.data.aiInsights.risks.map((item: string) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {entry.data.aiInsights.steps && entry.data.aiInsights.steps.length > 0 && (
+            <div class="insight-section insight-section--full">
+              <span class="insight-sec-title">推荐落地路径</span>
+              <ol class="insight-steps">
+                {entry.data.aiInsights.steps.map((item: string, idx: number) => (
+                  <li>
+                    <span class="step-num">{idx + 1}</span>
+                    <span class="step-text">{item}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* P3-A 隐私告知：本页匿名统计阅读深度（读到哪/是否读完）用于改进内容。
+        不采集 IP/身份；浏览器开启 DoNotTrack 即不采集。
+        先告知再采集（放在 BlockFeedback 之前），符合隐私原则。 */}
+    <aside class="telemetry-privacy-note" aria-label="阅读统计隐私告知">
+      匿名统计阅读深度以改进内容；不采集身份，浏览器开启「禁止追踪」即关闭。
+    </aside>
+
+    {/* 内容反馈（P1-B02）—— 正文结束后采集"有用 / 需补充 / 已过时"明确信号，
+        与底部 LikeCounter 区分：点赞是弱信号，这是直接导向行动的结果反馈 */}
+    <BlockFeedback contentId={entry.id} />
+
+    {((entry.data.collaborative === true) || (entry.data.form === 'idea' && entry.data.collaborative !== false)) && (
+      <div class="nls-co-create-hub reveal">
+        <div class="collab-dots-interactive" id="collab-dots-interactive">
+          <span class="collab-dot-main">●</span>
+          <span class="collab-dot-sub">°</span>
+          <div class="collab-ripple" id="collab-ripple"></div>
+        </div>
+        <p class="collab-invite">这个点子正在寻找同频者。</p>
+        
+        <div class="hub-collab-bar" id="collab-entry-bar" data-content-id={entry.id}>
+          <div class="hub-actions">
+            <a href={`/posts/${entry.id}/canvas`} class="hub-btn hub-btn-primary">
+              进入共创画布
+            </a>
+            <button type="button" class="hub-btn hub-btn-secondary" id="collab-join-btn">
+              靠近这个想法
+            </button>
+          </div>
+        </div>
+
+        <span class="collab-count" id="collab-count-text">正在加载同频者数据...</span>
+
+        <dialog class="collab-dialog" id="collab-dialog">
+          <div class="collab-dialog-content">
+            <div class="collab-dialog-header">
+              <h3 class="collab-dialog-title">靠近这个点子</h3>
+              <button type="button" class="collab-dialog-close" id="collab-dialog-close" aria-label="关闭">
+                <Icon name="lucide:x" width={18} height={18} />
+              </button>
+            </div>
+            <form class="collab-form" id="collab-form">
+              <div class="collab-form-group">
+                <label for="collab-role">我的技能身份</label>
+                <input type="text" id="collab-role" name="role" placeholder="如：前端开发 / UI 设计 / 深度体验者" required maxLength={80} />
+              </div>
+              <div class="collab-form-group">
+                <label for="collab-suggestion">我对此的第一步行动建议</label>
+                <textarea id="collab-suggestion" name="suggestion" placeholder="如：第一步可以建立静态草稿，或者我对此有不同的实现路径..." rows={4} required maxLength={400}></textarea>
+              </div>
+              <div class="collab-form-status" id="collab-form-status" hidden></div>
+              <div class="collab-actions-row">
+                <button type="submit" class="collab-submit-btn" id="collab-submit-btn">
+                  <span>确认靠近</span>
+                </button>
+                <a href={`/posts/${entry.id}/canvas`} class="collab-canvas-link-btn" id="collab-canvas-link-btn">
+                  <span>进入共创画布</span>
+                </a>
+              </div>
+            </form>
+          </div>
+        </dialog>
+      </div>
+    )}
+
+	    {/* 相关资源 */}
+    {resources.length > 0 && (
+      <section class="article-section">
+        <h2 class="section-heading">
+          <Icon name="lucide:link-2" width={20} height={20} class="section-icon" />
+          相关资源
+        </h2>
+        <div class="resource-list">
+          {resources.map((res: ArticleResource) => (
+            <ResourceCard
+              type={res.type}
+              url={res.url}
+              name={res.name}
+              description={res.description}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* 版本 & 系列导航 */}
+    {(hasVersion || hasSeries) && (
+      <section class="article-nav-links">
+        {/* 版本导航 */}
+        {hasVersion && (
+          <div class="nav-block version-block">
+            <div class="nav-label">
+              <Icon name="lucide:git-branch" width={14} height={14} />
+              版本迭代
+            </div>
+            <div class="version-chain">
+              {versionChain.map((v, i) => (
+                v.id === entry.id ? (
+                  <span class="version-current">v{v.data.version ?? i + 1}</span>
+                ) : (
+                  <a href={buildPostPath(v.id)} class="version-link">
+                    v{v.data.version ?? i + 1}
+                  </a>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 系列导航 */}
+        {hasSeries && (
+          <div class="nav-block series-block">
+            <div class="nav-label">
+              <Icon name="lucide:layers" width={14} height={14} />
+              {seriesName}
+              <span class="series-progress">{currentSeriesIndex + 1}/{seriesEntries.length}</span>
+            </div>
+            <div class="series-nav">
+              {seriesPrev ? (
+                <a href={buildPostPath(seriesPrev.id)} class="series-link series-prev">
+                  <Icon name="lucide:chevron-left" width={14} height={14} />
+                  {seriesPrev.title}
+                </a>
+              ) : <span />}
+              {seriesNext ? (
+                <a href={buildPostPath(seriesNext.id)} class="series-link series-next">
+                  {seriesNext.title}
+                  <Icon name="lucide:chevron-right" width={14} height={14} />
+                </a>
+              ) : <span />}
+            </div>
+          </div>
+        )}
+      </section>
+    )}
+
+    {/* 相关推荐 — 继续阅读的路径（aside slot：immersive 回流底部 / media 右侧栏） */}
+    {relatedPosts.length > 0 && (
+      <section slot="aside" class="article-section article-section--aside">
+        <h2 class="section-heading">
+          <Icon name="lucide:sparkles" width={20} height={20} class="section-icon" />
+          继续阅读
+        </h2>
+        <div class="related-grid related-grid--aside">
+          {relatedPosts.map(post => (
+            <a href={buildPostPath(post.id)} class="related-card group/rc">
+              <div class="related-card-title group-hover/rc:text-brand transition-colors">{post.title}</div>
+              {post.summary && (
+                <p class="related-card-summary">{post.summary}</p>
+              )}
+              <div class="related-card-tags">
+                {post.tags.slice(0, 2).map((t: string) => (
+                  <span class="related-tag">#{t}</span>
+                ))}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* 评论区 — 反馈闭环 */}
+    <GiscusWidget />
+
+    {/* 标签 — 文末标注主题 */}
+    {entry.data.tags.length > 0 && (
+      <div class="article-tags-end">
+        {entry.data.tags.map((tag: string) => (
+          <span class="article-tag-end">#{tag}</span>
+        ))}
+      </div>
+    )}
+
+    {/* 底部 — 阅读结束 */}
+    <footer class="article-footer">
+      <a href={POSTS} class="footer-back">
+        <Icon name="lucide:arrow-left" width={14} height={14} />
+        返回列表
+      </a>
+
+      {/* 生产资料所有权：一等公民的 Markdown 导出 */}
+      <a href={`/api/posts/${entry.id}/export`} class="footer-export" title="将这篇内容作为生产资料导出为 Markdown 手稿">
+        <Icon name="lucide:download" width={13} height={13} />
+        <span>导出 Markdown</span>
+      </a>
+
+      <div class="footer-like">
+        <LikeCounter pagePath={buildPostPath(entry.id)} />
+      </div>
+    </footer>
+  <AdminEditBar slug={entry.id} visibility={entry.data.visibility ?? (entry.data.published ? 'public' : 'draft')} layout={layout} />
+  <VersionHistory />
+	</ContentShell>
+
+<style>
+  /* ===== 面包屑 ===== */
+  .article-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.7;
+  }
+
+  /* ===== 创作者落款时空区 ===== */
+  .oriental-meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: -1rem 0 2rem;
+  }
+
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    background: color-mix(in srgb, var(--color-parchment-dim) 3%, transparent);
+    font-size: 0.72rem;
+    line-height: 1;
+    color: var(--color-parchment-dim);
+    transition: all 0.2s ease;
+  }
+
+  .meta-chip:hover {
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 4%, transparent);
+  }
+
+  .chip-icon {
+    opacity: 0.8;
+  }
+
+  .chip-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.55;
+    margin-right: 0.15rem;
+  }
+
+  .chip-value {
+    color: var(--color-parchment);
+    font-weight: 500;
+  }
+
+  /* P3-A 阅读遥测隐私告知：轻量、不阻断。
+     不加 opacity——parchment-dim 自身 ~4.57:1 过 WCAG AA，
+     叠 opacity:0.6 会把有效对比度拉到 ~2.7:1，跌破 AA 4.5:1 阈值。 */
+  .telemetry-privacy-note {
+    margin: 0.75rem 0 2rem;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--color-parchment-dim);
+    font-family: var(--font-mono);
+  }
+
+  .breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--color-brand);
+  }
+
+  .breadcrumb-sep {
+    opacity: 0.4;
+  }
+
+  .breadcrumb-date {
+    opacity: 0.6;
+  }
+
+  .breadcrumb-reading-time {
+    opacity: 0.4;
+    font-size: 0.7rem;
+  }
+
+  /* ===== 内容声明栏 ===== */
+  .content-declaration {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-parchment-dim);
+    width: 100%;
+  }
+
+  .declaration-label {
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+  }
+
+  .declaration-canvas-link {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-left: auto;
+    font-size: 0.75rem;
+  }
+
+  .declaration-canvas-link:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .declaration-sep {
+    opacity: 0.3;
+  }
+
+  .declaration-status-wrap {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ===== 标题 ===== */
+  .article-title {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 850;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--color-parchment);
+    margin-bottom: 1rem;
+  }
+
+  /* ===== 标签（文末） ===== */
+  .article-tags-end {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 8%, transparent);
+  }
+
+  .article-tag-end {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+  }
+
+  /* ===== 封面 ===== */
+  .article-cover {
+    margin: 0 -2rem 2.5rem;
+    aspect-ratio: 21/9;
+    overflow: hidden;
+    border-radius: 1rem;
+  }
+
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ===== 摘要 ===== */
+  .article-summary {
+    margin-bottom: 2.5rem;
+    padding-left: 1.5rem;
+    border-left: 3px solid color-mix(in srgb, var(--color-brand) 40%, transparent);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--color-parchment-dim);
+    font-style: italic;
+  }
+
+  /* ===== 分区（视频/资源）===== */
+  .article-section {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-parchment);
+    margin-bottom: 1rem;
+  }
+
+  .section-icon {
+    color: var(--color-brand);
+  }
+
+  /* ===== 视频 ===== */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .video-card {
+    text-decoration: none;
+    display: block;
+  }
+
+  .video-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    border-radius: 0.75rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .video-card:hover .video-card-inner {
+    border-color: color-mix(in srgb, var(--color-brand) 25%, transparent);
+    background: var(--color-brand-glow);
+  }
+
+  .video-platform {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--color-parchment-dim) 6%, transparent);
+    color: var(--color-parchment-dim);
+    flex-shrink: 0;
+  }
+
+  .video-card:hover .video-platform {
+    color: var(--color-brand);
+  }
+
+  .video-info {
+    min-width: 0;
+  }
+
+  .video-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-parchment);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .video-platform-name {
+    font-size: 0.7rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+    text-transform: capitalize;
+  }
+
+  /* ===== 资源 ===== */
+  .resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* ===== 版本 & 系列导航 ===== */
+  .article-nav-links {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .nav-block {
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--color-parchment-dim) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 8%, transparent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  .nav-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-parchment-dim);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .version-chain {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .version-current {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    background: color-mix(in srgb, var(--color-brand) 15%, transparent);
+    color: var(--color-brand);
+    border: 1px solid color-mix(in srgb, var(--color-brand) 25%, transparent);
+  }
+
+  .version-link {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 12%, transparent);
+    transition: all 0.2s ease;
+  }
+
+  .version-link:hover {
+    color: var(--color-brand);
+    border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
+  }
+
+  .series-progress {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    opacity: 0.5;
+    margin-left: auto;
+  }
+
+  .series-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .series-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+  }
+
+  .series-link:hover {
+    color: var(--color-brand);
+  }
+
+  .series-next {
+    margin-left: auto;
+    text-align: right;
+    flex-direction: row-reverse;
+  }
+
+  /* ===== 底部 ===== */
+  .article-footer {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-back:hover {
+    color: var(--color-brand);
+  }
+
+  .footer-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-parchment-dim);
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.1s ease;
+    cursor: pointer;
+  }
+
+  .footer-export:hover {
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+  }
+
+  .footer-export:active {
+    transform: scale(0.97);
+  }
+
+  .footer-like {
+    transform: scale(1.1);
+    transform-origin: right center;
+  }
+
+  .declaration-wordmark-size {
+    font-size: 0.72rem !important;
+    display: inline-flex;
+    align-items: flex-end;
+  }
+
+  .declaration-status-wrap {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* ===== 相关推荐 ===== */
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .related-card {
+    padding: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 10%, transparent);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .related-card:hover {
+    border-color: color-mix(in srgb, var(--color-brand) 25%, transparent);
+    background: var(--color-brand-glow);
+  }
+
+  .related-card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-parchment);
+    margin-bottom: 0.4rem;
+  }
+
+  .related-card-summary {
+    font-size: 0.75rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.6;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .related-card-tags {
+    display: flex;
+    gap: 0.3rem;
+  }
+
+  .related-tag {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+  }
+
+  /* media 模式右侧栏：推荐卡片纵向单列 */
+  .related-grid--aside {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .article-section--aside {
+    margin-top: 0;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 640px) {
+    .article-cover {
+      margin: 0 -1rem 2rem;
+      border-radius: 0.75rem;
+    }
+
+    .video-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ===== NLS 共创空间 (NLS Co-creation Hub) ===== */
+  .nls-co-create-hub {
+    margin: 4rem 0 3rem;
+    padding: 2.5rem 1.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: color-mix(in srgb, var(--color-parchment-dim) 1.5%, transparent);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* 引力圆点交互 */
+  .collab-dots-interactive {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 0.75rem;
+    height: 24px;
+    width: 60px;
+  }
+
+  .collab-dot-main {
+    font-size: 1.4rem;
+    color: var(--color-brand);
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), color 0.4s;
+    line-height: 1;
+  }
+
+  .collab-dot-sub {
+    font-size: 0.9rem;
+    color: var(--color-brand);
+    margin-left: 20px;
+    transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    opacity: 0.45;
+    line-height: 1;
+  }
+
+  .collab-dots-interactive.attracted .collab-dot-sub {
+    margin-left: 7px;
+    opacity: 1;
+    transform: scale(1.3);
+  }
+
+  .collab-dots-interactive.merged .collab-dot-sub {
+    margin-left: 2px;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .collab-ripple {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--color-brand);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1);
+    top: 50%;
+    left: 50%;
+    margin-top: -4px;
+    margin-left: -4px;
+  }
+
+  .animate-ripple {
+    animation: ripple-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes ripple-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(12);
+      opacity: 0;
+      border-width: 0.5px;
+    }
+  }
+
+  .collab-invite {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-parchment);
+    margin: 0 0 1.5rem;
+    line-height: 1.5;
+  }
+
+  .hub-collab-bar {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .hub-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .hub-actions {
+      flex-direction: column;
+    }
+    .hub-actions .hub-btn {
+      width: 100%;
+    }
+  }
+
+  .hub-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 1rem;
+    border-radius: 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .hub-btn-primary {
+    background: var(--brand-purple, var(--color-brand, #6E5BFF));
+    color: #ffffff;
+    border: 1px solid transparent;
+  }
+
+  .hub-btn-primary:hover {
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 85%, #ffffff);
+    box-shadow: 0 4px 12px rgba(110, 91, 255, 0.25);
+  }
+
+  .hub-btn-secondary {
+    background: transparent;
+    color: var(--color-parchment-dim);
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 20%, transparent);
+  }
+
+  .hub-btn-secondary:hover {
+    border-color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 5%, transparent);
+  }
+
+  /* ===== 靠近弹窗 (Collaboration Dialog) ===== */
+  .collab-dialog {
+    border: none;
+    border-radius: 1.25rem;
+    padding: 0;
+    max-width: 460px;
+    width: calc(100% - 2rem);
+    background: var(--color-inner-bg);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    color: var(--color-parchment);
+  }
+
+  .collab-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .collab-dialog-content {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .collab-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .collab-dialog-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .collab-dialog-close {
+    background: transparent;
+    border: none;
+    color: var(--color-parchment-dim);
+    cursor: pointer;
+    padding: 0.2rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .collab-dialog-close:hover {
+    color: var(--color-parchment);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .collab-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .collab-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .collab-form-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-parchment-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .collab-form-group input,
+  .collab-form-group textarea {
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-parchment);
+    font-family: inherit;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .collab-form-group input:focus,
+  .collab-form-group textarea:focus {
+    outline: none;
+    border-color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 10px rgba(110, 91, 255, 0.15);
+  }
+
+  .collab-form-status {
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .status-loading {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-parchment-dim);
+  }
+
+  .status-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: rgb(52, 211, 153);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .status-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgb(248, 113, 113);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  .collab-actions-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .collab-submit-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: none;
+    background: var(--brand-purple, var(--color-brand, #6E5BFF));
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .collab-submit-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 85%, #ffffff);
+    box-shadow: 0 4px 15px rgba(110, 91, 255, 0.4);
+  }
+
+  .collab-submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .collab-canvas-link-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-parchment-dim) 30%, transparent);
+    background: transparent;
+    color: var(--color-parchment);
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .collab-canvas-link-btn:hover {
+    border-color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    color: var(--brand-purple, var(--color-brand, #6E5BFF));
+    background: color-mix(in srgb, var(--brand-purple, var(--color-brand, #6E5BFF)) 8%, transparent);
+  }
+</style>
+
+<script>
+  function setupCollaborate() {
+    const bar = document.getElementById('collab-entry-bar');
+    if (!bar) return;
+
+    const contentId = bar.dataset.contentId;
+    if (!contentId) return;
+
+    const countText = document.getElementById('collab-count-text');
+    const joinBtn = document.getElementById('collab-join-btn');
+    const dialog = document.getElementById('collab-dialog') as HTMLDialogElement | null;
+    const closeBtn = document.getElementById('collab-dialog-close');
+    const form = document.getElementById('collab-form') as HTMLFormElement | null;
+    const formStatus = document.getElementById('collab-form-status');
+    const submitBtn = document.getElementById('collab-submit-btn');
+    
+    const interactiveDots = document.getElementById('collab-dots-interactive');
+    const ripple = document.getElementById('collab-ripple');
+
+    // 0. 引力悬浮动效
+    joinBtn?.addEventListener('mouseenter', () => {
+      interactiveDots?.classList.add('attracted');
+    });
+    joinBtn?.addEventListener('mouseleave', () => {
+      interactiveDots?.classList.remove('attracted');
+    });
+
+    // 1. 获取同频者数据
+    async function loadCollaboratorCount() {
+      try {
+        const res = await fetch(`/api/posts/${encodeURIComponent(contentId)}/collaborate`);
+        if (res.ok) {
+          const data = await res.json();
+          const count = data.count || 0;
+          if (countText) {
+            countText.textContent = count > 0 
+              ? `当前有 ${count} 位同频者正在靠近` 
+              : '目前尚无同频者靠近，成为第一个靠近的人';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load collaborator count:', err);
+      }
+    }
+
+    loadCollaboratorCount();
+
+    // 2. 弹窗控制
+    joinBtn?.addEventListener('click', () => {
+      dialog?.showModal();
+    });
+
+    closeBtn?.addEventListener('click', () => {
+      dialog?.close();
+    });
+
+    // 点击背景关闭 dialog
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        dialog.close();
+      }
+    });
+
+    // 3. 提交表单
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!formStatus || !submitBtn) return;
+
+      const formData = new FormData(form);
+      const role = formData.get('role')?.toString().trim();
+      const suggestion = formData.get('suggestion')?.toString().trim();
+
+      formStatus.hidden = false;
+      formStatus.textContent = '正在确认靠近...';
+      formStatus.className = 'collab-form-status status-loading';
+      
+      const span = submitBtn.querySelector('span');
+      if (span) span.textContent = '提交中...';
+      const submitButton = submitBtn as HTMLButtonElement;
+      submitButton.disabled = true;
+
+      try {
+        const res = await fetch(`/api/posts/${encodeURIComponent(contentId)}/collaborate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role, suggestion })
+        });
+
+        const result = await res.json();
+        if (res.ok && result.ok) {
+          formStatus.textContent = '靠近成功！同频信号已发送给创作者。';
+          formStatus.className = 'collab-form-status status-success';
+          form.reset();
+          
+          // 触发合并和涟漪动画
+          if (interactiveDots) {
+            interactiveDots.classList.remove('attracted');
+            interactiveDots.classList.add('merged');
+          }
+          if (ripple) {
+            ripple.classList.add('animate-ripple');
+          }
+          
+          setTimeout(() => {
+            dialog?.close();
+            formStatus.hidden = true;
+            loadCollaboratorCount();
+            
+            // 重置动画状态
+            interactiveDots?.classList.remove('merged');
+            ripple?.classList.remove('animate-ripple');
+          }, 1800);
+        } else {
+          formStatus.textContent = result.error || '靠近失败，请稍后再试。';
+          formStatus.className = 'collab-form-status status-error';
+        }
+      } catch (err) {
+        formStatus.textContent = '网络错误，请检查网络连接。';
+        formStatus.className = 'collab-form-status status-error';
+      } finally {
+        if (span) span.textContent = '确认靠近';
+        submitButton.disabled = false;
+      }
+    });
+  }
+
+  // 挂载加载逻辑
+  document.addEventListener('astro:page-load', setupCollaborate);
+  setupCollaborate();
+</script>
+
+

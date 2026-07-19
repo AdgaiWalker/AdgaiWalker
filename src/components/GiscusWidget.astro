@@ -1,0 +1,178 @@
+---
+/**
+ * GiscusWidget — 文章页评论组件
+ * 基于 GitHub Discussions，配置通过环境变量注入
+ * 主题跟随 walker-theme-change 事件自动切换
+ * 0 评论时折叠为轻量 CTA，点击展开
+ */
+---
+
+{import.meta.env.PUBLIC_GISCUS_REPO && (
+  <div class="giscus-section" id="giscus-section">
+    {/* 轻量 CTA — 初始显示，Giscus 加载后自动隐藏 */}
+    <button class="giscus-cta" id="giscus-cta">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>写第一条评论？</span>
+    </button>
+    <div class="giscus-wrapper" id="giscus-container">
+      <script
+        is:inline
+        src="https://giscus.app/client.js"
+        data-repo={import.meta.env.PUBLIC_GISCUS_REPO}
+        data-repo-id={import.meta.env.PUBLIC_GISCUS_REPO_ID}
+        data-category={import.meta.env.PUBLIC_GISCUS_CATEGORY}
+        data-category-id={import.meta.env.PUBLIC_GISCUS_CATEGORY_ID}
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="light"
+        data-lang="zh-CN"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async
+      ></script>
+    </div>
+  </div>
+)}
+
+{!import.meta.env.PUBLIC_GISCUS_REPO && (
+  <div class="giscus-placeholder panel-glass p-6 rounded-2xl text-center">
+    <p class="text-xs text-parchment-dim/40">评论系统配置中</p>
+  </div>
+)}
+
+<script>
+  let giscusAbort: AbortController | null = null;
+  let giscusMessageTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function setupGiscusTheme() {
+    const savedTheme = localStorage.getItem('walker-theme') || 'nature';
+    const giscusTheme = ['aurora', 'sunset', 'mint'].includes(savedTheme) ? 'dark_dimmed' : 'light';
+
+    const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement | null;
+    if (iframe) {
+      iframe.contentWindow?.postMessage(
+        { giscus: { setConfig: { theme: giscusTheme } } },
+        'https://giscus.app'
+      );
+    }
+  }
+
+  function setupGiscusCollapse(signal: AbortSignal) {
+    const cta = document.getElementById('giscus-cta');
+    const container = document.getElementById('giscus-container');
+    const section = document.getElementById('giscus-section');
+    if (!cta || !container || !section) return;
+
+    // CTA 点击 → 展开评论区
+    cta.addEventListener('click', () => {
+      cta.style.display = 'none';
+      container.style.display = 'block';
+      section.classList.add('giscus-expanded');
+    }, { signal });
+  }
+
+  function initGiscus() {
+    giscusAbort?.abort();
+    giscusAbort = new AbortController();
+    const { signal } = giscusAbort;
+
+    // 主题切换时同步 Giscus
+    document.addEventListener('walker-theme-change', ((e: CustomEvent) => {
+      const themeName = e.detail;
+      const giscusTheme = ['aurora', 'sunset', 'mint'].includes(themeName) ? 'dark_dimmed' : 'light';
+
+      const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement | null;
+      if (iframe) {
+        iframe.contentWindow?.postMessage(
+          { giscus: { setConfig: { theme: giscusTheme } } },
+          'https://giscus.app'
+        );
+      }
+    }) as EventListener, { signal });
+
+    // Giscus iframe 加载完成后同步主题 + 处理折叠
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'https://giscus.app') return;
+      if (!(typeof event.data === 'object' && event.data.giscus)) return;
+      setupGiscusTheme();
+
+      const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
+      if (iframe) {
+        if (giscusMessageTimer !== null) clearTimeout(giscusMessageTimer);
+        giscusMessageTimer = setTimeout(() => {
+          giscusMessageTimer = null;
+          const commentCount = document.querySelector('.giscus-wrapper h4');
+          if (commentCount) {
+            const match = commentCount.textContent?.match(/(\d+)/);
+            const count = match ? parseInt(match[1]) : 0;
+            if (count > 0) {
+              const cta = document.getElementById('giscus-cta');
+              if (cta) cta.style.display = 'none';
+            }
+          }
+        }, 500);
+      }
+    }, { signal });
+
+    setupGiscusTheme();
+    setupGiscusCollapse(signal);
+  }
+
+  initGiscus();
+  document.addEventListener('astro:page-load', initGiscus);
+  document.addEventListener('astro:before-swap', () => {
+    giscusAbort?.abort();
+    giscusAbort = null;
+    if (giscusMessageTimer !== null) {
+      clearTimeout(giscusMessageTimer);
+      giscusMessageTimer = null;
+    }
+  });
+</script>
+
+<style>
+  .giscus-section {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-nav-border);
+  }
+
+  .giscus-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 1rem;
+    border: 1px dashed color-mix(in srgb, var(--color-parchment-dim) 15%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--color-parchment-dim) 3%, transparent);
+    color: var(--color-parchment-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .giscus-cta:hover {
+    background: color-mix(in srgb, var(--color-brand) 5%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand) 25%, transparent);
+    color: var(--color-brand);
+  }
+
+  /* CTA 可见时隐藏 Giscus 容器 */
+  .giscus-section:not(.giscus-expanded) .giscus-wrapper {
+    display: none;
+  }
+
+  .giscus-wrapper {
+    margin-top: 0;
+  }
+
+  /* 有评论时 Giscus 自动展开，隐藏 CTA */
+  .giscus-section.giscus-expanded .giscus-cta {
+    display: none;
+  }
+</style>

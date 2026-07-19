@@ -1,0 +1,646 @@
+---
+/**
+ * GreetingCard — 首页头像互动卡
+ * 悬停：气泡动画吸引注意
+ * 点击卡片：弹跳 + 流星 + 悬浮点子卡（弹性弹出）
+ * 真实点子：显示「看看方案 →」按钮，跳转到 /ideas 页对应卡牌
+ */
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import { SITE_EMAIL } from '@/shared/constants';
+import { IDEAS } from '@/shared/routes';
+import avatar from '/public/images/秋知（我的头像）.jpg';
+
+interface Props {
+  sparks: { title: string; slug: string | null; isReal: boolean }[];
+}
+
+const { sparks } = Astro.props;
+const sparksJson = JSON.stringify(sparks);
+---
+
+<!-- 服务端数据传递给客户端脚本 -->
+<meta name="greeting-sparks" content={sparksJson} />
+<meta name="greeting-ideas-route" content={IDEAS} />
+
+<!-- 流星容器（全屏） -->
+<div id="spark-meteor-container" class="fixed inset-0 z-40 overflow-hidden pointer-events-none"></div>
+
+<!-- 悬浮点子卡（定位在身份卡下方） -->
+<div class="idea-popup" id="idea-popup">
+  <div class="idea-popup-inner">
+    <div class="idea-popup-header">
+      <Icon name="lucide:sparkles" width={14} height={14} class="idea-popup-icon" />
+      <span class="idea-popup-label">点子开了！</span>
+    </div>
+    <p class="idea-popup-text" id="idea-popup-text"></p>
+    <!-- 真实点子专属：看看方案 -->
+    <a class="idea-popup-detail" id="idea-popup-detail" href="#">
+      看看方案
+      <Icon name="lucide:arrow-right" width={12} height={12} />
+    </a>
+    <button class="idea-popup-again" id="idea-popup-again">再点一个 ✨</button>
+  </div>
+</div>
+
+<div class="greeting-card panel-glass p-6 py-7 flex flex-col items-center justify-center text-center h-full rounded-[40px] pointer-events-auto relative select-none" id="greeting-card" role="button" tabindex="0" aria-label="点我抽个点子">
+
+  <!-- 头像与气泡区域 -->
+  <div class="relative flex flex-col items-center mb-4 shrink-0">
+    <!-- 悬停气泡 -->
+    <div class="absolute bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 scale-75 opacity-0 pointer-events-none z-30 px-4 py-2.5 rounded-2xl backdrop-blur-xl shadow-lg transition-all duration-300 ease-out w-max max-w-[240px] sm:max-w-[280px] text-center" id="reaction-bubble" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border: 1.5px solid var(--color-brand); box-shadow: 0 10px 25px -5px var(--color-brand-glow); transition-property: opacity, transform;">
+      <span class="text-[12.5px] font-body font-bold leading-normal inline-block transition-all duration-300" id="reaction-text" style="color: var(--color-brand);">探索中</span>
+      <div class="absolute bottom-[-5.5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 rotate-45 border-r border-b" id="reaction-arrow" style="background: var(--color-card, rgba(255, 255, 255, 0.95)); border-color: var(--color-brand);"></div>
+    </div>
+
+    <!-- 头像 -->
+    <div class="avatar-ring w-[84px] h-[84px] rounded-full flex items-center justify-center relative overflow-hidden border-2 shadow-[0_4px_16px_var(--color-brand-glow)] shrink-0 transition-all duration-500" id="avatar-ring" style="border-color: var(--color-border, #ffffff);">
+      <Image src={avatar} alt="秋知" width={84} height={84} class="w-full h-full object-cover transition-transform duration-500" id="avatar-img" />
+      <div class="absolute inset-0 rounded-full opacity-0 transition-opacity duration-500 pointer-events-none" id="avatar-glow" style="background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-brand) 25%, transparent) 0%, transparent 70%);"></div>
+    </div>
+  </div>
+
+  <!-- 粒子容器 -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-[40px] z-20" id="particle-container"></div>
+
+  <!-- 动态问候语 -->
+  <div class="text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-1.5 transition-all duration-500" id="greeting-time-tag" style="color: var(--color-brand);">
+    GOOD MORNING
+  </div>
+
+  <!-- 问候语内容 -->
+  <h2 class="font-heading text-parchment text-[17px] font-medium leading-relaxed tracking-wide transition-opacity duration-300" id="greeting-heading">
+    我是<span class="font-bold text-[20px] mx-1" style="color: var(--color-brand);">秋知</span>，很高兴认识你！
+  </h2>
+
+  <div class="mt-2 max-w-[200px]">
+    <p class="text-parchment-dim/50 text-[11px] font-body leading-relaxed" id="subtitle-origin">
+      用 AI 走自己的路 · 存点子
+    </p>
+  </div>
+
+  <!-- 社交图标 -->
+  <div class="flex items-center justify-center gap-3 mt-4">
+    <a href="https://space.bilibili.com/1029612512" target="_blank" rel="noopener noreferrer" class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="哔哩哔哩">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(0,161,214,0.08);">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#00a1d6"><path d="M17.813 4.653h.854c1.51.054 2.769.578 3.773 1.574 1.004.995 1.524 2.249 1.56 3.76v7.36c-.036 1.51-.556 2.769-1.56 3.773s-2.262 1.524-3.773 1.56H5.333c-1.51-.036-2.769-.556-3.773-1.56S.036 18.858 0 17.347v-7.36c.036-1.511.556-2.765 1.56-3.76 1.004-.996 2.262-1.52 3.773-1.574h.774l-1.174-1.12a1.234 1.234 0 0 1-.373-.906c0-.356.124-.658.373-.907l.027-.027c.267-.249.573-.373.92-.373.347 0 .653.124.92.373L9.653 4.44c.071.071.134.142.187.213h4.267a.836.836 0 0 1 .16-.213l2.853-2.747c.267-.249.573-.373.92-.373.347 0 .662.124.929.373.267.249.391.551.391.907 0 .355-.124.657-.373.906zM5.333 7.24c-.746.018-1.373.276-1.88.773-.506.498-.769 1.13-.786 1.894v7.52c.017.764.28 1.395.786 1.893.507.498 1.134.756 1.88.773h13.334c.746-.017 1.373-.275 1.88-.773.506-.498.769-1.129.786-1.893v-7.52c-.017-.765-.28-1.396-.786-1.894-.507-.497-1.134-.755-1.88-.773zM8 11.107c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c0-.373.129-.689.386-.947.258-.257.574-.386.947-.386zm8 0c.373 0 .684.124.933.373.25.249.383.569.4.96v1.173c-.017.391-.15.711-.4.96-.249.25-.56.374-.933.374s-.684-.125-.933-.374c-.25-.249-.383-.569-.4-.96V12.44c.017-.391.15-.711.4-.96.249-.249.56-.373.933-.373Z"/></svg>
+      </span>
+      <span class="social-label">B站</span>
+    </a>
+    <a href="https://xiaohongshu.com" target="_blank" rel="noopener noreferrer" class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="小红书">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(255,36,66,0.08);">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#ff2442"><path d="M22.405 9.879c.002.016.01.02.07.019h.725a.797.797 0 0 0 .78-.972.794.794 0 0 0-.884-.618.795.795 0 0 0-.692.794c0 .101-.002.666.001.777zm-11.509 4.808c-.203.001-1.353.004-1.685.003a2.528 2.528 0 0 1-.766-.126.025.025 0 0 0-.03.014L7.7 16.127a.025.025 0 0 0 .01.032c.111.06.336.124.495.124.66.01 1.32.002 1.981 0 .01 0 .02-.006.023-.015l.712-1.545a.025.025 0 0 0-.024-.036zM.477 9.91c-.071 0-.076.002-.076.01a.834.834 0 0 0-.01.08c-.027.397-.038.495-.234 3.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681 1.523.787 1.74.008.015.011.02.017.02.008 0 .033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029 0-.033-.03-.034zm7.203 3.757a1.427 1.427 0 0 1-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443 0 0 0-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153 1.964.233 2.946.05.4.186 1.085.487 1.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126 0 0 1-.116-.178l1.178-2.625a.025.025 0 0 0-.023-.035l-1.318-.003a.148.148 0 0 1-.135-.21l.876-1.954a.025.025 0 0 0-.023-.035h-1.56c-.01 0-.02.006-.024.015l-.926 2.068c-.085.169-.314.634-.399.938a.534.534 0 0 0-.02.191.46.46 0 0 0 .23.378.981.981 0 0 0 .46.119h.59c.041 0-.688 1.482-.834 1.972a.53.53 0 0 0-.023.172.465.465 0 0 0 .23.398c.15.092.342.12.475.12l1.66-.001c.01 0 .02-.006.023-.015l.575-1.28a.025.025 0 0 0-.024-.035zm-6.93-4.937H3.1a.032.032 0 0 0-.034.033c0 1.048-.01 2.795-.01 6.829 0 .288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465 1.064.555 1.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33 0-4.66-.007-6.991a.032.032 0 0 0-.032-.032zm11.784 6.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08 0 .075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064 0-.075-.006-.075.073v1.445c0 .083-.006.077.08.077h.854c.075 0 .07-.004.07.07v4.624c0 .095.008.084-.085.084-.37 0-1.11-.002-1.304 0-.048.001-.06.03-.06.03l-.697 1.519s-.014.025-.008.036c.006.01.013.008.058.008 1.748.003 3.495.002 5.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0 .013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303 0-.072-.006-.071.07-.07l.733-.003c.041 0 .081.002.12.015.093.025.16.107.165.204.006.431.002 1.153.001 1.153zm2.67.244a1.953 1.953 0 0 0-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823 1.823 0 0 0-.153-.53 1.533 1.533 0 0 0-.677-.71 2.167 2.167 0 0 0-1-.258c-.153-.003-.567 0-.72 0-.07 0-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016 0-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0 .09-.004.082.082.082h.913c.082 0 .072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068 0-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082 0 .076-.006.076.079v3.225c0 .088-.007.081.082.081h1.43c.09 0 .082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098 0 .191.02.28.061a.46.46 0 0 1 .274.407c.008.395.003.79.003 1.185 0 .259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57 1.303a.045.045 0 0 0 .04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03 2.03 0 0 0 .408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38 0 .078-.029-.641-.724-.998z"/></svg>
+      </span>
+      <span class="social-label">小红书</span>
+    </a>
+    <a href="https://douyin.com" target="_blank" rel="noopener noreferrer" class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="抖音">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(0,0,0,0.04);">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#000"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+      </span>
+      <span class="social-label">抖音</span>
+    </a>
+    <a href={`mailto:${SITE_EMAIL}`} class="social-icon-btn flex flex-col items-center gap-1 no-underline transition-all" title="Email">
+      <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: color-mix(in srgb, var(--color-brand) 8%, transparent);">
+        <Icon name="lucide:mail" width={14} height={14} style="color: var(--color-brand);" />
+      </span>
+      <span class="social-label">邮箱</span>
+    </a>
+  </div>
+</div>
+
+<style>
+  /* 悬停：头像光晕 + 微放大 */
+  .greeting-card:hover .avatar-ring {
+    box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand) 20%, transparent), 0 0 48px color-mix(in srgb, var(--color-brand) 8%, transparent);
+  }
+  .greeting-card:hover #avatar-glow { opacity: 1; }
+  .greeting-card:hover #avatar-img { transform: scale(1.06); }
+
+  /* 悬停气泡 */
+  #reaction-bubble {
+    transform: translate(-50%, 0) scale(0.75);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  }
+  .greeting-card:hover #reaction-bubble {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1);
+  }
+  @keyframes mystery-pulse {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 1; }
+  }
+  .greeting-card:hover #reaction-text {
+    animation: mystery-pulse 1s ease-in-out infinite;
+  }
+
+  /* !!! 头像弹跳 */
+  @keyframes avatar-bounce {
+    0% { transform: scale(1.06); }
+    25% { transform: scale(0.9); }
+    55% { transform: scale(1.14); }
+    75% { transform: scale(0.98); }
+    100% { transform: scale(1.06); }
+  }
+
+  /* 粒子 */
+  @keyframes particle-fly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
+  }
+  .surprise-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-fly var(--duration) ease-out forwards;
+  }
+
+  /* 卡片闪光 */
+  @keyframes card-flash {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  #card-flash-overlay {
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    pointer-events: none; z-index: 15; opacity: 0;
+  }
+  #card-flash-overlay.active {
+    animation: card-flash 0.6s ease-out forwards;
+    background: radial-gradient(circle at 50% 40%, rgba(251, 191, 36, 0.14) 0%, transparent 70%);
+  }
+
+  /* 流星 */
+  :global(.spark-meteor) {
+    position: absolute;
+    width: 3.5px; height: 90px;
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--color-brand) 95%, transparent), transparent);
+    transform: rotate(-45deg);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-brand) 80%, transparent));
+    animation: meteor-slide 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes meteor-slide {
+    0% { transform: translate3d(200px, -200px, 0) rotate(-45deg); opacity: 1; }
+    100% { transform: translate3d(-600px, 600px, 0) rotate(-45deg); opacity: 0; }
+  }
+
+  /* ===== 悬浮点子卡 ===== */
+  .idea-popup {
+    position: absolute;
+    left: 50%;
+    bottom: -12px;
+    transform: translate(-50%, 100%) scale(0.9);
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 300px;
+    max-width: 90vw;
+  }
+  .idea-popup.visible {
+    opacity: 1;
+    transform: translate(-50%, 100%) scale(1);
+    pointer-events: auto;
+  }
+  .idea-popup-inner {
+    padding: 1.1rem 1.3rem;
+    border-radius: 1.25rem;
+    background: var(--color-card, rgba(255, 255, 255, 0.92));
+    backdrop-filter: blur(24px);
+    border: 1.5px solid color-mix(in srgb, var(--color-brand) 18%, transparent);
+    box-shadow:
+      0 12px 32px -4px color-mix(in srgb, var(--color-brand) 12%, transparent),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+    text-align: center;
+    position: relative;
+  }
+  /* 顶部小三角 */
+  .idea-popup-inner::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 10px; height: 10px;
+    background: var(--color-card, rgba(255, 255, 255, 0.92));
+    border-left: 1.5px solid color-mix(in srgb, var(--color-brand) 18%, transparent);
+    border-top: 1.5px solid color-mix(in srgb, var(--color-brand) 18%, transparent);
+  }
+
+  .idea-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-bottom: 0.6rem;
+  }
+  .idea-popup-icon {
+    color: var(--color-brand, #35bfab);
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.15); }
+  }
+  .idea-popup-label {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--color-brand, #35bfab);
+    text-transform: uppercase;
+  }
+
+  .idea-popup-text {
+    font-size: 0.82rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--color-parchment, #3f3027);
+    min-height: 2.8em;
+    white-space: pre-wrap;
+  }
+  .idea-popup-text.pop-in {
+    animation: text-spring-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes text-spring-pop {
+    0% { opacity: 0; transform: scale(0.3); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* 看看方案（真实点子专属，主操作按钮） */
+  .idea-popup-detail {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 0.7rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    background: var(--color-brand, #35bfab);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-family: var(--font-body);
+    font-weight: 700;
+    text-decoration: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .idea-popup-detail.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .idea-popup-detail:hover {
+    background: var(--color-brand-secondary, #f59e0b);
+    box-shadow: 0 4px 12px var(--color-brand-glow);
+  }
+
+  .idea-popup-again {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-brand) 20%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 6%, transparent);
+    color: var(--color-brand, #35bfab);
+    font-size: 0.72rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+  }
+  .idea-popup-again.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .idea-popup-again:hover {
+    background: color-mix(in srgb, var(--color-brand) 12%, transparent);
+  }
+
+  /* 社交图标 */
+  .social-icon-btn { transition: transform 0.2s ease; }
+  .social-icon-btn:hover { transform: scale(1.08); }
+  .social-label {
+    font-size: 0.55rem;
+    color: var(--color-parchment-dim);
+    opacity: 0.5;
+    letter-spacing: 0.02em;
+    transition: opacity 0.2s ease;
+  }
+  .social-icon-btn:hover .social-label { opacity: 0.8; }
+</style>
+
+<script>
+  const ALL_SPARKS: { title: string; slug: string | null; isReal: boolean }[] = JSON.parse(document.querySelector('meta[name=greeting-sparks]')?.getAttribute('content') ?? '[]');
+  const IDEAS_ROUTE = document.querySelector('meta[name=greeting-ideas-route]')?.getAttribute('content') ?? '/ideas';
+
+  // === 问候语 ===
+  const WALKER_STATES = ['探索中', '思考中', '创造中'];
+  const stateIndex = Math.floor(Math.random() * WALKER_STATES.length);
+
+  const SURPRISE_QUOTES = [
+    "你发现了我.看来你是个好奇心很强的人.",
+    "秋知正在秘密研究用 AI 征服世界.的代码.",
+    "你今天的运势.写代码零 Bug.点子源源不断.",
+    "其实这里什么也没有.但你已经看到了.",
+    "来自未来的鼓励.继续走自己的路.",
+    "这个世界需要更多像你一样好奇的人.",
+    "藏在头像里的秘密.秋知其实是个 AI.",
+    "恭喜触发彩蛋.送你一整天的灵感.",
+    "听说划到这里的人.今天运气都不会太差.",
+  ];
+
+  function updateGreeting() {
+    const hour = new Date().getHours();
+    const tagEl = document.getElementById('greeting-time-tag');
+    if (!tagEl) return;
+    const greetings = [
+      { text: 'GOOD MORNING', range: [5, 12] },
+      { text: 'GOOD AFTERNOON', range: [12, 18] },
+      { text: 'GOOD EVENING', range: [18, 22] },
+      { text: 'GOOD NIGHT', range: [22, 24] },
+      { text: 'GOOD NIGHT', range: [0, 5] },
+    ];
+    const g = greetings.find(g => hour >= g.range[0] && hour < g.range[1]) ?? greetings[0];
+    tagEl.textContent = g.text;
+  }
+
+  let greetingAbort: AbortController | null = null;
+  let inSequence = false;
+  let sequenceTimers: ReturnType<typeof setTimeout>[] = [];
+  let greetingTimers: ReturnType<typeof setTimeout>[] = [];
+  let greetingRafs: number[] = [];
+
+  function scheduleTimer(
+    callback: () => void,
+    delay: number,
+    bucket: ReturnType<typeof setTimeout>[] = greetingTimers,
+  ): ReturnType<typeof setTimeout> {
+    let timer: ReturnType<typeof setTimeout>;
+    timer = setTimeout(() => {
+      const index = bucket.indexOf(timer);
+      if (index >= 0) bucket.splice(index, 1);
+      callback();
+    }, delay);
+    bucket.push(timer);
+    return timer;
+  }
+
+  function scheduleRaf(callback: FrameRequestCallback): number {
+    let rafId = 0;
+    rafId = requestAnimationFrame((time) => {
+      greetingRafs = greetingRafs.filter((item) => item !== rafId);
+      callback(time);
+    });
+    greetingRafs.push(rafId);
+    return rafId;
+  }
+
+  function clearTimers(timers: ReturnType<typeof setTimeout>[]) {
+    timers.forEach((timer) => clearTimeout(timer));
+    timers.length = 0;
+  }
+
+  // === 粒子爆发 ===
+  function burstParticles(container: HTMLElement) {
+    const colors = ['#35bfab', '#f59e0b', '#fb7299', '#a78bfa', '#34d399', '#fbbf24'];
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'surprise-particle';
+      const size = 3 + Math.random() * 5;
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+      const dist = 30 + Math.random() * 40;
+      const px = Math.cos(angle) * dist;
+      const py = Math.sin(angle) * dist;
+      const duration = 0.5 + Math.random() * 0.35;
+      p.style.cssText = `
+        width: ${size}px; height: ${size}px;
+        top: 38%; left: 50%;
+        margin-left: ${-size / 2}px; margin-top: ${-size / 2}px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        --px: ${px}px; --py: ${py}px; --duration: ${duration}s;
+      `;
+      container.appendChild(p);
+      scheduleTimer(() => p.remove(), duration * 1000 + 50);
+    }
+  }
+
+  // === 流星 ===
+  function fireMeteor() {
+    const container = document.getElementById('spark-meteor-container');
+    if (!container) return;
+    const meteor = document.createElement('div');
+    meteor.className = 'spark-meteor';
+    meteor.style.top = '-100px';
+    meteor.style.right = `${10 + Math.random() * 30}%`;
+    container.appendChild(meteor);
+    scheduleTimer(() => meteor.remove(), 1000);
+  }
+
+  // === 悬停序列 ===
+  function clearSequenceTimers() {
+    clearTimers(sequenceTimers);
+  }
+
+  function resetCard() {
+    const bubble = document.getElementById('reaction-bubble');
+    const text = document.getElementById('reaction-text');
+    const arrow = document.getElementById('reaction-arrow');
+    const avatarRing = document.getElementById('avatar-ring');
+    clearSequenceTimers();
+    inSequence = false;
+    if (text) { text.textContent = WALKER_STATES[stateIndex]; text.style.color = 'var(--color-brand, #35bfab)'; text.style.fontSize = ''; text.style.fontWeight = ''; text.style.textAlign = ''; }
+    if (bubble) { bubble.style.borderColor = ''; bubble.style.opacity = ''; bubble.style.transform = ''; }
+    if (arrow) arrow.style.borderColor = '';
+    if (avatarRing) avatarRing.style.animation = '';
+    const container = document.getElementById('particle-container');
+    if (container) container.innerHTML = '';
+    const flash = document.getElementById('card-flash-overlay');
+    if (flash) flash.remove();
+  }
+
+  function startSequence() {
+    if (inSequence) return;
+    inSequence = true;
+    const bubble = document.getElementById('reaction-bubble');
+    const text = document.getElementById('reaction-text');
+    const arrow = document.getElementById('reaction-arrow');
+    const avatarRing = document.getElementById('avatar-ring');
+    const particleContainer = document.getElementById('particle-container');
+    const card = document.getElementById('greeting-card');
+
+    scheduleTimer(() => {
+      if (!inSequence) return;
+      if (text) { text.textContent = '! ! !'; text.style.color = '#f59e0b'; text.style.animation = 'none'; }
+      if (bubble) bubble.style.borderColor = '#f59e0b';
+      if (arrow) arrow.style.borderColor = '#f59e0b';
+      if (avatarRing) {
+        avatarRing.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        scheduleTimer(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650, sequenceTimers);
+      }
+      if (particleContainer) burstParticles(particleContainer);
+      if (card) {
+        const flash = document.createElement('div');
+        flash.id = 'card-flash-overlay';
+        card.appendChild(flash);
+        scheduleRaf(() => flash.classList.add('active'));
+        scheduleTimer(() => flash.remove(), 700, sequenceTimers);
+      }
+    }, 800, sequenceTimers);
+
+    scheduleTimer(() => {
+      if (!inSequence) return;
+      const quote = SURPRISE_QUOTES[Math.floor(Math.random() * SURPRISE_QUOTES.length)];
+      if (text) {
+        text.textContent = quote;
+        text.style.color = 'var(--color-parchment, #f4f4f5)';
+        text.style.fontSize = '12.5px';
+        text.style.fontWeight = '500';
+        text.style.textAlign = 'left';
+        text.style.animation = 'none';
+      }
+      if (bubble) {
+        bubble.style.borderColor = 'var(--color-brand, #35bfab)';
+        bubble.animate([
+          { transform: 'translate(-50%, -8px) scale(1)' },
+          { transform: 'translate(-50%, -15px) scale(1.05)' },
+          { transform: 'translate(-50%, -6px) scale(0.97)' },
+          { transform: 'translate(-50%, -8px) scale(1)' }
+        ], { duration: 450, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
+      }
+      if (arrow) arrow.style.borderColor = 'var(--color-brand, #35bfab)';
+    }, 1100, sequenceTimers);
+  }
+
+  // === 悬浮点子卡 ===
+  function showIdeaPopup() {
+    const popup = document.getElementById('idea-popup');
+    const textEl = document.getElementById('idea-popup-text');
+    const againBtn = document.getElementById('idea-popup-again');
+    const detailBtn = document.getElementById('idea-popup-detail') as HTMLAnchorElement | null;
+    if (!popup || !textEl) return;
+
+    // 随机选一个点子
+    const idea = ALL_SPARKS[Math.floor(Math.random() * ALL_SPARKS.length)];
+
+    // 重置按钮
+    againBtn?.classList.remove('visible');
+    if (detailBtn) { detailBtn.classList.remove('visible'); detailBtn.style.display = 'none'; }
+
+    // 显示悬浮卡
+    popup.classList.add('visible');
+
+    // 弹出文字
+    textEl.textContent = idea.title;
+    textEl.classList.remove('pop-in');
+    void textEl.offsetWidth; // 强制回流以重启动画
+    textEl.classList.add('pop-in');
+
+    // 弹出完成后显示按钮
+    scheduleTimer(() => {
+      againBtn?.classList.add('visible');
+      // 真实点子：显示「看看方案」按钮
+      if (idea.isReal && idea.slug && detailBtn) {
+        detailBtn.href = `${IDEAS_ROUTE}#${encodeURIComponent(idea.slug)}`;
+        detailBtn.style.display = '';
+        detailBtn.classList.add('visible');
+      }
+    }, 350);
+  }
+
+  function hideIdeaPopup() {
+    const popup = document.getElementById('idea-popup');
+    if (popup) popup.classList.remove('visible');
+  }
+
+  // === 点击卡片：抽点子 ===
+  function onCardClick(e: MouseEvent | KeyboardEvent) {
+    // 忽略社交链接和「看看方案」按钮点击
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('a, button')) return;
+
+    const avatarRing = document.getElementById('avatar-ring');
+    const particleContainer = document.getElementById('particle-container');
+    const popup = document.getElementById('idea-popup');
+
+    // 头像弹跳
+    if (avatarRing) {
+      avatarRing.style.animation = 'avatar-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      scheduleTimer(() => { if (avatarRing) avatarRing.style.animation = ''; }, 650);
+    }
+
+    // 粒子 + 流星
+    if (particleContainer) burstParticles(particleContainer);
+    fireMeteor();
+
+    // 如果悬浮卡已显示 → 滑走再滑入新点子
+    if (popup?.classList.contains('visible')) {
+      hideIdeaPopup();
+      scheduleTimer(() => showIdeaPopup(), 350);
+    } else {
+      showIdeaPopup();
+    }
+  }
+
+  // === 初始化 ===
+  function bindInteractions(card: HTMLElement, signal: AbortSignal) {
+    const againBtn = document.getElementById('idea-popup-again');
+
+    // 悬停序列
+    card.addEventListener('mouseenter', () => startSequence(), { signal });
+    card.addEventListener('mouseleave', () => resetCard(), { signal });
+
+    // 点击卡片：抽点子
+    card.addEventListener('click', (e) => onCardClick(e), { signal });
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(e); }
+    }, { signal });
+
+    // "再点一个"按钮
+    againBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideIdeaPopup();
+      scheduleTimer(() => {
+        fireMeteor();
+        showIdeaPopup();
+      }, 350);
+    }, { signal });
+  }
+
+  function clearGreetingAsyncWork() {
+    clearSequenceTimers();
+    clearTimers(greetingTimers);
+    greetingRafs.forEach((rafId) => cancelAnimationFrame(rafId));
+    greetingRafs = [];
+    inSequence = false;
+  }
+
+  function cleanupGreetingCard() {
+    greetingAbort?.abort();
+    greetingAbort = null;
+    clearGreetingAsyncWork();
+    document.querySelectorAll('.surprise-particle, .spark-meteor').forEach((el) => el.remove());
+    document.getElementById('card-flash-overlay')?.remove();
+  }
+
+  function initGreetingCard() {
+    cleanupGreetingCard();
+    const card = document.getElementById('greeting-card');
+    if (!card) return;
+
+    greetingAbort = new AbortController();
+    updateGreeting();
+    const text = document.getElementById('reaction-text');
+    if (text) text.textContent = WALKER_STATES[stateIndex];
+    bindInteractions(card, greetingAbort.signal);
+  }
+
+  initGreetingCard();
+  document.addEventListener('astro:page-load', initGreetingCard);
+  document.addEventListener('astro:before-swap', cleanupGreetingCard);
+</script>
