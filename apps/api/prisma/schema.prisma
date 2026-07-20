@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SchemaMeta {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Clue {
+  id         String   @id
+  body       String
+  source     String
+  poolStatus String   @default("candidate")
+  anonId     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  seedLinks SeedClueLink[]
+
+  @@index([poolStatus])
+  @@index([createdAt])
+}
+
+model Seed {
+  id            String   @id
+  title         String
+  severity      String?
+  selfInterest  String?
+  primaryClueId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  links      SeedClueLink[]
+  executions Execution[]
+}
+
+model SeedClueLink {
+  id     String @id
+  seedId String
+  clueId String
+  role   String
+
+  seed Seed @relation(fields: [seedId], references: [id], onDelete: Cascade)
+  clue Clue @relation(fields: [clueId], references: [id], onDelete: Cascade)
+
+  @@unique([seedId, clueId])
+  @@index([clueId])
+}
+
+model Execution {
+  id            String   @id
+  seedId        String
+  status        String   @default("doing")
+  deliveryUrl   String?
+  deliveryForm  String?
+  deliveryNote  String?
+  outcome       String?
+  evidence      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  seed Seed @relation(fields: [seedId], references: [id], onDelete: Cascade)
+
+  @@index([seedId])
+}
+
+model GuestQuota {
+  anonId    String   @id
+  usedCount Int      @default(0)
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+}
+
+model FeatureEvent {
+  id         String   @id
+  at         DateTime @default(now())
+  featureKey String
+  event      String
+  actorType  String
+  failCode   String?
+  props      Json?
+
+  @@index([featureKey, event])
+  @@index([at])
+}
+
+/// 点赞计数（0 起步真实计数，路径幂等键可选）
+model LikeCounter {
+  path      String   @id
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+/// 内容阅读反馈（与点赞分列）
+model ContentFeedback {
+  id        String   @id
+  contentId String
+  signal    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([contentId])
+  @@index([createdAt])
+}
+
+/// 搜索无结果等缺口信号
+model SearchMiss {
+  id        String   @id
+  query     String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+

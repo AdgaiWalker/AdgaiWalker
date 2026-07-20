@@ -7,6 +7,14 @@ dist/
 
 # dependencies
 node_modules/
+.pnpm-store/
+
+# Prisma
+apps/api/prisma/*.db
+
+# package build outputs (monorepo)
+apps/*/dist/
+packages/*/dist/
 
 # logs
 npm-debug.log*
@@ -70,3 +78,4 @@ dev-server.log
 
 # Playwright test output (transient)
 test-results/
+*.tsbuildinfo
