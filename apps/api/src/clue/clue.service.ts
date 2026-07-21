@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   assertClueBody,
+  DEFAULT_LIST_LIMIT,
   isClueSource,
   type CluePoolStatus,
   type ClueSource,
@@ -28,7 +29,7 @@ export class ClueService {
     @Inject(FEATURE_EVENT) private readonly events: FeatureEventPort,
   ) {}
 
-  async list(limit = 50) {
+  async list(limit = DEFAULT_LIST_LIMIT) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     return this.clues.list(limit);
   }

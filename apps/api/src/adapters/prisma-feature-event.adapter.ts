@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { mergeFailCodeCounts, normalizeFeatureFailCode } from '@walker/shared';
 import type { FeatureEventPort } from '../ports/feature-event.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 
@@ -24,7 +25,9 @@ export class PrismaFeatureEventAdapter implements FeatureEventPort {
           featureKey: input.featureKey,
           event: input.event,
           actorType: input.actorType,
-          failCode: input.failCode ?? null,
+          failCode: input.failCode
+            ? normalizeFeatureFailCode(input.failCode)
+            : null,
           props: (input.props ?? undefined) as object | undefined,
         },
       });
@@ -81,9 +84,11 @@ export class PrismaFeatureEventAdapter implements FeatureEventPort {
       if (r.event === 'success') slot.success += 1;
       if (r.event === 'fail') {
         slot.fail += 1;
-        if (r.failCode) failCodes[r.failCode] = (failCodes[r.failCode] ?? 0) + 1;
+        if (r.failCode) {
+          failCodes[r.failCode] = (failCodes[r.failCode] ?? 0) + 1;
+        }
       }
     }
-    return { byFeature, failCodes };
+    return { byFeature, failCodes: mergeFailCodeCounts(failCodes) };
   }
 }

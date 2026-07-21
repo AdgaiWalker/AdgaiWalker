@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { CluePoolStatus } from '@walker/shared';
+import { DEFAULT_LIST_LIMIT, type CluePoolStatus } from '@walker/shared';
 import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { ClueService } from './clue.service';
 
@@ -20,7 +20,7 @@ export class ClueController {
 
   @Get()
   list(@Query('limit') limit?: string) {
-    return this.clues.list(limit ? Number(limit) : 50);
+    return this.clues.list(limit ? Number(limit) : DEFAULT_LIST_LIMIT);
   }
 
   @Post()

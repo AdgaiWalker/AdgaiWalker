@@ -25,7 +25,8 @@ import { resolveVisibility, toContentDoc, isPostType } from './content.js';
 import { FEATURE_KEYS, isFeatureKey } from './feature-keys.js';
 import {
   FEATURE_FAIL_CODES,
-  HTTP_TO_FEATURE_FAIL,
+  mergeFailCodeCounts,
+  normalizeFeatureFailCode,
 } from './feature-fail-codes.js';
 import { GUEST_INTAKE_QUOTA, RATE_LIMITS, RATE_WINDOW_MINUTES } from './rate-limits.js';
 
@@ -236,10 +237,26 @@ describe('限流与 failCode SSOT', () => {
     expect(GUEST_INTAKE_QUOTA).toBe(1);
   });
 
-  it('FEATURE_FAIL_CODES 保持历史 snake 字面量', () => {
-    expect(FEATURE_FAIL_CODES.quotaExceeded).toBe('quota_exceeded');
-    expect(FEATURE_FAIL_CODES.validationError).toBe('validation_error');
-    expect(FEATURE_FAIL_CODES.rateLimited).toBe('rate_limited');
-    expect(HTTP_TO_FEATURE_FAIL['guest-quota-exceeded']).toBe('quota_exceeded');
+  it('FEATURE_FAIL_CODES 与 HTTP ErrorCode 统一 kebab', () => {
+    expect(FEATURE_FAIL_CODES.guestQuotaExceeded).toBe('guest-quota-exceeded');
+    expect(FEATURE_FAIL_CODES.validationError).toBe('validation-error');
+    expect(FEATURE_FAIL_CODES.rateLimited).toBe('rate-limited');
+    expect(FEATURE_FAIL_CODES.storageUnavailable).toBe('storage-unavailable');
+    expect(FEATURE_FAIL_CODES.missingClue).toBe('missing-clue');
+  });
+
+  it('normalize / merge 历史 snake 并入 kebab', () => {
+    expect(normalizeFeatureFailCode('quota_exceeded')).toBe('guest-quota-exceeded');
+    expect(normalizeFeatureFailCode('rate_limited')).toBe('rate-limited');
+    expect(
+      mergeFailCodeCounts({
+        quota_exceeded: 2,
+        'guest-quota-exceeded': 3,
+        validation_error: 1,
+      }),
+    ).toEqual({
+      'guest-quota-exceeded': 5,
+      'validation-error': 1,
+    });
   });
 });

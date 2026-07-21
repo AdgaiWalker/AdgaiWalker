@@ -32,6 +32,8 @@
 | `rate-limited` | 429 | 限流 |
 | `storage-unavailable` | 503 | 无 `DATABASE_URL` 或存储不可写 |
 
+**FeatureEvent.failCode** 与上表 **同一 kebab 词表**（`FEATURE_FAIL_CODES`）。读指标时历史 snake（如 `quota_exceeded`）会 **merge 进** 对应 kebab，不改库内旧行。
+
 ## 端点表
 
 ### 公开

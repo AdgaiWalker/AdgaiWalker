@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { DEFAULT_LIST_LIMIT } from '@walker/shared';
 import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { SeedService } from './seed.service';
 
@@ -18,7 +19,7 @@ export class SeedController {
 
   @Get()
   list(@Query('limit') limit?: string) {
-    return this.seeds.list(limit ? Number(limit) : 50);
+    return this.seeds.list(limit ? Number(limit) : DEFAULT_LIST_LIMIT);
   }
 
   @Post()

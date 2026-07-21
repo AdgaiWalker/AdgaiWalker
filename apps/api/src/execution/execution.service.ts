@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  DEFAULT_LIST_LIMIT,
   isCountableLoop,
   isValidDelivery,
   isValidReview,
@@ -35,7 +36,7 @@ export class ExecutionService {
     @Inject(FEATURE_EVENT) private readonly events: FeatureEventPort,
   ) {}
 
-  async list(limit = 50) {
+  async list(limit = DEFAULT_LIST_LIMIT) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     return this.executions.list(limit);
   }

@@ -63,7 +63,7 @@ export class IntakeService {
         featureKey: 'match.intake',
         event: 'fail',
         actorType,
-        failCode: FEATURE_FAIL_CODES.serverError,
+        failCode: FEATURE_FAIL_CODES.storageUnavailable,
       });
       throw storageUnavailable();
     }
@@ -96,7 +96,7 @@ export class IntakeService {
           featureKey: 'match.intake',
           event: 'fail',
           actorType,
-          failCode: FEATURE_FAIL_CODES.quotaExceeded,
+          failCode: FEATURE_FAIL_CODES.guestQuotaExceeded,
         });
         throw guestQuotaExceeded();
       }

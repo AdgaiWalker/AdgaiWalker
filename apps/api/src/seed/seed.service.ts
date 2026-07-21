@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   assertPrimaryHasClue,
+  DEFAULT_LIST_LIMIT,
   FEATURE_FAIL_CODES,
   isInterestLevel,
   isValidTwoQuestions,
+  type CluePoolStatus,
   type InterestLevel,
+  type SeedClueLink,
 } from '@walker/shared';
 import { newId } from '../common/ids';
 import {
@@ -41,7 +44,7 @@ export class SeedService {
     @Inject(FEATURE_EVENT) private readonly events: FeatureEventPort,
   ) {}
 
-  async list(limit = 50) {
+  async list(limit = DEFAULT_LIST_LIMIT) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     return this.seeds.list(limit);
   }
@@ -76,33 +79,16 @@ export class SeedService {
     const clue = await this.clues.findById(clueId);
     if (!clue) throw validationError('clue-not-found');
 
-    // 确保 link 存在
-    if (!seed.links.some((l) => l.clueId === clueId)) {
-      await this.seeds.linkClue({
-        id: newId(),
-        seedId,
-        clueId,
-        role: 'backup',
-      });
-    }
+    await this.ensureClueLinked(seedId, clueId, seed.links);
 
     const refreshed = await this.seeds.findById(seedId);
     if (!refreshed) throw validationError('seed-not-found');
 
-    // 构造用于断言的 links：目标 clue 视为 primary 候选
-    const trialLinks = refreshed.links.map((l) =>
-      l.clueId === clueId
-        ? { ...l, role: 'primary' as const, poolStatus: clue.poolStatus }
-        : { ...l, role: 'backup' as const },
+    const trialLinks = this.buildPrimaryTrialLinks(
+      refreshed.links,
+      clueId,
+      clue.poolStatus,
     );
-    // 若 link 里还没有，补上
-    if (!trialLinks.some((l) => l.clueId === clueId)) {
-      trialLinks.push({
-        clueId,
-        role: 'primary',
-        poolStatus: clue.poolStatus,
-      });
-    }
 
     try {
       assertPrimaryHasClue(trialLinks);
@@ -112,7 +98,7 @@ export class SeedService {
         featureKey: 'seed.promote',
         event: 'fail',
         actorType: 'owner',
-        failCode: FEATURE_FAIL_CODES.validationError,
+        failCode: FEATURE_FAIL_CODES.missingClue,
         props: { code: 'missing-clue' },
       });
       throw missingClue();
@@ -128,6 +114,37 @@ export class SeedService {
       props: { seedId, clueId },
     });
     return result;
+  }
+
+  private async ensureClueLinked(
+    seedId: string,
+    clueId: string,
+    links: Array<{ clueId: string }>,
+  ): Promise<void> {
+    if (links.some((l) => l.clueId === clueId)) return;
+    await this.seeds.linkClue({
+      id: newId(),
+      seedId,
+      clueId,
+      role: 'backup',
+    });
+  }
+
+  /** 将目标 clue 视为 primary 候选，供 assertPrimaryHasClue 使用 */
+  private buildPrimaryTrialLinks(
+    links: SeedClueLink[],
+    clueId: string,
+    poolStatus: CluePoolStatus,
+  ): SeedClueLink[] {
+    const trial: SeedClueLink[] = links.map((l) =>
+      l.clueId === clueId
+        ? { ...l, role: 'primary' as const, poolStatus }
+        : { ...l, role: 'backup' as const },
+    );
+    if (!trial.some((l) => l.clueId === clueId)) {
+      trial.push({ clueId, role: 'primary', poolStatus });
+    }
+    return trial;
   }
 
   async setTwoQuestions(
