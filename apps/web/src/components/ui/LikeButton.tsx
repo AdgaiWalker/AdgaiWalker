@@ -22,6 +22,7 @@ export function LikeButton({
         type="button"
         className="btn-ghost"
         disabled={busy}
+        aria-busy={busy || undefined}
         onClick={onLike}
       >
         <Heart size={15} />
