@@ -10,20 +10,27 @@ export type SearchableItem = {
   body: string;
 };
 
+export type SearchScope = 'title-summary' | 'full';
+
+/**
+ * 默认只搜标题+摘要（轻量）；full 含正文
+ */
 export function searchContentItems(
   items: readonly SearchableItem[],
   query: string,
   limit = 12,
+  scope: SearchScope = 'title-summary',
 ): SearchHit[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   return items
-    .filter(
-      (i) =>
-        i.title.toLowerCase().includes(q) ||
-        i.summary.toLowerCase().includes(q) ||
-        i.body.toLowerCase().includes(q),
-    )
+    .filter((i) => {
+      if (i.title.toLowerCase().includes(q) || i.summary.toLowerCase().includes(q)) {
+        return true;
+      }
+      if (scope === 'full' && i.body.toLowerCase().includes(q)) return true;
+      return false;
+    })
     .slice(0, limit)
     .map((i) => ({
       url: `/posts/${encodeURIComponent(i.slug)}`,

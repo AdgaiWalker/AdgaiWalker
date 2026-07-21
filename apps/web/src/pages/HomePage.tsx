@@ -86,21 +86,12 @@ export function HomePage() {
               </div>
             </div>
 
+            {/* 卡/逛仅保留上方主 CTA（home-dual-cta + HomeChrome），此处只放次要入口 */}
             <div
               className="panel-glass pop-in"
               style={{ padding: '0.75rem', borderRadius: 20, animationDelay: '0.12s' }}
             >
               <div className="quick-grid">
-                <Link to={dualEntry.ask.path} className="quick-link quick-link-primary">
-                  <MessageCircleQuestion size={16} />
-                  <span>
-                    {dualEntry.ask.label} · {dualEntry.ask.hint}
-                  </span>
-                </Link>
-                <Link to={dualEntry.browse.path} className="quick-link quick-link-secondary">
-                  <PenLine size={15} />
-                  <span>{dualEntry.browse.label}</span>
-                </Link>
                 <Link to={WEB_ROUTES.toolsResources} className="quick-link">
                   <Bookmark size={15} />
                   <span>资源</span>
@@ -112,6 +103,10 @@ export function HomePage() {
                 <Link to={WEB_ROUTES.projects} className="quick-link">
                   <FolderKanban size={15} />
                   <span>项目</span>
+                </Link>
+                <Link to={WEB_ROUTES.learn} className="quick-link">
+                  <PenLine size={15} />
+                  <span>学习</span>
                 </Link>
               </div>
             </div>

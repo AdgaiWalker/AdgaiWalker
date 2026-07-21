@@ -39,9 +39,13 @@ describe('searchContentItems', () => {
     expect(hits[0]?.title).toBe('AI 周报写法');
   });
 
-  it('按正文匹配', () => {
-    const hits = searchContentItems(items, 'AI 工具');
-    expect(hits.some((h) => h.url === '/posts/c')).toBe(true);
+  it('默认 scope 不扫正文；full 才按正文匹配', () => {
+    expect(searchContentItems(items, 'AI 工具').some((h) => h.url === '/posts/c')).toBe(
+      false,
+    );
+    expect(
+      searchContentItems(items, 'AI 工具', 12, 'full').some((h) => h.url === '/posts/c'),
+    ).toBe(true);
   });
 
   it('遵守 limit', () => {
