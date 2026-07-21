@@ -3,5 +3,11 @@
   "framework": "vite",
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build:web",
-  "outputDirectory": "apps/web/dist"
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -18,13 +18,14 @@
 
 ## 站主后续（非本轮代码必做）
 
-- [ ] 生产切流（API/反代/ENV）  
+- [ ] **生产双入口切流**（API/PG/反代/ENV）——执行锚与阶段验收：[`docs/GOAL-生产双入口切流.md`](./GOAL-生产双入口切流.md)（Phase 0–1：文档诚实 + SPA 深链；Phase 2+ 需站主下令）  
 - [ ] 公开 Auth 真接（若需要）  
 - [ ] Admin 内容编辑回迁  
-- [ ] 14 天 A11 复盘（见 s1-go-live）  
+- [ ] 14 天 A11 复盘（见 s1-go-live；建议自「卡生产可用日」起算）  
 
 ## 入口文档
 
+- `docs/GOAL-生产双入口切流.md`（生产可用性）  
 - `docs/frontend-layers.md`  
 - `docs/feature-add-playbook.md`  
 - `docs/naming-vocabulary.md`  

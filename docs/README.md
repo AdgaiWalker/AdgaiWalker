@@ -12,8 +12,9 @@
 | [`docs/naming-vocabulary.md`](./naming-vocabulary.md) | **命名/SSOT 词汇表**（同名异义禁区） |
 | [`docs/PRD-双入口小生产.md`](./PRD-双入口小生产.md) | 产品：卡/逛 + 过程 + 安全 |
 | [`docs/PRD-双入口触感.md`](./PRD-双入口触感.md) | 公开面触感工艺 |
+| [`docs/GOAL-生产双入口切流.md`](./GOAL-生产双入口切流.md) | **生产双入口可用性**执行锚（半部署事实 → SPA → API） |
 | [`docs/s1-go-live.md`](./s1-go-live.md) | 验证盒时钟与 A11 复盘勾选 |
-| [`docs/cutover-runbook.md`](./cutover-runbook.md) | 生产切流草案（未下令不执行） |
+| [`docs/cutover-runbook.md`](./cutover-runbook.md) | 生产切流操作手册（运行时切流另令） |
 | [`docs/redirects.md`](./redirects.md) | 公开路径表 |
 | [`docs/feature-keys.md`](./feature-keys.md) | feature_key 字典 |
 | [`docs/stage1-retro.md`](./stage1-retro.md) | Stage1 工程毕业复盘 |

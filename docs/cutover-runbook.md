@@ -1,6 +1,15 @@
 # 切流 Runbook 草案（Stage 1）
 
-> 未下令前不执行生产切流。本文说明**怎么切**，不代替上线决定。
+> 未下令前不执行**运行时**生产切流（API/PG/反代）。本文说明**怎么切**，不代替上线决定。  
+> 执行阶段与验收：`docs/GOAL-生产双入口切流.md`。
+
+## 当前生产缺口（2026-07-21 探针）
+
+1. **SPA 深链**：无 fallback 时 `/tools` 等客户端路由 → Vercel `NOT_FOUND`（Phase 1：`vercel.json` rewrites → `/index.html`，**排除** `/api/*`）。
+2. **无 Nest API**：`/api/health`、`/api/intake` → 404；双入口 intake 不可用。
+3. **无生产 PG**：无可写持久；不得假装已切双入口。
+
+> 仅完成 SPA rewrite **不等于**切流完成——无 API 时「卡」可开壳但提交必挂。
 
 ## 组件
 
@@ -11,7 +20,7 @@
 | API | 常驻 Node（`pnpm --filter @walker/api start`） | `8788`；对外建议反代为 `/api/*` |
 | PG | 托管 PostgreSQL | `DATABASE_URL` 必填 |
 
-仓库内 `vercel.json` 当前只配置 **web** 静态构建；API/Admin/PG 需另部或反代，**不要**假设 monorepo 自动全栈上 Vercel。
+仓库内 `vercel.json`：**web** 静态构建 + SPA rewrites（filesystem 优先，故 `/posts/**`、`/assets/**`、`/pagefind/**` 仍走真实文件；**`/api/*` 不 fallback 到 HTML**）。API/Admin/PG 需另部或反代，**不要**假设 monorepo 自动全栈上 Vercel。
 
 ## 前置检查
 
