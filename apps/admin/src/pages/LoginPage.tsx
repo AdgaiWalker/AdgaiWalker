@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { KeyRound } from 'lucide-react';
+import {
+  ADMIN_TOKEN_MIN_LENGTH,
+  isValidAdminToken,
+} from '../auth/token-policy';
 import {
   clearAdminToken,
   getAdminToken,
@@ -9,16 +13,23 @@ import {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from =
+    (location.state as { from?: string } | null)?.from &&
+    (location.state as { from: string }).from !== '/login'
+      ? (location.state as { from: string }).from
+      : '/clues';
+
   const [token, setToken] = useState(getAdminToken());
   const [msg, setMsg] = useState<string | null>(null);
 
   return (
-    <div>
+    <div className="layout" style={{ maxWidth: 480, margin: '2rem auto', padding: 16 }}>
       <h1>管理令牌</h1>
       <div className="panel">
         <p className="muted">
-          管理面使用 Bearer <code>ADMIN_API_TOKEN</code>（与 API 环境变量一致，长度至少 16）。
-          令牌只存在本机 localStorage，不上传第三方。
+          管理面使用 Bearer <code>ADMIN_API_TOKEN</code>（与 API 环境变量一致，长度至少{' '}
+          {ADMIN_TOKEN_MIN_LENGTH}）。令牌只存在本机 localStorage，不上传第三方。
         </p>
         <label htmlFor="token">
           <KeyRound size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
@@ -35,13 +46,13 @@ export function LoginPage() {
         <button
           type="button"
           onClick={() => {
-            if (token.trim().length < 16) {
-              setMsg('令牌过短（至少 16 字符）');
+            if (!isValidAdminToken(token)) {
+              setMsg(`令牌过短（至少 ${ADMIN_TOKEN_MIN_LENGTH} 字符）`);
               return;
             }
             setAdminToken(token);
-            setMsg('已保存，进入线索池');
-            navigate('/clues');
+            setMsg('已保存，进入工作台');
+            navigate(from, { replace: true });
           }}
         >
           保存并进入
@@ -58,9 +69,11 @@ export function LoginPage() {
           清除令牌
         </button>
         {msg ? <p className="muted">{msg}</p> : null}
-        <p className="muted">
-          <Link to="/clues">线索</Link>
-        </p>
+        {isValidAdminToken(getAdminToken()) ? (
+          <p className="muted">
+            <Link to="/clues">已有令牌 · 去线索</Link>
+          </p>
+        ) : null}
       </div>
     </div>
   );

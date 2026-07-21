@@ -139,7 +139,7 @@
 |----|------|--------|
 | SearchModal 全文过滤 | 交互块内扫 body | 抽「搜索」纯函数（规则）+ 可选 debounce |
 | PostDetail marked | 页内每 render 解析 | 页内 useMemo 即可，仍属页 |
-| Admin 无 token 门 | 壳未挡 | 壳/路由：**门面鉴权结果**决定是否进页 |
+| Admin 无 token 门 | **已补** `RequireAdminToken` | 无有效令牌 → `/login` |
 | 双 Login 同名 | 两页 | 命名区分：公开登录壳 vs 管理令牌页 |
 | 侧栏「逛」硬编码 | 块内 | 并入**配置** nav |
 
