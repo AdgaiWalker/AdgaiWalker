@@ -45,13 +45,14 @@ pnpm test:shared && pnpm test:api && pnpm test:web
 pnpm accept          # 双入口 + 深度浏览器（需三端已起）
 ```
 
-## 产品文档
+## 产品与工程文档
 
-- `docs/PRD-双入口小生产.md`
-- `docs/PRD-双入口触感.md`
-- `docs/GOAL-双入口小生产.md`
-- `docs/s1-go-live.md`
-- `docs/architecture-modules.md`
+- `docs/README.md` — 文档路由（现行 vs 历史）
+- `docs/api/README.md` — **Nest API 现行契约**
+- `docs/architecture-modules.md` — 模块与依赖关系
+- `docs/PRD-双入口小生产.md` / `docs/PRD-双入口触感.md`
+- `docs/s1-go-live.md` / `docs/cutover-runbook.md`
+- 废止的 Astro API 契约：`docs/archive/api-astro-era/`
 
 ## 产品心智
 

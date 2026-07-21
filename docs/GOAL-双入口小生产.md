@@ -1,9 +1,9 @@
 # Goal Document: 交付 PRD「双入口小生产」（安全优先）
 
 > **产品权威**：`docs/PRD-双入口小生产.md`  
-> **工程底座**：`refactor/stack-rewrite` monorepo（commit `fa46708` 一带）  
+> **工程底座**：已合入 **`main`**（历史施工分支 `refactor/stack-rewrite` / `feat/dual-entry-tactile-accept`；早期 commit `fa46708` 一带仅为 monorepo 起点）  
 > **优先级**：安全 > 质量 > 效率  
-> **状态**：工程交付完成（2026-07-21）
+> **状态**：工程交付完成（2026-07-21）；请在 `main` 继续，勿再以旧分支为唯一施工面
 
 ---
 

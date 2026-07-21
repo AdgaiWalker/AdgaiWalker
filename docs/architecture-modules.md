@@ -88,7 +88,7 @@ SharedKernel（纯规则，无 I/O）
 | **EnvConfigAdapter** | **实现** AppConfigPort |
 | **PrismaAdapter** | **实现** PrismaPort |
 | **Prisma*Repository** | **实现** 各仓储端口 |
-| **InMemoryRateLimiter** | **实现** RateLimitPort（进程内） |
+| **InMemoryRateLimiter** | **实现** RateLimitPort（进程内，单实例） |
 | **PrismaGuestQuotaAdapter** | **实现** GuestQuotaPort |
 | **RuleNextStepAdapter** | **实现** NextStepStrategy（关 AI） |
 | **PrismaFeatureEventAdapter** | **实现** FeatureEventPort |
@@ -158,9 +158,15 @@ PostgreSQL
 | 概念 | 路径 |
 |------|------|
 | SharedKernel | `packages/shared/src/*` |
-| Ports | `apps/api/src/ports/*` |
+| Ports（仓储/限流/配额等） | `apps/api/src/ports/*` |
+| AppConfigPort | `apps/api/src/config/config.port.ts`（实现：`env-config.adapter.ts`） |
 | Adapters | `apps/api/src/adapters/*` |
-| Use cases | `apps/api/src/{intake,clue,seed,execution,metrics,health}/*` |
+| Use cases | `apps/api/src/{intake,clue,seed,execution,metrics,health,engagement}/*` |
+| HTTP 契约说明 | `docs/api/README.md` |
 | Web | `apps/web/src/*` |
 | Admin | `apps/admin/src/*` |
 | Content gen | `scripts/generate-content.ts`（tsx）→ `apps/web/src/generated/content.json` |
+
+### 限流说明
+
+`InMemoryRateLimiter` **实现** `RateLimitPort`，进程内滑动窗口，**仅单实例保证**；多副本部署前需替换适配器（文档见 `docs/cutover-runbook.md`）。

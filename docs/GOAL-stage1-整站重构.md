@@ -61,9 +61,13 @@
 
 ## Current State
 
-- **存在**：Astro 6 站点（`output: server` + Vercel）、内容在 `src/content/log`、后台决策系统（WorkItem 等）在现网、`整体改造方案.md` 在仓库根、`main` 可用、**无** `apps/*` / `pnpm-workspace.yaml`
-- **约束**：一人可养；施工期双栈；公开 URL 尽量不变；Cookie 会话心智对齐 `walker-session`
-- **风险**：范围蠕变（顺手「优化」保真区）；双真相（MD/API/内存假持久）；假完成（关 AI nextStep 空、只改皮不进池）；Admin 巨石拖死；无明确下令就开写
+> **以下为 Goal 起草时的施工起点（历史快照），不是 2026-07-21 之后的仓库现状。**  
+> **现状**：`main` 已是 pnpm monorepo（`apps/web|admin|api` + `packages/shared`）；内容在 **`content/log`**；无 Astro 应用树。详见根 `README.md`。
+
+- **（历史）起草时存在**：Astro 6 站点、`src/content/log`、WorkItem 后台、尚无 monorepo 骨架  
+- **（历史）约束**：一人可养；施工期双栈；公开 URL 尽量不变  
+- **（现行）内容路径**：`content/log` → `pnpm content:gen`  
+- **（现行）管理鉴权**：`ADMIN_API_TOKEN` Bearer（非 walker-session 管理面）
 
 ---
 

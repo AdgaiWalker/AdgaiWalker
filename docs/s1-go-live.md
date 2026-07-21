@@ -6,7 +6,7 @@
 | **双入口 14 天验证盒起始** | **2026-07-21** |
 | 14 天复盘截止 | **2026-08-04** |
 | 56 天 Stage1 复盘窗口截止 | 2026-09-15（自演示日起算） |
-| 分支 | `refactor/stack-rewrite` |
+| 分支 | **`main`**（历史施工分支 `refactor/stack-rewrite` / `feat/dual-entry-tactile-accept` 已合入） |
 | 「卡」默认路由 | `/tools` |
 | 生产切流 | **未执行**（需站主另行下令） |
 

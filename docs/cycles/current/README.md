@@ -1,6 +1,9 @@
-# Cycles 当前阶段记录
+# Cycles 阶段记录（历史回放）
 
-本目录承载一轮工作包的**可回放链路**（Spec Kit / OpenSpec 桥接，U17）。让一轮工作在产品仓库也有可回放痕迹——blueprint 在 walker-northstar skill 仓库，reality + 阶段记录在产品仓库。
+> **状态**：历史轮次痕迹，**非** 2026-07 monorepo 现行工作台。  
+> 文中 `astro check` / `src/pages/*.astro` 路径已退役。
+
+本目录承载一轮工作包的**可回放链路**（Spec Kit / OpenSpec 桥接，U17）。
 
 ## 文件流（一轮工作包）
 

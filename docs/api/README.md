@@ -1,82 +1,102 @@
-> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
-> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
-> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+# Nest API 契约（当前唯一）
 
-# AdgaiWalker / iwalk.pro API 文档
+> **权威范围**：`apps/api`（NestJS）。  
+> **栈**：React monorepo · PostgreSQL · 管理鉴权 `Authorization: Bearer <ADMIN_API_TOKEN>`。  
+> **废止**：Astro 时代 67 端点文档见 [`docs/archive/api-astro-era/`](../archive/api-astro-era/)。
 
-本目录是 **67 个 API 端点的权威契约文档**,基于 2026-07-04 逐文件代码核实生成,不是凭记忆或旧文档抄写。文档与代码零漂移是硬性要求——每次代码改动后,对应章节必须同步。
+## 前缀约定
 
-## 文档结构
+| 调用方 | 路径形态 | 说明 |
+|--------|----------|------|
+| 直连 API（`:8788`） | `/health`、`/intake`、… | **无**全局 `setGlobalPrefix` |
+| 浏览器经 Vite 开发代理 | `/api/health`、`/api/intake`、… | `apps/web` / `apps/admin` 把 `/api` 前缀 strip 后转发到 8788 |
+| 生产同站反代（切流） | 通常对外 `/api/*` → Nest 裸路径 | 见 `docs/cutover-runbook.md` |
 
-| 文件 | 覆盖范围 | 端点数 |
-| --- | --- | --- |
-| [01-auth.md](./01-auth.md) | 认证机制、鉴权模型、Cookie/Token 体系(全局共享) | — |
-| [02-public.md](./02-public.md) | 公开 API:需求匹配、点赞、统计、反馈、点子、文章互动 | 19 |
-| [03-account.md](./03-account.md) | 账号:登录、注册、登出、画像、改密、本机预览 | 7 |
-| [04-admin-content.md](./04-admin-content.md) | 内容创作闭环:内容 CRUD、工作台、决定、行动、结果、简报 | 11 |
-| [05-admin-review.md](./05-admin-review.md) | 需求复盘 + 选题:review、insights、inspiration、hit-rate | 5 |
-| [06-admin-assets.md](./06-admin-assets.md) | 能力资产:经验、规则、Skill、资产晋升、学习请求 | 7 |
-| [07-admin-system.md](./07-admin-system.md) | 系统管理:账号、邀请码、授权、Gateway、外观、赞赏、事件、架构图 | 14 |
-| [08-admin-northstar.md](./08-admin-northstar.md) | 经营模块:offers/orders(标注 scaffolded 门控) | 2 |
-| [09-degradation.md](./09-degradation.md) | 降级与限流总表(生产 vs dev 差异,联调必读) | — |
-| [10-cron-and-tokens.md](./10-cron-and-tokens.md) | 定时任务 + Token 鉴权端点 | 2 |
+## 鉴权
 
-## 全局约定(所有端点共享)
+| 类 | 机制 |
+|----|------|
+| 公开 | 无 Bearer；游客用 Cookie `walker-anon`（HttpOnly，intake 配额） |
+| 管理 | **必须** `Authorization: Bearer <ADMIN_API_TOKEN>`，令牌长度 ≥ 16；未配置或错误 → **401** |
+| 用户登录 | **未实现**（`/login` 仅为前台壳；无 session/cookie 登录 API） |
 
-### Content-Type
-- 除 `/api/posts/{slug}/export`(`text/markdown`)和 `/api/admin/appearance/media`(二进制流)外,**全部 JSON**(`application/json`)
-- 请求体解析失败统一返回 `400 { error: 'invalid json' }`(部分端点带更具体原因)
+角色枚举 `public/user/admin/owner` 与邀请码账号体系 **不在** 本 monorepo 管理面路径内。
 
-### Cache-Control
-- 写操作和鉴权相关:`Cache-Control: no-store`(统一)
-- 公开统计读:`/api/stats` 用 `public, max-age=300`;`/api/like` GET 用 `s-maxage=10`
-- 个别 admin 读端点(`conversations`/`rules`/`experience-events`/`system-map`)**无 Cache-Control 头**(已知不一致,联调时标注)
+## 错误码（机器可读 `body.code`）
 
-### 鉴权方式(详见 01-auth.md)
-| 方式 | 适用端点 | 机制 |
-| --- | --- | --- |
-| Cookie `walker-session` | user/admin/owner 端点 | HMAC-SHA256 签名,装 `{sid, role, iat}` |
-| Token header | cron/match-process/insights(双轨) | `x-match-process-secret` 或 `Authorization: Bearer` |
-| 无鉴权 | 公开端点 | — |
-| 环境门控 | dev-preview/demo-scenario | `import.meta.env.DEV` + loopback 主机 |
+| code | HTTP | 含义 |
+|------|------|------|
+| `validation-error` | 400 | 入参不合法 |
+| `missing-clue` | 400 | 主选等缺线索 |
+| `guest-quota-exceeded` | 429 | 游客完整 intake 次数用尽 |
+| `rate-limited` | 429 | 限流 |
+| `storage-unavailable` | 503 | 无 `DATABASE_URL` 或存储不可写 |
 
-### 角色与权限
+## 端点表
+
+### 公开
+
+| 方法 | 路径 | 鉴权 | 请求 | 成功 |
+|------|------|------|------|------|
+| GET | `/health` | 无 | — | `{ ok, db, aiEnabled }` |
+| POST | `/intake` | 无（写 anon cookie） | `{ body: string, source?: string }` | **201** `{ clueId, nextStep, bucketId, aiUsedFlag, poolStatus }` |
+| GET | `/likes?path=` | 无 | query `path` | `{ path, count }` |
+| POST | `/likes` | 无 | `{ path: string }` | `{ path, count }` |
+| POST | `/content-feedback` | 无 | `{ contentId, signal, note? }` signal: `useful` \| `needs-more` \| `outdated` | `{ id, contentId, signal }` |
+| POST | `/search-events` | 无 | `{ query?, hadResults? }`；`hadResults===false` 记 miss | `{ ok: true }` |
+
+### 管理（均需 Bearer）
+
+| 方法 | 路径 | 请求要点 | 说明 |
+|------|------|----------|------|
+| GET | `/clues?limit=` | — | 线索列表 |
+| POST | `/clues` | `{ body, source? }` | 手动入库 |
+| PATCH | `/clues/:id/pool` | `{ poolStatus }` | 池状态 |
+| GET | `/seeds?limit=` | — | 题苗列表 |
+| POST | `/seeds` | `{ title }` | 新建题苗 |
+| POST | `/seeds/:id/link` | `{ clueId, asPrimary? }` | 挂线索 |
+| POST | `/seeds/:id/promote` | `{ clueId }` | 主选 → 建执行卡 |
+| POST | `/seeds/:id/two-questions` | `{ severity, selfInterest }` | 两问 |
+| GET | `/executions?limit=` | — | 执行卡列表 |
+| POST | `/executions/:id/deliver` | `{ url?, form?, note? }` | 交付 |
+| POST | `/executions/:id/review` | `{ outcome, evidence? }` | 检验；可计数由规则判定 |
+| GET | `/metrics` | — | 闭环 + 功能事件 + 线索来源分桶等 |
+
+## curl 示例
+
+```bash
+# 健康（直连 API）
+curl -sS http://127.0.0.1:8788/health
+
+# 游客 intake（保留 cookie 测配额）
+curl -sS -c /tmp/w.jar -b /tmp/w.jar \
+  -H 'Content-Type: application/json' \
+  -d '{"body":"想用 AI 写周报但每天只有半小时"}' \
+  http://127.0.0.1:8788/intake
+
+# 管理线索
+TOKEN=你的ADMIN_API_TOKEN
+curl -sS -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8788/clues
 ```
-public  访客,未通过邀请码
-user    已登录普通用户(邀请码注册)
-admin   管理员
-owner   站主(唯一,可指派角色/删账号/管理授权)
-```
 
-### 降级模型(详见 09-degradation.md)
-- **生产 fail-closed**:走 `requireHighRiskAudit` 的 14 类高风险动作,生产无 Redis → **503 storage-unavailable**(拒绝执行)
-- **dev fail-open**:DEV 模式无 Redis 时,admin gate 通过 `devFallback()` 放行;Redis 相关 store 走内存 Map
-- **生产 COOKIE_SECRET 必填**:未配 → 登录/注册/setup 抛 500;dev 用硬编码兜底
+## 存储与限流（生产注意）
 
-## 契约卡格式(每个端点)
+| 项 | 实现 | 含义 |
+|----|------|------|
+| 持久化 | PostgreSQL + Prisma | 缺库写路径 → `storage-unavailable` |
+| 游客配额 | PG `GuestQuota` | 与 anon cookie 绑定 |
+| 限流 | **进程内内存** `InMemoryRateLimiter` | **单实例有效**；多副本需换适配器，否则可被绕过 |
+| AI | `AI_ENABLED=true` 才可能调模型；默认关，规则 nextStep | |
 
-```
-### METHOD /api/path — 一句话职责
-- 鉴权:public | user | admin | owner(标注 isAdminAsync/isOwnerAsync/cookie/token)
-- 请求:body 字段表 或 query 参数
-- 响应:成功 JSON 结构 + 关键状态码
-- 降级:无 Redis/模型/token 时的行为
-- 限流:命名空间 + 窗口 + 上限
-- 审计:是否走 requireHighRiskAudit(action 名)
-- 前端调用方:哪个 .astro / scripts/*.ts 调用
-- 联调验证:curl 示例(Vercel 生产)
-```
+## 前端门面
 
-## 文档维护规则
+| 端 | 模块 | 职责 |
+|----|------|------|
+| web | `apps/web/src/api/public-api.ts` | 页面只调门面，不散落 fetch |
+| admin | `apps/admin/src/api/*` + Bearer token-store | 管理过程 |
 
-1. **代码改动后同步**:改了任何 `src/pages/api/**/*.ts`,必须同步更新对应章节
-2. **不抄旧文档**:这份文档的权威性来自代码核实,不是从 prd.md 或旧设计文档抄写
-3. **联调报告分离**:实际响应记录在 `docs/api/verify/report.md`,不污染契约文档
-4. **状态码诚实**:如果代码里有不一致(如某些端点缺 Cache-Control),文档如实标注,不粉饰
+## 维护规则
 
-## 与其他文档的关系
-
-- 本目录是 **API 契约**(What:路径/方法/字段/状态码)
-- `references/working/prd.md`(skill 仓库)是 **产品需求**(Why:为什么做这些)
-- `docs/design/admin-decision-system-spec.md` 是 **目标态架构**(目标形态)
-- AI 可读接口(`/llms.txt`、`/graph.json`、`/walker-style.md`)是代码生成,不在本目录维护
+1. 改 `apps/api/src/**/*.controller.ts` 后同步本文件。  
+2. **禁止**把 `docs/archive/api-astro-era` 当现行契约。  
+3. 行为验收：`pnpm accept:dual-entry` / `pnpm accept:deep`（需三端已起）。

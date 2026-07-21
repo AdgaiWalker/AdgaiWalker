@@ -8,7 +8,7 @@
 | `match.intake` | intake 返回 nextStep |
 | `tools.resource_click` | 资源外链点击（可后置） |
 | `like.click` | 点赞 API 成功 |
-| `auth.login` | 登录成功（Auth 后置） |
+| `auth.login` | 登录成功（**Auth 后置**：前台 `/login` 仅为壳，无登录 API，暂勿当已上线能力） |
 | `clue.create_manual` | admin 手动建线索 |
 | `seed.promote` | 主选成功 |
 | `execution.review` | 检验写入 |
