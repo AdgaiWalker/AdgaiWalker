@@ -142,15 +142,15 @@
   - **禁止**：在 main 上只 cherry-pick 文档；禁止把 Astro 树加回 main  
   - **验证**：合并后立即 `git ls-tree` / API tree 计数  
 - **Todos**:
-  - [ ] 合并前核对：Vercel/生产是否仍强依赖旧 Astro build（有则先改构或暂缓生产）  
+  - [x] 合并前核对：Vercel/生产是否仍强依赖旧 Astro build（有则先改构或暂缓生产）  
     - **Surface**: Vercel 项目设置  
     - **Proof**: build 命令 = monorepo 或可接受 downtime 窗口  
     - **Depends on**: 你的生产决策  
-  - [ ] 合并 PR #39 → `main`（推荐）  
+  - [x] 合并 PR #39 → `main`（推荐）  
     - **Surface**: GitHub  
     - **Proof**: `main` HEAD 含 monorepo + 无 `.astro`  
     - **Depends on**: 上一项不阻塞或已接受风险  
-  - [ ] 本地：`git fetch && git checkout main && git pull`，确认干净  
+  - [x] 本地：`git fetch && git checkout main && git pull`，确认干净  
     - **Surface**: 本地 git  
     - **Proof**: `git ls-tree -r HEAD --name-only \| grep '\.astro$'` 空  
     - **Depends on**: 合并完成  
@@ -178,7 +178,7 @@
   - [x] 保留 `generate-content.mjs` 的 strip 逻辑（防御）  
     - **Surface**: scripts  
     - **Proof**: 文件仍含 strip 函数  
-  - [ ] `pnpm typecheck`  
+  - [x] `pnpm typecheck`  
     - **Surface**: monorepo  
     - **Proof**: 退出码 0  
 - **Exit proof**: apps/packages 内无「请用 Astro 编辑」类指令  
@@ -209,16 +209,16 @@
 - **Phase rules**:
   - 验证优先于新功能  
 - **Todos**:
-  - [ ] `GET .../languages`：无 Astro 或 &lt;0.1%（注意缓存；以 tree 为准）  
+  - [x] `GET .../languages`：以 tree 为准 `.astro`=0；Linguist 条可能延迟刷新（已记录）  
     - **Surface**: GitHub API  
     - **Proof**: 记录 JSON  
-  - [ ] `main` tree：`.astro` = 0  
+  - [x] `main` tree：`.astro` = 0  
     - **Surface**: git/API  
     - **Proof**: 命令输出空  
-  - [ ] `pnpm typecheck`；环境允许时 `pnpm accept`  
+  - [x] `pnpm typecheck`；环境允许时 `pnpm accept`  
     - **Surface**: 本地  
     - **Proof**: 退出码 0  
-  - [ ] 更新 `docs/s1-go-live.md` 一行：默认分支已 React-only、日期  
+  - [x] 更新 `docs/s1-go-live.md` 一行：默认分支已 React-only、日期  
     - **Surface**: docs  
     - **Proof**: 文件有记录  
 - **Exit proof**: Final Validation 表全勾  
