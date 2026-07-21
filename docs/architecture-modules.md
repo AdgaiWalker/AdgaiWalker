@@ -170,3 +170,23 @@ PostgreSQL
 ### 限流说明
 
 `InMemoryRateLimiter` **实现** `RateLimitPort`，进程内滑动窗口，**仅单实例保证**；多副本部署前需替换适配器（文档见 `docs/cutover-runbook.md`）。
+
+---
+
+## 4. 前端分层（配置 / 规则 / 门面 / 页 / 块）
+
+React Component **≠** 仅 UI/UX。责任分层与全量归层表见：
+
+**[`docs/frontend-layers.md`](./frontend-layers.md)**（现行约定 + 全文件归层）
+
+摘要：
+
+| 层 | 职责 | 典型路径 |
+|----|------|----------|
+| 配置 | 卡/逛文案与导航 SSOT | `dual-entry`、`nav` |
+| 规则 | 纯校验与错误码/限流 | `packages/shared`、`sanitize-html` |
+| 门面 | HTTP / token | `web/api`、`admin/api` |
+| 页 | 任务编排 | `pages/*` |
+| 块/壳 | UI+UX 零件与布局 | `components/*`、`shell/*` |
+
+**依赖**：页 → 门面 →（规则）；页 → 组合块；块不直连业务 path，规则不 import React。

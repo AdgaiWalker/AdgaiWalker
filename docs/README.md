@@ -7,6 +7,7 @@
 | 根 [`README.md`](../README.md) | 安装、三端启动、验收命令 |
 | [`docs/api/README.md`](./api/README.md) | **Nest API 契约**（唯一） |
 | [`docs/architecture-modules.md`](./architecture-modules.md) | 模块职责与依赖/调用/触发/实现 |
+| [`docs/frontend-layers.md`](./frontend-layers.md) | **前端分层**：配置/规则/门面/页/块 + 全量归层表 |
 | [`docs/PRD-双入口小生产.md`](./PRD-双入口小生产.md) | 产品：卡/逛 + 过程 + 安全 |
 | [`docs/PRD-双入口触感.md`](./PRD-双入口触感.md) | 公开面触感工艺 |
 | [`docs/s1-go-live.md`](./s1-go-live.md) | 验证盒时钟与 A11 复盘勾选 |
