@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 04 · 内容创作闭环(admin)
 
 围绕 Evidence → Decision → Action → Outcome 责任链的内容创作工作台。全部需要 admin+ 权限。

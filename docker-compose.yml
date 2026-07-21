@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - '54329:5432'
+    environment:
+      POSTGRES_USER: walker
+      POSTGRES_PASSWORD: walker
+      POSTGRES_DB: walker
+    volumes:
+      - walker_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U walker -d walker']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  walker_pg_data:

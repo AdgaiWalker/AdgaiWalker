@@ -1,0 +1,153 @@
+:root {
+  --bg: #0f1115;
+  --fg: #e8eaed;
+  --muted: #9aa0a6;
+  --panel: #1a1d24;
+  --accent: #8ab4f8;
+  --border: #2d323c;
+  --danger: #f28b82;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  min-height: 100vh;
+}
+
+nav {
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  background: #12151b;
+}
+
+nav a {
+  display: block;
+  color: var(--fg);
+  text-decoration: none;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+}
+
+nav a.active,
+nav a:hover {
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.75rem 0;
+}
+
+button,
+button.secondary {
+  transition: transform 100ms ease-out, opacity 0.15s ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  nav {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  nav strong,
+  nav .muted {
+    width: 100%;
+  }
+
+  nav a {
+    display: inline-block;
+    margin: 0;
+  }
+}
+
+main {
+  padding: 1.25rem 1.5rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+button {
+  background: var(--accent);
+  color: #0f1115;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  margin-right: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  max-width: 480px;
+  display: block;
+  margin: 0.35rem 0 0.6rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #0f1115;
+  color: var(--fg);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.error {
+  color: var(--danger);
+}

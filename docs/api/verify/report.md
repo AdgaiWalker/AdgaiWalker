@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # API 联调报告 — 2026-07-04
 
 **联调环境**:Vercel 生产 `https://www.iwalk.pro`

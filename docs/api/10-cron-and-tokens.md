@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 10 · 定时任务与 Token 鉴权端点
 
 不在常规前端调用链里、靠 Token 或 cron 触发的端点。
