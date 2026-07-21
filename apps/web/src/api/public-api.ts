@@ -1,7 +1,10 @@
 /**
- * 公开站 API 门面：页面只依赖本模块，不直接拼 fetch。
+ * 公开站 API 门面：页/hooks 只依赖本模块，不直接拼 fetch。
  */
+import type { ContentFeedbackSignal } from '../shared/content-feedback';
 import { publicRequest } from './http';
+
+export type { ContentFeedbackSignal };
 
 export interface IntakeResult {
   clueId: string;
@@ -15,8 +18,6 @@ export interface LikeResult {
   path: string;
   count: number;
 }
-
-export type ContentFeedbackSignal = 'useful' | 'needs-more' | 'outdated';
 
 export const publicApi = {
   intake(body: string, source = 'tools-visitor'): Promise<IntakeResult> {

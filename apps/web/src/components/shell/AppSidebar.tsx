@@ -11,7 +11,6 @@ import {
   Rss,
   Search,
 } from 'lucide-react';
-import { cycleThemeVisual } from '../../lib/theme';
 import { dualEntry } from '../../shared/dual-entry';
 import { sidebarNavGroups } from '../../shared/nav';
 
@@ -19,9 +18,15 @@ type Props = {
   menuOpen: boolean;
   askActive: boolean;
   onOpenSearch: () => void;
+  onCycleTheme: () => void;
 };
 
-export function AppSidebar({ menuOpen, askActive, onOpenSearch }: Props) {
+export function AppSidebar({
+  menuOpen,
+  askActive,
+  onOpenSearch,
+  onCycleTheme,
+}: Props) {
   return (
     <aside className={`app-sidebar ${menuOpen ? 'is-open' : ''}`}>
       <div className="app-sidebar-head">
@@ -109,7 +114,7 @@ export function AppSidebar({ menuOpen, askActive, onOpenSearch }: Props) {
         <button
           type="button"
           className="btn-ghost"
-          onClick={() => cycleThemeVisual()}
+          onClick={onCycleTheme}
           title="切换节气色"
         >
           主题

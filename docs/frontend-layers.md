@@ -38,6 +38,18 @@
 | UX（用起来怎样） | 块的反馈 + 页的主路径编排 |
 | 能力 / 安全 / 配额 | **规则 + 门面 + 配置**，不是「又一个大组件」 |
 
+### 展示块硬约束（UI 组件）
+
+路径：`apps/web/src/components/ui/*`（及同等纯展示块）
+
+| 允许 | 禁止 |
+|------|------|
+| 接收 props（数据） | 读/写全局状态（store、context 业务） |
+| 渲染 UI | 直接 `fetch` / 调门面 / `publicApi` |
+| 通过 `onXxx` 抛出事件 | `document`/`window` 命令式 DOM API（监听请放 hook） |
+| 本地纯 UI 状态（如 hover 展开） | 藏领域规则、拼 API path 业务 |
+
+编排（门面 + 状态）放在 **hooks/** 或 **页**；块只接线 props。
 ---
 
 ## 2. 评审口令（五条）
@@ -87,10 +99,12 @@
 | `AppShell.tsx` | **壳** | 组合 + 搜索开关 |
 | `shell/HomeChrome` / `MobileBar` / `AppSidebar` | **块**（壳零件） | 展示为主 |
 | `ItemList.tsx` | **展示块** | 标杆 |
-| `LikeButton.tsx` | **交互块** | 调门面 |
-| `ContentFeedback.tsx` | **交互块** | 调门面 |
-| `GreetingCard.tsx` | **交互块** | 本地抽点子 |
-| `SearchModal.tsx` | **交互块（夹能力）** | 理想：搜索策略进规则/门面侧；现状全文扫 content |
+| `ui/LikeButton.tsx` | **展示块** | props + onLike |
+| `ui/ContentFeedback.tsx` | **展示块** | props + 事件 |
+| `ui/SearchModal.tsx` | **展示块** | props + onQueryChange |
+| `hooks/useLike` 等 | **页辅助（非 UI）** | 门面编排 |
+| `shared/search-content.ts` | **规则** | 纯搜索 |
+| `GreetingCard.tsx` | **交互块** | 本地抽点子（无 API） |
 
 ### 4.3 Web · 页
 

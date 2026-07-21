@@ -1,13 +1,16 @@
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { marked } from 'marked';
 import { getPostBySlug } from '../content';
-import { LikeButton } from '../components/LikeButton';
-import { ContentFeedback } from '../components/ContentFeedback';
+import { ContentFeedback } from '../components/ui/ContentFeedback';
+import { LikeButton } from '../components/ui/LikeButton';
+import { useContentFeedback } from '../hooks/useContentFeedback';
+import { useLike } from '../hooks/useLike';
+import { sanitizeHtml } from '../lib/sanitize-html';
 import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateLocale } from '../shared/format';
 import { estimateReadingMinutes } from '../shared/reading';
-import { sanitizeHtml } from '../lib/sanitize-html';
 
 function parseDate(iso: string): Date {
   const d = new Date(iso);
@@ -17,6 +20,7 @@ function parseDate(iso: string): Date {
 export function PostDetailPage() {
   const { slug = '' } = useParams();
   const post = getPostBySlug(decodeURIComponent(slug));
+
   if (!post) {
     return (
       <div className="surface-l2" style={{ padding: '1.5rem' }}>
@@ -26,9 +30,23 @@ export function PostDetailPage() {
     );
   }
 
-  const rawHtml = marked.parse(post.body, { async: false }) as string;
-  const html = sanitizeHtml(rawHtml);
+  return <PostDetailBody post={post} />;
+}
+
+function PostDetailBody({
+  post,
+}: {
+  post: NonNullable<ReturnType<typeof getPostBySlug>>;
+}) {
   const likePath = `${dualEntry.browse.path}/${post.slug}`;
+  const like = useLike(likePath);
+  const feedback = useContentFeedback(post.slug);
+
+  const html = useMemo(() => {
+    const rawHtml = marked.parse(post.body, { async: false }) as string;
+    return sanitizeHtml(rawHtml);
+  }, [post.body]);
+
   const mins = estimateReadingMinutes(post.body);
   const statusLabel = post.status ? STATUS_LABELS[post.status] ?? post.status : '';
 
@@ -57,8 +75,24 @@ export function PostDetailPage() {
         <div className="prose-md" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
       <div className="article-end">
-        <LikeButton path={likePath} />
-        <ContentFeedback contentId={post.slug} />
+        <LikeButton
+          count={like.count}
+          busy={like.busy}
+          error={like.error}
+          onLike={like.onLike}
+        />
+        <ContentFeedback
+          done={feedback.done}
+          error={feedback.error}
+          note={feedback.note}
+          pendingSignal={feedback.pendingSignal}
+          busy={feedback.busy}
+          onSelectUseful={feedback.onSelectUseful}
+          onSelectNeedsMore={feedback.onSelectNeedsMore}
+          onSelectOutdated={feedback.onSelectOutdated}
+          onNoteChange={feedback.onNoteChange}
+          onSubmitPending={feedback.onSubmitPending}
+        />
       </div>
     </article>
   );
