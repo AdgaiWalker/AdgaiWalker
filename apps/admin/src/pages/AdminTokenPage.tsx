@@ -11,7 +11,7 @@ import {
   setAdminToken,
 } from '../auth/token-store';
 
-export function LoginPage() {
+export function AdminTokenPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from =

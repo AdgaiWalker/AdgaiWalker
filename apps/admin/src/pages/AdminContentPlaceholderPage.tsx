@@ -7,7 +7,7 @@ interface Item {
 }
 
 /** 内容只读说明：编辑器未迁，真相源在仓库 content/log */
-export function ContentPage() {
+export function AdminContentPlaceholderPage() {
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {

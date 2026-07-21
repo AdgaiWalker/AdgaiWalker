@@ -9,13 +9,8 @@ import { useLike } from '../hooks/useLike';
 import { sanitizeHtml } from '../lib/sanitize-html';
 import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
-import { formatDateLocale } from '../shared/format';
+import { formatDateLocale, parseIsoDate } from '../shared/format';
 import { estimateReadingMinutes } from '../shared/reading';
-
-function parseDate(iso: string): Date {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? new Date() : d;
-}
 
 export function PostDetailPage() {
   const { slug = '' } = useParams();
@@ -61,7 +56,7 @@ function PostDetailBody({
       </p>
       <h1>{post.title}</h1>
       <p className="meta">
-        {formatDateLocale(parseDate(post.date))} · {post.type}
+        {formatDateLocale(parseIsoDate(post.date))} · {post.type}
         {statusLabel ? ` · ${statusLabel}` : ''}
         {` · 约 ${mins} 分钟阅读`}
         {post.tags.length ? ` · ${post.tags.slice(0, 4).join(' · ')}` : ''}

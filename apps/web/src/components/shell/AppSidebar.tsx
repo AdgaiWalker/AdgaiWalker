@@ -11,6 +11,7 @@ import {
   Rss,
   Search,
 } from 'lucide-react';
+import { SITE_LINKS } from '../../shared/constants';
 import { dualEntry } from '../../shared/dual-entry';
 import { sidebarNavGroups } from '../../shared/nav';
 
@@ -98,17 +99,17 @@ export function AppSidebar({
 
       <div className="app-sidebar-foot">
         <a
-          href="https://github.com/AdgaiWalker"
+          href={SITE_LINKS.github}
           target="_blank"
           rel="noreferrer"
           aria-label="GitHub"
         >
           <Code2 size={18} />
         </a>
-        <a href="mailto:praxiswalker@gmail.com" aria-label="Email">
+        <a href={SITE_LINKS.mailto} aria-label="Email">
           <Mail size={18} />
         </a>
-        <a href="/rss.xml" aria-label="RSS" title="RSS">
+        <a href={SITE_LINKS.rss} aria-label="RSS" title="RSS">
           <Rss size={16} />
         </a>
         <button

@@ -8,10 +8,10 @@ import { ToolsResourcesPage } from './pages/ToolsResourcesPage';
 import { IdeasPage } from './pages/IdeasPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { LearnPage } from './pages/LearnPage';
-import { ContentPage } from './pages/ContentPage';
+import { ContentUniversePage } from './pages/ContentUniversePage';
 import { AboutPage } from './pages/AboutPage';
 import { SupportPage } from './pages/SupportPage';
-import { LoginPage } from './pages/LoginPage';
+import { AccountLoginShellPage } from './pages/AccountLoginShellPage';
 
 export function App() {
   return (
@@ -24,12 +24,12 @@ export function App() {
           <Route path="ideas" element={<IdeasPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="learn" element={<LearnPage />} />
-          <Route path="content" element={<ContentPage />} />
+          <Route path="content" element={<ContentUniversePage />} />
           <Route path="tools" element={<ToolsPage />} />
           <Route path="tools/resources" element={<ToolsResourcesPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="support" element={<SupportPage />} />
-          <Route path="login" element={<LoginPage />} />
+          <Route path="login" element={<AccountLoginShellPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

@@ -1,17 +1,13 @@
 import { Link } from 'react-router-dom';
 import type { ContentItem } from '../content';
 import { STATUS_LABELS } from '../shared/constants';
-import { formatDateLocale } from '../shared/format';
+import { dualEntry } from '../shared/dual-entry';
+import { formatDateLocale, parseIsoDate } from '../shared/format';
 import { estimateReadingMinutes } from '../shared/reading';
-
-function parseDate(iso: string): Date {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? new Date(0) : d;
-}
 
 export function ItemList({
   items,
-  detailBase = '/posts',
+  detailBase = dualEntry.browse.path,
 }: {
   items: ContentItem[];
   detailBase?: string;
@@ -36,7 +32,7 @@ export function ItemList({
             </Link>
             {statusLabel ? <span className="status-pill">{statusLabel}</span> : null}
             <div className="meta">
-              {formatDateLocale(parseDate(p.date))} · {p.type}
+              {formatDateLocale(parseIsoDate(p.date))} · {p.type}
               {p.level ? ` · ${p.level}` : ''}
               {` · 约 ${mins} 分钟`}
               {p.tags.length ? ` · ${p.tags.slice(0, 3).join(', ')}` : ''}

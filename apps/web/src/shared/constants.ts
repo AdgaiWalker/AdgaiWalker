@@ -28,6 +28,16 @@ export const STATUS_WEIGHT: Record<string, number> = {
 /** 站点联系邮箱 */
 export const SITE_EMAIL = 'praxiswalker@gmail.com';
 
+/** 站外链接 SSOT（壳/关于/名片共用，勿散落硬编码） */
+export const SITE_LINKS = {
+  email: SITE_EMAIL,
+  mailto: `mailto:${SITE_EMAIL}`,
+  github: 'https://github.com/AdgaiWalker',
+  bilibili: 'https://space.bilibili.com/1029612512',
+  xiaohongshu: 'https://www.xiaohongshu.com',
+  rss: '/rss.xml',
+} as const;
+
 /** 中文阅读速度（字/分钟），用于估算阅读时长 */
 export const CHARS_PER_MINUTE_ZH = 400;
 

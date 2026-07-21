@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Mail, Sparkles } from 'lucide-react';
-import { SITE_EMAIL } from '../shared/constants';
+import { SITE_LINKS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
 
 export interface Spark {
@@ -54,7 +54,7 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
       <div className="social-row">
         <a
           className="social-icon-btn"
-          href="https://space.bilibili.com/1029612512"
+          href={SITE_LINKS.bilibili}
           target="_blank"
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
@@ -67,7 +67,7 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
         </a>
         <a
           className="social-icon-btn"
-          href="https://www.xiaohongshu.com"
+          href={SITE_LINKS.xiaohongshu}
           target="_blank"
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
@@ -80,7 +80,7 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
         </a>
         <a
           className="social-icon-btn"
-          href={`mailto:${SITE_EMAIL}`}
+          href={SITE_LINKS.mailto}
           onClick={(e) => e.stopPropagation()}
           title="Email"
         >

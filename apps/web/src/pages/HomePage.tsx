@@ -12,12 +12,7 @@ import { getSolarTerm } from '../lib/solar-terms';
 import { GreetingCard } from '../components/GreetingCard';
 import { dualEntry } from '../shared/dual-entry';
 import { SPARK_FALLBACKS } from '../shared/rules-ui';
-import { formatDateCompact } from '../shared/format';
-
-function parseDate(iso: string): Date {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? new Date() : d;
-}
+import { formatDateCompact, parseIsoDate } from '../shared/format';
 
 export function HomePage() {
   const term = getSolarTerm(new Date());
@@ -140,7 +135,7 @@ export function HomePage() {
                   >
                     <span className="recent-item-title">{p.title}</span>
                     <span className="recent-item-date">
-                      {formatDateCompact(parseDate(p.date))}
+                      {formatDateCompact(parseIsoDate(p.date))}
                     </span>
                   </Link>
                 ))}

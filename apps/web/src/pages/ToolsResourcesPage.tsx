@@ -9,13 +9,15 @@ import {
   infra,
   skills,
 } from '../data/tools-data';
+import { dualEntry } from '../shared/dual-entry';
 
 export function ToolsResourcesPage() {
   return (
     <div>
       <h1 className="page-title">资源</h1>
       <p className="page-lead">
-        与旧站 tools 数据同源（tools-data）。问答请去 <Link to="/tools">/tools</Link>。
+        与旧站 tools 数据同源（tools-data）。问答请去{' '}
+        <Link to={dualEntry.ask.path}>{dualEntry.ask.path}</Link>。
       </p>
 
       <Section title="社区">

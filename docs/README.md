@@ -9,6 +9,7 @@
 | [`docs/architecture-modules.md`](./architecture-modules.md) | 模块职责与依赖/调用/触发/实现 |
 | [`docs/frontend-layers.md`](./frontend-layers.md) | **前端分层**：配置/规则/门面/页/块 + 全量归层表 |
 | [`docs/feature-add-playbook.md`](./feature-add-playbook.md) | **加功能工作法**（功能驱动，不空转脚手架） |
+| [`docs/naming-vocabulary.md`](./naming-vocabulary.md) | **命名/SSOT 词汇表**（同名异义禁区） |
 | [`docs/PRD-双入口小生产.md`](./PRD-双入口小生产.md) | 产品：卡/逛 + 过程 + 安全 |
 | [`docs/PRD-双入口触感.md`](./PRD-双入口触感.md) | 公开面触感工艺 |
 | [`docs/s1-go-live.md`](./s1-go-live.md) | 验证盒时钟与 A11 复盘勾选 |

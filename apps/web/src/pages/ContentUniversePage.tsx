@@ -1,7 +1,7 @@
 import { getAllItems } from '../content';
 import { ItemList } from '../components/ItemList';
 
-export function ContentPage() {
+export function ContentUniversePage() {
   const items = getAllItems();
   return (
     <div>
