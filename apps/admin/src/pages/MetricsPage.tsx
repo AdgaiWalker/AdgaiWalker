@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { adminApi, type Metrics } from '../api/admin-api';
+import { useAdminAction } from '../hooks/useAdminAction';
 
 const BUCKET_LABEL: Record<string, string> = {
   visitor: '访客卡口',
@@ -9,14 +10,17 @@ const BUCKET_LABEL: Record<string, string> = {
 
 export function MetricsPage() {
   const [m, setM] = useState<Metrics | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const { err, run } = useAdminAction();
+
+  const load = useCallback(async () => {
+    await run(async () => {
+      setM(await adminApi.metrics());
+    });
+  }, [run]);
 
   useEffect(() => {
-    void adminApi
-      .metrics()
-      .then(setM)
-      .catch((e) => setErr(e instanceof Error ? e.message : String(e)));
-  }, []);
+    void load();
+  }, [load]);
 
   if (err) return <p className="error">{err}</p>;
   if (!m) return <p className="muted">加载中…</p>;

@@ -21,8 +21,8 @@ export function HomeChrome({ onOpenSearch }: Props) {
         <Search size={14} />
         搜索
       </button>
-      <Link to={WEB_ROUTES.login} className="btn-ghost">
-        登录
+      <Link to={WEB_ROUTES.login} className="btn-ghost" title="账号登录尚未开放">
+        账号
       </Link>
     </div>
   );

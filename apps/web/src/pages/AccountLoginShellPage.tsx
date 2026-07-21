@@ -1,36 +1,35 @@
+/**
+ * 公开站账号登录壳 — Auth 未接；避免伪装成已可用登录
+ */
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { dualEntry } from '../shared/dual-entry';
+import { WEB_ROUTES } from '../shared/routes';
 
 export function AccountLoginShellPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
-
   return (
     <div>
-      <h1 className="page-title">登录</h1>
-      <p className="page-lead">统一入口。游客问答不挡首屏。</p>
-      <div className="panel-glass" style={{ padding: '1.35rem 1.5rem', borderRadius: 28, maxWidth: 420 }}>
-        <label htmlFor="u">用户名</label>
-        <input id="u" value={username} onChange={(e) => setUsername(e.target.value)} style={{ margin: '6px 0 12px' }} />
-        <label htmlFor="p">密码</label>
-        <input
-          id="p"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ margin: '6px 0 12px' }}
-        />
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => setMsg('登录 API 将在 Auth 阶段接入；路径与表单壳已就绪。')}
-        >
-          登录
-        </button>
-        {msg ? <p className="meta">{msg}</p> : null}
+      <h1 className="page-title">账号</h1>
+      <p className="page-lead">
+        访客无需登录即可使用「{dualEntry.ask.label}」（{dualEntry.ask.path}
+        ）。账号登录将在 Auth 阶段接入，当前仅保留入口壳。
+      </p>
+      <div
+        className="panel-glass"
+        style={{ padding: '1.35rem 1.5rem', borderRadius: 28, maxWidth: 420 }}
+      >
+        <p className="meta" style={{ marginTop: 0 }}>
+          状态：<strong>未开放</strong>
+        </p>
+        <p className="meta">
+          站主过程请使用管理端令牌（本机 admin 的「令牌」页），与公开账号登录不是同一套。
+        </p>
         <p className="meta" style={{ marginTop: 12 }}>
-          <Link to="/">返回首页</Link>
+          <Link to={dualEntry.ask.path} className="btn-primary">
+            去{dualEntry.ask.cta}
+          </Link>{' '}
+          <Link to={WEB_ROUTES.home} className="btn-ghost">
+            返回首页
+          </Link>
         </p>
       </div>
     </div>

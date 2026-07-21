@@ -121,8 +121,8 @@ export function AppSidebar({
         >
           主题
         </button>
-        <Link to={WEB_ROUTES.login} className="btn-ghost">
-          登录
+        <Link to={WEB_ROUTES.login} className="btn-ghost" title="账号登录尚未开放">
+          账号
         </Link>
       </div>
     </aside>
