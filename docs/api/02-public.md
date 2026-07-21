@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 02 · 公开 API
 
 无需登录即可访问的端点(部分有 IP 限流)。涵盖需求匹配、点赞、统计、内容反馈、点子互动、文章共创。

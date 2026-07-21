@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 07 · 系统管理(admin)
 
 账号、邀请码、对象级授权、AI Gateway、外观、赞赏、事件、架构图。涵盖系统运营的全部管理功能。

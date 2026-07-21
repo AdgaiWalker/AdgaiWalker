@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 06 · 能力资产(admin)
 
 从真实经验沉淀到规则、Skill 准入的完整能力资产生命周期。全部需要 admin+ 权限。

@@ -1,5 +1,5 @@
 /**
- * tools/index.astro 的数据源
+ * ToolsResourcesPage 的数据源
  * 新增/修改资源只改此文件，不改页面组件
  */
 

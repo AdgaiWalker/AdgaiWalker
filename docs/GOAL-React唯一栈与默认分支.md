@@ -126,7 +126,7 @@
     - **Surface**: 本文件 / 会话证据  
     - **Proof**: 数字可复述  
     - **Depends on**: none  
-  - [ ] 确认 PR #39 仍 open 且含「删 Astro 树」提交 `643b41a`  
+  - [x] 确认 PR #39 仍 open 且含「删 Astro 树」提交 `643b41a`  
     - **Surface**: GitHub PR  
     - **Proof**: PR 页可见  
     - **Depends on**: none  
@@ -166,16 +166,16 @@
   - 无兼容垫片  
   - 退出前 typecheck  
 - **Todos**:
-  - [ ] `apps/admin/.../ContentPage.tsx`：去掉「Astro 对照」  
+  - [x] `apps/admin/.../ContentPage.tsx`：去掉「Astro 对照」  
     - **Surface**: admin UI 文案  
     - **Proof**: grep apps 无「现网 Astro」  
-  - [ ] `apps/web/src/data/tools-data.ts` 注释改为 React 页  
+  - [x] `apps/web/src/data/tools-data.ts` 注释改为 React 页  
     - **Surface**: web  
     - **Proof**: 注释可读  
-  - [ ] `scripts/verify-production-media-storage-local.mjs` 等注释去 astro/vitest 过时描述  
+  - [x] `scripts/verify-production-media-storage-local.mjs` 等注释去 astro/vitest 过时描述  
     - **Surface**: scripts  
     - **Proof**: grep scripts 无「项目用 astro」  
-  - [ ] 保留 `generate-content.mjs` 的 strip 逻辑（防御）  
+  - [x] 保留 `generate-content.mjs` 的 strip 逻辑（防御）  
     - **Surface**: scripts  
     - **Proof**: 文件仍含 strip 函数  
   - [ ] `pnpm typecheck`  
@@ -193,10 +193,10 @@
   - 不删 ADR 历史价值；可加 header  
   - 禁止借机改产品范围  
 - **Todos**:
-  - [ ] 为仍含大量 `.astro` 路径的 `docs/design`、`docs/GOAL-stage1-*` 加退役 header 或迁 archive  
+  - [x] 为仍含大量 `.astro` 路径的 `docs/design`、`docs/GOAL-stage1-*` 加退役 header 或迁 archive  
     - **Surface**: docs  
     - **Proof**: 文首可见「非当前栈」  
-  - [ ] 更新 `docs/architecture-modules.md` 一句：运行入口仅 apps/*  
+  - [x] 更新 `docs/architecture-modules.md` 一句：运行入口仅 apps/*  
     - **Surface**: docs  
     - **Proof**: 与 README 一致  
 - **Exit proof**: README + CLAUDE + architecture 三处栈描述一致为 React monorepo  

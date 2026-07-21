@@ -128,7 +128,7 @@ schedule "0 * * * *" = 每小时整点触发 /api/match-process。
   () => agent(`你的任务是新建内容字段迁移校验脚本。用中文。
 
 新建 scripts/check-content-fields.mjs，功能：
-1. 遍历 src/content/log/ 下所有 .md 文件（递归子目录）
+1. 遍历 content/log/ 下所有 .md 文件（递归子目录）
 2. 用 gray-matter 解析 frontmatter（项目已有 gray-matter 依赖）
 3. 校验必需字段是否存在：form, domain, intent, valueMode, aiUsePolicy, updated, summary
 4. 输出缺失字段的文件清单（只报告不修复）
@@ -137,7 +137,7 @@ schedule "0 * * * *" = 每小时整点触发 /api/match-process。
 然后在 package.json 的 scripts 里加："check:content-fields": "node scripts/check-content-fields.mjs"
 （用 Read 读 package.json，用 Edit 加 script，不要覆盖整个文件）
 
-先 Glob src/content/log/*.md 看看实际有哪些文件和 frontmatter 字段，据此确定校验逻辑。
+先 Glob content/log/*.md 看看实际有哪些文件和 frontmatter 字段，据此确定校验逻辑。
 运行验证：node scripts/check-content-fields.mjs（即使有缺失字段也应正常输出，不崩）`, { label: 'P0-8 内容脚本' }),
 
   // Agent E: P0-9-a sentry.ts
@@ -147,7 +147,7 @@ schedule "0 * * * *" = 每小时整点触发 /api/match-process。
 - 导出 captureException(error: unknown, context?: Record<string, unknown>): void
 - SENTRY_DSN 走 import.meta.env.SENTRY_DSN
 - 未配置 SENTRY_DSN 时 no-op（不阻塞开发/测试，不抛错）
-- 配置时用 fetch 直接上报到 Sentry envelope 端点（轻量手封，不用 @sentry/astro SDK）
+- 配置时用 fetch 直接上报到 Sentry envelope 端点（轻量手封，不绑框架 SDK）
 - fire-and-forget 语义（不 await，失败静默，绝不影响业务流程）
 
 DSN 格式解析：https://<publickey>@<host>/<projectid>

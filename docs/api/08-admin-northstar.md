@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 08 · 经营模块(admin)— scaffolded
 
 NorthStar 经营系统(offers/orders)。**代码与状态机完整,但默认 `NORTHSTAR_ENABLED=false` 门控**,属于"骨架已就绪、等社区/经营阶段激活"的预留位。

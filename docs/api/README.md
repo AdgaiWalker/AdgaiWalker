@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # AdgaiWalker / iwalk.pro API 文档
 
 本目录是 **67 个 API 端点的权威契约文档**,基于 2026-07-04 逐文件代码核实生成,不是凭记忆或旧文档抄写。文档与代码零漂移是硬性要求——每次代码改动后,对应章节必须同步。

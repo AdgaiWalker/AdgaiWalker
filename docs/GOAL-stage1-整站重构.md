@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # Goal Document: Walker 站 Stage 1 整站重构（保真前台 + 推进核）
 
 > **关联方案：** 仓库根目录 [`整体改造方案.md`](../整体改造方案.md)（改造标准源）  

@@ -6,13 +6,11 @@ interface Item {
   type: string;
 }
 
-/** 内容列表只读（GitHub 编辑未迁，标明） */
+/** 内容只读说明：编辑器未迁，真相源在仓库 content/log */
 export function ContentPage() {
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
-    // 开发态：从 web 同源无此数据；admin 仅展示说明 + 可选 fetch 公开站生成物不可用
-    // 用 metrics 健康与说明代替整包编辑器
     setItems([]);
   }, []);
 
@@ -21,13 +19,13 @@ export function ContentPage() {
       <h1>内容列表</h1>
       <div className="panel">
         <p>
-          站内 Markdown 真相源：<code>src/content/log</code>
+          Markdown 真相源：<code>content/log</code>
         </p>
         <p className="muted">
-          就地编辑 / GitHub 回写：<strong>未迁</strong>（Stage 1 不整迁旧 Admin
-          编辑器）。请在仓库或现网 Astro 对照流编辑。
+          就地编辑 / GitHub 回写：<strong>未迁</strong>。改文请直接编辑仓库{' '}
+          <code>content/log</code>，构建期经 <code>pnpm content:gen</code> 进入公开站。
         </p>
-        <p className="muted">公开阅读请用 web：/posts/:slug</p>
+        <p className="muted">公开阅读：web <code>/posts/:slug</code></p>
         {items.length === 0 ? null : (
           <ul>
             {items.map((i) => (

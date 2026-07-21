@@ -40,7 +40,7 @@ process.env.ADMIN_MEDIA_STORAGE_DIR = probeRoot;
 process.env.ADMIN_MEDIA_PUBLIC_BASE_URL = probeBase;
 
 // 动态加载生产代码的文件存储实现（ts 直接 import 需要编译；用 tsx/esbuild 注册器）。
-// 项目用 astro/vitest，tsx 在 devDependencies。若不可用则回退到内联等价实现（见下方）。
+// monorepo 下优先用 tsx；若不可用则回退到内联等价实现（见下方）。
 let fileStorage;
 try {
   // 尝试通过项目已有的 ts 加载机制（vitest 用 vites... 但脚本独立运行用 tsx）。

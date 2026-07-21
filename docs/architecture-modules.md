@@ -1,5 +1,8 @@
 # 核心模块与关系（双入口小生产）
 
+> **当前运行栈（唯一）**：`apps/web` · `apps/admin`（React + Vite）· `apps/api`（Nest）· `packages/shared` · 内容 `content/log`。  
+> **无 Astro 可运行入口**。旧设计文档见 `docs/archive/` / `docs/design/`（历史）。
+
 > 标注约定：  
 > - **依赖** A → B：编译/设计期需要 B 的抽象（优先接口）  
 > - **调用** A → B：运行期发起请求/函数调用  
@@ -42,6 +45,7 @@ SharedKernel（纯规则，无 I/O）
 | **admin/api/admin-api** | 管理 HTTP 门面（带 Bearer） |
 | **admin/auth/token-store** | 本机令牌存取（无业务） |
 | **ContentReadModel** | 构建期扫描 `content/log` 生成只读 JSON |
+| **dual-entry** | 公开站卡/逛路径与文案单一配置（无硬编码散落） |
 
 ### 契约与领域（无 I/O）
 
@@ -145,7 +149,7 @@ PostgreSQL
 - Application → 具体 PrismaClient 散落 `new`
 - Web 内复制主选/闭环状态机
 - 无 DATABASE_URL 写成功（必须 503 `storage-unavailable`）
-- Redis 必依赖 / 旧 Astro 双写推进核
+- Redis 必依赖 / 在 monorepo 外再启第二套可运行前台
 
 ---
 

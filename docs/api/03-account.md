@@ -1,3 +1,7 @@
+> **历史文档**：本文描述的是已退役的 Astro 单应用时代方案/记录。  
+> **当前运行栈**见 `README.md`、`docs/architecture-modules.md`（React monorepo）。  
+> 请勿按本文路径（`src/pages/*.astro`、`npx astro check`）施工。
+
 # 03 · 账号 API
 
 登录、注册、登出、画像、改密、本机预览。所有成功登录/注册/setup 都回 `Set-Cookie: walker-session=...`。

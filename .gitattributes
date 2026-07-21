@@ -1,0 +1,4 @@
+docs/** linguist-documentation
+content/** linguist-documentation
+*.md linguist-documentation
+*.mdx linguist-documentation
