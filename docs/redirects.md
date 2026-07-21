@@ -20,3 +20,9 @@
 内容真相源：`content/log/**/*.{md,mdx}` → `pnpm content:gen` → `apps/web/src/generated/content.json`。
 
 暂无额外 301；切流细节见 `docs/cutover-runbook.md`。
+
+## 内容 slug 迁移（2026-07-22）
+
+中文文件名 → 英文 slug；对照表见 [`docs/content-naming.md`](./content-naming.md)。  
+生产 301 写在根目录 `vercel.json` `redirects`（`/posts/旧` → `/posts/新`）。
+

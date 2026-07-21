@@ -24,8 +24,8 @@ aiUsePolicy:
   reason: 个人日记反思，含对话场景和主观判断，仅可读作背景
 related:
   - walkcraft-skill-craft
-  - 减法对话
-  - 渡论构建
+  - subtraction-dialogue
+  - ferry-theory
 visibility: draft
 layout: immersive
 ---

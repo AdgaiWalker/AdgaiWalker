@@ -16,7 +16,7 @@ domain: ai
 intent: share
 valueMode: utility
 related:
-  - 点子共促
+  - idea-cocreate
 aiUsePolicy:
   level: AI-2
   readable: true

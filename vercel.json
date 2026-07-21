@@ -4,6 +4,158 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build:web",
   "outputDirectory": "apps/web/dist",
+  "redirects": [
+    {
+      "source": "/posts/Walker启航",
+      "destination": "/posts/walker-launch",
+      "permanent": true
+    },
+    {
+      "source": "/posts/Walker启航/",
+      "destination": "/posts/walker-launch",
+      "permanent": true
+    },
+    {
+      "source": "/posts/我的畏惧也是动力",
+      "destination": "/posts/fear-as-fuel",
+      "permanent": true
+    },
+    {
+      "source": "/posts/我的畏惧也是动力/",
+      "destination": "/posts/fear-as-fuel",
+      "permanent": true
+    },
+    {
+      "source": "/posts/点子超越时间",
+      "destination": "/posts/ideas-beyond-time",
+      "permanent": true
+    },
+    {
+      "source": "/posts/点子超越时间/",
+      "destination": "/posts/ideas-beyond-time",
+      "permanent": true
+    },
+    {
+      "source": "/posts/未来已经在来了",
+      "destination": "/posts/future-already-here",
+      "permanent": true
+    },
+    {
+      "source": "/posts/未来已经在来了/",
+      "destination": "/posts/future-already-here",
+      "permanent": true
+    },
+    {
+      "source": "/posts/渡论构建",
+      "destination": "/posts/ferry-theory",
+      "permanent": true
+    },
+    {
+      "source": "/posts/渡论构建/",
+      "destination": "/posts/ferry-theory",
+      "permanent": true
+    },
+    {
+      "source": "/posts/Ferry渡轮",
+      "destination": "/posts/ferry-spec",
+      "permanent": true
+    },
+    {
+      "source": "/posts/Ferry渡轮/",
+      "destination": "/posts/ferry-spec",
+      "permanent": true
+    },
+    {
+      "source": "/posts/减法对话",
+      "destination": "/posts/subtraction-dialogue",
+      "permanent": true
+    },
+    {
+      "source": "/posts/减法对话/",
+      "destination": "/posts/subtraction-dialogue",
+      "permanent": true
+    },
+    {
+      "source": "/posts/设计为人与内容搭桥",
+      "destination": "/posts/design-for-people",
+      "permanent": true
+    },
+    {
+      "source": "/posts/设计为人与内容搭桥/",
+      "destination": "/posts/design-for-people",
+      "permanent": true
+    },
+    {
+      "source": "/posts/卡牌桌",
+      "destination": "/posts/card-table",
+      "permanent": true
+    },
+    {
+      "source": "/posts/卡牌桌/",
+      "destination": "/posts/card-table",
+      "permanent": true
+    },
+    {
+      "source": "/posts/CLI命令面板",
+      "destination": "/posts/cli-command-palette",
+      "permanent": true
+    },
+    {
+      "source": "/posts/CLI命令面板/",
+      "destination": "/posts/cli-command-palette",
+      "permanent": true
+    },
+    {
+      "source": "/posts/CC入门",
+      "destination": "/posts/cc-intro",
+      "permanent": true
+    },
+    {
+      "source": "/posts/CC入门/",
+      "destination": "/posts/cc-intro",
+      "permanent": true
+    },
+    {
+      "source": "/posts/Codex入门",
+      "destination": "/posts/codex-intro",
+      "permanent": true
+    },
+    {
+      "source": "/posts/Codex入门/",
+      "destination": "/posts/codex-intro",
+      "permanent": true
+    },
+    {
+      "source": "/posts/点子共促",
+      "destination": "/posts/idea-cocreate",
+      "permanent": true
+    },
+    {
+      "source": "/posts/点子共促/",
+      "destination": "/posts/idea-cocreate",
+      "permanent": true
+    },
+    {
+      "source": "/posts/平价AI社区",
+      "destination": "/posts/affordable-ai-community",
+      "permanent": true
+    },
+    {
+      "source": "/posts/平价AI社区/",
+      "destination": "/posts/affordable-ai-community",
+      "permanent": true
+    },
+    {
+      "source": "/posts/无题-关于人与skill",
+      "destination": "/posts/on-people-and-skill",
+      "permanent": true
+    },
+    {
+      "source": "/posts/无题-关于人与skill/",
+      "destination": "/posts/on-people-and-skill",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/).*)",

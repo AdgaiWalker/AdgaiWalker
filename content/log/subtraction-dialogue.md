@@ -12,7 +12,7 @@ intent: think
 valueMode: both
 series: 设计思考
 seriesOrder: 1
-related: [设计为人与内容搭桥, 渡论构建, 卡牌桌]
+related: [design-for-people, ferry-theory, card-table]
 aiUsePolicy:
   level: AI-3
   readable: true
