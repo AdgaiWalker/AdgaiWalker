@@ -47,12 +47,12 @@ pnpm accept          # 双入口 + 深度浏览器（需三端已起）
 
 ## 产品与工程文档
 
-- `docs/README.md` — 文档路由（现行 vs 历史）
-- `docs/api/README.md` — **Nest API 现行契约**
+- `docs/README.md` — **文档路由**（现行 / 资料 / 归档）
+- `docs/api/README.md` — Nest API 契约
 - `docs/architecture-modules.md` — 模块与依赖关系
 - `docs/PRD-双入口小生产.md` / `docs/PRD-双入口触感.md`
-- `docs/s1-go-live.md` / `docs/cutover-runbook.md`
-- 废止的 Astro API 契约：`docs/archive/api-astro-era/`
+- `docs/s1-go-live.md` / `docs/cutover-runbook.md` / `docs/stage1-retro.md`
+- 已完成 Goal 与历史设计：`docs/archive/`
 
 ## 产品心智
 

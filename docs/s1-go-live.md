@@ -37,6 +37,6 @@ Admin → **指标** 页「线索来源（A11 验证盒）」：
 - [ ] 降权「卡」（仍保留入口，不删过程）
 
 
-## 默认分支（Goal React 唯一栈）
+## 默认分支
 
-- **2026-07-21**：本仓库执行路径以 monorepo React 为准；合并后 `main` 应无 `.astro` 应用文件。
+- **2026-07-21**：执行路径以 monorepo React 为准；**`main` 已无** `.astro` 应用文件（追溯：`docs/archive/goals/GOAL-React唯一栈与默认分支.md`）。

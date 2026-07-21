@@ -4,7 +4,7 @@
 
 # Goal Document: Walker 站 Stage 1 整站重构（保真前台 + 推进核）
 
-> **关联方案：** 仓库根目录 [`整体改造方案.md`](../整体改造方案.md)（改造标准源）  
+> **关联方案：** [`整体改造方案.md`](../整体改造方案.md)（历史标准源，同 archive）  
 > **本文角色：** Stage 1 可执行目标与阶段闸门（先 Goal，再 Go）  
 > **状态：** Stage 1 工程交付完成（2026-07-21）；生产切流待站主下令
 
@@ -13,7 +13,7 @@
 ## Go / No-Go
 
 - **Judgment**: **Go executed · Stage1 engineering complete**
-- **Reason**: 技术栈、保真/改造边界、monorepo 形态、推进核语义在 `整体改造方案.md` 已可验证；仓库仍是 Astro 单应用、`apps/*` 未出现。执行前还差三件显式拍板：**(1) 本 Goal + 方案为执行权威；(2) 长分支旁路 monorepo；(3) 下令从 Phase 1（M1）开工**。未拍板前不写业务代码。
+- **Reason**: monorepo + Nest/PG + 推进核已交付（见 `docs/stage1-retro.md`）。下文「仓库仍是 Astro / 无 apps/*」为**起草时**背景，不是现状；`整体改造方案.md` 已归档于 `docs/archive/整体改造方案.md`。
 
 ---
 

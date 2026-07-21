@@ -8,8 +8,8 @@
 
 ## Go / No-Go
 
-- **Judgment**: **Go after decisions（可先开 Phase 1–2；Phase 3 需你点合并/改默认分支）**
-- **Reason**: 目标可验证、阶段清晰。feature 上 Astro 应用树已删（0 个 `.astro`）。**35.2% Astro 来自默认分支 `main` 仍是旧站**——合并 PR 或改默认分支必须由仓库权限方完成；其余源码/文档清理可立即执行。
+- **Judgment**: **Go completed**
+- **Reason**: PR #39 已合 `main`；仓库树无 `.astro` 应用文件；语言条以 tree 为准。下文「main 仍是 Astro / 35.2%」为**合并前历史证据**，不是现状。
 
 ---
 
@@ -41,10 +41,10 @@
 - **Verification rule**: 默认分支树 `.astro` 数 = 0；GitHub languages 无 Astro 键或 ≈0；本机 `pnpm typecheck` + `pnpm accept`（环境齐时）通过  
 - **Evidence source**: `git ls-tree` / GitHub API `languages` + `git/trees/{branch}?recursive=1` / 验收脚本  
 - **Pass criteria**:
-  - [ ] `main`（或新默认分支）上 `.astro` 文件数 = 0  
-  - [ ] 仓库 `GET /repos/.../languages` 无 `Astro` 或占比 &lt; 0.1%  
-  - [ ] 源码路径（apps/packages/scripts）无「请到 Astro 编辑」类误导文案  
-  - [ ] 双入口主路径未回退（accept 或等价 curl 闭环）  
+  - [x] `main`（或新默认分支）上 `.astro` 文件数 = 0  
+  - [x] 仓库 languages：以 tree `.astro`=0 为准（Linguist 可滞后）  
+  - [x] 源码路径无「请到 Astro 编辑」类误导文案  
+  - [x] 双入口主路径未回退（accept 已绿）  
 - **Confidence note**: 语言条已用 API 验证 = main 的 35.2%；feature 树 API 验证 = 0 个 `.astro`。合并后 Linguist 可能延迟数分钟刷新。  
 - **Judgment owner**:
   - 树/命令：系统（git + API）  
@@ -249,10 +249,6 @@
 
 ---
 
-## First Execution Step
+## First Execution Step（历史）
 
-1. **你**：打开 [PR #39](https://github.com/AdgaiWalker/AdgaiWalker/pull/39)，确认可合并；看一眼 Vercel 是否仍绑旧 Astro build。  
-2. **合并 PR #39 进 main**（或授权执行方用 API merge）。  
-3. 合并后通知执行方：跑 Phase 1 验证 + Phase 2 文案清理 + Phase 4。  
-
-**未合并 main 前**：可先做 Phase 2 文案清理并推到 `feat/dual-entry-tactile-accept`，但 **不得宣称「仓库已不是 Astro」**。
+已完成，无需再执行。原文步骤见 git 历史。

@@ -20,7 +20,7 @@
 基于 Stage 1 施工期 FeatureEvent / 集成与手测：
 
 1. **最热功能（2026-07-21 metrics）：** `match.intake` attempt=21 / success=14，为曝光最高写路径。  
-2. **主失败码：** `validation_error`（含 missing-clue 主选护栏）与 `quota_exceeded` 并列 — **有功能、有摩擦/护栏，不是 feature_missing**。  
+2. **主失败码：** `validation-error`（含 `missing-clue` 主选护栏）与 `guest-quota-exceeded` 并列 — **有功能、有摩擦/护栏，不是 feature_missing**（码表见 `docs/api/README.md`）。  
 3. **闭环：** countableLoops=6、yes=6、externalLoopCount=6 → `graduation.readyByMetrics=true`。  
 4. **内容侧：** 构建期公开条目入库；预渲染 HTML 含 title；Pagefind 进 `build:web`。
 

@@ -1,5 +1,5 @@
-# cycles/ — 历史轮次记录
+# cycles/（已清空 · 内容在 archive）
 
-`current/` 等目录保留的是**已结束**工作包回放（implement/retro），**不是**当前 sprint 工作台。
+历史轮次记录已迁至 **[`docs/archive/cycles/`](../archive/cycles/)**。
 
-现行产品/工程入口见 [`docs/README.md`](../README.md)。
+现行：`docs/README.md`。

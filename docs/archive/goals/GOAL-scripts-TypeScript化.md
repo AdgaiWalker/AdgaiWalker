@@ -8,8 +8,8 @@
 
 ## Go / No-Go
 
-- **Judgment**: **Go**
-- **Reason**: 目标可验证；JS 体积来源已钉死为 `scripts/*`；无产品决策阻塞；不改运行时业务状态机。可直接执行。
+- **Judgment**: **Go completed**
+- **Reason**: scripts 已全量 TS + 死脚本清理；Final Validation 全过。本文仅追溯。
 
 ---
 
@@ -257,41 +257,6 @@
 
 ---
 
-## First Execution Step
+## First Execution Step（历史）
 
-1. 执行方从 **Phase 1**：`scripts/lib/paths.ts` + tsx/tsconfig。  
-2. 立即 **Phase 2**：`generate-content.ts` 替换 mjs 并改 `package.json` 的 `content:gen`。  
-3. 每步跑 `pnpm content:gen` 与 `pnpm typecheck`。  
-
-**说「按此 Goal 开工」即可开始写代码。**
-
----
-
-## 附录：package.json 脚本对照（Phase 0 填全）
-
-| 现 script | 目标（已落地） |
-|-----------|----------------|
-| `content:gen` | `tsx scripts/generate-content.ts` |
-| `build:web` | `tsx scripts/build-web.ts` |
-| `accept:dual-entry` / `accept:deep` / `accept` | `tsx scripts/accept-*.ts` |
-| `verify:stage1` | `tsx scripts/verify-stage1.ts` |
-| `check:content-fields` | `tsx scripts/check-content-fields.ts` |
-| `typecheck` | 含 `tsc -p scripts/tsconfig.json` |
-| 删除 | build-mcp.cjs、workflow-p0、verify-production-*×4、check-production-readiness |
-
-### 核心模块（脚本）
-
-| 模块 | 一句话职责 |
-|------|-----------|
-| `lib/paths` | 仓库路径 SSOT |
-| `lib/run` | 子进程执行 |
-| `lib/env` | 本地 env / ADMIN token（不打印密钥） |
-| `lib/report` | 验收 pass/fail 与落盘 |
-| `lib/puppeteer-launch` | 浏览器启动抽象 |
-| `generate-content` | content/log → content.json |
-| `build-web` | gen → vite → prerender → pagefind |
-| `prerender-web` | dist 可索引 HTML |
-| `accept-*` | 双入口/深度验收 |
-| `verify-stage1` | Stage1 工程门禁 |
-
-**关系**：package.json **触发** generate/build/accept；build-web **调用** content:gen + prerender；accept **依赖** env/report/puppeteer 接口；generate **依赖** paths，**不**直连业务 app 运行时。
+已完成，无需再执行。

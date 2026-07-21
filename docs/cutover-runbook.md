@@ -7,7 +7,7 @@
 | 组件 | 形态 | 端口/路径 |
 |------|------|-----------|
 | Web | 静态托管（`pnpm build:web` → `apps/web/dist`） | `/` |
-| Admin | 静态托管（`pnpm build:admin` → `apps/admin/dist`） | `/admin` 或独立子域 |
+| Admin | 静态托管（`pnpm build:admin` → `apps/admin/dist`） | **本地**：独立源 `http://127.0.0.1:5174/`（根路径）；**生产**：子域或同域 `/admin` 反代（**部署时二选一钉死**，本草案不默认） |
 | API | 常驻 Node（`pnpm --filter @walker/api start`） | `8788`；对外建议反代为 `/api/*` |
 | PG | 托管 PostgreSQL | `DATABASE_URL` 必填 |
 

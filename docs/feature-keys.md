@@ -5,7 +5,7 @@
 | `nav.home` | 首页主壳渲染 |
 | `post.list` / `post.read` | 列表 / 详情 |
 | `search.query` | 搜索提交；无结果记 SearchMiss |
-| `match.intake` | intake 返回 nextStep |
+| `match.intake` | intake 返回 nextStep（**产品名「卡」**，路径 `/tools`；键名历史保留 match.*） |
 | `tools.resource_click` | 资源外链点击（可后置） |
 | `like.click` | 点赞 API 成功 |
 | `auth.login` | 登录成功（**Auth 后置**：前台 `/login` 仅为壳，无登录 API，暂勿当已上线能力） |

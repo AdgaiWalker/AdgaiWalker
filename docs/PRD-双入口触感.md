@@ -1,9 +1,9 @@
 # PRD：双入口触感（公开面工艺）
 
-> **状态**：草案（经 apple-design 方向 → hai-prd 收束）  
+> **状态**：**工程已验收**（B1–B9 可勾；2026-07-21）· 工艺以公开面为准，非像素复刻旧站  
 > **一句话**：验收「卡/逛能被身体分清 + 主路径按压有反馈 + 材料有层级」，**不是**旧站像素保真，也**不是**再堆功能。  
-> **产品父文档**：`docs/PRD-双入口小生产.md`（过程 + 安全 + 双入口语义已钉）  
-> **关联**：`docs/GOAL-双入口小生产.md`（工程交付完成）、apple-design 原则（Response / Materials / Wayfinding）
+> **产品父文档**：`docs/PRD-双入口小生产.md`  
+> **关联**：`docs/archive/goals/GOAL-双入口小生产.md`（工程追溯）、apple-design 原则（Response / Materials / Wayfinding）
 
 ---
 

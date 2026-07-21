@@ -1,7 +1,7 @@
 # 核心模块与关系（双入口小生产）
 
 > **当前运行栈（唯一）**：`apps/web` · `apps/admin`（React + Vite）· `apps/api`（Nest）· `packages/shared` · 内容 `content/log`。  
-> **无 Astro 可运行入口**。旧设计文档见 `docs/archive/` / `docs/design/`（历史）。
+> **无 Astro 可运行入口**。历史设计 / Goal 见 `docs/archive/`（含 `design/`、`goals/`）。
 
 > 标注约定：  
 > - **依赖** A → B：编译/设计期需要 B 的抽象（优先接口）  

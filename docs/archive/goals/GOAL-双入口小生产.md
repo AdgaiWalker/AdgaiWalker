@@ -1,6 +1,6 @@
 # Goal Document: 交付 PRD「双入口小生产」（安全优先）
 
-> **产品权威**：`docs/PRD-双入口小生产.md`  
+> **归档**：`docs/archive/goals/` · **产品权威**：[`docs/PRD-双入口小生产.md`](../../PRD-双入口小生产.md)  
 > **工程底座**：已合入 **`main`**（历史施工分支 `refactor/stack-rewrite` / `feat/dual-entry-tactile-accept`；早期 commit `fa46708` 一带仅为 monorepo 起点）  
 > **优先级**：安全 > 质量 > 效率  
 > **状态**：工程交付完成（2026-07-21）；请在 `main` 继续，勿再以旧分支为唯一施工面
@@ -10,7 +10,7 @@
 ## Go / No-Go
 
 - **Judgment**: **Go completed**
-- **Reason**: 目标、边界、验收已在 PRD + Razor 钉死；代码底座已有 Intake/过程 API 与 web 壳。阻塞仅剩「卡」路由文案默认值与是否立即动代码——**默认可定为：卡 = `/tools`（现 intake 页）+ 导航/首页一级强化；Match 不双轨。** 你书面改路由前按此默认执行。
+- **Reason**: 工程已交付：卡=`/tools`、过程闭环与 accept 已绿；产品权威见 `docs/PRD-双入口小生产.md`。本文仅追溯。
 
 ---
 
@@ -61,7 +61,7 @@
 
 ## Plan Rewrite Notes
 
-（相对 `docs/GOAL-stage1-整站重构.md` 与「视觉保真主线」）
+（相对同目录 `GOAL-stage1-整站重构.md` 与「视觉保真主线」）
 
 | Existing item | Decision | Reason |
 |---------------|----------|--------|
@@ -120,7 +120,7 @@
     - **Proof**: 表格状态为 assumed 或 confirmed  
     - **Depends on**: none  
   - [x] 若改路由：同步 PRD Open #1 一句  
-    - **Surface**: `docs/PRD-双入口小生产.md`  
+    - **Surface**: `../../PRD-双入口小生产.md`（docs 根）  
     - **Proof**: 文案与 Goal 一致  
     - **Depends on**: 你的决定  
 - **Exit proof**: 默认表可执行  

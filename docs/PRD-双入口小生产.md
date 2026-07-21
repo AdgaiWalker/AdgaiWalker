@@ -1,8 +1,8 @@
 # PRD：iwalk 双入口小生产
 
-> **状态**：草案（经 hai-idea → geju → hai-razor 收束）  
+> **状态**：**工程已验收**（A1–A11 可勾；2026-07-21）· 生产切流仍见 `docs/s1-go-live.md`（默认未切）  
 > **一句话**：验收「卡/逛双接口 + 一条可闭环生产过程 + 安全诚实」，**不是**旧站复刻完成度。  
-> **关联**：`docs/GOAL-stage1-整站重构.md`（工程迁移）、`整体改造方案.md`（技术宪法）、hai-razor 审计结论
+> **关联**：`docs/architecture-modules.md`、`docs/api/README.md`、`docs/stage1-retro.md`、`docs/s1-go-live.md`；工程 Goal 追溯 `docs/archive/goals/`
 
 ---
 
