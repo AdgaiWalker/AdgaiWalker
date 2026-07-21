@@ -2,3 +2,9 @@ docs/** linguist-documentation
 content/** linguist-documentation
 *.md linguist-documentation
 *.mdx linguist-documentation
+
+# 飞书/skill 工具链，不计入产品语言条
+.agents/** linguist-vendored
+
+# 构建产物（若被跟踪）不参与统计
+apps/web/src/generated/** linguist-generated
