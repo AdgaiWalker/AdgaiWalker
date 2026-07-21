@@ -1,14 +1,16 @@
 /**
- * 前台展示用规则文案（与 packages/shared + api 限流配额一致，不在 UI 重写状态机）
+ * 前台展示用规则文案（限流数字与 packages/shared 同源，不在 UI 重写状态机）
  */
-import { CLUE_BODY_MIN_LENGTH } from '@walker/shared';
+import {
+  CLUE_BODY_MIN_LENGTH,
+  GUEST_INTAKE_QUOTA,
+  RATE_LIMITS,
+  RATE_WINDOW_MINUTES,
+} from '@walker/shared';
 
-/** 与 api Intake 一致 */
-export const GUEST_INTAKE_QUOTA = 1;
-export const GUEST_RATE_LIMIT = 10;
-export const USER_RATE_LIMIT = 30;
-export const RATE_WINDOW_MINUTES = 10;
-export { CLUE_BODY_MIN_LENGTH };
+export const GUEST_RATE_LIMIT = RATE_LIMITS.guestPerWindow;
+export const USER_RATE_LIMIT = RATE_LIMITS.userPerWindow;
+export { CLUE_BODY_MIN_LENGTH, GUEST_INTAKE_QUOTA, RATE_WINDOW_MINUTES };
 
 export const ERROR_CODE_LABELS: Record<string, string> = {
   'guest-quota-exceeded':
@@ -32,8 +34,12 @@ export const INTAKE_RULE_HINTS = [
   '关 AI 时仍会返回可执行的「下一步」（规则五桶）',
 ] as const;
 
-/** 首页 Spark 兜底脑洞（与旧站 TEMP_SPARKS 对齐） */
-export const TEMP_SPARKS: Array<{ title: string; slug: string | null; isReal: boolean }> = [
+/** 首页 Spark 兜底脑洞 */
+export const SPARK_FALLBACKS: Array<{
+  title: string;
+  slug: string | null;
+  isReal: boolean;
+}> = [
   {
     title: '开发一个可以将猫咪喵喵声自动翻译成拍立得卡通日记的 APP！',
     slug: null,
@@ -76,11 +82,6 @@ export const TEMP_SPARKS: Array<{ title: string; slug: string | null; isReal: bo
   },
   {
     title: '开发一款「滑板AI跟拍仪」：用 AI 动作捕捉算法，自动在滑板腾空那一瞬间抓拍出最帅的侧脸！',
-    slug: null,
-    isReal: false,
-  },
-  {
-    title: '做一款「睡眠AI监控器」：通过 AI 分析你晚上的呼噜声，自动编排出一首舒缓的白噪音钢琴曲！',
     slug: null,
     isReal: false,
   },

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, type Execution } from '../api/admin-api';
+import { useAdminAction } from '../hooks/useAdminAction';
 import { labelExecutionStatus, labelOutcome } from '../shared/labels';
 
 function defaultDeliveryUrl(): string {
@@ -10,17 +11,14 @@ function defaultDeliveryUrl(): string {
 export function ExecutionsPage() {
   const [list, setList] = useState<Execution[]>([]);
   const [url, setUrl] = useState(defaultDeliveryUrl);
-  const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const { err, run } = useAdminAction();
 
   const load = useCallback(async () => {
-    try {
+    await run(async () => {
       setList(await adminApi.executions());
-      setErr(null);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
+    });
+  }, [run]);
 
   useEffect(() => {
     void load();
@@ -34,7 +32,9 @@ export function ExecutionsPage() {
   return (
     <div>
       <h1>执行 / 检验</h1>
-      <p className="muted">待检验 {openCount} · 共 {list.length}</p>
+      <p className="muted">
+        待检验 {openCount} · 共 {list.length}
+      </p>
       {err ? <p className="error">{err}</p> : null}
       {msg ? <p className="muted">{msg}</p> : null}
       <div className="panel">
@@ -50,44 +50,38 @@ export function ExecutionsPage() {
           <div className="muted">{ex.deliveryUrl ?? '未交付'}</div>
           <button
             type="button"
-            onClick={async () => {
-              try {
+            onClick={() =>
+              void run(async () => {
                 await adminApi.deliver(ex.id, url);
-                await load();
+                setList(await adminApi.executions());
                 setMsg('已交付');
-              } catch (e) {
-                setErr(e instanceof Error ? e.message : String(e));
-              }
-            }}
+              })
+            }
           >
             交付
           </button>
           <button
             type="button"
-            onClick={async () => {
-              try {
+            onClick={() =>
+              void run(async () => {
                 const r = await adminApi.review(ex.id, 'yes');
                 setMsg(`检验有用 · 可计数=${String(r.countable)}`);
-                await load();
-              } catch (e) {
-                setErr(e instanceof Error ? e.message : String(e));
-              }
-            }}
+                setList(await adminApi.executions());
+              })
+            }
           >
             检验有用
           </button>
           <button
             type="button"
             className="secondary"
-            onClick={async () => {
-              try {
+            onClick={() =>
+              void run(async () => {
                 const r = await adminApi.review(ex.id, 'no', '未达预期需重做');
                 setMsg(`检验没用 · 可计数=${String(r.countable)}`);
-                await load();
-              } catch (e) {
-                setErr(e instanceof Error ? e.message : String(e));
-              }
-            }}
+                setList(await adminApi.executions());
+              })
+            }
           >
             检验没用
           </button>

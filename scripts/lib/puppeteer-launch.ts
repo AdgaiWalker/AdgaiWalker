@@ -33,26 +33,61 @@ export type PageLike = {
   createCDPSession: () => Promise<{ send: (method: string) => Promise<unknown> }>;
 };
 
+const HOME = process.env.HOME || '';
+
+/** 可探测的 Chrome 路径（环境变量优先） */
+const CHROME_CANDIDATES = [
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  path.join(
+    HOME,
+    '.cache/puppeteer/chrome/mac_arm-150.0.7871.24/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  ),
+  path.join(
+    HOME,
+    '.cache/puppeteer/chrome/mac-150.0.7871.24/chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+  ),
+].filter((p): p is string => Boolean(p && p.length > 0));
+
+function resolveChromePath(): string | undefined {
+  for (const candidate of CHROME_CANDIDATES) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
+function loadPuppeteer(): {
+  launch: (opts: Record<string, unknown>) => Promise<BrowserLike>;
+} {
+  const candidates = [
+    path.join(HOME, '.local/node/lib/node_modules/devloop-mcp/package.json'),
+    path.join(HOME, '.local/node/lib/node_modules/puppeteer/package.json'),
+  ];
+  for (const pkg of candidates) {
+    if (!fs.existsSync(pkg)) continue;
+    try {
+      const require = createRequire(pkg);
+      return require('puppeteer') as {
+        launch: (opts: Record<string, unknown>) => Promise<BrowserLike>;
+      };
+    } catch {
+      /* try next */
+    }
+  }
+  throw new Error(
+    '无法加载 puppeteer：请安装 puppeteer 或设置 PUPPETEER_EXECUTABLE_PATH，并确保 devloop-mcp/puppeteer 可 require',
+  );
+}
+
 export async function launchBrowser(viewport?: {
   width: number;
   height: number;
 }): Promise<BrowserLike> {
-  const require = createRequire(
-    path.join(process.env.HOME || '', '.local/node/lib/node_modules/devloop-mcp/package.json'),
-  );
-  const puppeteer = require('puppeteer') as {
-    launch: (opts: Record<string, unknown>) => Promise<BrowserLike>;
-  };
-  const chrome =
-    process.env.PUPPETEER_EXECUTABLE_PATH ||
-    path.join(
-      process.env.HOME || '',
-      '.cache/puppeteer/chrome/mac_arm-150.0.7871.24/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-    );
+  const puppeteer = loadPuppeteer();
+  const executablePath = resolveChromePath();
 
   return puppeteer.launch({
     headless: true,
-    executablePath: fs.existsSync(chrome) ? chrome : undefined,
+    executablePath,
     args: [
       '--no-sandbox',
       ...(viewport ? [`--window-size=${viewport.width},${viewport.height}`] : []),

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   assertPrimaryHasClue,
+  FEATURE_FAIL_CODES,
   isInterestLevel,
   isValidTwoQuestions,
   type InterestLevel,
@@ -111,14 +112,13 @@ export class SeedService {
         featureKey: 'seed.promote',
         event: 'fail',
         actorType: 'owner',
-        failCode: 'validation_error',
+        failCode: FEATURE_FAIL_CODES.validationError,
         props: { code: 'missing-clue' },
       });
       throw missingClue();
     }
 
     const result = await this.seeds.setPrimary(seedId, clueId);
-    // 自动创建执行卡
     await this.executions.create({ id: newId(), seedId });
     await this.events.record({
       id: newId(),

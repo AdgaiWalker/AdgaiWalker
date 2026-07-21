@@ -11,7 +11,7 @@ import { getRecentPosts, getByType } from '../content';
 import { getSolarTerm } from '../lib/solar-terms';
 import { GreetingCard } from '../components/GreetingCard';
 import { dualEntry } from '../shared/dual-entry';
-import { TEMP_SPARKS } from '../shared/rules-ui';
+import { SPARK_FALLBACKS } from '../shared/rules-ui';
 import { formatDateCompact } from '../shared/format';
 
 function parseDate(iso: string): Date {
@@ -30,7 +30,7 @@ export function HomePage() {
     slug: i.slug,
     isReal: true as const,
   }));
-  const sparks = [...realIdeas, ...TEMP_SPARKS];
+  const sparks = [...realIdeas, ...SPARK_FALLBACKS];
 
   return (
     <div id="canvas-container">

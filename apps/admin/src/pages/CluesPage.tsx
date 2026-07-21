@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, type Clue } from '../api/admin-api';
+import { useAdminAction } from '../hooks/useAdminAction';
 import { labelPool, labelSource, poolActions } from '../shared/labels';
 
 const SOURCE_OPTIONS = [
@@ -13,16 +14,13 @@ export function CluesPage() {
   const [list, setList] = useState<Clue[]>([]);
   const [body, setBody] = useState('');
   const [source, setSource] = useState<string>('manual-self');
-  const [err, setErr] = useState<string | null>(null);
+  const { err, run } = useAdminAction();
 
   const load = useCallback(async () => {
-    try {
+    await run(async () => {
       setList(await adminApi.clues());
-      setErr(null);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
+    });
+  }, [run]);
 
   useEffect(() => {
     void load();
@@ -48,15 +46,13 @@ export function CluesPage() {
         <textarea value={body} onChange={(e) => setBody(e.target.value)} />
         <button
           type="button"
-          onClick={async () => {
-            try {
+          onClick={() =>
+            void run(async () => {
               await adminApi.createClue(body, source);
               setBody('');
-              await load();
-            } catch (e) {
-              setErr(e instanceof Error ? e.message : String(e));
-            }
-          }}
+              setList(await adminApi.clues());
+            })
+          }
         >
           入库
         </button>
@@ -88,28 +84,24 @@ export function CluesPage() {
                   <button
                     type="button"
                     className="secondary"
-                    onClick={async () => {
-                      try {
+                    onClick={() =>
+                      void run(async () => {
                         await adminApi.setPool(c.id, poolActions.intoPool.status);
-                        await load();
-                      } catch (e) {
-                        setErr(e instanceof Error ? e.message : String(e));
-                      }
-                    }}
+                        setList(await adminApi.clues());
+                      })
+                    }
                   >
                     {poolActions.intoPool.label}
                   </button>
                   <button
                     type="button"
                     className="secondary"
-                    onClick={async () => {
-                      try {
+                    onClick={() =>
+                      void run(async () => {
                         await adminApi.setPool(c.id, poolActions.discard.status);
-                        await load();
-                      } catch (e) {
-                        setErr(e instanceof Error ? e.message : String(e));
-                      }
-                    }}
+                        setList(await adminApi.clues());
+                      })
+                    }
                   >
                     {poolActions.discard.label}
                   </button>

@@ -1,22 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, type Clue, type Seed } from '../api/admin-api';
+import { useAdminAction } from '../hooks/useAdminAction';
 
 export function SeedsPage() {
   const [seeds, setSeeds] = useState<Seed[]>([]);
   const [clues, setClues] = useState<Clue[]>([]);
   const [title, setTitle] = useState('');
-  const [err, setErr] = useState<string | null>(null);
+  const { err, run } = useAdminAction();
 
   const load = useCallback(async () => {
-    try {
+    await run(async () => {
       const [s, c] = await Promise.all([adminApi.seeds(), adminApi.clues()]);
       setSeeds(s);
       setClues(c);
-      setErr(null);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
+    });
+  }, [run]);
 
   useEffect(() => {
     void load();
@@ -35,15 +33,15 @@ export function SeedsPage() {
         />
         <button
           type="button"
-          onClick={async () => {
-            try {
+          onClick={() =>
+            void run(async () => {
               await adminApi.createSeed(title);
               setTitle('');
-              await load();
-            } catch (e) {
-              setErr(e instanceof Error ? e.message : String(e));
-            }
-          }}
+              const [s, c] = await Promise.all([adminApi.seeds(), adminApi.clues()]);
+              setSeeds(s);
+              setClues(c);
+            })
+          }
         >
           新建
         </button>
@@ -53,8 +51,8 @@ export function SeedsPage() {
         <div className="panel" key={s.id}>
           <strong>{s.title}</strong>
           <div className="muted">
-            主选：{s.primaryClueId ? `${s.primaryClueId.slice(0, 10)}…` : '无'} ·
-            关联 {s.links.length}
+            主选：{s.primaryClueId ? `${s.primaryClueId.slice(0, 10)}…` : '无'} · 关联{' '}
+            {s.links.length}
           </div>
           <div>
             {inPool.length === 0 ? (
@@ -65,14 +63,17 @@ export function SeedsPage() {
                   key={c.id}
                   type="button"
                   className="secondary"
-                  onClick={async () => {
-                    try {
+                  onClick={() =>
+                    void run(async () => {
                       await adminApi.promote(s.id, c.id);
-                      await load();
-                    } catch (e) {
-                      setErr(e instanceof Error ? e.message : String(e));
-                    }
-                  }}
+                      const [ns, nc] = await Promise.all([
+                        adminApi.seeds(),
+                        adminApi.clues(),
+                      ]);
+                      setSeeds(ns);
+                      setClues(nc);
+                    })
+                  }
                 >
                   主选 ← {c.body.slice(0, 24)}
                 </button>

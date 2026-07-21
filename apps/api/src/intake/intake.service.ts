@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   assertClueBody,
+  FEATURE_FAIL_CODES,
   isClueSource,
+  RATE_LIMITS,
   type ClueSource,
 } from '@walker/shared';
 import { newId } from '../common/ids';
@@ -61,19 +63,27 @@ export class IntakeService {
         featureKey: 'match.intake',
         event: 'fail',
         actorType,
-        failCode: 'server_error',
+        failCode: FEATURE_FAIL_CODES.serverError,
       });
       throw storageUnavailable();
     }
 
-    const limit = input.isAuthenticated ? 30 : 10;
-    if (!this.rateLimit.consume(`intake:${input.ipKey}`, limit, 600)) {
+    const limit = input.isAuthenticated
+      ? RATE_LIMITS.userPerWindow
+      : RATE_LIMITS.guestPerWindow;
+    if (
+      !this.rateLimit.consume(
+        `intake:${input.ipKey}`,
+        limit,
+        RATE_LIMITS.windowSeconds,
+      )
+    ) {
       await this.events.record({
         id: newId(),
         featureKey: 'match.intake',
         event: 'fail',
         actorType,
-        failCode: 'rate_limited',
+        failCode: FEATURE_FAIL_CODES.rateLimited,
       });
       throw rateLimited();
     }
@@ -86,7 +96,7 @@ export class IntakeService {
           featureKey: 'match.intake',
           event: 'fail',
           actorType,
-          failCode: 'quota_exceeded',
+          failCode: FEATURE_FAIL_CODES.quotaExceeded,
         });
         throw guestQuotaExceeded();
       }
@@ -100,7 +110,7 @@ export class IntakeService {
         featureKey: 'match.intake',
         event: 'fail',
         actorType,
-        failCode: 'validation_error',
+        failCode: FEATURE_FAIL_CODES.validationError,
       });
       throw validationError('clue-body-too-short');
     }

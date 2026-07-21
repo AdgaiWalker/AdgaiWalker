@@ -23,6 +23,11 @@ import { isErrorCode } from './errors.js';
 import { ruleNextStep, matchNextStepBucket } from './nextstep.js';
 import { resolveVisibility, toContentDoc, isPostType } from './content.js';
 import { FEATURE_KEYS, isFeatureKey } from './feature-keys.js';
+import {
+  FEATURE_FAIL_CODES,
+  HTTP_TO_FEATURE_FAIL,
+} from './feature-fail-codes.js';
+import { GUEST_INTAKE_QUOTA, RATE_LIMITS, RATE_WINDOW_MINUTES } from './rate-limits.js';
 
 describe('线索规则', () => {
   it('正文 trim 后长度 ≥4 才合法', () => {
@@ -219,5 +224,22 @@ describe('sourceBucket (A11)', () => {
     expect(sourceBucket('manual-self')).toBe('self');
     expect(sourceBucket('wechat')).toBe('external');
     expect(sourceBucket('live')).toBe('external');
+  });
+});
+
+describe('限流与 failCode SSOT', () => {
+  it('RATE_LIMITS 与历史行为一致（10/30/600）', () => {
+    expect(RATE_LIMITS.guestPerWindow).toBe(10);
+    expect(RATE_LIMITS.userPerWindow).toBe(30);
+    expect(RATE_LIMITS.windowSeconds).toBe(600);
+    expect(RATE_WINDOW_MINUTES).toBe(10);
+    expect(GUEST_INTAKE_QUOTA).toBe(1);
+  });
+
+  it('FEATURE_FAIL_CODES 保持历史 snake 字面量', () => {
+    expect(FEATURE_FAIL_CODES.quotaExceeded).toBe('quota_exceeded');
+    expect(FEATURE_FAIL_CODES.validationError).toBe('validation_error');
+    expect(FEATURE_FAIL_CODES.rateLimited).toBe('rate_limited');
+    expect(HTTP_TO_FEATURE_FAIL['guest-quota-exceeded']).toBe('quota_exceeded');
   });
 });
