@@ -10,6 +10,7 @@ import {
   skills,
 } from '../data/tools-data';
 import { dualEntry } from '../shared/dual-entry';
+import { WEB_ROUTES } from '../shared/routes';
 
 export function ToolsResourcesPage() {
   return (
@@ -17,7 +18,7 @@ export function ToolsResourcesPage() {
       <h1 className="page-title">资源</h1>
       <p className="page-lead">
         与旧站 tools 数据同源（tools-data）。问答请去{' '}
-        <Link to={dualEntry.ask.path}>{dualEntry.ask.path}</Link>。
+        <Link to={WEB_ROUTES.ask}>{WEB_ROUTES.ask}</Link>。
       </p>
 
       <Section title="社区">

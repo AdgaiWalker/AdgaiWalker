@@ -11,8 +11,9 @@ import { getRecentPosts, getByType } from '../content';
 import { getSolarTerm } from '../lib/solar-terms';
 import { GreetingCard } from '../components/GreetingCard';
 import { dualEntry } from '../shared/dual-entry';
-import { SPARK_FALLBACKS } from '../shared/rules-ui';
 import { formatDateCompact, parseIsoDate } from '../shared/format';
+import { WEB_ROUTES } from '../shared/routes';
+import { SPARK_FALLBACKS } from '../shared/rules-ui';
 
 export function HomePage() {
   const term = getSolarTerm(new Date());
@@ -80,8 +81,8 @@ export function HomePage() {
                 </Link>
               ) : null}
               <div className="directory-ghost-nav">
-                <Link to="/content">内容</Link>
-                <Link to="/about">关于</Link>
+                <Link to={WEB_ROUTES.content}>内容</Link>
+                <Link to={WEB_ROUTES.about}>关于</Link>
               </div>
             </div>
 
@@ -100,15 +101,15 @@ export function HomePage() {
                   <PenLine size={15} />
                   <span>{dualEntry.browse.label}</span>
                 </Link>
-                <Link to="/tools/resources" className="quick-link">
+                <Link to={WEB_ROUTES.toolsResources} className="quick-link">
                   <Bookmark size={15} />
                   <span>资源</span>
                 </Link>
-                <Link to="/ideas" className="quick-link">
+                <Link to={WEB_ROUTES.ideas} className="quick-link">
                   <Lightbulb size={15} />
                   <span>点子</span>
                 </Link>
-                <Link to="/projects" className="quick-link">
+                <Link to={WEB_ROUTES.projects} className="quick-link">
                   <FolderKanban size={15} />
                   <span>项目</span>
                 </Link>

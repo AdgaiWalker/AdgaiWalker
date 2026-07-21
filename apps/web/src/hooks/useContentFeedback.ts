@@ -2,10 +2,9 @@
  * useContentFeedback — 页/容器侧：内容反馈门面编排
  */
 import { useCallback, useState } from 'react';
-import { ApiError } from '../api/http';
+import { formatApiError } from '../api/format-api-error';
 import { publicApi } from '../api/public-api';
 import type { ContentFeedbackSignal } from '../shared/content-feedback';
-import { explainErrorCode } from '../shared/rules-ui';
 
 export function useContentFeedback(contentId: string) {
   const [done, setDone] = useState(false);
@@ -27,11 +26,7 @@ export function useContentFeedback(contentId: string) {
         });
         setDone(true);
       } catch (e) {
-        if (e instanceof ApiError) {
-          setError(explainErrorCode(e.code, e.message));
-        } else {
-          setError(e instanceof Error ? e.message : String(e));
-        }
+        setError(formatApiError(e));
       } finally {
         setBusy(false);
       }

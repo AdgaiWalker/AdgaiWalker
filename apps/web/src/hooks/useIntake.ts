@@ -3,9 +3,8 @@
  */
 import { isValidClueBody, CLUE_BODY_MIN_LENGTH } from '@walker/shared';
 import { useCallback, useMemo, useState } from 'react';
-import { ApiError } from '../api/http';
+import { formatApiError } from '../api/format-api-error';
 import { publicApi, type IntakeResult } from '../api/public-api';
-import { explainErrorCode } from '../shared/rules-ui';
 
 export function useIntake() {
   const [body, setBody] = useState('');
@@ -24,11 +23,7 @@ export function useIntake() {
       const data = await publicApi.intake(body);
       setResult(data);
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(explainErrorCode(e.code, e.message));
-      } else {
-        setError(e instanceof Error ? e.message : String(e));
-      }
+      setError(formatApiError(e));
     } finally {
       setLoading(false);
     }

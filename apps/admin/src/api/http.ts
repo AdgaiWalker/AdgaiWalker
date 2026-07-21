@@ -1,4 +1,5 @@
 import { clearAdminToken, getAdminToken } from '../auth/token-store';
+import { ADMIN_ROUTES } from '../shared/routes';
 
 export class AdminApiError extends Error {
   constructor(
@@ -41,8 +42,11 @@ export async function adminRequest<T>(
     const code = body?.code ?? res.statusText;
     if (res.status === 401 || code === 'unauthorized' || code === 'auth-not-configured') {
       clearAdminToken();
-      if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/login')) {
-        window.location.assign('/login');
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.endsWith(ADMIN_ROUTES.login)
+      ) {
+        window.location.assign(ADMIN_ROUTES.login);
       }
     }
     throw new AdminApiError(code, body?.message);

@@ -10,15 +10,16 @@ import {
   getAdminToken,
   setAdminToken,
 } from '../auth/token-store';
+import { ADMIN_ROUTES } from '../shared/routes';
 
 export function AdminTokenPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from =
     (location.state as { from?: string } | null)?.from &&
-    (location.state as { from: string }).from !== '/login'
+    (location.state as { from: string }).from !== ADMIN_ROUTES.login
       ? (location.state as { from: string }).from
-      : '/clues';
+      : ADMIN_ROUTES.clues;
 
   const [token, setToken] = useState(getAdminToken());
   const [msg, setMsg] = useState<string | null>(null);
@@ -71,7 +72,7 @@ export function AdminTokenPage() {
         {msg ? <p className="muted">{msg}</p> : null}
         {isValidAdminToken(getAdminToken()) ? (
           <p className="muted">
-            <Link to="/clues">已有令牌 · 去线索</Link>
+            <Link to={ADMIN_ROUTES.clues}>已有令牌 · 去线索</Link>
           </p>
         ) : null}
       </div>

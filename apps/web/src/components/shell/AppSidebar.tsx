@@ -14,6 +14,7 @@ import {
 import { SITE_LINKS } from '../../shared/constants';
 import { dualEntry } from '../../shared/dual-entry';
 import { sidebarNavGroups } from '../../shared/nav';
+import { WEB_ROUTES } from '../../shared/routes';
 
 type Props = {
   menuOpen: boolean;
@@ -120,7 +121,7 @@ export function AppSidebar({
         >
           主题
         </button>
-        <Link to="/login" className="btn-ghost">
+        <Link to={WEB_ROUTES.login} className="btn-ghost">
           登录
         </Link>
       </div>

@@ -1,6 +1,7 @@
 import { IntakePanel } from '../components/ui/IntakePanel';
 import { useIntake } from '../hooks/useIntake';
 import { dualEntry } from '../shared/dual-entry';
+import { WEB_ROUTES } from '../shared/routes';
 import { INTAKE_RULE_HINTS } from '../shared/rules-ui';
 
 const EXAMPLES = [
@@ -38,6 +39,7 @@ export function ToolsPage() {
       }
       browsePath={dualEntry.browse.path}
       browseLabel={dualEntry.browse.label}
+      resourcesHref={WEB_ROUTES.toolsResources}
       onBodyChange={intake.onBodyChange}
       onPickExample={intake.onPickExample}
       onSubmit={intake.onSubmit}

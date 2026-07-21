@@ -23,13 +23,16 @@
 
 路由 URL 可仍为 `/login`、`/content`（对外稳定）；**导出组件名**必须可区分。
 
-## 日期与外链 SSOT
+## 日期 / 外链 / 路由 SSOT
 
 | 事实 | 唯一入口 |
 |------|----------|
 | 解析内容日期 | `parseIsoDate`（`shared/format.ts`） |
 | 站外链接 | `SITE_LINKS`（`shared/constants.ts`） |
 | 邮箱 | `SITE_EMAIL` / `SITE_LINKS.mailto` |
+| 公开站固定 path | `WEB_ROUTES` + `dualEntry`（`apps/web/src/shared/routes.ts`） |
+| 管理端固定 path | `ADMIN_ROUTES`（`apps/admin/src/shared/routes.ts`） |
+| 门面错误人话 | `formatApiError`（`apps/web/src/api/format-api-error.ts`） |
 
 ## 分层词（与 frontend-layers 一致）
 

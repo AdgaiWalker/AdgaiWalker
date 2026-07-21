@@ -4,6 +4,7 @@
 import { Link } from 'react-router-dom';
 import { MessageCircleQuestion, Search } from 'lucide-react';
 import { dualEntry } from '../../shared/dual-entry';
+import { WEB_ROUTES } from '../../shared/routes';
 
 type Props = {
   onOpenSearch: () => void;
@@ -20,7 +21,7 @@ export function HomeChrome({ onOpenSearch }: Props) {
         <Search size={14} />
         搜索
       </button>
-      <Link to="/login" className="btn-ghost">
+      <Link to={WEB_ROUTES.login} className="btn-ghost">
         登录
       </Link>
     </div>

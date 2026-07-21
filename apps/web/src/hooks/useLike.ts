@@ -2,9 +2,8 @@
  * useLike — 页/容器侧：点赞门面编排（非 UI）
  */
 import { useCallback, useEffect, useState } from 'react';
-import { ApiError } from '../api/http';
+import { formatApiError } from '../api/format-api-error';
 import { publicApi } from '../api/public-api';
-import { explainErrorCode } from '../shared/rules-ui';
 
 export function useLike(path: string) {
   const [count, setCount] = useState<number | null>(null);
@@ -38,11 +37,7 @@ export function useLike(path: string) {
       .like(path)
       .then((data) => setCount(data.count))
       .catch((e: unknown) => {
-        if (e instanceof ApiError) {
-          setError(explainErrorCode(e.code, e.message));
-        } else {
-          setError(e instanceof Error ? e.message : String(e));
-        }
+        setError(formatApiError(e));
       })
       .finally(() => setBusy(false));
   }, [path]);
