@@ -163,4 +163,4 @@ PostgreSQL
 | Use cases | `apps/api/src/{intake,clue,seed,execution,metrics,health}/*` |
 | Web | `apps/web/src/*` |
 | Admin | `apps/admin/src/*` |
-| Content gen | `scripts/generate-content.mjs` → `apps/web/src/generated/content.json` |
+| Content gen | `scripts/generate-content.ts`（tsx）→ `apps/web/src/generated/content.json` |

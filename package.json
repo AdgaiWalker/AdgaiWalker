@@ -8,27 +8,32 @@
     "node": ">=20"
   },
   "scripts": {
-    "content:gen": "node scripts/generate-content.mjs",
+    "content:gen": "tsx scripts/generate-content.ts",
     "dev:web": "pnpm content:gen && pnpm --filter @walker/web dev",
     "dev:admin": "pnpm --filter @walker/admin dev",
     "dev:api": "pnpm --filter @walker/api dev",
-    "build:web": "node scripts/build-web.mjs",
+    "build:web": "tsx scripts/build-web.ts",
     "build:admin": "pnpm --filter @walker/admin build",
     "build:api": "pnpm --filter @walker/api build",
     "build:shared": "pnpm --filter @walker/shared build",
     "test:shared": "pnpm --filter @walker/shared test",
     "test:api": "pnpm build:shared && pnpm --filter @walker/api test",
     "test:web": "pnpm --filter @walker/web test",
-    "typecheck": "pnpm build:shared && pnpm -r run typecheck",
+    "typecheck": "pnpm build:shared && pnpm -r run typecheck && tsc -p scripts/tsconfig.json",
+    "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "db:migrate": "pnpm --filter @walker/api prisma:migrate",
     "db:generate": "pnpm --filter @walker/api prisma:generate",
-    "verify:stage1": "node scripts/verify-stage1.mjs",
-    "accept:dual-entry": "node scripts/accept-dual-entry.mjs",
-    "accept:deep": "node scripts/accept-deep.mjs",
-    "accept": "node scripts/accept-dual-entry.mjs && node scripts/accept-deep.mjs"
+    "check:content-fields": "tsx scripts/check-content-fields.ts",
+    "verify:stage1": "tsx scripts/verify-stage1.ts",
+    "accept:dual-entry": "tsx scripts/accept-dual-entry.ts",
+    "accept:deep": "tsx scripts/accept-deep.ts",
+    "accept": "tsx scripts/accept-dual-entry.ts && tsx scripts/accept-deep.ts"
   },
   "devDependencies": {
+    "@types/node": "^22.15.32",
     "gray-matter": "^4.0.3",
-    "pagefind": "^1.3.0"
+    "pagefind": "^1.3.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3"
   }
 }

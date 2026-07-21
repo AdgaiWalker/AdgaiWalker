@@ -1,18 +1,31 @@
 /**
- * 构建期扫描 content/log → apps/web/src/generated/content.json
- * 纯 Markdown/MDX 真相源；剥离旧 Astro 组件 import，React 站不消费 .astro
+ * generate-content — 扫描 content/log → apps/web/src/generated/content.json
+ * 依赖：gray-matter、paths
+ * 触发：pnpm content:gen / build-web / dev:web
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
+import { contentLogDir, contentJsonPath, webGeneratedDir } from './lib/paths';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const contentDir = path.join(root, 'content/log');
-const outDir = path.join(root, 'apps/web/src/generated');
-const outFile = path.join(outDir, 'content.json');
+type Visibility = 'public' | 'draft' | 'private';
 
-function resolveVisibility(data) {
+export type ContentItem = {
+  slug: string;
+  title: string;
+  date: string;
+  type: string;
+  status: string;
+  summary: string;
+  body: string;
+  tags: string[];
+  level: string;
+  emoji: string;
+  visibility: Visibility;
+  published: boolean;
+};
+
+function resolveVisibility(data: Record<string, unknown>): Visibility {
   if (
     data.visibility === 'public' ||
     data.visibility === 'draft' ||
@@ -25,7 +38,7 @@ function resolveVisibility(data) {
 }
 
 /** 去掉 MDX 顶部对 Astro 组件的 import，避免正文出现运行时噪音 */
-function stripLegacyAstroImports(body) {
+function stripLegacyAstroImports(body: string): string {
   return body
     .split('\n')
     .filter((line) => {
@@ -40,14 +53,14 @@ function stripLegacyAstroImports(body) {
     .trim();
 }
 
-const docs = [];
-if (fs.existsSync(contentDir)) {
-  for (const file of fs.readdirSync(contentDir)) {
+const docs: ContentItem[] = [];
+if (fs.existsSync(contentLogDir)) {
+  for (const file of fs.readdirSync(contentLogDir)) {
     if (!/\.(md|mdx)$/i.test(file)) continue;
-    const raw = fs.readFileSync(path.join(contentDir, file), 'utf8');
+    const raw = fs.readFileSync(path.join(contentLogDir, file), 'utf8');
     const { data, content } = matter(raw);
     const slug = file.replace(/\.(md|mdx)$/i, '');
-    const visibility = resolveVisibility(data);
+    const visibility = resolveVisibility(data as Record<string, unknown>);
     if (visibility !== 'public') continue;
     docs.push({
       slug,
@@ -61,7 +74,7 @@ if (fs.existsSync(contentDir)) {
       summary: String(data.summary || data.description || ''),
       body: stripLegacyAstroImports(content),
       tags: Array.isArray(data.tags)
-        ? data.tags.filter((t) => typeof t === 'string')
+        ? data.tags.filter((t): t is string => typeof t === 'string')
         : [],
       level: data.level ? String(data.level) : '',
       emoji: data.emoji ? String(data.emoji) : '',
@@ -72,9 +85,9 @@ if (fs.existsSync(contentDir)) {
 }
 
 docs.sort((a, b) => (a.date < b.date ? 1 : -1));
-fs.mkdirSync(outDir, { recursive: true });
+fs.mkdirSync(webGeneratedDir, { recursive: true });
 fs.writeFileSync(
-  outFile,
+  contentJsonPath,
   JSON.stringify({ generatedAt: new Date().toISOString(), items: docs }, null, 2),
 );
-console.log(`wrote ${docs.length} items → ${outFile}`);
+console.log(`wrote ${docs.length} items → ${contentJsonPath}`);

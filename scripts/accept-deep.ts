@@ -1,41 +1,21 @@
 /**
- * 深度浏览器验收：web 双入口触感 + admin 闭环 + A11
- * 前置：api:8788 web:5173 admin:5174
+ * accept-deep — 浏览器深度验收：web 双入口触感 + admin 闭环 + A11
+ * 依赖：env / report / paths / puppeteer-launch
+ * 触发：pnpm accept:deep（前置 api:8788 web:5173 admin:5174）
  */
-import { createRequire } from 'node:module';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadAdminToken } from './lib/env';
+import { launchBrowser, type PageLike } from './lib/puppeteer-launch';
+import { createReport } from './lib/report';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = process.env.WEB_BASE || 'http://127.0.0.1:5173';
 const ADMIN = process.env.ADMIN_BASE || 'http://127.0.0.1:5174';
 const API = process.env.API_BASE || 'http://127.0.0.1:8788';
+const TOKEN = loadAdminToken();
+const { pass, fail, writeJson, exitWithSummary } = createReport();
 
-function loadToken() {
-  if (process.env.ADMIN_API_TOKEN) return process.env.ADMIN_API_TOKEN;
-  const envPath = path.join(root, 'apps/api/.env');
-  if (!fs.existsSync(envPath)) return '';
-  const line = fs.readFileSync(envPath, 'utf8').split('\n').find((l) => l.startsWith('ADMIN_API_TOKEN='));
-  return line ? line.slice('ADMIN_API_TOKEN='.length).trim() : '';
-}
-
-const TOKEN = loadToken();
-let failed = 0;
-const log = [];
-function pass(n, d = '') {
-  log.push({ n, ok: true, d });
-  console.log('PASS', n, d);
-}
-function fail(n, d = '') {
-  failed += 1;
-  log.push({ n, ok: false, d });
-  console.error('FAIL', n, d);
-}
-
-function setTextarea(page, selector, text) {
+function setTextarea(page: PageLike, selector: string, text: string): Promise<void> {
   return page.evaluate(
-    (sel, value) => {
+    (sel: string, value: string) => {
       const el = document.querySelector(sel);
       if (!el) return;
       const setter = Object.getOwnPropertyDescriptor(
@@ -50,36 +30,20 @@ function setTextarea(page, selector, text) {
   );
 }
 
-async function main() {
-  const require = createRequire(
-    path.join(process.env.HOME || '', '.local/node/lib/node_modules/devloop-mcp/package.json'),
-  );
-  const puppeteer = require('puppeteer');
-  const chrome =
-    process.env.PUPPETEER_EXECUTABLE_PATH ||
-    path.join(
-      process.env.HOME || '',
-      '.cache/puppeteer/chrome/mac_arm-150.0.7871.24/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-    );
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: fs.existsSync(chrome) ? chrome : undefined,
-    args: ['--no-sandbox', '--window-size=1280,900'],
-    defaultViewport: { width: 1280, height: 900 },
-  });
+async function main(): Promise<void> {
+  const browser = await launchBrowser({ width: 1280, height: 900 });
   const page = await browser.newPage();
-  const pageErrors = [];
+  const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
 
   await page.goto(`${WEB}/`, { waitUntil: 'networkidle0', timeout: 20000 });
   const home = await page.evaluate(() => ({
     primary: [...document.querySelectorAll('a.btn-primary')].map((a) => ({
-      t: a.textContent.trim().replace(/\s+/g, ' '),
+      t: (a.textContent || '').trim().replace(/\s+/g, ' '),
       h: a.getAttribute('href'),
     })),
     secondary: [...document.querySelectorAll('a.btn-secondary')].map((a) => ({
-      t: a.textContent.trim().replace(/\s+/g, ' '),
+      t: (a.textContent || '').trim().replace(/\s+/g, ' '),
       h: a.getAttribute('href'),
     })),
     press: getComputedStyle(document.documentElement).getPropertyValue('--press-scale').trim(),
@@ -110,14 +74,16 @@ async function main() {
   );
   await page.click('.instrument-actions button.btn-primary');
   await page.waitForSelector('.success-hero .next-step', { timeout: 12000 });
-  const step = await page.$eval('.success-hero .next-step', (el) => el.textContent.trim());
+  const step = await page.$eval('.success-hero .next-step', (el) =>
+    (el.textContent || '').trim(),
+  );
   if (step.length >= 4) pass('卡-成功nextStep', step.slice(0, 40));
   else fail('卡-成功nextStep', step);
 
   await setTextarea(page, '#need', '第二次提交应配额失败，需要足够长的文字。');
   await page.click('.instrument-actions button.btn-primary');
   await page.waitForSelector('.alert-fail', { timeout: 12000 });
-  const failText = await page.$eval('.alert-fail', (el) => el.textContent.trim());
+  const failText = await page.$eval('.alert-fail', (el) => (el.textContent || '').trim());
   if (/游客|配额|用完/.test(failText)) pass('卡-失败态');
   else fail('卡-失败态', failText);
 
@@ -144,17 +110,24 @@ async function main() {
       hasEnd: !!end,
       likeClass: like?.className || '',
       proseLen: body?.textContent?.trim().length || 0,
-      endAfter: !!(end && body && end.getBoundingClientRect().top > body.getBoundingClientRect().top),
+      endAfter: !!(
+        end &&
+        body &&
+        end.getBoundingClientRect().top > body.getBoundingClientRect().top
+      ),
     };
   });
-  if (detail.proseLen > 50 && detail.hasEnd && detail.endAfter) pass('逛-详情底线', detail.title?.slice(0, 24));
+  if (detail.proseLen > 50 && detail.hasEnd && detail.endAfter)
+    pass('逛-详情底线', detail.title?.slice(0, 24) || '');
   else fail('逛-详情底线', JSON.stringify(detail));
   if (detail.likeClass.includes('btn-ghost')) pass('逛-赞安静');
   else fail('逛-赞安静', detail.likeClass);
 
   await page.click('.article-end button');
   await new Promise((r) => setTimeout(r, 900));
-  const likeAfter = await page.$eval('.article-end button', (el) => el.textContent.trim());
+  const likeAfter = await page.$eval('.article-end button', (el) =>
+    (el.textContent || '').trim(),
+  );
   if (/赞\s*\d+/.test(likeAfter)) pass('点赞', likeAfter);
   else fail('点赞', likeAfter);
 
@@ -176,7 +149,9 @@ async function main() {
   const mobileOk = await page.evaluate(() =>
     [...document.querySelectorAll('a.btn-primary')].some((a) => {
       const r = a.getBoundingClientRect();
-      return a.textContent.includes('卡住') && r.top >= 0 && r.bottom <= innerHeight;
+      return (
+        (a.textContent || '').includes('卡住') && r.top >= 0 && r.bottom <= innerHeight
+      );
     }),
   );
   if (mobileOk) pass('移动-卡可见');
@@ -195,13 +170,21 @@ async function main() {
 
     const hasSource = await page.$('#clue-source');
     if (hasSource) {
-      await page.select('#clue-source', 'wechat');
+      await page.evaluate(() => {
+        const sel = document.querySelector('#clue-source') as HTMLSelectElement | null;
+        if (sel) {
+          sel.value = 'wechat';
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
       pass('Admin-来源选择器');
     } else fail('Admin-来源选择器');
 
     await setTextarea(page, 'textarea', '深度Admin闭环：外贴来源线索用于A11分桶。');
     await page.evaluate(() => {
-      [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '入库')?.click();
+      [...document.querySelectorAll('button')]
+        .find((b) => (b.textContent || '').trim() === '入库')
+        ?.click();
     });
     await new Promise((r) => setTimeout(r, 1000));
     const rows = await page.$$eval('table tbody tr', (trs) => trs.length);
@@ -209,19 +192,25 @@ async function main() {
     else fail('Admin-线索列表');
 
     await page.evaluate(() => {
-      const buttons = [...document.querySelectorAll('table tbody tr:first-child button')];
-      buttons.find((b) => b.textContent.includes('入池'))?.click();
+      const buttons = [
+        ...document.querySelectorAll<HTMLButtonElement>('table tbody tr:first-child button'),
+      ];
+      buttons.find((b) => (b.textContent || '').includes('入池'))?.click();
     });
     await new Promise((r) => setTimeout(r, 800));
 
     await page.goto(`${ADMIN}/seeds`, { waitUntil: 'networkidle0', timeout: 20000 });
     await page.type('input', `深度闭环题苗 ${Date.now()}`);
     await page.evaluate(() => {
-      [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '新建')?.click();
+      [...document.querySelectorAll('button')]
+        .find((b) => (b.textContent || '').trim() === '新建')
+        ?.click();
     });
     await new Promise((r) => setTimeout(r, 1000));
     const promoted = await page.evaluate(() => {
-      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.includes('主选'));
+      const b = [...document.querySelectorAll('button')].find((x) =>
+        (x.textContent || '').includes('主选'),
+      );
       if (!b) return false;
       b.click();
       return true;
@@ -232,11 +221,15 @@ async function main() {
 
     await page.goto(`${ADMIN}/executions`, { waitUntil: 'networkidle0', timeout: 20000 });
     await page.evaluate(() => {
-      [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === '交付')?.click();
+      [...document.querySelectorAll('button')]
+        .find((b) => (b.textContent || '').trim() === '交付')
+        ?.click();
     });
     await new Promise((r) => setTimeout(r, 900));
     await page.evaluate(() => {
-      [...document.querySelectorAll('button')].find((b) => b.textContent.includes('检验有用'))?.click();
+      [...document.querySelectorAll('button')]
+        .find((b) => (b.textContent || '').includes('检验有用'))
+        ?.click();
     });
     await new Promise((r) => setTimeout(r, 900));
     const msg = await page.evaluate(() => document.body.innerText);
@@ -251,7 +244,7 @@ async function main() {
     const mRes = await fetch(`${API}/metrics`, {
       headers: { Authorization: `Bearer ${TOKEN}` },
     });
-    const m = await mRes.json();
+    const m = (await mRes.json()) as { clueSources?: { byBucket?: unknown } };
     if (m.clueSources?.byBucket) pass('API-clueSources', JSON.stringify(m.clueSources.byBucket));
     else fail('API-clueSources');
   }
@@ -264,17 +257,11 @@ async function main() {
   else pass('无pageerror');
 
   await browser.close();
-  const outDir = path.join(root, 'tmp');
-  fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(outDir, 'accept-deep.json'),
-    JSON.stringify({ at: new Date().toISOString(), failed, log }, null, 2),
-  );
-  console.log(failed === 0 ? `\nDEEP PASS (${log.length})` : `\nDEEP FAIL ${failed}/${log.length}`);
-  process.exit(failed === 0 ? 0 : 1);
+  writeJson('accept-deep.json', { log: undefined });
+  exitWithSummary('DEEP');
 }
 
-main().catch((e) => {
+main().catch((e: unknown) => {
   console.error(e);
   process.exit(1);
 });
