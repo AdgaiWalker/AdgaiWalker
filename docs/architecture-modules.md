@@ -1,10 +1,32 @@
-# 核心模块与关系（Stage 1 全量）
+# 核心模块与关系（双入口小生产）
 
 > 标注约定：  
 > - **依赖** A → B：编译/设计期需要 B 的抽象（优先接口）  
 > - **调用** A → B：运行期发起请求/函数调用  
 > - **触发** A → B：副作用，B 失败不推翻 A 主结果（若无特别说明）  
 > - **实现** A ⇒ I：A 是接口 I 的具体适配器  
+
+## 分层纪律（强制）
+
+```text
+页面/组件（只渲染与本地 UI 状态）
+    │ 调用
+    ▼
+api/* 门面（HTTP 拼装，无业务 if 森林）
+    │ 调用
+    ▼
+Controller（协议：DTO/状态码/Cookie）
+    │ 调用
+    ▼
+Application Service（用例编排）
+    │ 依赖 Port
+    ▼
+Adapter（Prisma / 规则 nextStep / 内存限流）
+    +
+SharedKernel（纯规则，无 I/O）
+```
+
+**禁止**：页面直写 fetch 业务分支；Controller 写主选/闭环规则；Service `new PrismaClient()`；React 复制状态机。
 
 ---
 
@@ -14,9 +36,12 @@
 
 | 模块 | 一句话职责 |
 |------|------------|
-| **WebApp** | 公开站：首页/文章保真浏览 + `/tools` 问答提交 |
-| **AdminApp** | 管理端：线索 / 题苗 / 执行 / 指标导航与热记操作 |
-| **ContentReadModel** | 构建期扫描 `src/content/log` 生成只读 JSON，供 Web 渲染 |
+| **WebApp** | 公开站：卡/逛双入口 + 证据库阅读 |
+| **web/api/public-api** | 公开 HTTP 门面（intake/赞/反馈） |
+| **AdminApp** | 管理端：池/苗/检/数 |
+| **admin/api/admin-api** | 管理 HTTP 门面（带 Bearer） |
+| **admin/auth/token-store** | 本机令牌存取（无业务） |
+| **ContentReadModel** | 构建期扫描 `src/content/log` 生成只读 JSON |
 
 ### 契约与领域（无 I/O）
 

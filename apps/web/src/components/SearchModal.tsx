@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { publicApi } from '../api/public-api';
 import { getAllItems } from '../content';
 
 interface Hit {
@@ -49,11 +50,7 @@ export function SearchModal({
     setHits(local);
     setNote(local.length ? '' : '无结果');
     if (!local.length) {
-      void fetch('/api/search-events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, hadResults: false }),
-      }).catch(() => {});
+      void publicApi.searchMiss(q).catch(() => {});
     }
   }, [q, open]);
 

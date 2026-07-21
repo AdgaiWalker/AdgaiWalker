@@ -18,10 +18,14 @@
     "build:shared": "pnpm --filter @walker/shared build",
     "test:shared": "pnpm --filter @walker/shared test",
     "test:api": "pnpm build:shared && pnpm --filter @walker/api test",
+    "test:web": "pnpm --filter @walker/web test",
     "typecheck": "pnpm build:shared && pnpm -r run typecheck",
     "db:migrate": "pnpm --filter @walker/api prisma:migrate",
     "db:generate": "pnpm --filter @walker/api prisma:generate",
-    "verify:stage1": "node scripts/verify-stage1.mjs"
+    "verify:stage1": "node scripts/verify-stage1.mjs",
+    "accept:dual-entry": "node scripts/accept-dual-entry.mjs",
+    "accept:deep": "node scripts/accept-deep.mjs",
+    "accept": "node scripts/accept-dual-entry.mjs && node scripts/accept-deep.mjs"
   },
   "devDependencies": {
     "gray-matter": "^4.0.3",

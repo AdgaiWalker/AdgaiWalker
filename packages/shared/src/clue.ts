@@ -11,7 +11,7 @@ export type CluePoolStatus = 'candidate' | 'in-pool' | 'discarded';
 
 export const CLUE_BODY_MIN_LENGTH = 4;
 
-const CLUE_SOURCES: readonly ClueSource[] = [
+export const CLUE_SOURCES: readonly ClueSource[] = [
   'manual-self',
   'tools-visitor',
   'wechat',
@@ -21,6 +21,15 @@ const CLUE_SOURCES: readonly ClueSource[] = [
 
 export function isClueSource(value: string): value is ClueSource {
   return (CLUE_SOURCES as readonly string[]).includes(value);
+}
+
+/** 14 天验证盒：来源分桶（访客 / 自记 / 外贴） */
+export type SourceBucket = 'visitor' | 'self' | 'external';
+
+export function sourceBucket(source: ClueSource): SourceBucket {
+  if (source === 'manual-self') return 'self';
+  if (source === 'tools-visitor') return 'visitor';
+  return 'external';
 }
 
 /** 非 manual-self 视为外部来源 */

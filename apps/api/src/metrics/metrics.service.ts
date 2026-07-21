@@ -1,5 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { graduationProgress, isCountableLoop, type DeliveryForm, type ReviewOutcome } from '@walker/shared';
+import {
+  graduationProgress,
+  isClueSource,
+  isCountableLoop,
+  isExternalSource,
+  sourceBucket,
+  type ClueSource,
+  type DeliveryForm,
+  type ReviewOutcome,
+  type SourceBucket,
+} from '@walker/shared';
 import { storageUnavailable } from '../common/http-error';
 import {
   EXECUTION_REPOSITORY,
@@ -18,7 +28,9 @@ import {
   type ClueRepositoryPort,
 } from '../ports/clue.repository';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
-import { isExternalSource } from '@walker/shared';
+
+const MS_DAY = 24 * 60 * 60 * 1000;
+const BOX_DAYS = 14;
 
 @Injectable()
 export class MetricsService {
@@ -34,9 +46,9 @@ export class MetricsService {
   async summary() {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     const [execs, seeds, clueList, featureAgg] = await Promise.all([
-      this.executions.list(100),
-      this.seeds.list(100),
-      this.clues.list(100),
+      this.executions.list(200),
+      this.seeds.list(200),
+      this.clues.list(200),
       this.events.aggregate(),
     ]);
 
@@ -66,7 +78,33 @@ export class MetricsService {
       const primary = seed.links.find((l) => l.role === 'primary');
       if (primary) {
         const clue = clueList.find((c) => c.id === primary.clueId);
-        if (clue && isExternalSource(clue.source)) externalLoopCount += 1;
+        if (clue && isClueSource(clue.source) && isExternalSource(clue.source)) {
+          externalLoopCount += 1;
+        }
+      }
+    }
+
+    const bySource: Record<string, number> = {};
+    const byBucket: Record<SourceBucket, number> = {
+      visitor: 0,
+      self: 0,
+      external: 0,
+    };
+    const since = Date.now() - BOX_DAYS * MS_DAY;
+    const byBucket14d: Record<SourceBucket, number> = {
+      visitor: 0,
+      self: 0,
+      external: 0,
+    };
+
+    for (const c of clueList) {
+      const src = isClueSource(c.source) ? c.source : ('other-external' as ClueSource);
+      bySource[src] = (bySource[src] ?? 0) + 1;
+      const bucket = sourceBucket(src);
+      byBucket[bucket] += 1;
+      const created = new Date(c.createdAt).getTime();
+      if (!Number.isNaN(created) && created >= since) {
+        byBucket14d[bucket] += 1;
       }
     }
 
@@ -83,6 +121,12 @@ export class MetricsService {
         externalLoopCount,
       }),
       features: featureAgg,
+      clueSources: {
+        bySource,
+        byBucket,
+        byBucket14d,
+        windowDays: BOX_DAYS,
+      },
     };
   }
 }

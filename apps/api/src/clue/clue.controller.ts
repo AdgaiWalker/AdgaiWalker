@@ -1,8 +1,20 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { CluePoolStatus } from '@walker/shared';
+import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { ClueService } from './clue.service';
 
 @Controller('clues')
+@UseGuards(AdminAuthGuard)
 export class ClueController {
   constructor(@Inject(ClueService) private readonly clues: ClueService) {}
 

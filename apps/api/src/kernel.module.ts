@@ -34,6 +34,8 @@ import { LikeController } from './engagement/like.controller';
 import { ContentFeedbackService } from './engagement/content-feedback.service';
 import { ContentFeedbackController } from './engagement/content-feedback.controller';
 import { SearchEventsController } from './engagement/search-events.controller';
+import { SearchEventsService } from './engagement/search-events.service';
+import { AdminAuthGuard } from './auth/admin-auth.guard';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -48,6 +50,7 @@ import { SearchEventsController } from './engagement/search-events.controller';
     SearchEventsController,
   ],
   providers: [
+    AdminAuthGuard,
     { provide: PRISMA, useClass: PrismaAdapter },
     {
       provide: DATABASE,
@@ -68,6 +71,7 @@ import { SearchEventsController } from './engagement/search-events.controller';
     MetricsService,
     LikeService,
     ContentFeedbackService,
+    SearchEventsService,
   ],
   exports: [PRISMA, DATABASE],
 })

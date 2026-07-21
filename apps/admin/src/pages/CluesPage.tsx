@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Clue } from '../api';
+import { adminApi, type Clue } from '../api/admin-api';
+import { labelPool, labelSource, poolActions } from '../shared/labels';
+
+const SOURCE_OPTIONS = [
+  { value: 'manual-self', label: '站主热记' },
+  { value: 'wechat', label: '微信外贴' },
+  { value: 'live', label: '直播外贴' },
+  { value: 'other-external', label: '其他外贴' },
+] as const;
 
 export function CluesPage() {
   const [list, setList] = useState<Clue[]>([]);
   const [body, setBody] = useState('');
+  const [source, setSource] = useState<string>('manual-self');
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setList(await api.clues());
+      setList(await adminApi.clues());
       setErr(null);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -24,12 +33,24 @@ export function CluesPage() {
       <h1>线索</h1>
       <div className="panel">
         <h3>热记 / 手动入库</h3>
+        <label htmlFor="clue-source">来源（A11）</label>
+        <select
+          id="clue-source"
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+        >
+          {SOURCE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
         <textarea value={body} onChange={(e) => setBody(e.target.value)} />
         <button
           type="button"
           onClick={async () => {
             try {
-              await api.createClue(body);
+              await adminApi.createClue(body, source);
               setBody('');
               await load();
             } catch (e) {
@@ -61,28 +82,36 @@ export function CluesPage() {
                   {c.body}
                   <div className="muted">{c.id.slice(0, 10)}…</div>
                 </td>
-                <td>{c.source}</td>
-                <td>{c.poolStatus}</td>
+                <td>{labelSource(c.source)}</td>
+                <td>{labelPool(c.poolStatus)}</td>
                 <td>
                   <button
                     type="button"
                     className="secondary"
                     onClick={async () => {
-                      await api.setPool(c.id, 'in-pool');
-                      await load();
+                      try {
+                        await adminApi.setPool(c.id, poolActions.intoPool.status);
+                        await load();
+                      } catch (e) {
+                        setErr(e instanceof Error ? e.message : String(e));
+                      }
                     }}
                   >
-                    入池
+                    {poolActions.intoPool.label}
                   </button>
                   <button
                     type="button"
                     className="secondary"
                     onClick={async () => {
-                      await api.setPool(c.id, 'discarded');
-                      await load();
+                      try {
+                        await adminApi.setPool(c.id, poolActions.discard.status);
+                        await load();
+                      } catch (e) {
+                        setErr(e instanceof Error ? e.message : String(e));
+                      }
                     }}
                   >
-                    丢弃
+                    {poolActions.discard.label}
                   </button>
                 </td>
               </tr>

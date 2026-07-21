@@ -46,6 +46,46 @@ nav a:hover {
   color: var(--accent);
 }
 
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.75rem 0;
+}
+
+button,
+button.secondary {
+  transition: transform 100ms ease-out, opacity 0.15s ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  nav {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  nav strong,
+  nav .muted {
+    width: 100%;
+  }
+
+  nav a {
+    display: inline-block;
+    margin: 0;
+  }
+}
+
 main {
   padding: 1.25rem 1.5rem;
 }

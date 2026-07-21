@@ -1,12 +1,16 @@
+import { Link } from 'react-router-dom';
 import siteStats from '../data/site-stats.json';
 import {
   Anchor,
   BookOpen,
   Compass,
   Globe,
+  MessageCircleQuestion,
+  PenLine,
   Ship,
   type LucideIcon,
 } from 'lucide-react';
+import { dualEntry } from '../shared/dual-entry';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   'lucide:anchor': Anchor,
@@ -32,6 +36,23 @@ export function AboutPage() {
           Walker（秋知）的个人空间。沉淀思考、工具、点子与学习路径，并用「需求可见 →
           选题生产 → 结果检验」推进真实问题。
         </p>
+        <p style={{ lineHeight: 1.7, color: 'var(--color-parchment-dim)' }}>
+          两种用法：
+          <strong>{dualEntry.ask.label}</strong>
+          （{dualEntry.ask.hint}）或
+          <strong>{dualEntry.browse.label}</strong>
+          （{dualEntry.browse.hint}）。
+        </p>
+        <div className="home-dual-cta" style={{ justifyContent: 'flex-start' }}>
+          <Link to={dualEntry.ask.path} className="btn-primary">
+            <MessageCircleQuestion size={16} />
+            {dualEntry.ask.cta}
+          </Link>
+          <Link to={dualEntry.browse.path} className="btn-secondary">
+            <PenLine size={16} />
+            {dualEntry.browse.cta}
+          </Link>
+        </div>
       </section>
 
       <section

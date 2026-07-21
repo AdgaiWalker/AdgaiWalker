@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Clue, type Seed } from '../api';
+import { adminApi, type Clue, type Seed } from '../api/admin-api';
 
 export function SeedsPage() {
   const [seeds, setSeeds] = useState<Seed[]>([]);
@@ -9,7 +9,7 @@ export function SeedsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [s, c] = await Promise.all([api.seeds(), api.clues()]);
+      const [s, c] = await Promise.all([adminApi.seeds(), adminApi.clues()]);
       setSeeds(s);
       setClues(c);
       setErr(null);
@@ -37,7 +37,7 @@ export function SeedsPage() {
           type="button"
           onClick={async () => {
             try {
-              await api.createSeed(title);
+              await adminApi.createSeed(title);
               setTitle('');
               await load();
             } catch (e) {
@@ -53,26 +53,31 @@ export function SeedsPage() {
         <div className="panel" key={s.id}>
           <strong>{s.title}</strong>
           <div className="muted">
-            primary: {s.primaryClueId ?? '无'} · links {s.links.length}
+            主选：{s.primaryClueId ? `${s.primaryClueId.slice(0, 10)}…` : '无'} ·
+            关联 {s.links.length}
           </div>
           <div>
-            {inPool.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="secondary"
-                onClick={async () => {
-                  try {
-                    await api.promote(s.id, c.id);
-                    await load();
-                  } catch (e) {
-                    setErr(e instanceof Error ? e.message : String(e));
-                  }
-                }}
-              >
-                主选← {c.body.slice(0, 24)}
-              </button>
-            ))}
+            {inPool.length === 0 ? (
+              <p className="muted">暂无已入池线索，请先在「线索」入池</p>
+            ) : (
+              inPool.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="secondary"
+                  onClick={async () => {
+                    try {
+                      await adminApi.promote(s.id, c.id);
+                      await load();
+                    } catch (e) {
+                      setErr(e instanceof Error ? e.message : String(e));
+                    }
+                  }}
+                >
+                  主选 ← {c.body.slice(0, 24)}
+                </button>
+              ))
+            )}
           </div>
         </div>
       ))}

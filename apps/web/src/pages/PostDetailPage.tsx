@@ -4,8 +4,10 @@ import { getPostBySlug } from '../content';
 import { LikeButton } from '../components/LikeButton';
 import { ContentFeedback } from '../components/ContentFeedback';
 import { STATUS_LABELS } from '../shared/constants';
+import { dualEntry } from '../shared/dual-entry';
 import { formatDateLocale } from '../shared/format';
 import { estimateReadingMinutes } from '../shared/reading';
+import { sanitizeHtml } from '../lib/sanitize-html';
 
 function parseDate(iso: string): Date {
   const d = new Date(iso);
@@ -17,23 +19,24 @@ export function PostDetailPage() {
   const post = getPostBySlug(decodeURIComponent(slug));
   if (!post) {
     return (
-      <div className="panel-glass" style={{ padding: '1.5rem', borderRadius: 24 }}>
+      <div className="surface-l2" style={{ padding: '1.5rem' }}>
         <h1 className="page-title">未找到</h1>
-        <Link to="/posts">返回列表</Link>
+        <Link to={dualEntry.browse.path}>返回列表</Link>
       </div>
     );
   }
 
-  const html = marked.parse(post.body, { async: false }) as string;
-  const likePath = `/posts/${post.slug}`;
+  const rawHtml = marked.parse(post.body, { async: false }) as string;
+  const html = sanitizeHtml(rawHtml);
+  const likePath = `${dualEntry.browse.path}/${post.slug}`;
   const mins = estimateReadingMinutes(post.body);
   const statusLabel = post.status ? STATUS_LABELS[post.status] ?? post.status : '';
 
   return (
     <article className="article-shell">
       <p className="meta">
-        <Link to="/posts" style={{ color: 'var(--color-parchment-dim)' }}>
-          文章
+        <Link to={dualEntry.browse.path} style={{ color: 'var(--color-parchment-dim)' }}>
+          {dualEntry.browse.title}
         </Link>
         {' / '}
         {post.slug}
@@ -50,13 +53,13 @@ export function PostDetailPage() {
           {post.summary}
         </p>
       ) : null}
-      <div className="panel-glass" style={{ padding: '1.5rem 1.6rem', borderRadius: 28 }}>
+      <div className="surface-l2 article-body">
         <div className="prose-md" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
-      <div style={{ marginTop: '1.25rem' }}>
+      <div className="article-end">
         <LikeButton path={likePath} />
+        <ContentFeedback contentId={post.slug} />
       </div>
-      <ContentFeedback contentId={post.slug} />
     </article>
   );
 }

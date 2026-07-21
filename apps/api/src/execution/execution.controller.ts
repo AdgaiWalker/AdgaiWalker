@@ -1,7 +1,18 @@
-import { Body, Controller, Get, Inject, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { ExecutionService } from './execution.service';
 
 @Controller('executions')
+@UseGuards(AdminAuthGuard)
 export class ExecutionController {
   constructor(
     @Inject(ExecutionService) private readonly executions: ExecutionService,

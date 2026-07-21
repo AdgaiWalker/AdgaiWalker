@@ -79,3 +79,7 @@ dev-server.log
 # Playwright test output (transient)
 test-results/
 *.tsbuildinfo
+tmp/
+
+# Grok TUI local MCP / session config
+.grok/

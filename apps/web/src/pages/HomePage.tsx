@@ -1,8 +1,16 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bookmark, FolderKanban, Lightbulb, PenLine } from 'lucide-react';
+import {
+  ArrowRight,
+  Bookmark,
+  FolderKanban,
+  Lightbulb,
+  MessageCircleQuestion,
+  PenLine,
+} from 'lucide-react';
 import { getRecentPosts, getByType } from '../content';
 import { getSolarTerm } from '../lib/solar-terms';
 import { GreetingCard } from '../components/GreetingCard';
+import { dualEntry } from '../shared/dual-entry';
 import { TEMP_SPARKS } from '../shared/rules-ui';
 import { formatDateCompact } from '../shared/format';
 
@@ -35,6 +43,22 @@ export function HomePage() {
           <span className="seasonal-poetic">{term.poetic}</span>
         </div>
 
+        <div className="pop-in home-dual-lead meta" style={{ animationDelay: '0.02s' }}>
+          <p style={{ margin: 0 }}>
+            公开笔记，也是把卡点变成可检验交付的小机器。
+          </p>
+          <div className="home-dual-cta">
+            <Link to={dualEntry.ask.path} className="btn-primary">
+              <MessageCircleQuestion size={16} />
+              {dualEntry.ask.cta}
+            </Link>
+            <Link to={dualEntry.browse.path} className="btn-secondary">
+              <PenLine size={16} />
+              {dualEntry.browse.cta}
+            </Link>
+          </div>
+        </div>
+
         <div className="home-grid">
           <div className="flex flex-col gap-4" style={{ marginTop: '1.25rem' }}>
             <div
@@ -52,7 +76,7 @@ export function HomePage() {
               </div>
               {featured ? (
                 <Link
-                  to={`/posts/${encodeURIComponent(featured.slug)}`}
+                  to={`${dualEntry.browse.path}/${encodeURIComponent(featured.slug)}`}
                   className="directory-trace"
                 >
                   <span className="directory-trace-label">最近</span>
@@ -71,9 +95,15 @@ export function HomePage() {
               style={{ padding: '0.75rem', borderRadius: 20, animationDelay: '0.12s' }}
             >
               <div className="quick-grid">
-                <Link to="/posts" className="quick-link">
+                <Link to={dualEntry.ask.path} className="quick-link quick-link-primary">
+                  <MessageCircleQuestion size={16} />
+                  <span>
+                    {dualEntry.ask.label} · {dualEntry.ask.hint}
+                  </span>
+                </Link>
+                <Link to={dualEntry.browse.path} className="quick-link quick-link-secondary">
                   <PenLine size={15} />
-                  <span>文章</span>
+                  <span>{dualEntry.browse.label}</span>
                 </Link>
                 <Link to="/tools/resources" className="quick-link">
                   <Bookmark size={15} />
@@ -97,7 +127,7 @@ export function HomePage() {
               <div className="recent-header">
                 <PenLine size={13} color="var(--color-brand)" />
                 <span className="recent-label">最近文章</span>
-                <Link to="/posts" className="recent-more">
+                <Link to={dualEntry.browse.path} className="recent-more">
                   全部 →
                 </Link>
               </div>
@@ -105,7 +135,7 @@ export function HomePage() {
                 {recentPosts.map((p) => (
                   <Link
                     key={p.slug}
-                    to={`/posts/${encodeURIComponent(p.slug)}`}
+                    to={`${dualEntry.browse.path}/${encodeURIComponent(p.slug)}`}
                     className="recent-item"
                   >
                     <span className="recent-item-title">{p.title}</span>

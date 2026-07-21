@@ -20,7 +20,11 @@ export function missingClue(): ApiError {
 }
 
 export function guestQuotaExceeded(): ApiError {
-  return new ApiError('guest-quota-exceeded', HttpStatus.UNAUTHORIZED);
+  return new ApiError(
+    'guest-quota-exceeded',
+    HttpStatus.TOO_MANY_REQUESTS,
+    '游客完整问答次数已用完',
+  );
 }
 
 export function rateLimited(): ApiError {

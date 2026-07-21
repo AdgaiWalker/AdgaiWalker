@@ -1,34 +1,33 @@
 import { useState } from 'react';
-
-type Signal = 'useful' | 'needs-more' | 'outdated';
+import { ApiError } from '../api/http';
+import {
+  publicApi,
+  type ContentFeedbackSignal,
+} from '../api/public-api';
+import { explainErrorCode } from '../shared/rules-ui';
 
 export function ContentFeedback({ contentId }: { contentId: string }) {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  const [signal, setSignal] = useState<Signal | null>(null);
+  const [signal, setSignal] = useState<ContentFeedbackSignal | null>(null);
 
-  async function submit(sig: Signal) {
+  async function submit(sig: ContentFeedbackSignal) {
     setSignal(sig);
     setErr(null);
     try {
-      const res = await fetch('/api/content-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contentId,
-          signal: sig,
-          note: sig === 'useful' ? undefined : note,
-        }),
+      await publicApi.contentFeedback({
+        contentId,
+        signal: sig,
+        note: sig === 'useful' ? undefined : note,
       });
-      const data = (await res.json()) as { code?: string };
-      if (!res.ok) {
-        setErr(data.code ?? res.statusText);
-        return;
-      }
       setDone(true);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      if (e instanceof ApiError) {
+        setErr(explainErrorCode(e.code, e.message));
+      } else {
+        setErr(e instanceof Error ? e.message : String(e));
+      }
     }
   }
 
@@ -37,14 +36,13 @@ export function ContentFeedback({ contentId }: { contentId: string }) {
   }
 
   return (
-    <div
-      className="panel-glass"
-      style={{ marginTop: '1.25rem', padding: '1.15rem 1.25rem', borderRadius: 24 }}
-    >
-      <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem' }}>这篇对你有用吗？</h3>
-      <p className="meta">阅读结果反馈（与点赞分开）</p>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-        <button type="button" className="btn-primary" onClick={() => void submit('useful')}>
+    <div className="feedback-quiet">
+      <h3>这篇对你有用吗？</h3>
+      <p className="meta" style={{ marginTop: 0 }}>
+        阅读结果（与点赞分开）
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+        <button type="button" className="btn-ghost" onClick={() => void submit('useful')}>
           有用
         </button>
         <button type="button" className="btn-ghost" onClick={() => setSignal('needs-more')}>
@@ -61,12 +59,21 @@ export function ContentFeedback({ contentId }: { contentId: string }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          <button type="button" className="btn-primary" onClick={() => void submit(signal)}>
+          <button
+            type="button"
+            className="btn-ghost"
+            style={{ marginTop: 8 }}
+            onClick={() => void submit(signal)}
+          >
             提交
           </button>
         </div>
       ) : null}
-      {err ? <p className="meta">失败：{err}</p> : null}
+      {err ? (
+        <div className="alert-fail" role="alert" style={{ marginTop: 10 }}>
+          {err}
+        </div>
+      ) : null}
     </div>
   );
 }

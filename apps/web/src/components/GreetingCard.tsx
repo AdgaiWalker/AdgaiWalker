@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Mail, Sparkles } from 'lucide-react';
 import { SITE_EMAIL } from '../shared/constants';
+import { dualEntry } from '../shared/dual-entry';
 
 export interface Spark {
   title: string;
@@ -10,11 +11,11 @@ export interface Spark {
 }
 
 function greetingByHour(h: number): string {
-  if (h < 5) return 'GOOD NIGHT';
-  if (h < 11) return 'GOOD MORNING';
-  if (h < 14) return 'GOOD NOON';
-  if (h < 18) return 'GOOD AFTERNOON';
-  return 'GOOD EVENING';
+  if (h < 5) return '夜深了';
+  if (h < 11) return '早上好';
+  if (h < 14) return '中午好';
+  if (h < 18) return '下午好';
+  return '晚上好';
 }
 
 export function GreetingCard({ sparks }: { sparks: Spark[] }) {
@@ -100,14 +101,15 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
           <p className="idea-popup-text">{spark.title}</p>
           {spark.isReal && spark.slug ? (
             <Link
-              to={`/posts/${encodeURIComponent(spark.slug)}`}
+              to={`${dualEntry.browse.path}/${encodeURIComponent(spark.slug)}`}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
             >
               看看方案 <ArrowRight size={12} />
             </Link>
           ) : null}
           <button type="button" className="btn-ghost" onClick={draw}>
-            再点一个 ✨
+            <Sparkles size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+            再点一个
           </button>
         </div>
       ) : null}

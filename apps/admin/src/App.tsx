@@ -6,22 +6,31 @@ import { MetricsPage } from './pages/MetricsPage';
 import { ContentPage } from './pages/ContentPage';
 import { AiGatewayPage } from './pages/AiGatewayPage';
 import { LoginPage } from './pages/LoginPage';
+import {
+  adminDeferredNote,
+  adminPrimaryNav,
+  adminSecondaryNav,
+} from './shared/nav';
 
 export function App() {
   return (
     <div className="layout">
       <nav>
         <strong>Walker Admin</strong>
-        <p className="muted">推进核</p>
-        <NavLink to="/login">登录</NavLink>
-        <NavLink to="/clues">线索</NavLink>
-        <NavLink to="/seeds">题苗</NavLink>
-        <NavLink to="/executions">执行</NavLink>
-        <NavLink to="/metrics">指标</NavLink>
-        <NavLink to="/content">内容</NavLink>
-        <NavLink to="/ai-gateway">AI Gateway</NavLink>
+        <p className="muted">推进核 · 池 / 苗 / 检 / 数</p>
+        {adminPrimaryNav.map((item) => (
+          <NavLink key={item.path} to={item.path}>
+            {item.label}
+          </NavLink>
+        ))}
+        <div className="nav-divider" />
+        {adminSecondaryNav.map((item) => (
+          <NavLink key={item.path} to={item.path}>
+            {item.label}
+          </NavLink>
+        ))}
         <p className="muted" style={{ marginTop: 16 }}>
-          未迁：WorkItem / Skill / NorthStar / Grants
+          {adminDeferredNote}
         </p>
       </nav>
       <main>

@@ -4,6 +4,8 @@ export interface AppConfigPort {
   isAiEnabled(): boolean;
   getPort(): number;
   getNodeEnv(): string;
+  /** 管理 API Bearer 令牌；未配置则管理面 fail-closed */
+  getAdminApiToken(): string | undefined;
 }
 
 export const APP_CONFIG = Symbol('APP_CONFIG');

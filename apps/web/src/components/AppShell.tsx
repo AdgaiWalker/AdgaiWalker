@@ -18,34 +18,34 @@ import {
   User,
 } from 'lucide-react';
 import { applySiteTheme, cycleThemeVisual } from '../lib/theme';
+import { dualEntry } from '../shared/dual-entry';
 import { SearchModal } from './SearchModal';
 
-const groups = [
-  {
-    items: [
-      { label: '内容', href: '/content', icon: LayoutGrid, hint: 'Content' },
-      { label: '关于', href: '/about', icon: User, hint: 'About' },
-      { label: '支持', href: '/support', icon: Heart, hint: 'Support' },
-    ],
-  },
-  {
-    title: '空间',
-    items: [
-      { label: '项目', href: '/projects', icon: FolderKanban, hint: 'Projects' },
-      { label: '学习', href: '/learn', icon: Rocket, hint: 'Learn' },
-      { label: '资源', href: '/tools/resources', icon: Bookmark, hint: 'Tools' },
-      { label: '点子', href: '/ideas', icon: Lightbulb, hint: 'Ideas' },
-      { label: '文章', href: '/posts', icon: PenLine, hint: 'Posts' },
-      { label: '问答', href: '/tools', icon: MessageCircleQuestion, hint: 'Ask' },
-    ],
-  },
-];
+const evidenceGroup = {
+  title: '证据库',
+  items: [
+    { label: '内容', href: '/content', icon: LayoutGrid, hint: 'Content' },
+    { label: '学习', href: '/learn', icon: Rocket, hint: 'Learn' },
+    { label: '点子', href: '/ideas', icon: Lightbulb, hint: 'Ideas' },
+    { label: '项目', href: '/projects', icon: FolderKanban, hint: 'Projects' },
+    { label: '资源', href: '/tools/resources', icon: Bookmark, hint: 'Tools' },
+  ],
+};
+
+const siteGroup = {
+  title: '站',
+  items: [
+    { label: '关于', href: '/about', icon: User, hint: 'About' },
+    { label: '支持', href: '/support', icon: Heart, hint: 'Support' },
+  ],
+};
 
 export function AppShell() {
   const { pathname } = useLocation();
   const isHome = pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const askActive = pathname === dualEntry.ask.path;
 
   useEffect(() => {
     applySiteTheme();
@@ -69,20 +69,16 @@ export function AppShell() {
   if (isHome) {
     return (
       <>
-        <div
-          style={{
-            position: 'fixed',
-            top: 12,
-            right: 12,
-            zIndex: 30,
-            display: 'flex',
-            gap: 8,
-          }}
-        >
+        <div className="home-chrome">
+          <Link to={dualEntry.ask.path} className="btn-primary">
+            <MessageCircleQuestion size={15} />
+            {dualEntry.ask.cta}
+          </Link>
           <button type="button" className="btn-ghost" onClick={() => setSearchOpen(true)}>
-            <Search size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> 搜索
+            <Search size={14} />
+            搜索
           </button>
-          <Link to="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
+          <Link to="/login" className="btn-ghost">
             登录
           </Link>
         </div>
@@ -94,7 +90,7 @@ export function AppShell() {
 
   return (
     <div className="app-layout">
-      <div className="mobile-bar">
+      <div className="mobile-bar surface-l1">
         <button type="button" aria-label="菜单" onClick={() => setMenuOpen((v) => !v)}>
           <Menu size={20} />
         </button>
@@ -104,12 +100,14 @@ export function AppShell() {
         >
           Walker
         </Link>
-        <button
-          type="button"
-          className="btn-ghost"
-          style={{ marginLeft: 'auto' }}
-          onClick={() => setSearchOpen(true)}
+        <Link
+          to={dualEntry.ask.path}
+          className="btn-primary"
+          style={{ marginLeft: 'auto', padding: '0.4rem 0.85rem', minHeight: 36 }}
         >
+          {dualEntry.ask.shortCta}
+        </Link>
+        <button type="button" className="btn-ghost" onClick={() => setSearchOpen(true)}>
           搜索
         </button>
       </div>
@@ -123,6 +121,21 @@ export function AppShell() {
             </span>
           </Link>
         </div>
+        <p className="meta" style={{ padding: '0 1rem 0.75rem', margin: 0, lineHeight: 1.45 }}>
+          <strong>{dualEntry.ask.label}</strong> {dualEntry.ask.hint} ·{' '}
+          <strong>{dualEntry.browse.label}</strong> {dualEntry.browse.hint}
+        </p>
+
+        <div className="nav-group nav-group-primary">
+          <Link
+            to={dualEntry.ask.path}
+            className={`nav-cta-ask${askActive ? ' is-active' : ''}`}
+          >
+            <MessageCircleQuestion size={18} />
+            {dualEntry.ask.cta}
+          </Link>
+        </div>
+
         <button type="button" className="app-search" onClick={() => setSearchOpen(true)}>
           <Search size={18} />
           <span>搜索</span>
@@ -130,9 +143,23 @@ export function AppShell() {
         </button>
 
         <div style={{ flex: 1, overflow: 'auto', paddingBottom: 16 }}>
-          {groups.map((g) => (
-            <div key={g.title ?? 'main'} style={{ marginBottom: 12 }}>
-              {g.title ? <div className="nav-section-title">{g.title}</div> : null}
+          <div className="nav-group">
+            <div className="nav-section-title">入口</div>
+            <NavLink
+              to={dualEntry.browse.path}
+              className={({ isActive }) =>
+                `nav-link nav-link-browse${isActive ? ' nav-link-active' : ''}`
+              }
+            >
+              <PenLine size={18} className="nav-link-icon" />
+              <span>{dualEntry.browse.label}</span>
+              <span className="nav-link-hint">{dualEntry.browse.hint}</span>
+            </NavLink>
+          </div>
+
+          {[evidenceGroup, siteGroup].map((g) => (
+            <div key={g.title} className="nav-group">
+              <div className="nav-section-title">{g.title}</div>
               {g.items.map((item) => {
                 const Ico = item.icon;
                 return (
@@ -140,7 +167,7 @@ export function AppShell() {
                     key={item.href}
                     to={item.href}
                     className={({ isActive }) =>
-                      `nav-link ${isActive ? 'nav-link-active' : ''}`
+                      `nav-link${isActive ? ' nav-link-active' : ''}`
                     }
                   >
                     <Ico size={18} className="nav-link-icon" />
@@ -165,7 +192,7 @@ export function AppShell() {
           <a href="mailto:praxiswalker@gmail.com" aria-label="Email">
             <Mail size={18} />
           </a>
-          <a href="/rss.xml" aria-label="RSS" title="RSS（切流后可用）">
+          <a href="/rss.xml" aria-label="RSS" title="RSS">
             <Rss size={16} />
           </a>
           <button
@@ -176,7 +203,7 @@ export function AppShell() {
           >
             主题
           </button>
-          <Link to="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
+          <Link to="/login" className="btn-ghost">
             登录
           </Link>
         </div>

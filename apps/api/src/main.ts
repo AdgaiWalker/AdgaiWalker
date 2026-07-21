@@ -2,9 +2,11 @@ import 'reflect-metadata';
 import type { NextFunction, Request, Response } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { EnvConfigAdapter } from './config/env-config.adapter';
 import { RequestIdMiddleware } from './observability/request-id.middleware';
 
 async function bootstrap() {
+  const config = new EnvConfigAdapter();
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
@@ -12,7 +14,7 @@ async function bootstrap() {
   app.use((req: Request, res: Response, next: NextFunction) =>
     requestId.use(req, res, next),
   );
-  const port = Number(process.env.PORT ?? 8788);
+  const port = config.getPort();
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(
@@ -20,7 +22,7 @@ async function bootstrap() {
       level: 'info',
       msg: 'api_started',
       port,
-      aiEnabled: process.env.AI_ENABLED === 'true',
+      aiEnabled: config.isAiEnabled(),
     }),
   );
 }

@@ -3,6 +3,7 @@ import {
   assertClueBody,
   isExternalSource,
   isValidClueBody,
+  sourceBucket,
 } from './clue.js';
 import {
   assertPrimaryHasClue,
@@ -209,5 +210,14 @@ describe('feature_key 字典', () => {
     expect(isFeatureKey('match.intake')).toBe(true);
     expect(isFeatureKey('seed.promote')).toBe(true);
     expect(FEATURE_KEYS['content.feedback']).toBeTruthy();
+  });
+});
+
+describe('sourceBucket (A11)', () => {
+  it('maps sources to visitor/self/external', () => {
+    expect(sourceBucket('tools-visitor')).toBe('visitor');
+    expect(sourceBucket('manual-self')).toBe('self');
+    expect(sourceBucket('wechat')).toBe('external');
+    expect(sourceBucket('live')).toBe('external');
   });
 });

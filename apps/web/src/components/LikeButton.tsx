@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Heart } from 'lucide-react';
+import { ApiError } from '../api/http';
+import { publicApi } from '../api/public-api';
+import { explainErrorCode } from '../shared/rules-ui';
 
 export function LikeButton({ path }: { path: string }) {
   const [count, setCount] = useState<number | null>(null);
@@ -6,9 +10,9 @@ export function LikeButton({ path }: { path: string }) {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetch(`/api/likes?path=${encodeURIComponent(path)}`)
-      .then((r) => r.json())
-      .then((d: { count?: number }) => setCount(d.count ?? 0))
+    void publicApi
+      .getLikeCount(path)
+      .then((d) => setCount(d.count))
       .catch(() => setCount(0));
   }, [path]);
 
@@ -16,19 +20,14 @@ export function LikeButton({ path }: { path: string }) {
     setBusy(true);
     setErr(null);
     try {
-      const res = await fetch('/api/likes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path }),
-      });
-      const data = (await res.json()) as { count?: number; code?: string };
-      if (!res.ok) {
-        setErr(data.code ?? res.statusText);
-        return;
-      }
-      setCount(data.count ?? 0);
+      const data = await publicApi.like(path);
+      setCount(data.count);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
+      if (e instanceof ApiError) {
+        setErr(explainErrorCode(e.code, e.message));
+      } else {
+        setErr(e instanceof Error ? e.message : String(e));
+      }
     } finally {
       setBusy(false);
     }
@@ -36,7 +35,8 @@ export function LikeButton({ path }: { path: string }) {
 
   return (
     <div>
-      <button type="button" className="btn-primary" disabled={busy} onClick={() => void like()}>
+      <button type="button" className="btn-ghost" disabled={busy} onClick={() => void like()}>
+        <Heart size={15} />
         赞 {count === null ? '…' : count}
       </button>
       {err ? <span className="meta"> · {err}</span> : null}

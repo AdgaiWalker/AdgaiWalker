@@ -99,6 +99,10 @@ pnpm typecheck
 
 **限制：** API 首版单实例；无 Redis 必依赖；无 `DATABASE_URL` 时 `/health.db=false`，禁止静默假持久。
 
+管理面需配置 `ADMIN_API_TOKEN`（≥16 字符，见 `apps/api/.env.example`）。admin 在「令牌」页粘贴同一值；请求头 `Authorization: Bearer <token>`。未配置令牌时管理 API 全部拒绝（fail-closed）。
+
+产品目标见 `docs/PRD-双入口小生产.md`，执行 Goal 见 `docs/GOAL-双入口小生产.md`。
+
 ## 文档入口
 
 本仓库采用“代码仓库 + Skill 仓库”双边界：
