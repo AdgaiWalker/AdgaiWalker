@@ -2,7 +2,7 @@
 /**
  * 内容字段迁移校验脚本
  *
- * 遍历 src/content/log/ 下所有 .md 文件，用 gray-matter 解析 frontmatter，
+ * 遍历 content/log/ 下所有 .md 文件，用 gray-matter 解析 frontmatter，
  * 校验必需字段是否齐全，输出缺失字段的文件清单。
  *
  * 必需字段（已核对实际 frontmatter，字段名与 to-do 一致，无需调整）：

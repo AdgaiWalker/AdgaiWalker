@@ -1,6 +1,6 @@
 /**
- * 构建期扫描 src/content/log → apps/web/src/generated/content.json
- * 解析规则与 packages/shared content 对齐（唯一构建入口）
+ * 构建期扫描 content/log → apps/web/src/generated/content.json
+ * 纯 Markdown/MDX 真相源；剥离旧 Astro 组件 import，React 站不消费 .astro
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const contentDir = path.join(root, 'src/content/log');
+const contentDir = path.join(root, 'content/log');
 const outDir = path.join(root, 'apps/web/src/generated');
 const outFile = path.join(outDir, 'content.json');
 
@@ -22,6 +22,22 @@ function resolveVisibility(data) {
   }
   if (data.published === false) return 'draft';
   return 'public';
+}
+
+/** 去掉 MDX 顶部对 Astro 组件的 import，避免正文出现运行时噪音 */
+function stripLegacyAstroImports(body) {
+  return body
+    .split('\n')
+    .filter((line) => {
+      const t = line.trim();
+      if (!t.startsWith('import ')) return true;
+      if (/\.astro['"]\s*;?\s*$/.test(t)) return false;
+      if (/from\s+['"]@\/components\//.test(t) && t.includes('astro')) return false;
+      return true;
+    })
+    .join('\n')
+    .replace(/^\s*\n+/, '')
+    .trim();
 }
 
 const docs = [];
@@ -43,7 +59,7 @@ if (fs.existsSync(contentDir)) {
       type: String(data.type || 'knowledge'),
       status: data.status ? String(data.status) : '',
       summary: String(data.summary || data.description || ''),
-      body: content.trim(),
+      body: stripLegacyAstroImports(content),
       tags: Array.isArray(data.tags)
         ? data.tags.filter((t) => typeof t === 'string')
         : [],

@@ -9,5 +9,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "exclude": ["node_modules", "dist", "apps", "packages", "src"]
+  "exclude": ["node_modules", "dist", "apps", "packages", "content"]
 }

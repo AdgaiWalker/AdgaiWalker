@@ -41,7 +41,7 @@ SharedKernel（纯规则，无 I/O）
 | **AdminApp** | 管理端：池/苗/检/数 |
 | **admin/api/admin-api** | 管理 HTTP 门面（带 Bearer） |
 | **admin/auth/token-store** | 本机令牌存取（无业务） |
-| **ContentReadModel** | 构建期扫描 `src/content/log` 生成只读 JSON |
+| **ContentReadModel** | 构建期扫描 `content/log` 生成只读 JSON |
 
 ### 契约与领域（无 I/O）
 

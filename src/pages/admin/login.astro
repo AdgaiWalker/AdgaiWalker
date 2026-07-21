@@ -1,8 +1,0 @@
----
-// /admin/login — 站主账号登录入口
-// owner 账号与普通用户在同一 /login 页登录，此处仅做重定向，避免重复维护登录表单与会话逻辑。
-// 选择理由：账号系统已统一（walker-session cookie + role=admin），/login 页已支持 owner 登录后跳首页，
-// 保留独立 owner 登录表单会与 /login 重复（同一 POST /api/auth/login、同一 cookie、同一表单代码），
-// 单一入口更干净。
-return Astro.redirect('/login');
----
