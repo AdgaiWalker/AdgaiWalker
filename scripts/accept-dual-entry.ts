@@ -1,56 +1,43 @@
 /**
- * 双入口小生产 + 触感：可复现验收（依赖本机已起 api/web）
- * 用法：node scripts/accept-dual-entry.mjs
- * 环境：API_BASE ADMIN_API_TOKEN WEB_BASE（可选）
+ * accept-dual-entry — 双入口 + 触感可复现验收（API + 浏览器抽样）
+ * 依赖：env / report / paths / puppeteer-launch
+ * 触发：pnpm accept:dual-entry（需 api/web/admin 已起）
  */
-import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { loadAdminToken } from './lib/env';
+import {
+  contentJsonPath,
+  dualEntryPath,
+  repoRoot,
+  tmpDir,
+  walkerCssPath,
+} from './lib/paths';
+import { launchBrowser } from './lib/puppeteer-launch';
+import { createReport } from './lib/report';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const API = process.env.API_BASE || 'http://127.0.0.1:8788';
 const WEB = process.env.WEB_BASE || 'http://127.0.0.1:5173';
 const ADMIN = process.env.ADMIN_BASE || 'http://127.0.0.1:5174';
+const TOKEN = loadAdminToken();
+const { pass, fail, writeJson, exitWithSummary } = createReport();
 
-function loadToken() {
-  if (process.env.ADMIN_API_TOKEN) return process.env.ADMIN_API_TOKEN;
-  const envPath = path.join(root, 'apps/api/.env');
-  if (!fs.existsSync(envPath)) return '';
-  const line = fs
-    .readFileSync(envPath, 'utf8')
-    .split('\n')
-    .find((l) => l.startsWith('ADMIN_API_TOKEN='));
-  return line ? line.slice('ADMIN_API_TOKEN='.length).trim() : '';
-}
-
-const TOKEN = loadToken();
-let failed = 0;
-const report = [];
-
-function pass(name, detail = '') {
-  report.push({ name, ok: true, detail });
-  console.log('PASS', name, detail ? `— ${detail}` : '');
-}
-function fail(name, detail = '') {
-  failed += 1;
-  report.push({ name, ok: false, detail });
-  console.error('FAIL', name, detail ? `— ${detail}` : '');
-}
-
-async function json(url, init = {}) {
+async function json(
+  url: string,
+  init: RequestInit = {},
+): Promise<{ res: Response; body: Record<string, unknown> | null }> {
   const res = await fetch(url, init);
-  let body = null;
+  let body: Record<string, unknown> | null = null;
   try {
-    body = await res.json();
+    body = (await res.json()) as Record<string, unknown>;
   } catch {
     body = null;
   }
   return { res, body };
 }
 
-async function main() {
+async function main(): Promise<void> {
   const health = await json(`${API}/health`);
   if (health.res.ok && health.body?.ok) pass('A8-health', JSON.stringify(health.body));
   else fail('A8-health', String(health.res.status));
@@ -63,7 +50,10 @@ async function main() {
   if (!TOKEN || TOKEN.length < 16) {
     fail('A2-令牌', '缺少 ADMIN_API_TOKEN');
   } else {
-    const auth = { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' };
+    const auth = {
+      Authorization: `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json',
+    };
     const clue = await json(`${API}/clues`, {
       method: 'POST',
       headers: auth,
@@ -71,7 +61,7 @@ async function main() {
     });
     if (!clue.res.ok) fail('A2-建线索', JSON.stringify(clue.body));
     else {
-      const clueId = clue.body.id;
+      const clueId = clue.body?.id as string;
       await json(`${API}/clues/${clueId}/pool`, {
         method: 'PATCH',
         headers: auth,
@@ -82,7 +72,7 @@ async function main() {
         headers: auth,
         body: JSON.stringify({ title: `验收题苗 ${Date.now()}` }),
       });
-      const seedId = seed.body?.id;
+      const seedId = seed.body?.id as string | undefined;
       const promoted = await json(`${API}/seeds/${seedId}/promote`, {
         method: 'POST',
         headers: auth,
@@ -91,7 +81,8 @@ async function main() {
       if (!promoted.res.ok) fail('A2-主选', JSON.stringify(promoted.body));
       else {
         const exList = await json(`${API}/executions`, { headers: auth });
-        const ex = (exList.body || []).find((e) => e.seedId === seedId);
+        const list = (exList.body as unknown as Array<{ id: string; seedId: string }>) || [];
+        const ex = list.find((e) => e.seedId === seedId);
         if (!ex) fail('A2-执行卡', 'promote 后无 execution');
         else {
           await json(`${API}/executions/${ex.id}/deliver`, {
@@ -116,16 +107,19 @@ async function main() {
     const m = await json(`${API}/metrics`, {
       headers: { Authorization: `Bearer ${TOKEN}` },
     });
-    if (m.res.ok && m.body?.clueSources?.byBucket) {
-      pass('A11-来源分桶', JSON.stringify(m.body.clueSources.byBucket));
+    const sources = m.body?.clueSources as { byBucket?: unknown } | undefined;
+    if (m.res.ok && sources?.byBucket) {
+      pass('A11-来源分桶', JSON.stringify(sources.byBucket));
     } else fail('A11-来源分桶', JSON.stringify(m.body)?.slice(0, 160));
   }
 
-  const jar = path.join(root, 'tmp', 'accept-anon.jar');
+  const jar = path.join(tmpDir, 'accept-anon.jar');
   fs.mkdirSync(path.dirname(jar), { recursive: true });
   try {
     fs.unlinkSync(jar);
-  } catch {}
+  } catch {
+    /* empty */
+  }
   const intake1 = spawnSync(
     'curl',
     [
@@ -144,15 +138,17 @@ async function main() {
     ],
     { encoding: 'utf8' },
   );
-  const lines1 = intake1.stdout.trim().split('\n');
+  const lines1 = (intake1.stdout || '').trim().split('\n');
   const code1 = lines1.pop();
-  let body1 = {};
+  let body1: { nextStep?: string } = {};
   try {
-    body1 = JSON.parse(lines1.join('\n'));
-  } catch {}
+    body1 = JSON.parse(lines1.join('\n')) as { nextStep?: string };
+  } catch {
+    /* empty */
+  }
   if (code1 === '201' && (body1.nextStep || '').length >= 4) {
-    pass('A3-规则 nextStep', body1.nextStep.slice(0, 40));
-  } else fail('A3-规则 nextStep', intake1.stdout.slice(0, 200));
+    pass('A3-规则 nextStep', (body1.nextStep || '').slice(0, 40));
+  } else fail('A3-规则 nextStep', (intake1.stdout || '').slice(0, 200));
 
   const intake2 = spawnSync(
     'curl',
@@ -172,20 +168,24 @@ async function main() {
     ],
     { encoding: 'utf8' },
   );
-  const lines2 = intake2.stdout.trim().split('\n');
+  const lines2 = (intake2.stdout || '').trim().split('\n');
   const code2 = lines2.pop();
-  let body2 = {};
+  let body2: { code?: string; message?: string } = {};
   try {
-    body2 = JSON.parse(lines2.join('\n'));
-  } catch {}
+    body2 = JSON.parse(lines2.join('\n')) as { code?: string; message?: string };
+  } catch {
+    /* empty */
+  }
   if (code2 === '429' && body2.code === 'guest-quota-exceeded') {
     pass('A4-配额失败', body2.message || body2.code);
-  } else fail('A4-配额失败', intake2.stdout.slice(0, 200));
+  } else fail('A4-配额失败', (intake2.stdout || '').slice(0, 200));
 
-  const contentPath = path.join(root, 'apps/web/src/generated/content.json');
-  if (fs.existsSync(contentPath)) {
-    const content = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
-    const items = content.items || content.posts || content;
+  if (fs.existsSync(contentJsonPath)) {
+    const content = JSON.parse(fs.readFileSync(contentJsonPath, 'utf8')) as {
+      items?: Array<{ published?: boolean; title?: string; body?: string; slug?: string }>;
+      posts?: Array<{ published?: boolean; title?: string; body?: string; slug?: string }>;
+    };
+    const items = content.items || content.posts || [];
     const list = Array.isArray(items) ? items : [];
     const published = list.filter((i) => i.published !== false).slice(0, 3);
     if (published.length >= 3 && published.every((i) => i.title && (i.body || i.slug))) {
@@ -193,9 +193,8 @@ async function main() {
     } else fail('A5-内容底线', `count=${published.length}`);
   } else fail('A5-内容底线', 'content.json 不存在');
 
-  const dualEntry = path.join(root, 'apps/web/src/shared/dual-entry.ts');
-  if (fs.existsSync(dualEntry)) {
-    const de = fs.readFileSync(dualEntry, 'utf8');
+  if (fs.existsSync(dualEntryPath)) {
+    const de = fs.readFileSync(dualEntryPath, 'utf8');
     if (de.includes("path: '/tools'") && de.includes("path: '/posts'")) {
       pass('A1-双入口配置', '卡/tools + 逛/posts');
     } else fail('A1-双入口配置', '路径缺失');
@@ -205,34 +204,15 @@ async function main() {
     fail('逻辑分离', 'dual-entry.ts 缺失');
   }
 
-  const tactile = path.join(root, 'apps/web/src/styles/walker.css');
-  const css = fs.readFileSync(tactile, 'utf8');
+  const css = fs.readFileSync(walkerCssPath, 'utf8');
   if (css.includes('--press-scale') && css.includes('btn-primary:active')) {
     pass('B3-press token', '--press-scale + :active');
   } else fail('B3-press token');
   if (css.includes('prefers-reduced-motion')) pass('B8-reduced-motion');
   else fail('B8-reduced-motion');
 
-  // Admin UI 登录 + 线索页
   try {
-    const require = createRequire(
-      path.join(
-        process.env.HOME || '',
-        '.local/node/lib/node_modules/devloop-mcp/package.json',
-      ),
-    );
-    const puppeteer = require('puppeteer');
-    const chrome =
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      path.join(
-        process.env.HOME || '',
-        '.cache/puppeteer/chrome/mac_arm-150.0.7871.24/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-      );
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: fs.existsSync(chrome) ? chrome : undefined,
-      args: ['--no-sandbox'],
-    });
+    const browser = await launchBrowser();
     const page = await browser.newPage();
     await page.goto(`${ADMIN}/login`, { waitUntil: 'networkidle0', timeout: 20000 });
     if (TOKEN) {
@@ -242,9 +222,9 @@ async function main() {
         timeout: 8000,
       });
     }
-    const h1 = await page.$eval('h1', (el) => el.textContent).catch(() => '');
+    const h1 = await page.$eval('h1', (el) => el.textContent || '').catch(() => '');
     const deferred = await page
-      .$eval('nav', (el) => el.textContent)
+      .$eval('nav', (el) => el.textContent || '')
       .catch(() => '');
     if (h1 === '线索') pass('A9-Admin 线索页', h1);
     else fail('A9-Admin 线索页', h1);
@@ -253,7 +233,7 @@ async function main() {
 
     await page.goto(`${WEB}/`, { waitUntil: 'networkidle0', timeout: 20000 });
     const cta = await page.$eval('a.btn-primary', (el) => ({
-      text: el.textContent.replace(/\s+/g, ' ').trim(),
+      text: (el.textContent || '').replace(/\s+/g, ' ').trim(),
       href: el.getAttribute('href'),
     }));
     if (cta.href === '/tools' && cta.text.includes('卡住')) pass('B1-主控件', JSON.stringify(cta));
@@ -274,7 +254,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 100));
     const disabledShort = await page.$eval(
       '.instrument-actions button.btn-primary',
-      (el) => el.disabled,
+      (el) => (el as HTMLButtonElement).disabled,
     );
     if (disabledShort) pass('校验-短文禁用');
     else fail('校验-短文禁用');
@@ -284,22 +264,12 @@ async function main() {
     fail('浏览器验收', e instanceof Error ? e.message : String(e));
   }
 
-  const outDir = path.join(root, 'tmp');
-  fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(outDir, 'accept-dual-entry.json'),
-    JSON.stringify({ at: new Date().toISOString(), API, WEB, ADMIN, report }, null, 2),
-  );
-
-  console.log(
-    failed === 0
-      ? `\n验收 PASS (${report.length})`
-      : `\n验收 FAIL ${failed}/${report.length}`,
-  );
-  process.exit(failed === 0 ? 0 : 1);
+  writeJson('accept-dual-entry.json', { API, WEB, ADMIN, report: undefined, root: repoRoot });
+  // re-read createReport items already in writeJson via items key
+  exitWithSummary('验收');
 }
 
-main().catch((e) => {
+main().catch((e: unknown) => {
   console.error(e);
   process.exit(1);
 });

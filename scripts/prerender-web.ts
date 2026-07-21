@@ -1,27 +1,38 @@
 /**
- * 在 vite build 之后生成可索引静态 HTML（含真实 title），再供 pagefind 索引。
+ * prerender-web — vite dist 上生成可索引静态 HTML（真实 title）
+ * 依赖：paths、content.json
+ * 被调用：build-web
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { contentJsonPath, webDistDir } from './lib/paths';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dist = path.join(root, 'apps/web/dist');
-const contentFile = path.join(root, 'apps/web/src/generated/content.json');
-
-if (!fs.existsSync(dist)) {
+if (!fs.existsSync(webDistDir)) {
   console.error('dist missing; run vite build first');
   process.exit(1);
 }
-if (!fs.existsSync(contentFile)) {
+if (!fs.existsSync(contentJsonPath)) {
   console.error('content.json missing; run content:gen first');
   process.exit(1);
 }
 
-const { items = [], posts = [] } = JSON.parse(fs.readFileSync(contentFile, 'utf8'));
-const docs = items.length ? items : posts;
+type Doc = { slug: string; title: string; summary?: string; body: string };
 
-function page(title, bodyHtml, extra = '') {
+const parsed = JSON.parse(fs.readFileSync(contentJsonPath, 'utf8')) as {
+  items?: Doc[];
+  posts?: Doc[];
+};
+const docs = parsed.items?.length ? parsed.items : (parsed.posts ?? []);
+
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function page(title: string, bodyHtml: string, extra = ''): string {
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -43,15 +54,6 @@ function page(title, bodyHtml, extra = '') {
 `;
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// 列表页
 const listHtml = page(
   '文章 · Walker',
   `<ul>${docs
@@ -61,19 +63,17 @@ const listHtml = page(
     )
     .join('\n')}</ul>`,
 );
-fs.mkdirSync(path.join(dist, 'posts'), { recursive: true });
-fs.writeFileSync(path.join(dist, 'posts', 'index.html'), listHtml);
+fs.mkdirSync(path.join(webDistDir, 'posts'), { recursive: true });
+fs.writeFileSync(path.join(webDistDir, 'posts', 'index.html'), listHtml);
 
-// 详情页：title + body 纯文本供 pagefind
 for (const d of docs) {
-  const dir = path.join(dist, 'posts', d.slug);
+  const dir = path.join(webDistDir, 'posts', d.slug);
   fs.mkdirSync(dir, { recursive: true });
-  const body = `<article><p class="summary">${escapeHtml(d.summary || '')}</p><pre class="body">${escapeHtml(d.body.slice(0, 50000))}</pre></article>`;
+  const body = `<article><p class="summary">${escapeHtml(d.summary || '')}</p><pre class="body">${escapeHtml((d.body || '').slice(0, 50000))}</pre></article>`;
   fs.writeFileSync(path.join(dir, 'index.html'), page(d.title, body));
 }
 
-// 首页增强：若已有 index.html 则注入 noscript 标题列表（保留 SPA）
-const indexPath = path.join(dist, 'index.html');
+const indexPath = path.join(webDistDir, 'index.html');
 if (fs.existsSync(indexPath)) {
   let index = fs.readFileSync(indexPath, 'utf8');
   const inject = `<noscript data-pagefind-body><h1>Walker — 行过万里水路</h1><ul>${docs
