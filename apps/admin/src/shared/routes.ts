@@ -8,5 +8,6 @@ export const ADMIN_ROUTES = {
   executions: '/executions',
   metrics: '/metrics',
   content: '/content',
+  contentEdit: '/content/:slug',
   aiGateway: '/ai-gateway',
 } as const;

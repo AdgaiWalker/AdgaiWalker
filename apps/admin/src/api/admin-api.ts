@@ -85,4 +85,27 @@ export const adminApi = {
       },
     ),
   metrics: () => adminRequest<Metrics>('/metrics'),
+
+  contentList: () => adminRequest<ContentMeta[]>('/admin/content'),
+  contentGet: (slug: string) =>
+    adminRequest<ContentDetail>(
+      `/admin/content/${encodeURIComponent(slug)}`,
+    ),
+  contentSave: (slug: string, raw: string) =>
+    adminRequest<ContentDetail>(
+      `/admin/content/${encodeURIComponent(slug)}`,
+      { method: 'PUT', body: JSON.stringify({ raw }) },
+    ),
+};
+
+export type ContentMeta = {
+  slug: string;
+  title: string;
+  type: string;
+  updatedAt: string;
+};
+
+export type ContentDetail = ContentMeta & {
+  raw: string;
+  ext: '.md' | '.mdx';
 };

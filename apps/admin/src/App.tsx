@@ -2,7 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminShell } from './AdminShell';
 import { RequireAdminToken } from './auth/RequireAdminToken';
 import { AiGatewayPage } from './pages/AiGatewayPage';
-import { AdminContentPlaceholderPage } from './pages/AdminContentPlaceholderPage';
+import { ContentEditPage } from './pages/ContentEditPage';
+import { ContentListPage } from './pages/ContentListPage';
 import { AdminTokenPage } from './pages/AdminTokenPage';
 import { CluesPage } from './pages/CluesPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
@@ -24,10 +25,8 @@ export function App() {
           <Route path={ADMIN_ROUTES.seeds} element={<SeedsPage />} />
           <Route path={ADMIN_ROUTES.executions} element={<ExecutionsPage />} />
           <Route path={ADMIN_ROUTES.metrics} element={<MetricsPage />} />
-          <Route
-            path={ADMIN_ROUTES.content}
-            element={<AdminContentPlaceholderPage />}
-          />
+          <Route path={ADMIN_ROUTES.content} element={<ContentListPage />} />
+          <Route path="/content/:slug" element={<ContentEditPage />} />
           <Route path={ADMIN_ROUTES.aiGateway} element={<AiGatewayPage />} />
           <Route
             path="*"

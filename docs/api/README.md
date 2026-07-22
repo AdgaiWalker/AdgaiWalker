@@ -63,6 +63,9 @@
 | POST | `/executions/:id/deliver` | `{ url?, form?, note? }` | 交付 |
 | POST | `/executions/:id/review` | `{ outcome, evidence? }` | 检验；可计数由规则判定 |
 | GET | `/metrics` | — | 闭环 + 功能事件 + 线索来源分桶等 |
+| GET | `/admin/content` | — | 内容文件列表（`content/log`） |
+| GET | `/admin/content/:slug` | — | 单篇 raw markdown |
+| PUT | `/admin/content/:slug` | `{ raw }` | 写回磁盘（需 frontmatter） |
 
 ## curl 示例
 

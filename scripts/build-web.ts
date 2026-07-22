@@ -10,6 +10,7 @@ import { runOrExit } from './lib/run';
 runOrExit('pnpm', ['content:gen']);
 runOrExit('pnpm', ['--filter', '@walker/web', 'build']);
 runOrExit('pnpm', ['exec', 'tsx', 'scripts/prerender-web.ts']);
+runOrExit('pnpm', ['exec', 'tsx', 'scripts/emit-static-feeds.ts']);
 
 const pf = spawnSync(
   'pnpm',
@@ -20,4 +21,4 @@ if (pf.status !== 0) {
   console.error('pagefind failed');
   process.exit(pf.status ?? 1);
 }
-console.log('build:web complete (vite + prerender + pagefind)');
+console.log('build:web complete (vite + prerender + feeds + pagefind)');

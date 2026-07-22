@@ -13,6 +13,7 @@ import {
 } from '../content';
 import { ArticleToc } from '../components/ui/ArticleToc';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
+import { GiscusComments } from '../components/ui/GiscusComments';
 import { LikeButton } from '../components/ui/LikeButton';
 import { ReadingProgress } from '../components/ui/ReadingProgress';
 import { useContentFeedback } from '../hooks/useContentFeedback';
@@ -230,6 +231,8 @@ function PostDetailBody({
           onSubmitPending={feedback.onSubmitPending}
         />
       </div>
+
+      <GiscusComments term={post.slug} />
     </article>
   );
 }

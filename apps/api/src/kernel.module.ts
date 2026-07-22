@@ -36,6 +36,10 @@ import { ContentFeedbackController } from './engagement/content-feedback.control
 import { SearchEventsController } from './engagement/search-events.controller';
 import { SearchEventsService } from './engagement/search-events.service';
 import { AdminAuthGuard } from './auth/admin-auth.guard';
+import { CONTENT_FILE_REPOSITORY } from './ports/content-file.repository';
+import { FsContentFileRepository } from './adapters/fs-content-file.repository';
+import { ContentAdminService } from './content-admin/content-admin.service';
+import { ContentAdminController } from './content-admin/content-admin.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -48,6 +52,7 @@ import { AdminAuthGuard } from './auth/admin-auth.guard';
     LikeController,
     ContentFeedbackController,
     SearchEventsController,
+    ContentAdminController,
   ],
   providers: [
     AdminAuthGuard,
@@ -60,6 +65,7 @@ import { AdminAuthGuard } from './auth/admin-auth.guard';
     { provide: SEED_REPOSITORY, useClass: PrismaSeedRepository },
     { provide: EXECUTION_REPOSITORY, useClass: PrismaExecutionRepository },
     { provide: LIKE_REPOSITORY, useClass: PrismaLikeRepository },
+    { provide: CONTENT_FILE_REPOSITORY, useClass: FsContentFileRepository },
     { provide: RATE_LIMIT, useClass: InMemoryRateLimiter },
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
     { provide: NEXT_STEP_STRATEGY, useClass: RuleNextStepAdapter },
@@ -72,6 +78,7 @@ import { AdminAuthGuard } from './auth/admin-auth.guard';
     LikeService,
     ContentFeedbackService,
     SearchEventsService,
+    ContentAdminService,
   ],
   exports: [PRISMA, DATABASE],
 })

@@ -20,7 +20,25 @@
 | API | 常驻 Node（`pnpm --filter @walker/api start`） | `8788`；对外建议反代为 `/api/*` |
 | PG | 托管 PostgreSQL | `DATABASE_URL` 必填 |
 
-仓库内 `vercel.json`：**web** 静态构建 + SPA rewrites（filesystem 优先，故 `/posts/**`、`/assets/**`、`/pagefind/**` 仍走真实文件；**`/api/*` 不 fallback 到 HTML**）。API/Admin/PG 需另部或反代，**不要**假设 monorepo 自动全栈上 Vercel。
+仓库内 `vercel.json`：**web** 静态构建 + SPA rewrites（filesystem 优先，故 `/posts/**`、`/assets/**`、`/pagefind/**`、`rss.xml`、`llms.txt` 仍走真实文件；**`/api/*` 不 fallback 到 HTML**）。API/Admin/PG 需另部或反代，**不要**假设 monorepo 自动全栈上 Vercel。
+
+### 生产 `/api` 反代示例（Vercel → 外链 Nest）
+
+在 `vercel.json` 的 `rewrites` **最前**增加（将 `API_ORIGIN` 换成真实 API 主机，**勿**把 `/api` fallback 到 index.html）：
+
+```json
+{
+  "source": "/api/:path*",
+  "destination": "https://API_ORIGIN/:path*"
+}
+```
+
+Nest 无全局 `/api` 前缀：若 destination 需 strip，用网关规则或 `https://API_ORIGIN/$1` 视托管而定。本地：Vite 已 proxy `/api` → `8788`。
+
+### 管理内容目录
+
+- API 读写 `CONTENT_LOG_DIR`（默认探测 monorepo `content/log`）。
+- 生产若无本地磁盘，需把 content 挂卷或改 GitHub 适配器（本版默认 FS）。
 
 ## 前置检查
 
