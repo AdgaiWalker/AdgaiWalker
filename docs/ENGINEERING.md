@@ -8,26 +8,50 @@
 ```text
 apps/web      # 公开站 React+Vite
 apps/admin    # 管理端 React+Vite
-apps/api      # Nest + Prisma + PG
+apps/api      # Nest + Prisma（本地默认 SQLite；未来生产 PG）
 packages/shared
-content/log   # Markdown 真相源
+content/log   # Markdown 真相源（进 Git → Vercel）
 ```
 
-**无 Astro。** 内容：`content/log` → `pnpm content:gen` → `apps/web/src/generated/content.json`。
+**无 Astro。**  
+**两条数据管线（勿混）：**
+
+| 管线 | 真相源 | 上线 |
+|------|--------|------|
+| 文章/配置 | `content/log`、`support-config.json` | `pnpm content:publish --push` 或 git push |
+| 过程（线索等） | 本地 SQLite / 未来 PG | **不进** Vercel；需公网 Nest |
+
+内容：`content/log` → `pnpm content:gen` → `apps/web/src/generated/content.json`。
 
 ## 2. 常用命令
 
 ```bash
 pnpm install
+cp apps/api/.env.example apps/api/.env   # 默认 file:./data/walker.db
+pnpm db:generate && pnpm db:push         # 本地 SQLite
 pnpm content:gen
 pnpm dev:api    # :8788
 pnpm dev:web    # :5173
 pnpm dev:admin  # :5174
+
+# 内容上线（Admin 保存后必做，否则生产不变）
+pnpm content:publish           # gen + 看状态
+pnpm content:publish --push    # commit 内容路径并 push → Vercel
+
 pnpm typecheck
 pnpm test:shared && pnpm test:api && pnpm test:web
-pnpm accept     # 需三端已起
+pnpm accept
 pnpm exec tsx scripts/probe-production.ts
 ```
+
+### 数据库切换
+
+| 环境 | 配置 |
+|------|------|
+| 本地默认 | `WALKER_DB_PROVIDER=sqlite` · `DATABASE_URL=file:…` · `schema.prisma` · `db:push` |
+| 未来 PG | `WALKER_DB_PROVIDER=postgresql` · PG URL · `schema.postgresql.prisma` · `db:migrate` |
+
+选择逻辑：`scripts/prisma-env.ts`（依赖 URL / WALKER_DB_PROVIDER）。
 
 ## 3. 前端分层
 
@@ -69,9 +93,11 @@ pnpm exec tsx scripts/probe-production.ts
 
 ### 生产环境变量（名，不含值）
 
-`DATABASE_URL` · `ADMIN_API_TOKEN`（强随机）· `AI_ENABLED` · `PORT` · `CONTENT_LOG_DIR` · 可选 `VITE_GISCUS_*`
+`DATABASE_URL` · `AI_ENABLED` · `PORT` · `CONTENT_LOG_DIR` · 可选 `VITE_GISCUS_*`  
+（管理面**无** `ADMIN_API_TOKEN`；公网须靠网络隔离。）
 
-生产改文默认：**改 `content/log` → push → 重建 web**。Admin 写盘仅开发机。
+生产改文默认：**改 `content/log` → `pnpm content:publish --push`（或手动 push）→ Vercel 重建 web**。  
+Admin 写盘仅本机；**不会**自动同步 GitHub。
 
 ### 切流最短步骤
 
@@ -83,23 +109,57 @@ pnpm exec tsx scripts/probe-production.ts
 
 ## 6. 运行时模块（依赖 / 调用 / 触发 / 实现）
 
-| 模块 | 职责 |
-|------|------|
-| Web `public-api` | 浏览器同源 `/api/*` 门面 |
-| 反代 / Vite proxy | 把 `/api` 转到 Nest |
-| Nest Kernel | 注册 intake/clue/… |
+### 6.1 双入口与 API
+
+| 模块 | 一句话职责 |
+|------|------------|
+| Web `public-api` | 浏览器同源 `/api/*` 写路径门面（intake/赞/反馈） |
+| 反代 / Vite proxy | 把 `/api` 转到 Nest 裸路径 |
+| Nest Kernel | 注册 intake/clue/seed/execution… |
 | IntakeService | 配额 → nextStep → 落 Clue |
-| Prisma/PG | 持久化 |
-| AdminAuthGuard | Bearer 管理鉴权 |
-| content:gen | log → JSON |
+| Prisma/PG | 过程对象持久化 |
+| 管理 API | 过程读写（当前无令牌） |
+| content:gen | `content/log` → `content.json` |
 
 ```
 [触发] push main → [调用] Vercel → [实现] build:web → www.iwalk.pro
 [触发] 卡提交 → [调用] public-api → [依赖] 反代 → Nest Intake → [实现] PG
-[触发] 站主列线索 → [调用] Bearer /clues → [依赖] AdminAuthGuard → ClueService
+[触发] 站主列线索 → [调用] /clues → [依赖] ClueService → [实现] Prisma
 ```
 
-页面依赖 HTTP 契约，不依赖 Prisma；Service 依赖 Port。
+页面依赖 HTTP **契约**（门面），不依赖 Prisma；Service **依赖 Port 接口**，不绑具体适配器。
+
+### 6.2 公开面与 Admin 今日
+
+| 模块 | 一句话职责 |
+|------|------------|
+| `content.ts` | 查询门面：`getPublishedPosts`（逛）/ `getPublishedContentItems`（宇宙含 tool） |
+| `content-spaces` / `tools-sections` / `constants` | **配置**：分型、分区、外链、Ferry 线名 |
+| `posts-timeline` / `idea-status` / `pickNextActions` | **规则**：筛选、点子状态、下一动作（无路由） |
+| `json-request.fetchJson` | **传输**：统一 JSON fetch |
+| `space-icons` / `tools-section-icons` | **展示映射**：icon 键 → Lucide |
+| `public-api` / `admin-api` | **门面**：过程 HTTP |
+| `pages/*` | **页**：编排；路径只读 `WEB_ROUTES` / `ADMIN_ROUTES` |
+| `ContentCard` / `ItemList` / `ResourceCard` | **块**：props + onXxx |
+
+```
+[触发] /content
+  → [调用] ContentUniversePage
+  → [依赖] getPublishedContentItems + content-spaces
+  → [实现] 分型列表/网格（含 tool）
+
+[触发] Admin 今日
+  → [调用] pickNextActions（无 href）
+  → [依赖] admin-api；页内 KIND_HREF → ADMIN_ROUTES
+  → [实现] 动作列表
+
+[触发] PUT /support
+  → [调用] SupportService.save(partial)
+  → [依赖] SupportConfigRepositoryPort
+  → [实现] 合并当前配置再写盘
+```
+
+**倒置：** 规则不绑 React/路由；门面依赖 `fetchJson`；页映射路径 SSOT。
 
 ## 7. 禁止
 

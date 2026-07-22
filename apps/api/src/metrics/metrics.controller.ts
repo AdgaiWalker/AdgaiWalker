@@ -1,9 +1,7 @@
-import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
-import { AdminAuthGuard } from '../auth/admin-auth.guard';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 
 @Controller('metrics')
-@UseGuards(AdminAuthGuard)
 export class MetricsController {
   constructor(@Inject(MetricsService) private readonly metrics: MetricsService) {}
 

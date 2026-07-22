@@ -26,6 +26,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@walker/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       lucide-react:
         specifier: ^1.25.0
         version: 1.25.0(react@19.2.7)

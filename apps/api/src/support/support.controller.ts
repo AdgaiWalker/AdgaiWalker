@@ -1,8 +1,8 @@
 /**
- * 赞赏配置 — GET 公开；PUT 需管理令牌
+ * 赞赏配置 HTTP
+ * 职责：GET 读、PUT 合并写（未传字段保留）。
  */
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
-import { AdminAuthGuard } from '../auth/admin-auth.guard';
+import { Body, Controller, Get, Put } from '@nestjs/common';
 import type { SupportConfig } from '../ports/support-config.repository';
 import { SupportService } from './support.service';
 
@@ -16,14 +16,7 @@ export class SupportController {
   }
 
   @Put()
-  @UseGuards(AdminAuthGuard)
   save(@Body() body: Partial<SupportConfig>) {
-    return this.support.save({
-      title: body.title ?? '',
-      body: body.body ?? '',
-      wechatQrUrl: body.wechatQrUrl ?? '',
-      alipayQrUrl: body.alipayQrUrl ?? '',
-      externalLinks: body.externalLinks ?? [],
-    });
+    return this.support.save(body);
   }
 }

@@ -1,92 +1,74 @@
 /**
- * 赞赏页 — 读取公开 GET /support
+ * 赞赏页（页）
+ * 职责：展示赞赏配置；配置真相源为仓库 content/support-config.json（构建期打入）。
+ * 不经 API 读：生产 web 静态无 Nest 时仍可展示；改配置靠 git push 重建。
+ *
+ * 依赖：support-config.json（配置）、WEB_ROUTES
+ * 调用：无 HTTP 读
+ * 触发：路由 /support
+ * 实现：静态渲染二维码与文案
  */
-import { useEffect, useState } from 'react';
 import { Heart } from 'lucide-react';
-import { publicApi, type SupportConfig } from '../api/public-api';
+import { Link } from 'react-router-dom';
+import supportConfig from '../../../../content/support-config.json';
+import { WEB_ROUTES } from '../shared/routes';
+
+type SupportView = {
+  title: string;
+  body: string;
+  wechatQrUrl: string;
+  alipayQrUrl: string;
+  externalLinks: Array<{ label: string; url: string }>;
+};
+
+const cfg = supportConfig as SupportView;
 
 export function SupportPage() {
-  const [cfg, setCfg] = useState<SupportConfig | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    void publicApi
-      .getSupport()
-      .then(setCfg)
-      .catch(() => {
-        setError('暂时无法加载赞赏配置');
-        setCfg({
-          title: '支持 / 赞赏',
-          body: '若内容对你有帮助，可通过赞赏支持持续创作。',
-          wechatQrUrl: '',
-          alipayQrUrl: '',
-          externalLinks: [],
-        });
-      });
-  }, []);
-
-  if (!cfg) {
-    return (
-      <div>
-        <h1 className="page-title">支持 / 赞赏</h1>
-        <p className="meta">加载中…</p>
-      </div>
-    );
-  }
+  const hasQr = Boolean(cfg.wechatQrUrl || cfg.alipayQrUrl);
+  const hasLinks = Boolean(cfg.externalLinks?.length);
 
   return (
-    <div>
-      <h1
-        className="page-title"
-        style={{ display: 'flex', alignItems: 'center', gap: 10 }}
-      >
-        <Heart size={26} aria-hidden />
+    <div className="support-page">
+      <h1 className="page-title">
+        <Heart size={26} aria-hidden className="page-title-icon" />
         {cfg.title}
       </h1>
-      {error ? <p className="meta">{error}</p> : null}
-      <section
-        className="panel-glass"
-        style={{ padding: '1.35rem 1.5rem', borderRadius: 28 }}
-      >
-        <p style={{ lineHeight: 1.7 }}>{cfg.body}</p>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '1.5rem',
-            marginTop: '1.25rem',
-          }}
-        >
-          {cfg.wechatQrUrl ? (
-            <figure style={{ margin: 0, textAlign: 'center' }}>
-              <img
-                src={cfg.wechatQrUrl}
-                alt="微信赞赏码"
-                style={{ maxWidth: 200, borderRadius: 12 }}
-              />
-              <figcaption className="meta">微信</figcaption>
-            </figure>
-          ) : null}
-          {cfg.alipayQrUrl ? (
-            <figure style={{ margin: 0, textAlign: 'center' }}>
-              <img
-                src={cfg.alipayQrUrl}
-                alt="支付宝赞赏码"
-                style={{ maxWidth: 200, borderRadius: 12 }}
-              />
-              <figcaption className="meta">支付宝</figcaption>
-            </figure>
-          ) : null}
-        </div>
-        {!cfg.wechatQrUrl && !cfg.alipayQrUrl ? (
-          <p className="meta" style={{ marginTop: '1rem' }}>
-            收款码尚未配置。站主可在 API{' '}
-            <code>PUT /support</code>（Bearer）写入{' '}
-            <code>content/support-config.json</code>。
-          </p>
-        ) : null}
-        {cfg.externalLinks?.length ? (
-          <ul style={{ marginTop: '1rem' }}>
+      <p className="page-lead support-sub">{cfg.body}</p>
+
+      <section className="panel-glass support-body">
+        {hasQr ? (
+          <div className="qr-row">
+            {cfg.wechatQrUrl ? (
+              <figure className="qr-card">
+                <img
+                  src={cfg.wechatQrUrl}
+                  alt="微信赞赏码"
+                  width={180}
+                  height={180}
+                />
+                <figcaption>微信赞赏</figcaption>
+                <span className="meta">长按或扫码</span>
+              </figure>
+            ) : null}
+            {cfg.alipayQrUrl ? (
+              <figure className="qr-card">
+                <img
+                  src={cfg.alipayQrUrl}
+                  alt="支付宝收款码"
+                  width={180}
+                  height={180}
+                />
+                <figcaption>支付宝</figcaption>
+                <span className="meta">长按或扫码</span>
+              </figure>
+            ) : null}
+          </div>
+        ) : (
+          <p className="meta">暂未配置收款码。</p>
+        )}
+
+        {hasLinks ? (
+          <ul className="support-links">
             {cfg.externalLinks.map((l) => (
               <li key={l.url}>
                 <a href={l.url} target="_blank" rel="noreferrer">
@@ -97,6 +79,9 @@ export function SupportPage() {
           </ul>
         ) : null}
       </section>
+
+      <p className="meta support-foot">所有内容免费阅读，赞赏完全自愿。谢谢你。</p>
+      <Link to={WEB_ROUTES.home}>回到首页</Link>
     </div>
   );
 }

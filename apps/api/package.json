@@ -7,9 +7,10 @@
     "start": "tsx --tsconfig tsconfig.json src/main.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
+    "prisma:generate": "tsx ../../scripts/prisma-env.ts generate",
+    "prisma:migrate": "tsx ../../scripts/prisma-env.ts migrate",
+    "prisma:push": "tsx ../../scripts/prisma-env.ts push",
+    "prisma:deploy": "tsx ../../scripts/prisma-env.ts migrate",
     "test": "vitest run"
   },
   "dependencies": {

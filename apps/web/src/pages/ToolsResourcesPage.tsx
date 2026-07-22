@@ -1,5 +1,13 @@
-import type { ReactNode } from 'react';
-import { ExternalLink } from 'lucide-react';
+/**
+ * 资源页（页）
+ * 职责：编排分区导航与数据；卡片用 ResourceCard 块。
+ *
+ * 依赖：tools-data、tools-sections 配置、ResourceCard
+ * 调用：无 HTTP
+ * 触发：/tools/resources
+ * 实现：锚点分区 + 网格
+ */
+import { ExternalLink, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   aiResources,
@@ -9,78 +17,124 @@ import {
   infra,
   skills,
 } from '../data/tools-data';
+import { ResourceCard } from '../components/ResourceCard';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
+import { TOOLS_SECTIONS, type ToolsSectionId } from '../shared/tools-sections';
+import { toolsSectionIcon } from '../shared/tools-section-icons';
 
 export function ToolsResourcesPage() {
   return (
-    <div>
-      <h1 className="page-title">资源</h1>
-      <p className="page-lead">
-        与旧站 tools 数据同源（tools-data）。问答请去{' '}
-        <Link to={WEB_ROUTES.ask}>{WEB_ROUTES.ask}</Link>。
-      </p>
+    <div className="resource-page">
+      <header className="resource-head">
+        <h1 className="page-title">
+          <Wrench size={24} aria-hidden className="page-title-icon" />
+          资源
+        </h1>
+        <p className="page-lead">
+          秋知实际在用的 AI 资源。
+          <strong>以下群/服务/产品与本人无任何利益关系</strong>
+          ，只是用户分享。卡住请先去{' '}
+          <Link to={WEB_ROUTES.ask}>{dualEntry.ask.cta}</Link>。
+        </p>
+      </header>
 
-      <Section title="社区">
+      <nav className="section-nav" aria-label="资源分区">
+        {TOOLS_SECTIONS.map((sec) => {
+          const Icon = toolsSectionIcon(sec.icon);
+          return (
+            <a key={sec.id} href={`#${sec.id}`} className="section-nav-tab">
+              <Icon size={14} aria-hidden />
+              {sec.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      <section id="info-source" className="resource-section panel-glass">
+        <SectionTitle id="info-source" />
+        <h3 className="sub-title">AI 学习氛围群</h3>
+        <p className="section-hint">有二维码的直接扫。博主维护的群，关注他们加入。</p>
         <div className="res-grid">
           {communities.map((c) => (
-            <div key={c.name} className="res-card">
-              <div className="res-badge">{c.badge}</div>
-              <div className="res-name">{c.name}</div>
-              <p className="meta">{c.desc}</p>
-              {c.blogger ? <p className="meta">关注博主：{c.blogger}</p> : null}
-              {c.qrCode ? (
-                <img src={c.qrCode} alt={`${c.name} 二维码`} className="res-qr" />
-              ) : null}
-            </div>
+            <ResourceCard
+              key={c.name}
+              name={c.name}
+              badge={c.badge}
+              desc={c.desc}
+              qrCode={c.qrCode}
+              featured={c.featured}
+              footer={
+                c.blogger ? (
+                  <a href="#bloggers" className="meta res-blogger-link">
+                    关注 {c.blogger} 加入
+                  </a>
+                ) : null
+              }
+            />
           ))}
         </div>
-      </Section>
-
-      <Section title="AI 资源群">
+        <h3 className="sub-title">省钱用 AI</h3>
+        <p className="section-hint">获取低价 AI 额度的渠道。有码可扫。</p>
         <div className="res-grid">
           {aiResources.map((r) => (
-            <div key={r.name} className="res-card">
-              <div className="res-badge">{r.badge}</div>
-              <div className="res-name">{r.name}</div>
-              <p className="meta">{r.desc}</p>
-              {r.qrCode ? (
-                <img src={r.qrCode} alt={r.name} className="res-qr" />
-              ) : null}
+            <ResourceCard
+              key={r.name}
+              name={r.name}
+              badge={r.badge}
+              desc={r.desc}
+              qrCode={r.qrCode}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section id="ai-tools" className="resource-section panel-glass">
+        <SectionTitle id="ai-tools" />
+        <div className="tool-grid">
+          {aiTools.map((t) => (
+            <div key={t.category} className="tool-card">
+              <span className="tool-category">{t.category}</span>
+              <span className="tool-value">{t.tools}</span>
             </div>
           ))}
         </div>
-      </Section>
+      </section>
 
-      <Section title="我在用的 AI 工具">
+      <section id="skill" className="resource-section panel-glass">
+        <SectionTitle id="skill" />
         <ul className="post-list">
-          {aiTools.map((t) => (
-            <li key={t.category}>
-              <strong style={{ color: 'var(--color-parchment)' }}>{t.category}</strong>
-              <div className="meta">{t.tools}</div>
+          {skills.map((s) => (
+            <li key={s.name}>
+              <a href={s.url} target="_blank" rel="noreferrer">
+                {s.name} <ExternalLink size={12} className="inline-icon" />
+              </a>
+              <div className="meta">{s.desc}</div>
             </li>
           ))}
         </ul>
-      </Section>
+      </section>
 
-      <Section title="基建">
+      <section id="infra" className="resource-section panel-glass">
+        <SectionTitle id="infra" />
         <ul className="post-list">
           {infra.map((i) => (
             <li key={i.name}>
               {i.url ? (
                 <a href={i.url} target="_blank" rel="noreferrer">
-                  {i.name} <ExternalLink size={12} style={{ display: 'inline' }} />
+                  {i.name} <ExternalLink size={12} className="inline-icon" />
                 </a>
               ) : (
-                <strong style={{ color: 'var(--color-parchment)' }}>{i.name}</strong>
+                <strong className="res-strong">{i.name}</strong>
               )}
               <div className="meta">{i.desc}</div>
             </li>
           ))}
         </ul>
-      </Section>
+      </section>
 
-      <Section title="博主">
+      <section id="bloggers" className="resource-section panel-glass">
+        <SectionTitle id="bloggers" />
         <div className="res-grid">
           {bloggers.map((b) => (
             <a
@@ -88,20 +142,21 @@ export function ToolsResourcesPage() {
               href={b.url}
               target="_blank"
               rel="noreferrer"
-              className="res-card"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              className="res-card res-card-link"
             >
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div className="blogger-row">
                 {b.avatar ? (
                   <img
                     src={b.avatar}
-                    alt={b.name}
+                    alt=""
                     width={40}
                     height={40}
-                    style={{ borderRadius: 999, objectFit: 'cover' }}
+                    className="blogger-avatar"
                   />
                 ) : (
-                  <span className="directory-mark">{b.initial}</span>
+                  <span className="directory-mark" aria-hidden>
+                    {b.initial}
+                  </span>
                 )}
                 <div>
                   <div className="res-name">{b.name}</div>
@@ -114,32 +169,21 @@ export function ToolsResourcesPage() {
             </a>
           ))}
         </div>
-      </Section>
-
-      <Section title="Skills">
-        <ul className="post-list">
-          {skills.map((s) => (
-            <li key={s.name}>
-              <a href={s.url} target="_blank" rel="noreferrer">
-                {s.name}
-              </a>
-              <div className="meta">{s.desc}</div>
-            </li>
-          ))}
-        </ul>
-      </Section>
+      </section>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function SectionTitle({ id }: { id: ToolsSectionId }) {
+  const sec = TOOLS_SECTIONS.find((s) => s.id === id)!;
+  const Icon = toolsSectionIcon(sec.icon);
   return (
-    <section
-      className="panel-glass"
-      style={{ padding: '1.1rem 1.25rem', borderRadius: 24, marginBottom: 14 }}
-    >
-      <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>{title}</h2>
-      {children}
-    </section>
+    <>
+      <h2 className="section-title">
+        <Icon size={20} aria-hidden className="section-icon" />
+        {sec.label}
+      </h2>
+      {sec.hint ? <p className="section-hint">{sec.hint}</p> : null}
+    </>
   );
 }

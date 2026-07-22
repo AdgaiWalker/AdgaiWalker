@@ -1,8 +1,8 @@
 /**
- * 管理端固定路径 SSOT（Accept 与导航共用）
+ * 管理端固定路径 SSOT
  */
 export const ADMIN_ROUTES = {
-  login: '/login',
+  today: '/',
   clues: '/clues',
   seeds: '/seeds',
   executions: '/executions',

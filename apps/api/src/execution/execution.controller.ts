@@ -6,14 +6,11 @@ import {
   Param,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { DEFAULT_LIST_LIMIT } from '@walker/shared';
-import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { ExecutionService } from './execution.service';
 
 @Controller('executions')
-@UseGuards(AdminAuthGuard)
 export class ExecutionController {
   constructor(
     @Inject(ExecutionService) private readonly executions: ExecutionService,

@@ -3,14 +3,12 @@
  * 依赖：env / report / paths / puppeteer-launch
  * 触发：pnpm accept:deep（前置 api:8788 web:5173 admin:5174）
  */
-import { loadAdminToken } from './lib/env';
 import { launchBrowser, type PageLike } from './lib/puppeteer-launch';
 import { createReport } from './lib/report';
 
 const WEB = process.env.WEB_BASE || 'http://127.0.0.1:5173';
 const ADMIN = process.env.ADMIN_BASE || 'http://127.0.0.1:5174';
 const API = process.env.API_BASE || 'http://127.0.0.1:8788';
-const TOKEN = loadAdminToken();
 const report = createReport();
 const { pass, fail } = report;
 
@@ -169,17 +167,8 @@ async function assertMobileCta(page: PageLike): Promise<void> {
 }
 
 async function assertAdminLoop(page: PageLike): Promise<void> {
-  if (!TOKEN || TOKEN.length < 16) {
-    fail('Admin-token', '缺少 ADMIN_API_TOKEN');
-    return;
-  }
   await page.setViewport({ width: 1280, height: 900, isMobile: false });
-  await page.goto(`${ADMIN}/login`, { waitUntil: 'networkidle0', timeout: 20000 });
-  await page.evaluate(() => localStorage.clear());
-  await page.reload({ waitUntil: 'networkidle0' });
-  await page.type('#token', TOKEN);
-  await page.click('button');
-  await page.waitForFunction(() => location.pathname.includes('/clues'), { timeout: 10000 });
+  await page.goto(`${ADMIN}/clues`, { waitUntil: 'networkidle0', timeout: 20000 });
 
   const hasSource = await page.$('#clue-source');
   if (hasSource) {
@@ -256,9 +245,7 @@ async function assertAdminLoop(page: PageLike): Promise<void> {
   if (/线索来源|访客卡口/.test(metricsText)) pass('Admin-A11指标');
   else fail('Admin-A11指标', metricsText.slice(0, 160));
 
-  const mRes = await fetch(`${API}/metrics`, {
-    headers: { Authorization: `Bearer ${TOKEN}` },
-  });
+  const mRes = await fetch(`${API}/metrics`);
   const m = (await mRes.json()) as { clueSources?: { byBucket?: unknown } };
   if (m.clueSources?.byBucket) pass('API-clueSources', JSON.stringify(m.clueSources.byBucket));
   else fail('API-clueSources');
@@ -277,9 +264,9 @@ async function main(): Promise<void> {
   await assertMobileCta(page);
   await assertAdminLoop(page);
 
-  const no = await fetch(`${API}/clues`);
-  if (no.status === 401) pass('API-无令牌401');
-  else fail('API-无令牌401', String(no.status));
+  const open = await fetch(`${API}/clues`);
+  if (open.ok) pass('API-管理面无令牌可访问');
+  else fail('API-管理面无令牌可访问', String(open.status));
 
   if (pageErrors.length) fail('pageerror', pageErrors.slice(0, 3).join(' | '));
   else pass('无pageerror');

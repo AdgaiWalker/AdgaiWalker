@@ -36,7 +36,17 @@ export interface ContentItem {
 const raw = data as { items?: ContentItem[] };
 const items: ContentItem[] = raw.items ?? [];
 
-const POST_TYPES = new Set(['knowledge', 'idea', 'project', 'learn']);
+/** 逛列表：笔记/点子/项目/学习（不含 tool 资源型） */
+const BROWSE_TYPES = new Set(['knowledge', 'idea', 'project', 'learn']);
+
+/** 内容宇宙：公开内容空间（含 tool） */
+const UNIVERSE_TYPES = new Set([
+  'knowledge',
+  'idea',
+  'project',
+  'learn',
+  'tool',
+]);
 
 function asSeriesItems(
   list: readonly ContentItem[],
@@ -48,8 +58,14 @@ export function getAllItems(): ContentItem[] {
   return items;
 }
 
+/** 逛（/posts）用：浏览型笔记 */
 export function getPublishedPosts(): ContentItem[] {
-  return items.filter((d) => POST_TYPES.has(d.type));
+  return items.filter((d) => BROWSE_TYPES.has(d.type));
+}
+
+/** 内容宇宙用：分型空间全部公开项 */
+export function getPublishedContentItems(): ContentItem[] {
+  return items.filter((d) => UNIVERSE_TYPES.has(d.type));
 }
 
 export function getByType(type: string): ContentItem[] {

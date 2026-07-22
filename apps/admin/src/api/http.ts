@@ -1,5 +1,8 @@
-import { clearAdminToken, getAdminToken } from '../auth/token-store';
-import { ADMIN_ROUTES } from '../shared/routes';
+/**
+ * 管理端 HTTP 门面传输
+ * 职责：/api 前缀 + 抛 AdminApiError；依赖 shared.fetchJson。
+ */
+import { fetchJson } from '@walker/shared';
 
 export class AdminApiError extends Error {
   constructor(
@@ -15,41 +18,9 @@ export async function adminRequest<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const token = getAdminToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> | undefined),
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const result = await fetchJson<T>(`/api${path}`, init);
+  if (!result.ok) {
+    throw new AdminApiError(result.code, result.message);
   }
-
-  const res = await fetch(`/api${path}`, {
-    ...init,
-    headers,
-    credentials: 'include',
-  });
-
-  let data: unknown = null;
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
-  }
-
-  if (!res.ok) {
-    const body = data as { code?: string; message?: string } | null;
-    const code = body?.code ?? res.statusText;
-    if (res.status === 401 || code === 'unauthorized' || code === 'auth-not-configured') {
-      clearAdminToken();
-      if (
-        typeof window !== 'undefined' &&
-        !window.location.pathname.endsWith(ADMIN_ROUTES.login)
-      ) {
-        window.location.assign(ADMIN_ROUTES.login);
-      }
-    }
-    throw new AdminApiError(code, body?.message);
-  }
-  return data as T;
+  return result.data;
 }

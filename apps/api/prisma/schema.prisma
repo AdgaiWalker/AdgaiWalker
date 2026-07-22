@@ -1,9 +1,11 @@
+// 默认：本地开发 SQLite（file: URL）
+// 未来生产 PG：用 schema.postgresql.prisma + WALKER_DB_PROVIDER=postgresql
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -87,19 +89,16 @@ model FeatureEvent {
   actorType  String
   failCode   String?
   props      Json?
-
   @@index([featureKey, event])
   @@index([at])
 }
 
-/// 点赞计数（0 起步真实计数，路径幂等键可选）
 model LikeCounter {
   path      String   @id
   count     Int      @default(0)
   updatedAt DateTime @updatedAt
 }
 
-/// 内容阅读反馈（与点赞分列）
 model ContentFeedback {
   id        String   @id
   contentId String
@@ -111,7 +110,6 @@ model ContentFeedback {
   @@index([createdAt])
 }
 
-/// 搜索无结果等缺口信号
 model SearchMiss {
   id        String   @id
   query     String
@@ -119,5 +117,3 @@ model SearchMiss {
 
   @@index([createdAt])
 }
-
-

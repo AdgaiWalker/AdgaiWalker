@@ -1,7 +1,7 @@
 # Nest API 契约（当前唯一）
 
 > **权威范围**：`apps/api`（NestJS）。  
-> **栈**：React monorepo · PostgreSQL · 管理鉴权 `Authorization: Bearer <ADMIN_API_TOKEN>`。  
+> **栈**：React monorepo · PostgreSQL · **管理面当前无令牌**（过程 API 开放）。  
 > **废止**：Astro 时代 67 端点文档见 [`docs/archive/api-astro-era/`](../archive/api-astro-era/)。
 
 ## 前缀约定
@@ -16,11 +16,11 @@
 
 | 类 | 机制 |
 |----|------|
-| 公开 | 无 Bearer；游客用 Cookie `walker-anon`（HttpOnly，intake 配额） |
-| 管理 | **必须** `Authorization: Bearer <ADMIN_API_TOKEN>`，令牌长度 ≥ 16；未配置或错误 → **401** |
-| 用户登录 | **未实现**（`/login` 仅为前台壳；无 session/cookie 登录 API） |
+| 公开 | 游客 Cookie `walker-anon`（HttpOnly，intake 配额） |
+| 管理 | **无 Bearer**；`/clues` `/seeds` `/executions` `/metrics` `/admin/content` 等直接可调 |
+| 用户登录 | **未实现** |
 
-角色枚举 `public/user/admin/owner` 与邀请码账号体系 **不在** 本 monorepo 管理面路径内。
+> 生产若公网暴露 Nest，需另加网关/网络隔离；当前产品选择是去掉管理令牌以降低本地摩擦。
 
 ## 错误码（机器可读 `body.code`）
 
@@ -47,7 +47,7 @@
 | POST | `/content-feedback` | 无 | `{ contentId, signal, note? }` signal: `useful` \| `needs-more` \| `outdated` | `{ id, contentId, signal }` |
 | POST | `/search-events` | 无 | `{ query?, hadResults? }`；`hadResults===false` 记 miss | `{ ok: true }` |
 
-### 管理（均需 Bearer）
+### 管理（当前无令牌）
 
 | 方法 | 路径 | 请求要点 | 说明 |
 |------|------|----------|------|
@@ -67,7 +67,7 @@
 | GET | `/admin/content/:slug` | — | 单篇 raw markdown |
 | PUT | `/admin/content/:slug` | `{ raw }` | 写回磁盘（需 frontmatter）；保存后异步 `content:gen` |
 | GET | `/support` | — | 赞赏配置（公开） |
-| PUT | `/support` | SupportConfig body | 写赞赏配置（Bearer） |
+| PUT | `/support` | SupportConfig body | 写赞赏配置 |
 
 ## curl 示例
 
@@ -81,9 +81,8 @@ curl -sS -c /tmp/w.jar -b /tmp/w.jar \
   -d '{"body":"想用 AI 写周报但每天只有半小时"}' \
   http://127.0.0.1:8788/intake
 
-# 管理线索
-TOKEN=你的ADMIN_API_TOKEN
-curl -sS -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8788/clues
+# 管理线索（无令牌）
+curl -sS http://127.0.0.1:8788/clues
 ```
 
 ## 存储与限流（生产注意）
@@ -100,7 +99,7 @@ curl -sS -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8788/clues
 | 端 | 模块 | 职责 |
 |----|------|------|
 | web | `apps/web/src/api/public-api.ts` | 页面只调门面，不散落 fetch |
-| admin | `apps/admin/src/api/*` + Bearer token-store | 管理过程 |
+| admin | `apps/admin/src/api/*` | 管理过程 |
 
 ## 维护规则
 

@@ -12,7 +12,8 @@
 | Vercel | 项目 `adgai-walker` · **push main 自动部署 web** |
 | 生产 web | **已部署**（SPA 深链、文章、rss/llms/pagefind） |
 | 生产 API | **未切**（`/api/health` 404） |
-| 本地双入口 | **可绿**（PG + Nest：health/intake/列线索/写 503） |
+| 本地双入口 | **可绿**（默认 SQLite + Nest；可选 PG） |
+| 内容上线 | **Git 为王**：`content:publish --push`；Admin 保存仅本机 |
 | 验证盒 | **正式 14 天自「卡生产可用日」起算**（旧 07-21 窗口作废） |
 
 ## 生产探针（2026-07-22）
@@ -44,7 +45,10 @@
 
 ## 已交付（不再当待办）
 
-主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。
+主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。  
+公开面：分型/卡牌/时间线+标签、资源分区、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。  
+Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。  
+**不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar、canvas、MDX 块组件全量。
 
 ## 未交付（生产运行时）
 
@@ -52,4 +56,4 @@
 2. Vercel `/api` → API 主机  
 3. 生产 intake 探针绿后更新本页「生产切流：已完成」
 
-可选配置：Giscus 四 env、赞赏二维码 URL、生产强随机 `ADMIN_API_TOKEN`。
+可选配置：Giscus 四 env、赞赏二维码 URL。管理面已去令牌。

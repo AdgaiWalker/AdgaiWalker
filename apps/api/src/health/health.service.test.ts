@@ -17,7 +17,6 @@ function stubConfig(partial: Partial<AppConfigPort> = {}): AppConfigPort {
     isAiEnabled: () => false,
     getPort: () => 8788,
     getNodeEnv: () => 'test',
-    getAdminApiToken: () => 'test-admin-token-16+',
     ...partial,
   };
 }

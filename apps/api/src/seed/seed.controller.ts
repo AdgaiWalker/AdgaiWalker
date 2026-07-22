@@ -6,14 +6,11 @@ import {
   Param,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { DEFAULT_LIST_LIMIT } from '@walker/shared';
-import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { SeedService } from './seed.service';
 
 @Controller('seeds')
-@UseGuards(AdminAuthGuard)
 export class SeedController {
   constructor(@Inject(SeedService) private readonly seeds: SeedService) {}
 

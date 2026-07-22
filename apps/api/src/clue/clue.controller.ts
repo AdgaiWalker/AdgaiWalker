@@ -7,14 +7,11 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { DEFAULT_LIST_LIMIT, type CluePoolStatus } from '@walker/shared';
-import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { ClueService } from './clue.service';
 
 @Controller('clues')
-@UseGuards(AdminAuthGuard)
 export class ClueController {
   constructor(@Inject(ClueService) private readonly clues: ClueService) {}
 

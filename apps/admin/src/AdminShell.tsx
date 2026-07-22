@@ -1,5 +1,5 @@
 /**
- * AdminShell — 有令牌后的布局壳
+ * AdminShell — 管理端布局壳（导航 + Outlet；当前无令牌门）
  */
 import { NavLink, Outlet } from 'react-router-dom';
 import {
@@ -13,9 +13,13 @@ export function AdminShell() {
     <div className="layout">
       <nav>
         <strong>Walker Admin</strong>
-        <p className="muted">推进核 · 池 / 苗 / 检 / 数</p>
+        <p className="muted">今日 · 池 / 苗 / 检 / 数</p>
         {adminPrimaryNav.map((item) => (
-          <NavLink key={item.path} to={item.path}>
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/'}
+          >
             {item.label}
           </NavLink>
         ))}

@@ -14,6 +14,7 @@ export function ContentEditPage() {
   const [title, setTitle] = useState('');
   const { err, run } = useAdminAction();
   const [savedAt, setSavedAt] = useState('');
+  const [publishHint, setPublishHint] = useState(false);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -43,7 +44,17 @@ export function ContentEditPage() {
       </p>
       <div className="panel">
         {err ? <p className="error">{err}</p> : null}
-        {savedAt ? <p className="muted">已保存 {savedAt}</p> : null}
+        {savedAt ? <p className="muted">已保存本机 {savedAt}</p> : null}
+        {publishHint ? (
+          <p className="muted" style={{ lineHeight: 1.6 }}>
+            已写入本机 <code>content/log</code>，并会触发 content:gen。
+            <strong>不会自动进 GitHub / Vercel。</strong>
+            上线请在仓库根执行：
+            <br />
+            <code>pnpm content:publish --push</code>
+            （或 <code>--commit</code> 仅提交不推送）
+          </p>
+        ) : null}
         <textarea
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
@@ -59,6 +70,7 @@ export function ContentEditPage() {
               setRaw(doc.raw);
               setTitle(doc.title);
               setSavedAt(new Date().toLocaleString('zh-CN'));
+              setPublishHint(true);
             })
           }
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8 }}

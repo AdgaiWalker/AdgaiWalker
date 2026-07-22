@@ -20,9 +20,4 @@ export class EnvConfigAdapter implements AppConfigPort {
   getNodeEnv(): string {
     return process.env.NODE_ENV ?? 'development';
   }
-
-  getAdminApiToken(): string | undefined {
-    const token = process.env.ADMIN_API_TOKEN?.trim();
-    return token && token.length > 0 ? token : undefined;
-  }
 }

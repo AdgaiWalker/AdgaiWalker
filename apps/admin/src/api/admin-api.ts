@@ -96,6 +96,8 @@ export const adminApi = {
       `/admin/content/${encodeURIComponent(slug)}`,
       { method: 'PUT', body: JSON.stringify({ raw }) },
     ),
+
+  health: () => adminRequest<{ ok: boolean; db: boolean; aiEnabled: boolean }>('/health'),
 };
 
 export type ContentMeta = {

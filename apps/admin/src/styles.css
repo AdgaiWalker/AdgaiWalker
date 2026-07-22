@@ -151,3 +151,22 @@ td {
 .error {
   color: var(--danger);
 }
+
+a.secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  text-decoration: none;
+  margin-right: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+}
+
+a.secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+

@@ -8,8 +8,13 @@ dist/
 node_modules/
 .pnpm-store/
 
-# Prisma
+# Prisma / local SQLite（库文件不进 Git）
 apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+apps/api/prisma/data/
+apps/api/data/
+*.db
+*.db-journal
 
 # package build outputs (monorepo)
 apps/*/dist/

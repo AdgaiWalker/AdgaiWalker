@@ -5,7 +5,6 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadAdminToken } from './lib/env';
 import { curlJsonWithCookie, fetchJson } from './lib/accept-http';
 import {
   contentJsonPath,
@@ -20,18 +19,10 @@ import { createReport } from './lib/report';
 const API = process.env.API_BASE || 'http://127.0.0.1:8788';
 const WEB = process.env.WEB_BASE || 'http://127.0.0.1:5173';
 const ADMIN = process.env.ADMIN_BASE || 'http://127.0.0.1:5174';
-const TOKEN = loadAdminToken();
 const report = createReport();
 const { pass, fail } = report;
 
-type AuthHeaders = { Authorization: string; 'Content-Type': string };
-
-function authHeaders(): AuthHeaders {
-  return {
-    Authorization: `Bearer ${TOKEN}`,
-    'Content-Type': 'application/json',
-  };
-}
+const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 
 async function assertHealth(): Promise<void> {
   const health = await fetchJson(`${API}/health`);
@@ -39,24 +30,19 @@ async function assertHealth(): Promise<void> {
   else fail('A8-health', String(health.res.status));
 }
 
-async function assertNoAuthRejected(): Promise<void> {
-  const noAuth = await fetchJson(`${API}/clues`);
-  if (noAuth.res.status === 401 || noAuth.res.status === 403) {
-    pass('A6-无令牌拒绝', String(noAuth.res.status));
+async function assertAdminOpen(): Promise<void> {
+  const open = await fetchJson(`${API}/clues`);
+  if (open.res.ok) {
+    pass('A6-管理面无令牌可访问', String(open.res.status));
     return;
   }
-  fail('A6-无令牌拒绝', String(noAuth.res.status));
+  fail('A6-管理面无令牌可访问', String(open.res.status));
 }
 
 async function assertAdminCountableLoop(): Promise<void> {
-  if (!TOKEN || TOKEN.length < 16) {
-    fail('A2-令牌', '缺少 ADMIN_API_TOKEN');
-    return;
-  }
-  const auth = authHeaders();
   const clue = await fetchJson(`${API}/clues`, {
     method: 'POST',
-    headers: auth,
+    headers: JSON_HEADERS,
     body: JSON.stringify({ body: '验收脚本热记：双入口闭环自动跑通一次' }),
   });
   if (!clue.res.ok) {
@@ -66,25 +52,25 @@ async function assertAdminCountableLoop(): Promise<void> {
   const clueId = clue.body?.id as string;
   await fetchJson(`${API}/clues/${clueId}/pool`, {
     method: 'PATCH',
-    headers: auth,
+    headers: JSON_HEADERS,
     body: JSON.stringify({ poolStatus: 'in-pool' }),
   });
   const seed = await fetchJson(`${API}/seeds`, {
     method: 'POST',
-    headers: auth,
+    headers: JSON_HEADERS,
     body: JSON.stringify({ title: `验收题苗 ${Date.now()}` }),
   });
   const seedId = seed.body?.id as string | undefined;
   const promoted = await fetchJson(`${API}/seeds/${seedId}/promote`, {
     method: 'POST',
-    headers: auth,
+    headers: JSON_HEADERS,
     body: JSON.stringify({ clueId }),
   });
   if (!promoted.res.ok) {
     fail('A2-主选', JSON.stringify(promoted.body));
     return;
   }
-  const exList = await fetchJson(`${API}/executions`, { headers: auth });
+  const exList = await fetchJson(`${API}/executions`);
   const list = (exList.body as unknown as Array<{ id: string; seedId: string }>) || [];
   const ex = list.find((e) => e.seedId === seedId);
   if (!ex) {
@@ -93,12 +79,12 @@ async function assertAdminCountableLoop(): Promise<void> {
   }
   await fetchJson(`${API}/executions/${ex.id}/deliver`, {
     method: 'POST',
-    headers: auth,
+    headers: JSON_HEADERS,
     body: JSON.stringify({ url: `${WEB}/posts` }),
   });
   const rev = await fetchJson(`${API}/executions/${ex.id}/review`, {
     method: 'POST',
-    headers: auth,
+    headers: JSON_HEADERS,
     body: JSON.stringify({ outcome: 'yes' }),
   });
   if (rev.res.ok && rev.body?.countable !== false) {
@@ -109,10 +95,7 @@ async function assertAdminCountableLoop(): Promise<void> {
 }
 
 async function assertClueSourceBuckets(): Promise<void> {
-  if (!TOKEN || TOKEN.length < 16) return;
-  const m = await fetchJson(`${API}/metrics`, {
-    headers: { Authorization: `Bearer ${TOKEN}` },
-  });
+  const m = await fetchJson(`${API}/metrics`);
   const sources = m.body?.clueSources as { byBucket?: unknown } | undefined;
   if (m.res.ok && sources?.byBucket) {
     pass('A11-来源分桶', JSON.stringify(sources.byBucket));
@@ -196,14 +179,7 @@ async function assertBrowserSmoke(): Promise<void> {
   try {
     const browser = await launchBrowser();
     const page = await browser.newPage();
-    await page.goto(`${ADMIN}/login`, { waitUntil: 'networkidle0', timeout: 20000 });
-    if (TOKEN) {
-      await page.type('#token', TOKEN);
-      await page.click('button');
-      await page.waitForFunction(() => location.pathname.includes('clues'), {
-        timeout: 8000,
-      });
-    }
+    await page.goto(`${ADMIN}/clues`, { waitUntil: 'networkidle0', timeout: 20000 });
     const h1 = await page.$eval('h1', (el) => el.textContent || '').catch(() => '');
     const deferred = await page
       .$eval('nav', (el) => el.textContent || '')
@@ -252,7 +228,7 @@ async function assertBrowserSmoke(): Promise<void> {
 
 async function main(): Promise<void> {
   await assertHealth();
-  await assertNoAuthRejected();
+  await assertAdminOpen();
   await assertAdminCountableLoop();
   await assertClueSourceBuckets();
   assertGuestQuota();

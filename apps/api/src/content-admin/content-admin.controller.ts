@@ -1,5 +1,5 @@
 /**
- * 管理内容 HTTP — Bearer 鉴权
+ * 管理内容 HTTP（无令牌）
  * 触发：Admin 列表/编辑；依赖：ContentAdminService
  */
 import {
@@ -8,13 +8,10 @@ import {
   Get,
   Param,
   Put,
-  UseGuards,
 } from '@nestjs/common';
-import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { ContentAdminService } from './content-admin.service';
 
 @Controller('admin/content')
-@UseGuards(AdminAuthGuard)
 export class ContentAdminController {
   constructor(private readonly content: ContentAdminService) {}
 

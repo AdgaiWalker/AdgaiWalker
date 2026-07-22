@@ -4,7 +4,10 @@ export * from './seed.js';
 export * from './execution.js';
 export * from './loop.js';
 export * from './nextstep.js';
+export * from './next-actions.js';
+export * from './json-request.js';
 export * from './content.js';
+
 export * from './feature-keys.js';
 export * from './rate-limits.js';
 export * from './feature-fail-codes.js';

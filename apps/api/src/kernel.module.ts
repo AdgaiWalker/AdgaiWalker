@@ -35,7 +35,6 @@ import { ContentFeedbackService } from './engagement/content-feedback.service';
 import { ContentFeedbackController } from './engagement/content-feedback.controller';
 import { SearchEventsController } from './engagement/search-events.controller';
 import { SearchEventsService } from './engagement/search-events.service';
-import { AdminAuthGuard } from './auth/admin-auth.guard';
 import { CONTENT_FILE_REPOSITORY } from './ports/content-file.repository';
 import { FsContentFileRepository } from './adapters/fs-content-file.repository';
 import { ContentAdminService } from './content-admin/content-admin.service';
@@ -60,7 +59,6 @@ import { SupportController } from './support/support.controller';
     SupportController,
   ],
   providers: [
-    AdminAuthGuard,
     { provide: PRISMA, useClass: PrismaAdapter },
     {
       provide: DATABASE,

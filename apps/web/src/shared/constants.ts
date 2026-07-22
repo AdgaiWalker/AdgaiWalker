@@ -28,13 +28,17 @@ export const STATUS_WEIGHT: Record<string, number> = {
 /** 站点联系邮箱 */
 export const SITE_EMAIL = 'praxiswalker@gmail.com';
 
+/** Ferry 主题线 frontmatter 名（与 content:gen series 一致） */
+export const FERRY_SERIES_NAME = 'Ferry';
+
 /** 站外链接 SSOT（壳/关于/名片共用，勿散落硬编码） */
 export const SITE_LINKS = {
   email: SITE_EMAIL,
   mailto: `mailto:${SITE_EMAIL}`,
   github: 'https://github.com/AdgaiWalker',
   bilibili: 'https://space.bilibili.com/1029612512',
-  xiaohongshu: 'https://www.xiaohongshu.com',
+  xiaohongshu:
+    'https://www.xiaohongshu.com/user/profile/689dd905000000001802921e',
   rss: '/rss.xml',
 } as const;
 
