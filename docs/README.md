@@ -13,6 +13,7 @@
 | [`docs/PRD-双入口小生产.md`](./PRD-双入口小生产.md) | 产品：卡/逛 + 过程 + 安全 |
 | [`docs/PRD-双入口触感.md`](./PRD-双入口触感.md) | 公开面触感工艺 |
 | [`docs/GOAL-生产双入口切流.md`](./GOAL-生产双入口切流.md) | **生产双入口可用性**执行锚（半部署事实 → SPA → API） |
+| [`docs/GOAL-内容主题线L1.md`](./GOAL-内容主题线L1.md) | 主题线 series/related 进 gen 与逛筛选 |
 | [`docs/s1-go-live.md`](./s1-go-live.md) | 验证盒时钟与 A11 复盘勾选 |
 | [`docs/cutover-runbook.md`](./cutover-runbook.md) | 生产切流操作手册（运行时切流另令） |
 | [`docs/content-naming.md`](./content-naming.md) | 内容文件名=URL slug 规则 |

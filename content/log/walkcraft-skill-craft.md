@@ -16,7 +16,7 @@ valueMode: both
 published: true
 summary: "从真实测试中迭代出健壮技能的方法论。6 阶段流程：问题建模 → 草稿 → 真实测试 → 审计分级 → 做减法 → 通用化。核心观点：第一版必然基于错误假设，只有真实测试才能暴露问题。"
 status: verified
-series: Ferry计划
+series: Ferry
 seriesOrder: 2
 related: [ferry-spec, side-hustle-blueprint, ferry-theory, subtraction-dialogue]
 url: https://github.com/AdgaiWalker/Walkcraft-Skill-Craft

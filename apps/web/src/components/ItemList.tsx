@@ -33,6 +33,7 @@ export function ItemList({
             {statusLabel ? <span className="status-pill">{statusLabel}</span> : null}
             <div className="meta">
               {formatDateLocale(parseIsoDate(p.date))} · {p.type}
+              {p.series ? ` · ${p.series}` : ''}
               {p.level ? ` · ${p.level}` : ''}
               {` · 约 ${mins} 分钟`}
               {p.tags.length ? ` · ${p.tags.slice(0, 3).join(', ')}` : ''}

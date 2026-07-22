@@ -10,6 +10,8 @@
 
 不做：纯数字 `/posts/1`、文件名中文、独立 `slug:` 双轨（要简单就维持文件名=网址）。
 
+主题线（`series` / `seriesOrder` / `related`）进站与模块关系见 [`docs/GOAL-内容主题线L1.md`](./GOAL-内容主题线L1.md)。
+
 ## 2026-07-22 迁移对照（旧 → 新）
 
 | 旧 slug（文件名） | 新 slug |

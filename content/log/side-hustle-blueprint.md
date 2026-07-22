@@ -16,7 +16,7 @@ valueMode: utility
 published: true
 summary: "帮用户从零到一规划并上线服务型副业的 AI 技能。8 阶段流程，双入口设计，历经 8 次迭代。核心创新：止痛药/维生素判断、学习曲线定价（新手不降价）、信任四层体系。"
 status: verified
-series: Ferry计划
+series: Ferry
 seriesOrder: 3
 related: [walkcraft-skill-craft, ferry-spec]
 url: https://github.com/AdgaiWalker/Walker-skills-test/tree/main/side-hustle-blueprint

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-21T19:55:02.001Z",
+  "generatedAt": "2026-07-22T04:37:58.434Z",
   "items": [
     {
       "slug": "codex-intro",
@@ -18,7 +18,10 @@
       "level": "入门",
       "emoji": "🧪",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": []
     },
     {
       "slug": "cc-intro",
@@ -37,7 +40,10 @@
       "level": "入门",
       "emoji": "🤖",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": []
     },
     {
       "slug": "side-hustle-blueprint",
@@ -57,7 +63,13 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "Ferry",
+      "seriesOrder": 3,
+      "related": [
+        "walkcraft-skill-craft",
+        "ferry-spec"
+      ]
     },
     {
       "slug": "design-for-people",
@@ -76,7 +88,14 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "设计思考",
+      "seriesOrder": 2,
+      "related": [
+        "subtraction-dialogue",
+        "card-table",
+        "cli-command-palette"
+      ]
     },
     {
       "slug": "cli-command-palette",
@@ -95,7 +114,13 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": [
+        "card-table",
+        "design-for-people"
+      ]
     },
     {
       "slug": "card-table",
@@ -114,7 +139,14 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": [
+        "cli-command-palette",
+        "design-for-people",
+        "subtraction-dialogue"
+      ]
     },
     {
       "slug": "ideas-beyond-time",
@@ -132,7 +164,14 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "前进三部曲",
+      "seriesOrder": 2,
+      "related": [
+        "fear-as-fuel",
+        "future-already-here",
+        "idea-cocreate"
+      ]
     },
     {
       "slug": "fear-as-fuel",
@@ -150,7 +189,14 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "前进三部曲",
+      "seriesOrder": 1,
+      "related": [
+        "ideas-beyond-time",
+        "future-already-here",
+        "ferry-theory"
+      ]
     },
     {
       "slug": "future-already-here",
@@ -168,7 +214,13 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "前进三部曲",
+      "seriesOrder": 3,
+      "related": [
+        "fear-as-fuel",
+        "ideas-beyond-time"
+      ]
     },
     {
       "slug": "ferry-theory",
@@ -186,7 +238,13 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": [
+        "subtraction-dialogue",
+        "fear-as-fuel"
+      ]
     },
     {
       "slug": "ferry-spec",
@@ -205,7 +263,15 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "Ferry",
+      "seriesOrder": 1,
+      "related": [
+        "walkcraft-skill-craft",
+        "side-hustle-blueprint",
+        "ferry-theory",
+        "subtraction-dialogue"
+      ]
     },
     {
       "slug": "walkcraft-skill-craft",
@@ -225,7 +291,15 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "Ferry",
+      "seriesOrder": 2,
+      "related": [
+        "ferry-spec",
+        "side-hustle-blueprint",
+        "ferry-theory",
+        "subtraction-dialogue"
+      ]
     },
     {
       "slug": "idea-cocreate",
@@ -245,7 +319,14 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": [
+        "affordable-ai-community",
+        "ideas-beyond-time",
+        "fear-as-fuel"
+      ]
     },
     {
       "slug": "affordable-ai-community",
@@ -265,7 +346,12 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": [
+        "idea-cocreate"
+      ]
     },
     {
       "slug": "walker-launch",
@@ -282,7 +368,13 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "",
+      "seriesOrder": null,
+      "related": [
+        "fear-as-fuel",
+        "ferry-theory"
+      ]
     },
     {
       "slug": "subtraction-dialogue",
@@ -300,7 +392,14 @@
       "level": "",
       "emoji": "",
       "visibility": "public",
-      "published": true
+      "published": true,
+      "series": "设计思考",
+      "seriesOrder": 1,
+      "related": [
+        "design-for-people",
+        "ferry-theory",
+        "card-table"
+      ]
     }
   ]
 }

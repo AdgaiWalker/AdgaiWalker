@@ -15,7 +15,7 @@ valueMode: both
 published: true
 summary: "面向人机协作的世界协议。f(x)=y · 做减法 · 螺旋进化 · 熵减命令。Ferry 计划的根——理论指导实践，实践反哺理论。"
 status: building
-series: Ferry计划
+series: Ferry
 seriesOrder: 1
 related: [walkcraft-skill-craft, side-hustle-blueprint, ferry-theory, subtraction-dialogue]
 aiUsePolicy:

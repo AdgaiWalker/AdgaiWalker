@@ -23,7 +23,30 @@ export type ContentItem = {
   emoji: string;
   visibility: Visibility;
   published: boolean;
+  /** 主题线名（frontmatter series，空串表示未归线） */
+  series: string;
+  /** 系列内顺序，缺省为 null */
+  seriesOrder: number | null;
+  /** 站内 related slug 列表 */
+  related: string[];
 };
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((x): x is string => typeof x === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function asSeriesOrder(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
 
 function resolveVisibility(data: Record<string, unknown>): Visibility {
   if (
@@ -80,6 +103,9 @@ if (fs.existsSync(contentLogDir)) {
       emoji: data.emoji ? String(data.emoji) : '',
       visibility,
       published: true,
+      series: data.series ? String(data.series).trim() : '',
+      seriesOrder: asSeriesOrder(data.seriesOrder),
+      related: asStringArray(data.related),
     });
   }
 }
