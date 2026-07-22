@@ -28,12 +28,10 @@ mustExist('apps/web');
 mustExist('apps/admin');
 mustExist('apps/api');
 mustExist('packages/shared');
-mustExist('docs/architecture-modules.md');
-mustExist('docs/cutover-runbook.md');
-mustExist('docs/stage1-retro.md');
-mustExist('docs/s1-go-live.md');
-mustExist('docs/feature-keys.md');
-mustExist('docs/redirects.md');
+mustExist('docs/PRODUCT.md');
+mustExist('docs/ENGINEERING.md');
+mustExist('docs/STATUS.md');
+mustExist('docs/api/README.md');
 
 const pkg = JSON.parse(fs.readFileSync(fromRoot('package.json'), 'utf8')) as {
   packageManager?: string;
@@ -52,10 +50,10 @@ const deps = { ...apiPkg.dependencies, ...apiPkg.devDependencies };
 if (Object.keys(deps).some((k) => /redis/i.test(k))) bad('redis required dep');
 else ok('no redis required dep');
 
-const arch = fs.readFileSync(fromRoot('docs/architecture-modules.md'), 'utf8');
+const eng = fs.readFileSync(fromRoot('docs/ENGINEERING.md'), 'utf8');
 for (const k of ['依赖', '调用', '触发', '实现']) {
-  if (arch.includes(k)) ok(`arch has ${k}`);
-  else bad(`arch missing ${k}`);
+  if (eng.includes(k)) ok(`ENGINEERING has ${k}`);
+  else bad(`ENGINEERING missing ${k}`);
 }
 
 if (run('pnpm', ['test:shared']) === 0) ok('shared tests');

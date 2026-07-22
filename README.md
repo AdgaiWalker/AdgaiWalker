@@ -13,7 +13,7 @@ apps/web      # 公开站 React
 apps/admin    # 管理端 React
 apps/api      # Nest API
 packages/shared
-content/log   # Markdown/MDX 内容真相源（非 Astro）
+content/log   # Markdown/MDX 内容真相源
 ```
 
 ## 本地运行
@@ -45,22 +45,24 @@ pnpm test:shared && pnpm test:api && pnpm test:web
 pnpm accept          # 双入口 + 深度浏览器（需三端已起）
 ```
 
-## 部署（GitHub → Vercel）
+## 部署
 
-**准读取**：[`docs/deploy.md`](docs/deploy.md)
+`git push origin main` → Vercel 项目 **`adgai-walker`** → **https://www.iwalk.pro**（只构建 web 静态）。
 
-- 仓库 `main` → Vercel 项目 **`adgai-walker`** → **https://www.iwalk.pro**（push 自动生产部署）
-- 当前只部署 **web 静态**；公网 Nest/PG/`/api` 见该文档 §3–§4
+细节与生产缺口见 [`docs/ENGINEERING.md`](docs/ENGINEERING.md) · 时钟见 [`docs/STATUS.md`](docs/STATUS.md)。
 
-## 产品与工程文档
+## 文档（只这几份）
 
-- `docs/README.md` — **文档路由**（现行 / 资料 / 归档）
-- `docs/deploy.md` — **部署与发版（权威）**
-- `docs/api/README.md` — Nest API 契约
-- `docs/architecture-modules.md` — 模块与依赖关系
-- `docs/PRD-双入口小生产.md` / `docs/PRD-双入口触感.md`
-- `docs/s1-go-live.md` / `docs/cutover-runbook.md` / `docs/stage1-retro.md`
-- 已完成 Goal 与历史设计：`docs/archive/`
+| 文件 | 用途 |
+|------|------|
+| [`Claude.md`](Claude.md) | 对话默认上下文 |
+| [`docs/PRODUCT.md`](docs/PRODUCT.md) | 产品 |
+| [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | 工程 + 部署 |
+| [`docs/STATUS.md`](docs/STATUS.md) | 生产状态 |
+| [`docs/api/README.md`](docs/api/README.md) | API 契约 |
+| [`docs/README.md`](docs/README.md) | 索引 |
+
+历史文稿在 [`docs/archive/`](docs/archive/)。
 
 ## 产品心智
 

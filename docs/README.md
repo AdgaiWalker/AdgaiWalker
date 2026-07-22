@@ -1,52 +1,17 @@
-# Docs 使用规则
+# 文档
 
-## 1. 现行（保留 · 施工/联调以这些为准）
+**现行只读这些：**
 
-| 文档 | 用途 |
+| 文件 | 用途 |
 |------|------|
-| 根 [`README.md`](../README.md) | 安装、三端启动、验收命令 |
-| [`docs/deploy.md`](./deploy.md) | **部署权威**：GitHub → Vercel、域名、SPA/`/api`、发版流程 |
-| [`docs/api/README.md`](./api/README.md) | **Nest API 契约**（唯一） |
-| [`docs/architecture-modules.md`](./architecture-modules.md) | 模块职责与依赖/调用/触发/实现 |
-| [`docs/frontend-layers.md`](./frontend-layers.md) | **前端分层**：配置/规则/门面/页/块 + 全量归层表 |
-| [`docs/feature-add-playbook.md`](./feature-add-playbook.md) | **加功能工作法**（功能驱动，不空转脚手架） |
-| [`docs/naming-vocabulary.md`](./naming-vocabulary.md) | **命名/SSOT 词汇表**（同名异义禁区） |
-| [`docs/PRD-双入口小生产.md`](./PRD-双入口小生产.md) | 产品：卡/逛 + 过程 + 安全 |
-| [`docs/PRD-双入口触感.md`](./PRD-双入口触感.md) | 公开面触感工艺 |
-| [`docs/GOAL-生产双入口切流.md`](./GOAL-生产双入口切流.md) | **生产双入口可用性**执行锚（半部署事实 → SPA → API） |
-| [`docs/GOAL-内容主题线L1.md`](./GOAL-内容主题线L1.md) | 主题线 series/related 进 gen 与逛筛选 |
-| [`docs/GOAL-新站完善与生产可用.md`](./GOAL-新站完善与生产可用.md) | **当前**：生产双入口运行时 + 配置收口 |
-| [`docs/s1-go-live.md`](./s1-go-live.md) | 验证盒时钟与 A11 复盘勾选 |
-| [`docs/cutover-runbook.md`](./cutover-runbook.md) | 生产切流操作手册（运行时切流另令） |
-| [`docs/content-naming.md`](./content-naming.md) | 内容文件名=URL slug 规则 |
-| [`docs/redirects.md`](./redirects.md) | 公开路径表 |
-| [`docs/feature-keys.md`](./feature-keys.md) | feature_key 字典 |
-| [`docs/stage1-retro.md`](./stage1-retro.md) | Stage1 工程毕业复盘 |
+| 根 [`README.md`](../README.md) | 安装与三端启动 |
+| 根 [`Claude.md`](../Claude.md) | **对话默认上下文**（栈 / 命令 / 部署须知） |
+| [`PRODUCT.md`](./PRODUCT.md) | **产品** |
+| [`ENGINEERING.md`](./ENGINEERING.md) | **工程**（分层、命名、部署、切流就绪） |
+| [`STATUS.md`](./STATUS.md) | **状态**（生产探针与时钟） |
+| [`api/README.md`](./api/README.md) | **Nest API 契约** |
 
-## 2. 资料 / 长期记录（保留）
+冲突时：**代码 + `api/README` + 三份权威 + `Claude.md` > `archive/`**。
 
-| 文档 | 用途 |
-|------|------|
-| [`docs/adr/`](./adr/) | 架构决策记录 |
-| [`docs/AI赋能/`](./AI赋能/) | 方法论资料（非运行时契约） |
-| [`docs/CC入门.md`](./CC入门.md) / [`Codex入门.md`](./Codex入门.md) | 工具入门笔记 |
-
-## 3. 归档（保留追溯 · 禁止当现行施工）
-
-| 路径 | 内容 |
-|------|------|
-| [`docs/archive/goals/`](./archive/goals/) | 已完成 Goal（双入口 / React 栈 / scripts TS / stage1） |
-| [`docs/archive/api-astro-era/`](./archive/api-astro-era/) | 废止的 Astro 67 端点契约 |
-| [`docs/archive/design/`](./archive/design/) | 旧设计稿与上线 to-do |
-| [`docs/archive/cycles/`](./archive/cycles/) | 历史轮次 implement/retro |
-| [`docs/archive/整体改造方案.md`](./archive/整体改造方案.md) | Stage1 时代改造宪法（历史） |
-| 其它 `docs/archive/*` | 旧 workbench / workflow 注记等 |
-
-空壳指针：`docs/design/README.md`、`docs/cycles/README.md` → 指向 archive。
-
-## 规则
-
-1. **冲突时**：`docs/api` + `architecture-modules` + 根 README + 代码 > 归档 Goal/设计。  
-2. **新 PRD/Goal**：写在 `docs/` 根或明确入口表；完成后迁 `archive/goals/` 并更新本页。  
-3. **不要**恢复 `api-astro-era` 为权威契约。  
-4. 可选 skill 路径 `.agents/skills/walker-northstar/references/` **不保证**在本仓 git 内；有冲突以本仓现行表为准。
+历史 PRD / Goal / 切流长文 / 旧分层全文 / Astro 契约 → [`archive/`](./archive/)。  
+**禁止**把 `archive/api-astro-era` 当现行契约。

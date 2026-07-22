@@ -10,7 +10,7 @@
 |--------|----------|------|
 | 直连 API（`:8788`） | `/health`、`/intake`、… | **无**全局 `setGlobalPrefix` |
 | 浏览器经 Vite 开发代理 | `/api/health`、`/api/intake`、… | `apps/web` / `apps/admin` 把 `/api` 前缀 strip 后转发到 8788 |
-| 生产同站反代（切流） | 通常对外 `/api/*` → Nest 裸路径 | 见 `docs/cutover-runbook.md` |
+| 生产同站反代（切流） | 通常对外 `/api/*` → Nest 裸路径 | 见 `docs/ENGINEERING.md` §5 |
 
 ## 鉴权
 
