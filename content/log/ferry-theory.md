@@ -3,6 +3,8 @@ title: Ferry 理论建构：从差距到行动的映射
 date: 2026-05-23
 tags: [哲学, AI, Ferry]
 type: knowledge
+series: Ferry
+seriesOrder: 1
 published: true
 summary: 世界是一个巨大的 f(x) = y。差距驱动行动，行动逼近目标——Ferry 协议的数学表达与认知框架。
 updated: 2026-05-31

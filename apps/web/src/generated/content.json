@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T04:37:58.434Z",
+  "generatedAt": "2026-07-22T04:57:22.995Z",
   "items": [
     {
       "slug": "codex-intro",
@@ -19,8 +19,8 @@
       "emoji": "🧪",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "跟学",
+      "seriesOrder": 2,
       "related": []
     },
     {
@@ -41,8 +41,8 @@
       "emoji": "🤖",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "跟学",
+      "seriesOrder": 1,
       "related": []
     },
     {
@@ -65,7 +65,7 @@
       "visibility": "public",
       "published": true,
       "series": "Ferry",
-      "seriesOrder": 3,
+      "seriesOrder": 4,
       "related": [
         "walkcraft-skill-craft",
         "ferry-spec"
@@ -115,8 +115,8 @@
       "emoji": "",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "交互点子",
+      "seriesOrder": 2,
       "related": [
         "card-table",
         "design-for-people"
@@ -140,8 +140,8 @@
       "emoji": "",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "交互点子",
+      "seriesOrder": 1,
       "related": [
         "cli-command-palette",
         "design-for-people",
@@ -239,8 +239,8 @@
       "emoji": "",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "Ferry",
+      "seriesOrder": 1,
       "related": [
         "subtraction-dialogue",
         "fear-as-fuel"
@@ -265,7 +265,7 @@
       "visibility": "public",
       "published": true,
       "series": "Ferry",
-      "seriesOrder": 1,
+      "seriesOrder": 2,
       "related": [
         "walkcraft-skill-craft",
         "side-hustle-blueprint",
@@ -293,7 +293,7 @@
       "visibility": "public",
       "published": true,
       "series": "Ferry",
-      "seriesOrder": 2,
+      "seriesOrder": 3,
       "related": [
         "ferry-spec",
         "side-hustle-blueprint",
@@ -320,8 +320,8 @@
       "emoji": "",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "场",
+      "seriesOrder": 1,
       "related": [
         "affordable-ai-community",
         "ideas-beyond-time",
@@ -347,8 +347,8 @@
       "emoji": "",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "场",
+      "seriesOrder": 2,
       "related": [
         "idea-cocreate"
       ]
@@ -369,8 +369,8 @@
       "emoji": "",
       "visibility": "public",
       "published": true,
-      "series": "",
-      "seriesOrder": null,
+      "series": "站志",
+      "seriesOrder": 1,
       "related": [
         "fear-as-fuel",
         "ferry-theory"

@@ -1,6 +1,6 @@
 /**
- * 文章详情 — 正文 + 同主题线邻篇 + 存活 related。
- * 依赖：content 查询、赞/反馈 hooks；邻篇/related 由 helpers 计算。
+ * 文章详情 — 正文 + 目录 + 进度 + 同主题线邻篇 + related。
+ * 依赖：content 查询、outline 纯函数、赞/反馈 hooks。
  */
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -11,11 +11,16 @@ import {
   getRelatedPosts,
   getSeriesNeighborsForSlug,
 } from '../content';
+import { ArticleToc } from '../components/ui/ArticleToc';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
 import { LikeButton } from '../components/ui/LikeButton';
+import { ReadingProgress } from '../components/ui/ReadingProgress';
 import { useContentFeedback } from '../hooks/useContentFeedback';
 import { useLike } from '../hooks/useLike';
+import { useReadingProgress } from '../hooks/useReadingProgress';
+import { useTocActive } from '../hooks/useTocActive';
 import { sanitizeHtml } from '../lib/sanitize-html';
+import { buildArticleOutline } from '../shared/article-outline';
 import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateLocale, parseIsoDate } from '../shared/format';
@@ -34,7 +39,7 @@ export function PostDetailPage() {
     );
   }
 
-  return <PostDetailBody post={post} />;
+  return <PostDetailBody key={post.slug} post={post} />;
 }
 
 function PostDetailBody({
@@ -48,10 +53,15 @@ function PostDetailBody({
   const neighbors = getSeriesNeighborsForSlug(post.slug);
   const related = getRelatedPosts(post.slug);
 
-  const html = useMemo(() => {
+  const { html, toc } = useMemo(() => {
     const rawHtml = marked.parse(post.body, { async: false }) as string;
-    return sanitizeHtml(rawHtml);
+    const safe = sanitizeHtml(rawHtml);
+    return buildArticleOutline(safe);
   }, [post.body]);
+
+  const tocIds = useMemo(() => toc.map((t) => t.id), [toc]);
+  const activeId = useTocActive(tocIds);
+  const progress = useReadingProgress(true);
 
   const mins = estimateReadingMinutes(post.body);
   const statusLabel = post.status ? STATUS_LABELS[post.status] ?? post.status : '';
@@ -59,6 +69,7 @@ function PostDetailBody({
 
   return (
     <article className="article-shell">
+      <ReadingProgress ratio={progress} />
       <p className="meta">
         <Link
           to={dualEntry.browse.path}
@@ -87,11 +98,26 @@ function PostDetailBody({
           {post.summary}
         </p>
       ) : null}
-      <div className="surface-l2 article-body">
-        <div
-          className="prose-md"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: toc.length ? 'minmax(0,1fr) 12rem' : '1fr',
+          gap: '1.25rem',
+          alignItems: 'start',
+        }}
+      >
+        <div className="surface-l2 article-body">
+          <div
+            className="prose-md"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        </div>
+        {toc.length > 0 ? (
+          <div style={{ position: 'sticky', top: '4.5rem' }}>
+            <ArticleToc items={toc} activeId={activeId} />
+          </div>
+        ) : null}
       </div>
 
       {(neighbors.prev || neighbors.next) && (

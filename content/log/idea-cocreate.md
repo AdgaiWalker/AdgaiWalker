@@ -9,6 +9,8 @@ tags:
   - 社群
   - 学习
 type: tool
+series: 场
+seriesOrder: 1
 published: true
 summary: 和朋友们的学习氛围群。有一个点子想把它做出来的人，欢迎加入。免费，只为更好的未来。
 form: resource

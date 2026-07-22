@@ -7,6 +7,8 @@ form: idea
 domain: coding
 intent: showcase
 valueMode: both
+series: 交互点子
+seriesOrder: 1
 published: true
 summary: /ideas 页面不是列表，是一张卡牌桌。每个点子是一张牌，状态决定牌的翻开程度。构思中是牌背，验证中是翻开了但有雾，实现中在发光，已完成完全展示。页面本身就在演示"卡牌式交互"这个点子。
 status: verified

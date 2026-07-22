@@ -15,7 +15,9 @@
 | **content-series**（`apps/web/src/shared/content-series.ts`） | 纯函数：主题线列表、同线排序、邻篇、过滤死 related |
 | **content 门面**（`apps/web/src/content.ts`） | 绑定 gen 产物，向页面暴露已发布查询 API |
 | **PostsPage** | 编排主题线 chips + 列表筛选展示 |
-| **PostDetailPage** | 渲染正文、邻篇导航、related 链、赞与反馈 |
+| **PostDetailPage** | 渲染正文、目录/进度、邻篇导航、related 链、赞与反馈 |
+| **article-outline** | 从 HTML 抽 TOC、注入标题 id、计算阅读进度比例 |
+| **ArticleToc / ReadingProgress** | 目录与进度条纯展示（Lucide） |
 
 ## 模块关系（依赖 / 调用 / 触发 / 实现）
 
@@ -36,7 +38,8 @@
 
 [触发] 打开详情
     → [调用] getSeriesNeighborsForSlug / getRelatedPosts
-    → [实现] 邻篇与 related UI（死链在 getRelatedItems 内丢弃）
+    → [调用] buildArticleOutline（正文 HTML）
+    → [实现] 邻篇、related、TOC、进度条（死 related 丢弃）
 ```
 
 方向小结：

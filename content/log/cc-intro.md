@@ -5,6 +5,8 @@ type: learn
 level: 入门
 emoji: 🤖
 description: 做一件以前做不到的事——从零驾驭 Claude Code 命令行 agent，自动化装好全栈开发环境。
+series: 跟学
+seriesOrder: 1
 visibility: public
 tags: [AI, Claude Code, 入门, agent]
 category: 学习

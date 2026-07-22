@@ -4,6 +4,8 @@ date: 2026-04-29
 updated: 2026-05-31
 tags: [随想, 哲学]
 type: knowledge
+series: 站志
+seriesOrder: 1
 published: true
 summary: 行过万里水路，记录每一次停靠。这是 Walker 的第一篇日志。
 form: article

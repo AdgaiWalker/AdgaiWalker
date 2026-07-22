@@ -9,6 +9,8 @@ tags:
   - 省钱
   - 社群
 type: tool
+series: 场
+seriesOrder: 2
 published: true
 summary: 我常用的低价 AI 资源群。Token、会员、中转——让我用很便宜的 AI 干活。全部免费加入，只为更好的未来。
 form: resource
