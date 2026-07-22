@@ -1,6 +1,7 @@
 # 切流 Runbook 草案（Stage 1）
 
 > 未下令前不执行**运行时**生产切流（API/PG/反代）。本文说明**怎么切**，不代替上线决定。  
+> **GitHub→Vercel 发版事实**：[`docs/deploy.md`](./deploy.md)（准读取）。  
 > 执行锚：`docs/GOAL-新站完善与生产可用.md`（前序：`docs/GOAL-生产双入口切流.md`）。  
 > 探针脚本：`pnpm exec tsx scripts/probe-production.ts`
 

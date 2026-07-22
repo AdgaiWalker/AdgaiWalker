@@ -45,9 +45,17 @@ pnpm test:shared && pnpm test:api && pnpm test:web
 pnpm accept          # 双入口 + 深度浏览器（需三端已起）
 ```
 
+## 部署（GitHub → Vercel）
+
+**准读取**：[`docs/deploy.md`](docs/deploy.md)
+
+- 仓库 `main` → Vercel 项目 **`adgai-walker`** → **https://www.iwalk.pro**（push 自动生产部署）
+- 当前只部署 **web 静态**；公网 Nest/PG/`/api` 见该文档 §3–§4
+
 ## 产品与工程文档
 
 - `docs/README.md` — **文档路由**（现行 / 资料 / 归档）
+- `docs/deploy.md` — **部署与发版（权威）**
 - `docs/api/README.md` — Nest API 契约
 - `docs/architecture-modules.md` — 模块与依赖关系
 - `docs/PRD-双入口小生产.md` / `docs/PRD-双入口触感.md`

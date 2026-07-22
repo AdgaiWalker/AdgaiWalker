@@ -8,7 +8,7 @@
 | 56 天 Stage1 复盘窗口截止 | 2026-09-15（自演示日起算） |
 | 分支 | **`main`** |
 | 「卡」默认路由 | `/tools` |
-| 生产部署 | **web 静态已部署**（SPA rewrite 生效：`/tools` 200 壳）；**双入口运行时未切**（无生产 Nest/PG、无同源 `/api`） |
+| 生产部署 | **web 静态已部署**（Vercel 项目 `adgai-walker`，Git `main` 自动发布 → www.iwalk.pro；见 [`deploy.md`](./deploy.md)）；**双入口运行时未切**（无生产 Nest/PG、无同源 `/api`） |
 | 生产切流 | **未完成**（禁止标已切；执行锚：`docs/GOAL-新站完善与生产可用.md`） |
 | 本地双入口验收 | **2026-07-22 绿**（PG `localhost:5432` + Nest：health `db:true`、intake+列线索、写 503） |
 

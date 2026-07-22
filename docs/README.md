@@ -5,6 +5,7 @@
 | 文档 | 用途 |
 |------|------|
 | 根 [`README.md`](../README.md) | 安装、三端启动、验收命令 |
+| [`docs/deploy.md`](./deploy.md) | **部署权威**：GitHub → Vercel、域名、SPA/`/api`、发版流程 |
 | [`docs/api/README.md`](./api/README.md) | **Nest API 契约**（唯一） |
 | [`docs/architecture-modules.md`](./architecture-modules.md) | 模块职责与依赖/调用/触发/实现 |
 | [`docs/frontend-layers.md`](./frontend-layers.md) | **前端分层**：配置/规则/门面/页/块 + 全量归层表 |
