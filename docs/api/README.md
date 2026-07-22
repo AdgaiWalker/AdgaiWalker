@@ -65,7 +65,9 @@
 | GET | `/metrics` | — | 闭环 + 功能事件 + 线索来源分桶等 |
 | GET | `/admin/content` | — | 内容文件列表（`content/log`） |
 | GET | `/admin/content/:slug` | — | 单篇 raw markdown |
-| PUT | `/admin/content/:slug` | `{ raw }` | 写回磁盘（需 frontmatter） |
+| PUT | `/admin/content/:slug` | `{ raw }` | 写回磁盘（需 frontmatter）；保存后异步 `content:gen` |
+| GET | `/support` | — | 赞赏配置（公开） |
+| PUT | `/support` | SupportConfig body | 写赞赏配置（Bearer） |
 
 ## curl 示例
 

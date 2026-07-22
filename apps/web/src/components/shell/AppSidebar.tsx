@@ -20,14 +20,12 @@ type Props = {
   menuOpen: boolean;
   askActive: boolean;
   onOpenSearch: () => void;
-  onCycleTheme: () => void;
 };
 
 export function AppSidebar({
   menuOpen,
   askActive,
   onOpenSearch,
-  onCycleTheme,
 }: Props) {
   return (
     <aside className={`app-sidebar ${menuOpen ? 'is-open' : ''}`}>
@@ -113,14 +111,6 @@ export function AppSidebar({
         <a href={SITE_LINKS.rss} aria-label="RSS" title="RSS">
           <Rss size={16} />
         </a>
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={onCycleTheme}
-          title="切换节气色"
-        >
-          主题
-        </button>
         <Link to={WEB_ROUTES.login} className="btn-ghost" title="账号登录尚未开放">
           账号
         </Link>

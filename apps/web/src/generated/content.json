@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T05:15:54.995Z",
+  "generatedAt": "2026-07-22T09:22:46.111Z",
   "items": [
     {
       "slug": "codex-intro",
@@ -21,7 +21,9 @@
       "published": true,
       "series": "跟学",
       "seriesOrder": 2,
-      "related": []
+      "related": [],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "cc-intro",
@@ -43,7 +45,9 @@
       "published": true,
       "series": "跟学",
       "seriesOrder": 1,
-      "related": []
+      "related": [],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "side-hustle-blueprint",
@@ -69,7 +73,9 @@
       "related": [
         "walkcraft-skill-craft",
         "ferry-spec"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "design-for-people",
@@ -95,7 +101,9 @@
         "subtraction-dialogue",
         "card-table",
         "cli-command-palette"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "cli-command-palette",
@@ -120,7 +128,9 @@
       "related": [
         "card-table",
         "design-for-people"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "card-table",
@@ -146,7 +156,9 @@
         "cli-command-palette",
         "design-for-people",
         "subtraction-dialogue"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "ideas-beyond-time",
@@ -171,7 +183,9 @@
         "fear-as-fuel",
         "future-already-here",
         "idea-cocreate"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "fear-as-fuel",
@@ -196,7 +210,9 @@
         "ideas-beyond-time",
         "future-already-here",
         "ferry-theory"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "future-already-here",
@@ -220,7 +236,9 @@
       "related": [
         "fear-as-fuel",
         "ideas-beyond-time"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "ferry-theory",
@@ -244,7 +262,9 @@
       "related": [
         "subtraction-dialogue",
         "fear-as-fuel"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "ferry-spec",
@@ -271,7 +291,9 @@
         "side-hustle-blueprint",
         "ferry-theory",
         "subtraction-dialogue"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "walkcraft-skill-craft",
@@ -299,7 +321,9 @@
         "side-hustle-blueprint",
         "ferry-theory",
         "subtraction-dialogue"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "idea-cocreate",
@@ -326,7 +350,9 @@
         "affordable-ai-community",
         "ideas-beyond-time",
         "fear-as-fuel"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "affordable-ai-community",
@@ -351,7 +377,9 @@
       "seriesOrder": 2,
       "related": [
         "idea-cocreate"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "walker-launch",
@@ -374,7 +402,9 @@
       "related": [
         "fear-as-fuel",
         "ferry-theory"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     },
     {
       "slug": "subtraction-dialogue",
@@ -399,7 +429,9 @@
         "design-for-people",
         "ferry-theory",
         "card-table"
-      ]
+      ],
+      "version": null,
+      "previousVersion": ""
     }
   ]
 }

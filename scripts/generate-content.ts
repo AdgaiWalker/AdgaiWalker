@@ -29,6 +29,10 @@ export type ContentItem = {
   seriesOrder: number | null;
   /** 站内 related slug 列表 */
   related: string[];
+  /** 版本号（可选） */
+  version: number | null;
+  /** 上一版 slug（可选） */
+  previousVersion: string;
 };
 
 function asStringArray(value: unknown): string[] {
@@ -106,6 +110,11 @@ if (fs.existsSync(contentLogDir)) {
       series: data.series ? String(data.series).trim() : '',
       seriesOrder: asSeriesOrder(data.seriesOrder),
       related: asStringArray(data.related),
+      version: asSeriesOrder(data.version),
+      previousVersion:
+        typeof data.previousVersion === 'string'
+          ? data.previousVersion.trim()
+          : '',
     });
   }
 }

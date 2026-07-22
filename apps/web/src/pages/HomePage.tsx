@@ -7,8 +7,7 @@ import {
   MessageCircleQuestion,
   PenLine,
 } from 'lucide-react';
-import { getRecentPosts, getByType } from '../content';
-import { getSolarTerm } from '../lib/solar-terms';
+import { getRecentPosts, getByType, listSeries } from '../content';
 import { GreetingCard } from '../components/GreetingCard';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateCompact, parseIsoDate } from '../shared/format';
@@ -16,10 +15,10 @@ import { WEB_ROUTES } from '../shared/routes';
 import { SPARK_FALLBACKS } from '../shared/rules-ui';
 
 export function HomePage() {
-  const term = getSolarTerm(new Date());
   const knowledgePosts = getRecentPosts(20).filter((p) => p.type === 'knowledge');
-  const recentPosts = (knowledgePosts.length ? knowledgePosts : getRecentPosts(4)).slice(0, 4);
+  const recentPosts = (knowledgePosts.length ? knowledgePosts : getRecentPosts(8)).slice(0, 6);
   const featured = recentPosts.find((p) => p.tags.includes('featured')) ?? recentPosts[0];
+  const series = listSeries().slice(0, 6);
 
   const realIdeas = getByType('idea').map((i) => ({
     title: i.title,
@@ -32,11 +31,9 @@ export function HomePage() {
     <div id="canvas-container">
       <div id="desktop-canvas">
         <div className="seasonal-announcement pop-in" style={{ animationDelay: '0s' }}>
-          <span className="seasonal-term">
-            {term.name} · {term.english}
-          </span>
+          <span className="seasonal-term">Walker</span>
           <span className="seasonal-sep">•</span>
-          <span className="seasonal-poetic">{term.poetic}</span>
+          <span className="seasonal-poetic">行过万里水路 · 卡与逛同一过程</span>
         </div>
 
         <div className="pop-in home-dual-lead meta" style={{ animationDelay: '0.02s' }}>
@@ -110,6 +107,33 @@ export function HomePage() {
                 </Link>
               </div>
             </div>
+
+            {series.length > 0 ? (
+              <div
+                className="panel-glass pop-in"
+                style={{ padding: '0.85rem 1rem', borderRadius: 20, animationDelay: '0.16s' }}
+              >
+                <div className="recent-header">
+                  <FolderKanban size={13} color="var(--color-brand)" />
+                  <span className="recent-label">主题线</span>
+                  <Link to={dualEntry.browse.path} className="recent-more">
+                    逛 →
+                  </Link>
+                </div>
+                <div className="quick-grid" style={{ marginTop: 8 }}>
+                  {series.map((name) => (
+                    <Link
+                      key={name}
+                      to={dualEntry.browse.path}
+                      className="quick-link"
+                      title={`在逛中筛选：${name}`}
+                    >
+                      <span>{name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div
               className="panel-glass pop-in"

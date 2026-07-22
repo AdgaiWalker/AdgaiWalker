@@ -57,4 +57,16 @@ export const publicApi = {
       body: JSON.stringify({ query, hadResults: false }),
     });
   },
+
+  getSupport(): Promise<SupportConfig> {
+    return publicRequest<SupportConfig>('/support');
+  },
+};
+
+export type SupportConfig = {
+  title: string;
+  body: string;
+  wechatQrUrl: string;
+  alipayQrUrl: string;
+  externalLinks: Array<{ label: string; url: string }>;
 };

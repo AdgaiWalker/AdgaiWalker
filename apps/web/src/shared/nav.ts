@@ -33,6 +33,7 @@ export const evidenceNavGroup: NavGroup = {
     { label: '学习', href: '/learn', icon: Rocket, hint: 'Learn' },
     { label: '点子', href: '/ideas', icon: Lightbulb, hint: 'Ideas' },
     { label: '项目', href: '/projects', icon: FolderKanban, hint: 'Projects' },
+    { label: 'Ferry', href: '/projects/ferry', icon: Rocket, hint: 'Protocol' },
     { label: '资源', href: '/tools/resources', icon: Bookmark, hint: 'Tools' },
   ],
 };

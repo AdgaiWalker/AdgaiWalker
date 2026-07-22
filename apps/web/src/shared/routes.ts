@@ -12,6 +12,7 @@ export const WEB_ROUTES = {
   learn: '/learn',
   ideas: '/ideas',
   projects: '/projects',
+  ferry: '/projects/ferry',
   toolsResources: '/tools/resources',
   ask: dualEntry.ask.path,
   browse: dualEntry.browse.path,

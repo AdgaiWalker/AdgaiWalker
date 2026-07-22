@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useContentSearch } from '../hooks/useContentSearch';
 import { useSearchHotkey } from '../hooks/useSearchHotkey';
-import { applySiteTheme, cycleThemeVisual } from '../lib/theme';
+import { applySiteTheme } from '../lib/theme';
 import { dualEntry } from '../shared/dual-entry';
 import { SearchModal } from './ui/SearchModal';
 import { AppSidebar } from './shell/AppSidebar';
@@ -64,7 +64,6 @@ export function AppShell() {
         menuOpen={menuOpen}
         askActive={askActive}
         onOpenSearch={openSearch}
-        onCycleTheme={cycleThemeVisual}
       />
       <main className="app-main">
         <Outlet />

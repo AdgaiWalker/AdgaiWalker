@@ -7,6 +7,7 @@ import { ToolsPage } from './pages/ToolsPage';
 import { ToolsResourcesPage } from './pages/ToolsResourcesPage';
 import { IdeasPage } from './pages/IdeasPage';
 import { ProjectsPage } from './pages/ProjectsPage';
+import { FerryPage } from './pages/FerryPage';
 import { LearnPage } from './pages/LearnPage';
 import { ContentUniversePage } from './pages/ContentUniversePage';
 import { AboutPage } from './pages/AboutPage';
@@ -29,6 +30,7 @@ export function App() {
           <Route path={`${strip(WEB_ROUTES.browse)}/:slug`} element={<PostDetailPage />} />
           <Route path={strip(WEB_ROUTES.ideas)} element={<IdeasPage />} />
           <Route path={strip(WEB_ROUTES.projects)} element={<ProjectsPage />} />
+          <Route path={strip(WEB_ROUTES.ferry)} element={<FerryPage />} />
           <Route path={strip(WEB_ROUTES.learn)} element={<LearnPage />} />
           <Route path={strip(WEB_ROUTES.content)} element={<ContentUniversePage />} />
           <Route path={strip(WEB_ROUTES.ask)} element={<ToolsPage />} />

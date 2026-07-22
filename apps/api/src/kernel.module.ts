@@ -40,6 +40,10 @@ import { CONTENT_FILE_REPOSITORY } from './ports/content-file.repository';
 import { FsContentFileRepository } from './adapters/fs-content-file.repository';
 import { ContentAdminService } from './content-admin/content-admin.service';
 import { ContentAdminController } from './content-admin/content-admin.controller';
+import { SUPPORT_CONFIG_REPOSITORY } from './ports/support-config.repository';
+import { FsSupportConfigRepository } from './adapters/fs-support-config.repository';
+import { SupportService } from './support/support.service';
+import { SupportController } from './support/support.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -53,6 +57,7 @@ import { ContentAdminController } from './content-admin/content-admin.controller
     ContentFeedbackController,
     SearchEventsController,
     ContentAdminController,
+    SupportController,
   ],
   providers: [
     AdminAuthGuard,
@@ -66,6 +71,10 @@ import { ContentAdminController } from './content-admin/content-admin.controller
     { provide: EXECUTION_REPOSITORY, useClass: PrismaExecutionRepository },
     { provide: LIKE_REPOSITORY, useClass: PrismaLikeRepository },
     { provide: CONTENT_FILE_REPOSITORY, useClass: FsContentFileRepository },
+    {
+      provide: SUPPORT_CONFIG_REPOSITORY,
+      useClass: FsSupportConfigRepository,
+    },
     { provide: RATE_LIMIT, useClass: InMemoryRateLimiter },
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
     { provide: NEXT_STEP_STRATEGY, useClass: RuleNextStepAdapter },
@@ -79,6 +88,7 @@ import { ContentAdminController } from './content-admin/content-admin.controller
     ContentFeedbackService,
     SearchEventsService,
     ContentAdminService,
+    SupportService,
   ],
   exports: [PRISMA, DATABASE],
 })

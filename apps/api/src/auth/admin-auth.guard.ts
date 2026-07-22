@@ -18,10 +18,10 @@ export class AdminAuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const expected = this.config.getAdminApiToken();
-    if (!expected || expected.length < 16) {
+    if (!expected || expected.length < 8) {
       throw new UnauthorizedException({
         code: 'auth-not-configured',
-        message: '管理令牌未配置或过短（需 ADMIN_API_TOKEN，长度≥16）',
+        message: '管理令牌未配置或过短（需 ADMIN_API_TOKEN，长度≥8）',
       });
     }
 

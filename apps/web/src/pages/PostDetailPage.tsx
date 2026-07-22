@@ -10,6 +10,7 @@ import {
   getPostBySlug,
   getRelatedPosts,
   getSeriesNeighborsForSlug,
+  getVersionChain,
 } from '../content';
 import { ArticleToc } from '../components/ui/ArticleToc';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
@@ -53,6 +54,7 @@ function PostDetailBody({
   const feedback = useContentFeedback(post.slug);
   const neighbors = getSeriesNeighborsForSlug(post.slug);
   const related = getRelatedPosts(post.slug);
+  const versions = getVersionChain(post.slug);
 
   const { html, toc } = useMemo(() => {
     const rawHtml = marked.parse(post.body, { async: false }) as string;
@@ -178,6 +180,35 @@ function PostDetailBody({
           ) : null}
         </nav>
       )}
+
+      {versions.length > 1 ? (
+        <section
+          className="surface-l2"
+          style={{ marginTop: '1rem', padding: '0.85rem 1.1rem' }}
+          aria-label="版本"
+        >
+          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>版本</h2>
+          <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+            {versions.map((v) => (
+              <li key={v.slug}>
+                {v.slug === post.slug ? (
+                  <strong>
+                    {v.title}
+                    {v.version != null ? ` · v${v.version}` : ' · 当前'}
+                  </strong>
+                ) : (
+                  <Link
+                    to={`${dualEntry.browse.path}/${encodeURIComponent(v.slug)}`}
+                  >
+                    {v.title}
+                    {v.version != null ? ` · v${v.version}` : ''}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {related.length > 0 ? (
         <section
