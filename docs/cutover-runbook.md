@@ -1,15 +1,17 @@
 # 切流 Runbook 草案（Stage 1）
 
 > 未下令前不执行**运行时**生产切流（API/PG/反代）。本文说明**怎么切**，不代替上线决定。  
-> 执行阶段与验收：`docs/GOAL-生产双入口切流.md`。
+> 执行锚：`docs/GOAL-新站完善与生产可用.md`（前序：`docs/GOAL-生产双入口切流.md`）。  
+> 探针脚本：`pnpm exec tsx scripts/probe-production.ts`
 
-## 当前生产缺口（2026-07-21 探针）
+## 当前生产缺口（2026-07-22 探针）
 
-1. **SPA 深链**：无 fallback 时 `/tools` 等客户端路由 → Vercel `NOT_FOUND`（Phase 1：`vercel.json` rewrites → `/index.html`，**排除** `/api/*`）。
-2. **无 Nest API**：`/api/health`、`/api/intake` → 404；双入口 intake 不可用。
-3. **无生产 PG**：无可写持久；不得假装已切双入口。
+1. ~~SPA 深链~~：**已缓解** — `/tools` 等返回 SPA 200（`#root`）；`vercel.json` SPA rewrite 排除 `/api/*`。
+2. **无 Nest API 反代**：`GET /api/health` → **404**；`/health` 被 SPA 吞成 HTML（勿当作 API）。
+3. **无生产 PG / 无公网 Nest 主机**：intake/赞/Admin 写在生产不可用。
+4. **本地（非生产）**：`localhost:5432` + Nest 已可全绿（health `db:true`、intake、列线索、写 503）。
 
-> 仅完成 SPA rewrite **不等于**切流完成——无 API 时「卡」可开壳但提交必挂。
+> 仅 SPA rewrite **不等于**切流完成——无 `/api` 时「卡」可开壳但提交必挂。
 
 ## 组件
 
@@ -22,18 +24,41 @@
 
 仓库内 `vercel.json`：**web** 静态构建 + SPA rewrites（filesystem 优先，故 `/posts/**`、`/assets/**`、`/pagefind/**`、`rss.xml`、`llms.txt` 仍走真实文件；**`/api/*` 不 fallback 到 HTML**）。API/Admin/PG 需另部或反代，**不要**假设 monorepo 自动全栈上 Vercel。
 
-### 生产 `/api` 反代示例（Vercel → 外链 Nest）
+### 生产 `/api` 反代顺序（关键）
 
-在 `vercel.json` 的 `rewrites` **最前**增加（将 `API_ORIGIN` 换成真实 API 主机，**勿**把 `/api` fallback 到 index.html）：
+仓库 `vercel.json` **当前 rewrites**（顺序固定）：
+
+1. **仅有** SPA fallback：`/((?!api/).*)` → `/index.html`  
+   - 含义：`/api/*` **不会**落到 HTML（负向前瞻排除）。  
+2. **尚未**配置 `destination` 到公网 Nest（因宿主 URL 未定，**禁止硬编码假域名**）。
+
+部署 Nest 后，在 rewrites **数组最前**插入：
 
 ```json
 {
   "source": "/api/:path*",
-  "destination": "https://API_ORIGIN/:path*"
+  "destination": "https://<你的-API-主机>/:path*"
 }
 ```
 
-Nest 无全局 `/api` 前缀：若 destination 需 strip，用网关规则或 `https://API_ORIGIN/$1` 视托管而定。本地：Vite 已 proxy `/api` → `8788`。
+注意：Nest **无**全局 `/api` 前缀 → destination 应转到 Nest 的 `/health`、`/intake` 等。若网关保留 `/api` 前缀，需在 Nest 或网关 strip。本地：Vite proxy `/api` → `8788` 并 strip。
+
+### 生产环境变量清单（禁止把真实密钥提交 git）
+
+| 变量 | 组件 | 说明 |
+|------|------|------|
+| `DATABASE_URL` | Nest | 生产 PG 连接串 |
+| `ADMIN_API_TOKEN` | Nest / Admin | 强随机；**勿**用本地短口令 |
+| `AI_ENABLED` | Nest | 默认 `false` |
+| `PORT` | Nest | 宿主注入 |
+| `CONTENT_LOG_DIR` | Nest | 生产无盘则内容编辑仅本地/Git |
+| `VITE_GISCUS_*` | Web 构建 | 可选评论 |
+| `SUPPORT_CONFIG_PATH` | Nest | 可选；默认 `content/support-config.json` |
+
+### Admin 连生产 API
+
+- **推荐**：本地 Admin（`5174`）临时把 proxy target 指生产 API，或设环境变量式网关；生产 Admin 静态托管同域 `/admin` 时同源 `/api`。  
+- **钉死一句**：生产改文默认 **git 推 monorepo + 重建 web**；Admin 写盘仅开发机有 `content/log` 时可用。
 
 ### 管理内容目录
 
