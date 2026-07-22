@@ -1,8 +1,9 @@
 /**
- * AppShell — 壳：组合 chrome / 侧栏 / 主区；编排搜索状态（非展示规则）
+ * AppShell — 壳布局
+ * 职责：首页画布 / 阅读沉浸 / 常规侧栏；自适应断点由 CSS。
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, matchPath } from 'react-router-dom';
 import { useContentSearch } from '../hooks/useContentSearch';
 import { useSearchHotkey } from '../hooks/useSearchHotkey';
 import { applySiteTheme } from '../lib/theme';
@@ -12,9 +13,16 @@ import { AppSidebar } from './shell/AppSidebar';
 import { HomeChrome } from './shell/HomeChrome';
 import { MobileBar } from './shell/MobileBar';
 
+function isPostDetail(pathname: string): boolean {
+  return Boolean(
+    matchPath({ path: `${dualEntry.browse.path}/:slug`, end: true }, pathname),
+  );
+}
+
 export function AppShell() {
   const { pathname } = useLocation();
   const isHome = pathname === '/';
+  const reading = isPostDetail(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const askActive = pathname === dualEntry.ask.path;
@@ -51,6 +59,23 @@ export function AppShell() {
         <Outlet />
         {searchModal}
       </>
+    );
+  }
+
+  /** 阅读模式：无侧栏，主区全宽居中，只专注正文 */
+  if (reading) {
+    return (
+      <div className="app-layout is-reading">
+        <MobileBar
+          reading
+          onToggleMenu={() => setMenuOpen((v) => !v)}
+          onOpenSearch={openSearch}
+        />
+        <main className="app-main app-main-reading">
+          <Outlet />
+        </main>
+        {searchModal}
+      </div>
     );
   }
 

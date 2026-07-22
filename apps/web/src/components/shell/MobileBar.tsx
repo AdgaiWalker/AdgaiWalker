@@ -1,16 +1,43 @@
 /**
- * MobileBar — 内页移动顶栏
+ * MobileBar — 内页移动顶栏；阅读模式仅保留返回首页 + 搜索
  */
 import { Link } from 'react-router-dom';
-import { Menu, Search } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { dualEntry } from '../../shared/dual-entry';
 
 type Props = {
   onToggleMenu: () => void;
   onOpenSearch: () => void;
+  /** 沉浸阅读：无侧栏菜单，减少干扰 */
+  reading?: boolean;
 };
 
-export function MobileBar({ onToggleMenu, onOpenSearch }: Props) {
+export function MobileBar({
+  onToggleMenu,
+  onOpenSearch,
+  reading = false,
+}: Props) {
+  if (reading) {
+    return (
+      <div className="mobile-bar surface-l1 is-reading-bar">
+        <span className="reading-bar-spacer" aria-hidden />
+        <Link
+          to="/"
+          style={{
+            fontWeight: 700,
+            color: 'var(--color-parchment)',
+            textDecoration: 'none',
+          }}
+        >
+          Walker
+        </Link>
+        <button type="button" className="btn-ghost" onClick={onOpenSearch}>
+          搜索
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-bar surface-l1">
       <button type="button" aria-label="菜单" onClick={onToggleMenu}>
@@ -18,7 +45,11 @@ export function MobileBar({ onToggleMenu, onOpenSearch }: Props) {
       </button>
       <Link
         to="/"
-        style={{ fontWeight: 700, color: 'var(--color-parchment)', textDecoration: 'none' }}
+        style={{
+          fontWeight: 700,
+          color: 'var(--color-parchment)',
+          textDecoration: 'none',
+        }}
       >
         Walker
       </Link>

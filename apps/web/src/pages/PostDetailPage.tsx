@@ -1,10 +1,10 @@
 /**
- * 文章详情 — 正文 + 目录 + 进度 + 同主题线邻篇 + related。
- * 依赖：content 查询、outline 纯函数、赞/反馈 hooks。
+ * 文章详情（页）— 沉浸阅读
+ * 职责：单栏居中正文；壳层隐藏侧栏（AppShell reading 模式）。
  */
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
 import { marked } from 'marked';
 import {
   getPostBySlug,
@@ -34,7 +34,7 @@ export function PostDetailPage() {
 
   if (!post) {
     return (
-      <div className="surface-l2" style={{ padding: '1.5rem' }}>
+      <div className="reading-focus">
         <h1 className="page-title">未找到</h1>
         <Link to={dualEntry.browse.path}>返回列表</Link>
       </div>
@@ -67,91 +67,58 @@ function PostDetailBody({
   const progress = useReadingProgress(true);
 
   const mins = estimateReadingMinutes(post.body);
-  const statusLabel = post.status ? STATUS_LABELS[post.status] ?? post.status : '';
-  const seriesLabel = post.series?.trim() || '';
+  const statusLabel = post.status
+    ? (STATUS_LABELS[post.status] ?? post.status)
+    : '';
 
   return (
-    <article className="article-shell">
+    <article className="reading-focus article-shell">
       <ReadingProgress ratio={progress} />
-      <p className="meta">
-        <Link
-          to={dualEntry.browse.path}
-          style={{ color: 'var(--color-parchment-dim)' }}
-        >
+
+      <p className="article-back">
+        <Link to={dualEntry.browse.path} className="article-back-link">
+          <ArrowLeft size={16} aria-hidden />
           {dualEntry.browse.title}
         </Link>
-        {' / '}
-        {post.slug}
       </p>
-      <h1>{post.title}</h1>
-      <p className="meta">
-        {formatDateLocale(parseIsoDate(post.date))} · {post.type}
-        {seriesLabel ? ` · ${seriesLabel}` : ''}
-        {statusLabel ? ` · ${statusLabel}` : ''}
-        {` · 约 ${mins} 分钟阅读`}
-        {post.tags.length ? ` · ${post.tags.slice(0, 4).join(' · ')}` : ''}
-      </p>
-      {post.summary ? (
-        <p
-          style={{
-            color: 'var(--color-parchment-dim)',
-            marginBottom: '1.25rem',
-          }}
-        >
-          {post.summary}
-        </p>
-      ) : null}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: toc.length ? 'minmax(0,1fr) 12rem' : '1fr',
-          gap: '1.25rem',
-          alignItems: 'start',
-        }}
-      >
-        <div className="surface-l2 article-body">
+      <header className="article-header">
+        <h1>{post.title}</h1>
+        <p className="meta article-meta">
+          {formatDateLocale(parseIsoDate(post.date))}
+          {` · 约 ${mins} 分钟`}
+          {statusLabel ? ` · ${statusLabel}` : ''}
+        </p>
+        {post.summary ? <p className="article-summary">{post.summary}</p> : null}
+      </header>
+
+      <div className={`article-layout${toc.length ? ' has-toc' : ''}`}>
+        {toc.length > 0 ? (
+          <aside className="article-toc-aside" aria-label="目录">
+            <ArticleToc items={toc} activeId={activeId} />
+          </aside>
+        ) : null}
+        <div className="article-body">
           <div
             className="prose-md"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </div>
-        {toc.length > 0 ? (
-          <div style={{ position: 'sticky', top: '4.5rem' }}>
-            <ArticleToc items={toc} activeId={activeId} />
-          </div>
-        ) : null}
       </div>
 
       {(neighbors.prev || neighbors.next) && (
-        <nav
-          className="surface-l2"
-          aria-label="同主题线上下篇"
-          style={{
-            marginTop: '1.25rem',
-            padding: '0.85rem 1.1rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '1rem',
-            flexWrap: 'wrap',
-          }}
-        >
+        <nav className="article-neighbors" aria-label="上下篇">
           {neighbors.prev ? (
             <Link
               to={`${dualEntry.browse.path}/${encodeURIComponent(neighbors.prev.slug)}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                maxWidth: '48%',
-              }}
+              className="article-neighbor"
             >
               <ChevronLeft size={16} aria-hidden />
               <span>
-                <span className="meta" style={{ display: 'block' }}>
-                  上一篇
+                <span className="meta">上一篇</span>
+                <span className="article-neighbor-title">
+                  {neighbors.prev.title}
                 </span>
-                {neighbors.prev.title}
               </span>
             </Link>
           ) : (
@@ -160,20 +127,13 @@ function PostDetailBody({
           {neighbors.next ? (
             <Link
               to={`${dualEntry.browse.path}/${encodeURIComponent(neighbors.next.slug)}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                maxWidth: '48%',
-                marginLeft: 'auto',
-                textAlign: 'right',
-              }}
+              className="article-neighbor is-next"
             >
               <span>
-                <span className="meta" style={{ display: 'block' }}>
-                  下一篇
+                <span className="meta">下一篇</span>
+                <span className="article-neighbor-title">
+                  {neighbors.next.title}
                 </span>
-                {neighbors.next.title}
               </span>
               <ChevronRight size={16} aria-hidden />
             </Link>
@@ -182,13 +142,9 @@ function PostDetailBody({
       )}
 
       {versions.length > 1 ? (
-        <section
-          className="surface-l2"
-          style={{ marginTop: '1rem', padding: '0.85rem 1.1rem' }}
-          aria-label="版本"
-        >
-          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>版本</h2>
-          <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+        <section className="article-footer-block" aria-label="版本">
+          <h2>版本</h2>
+          <ul>
             {versions.map((v) => (
               <li key={v.slug}>
                 {v.slug === post.slug ? (
@@ -211,24 +167,12 @@ function PostDetailBody({
       ) : null}
 
       {related.length > 0 ? (
-        <section
-          className="surface-l2"
-          style={{ marginTop: '1rem', padding: '0.85rem 1.1rem' }}
-          aria-label="相关文章"
-        >
-          <h2
-            style={{
-              margin: '0 0 0.5rem',
-              fontSize: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
+        <section className="article-footer-block" aria-label="相关">
+          <h2>
             <Link2 size={16} aria-hidden />
             相关
           </h2>
-          <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+          <ul>
             {related.map((r) => (
               <li key={r.slug}>
                 <Link

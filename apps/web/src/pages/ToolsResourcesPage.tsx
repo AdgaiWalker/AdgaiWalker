@@ -32,7 +32,7 @@ export function ToolsResourcesPage() {
           资源
         </h1>
         <p className="page-lead">
-          秋知实际在用的 AI 资源。
+          duola 实际在用的 AI 资源。
           <strong>以下群/服务/产品与本人无任何利益关系</strong>
           ，只是用户分享。卡住请先去{' '}
           <Link to={WEB_ROUTES.ask}>{dualEntry.ask.cta}</Link>。

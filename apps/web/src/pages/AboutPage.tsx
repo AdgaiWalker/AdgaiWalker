@@ -45,8 +45,8 @@ export function AboutPage() {
         <div className="about-hero-overlay" />
         <div className="about-hero-content">
           <img
-            src="/images/秋知（我的头像）.jpg"
-            alt="秋知"
+            src="/images/duola.jpg"
+            alt="duola"
             className="about-hero-avatar"
             width={96}
             height={96}
@@ -74,7 +74,7 @@ export function AboutPage() {
       <section className="panel-glass about-section">
         <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>关于我</h2>
         <p style={{ lineHeight: 1.7, color: 'var(--color-parchment-dim)' }}>
-          Walker（秋知）的个人空间。沉淀思考、工具、点子与学习路径，并用「需求可见 →
+          Walker（duola）的个人空间。沉淀思考、工具、点子与学习路径，并用「需求可见 →
           选题生产 → 结果检验」推进真实问题。
         </p>
         <p style={{ lineHeight: 1.7, color: 'var(--color-parchment-dim)' }}>

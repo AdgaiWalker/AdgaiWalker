@@ -15,25 +15,8 @@ export function ReadingProgress({ ratio }: ReadingProgressProps) {
       aria-valuemax={100}
       aria-valuenow={pct}
       aria-label="阅读进度"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 3,
-        zIndex: 50,
-        background: 'transparent',
-        pointerEvents: 'none',
-      }}
     >
-      <div
-        style={{
-          height: '100%',
-          width: `${pct}%`,
-          background: 'var(--color-accent, #2d6a4f)',
-          transition: 'width 80ms linear',
-        }}
-      />
+      <div className="reading-progress-bar" style={{ width: `${pct}%` }} />
     </div>
   );
 }
