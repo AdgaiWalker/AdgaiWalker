@@ -80,6 +80,11 @@ export const CONTENT_SPACES: readonly ContentSpace[] = [
   },
 ] as const;
 
+/** 逛页类型 chip：不含 tool（资源在 /tools/resources） */
+export const BROWSE_SPACES: readonly ContentSpace[] = CONTENT_SPACES.filter(
+  (s) => s.id !== 'tool',
+);
+
 export function spaceForType(type: string): ContentSpace {
   return (
     CONTENT_SPACES.find((s) => s.types?.includes(type)) ?? CONTENT_SPACES[0]

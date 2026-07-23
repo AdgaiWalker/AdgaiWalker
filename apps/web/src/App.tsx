@@ -2,7 +2,7 @@
  * 公开站路由表
  * 职责：挂载页；路径一律来自 WEB_ROUTES / dual-entry。
  */
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { HomePage } from './pages/HomePage';
 import { PostsPage } from './pages/PostsPage';
@@ -15,11 +15,11 @@ import { ProjectsPage } from './pages/ProjectsPage';
 import { FerryPage } from './pages/FerryPage';
 import { LearnPage } from './pages/LearnPage';
 import { LearnGuideRedirectPage } from './pages/LearnGuideRedirectPage';
-import { ContentUniversePage } from './pages/ContentUniversePage';
 import { AboutPage } from './pages/AboutPage';
 import { SupportPage } from './pages/SupportPage';
 import { AccountLoginShellPage } from './pages/AccountLoginShellPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { dualEntry } from './shared/dual-entry';
 import { WEB_ROUTES } from './shared/routes';
 
 function strip(path: string): string {
@@ -52,7 +52,11 @@ export function App() {
             element={<LearnGuideRedirectPage />}
           />
           <Route path={`${learnBase}/:slug`} element={<LearnGuideRedirectPage />} />
-          <Route path={strip(WEB_ROUTES.content)} element={<ContentUniversePage />} />
+          {/* 旧「内容宇宙」→ 逛；总览只保留 dualEntry.browse */}
+          <Route
+            path={strip(WEB_ROUTES.content)}
+            element={<Navigate to={dualEntry.browse.path} replace />}
+          />
           <Route path={strip(WEB_ROUTES.ask)} element={<ToolsPage />} />
           <Route
             path={strip(WEB_ROUTES.toolsResources)}

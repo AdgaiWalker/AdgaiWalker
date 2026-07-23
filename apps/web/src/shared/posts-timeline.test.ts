@@ -4,6 +4,7 @@ import {
   groupPostsByYear,
   listFrequentTags,
   tagFilterKey,
+  typeFilterKey,
   type TimelineItem,
 } from './posts-timeline';
 
@@ -52,6 +53,11 @@ describe('filterTimelineItems', () => {
     expect(
       filterTimelineItems(sample, tagFilterKey('AI')).map((i) => i.slug),
     ).toEqual(['a', 'b']);
+  });
+  it('类型筛选', () => {
+    expect(
+      filterTimelineItems(sample, typeFilterKey('idea')).map((i) => i.slug),
+    ).toEqual(['c']);
   });
 });
 

@@ -25,6 +25,8 @@ export type IntakePanelProps = {
   browsePath: string;
   browseLabel: string;
   resourcesHref?: string;
+  /** 诚实说明：公网/本地服务边界（非错误） */
+  serviceNote?: string | null;
   onBodyChange: (body: string) => void;
   onPickExample: (example: string) => void;
   onSubmit: () => void;
@@ -45,6 +47,7 @@ export function IntakePanel({
   browsePath,
   browseLabel,
   resourcesHref = '/tools/resources',
+  serviceNote = null,
   onBodyChange,
   onPickExample,
   onSubmit,
@@ -55,6 +58,12 @@ export function IntakePanel({
       <p className="page-lead">
         {lead} 资源见 <Link to={resourcesHref}>资源列表</Link>。
       </p>
+
+      {serviceNote ? (
+        <p className="instrument-service-note meta" role="note">
+          {serviceNote}
+        </p>
+      ) : null}
 
       <div className="surface-quiet instrument-rules">
         <div

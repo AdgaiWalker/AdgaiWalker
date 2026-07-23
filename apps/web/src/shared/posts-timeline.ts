@@ -1,6 +1,6 @@
 /**
  * 逛时间线规则（纯函数）
- * 职责：主题线 / 标签筛选、按年分组、高频标签统计。
+ * 职责：类型 / 标签筛选、按年分组、高频标签统计。
  *
  * 依赖：format.parseIsoDate
  * 调用：PostsPage
@@ -19,14 +19,21 @@ export type TimelineItem = {
   tags: string[];
 };
 
-/** 筛选键：全部 | 无主题线 | 主题线名 | 标签前缀 */
+/** 筛选键：全部 | 类型前缀 | 标签前缀 |（兼容）主题线名 */
 export type TimelineFilterKey = 'all' | 'other' | string;
 
-/** 标签筛选键前缀（配置层常量，禁止页内散落 magic 字符串） */
+/** 标签筛选键前缀 */
 export const TAG_FILTER_PREFIX = 'tag:';
+
+/** 内容类型筛选键前缀 */
+export const TYPE_FILTER_PREFIX = 'type:';
 
 export function tagFilterKey(tag: string): string {
   return `${TAG_FILTER_PREFIX}${tag}`;
+}
+
+export function typeFilterKey(type: string): string {
+  return `${TYPE_FILTER_PREFIX}${type}`;
 }
 
 export function filterTimelineItems<T extends TimelineItem>(
@@ -35,6 +42,10 @@ export function filterTimelineItems<T extends TimelineItem>(
 ): T[] {
   if (key === 'all') return [...items];
   if (key === 'other') return items.filter((i) => !i.series?.trim());
+  if (key.startsWith(TYPE_FILTER_PREFIX)) {
+    const type = key.slice(TYPE_FILTER_PREFIX.length);
+    return items.filter((i) => i.type === type);
+  }
   if (key.startsWith(TAG_FILTER_PREFIX)) {
     const tag = key.slice(TAG_FILTER_PREFIX.length);
     return items.filter((i) => i.tags.includes(tag));

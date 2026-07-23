@@ -36,17 +36,8 @@ export interface ContentItem {
 const raw = data as { items?: ContentItem[] };
 const items: ContentItem[] = raw.items ?? [];
 
-/** 逛列表：笔记/点子/项目/学习（不含 tool 资源型） */
+/** 逛：可读证据类型（不含 tool；资源走 /tools/resources） */
 const BROWSE_TYPES = new Set(['knowledge', 'idea', 'project', 'learn']);
-
-/** 内容宇宙：公开内容空间（含 tool） */
-const UNIVERSE_TYPES = new Set([
-  'knowledge',
-  'idea',
-  'project',
-  'learn',
-  'tool',
-]);
 
 function asSeriesItems(
   list: readonly ContentItem[],
@@ -58,14 +49,22 @@ export function getAllItems(): ContentItem[] {
   return items;
 }
 
-/** 逛（/posts）用：浏览型笔记 */
-export function getPublishedPosts(): ContentItem[] {
+/**
+ * 逛列表唯一数据门面。
+ * 公开总览只有 dualEntry.browse（/posts）；tool 不进此列。
+ */
+export function getBrowseItems(): ContentItem[] {
   return items.filter((d) => BROWSE_TYPES.has(d.type));
 }
 
-/** 内容宇宙用：分型空间全部公开项 */
+/** @deprecated 用 getBrowseItems；保留别名避免零星调用方漏改 */
+export function getPublishedPosts(): ContentItem[] {
+  return getBrowseItems();
+}
+
+/** @deprecated 内容宇宙已并入逛；等同 getBrowseItems（不含 tool） */
 export function getPublishedContentItems(): ContentItem[] {
-  return items.filter((d) => UNIVERSE_TYPES.has(d.type));
+  return getBrowseItems();
 }
 
 export function getByType(type: string): ContentItem[] {

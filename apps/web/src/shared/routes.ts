@@ -6,6 +6,7 @@ import { dualEntry } from './dual-entry';
 export const WEB_ROUTES = {
   home: '/',
   login: '/login',
+  /** 兼容旧链；App 内 redirect → dualEntry.browse */
   content: '/content',
   about: '/about',
   support: '/support',

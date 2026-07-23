@@ -10,10 +10,10 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   Bookmark,
-  FolderKanban,
-  Lightbulb,
+  Heart,
   MessageCircleQuestion,
   PenLine,
+  Rocket,
 } from 'lucide-react';
 import { getRecentPosts, getByType } from '../content';
 import { GreetingCard } from '../components/GreetingCard';
@@ -57,7 +57,8 @@ export function HomePage() {
           style={{ animationDelay: '0.02s' }}
         >
           <p style={{ margin: 0 }}>
-            公开笔记，也是把卡点变成可检验交付的小机器。
+            {dualEntry.ask.label}拿下一步 · {dualEntry.browse.label}
+            {dualEntry.browse.title}。同一过程，两个入口。
           </p>
           <div className="home-dual-cta">
             <Link to={dualEntry.ask.path} className="btn-primary">
@@ -70,7 +71,7 @@ export function HomePage() {
             </Link>
           </div>
           <p className="home-canvas-hint meta">
-            拖拽卡片整理画布 · 按住 Ctrl（Mac 为 ⌘）滚轮缩放 · 离开再进恢复默认
+            拖拽卡片 · Ctrl/⌘+滚轮缩放 · 离开再进恢复默认
           </p>
         </div>
 
@@ -99,9 +100,8 @@ export function HomePage() {
                   <ArrowRight size={12} aria-hidden />
                 </Link>
               ) : null}
-              {/* 隐形导航：音符跳动特效 */}
               <div className="directory-ghost-nav" aria-label="快捷">
-                <Link to={WEB_ROUTES.content}>内容</Link>
+                <Link to={dualEntry.browse.path}>{dualEntry.browse.label}</Link>
                 <Link to={WEB_ROUTES.about}>关于</Link>
               </div>
             </div>
@@ -110,22 +110,23 @@ export function HomePage() {
               className="panel-glass pop-in draggable-card home-panel"
               style={{ animationDelay: '0.12s' }}
             >
+              {/* 与侧栏一致：不重复类型总览，只放正交深页 */}
               <div className="quick-grid">
                 <Link to={WEB_ROUTES.toolsResources} className="quick-link">
                   <Bookmark size={15} aria-hidden />
                   <span>资源</span>
                 </Link>
-                <Link to={WEB_ROUTES.ideas} className="quick-link">
-                  <Lightbulb size={15} aria-hidden />
-                  <span>点子</span>
+                <Link to={WEB_ROUTES.ferry} className="quick-link">
+                  <Rocket size={15} aria-hidden />
+                  <span>Ferry</span>
                 </Link>
-                <Link to={WEB_ROUTES.projects} className="quick-link">
-                  <FolderKanban size={15} aria-hidden />
-                  <span>项目</span>
-                </Link>
-                <Link to={WEB_ROUTES.learn} className="quick-link">
+                <Link to={WEB_ROUTES.about} className="quick-link">
                   <PenLine size={15} aria-hidden />
-                  <span>学习</span>
+                  <span>关于</span>
+                </Link>
+                <Link to={WEB_ROUTES.support} className="quick-link">
+                  <Heart size={15} aria-hidden />
+                  <span>支持</span>
                 </Link>
               </div>
             </div>
@@ -136,7 +137,7 @@ export function HomePage() {
             >
               <div className="recent-header">
                 <PenLine size={13} color="var(--color-brand)" aria-hidden />
-                <span className="recent-label">最近文章</span>
+                <span className="recent-label">最近{dualEntry.browse.title}</span>
                 <Link to={dualEntry.browse.path} className="recent-more">
                   全部
                   <ArrowRight size={12} aria-hidden style={{ display: 'inline' }} />

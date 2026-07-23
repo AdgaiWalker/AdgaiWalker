@@ -21,14 +21,25 @@ export async function fetchJson<T>(
   url: string,
   init?: RequestInit,
 ): Promise<JsonRequestResult<T>> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers as Record<string, string> | undefined),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      credentials: 'include',
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers as Record<string, string> | undefined),
+      },
+    });
+  } catch {
+    /* 断网 / 代理挂 / 无 API 主机 */
+    return {
+      ok: false,
+      status: 0,
+      code: 'network-error',
+      message: '无法连接服务',
+    };
+  }
 
   let data: unknown = null;
   try {
@@ -39,10 +50,16 @@ export async function fetchJson<T>(
 
   if (!res.ok) {
     const body = data as { code?: string; message?: string } | null;
+    const fallbackCode =
+      res.status === 404
+        ? 'api-not-found'
+        : res.status === 502 || res.status === 503 || res.status === 504
+          ? 'api-unavailable'
+          : res.statusText || 'request-failed';
     return {
       ok: false,
       status: res.status,
-      code: body?.code ?? res.statusText,
+      code: body?.code ?? fallbackCode,
       message: body?.message,
     };
   }

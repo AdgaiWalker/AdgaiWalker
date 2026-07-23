@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation, matchPath } from 'react-router-dom';
+import type { BrowseReturnState } from './ItemList';
 import { useContentSearch } from '../hooks/useContentSearch';
 import { useSearchHotkey } from '../hooks/useSearchHotkey';
 import { applySiteTheme } from '../lib/theme';
@@ -19,10 +20,19 @@ function isPostDetail(pathname: string): boolean {
   );
 }
 
+function browseHrefFromState(state: unknown): string {
+  const s = state as BrowseReturnState | null;
+  const q = s?.browseSearch?.trim();
+  if (q) return `${dualEntry.browse.path}?${q}`;
+  return dualEntry.browse.path;
+}
+
 export function AppShell() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const isHome = pathname === '/';
   const reading = isPostDetail(pathname);
+  const browseHref = browseHrefFromState(location.state);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const askActive = pathname === dualEntry.ask.path;
@@ -62,12 +72,13 @@ export function AppShell() {
     );
   }
 
-  /** 阅读模式：无侧栏，主区全宽居中，只专注正文 */
+  /** 阅读模式：无侧栏，全宽舞台，正文光学居中 */
   if (reading) {
     return (
       <div className="app-layout is-reading">
         <MobileBar
           reading
+          browseHref={browseHref}
           onToggleMenu={() => setMenuOpen((v) => !v)}
           onOpenSearch={openSearch}
         />
@@ -90,7 +101,7 @@ export function AppShell() {
         askActive={askActive}
         onOpenSearch={openSearch}
       />
-      <main className="app-main">
+      <main className="app-main app-main-browse">
         <Outlet />
       </main>
       {searchModal}

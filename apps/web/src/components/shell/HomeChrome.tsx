@@ -1,10 +1,9 @@
 /**
- * HomeChrome — 首页顶栏（卡 CTA + 搜索 + 登录）
+ * HomeChrome — 首页顶栏：卡 + 逛 + 搜索（双入口话术一致）
  */
 import { Link } from 'react-router-dom';
-import { MessageCircleQuestion, Search } from 'lucide-react';
+import { MessageCircleQuestion, PenLine, Search } from 'lucide-react';
 import { dualEntry } from '../../shared/dual-entry';
-import { WEB_ROUTES } from '../../shared/routes';
 
 type Props = {
   onOpenSearch: () => void;
@@ -17,13 +16,14 @@ export function HomeChrome({ onOpenSearch }: Props) {
         <MessageCircleQuestion size={15} />
         {dualEntry.ask.cta}
       </Link>
+      <Link to={dualEntry.browse.path} className="btn-secondary">
+        <PenLine size={14} />
+        {dualEntry.browse.shortCta}
+      </Link>
       <button type="button" className="btn-ghost" onClick={onOpenSearch}>
         <Search size={14} />
         搜索
       </button>
-      <Link to={WEB_ROUTES.login} className="btn-ghost" title="账号登录尚未开放">
-        账号
-      </Link>
     </div>
   );
 }

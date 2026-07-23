@@ -4,9 +4,25 @@
 import { ApiError } from './http';
 import { explainErrorCode } from '../shared/rules-ui';
 
+function looksLikeNetworkMessage(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return (
+    m.includes('failed to fetch') ||
+    m.includes('networkerror') ||
+    m.includes('load failed') ||
+    m.includes('network request failed')
+  );
+}
+
 export function formatApiError(e: unknown): string {
   if (e instanceof ApiError) {
     return explainErrorCode(e.code, e.message);
   }
-  return e instanceof Error ? e.message : String(e);
+  if (e instanceof Error) {
+    if (looksLikeNetworkMessage(e.message)) {
+      return explainErrorCode('network-error');
+    }
+    return e.message;
+  }
+  return String(e);
 }

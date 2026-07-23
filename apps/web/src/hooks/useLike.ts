@@ -19,10 +19,12 @@ export function useLike(path: string) {
       .then((d) => {
         if (!cancelled) setCount(d.count);
       })
-      .catch(() => {
+      .catch((e: unknown) => {
         if (!cancelled) {
           setCount(null);
-          setError('暂无法读取点赞');
+          /* 读失败不刷红字吓人：赞依赖 API；无服务时静默 */
+          void e;
+          setError(null);
         }
       });
     return () => {

@@ -8,8 +8,20 @@ describe('formatApiError', () => {
     expect(msg).toMatch(/游客|配额|用完/);
   });
 
+  it('network-error 给诚实人话', () => {
+    expect(formatApiError(new ApiError('network-error'))).toMatch(
+      /连不上|API|逛/,
+    );
+  });
+
+  it('Failed to fetch 映射为服务不可用', () => {
+    expect(formatApiError(new Error('Failed to fetch'))).toMatch(
+      /连不上|API|逛/,
+    );
+  });
+
   it('普通 Error 用 message', () => {
-    expect(formatApiError(new Error('网络断了'))).toBe('网络断了');
+    expect(formatApiError(new Error('自定义错误'))).toBe('自定义错误');
   });
 
   it('未知值 String()', () => {

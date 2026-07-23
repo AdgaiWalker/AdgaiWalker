@@ -28,11 +28,12 @@ describe('useLike', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('加载失败时 error 提示且 count 保持 null', async () => {
+  it('加载失败时静默：count 保持 null、不刷 error', async () => {
     getLikeCount.mockRejectedValue(new Error('down'));
     const { result } = renderHook(() => useLike('/posts/a'));
-    await waitFor(() => expect(result.current.error).toBe('暂无法读取点赞'));
+    await waitFor(() => expect(getLikeCount).toHaveBeenCalled());
     expect(result.current.count).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 
   it('onLike 成功更新 count', async () => {

@@ -13,6 +13,9 @@ const EXAMPLES = [
   '周报总是拖到最后一刻',
 ] as const;
 
+const SERVICE_NOTE =
+  '本页需要处理服务。本地：终端跑 pnpm dev:api。公网目前多半只有网站、没有真·卡写入——失败时会说明原因，不会假装成功。';
+
 export function ToolsPage() {
   const intake = useIntake();
 
@@ -40,6 +43,7 @@ export function ToolsPage() {
       browsePath={dualEntry.browse.path}
       browseLabel={dualEntry.browse.label}
       resourcesHref={WEB_ROUTES.toolsResources}
+      serviceNote={SERVICE_NOTE}
       onBodyChange={intake.onBodyChange}
       onPickExample={intake.onPickExample}
       onSubmit={intake.onSubmit}

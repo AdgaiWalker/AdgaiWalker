@@ -1,35 +1,35 @@
 /**
- * MobileBar — 内页移动顶栏；阅读模式仅保留返回首页 + 搜索
+ * MobileBar — 内页移动顶栏
+ * 阅读模式：← 证据 回逛（与桌面 chrome 同路径语义）
  */
 import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { ArrowLeft, Menu } from 'lucide-react';
 import { dualEntry } from '../../shared/dual-entry';
 
 type Props = {
   onToggleMenu: () => void;
   onOpenSearch: () => void;
-  /** 沉浸阅读：无侧栏菜单，减少干扰 */
   reading?: boolean;
+  /** 阅读页返回逛的完整 href（可含 ?type=） */
+  browseHref?: string;
 };
 
 export function MobileBar({
   onToggleMenu,
   onOpenSearch,
   reading = false,
+  browseHref = dualEntry.browse.path,
 }: Props) {
   if (reading) {
     return (
       <div className="mobile-bar surface-l1 is-reading-bar">
-        <span className="reading-bar-spacer" aria-hidden />
         <Link
-          to="/"
-          style={{
-            fontWeight: 700,
-            color: 'var(--color-parchment)',
-            textDecoration: 'none',
-          }}
+          to={browseHref}
+          className="reading-mobile-back"
+          aria-label={`返回${dualEntry.browse.title}`}
         >
-          Walker
+          <ArrowLeft size={18} aria-hidden />
+          <span>{dualEntry.browse.title}</span>
         </Link>
         <button type="button" className="btn-ghost" onClick={onOpenSearch}>
           搜索

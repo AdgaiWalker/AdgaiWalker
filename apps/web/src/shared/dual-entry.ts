@@ -16,8 +16,8 @@ export const dualEntry = {
     label: '逛',
     cta: '去逛证据',
     shortCta: '逛',
-    hint: '读笔记',
-    title: '文章',
+    hint: '读证据',
+    title: '证据',
   },
 } as const;
 
