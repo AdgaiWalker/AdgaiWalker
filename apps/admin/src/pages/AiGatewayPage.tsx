@@ -32,28 +32,36 @@ export function AiGatewayPage() {
 
   return (
     <div>
-      <h1>
-        <Server size={22} style={{ verticalAlign: -4, marginRight: 8 }} aria-hidden />
-        系统
-      </h1>
-      <p className="muted">
-        旧站 AI Gateway 全配面板不迁。现网：AI 由环境变量{' '}
-        <code>AI_ENABLED</code> 控制；关时 intake 用规则 nextStep。
-      </p>
+      <header className="page-head">
+        <h1>
+          <Server size={22} aria-hidden />
+          系统
+        </h1>
+        <p className="page-lead">
+          只读健康态。AI 由 <code>AI_ENABLED</code> 控制；关时 intake 用规则
+          nextStep。旧 Gateway 全配面板不迁。
+        </p>
+      </header>
       {err ? <p className="error">{err}</p> : null}
       <div className="panel">
         <h3>
-          <Activity size={16} style={{ verticalAlign: -2, marginRight: 6 }} aria-hidden />
+          <Activity size={16} aria-hidden />
           健康态
         </h3>
         {!health ? (
           <p className="muted">加载中…</p>
         ) : (
-          <ul className="muted" style={{ lineHeight: 1.8 }}>
-            <li>API：{health.ok ? 'ok' : '异常'}</li>
-            <li>数据库：{health.db ? '已连接' : '未连接 / 不可写'}</li>
-            <li>AI：{health.aiEnabled ? '已启用' : '关闭（规则路径）'}</li>
-          </ul>
+          <div className="health-pills">
+            <span className={`health-pill${health.ok ? ' is-ok' : ' is-bad'}`}>
+              API {health.ok ? 'ok' : '异常'}
+            </span>
+            <span className={`health-pill${health.db ? ' is-ok' : ' is-bad'}`}>
+              库 {health.db ? '已连接' : '未连接'}
+            </span>
+            <span className="health-pill">
+              AI {health.aiEnabled ? '已启用' : '关闭 · 规则路径'}
+            </span>
+          </div>
         )}
         <button type="button" className="secondary" onClick={() => void load()}>
           刷新

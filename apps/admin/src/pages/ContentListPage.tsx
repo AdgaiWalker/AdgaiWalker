@@ -24,15 +24,18 @@ export function ContentListPage() {
 
   return (
     <div>
-      <h1 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <FileText size={22} aria-hidden />
-        内容
-      </h1>
-      <div className="panel">
-        <p className="muted">
-          真相源：仓库 <code>content/log</code>。保存后请本地执行{' '}
-          <code>pnpm content:gen</code>（或重新 build）刷新公开站。
+      <header className="page-head">
+        <h1>
+          <FileText size={22} aria-hidden />
+          内容
+        </h1>
+        <p className="page-lead">
+          真相源 <code>content/log</code>。保存后本地{' '}
+          <code>pnpm content:gen</code> / <code>content:publish --push</code>。
         </p>
+      </header>
+      <div className="panel">
+        <p className="muted">Admin 写盘仅本机，不会自动上公网。</p>
         {err ? <p className="error">{err}</p> : null}
         <button type="button" className="secondary" onClick={() => void load()}>
           刷新

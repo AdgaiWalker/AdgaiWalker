@@ -1,11 +1,6 @@
 /**
- * 今日（页）
- * 职责：下一动作编排；规则在 pickNextActions，路径在 ADMIN_ROUTES。
- *
- * 依赖：admin-api 门面、@walker/shared 规则、ADMIN_ROUTES 配置
- * 调用：分路加载过程列表（互不拖死）
- * 触发：路由 /
- * 实现：快照 + 动作列表
+ * 今日（页）— 下一动作编排
+ * 职责：池面快照 + pickNextActions；路径走 ADMIN_ROUTES。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -14,6 +9,7 @@ import {
   CircleCheck,
   ClipboardList,
   Inbox,
+  RefreshCw,
   Sprout,
 } from 'lucide-react';
 import {
@@ -38,7 +34,6 @@ const KIND_ICON = {
   'deliver-execution': ClipboardList,
 } as const;
 
-/** 规则 kind → 管理路径（展示层映射，不进 shared） */
 const KIND_HREF: Record<NextActionKind, string> = {
   'pool-clue': ADMIN_ROUTES.clues,
   'promote-seed': ADMIN_ROUTES.seeds,
@@ -74,7 +69,6 @@ export function TodayPage() {
       if (results[3].status === 'fulfilled') setMetrics(results[3].value);
       if (results[4].status === 'fulfilled') setHealth(results[4].value);
 
-      // 过程列表失败才抛；metrics/health 软失败不挡今日动作
       const processReject = [results[0], results[1], results[2]].find(
         (r) => r.status === 'rejected',
       );
@@ -124,41 +118,64 @@ export function TodayPage() {
 
   return (
     <div>
-      <h1>今日</h1>
-      <p className="muted">
-        只读过程列表算下一动作，不写第二份业务事实。
-      </p>
+      <header className="page-head">
+        <h1>今日</h1>
+        <p className="page-lead">
+          只读过程列表算下一动作，不写第二份业务事实。
+        </p>
+      </header>
       {err ? <p className="error">{err}</p> : null}
 
-      <div className="panel">
+      <section className="panel">
         <h3>系统</h3>
-        {health ? (
-          <p className="muted">
-            API {health.ok ? '可用' : '异常'} · 库{' '}
-            {health.db ? '已连' : '未连'} · AI{' '}
-            {health.aiEnabled ? '开' : '关（规则 nextStep）'}
-          </p>
-        ) : (
-          <p className="muted">加载健康态…</p>
-        )}
+        <div className="health-pills">
+          <span
+            className={`health-pill${health?.ok ? ' is-ok' : health ? ' is-bad' : ''}`}
+          >
+            API {health ? (health.ok ? '可用' : '异常') : '…'}
+          </span>
+          <span
+            className={`health-pill${health?.db ? ' is-ok' : health ? ' is-bad' : ''}`}
+          >
+            库 {health ? (health.db ? '已连' : '未连') : '…'}
+          </span>
+          <span className="health-pill">
+            AI {health ? (health.aiEnabled ? '开' : '关 · 规则 nextStep') : '…'}
+          </span>
+        </div>
         {metrics ? (
           <p className="muted">
-            可计数闭环 {metrics.countableLoops} · 有用 {metrics.yesCount} · 线索{' '}
+            闭环 {metrics.countableLoops} · 有用 {metrics.yesCount} · 线索{' '}
             {metrics.clues} · 题苗 {metrics.seeds} · 执行 {metrics.executions}
           </p>
         ) : null}
         <button type="button" className="secondary" onClick={() => void load()}>
+          <RefreshCw size={14} aria-hidden />
           刷新
         </button>
-      </div>
+      </section>
 
-      <div className="panel">
+      <section className="panel">
         <h3>池面快照</h3>
-        <p className="muted">
-          候选 {counts.candidate} · 已入池 {counts.inPool} · 待主选苗{' '}
-          {counts.openSeed} · 未结执行 {counts.openEx}
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+        <div className="stat-row">
+          <div className="stat-chip">
+            <span className="stat-chip-label">候选</span>
+            <span className="stat-chip-value">{counts.candidate}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">已入池</span>
+            <span className="stat-chip-value">{counts.inPool}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">待主选</span>
+            <span className="stat-chip-value">{counts.openSeed}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">未结执行</span>
+            <span className="stat-chip-value">{counts.openEx}</span>
+          </div>
+        </div>
+        <div className="quick-links">
           <Link className="secondary" to={ADMIN_ROUTES.clues}>
             线索
           </Link>
@@ -169,23 +186,25 @@ export function TodayPage() {
             执行
           </Link>
           <Link className="secondary" to={ADMIN_ROUTES.metrics}>
-            指标
+            数
           </Link>
         </div>
-      </div>
+      </section>
 
-      <div className="panel">
+      <section className="panel">
         <h3>下一动作</h3>
         {actions.length === 0 ? (
-          <p className="muted">当前无待办。可手动入库线索或等待访客卡口。</p>
+          <p className="empty-state">
+            当前无待办。可手动入库线索或等待访客卡口。
+          </p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className="action-list">
             {actions.map((a) => (
               <NextActionRow key={`${a.kind}-${a.id}`} action={a} />
             ))}
           </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
@@ -194,33 +213,15 @@ function NextActionRow({ action }: { action: NextAction }) {
   const Icon = KIND_ICON[action.kind];
   const href = KIND_HREF[action.kind];
   return (
-    <li
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
-        padding: '10px 0',
-        borderBottom: '1px solid var(--border)',
-      }}
-    >
-      <Icon size={18} style={{ marginTop: 2, flexShrink: 0 }} aria-hidden />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600 }}>{action.label}</div>
-        <div className="muted" style={{ marginTop: 4 }}>
-          {action.summary}
-        </div>
+    <li className="action-item">
+      <Icon size={18} className="action-item-icon" aria-hidden />
+      <div className="action-item-body">
+        <div className="action-item-title">{action.label}</div>
+        <div className="action-item-summary">{action.summary}</div>
       </div>
-      <Link
-        to={href}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          flexShrink: 0,
-        }}
-      >
+      <Link to={href} className="action-item-go">
         去处理
-        <ArrowRight size={14} />
+        <ArrowRight size={14} aria-hidden />
       </Link>
     </li>
   );

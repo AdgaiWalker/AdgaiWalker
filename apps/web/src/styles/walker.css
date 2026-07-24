@@ -4,25 +4,25 @@
 body.theme-dianzi,
 html.theme-dianzi,
 :root {
-  --color-brand: #6e5bff;
-  --color-brand-glow: rgba(110, 91, 255, 0.12);
-  --color-brand-secondary: #8ea7ff;
+  --color-brand: #3b82f6;
+  --color-brand-glow: rgba(59, 130, 246, 0.14);
+  --color-brand-secondary: #60a5fa;
   --color-parchment: #111111;
-  --color-parchment-dim: #6b7280;
+  --color-parchment-dim: #5b6b7c;
   --color-card: #ffffff;
-  --color-border: rgba(0, 0, 0, 0.06);
-  --color-bg: #f7f7f5;
+  --color-border: rgba(40, 80, 140, 0.1);
+  --color-bg: #e8f0fb;
   --color-danger: #c2410c;
   --color-danger-bg: color-mix(in srgb, #c2410c 10%, var(--color-card));
   --color-danger-border: color-mix(in srgb, #c2410c 28%, transparent);
-  --orb-color-1: rgba(110, 91, 255, 0.12);
-  --orb-color-2: rgba(142, 167, 255, 0.1);
-  --orb-color-3: rgba(247, 247, 245, 0.5);
-  --orb-color-4: rgba(110, 91, 255, 0.06);
+  --orb-color-1: rgba(59, 130, 246, 0.2);
+  --orb-color-2: rgba(96, 165, 250, 0.16);
+  --orb-color-3: rgba(232, 240, 251, 0.6);
+  --orb-color-4: rgba(147, 197, 253, 0.18);
   --color-inner-bg: rgba(255, 255, 255, 0.6);
   --color-inner-border: rgba(0, 0, 0, 0.04);
-  --color-nav-bg: rgba(247, 247, 245, 0.72);
-  --color-nav-border: rgba(0, 0, 0, 0.06);
+  --color-nav-bg: rgba(232, 240, 251, 0.78);
+  --color-nav-border: rgba(40, 80, 140, 0.1);
   --font-heading: "Averia Gruesa Libre", "Noto Serif SC", Georgia, serif;
   --font-body: "Outfit", "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;

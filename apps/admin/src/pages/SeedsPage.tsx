@@ -24,7 +24,10 @@ export function SeedsPage() {
 
   return (
     <div>
-      <h1>题苗</h1>
+      <header className="page-head">
+        <h1>题苗</h1>
+        <p className="page-lead">新建题苗 · 挂主线索 · 推进执行。</p>
+      </header>
       <div className="panel">
         <input
           placeholder="题苗标题"

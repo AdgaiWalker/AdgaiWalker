@@ -31,10 +31,12 @@ export function ExecutionsPage() {
 
   return (
     <div>
-      <h1>执行 / 检验</h1>
-      <p className="muted">
-        待检验 {openCount} · 共 {list.length}
-      </p>
+      <header className="page-head">
+        <h1>执行 / 检验</h1>
+        <p className="page-lead">
+          待检验 {openCount} · 共 {list.length}
+        </p>
+      </header>
       {err ? <p className="error">{err}</p> : null}
       {msg ? <p className="muted">{msg}</p> : null}
       <div className="panel">

@@ -31,14 +31,31 @@ export function MetricsPage() {
 
   return (
     <div>
-      <h1>指标 / 冷热</h1>
+      <header className="page-head">
+        <h1>数</h1>
+        <p className="page-lead">过程漏斗与冷热分桶，只读事实。</p>
+      </header>
       <div className="panel">
-        <p>
-          线索 {m.clues} · 题苗 {m.seeds} · 执行 {m.executions}
-        </p>
-        <p>
-          可计数闭环 {m.countableLoops} · 有用 {m.yesCount} · 外部闭环{' '}
-          {m.externalLoopCount}
+        <div className="stat-row">
+          <div className="stat-chip">
+            <span className="stat-chip-label">线索</span>
+            <span className="stat-chip-value">{m.clues}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">题苗</span>
+            <span className="stat-chip-value">{m.seeds}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">执行</span>
+            <span className="stat-chip-value">{m.executions}</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-label">闭环</span>
+            <span className="stat-chip-value">{m.countableLoops}</span>
+          </div>
+        </div>
+        <p className="muted">
+          有用 {m.yesCount} · 外部闭环 {m.externalLoopCount}
         </p>
       </div>
 

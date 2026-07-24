@@ -28,7 +28,10 @@ export function CluesPage() {
 
   return (
     <div>
-      <h1>线索</h1>
+      <header className="page-head">
+        <h1>线索</h1>
+        <p className="page-lead">热记入库 · 入池 / 丢弃。过程入口。</p>
+      </header>
       <div className="panel">
         <h3>热记 / 手动入库</h3>
         <label htmlFor="clue-source">来源（A11）</label>
