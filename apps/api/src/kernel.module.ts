@@ -74,6 +74,8 @@ import { WORK_EXPORT_SERVICE, WorkExportService } from './workflow/export.servic
 import { ExportController } from './workflow/export.controller';
 import { WEBSITE_DEPLOYMENT_VERIFIER } from './ports/website-deployment-verifier.port';
 import { HttpWebsiteDeploymentVerifier } from './adapters/http-website-deployment-verifier';
+import { WECHAT_DRAFT_SESSION } from './ports/wechat-draft-session.port';
+import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-draft-session';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -139,6 +141,7 @@ import { HttpWebsiteDeploymentVerifier } from './adapters/http-website-deploymen
     },
     { provide: PUBLICATION_REPOSITORY, useClass: PrismaPublicationRepository },
     { provide: WEBSITE_DEPLOYMENT_VERIFIER, useClass: HttpWebsiteDeploymentVerifier },
+    { provide: WECHAT_DRAFT_SESSION, useClass: UnavailableWechatDraftSession },
     {
       provide: PUBLICATION_PACKAGE_REPOSITORY,
       inject: [APP_CONFIG],

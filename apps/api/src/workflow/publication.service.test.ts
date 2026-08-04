@@ -38,4 +38,15 @@ describe('PublicationService', () => {
     expect(result.status).toBe('FAILED');
     expect(result.lastError).toBe('remote-content-not-found');
   });
+
+  it('records a normal-session WeChat draft id while keeping public release manual', async () => {
+    const h = harness();
+    const service = new PublicationService(
+      h.prisma, h.works, h.stages, h.publications, h.files, undefined, undefined,
+      { saveDraft: async () => ({ saved: true, draftId: 'draft-123' }) },
+    );
+    const result = await service.prepareWechat('work-1', 'approved-hash');
+    expect(result.publication.status).toBe('WAITING_USER');
+    expect(result.publication.url).toBe('wechat://draft/draft-123');
+  });
 });

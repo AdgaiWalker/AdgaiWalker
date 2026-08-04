@@ -8,6 +8,7 @@ import { STAGE_ARTIFACT_REPOSITORY, type StageArtifactRepositoryPort } from '../
 import { WORK_REPOSITORY, type WorkRepositoryPort } from '../ports/work.repository';
 import { PUBLICATION_PACKAGE_REPOSITORY, type PublicationPackageRepositoryPort } from '../ports/publication-package.repository';
 import { WEBSITE_DEPLOYMENT_VERIFIER, type WebsiteDeploymentVerifierPort } from '../ports/website-deployment-verifier.port';
+import { WECHAT_DRAFT_SESSION, type WechatDraftSessionPort } from '../ports/wechat-draft-session.port';
 
 @Injectable()
 export class PublicationService {
@@ -19,6 +20,7 @@ export class PublicationService {
     @Inject(CONTENT_FILE_REPOSITORY) private readonly files: ContentFileRepositoryPort,
     @Optional() @Inject(PUBLICATION_PACKAGE_REPOSITORY) private readonly packages?: PublicationPackageRepositoryPort,
     @Optional() @Inject(WEBSITE_DEPLOYMENT_VERIFIER) private readonly websiteVerifier?: WebsiteDeploymentVerifierPort,
+    @Optional() @Inject(WECHAT_DRAFT_SESSION) private readonly wechatSession?: WechatDraftSessionPort,
   ) {}
 
   async publishWebsite(workId: string, artifactHash: string) {
@@ -90,7 +92,8 @@ export class PublicationService {
       artifactHash,
     };
     const saved = this.packages ? await this.packages.saveWechat(workId, value) : { path: '', value };
-    const publication = await this.publications.upsert({ id: newId(), submissionId: workId, channel: 'WECHAT', artifactHash, status: 'WAITING_USER' });
+    const session = this.wechatSession ? await this.wechatSession.saveDraft(value) : { saved: false, reason: 'wechat-session-unavailable' };
+    const publication = await this.publications.upsert({ id: newId(), submissionId: workId, channel: 'WECHAT', artifactHash, status: 'WAITING_USER', url: session.draftId ? `wechat://draft/${encodeURIComponent(session.draftId)}` : null, lastError: session.saved ? null : session.reason ?? null });
     const website = await this.publications.find(workId, 'WEBSITE');
     if (website?.status === 'PUBLISHED' && this.works.setStatus) await this.works.setStatus(workId, 'COMPLETED', artifactHash);
     return { publication, packagePath: saved.path, package: saved.value };
