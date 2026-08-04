@@ -76,6 +76,13 @@ export class FsArtifactRepository implements ArtifactRepositoryPort {
     await fs.rm(this.resolveWork(workId), { recursive: true, force: true });
   }
 
+  async readOriginalText(workId: string): Promise<string> {
+    const manifest = await this.readManifest(workId);
+    const draft = manifest?.originalFiles.find((file) => file.role === 'draft');
+    if (!draft) throw new Error('draft-not-found');
+    return fs.readFile(path.join(this.resolveWork(workId), 'original', draft.name), 'utf8');
+  }
+
   private safeName(input: string): string {
     const base = path.basename(input).replace(/[\u0000-\u001f\u007f]/g, '_').trim();
     return base || 'upload.bin';

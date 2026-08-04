@@ -42,6 +42,7 @@ export interface WorkRepositoryPort {
   list(limit: number): Promise<WorkRecord[]>;
   createForExecution(input: NewWorkRecord): Promise<WorkRecord>;
   createFromDraft(input: NewManualWorkRecord): Promise<WorkRecord>;
+  setStatus?(id: string, status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord>;
 }
 
 export const WORK_REPOSITORY = Symbol('WORK_REPOSITORY');

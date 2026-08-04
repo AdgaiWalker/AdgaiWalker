@@ -44,3 +44,21 @@ CREATE INDEX "Submission_createdAt_idx" ON "Submission"("createdAt");
 CREATE INDEX "Action_status_idx" ON "Action"("status");
 CREATE INDEX "Action_plannedDate_idx" ON "Action"("plannedDate");
 CREATE INDEX "Action_entityType_entityId_idx" ON "Action"("entityType", "entityId");
+
+CREATE TABLE "Publication" (
+    "id" TEXT NOT NULL,
+    "submissionId" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "artifactHash" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "url" TEXT,
+    "lastError" TEXT,
+    "publishedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "Publication_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "Publication_submissionId_fkey" FOREIGN KEY ("submissionId") REFERENCES "Submission"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "Publication_submissionId_channel_key" ON "Publication"("submissionId", "channel");
+CREATE INDEX "Publication_status_idx" ON "Publication"("status");

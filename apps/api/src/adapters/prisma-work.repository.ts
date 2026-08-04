@@ -86,4 +86,9 @@ export class PrismaWorkRepository implements WorkRepositoryPort {
     });
     return this.map(row);
   }
+
+  async setStatus(id: string, status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord> {
+    const row = await this.db().submission.update({ where: { id }, data: { status, approvedArtifactHash } });
+    return this.map(row);
+  }
 }

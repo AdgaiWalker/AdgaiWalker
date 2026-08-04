@@ -42,6 +42,11 @@ export class WorkService {
     return work;
   }
 
+  async readOriginalText(id: string) {
+    if (!this.artifacts.readOriginalText) throw validationError('original-reader-unavailable');
+    return this.artifacts.readOriginalText(id);
+  }
+
   async create(input: CreateWorkInput, draft: OriginalFileInput, attachments: OriginalFileInput[]) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     const idempotencyKey = input.idempotencyKey?.trim() ?? '';

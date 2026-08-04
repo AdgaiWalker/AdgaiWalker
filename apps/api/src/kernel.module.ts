@@ -54,8 +54,24 @@ import { FsArtifactRepository } from './adapters/fs-artifact.repository';
 import { APP_CONFIG, type AppConfigPort } from './config/config.port';
 import { WorkbenchService } from './workbench/workbench.service';
 import { WorkbenchController } from './workbench/workbench.controller';
+import { ProductionService } from './workflow/production.service';
+import { ProductionController } from './workflow/production.controller';
+import { AGENT_RUNNER } from './ports/agent-runner.port';
+import { CodexAgentRunner } from './adapters/codex-agent.runner';
+import { STAGE_ARTIFACT_REPOSITORY } from './ports/stage-artifact.repository';
+import { FsStageArtifactRepository } from './adapters/fs-stage-artifact.repository';
+import { ReviewService } from './workflow/review.service';
+import { ReviewController } from './workflow/review.controller';
+import { PublicationService } from './workflow/publication.service';
+import { PublicationController } from './workflow/publication.controller';
+import { PUBLICATION_REPOSITORY } from './ports/publication.repository';
+import { PrismaPublicationRepository } from './adapters/prisma-publication.repository';
+import { PUBLICATION_PACKAGE_REPOSITORY } from './ports/publication-package.repository';
+import { FsPublicationPackageRepository } from './adapters/fs-publication-package.repository';
 import { ActionService } from './action/action.service';
 import { ActionController } from './action/action.controller';
+import { WORK_EXPORT_SERVICE, WorkExportService } from './workflow/export.service';
+import { ExportController } from './workflow/export.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -73,6 +89,10 @@ import { ActionController } from './action/action.controller';
     ActionController,
     WorkController,
     WorkbenchController,
+    ProductionController,
+    ReviewController,
+    PublicationController,
+    ExportController,
   ],
   providers: [
     { provide: PRISMA, useClass: PrismaAdapter },
@@ -107,6 +127,26 @@ import { ActionController } from './action/action.controller';
     ActionService,
     WorkService,
     WorkbenchService,
+    ProductionService,
+    ReviewService,
+    PublicationService,
+    {
+      provide: WORK_EXPORT_SERVICE,
+      inject: [APP_CONFIG],
+      useFactory: (config: AppConfigPort) => new WorkExportService(config.getWorkRootDir()),
+    },
+    { provide: PUBLICATION_REPOSITORY, useClass: PrismaPublicationRepository },
+    {
+      provide: PUBLICATION_PACKAGE_REPOSITORY,
+      inject: [APP_CONFIG],
+      useFactory: (config: AppConfigPort) => new FsPublicationPackageRepository(config.getWorkRootDir()),
+    },
+    { provide: AGENT_RUNNER, useClass: CodexAgentRunner },
+    {
+      provide: STAGE_ARTIFACT_REPOSITORY,
+      inject: [APP_CONFIG],
+      useFactory: (config: AppConfigPort) => new FsStageArtifactRepository(config.getWorkRootDir()),
+    },
     { provide: WORK_REPOSITORY, useClass: PrismaWorkRepository },
     {
       provide: ARTIFACT_REPOSITORY,

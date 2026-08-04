@@ -148,6 +148,19 @@ export const adminApi = {
     for (const attachment of input.attachments ?? []) form.append('attachments', attachment);
     return adminRequest<Work>('/works', { method: 'POST', body: form });
   },
+  produceWork: (id: string, body?: { originalText?: string; fromStage?: string }) =>
+    adminRequest<{ status: string; latestHash?: string; failedStage?: string; error?: string }>(`/works/${id}/produce`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
+  acceptManualArtifact: (id: string, artifact: unknown) =>
+    adminRequest<{ hash: string }>(`/works/${id}/artifacts`, { method: 'POST', body: JSON.stringify({ artifact }) }),
+  approveWork: (id: string, artifactHash: string) =>
+    adminRequest<Work>(`/works/${id}/approve`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
+  returnWork: (id: string) => adminRequest<Work>(`/works/${id}/return`, { method: 'POST' }),
+  publishWebsite: (id: string, artifactHash: string) =>
+    adminRequest<{ status: string; url: string | null }>(`/works/${id}/publish/website`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
+  prepareWechatDraft: (id: string, artifactHash: string) =>
+    adminRequest<{ packagePath: string; publication: { status: string } }>(`/works/${id}/publish/wechat-draft`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
+  exportWork: (id: string, destination: string) =>
+    adminRequest<{ path: string }>(`/works/${id}/export`, { method: 'POST', body: JSON.stringify({ destination }) }),
 
   contentList: () => adminRequest<ContentMeta[]>('/admin/content'),
   contentGet: (slug: string) =>

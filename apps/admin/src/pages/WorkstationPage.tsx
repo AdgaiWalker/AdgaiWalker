@@ -75,6 +75,7 @@ function LiveWorkbench() {
   const [viewpoint, setViewpoint] = useState('');
   const [draft, setDraft] = useState<File | null>(null);
   const [brief, setBrief] = useState({ audience: '', scenario: '', problem: '', keyQuestion: '', intendedAction: '' });
+  const [artifactHashes, setArtifactHashes] = useState<Record<string, string>>({});
   const { err, run } = useAdminAction();
 
   const load = useCallback(async () => {
@@ -127,7 +128,22 @@ function LiveWorkbench() {
           <p className="muted">Open actions: {snapshot?.openActions.length ?? '—'}</p>
           <p className="muted">Video log: {snapshot?.videoLog.length ?? '—'}</p>
           <p className="muted">Works: {snapshot?.activeWorks.length ?? '—'}</p>
-          {snapshot?.activeWorks.map((work) => <div className="workstation-mini-row" key={work.id}><strong>{work.title}</strong><span>{work.status}</span></div>)}
+          {snapshot?.activeWorks.map((work) => {
+            const hash = artifactHashes[work.id] ?? work.approvedArtifactHash ?? '';
+            return <div className="workstation-mini-row" key={work.id}>
+              <strong>{work.title}</strong><span>{work.status}</span>
+              <button type="button" className="secondary" onClick={() => void run(async () => {
+                const result = await adminApi.produceWork(work.id);
+                if (result.latestHash) setArtifactHashes((current) => ({ ...current, [work.id]: result.latestHash! }));
+                await load();
+              })}>Run recipe</button>
+              {hash && (work.status === 'REVIEW_READY' || work.status === 'APPROVED') ? <>
+                {work.status === 'REVIEW_READY' ? <button type="button" onClick={() => void run(async () => { await adminApi.approveWork(work.id, hash); await load(); })}>Approve</button> : null}
+                {work.status === 'APPROVED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.publishWebsite(work.id, hash); await load(); })}>Website</button> : null}
+                <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.prepareWechatDraft(work.id, hash); await load(); })}>WeChat draft</button>
+              </> : null}
+            </div>;
+          })}
         </div>
       </div>
     </section>
