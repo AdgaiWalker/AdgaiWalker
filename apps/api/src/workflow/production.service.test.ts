@@ -37,7 +37,8 @@ describe('ProductionService', () => {
     expect(result.status).toBe('REVIEW_READY');
     expect(h.writes).toHaveLength(8);
     expect(h.writes[0].stage).toBe('NORMALIZE');
-    expect(h.writes.find((item) => item.stage === 'COVER')?.artifact.output.landscapeCover).toEqual(expect.stringContaining('<svg'));
+    expect(h.writes.find((item) => item.stage === 'COVER')?.artifact.output.landscapeCover).toEqual(expect.stringContaining('width="2100" height="900"'));
+    expect(h.writes.find((item) => item.stage === 'COVER')?.artifact.output.portraitCover).toEqual(expect.stringContaining('width="900" height="1200"'));
   });
 
   it('retries only the failed stage and preserves earlier artifacts', async () => {
@@ -79,5 +80,54 @@ describe('ProductionService', () => {
     expect(result.status).toBe('CANCELLED');
     expect(h.writes).toHaveLength(0);
     expect(statuses).toEqual(['CANCELLED']);
+  });
+
+  it('persists the active stage and latest output timestamps for restartable progress', async () => {
+    const h = harness();
+    const progress: Array<Record<string, unknown>> = [];
+    const service = new ProductionService(
+      h.prisma,
+      h.runner,
+      h.artifacts,
+      {
+        setStatus: async (_id: string, status: WorkStatus) => ({ status } as never),
+        setProgress: async (_id: string, input: Record<string, unknown>) => { progress.push(input); return {} as never; },
+      } as unknown as WorkRepositoryPort,
+    );
+    const result = await service.run('work-progress', '# original draft');
+    expect(result.status).toBe('REVIEW_READY');
+    expect(progress.some((item) => item.currentStage === 'QUALITY_CHECK' && item.stageStartedAt instanceof Date)).toBe(true);
+    expect(progress.some((item) => item.lastOutputAt instanceof Date)).toBe(true);
+    expect(progress.at(-1)).toMatchObject({ currentStage: null, waitingReason: null });
+  });
+
+  it('creates a safe 390px preview without scripts for platform formatting', async () => {
+    const h = harness();
+    const service = new ProductionService(h.prisma, h.runner, h.artifacts);
+    const saved = await service.acceptManualArtifact('work-preview', {
+      recipeVersion: 1,
+      stage: 'WECHAT_FORMAT',
+      output: { body: '正文', html: '<p>正文</p><script>alert(1)</script>' },
+    });
+    expect(saved.artifact.output.html).not.toContain('<script');
+    expect(saved.artifact.output.mobilePreviewHtml).toContain('data-preview-width="390"');
+  });
+
+  it('stops after two retries for the same failed stage', async () => {
+    const h = harness();
+    const artifact = { recipeVersion: 1 as const, stage: 'QUALITY_CHECK' as const, output: { body: 'check' } };
+    await h.service.acceptManualArtifact('work-retry-limit', artifact);
+    await h.service.acceptManualArtifact('work-retry-limit', artifact);
+    await h.service.acceptManualArtifact('work-retry-limit', artifact);
+    await expect(h.service.run('work-retry-limit', '# draft', { fromStage: 'QUALITY_CHECK' })).rejects.toThrow('retry-limit-exceeded');
+  });
+
+  it('does not accept unresolved high-risk quality findings', async () => {
+    const h = harness();
+    await expect(h.service.acceptManualArtifact('work-risk', {
+      recipeVersion: 1,
+      stage: 'QUALITY_CHECK',
+      output: { body: '正文', risks: [{ severity: 'high', resolved: false, message: '未核实事实' }] },
+    })).rejects.toThrow('quality-risk-unresolved');
   });
 });

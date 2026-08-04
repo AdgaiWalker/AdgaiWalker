@@ -72,6 +72,8 @@ import { ActionService } from './action/action.service';
 import { ActionController } from './action/action.controller';
 import { WORK_EXPORT_SERVICE, WorkExportService } from './workflow/export.service';
 import { ExportController } from './workflow/export.controller';
+import { WEBSITE_DEPLOYMENT_VERIFIER } from './ports/website-deployment-verifier.port';
+import { HttpWebsiteDeploymentVerifier } from './adapters/http-website-deployment-verifier';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -136,6 +138,7 @@ import { ExportController } from './workflow/export.controller';
       useFactory: (config: AppConfigPort) => new WorkExportService(config.getWorkRootDir()),
     },
     { provide: PUBLICATION_REPOSITORY, useClass: PrismaPublicationRepository },
+    { provide: WEBSITE_DEPLOYMENT_VERIFIER, useClass: HttpWebsiteDeploymentVerifier },
     {
       provide: PUBLICATION_PACKAGE_REPOSITORY,
       inject: [APP_CONFIG],

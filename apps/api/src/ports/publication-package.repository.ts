@@ -3,6 +3,7 @@ export interface WechatPublicationPackage {
   summary: string;
   author: string;
   html: string;
+  mobilePreviewHtml: string;
   images: string[];
   landscapeCover: string;
   portraitCover: string;

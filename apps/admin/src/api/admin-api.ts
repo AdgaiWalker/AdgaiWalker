@@ -45,6 +45,10 @@ export interface Work {
   coreViewpoint: string;
   protectedClaims: string[];
   approvedArtifactHash: string | null;
+  currentStage?: string | null;
+  stageStartedAt?: string | null;
+  lastOutputAt?: string | null;
+  waitingReason?: string | null;
 }
 
 export interface WorkbenchSnapshot {
@@ -134,7 +138,7 @@ export const adminApi = {
   completeAction: (id: string) => adminRequest<Action>(`/actions/${id}/complete`, { method: 'POST' }),
   reopenAction: (id: string) => adminRequest<Action>(`/actions/${id}/reopen`, { method: 'POST' }),
   works: () => adminRequest<Work[]>('/works'),
-  createWork: (input: { idempotencyKey: string; executionId?: string; title: string; sourceProblem?: string; whyNow?: string; contentBrief?: Record<string, string>; coreViewpoint: string; protectedClaims: string[]; draft: File; attachments?: File[] }) => {
+  createWork: (input: { idempotencyKey: string; executionId?: string; title: string; sourceProblem?: string; whyNow?: string; contentBrief?: Record<string, string>; links?: string[]; coreViewpoint: string; protectedClaims: string[]; draft: File; attachments?: File[] }) => {
     const form = new FormData();
     form.set('idempotencyKey', input.idempotencyKey);
     if (input.executionId) form.set('executionId', input.executionId);
@@ -142,6 +146,7 @@ export const adminApi = {
     if (input.sourceProblem) form.set('sourceProblem', input.sourceProblem);
     if (input.whyNow) form.set('whyNow', input.whyNow);
     if (input.contentBrief) form.set('contentBrief', JSON.stringify(input.contentBrief));
+    if (input.links?.length) form.set('links', JSON.stringify(input.links));
     form.set('coreViewpoint', input.coreViewpoint);
     form.set('protectedClaims', JSON.stringify(input.protectedClaims));
     form.set('draft', input.draft);
@@ -151,14 +156,28 @@ export const adminApi = {
   produceWork: (id: string, body?: { originalText?: string; fromStage?: string }) =>
     adminRequest<{ status: string; latestHash?: string; failedStage?: string; error?: string }>(`/works/${id}/produce`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
   cancelWork: (id: string) =>
-    adminRequest<{ status: 'CANCELLED'; workId: string }>(`/works/${id}/cancel`, { method: 'POST' }),
+    adminRequest<{ status: 'CANCELLED'; workId: string }>(`/works/${id}/produce/cancel`, { method: 'POST' }),
   acceptManualArtifact: (id: string, artifact: unknown) =>
     adminRequest<{ hash: string }>(`/works/${id}/artifacts`, { method: 'POST', body: JSON.stringify({ artifact }) }),
   approveWork: (id: string, artifactHash: string) =>
     adminRequest<Work>(`/works/${id}/approve`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
+  getReview: (id: string) =>
+    adminRequest<{
+      workId: string;
+      status: string;
+      original: { text: string | null; manifestPath: string; coreViewpoint: string; protectedClaims: string[] };
+      candidate: { hash: string; output: Record<string, unknown> } | null;
+      edits: Record<string, unknown> | null;
+      risks: Record<string, unknown> | null;
+      covers: Record<string, unknown> | null;
+      platforms: { website: Record<string, unknown> | null; wechat: Record<string, unknown> | null };
+      approvedArtifactHash: string | null;
+    }>(`/works/${id}/review`),
   returnWork: (id: string) => adminRequest<Work>(`/works/${id}/return`, { method: 'POST' }),
   publishWebsite: (id: string, artifactHash: string) =>
     adminRequest<{ status: string; url: string | null }>(`/works/${id}/publish/website`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
+  verifyWebsite: (id: string) =>
+    adminRequest<{ status: string; url: string | null }>(`/works/${id}/publish/website/verify`, { method: 'POST' }),
   prepareWechatDraft: (id: string, artifactHash: string) =>
     adminRequest<{ packagePath: string; publication: { status: string } }>(`/works/${id}/publish/wechat-draft`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
   exportWork: (id: string, destination: string) =>

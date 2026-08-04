@@ -19,10 +19,11 @@ export interface WorkManifest {
   version: 1;
   originalCreatedAt: string;
   originalFiles: OriginalFileRecord[];
+  originalLinks: string[];
 }
 
 export interface ArtifactRepositoryPort {
-  createOriginal(workId: string, files: OriginalFileInput[]): Promise<WorkManifest>;
+  createOriginal(workId: string, files: OriginalFileInput[], links?: string[]): Promise<WorkManifest>;
   readManifest(workId: string): Promise<WorkManifest | null>;
   discardWork(workId: string): Promise<void>;
   readOriginalText?(workId: string): Promise<string>;

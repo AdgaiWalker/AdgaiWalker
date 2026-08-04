@@ -42,6 +42,7 @@ export class WorkController {
       contentBriefRaw: body.contentBrief,
       coreViewpoint: body.coreViewpoint,
       protectedClaimsRaw: body.protectedClaims,
+      linksRaw: body.links,
     }, { ...toInput(draft), role: 'draft' }, attachments.map(toInput));
   }
 }

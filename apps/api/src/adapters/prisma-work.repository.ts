@@ -18,11 +18,12 @@ export class PrismaWorkRepository implements WorkRepositoryPort {
   private map(row: {
     id: string; executionId: string; idempotencyKey: string; title: string; status: string;
     manifestPath: string; coreViewpoint: string; protectedClaims: unknown;
-    approvedArtifactHash: string | null; createdAt: Date; updatedAt: Date;
+    approvedArtifactHash: string | null; currentStage: string | null; stageStartedAt: Date | null; lastOutputAt: Date | null; waitingReason: string | null; createdAt: Date; updatedAt: Date;
   }): WorkRecord {
     return {
       ...row,
       status: row.status as WorkStatus,
+      currentStage: row.currentStage as WorkRecord['currentStage'],
       protectedClaims: Array.isArray(row.protectedClaims) ? row.protectedClaims.filter((item): item is string => typeof item === 'string') : [],
     };
   }
@@ -89,6 +90,16 @@ export class PrismaWorkRepository implements WorkRepositoryPort {
 
   async setStatus(id: string, status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord> {
     const row = await this.db().submission.update({ where: { id }, data: { status, approvedArtifactHash } });
+    return this.map(row);
+  }
+
+  async setProgress(id: string, input: {
+    currentStage?: import('@walker/shared').ProductionStage | null;
+    stageStartedAt?: Date | null;
+    lastOutputAt?: Date | null;
+    waitingReason?: string | null;
+  }): Promise<WorkRecord> {
+    const row = await this.db().submission.update({ where: { id }, data: input });
     return this.map(row);
   }
 }

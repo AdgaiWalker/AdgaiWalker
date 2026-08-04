@@ -89,6 +89,10 @@ model Submission {
   coreViewpoint        String
   protectedClaims      Json
   approvedArtifactHash String?
+  currentStage         String?
+  stageStartedAt       DateTime?
+  lastOutputAt         DateTime?
+  waitingReason        String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

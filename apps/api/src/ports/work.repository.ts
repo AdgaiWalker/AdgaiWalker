@@ -1,4 +1,4 @@
-import type { ContentBrief, WorkStatus } from '@walker/shared';
+import type { ContentBrief, ProductionStage, WorkStatus } from '@walker/shared';
 
 export interface WorkRecord {
   id: string;
@@ -10,6 +10,10 @@ export interface WorkRecord {
   coreViewpoint: string;
   protectedClaims: string[];
   approvedArtifactHash: string | null;
+  currentStage: ProductionStage | null;
+  stageStartedAt: Date | null;
+  lastOutputAt: Date | null;
+  waitingReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +47,12 @@ export interface WorkRepositoryPort {
   createForExecution(input: NewWorkRecord): Promise<WorkRecord>;
   createFromDraft(input: NewManualWorkRecord): Promise<WorkRecord>;
   setStatus?(id: string, status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord>;
+  setProgress?(id: string, input: {
+    currentStage?: ProductionStage | null;
+    stageStartedAt?: Date | null;
+    lastOutputAt?: Date | null;
+    waitingReason?: string | null;
+  }): Promise<WorkRecord>;
 }
 
 export const WORK_REPOSITORY = Symbol('WORK_REPOSITORY');

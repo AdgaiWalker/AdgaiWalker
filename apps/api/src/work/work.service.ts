@@ -20,6 +20,7 @@ export interface CreateWorkInput {
   contentBriefRaw?: string;
   coreViewpoint?: string;
   protectedClaimsRaw?: string;
+  linksRaw?: string;
 }
 
 @Injectable()
@@ -74,7 +75,7 @@ export class WorkService {
     const files = [draft, ...attachments].map((file, index) => ({ ...file, role: index === 0 ? 'draft' as const : 'attachment' as const }));
     let manifest;
     try {
-      manifest = await this.artifacts.createOriginal(workId, files);
+      manifest = await this.artifacts.createOriginal(workId, files, this.parseLinks(input.linksRaw));
       const manifestPath = `var/works/${workId}/manifest.json`;
       if (input.executionId) {
         return await this.works.createForExecution({
@@ -110,5 +111,15 @@ export class WorkService {
     try { parsed = JSON.parse(raw); } catch { throw validationError('invalid-content-brief'); }
     try { return normalizeContentBrief(parsed as ContentBrief); }
     catch (error) { throw validationError(error instanceof Error ? error.message : 'content-brief-incomplete'); }
+  }
+
+  private parseLinks(raw?: string): string[] {
+    if (!raw?.trim()) return [];
+    let parsed: unknown;
+    try { parsed = JSON.parse(raw); } catch { parsed = raw.split(/\r?\n|,/); }
+    const values = Array.isArray(parsed) ? parsed : [parsed];
+    const links = values.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
+    if (links.some((link) => !/^https?:\/\/[^\s]+$/i.test(link))) throw validationError('invalid-source-link');
+    return [...new Set(links)].slice(0, 20);
   }
 }

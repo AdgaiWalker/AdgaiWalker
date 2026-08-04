@@ -1,10 +1,13 @@
-import { Body, Controller, Inject, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
 import type { ProductionStage } from '@walker/shared';
 import { ReviewService } from './review.service';
 
 @Controller('works')
 export class ReviewController {
   constructor(@Inject(ReviewService) private readonly review: ReviewService) {}
+
+  @Get(':id/review')
+  getReview(@Param('id') id: string) { return this.review.getReview(id); }
 
   @Post(':id/approve')
   approve(@Param('id') id: string, @Body() body: { artifactHash?: string }) { return this.review.approve(id, body.artifactHash ?? ''); }

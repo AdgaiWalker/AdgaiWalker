@@ -73,10 +73,12 @@ function LiveWorkbench() {
   const [problem, setProblem] = useState('');
   const [whyNow, setWhyNow] = useState('');
   const [viewpoint, setViewpoint] = useState('');
+  const [links, setLinks] = useState('');
   const [draft, setDraft] = useState<File | null>(null);
   const [brief, setBrief] = useState({ audience: '', scenario: '', problem: '', keyQuestion: '', intendedAction: '' });
   const [artifactHashes, setArtifactHashes] = useState<Record<string, string>>({});
   const [failedStages, setFailedStages] = useState<Record<string, string>>({});
+  const [reviewPackets, setReviewPackets] = useState<Record<string, Awaited<ReturnType<typeof adminApi.getReview>>>>({});
   const [exportDestination, setExportDestination] = useState('');
   const { err, run } = useAdminAction();
 
@@ -105,9 +107,9 @@ function LiveWorkbench() {
             await adminApi.createWork({
               idempotencyKey: `admin-${Date.now()}`,
               title, sourceProblem: problem, whyNow, coreViewpoint: viewpoint,
-              protectedClaims: [], contentBrief: brief, draft,
+              protectedClaims: [], contentBrief: brief, links: links.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean), draft,
             });
-            setTitle(''); setProblem(''); setWhyNow(''); setViewpoint(''); setDraft(null);
+            setTitle(''); setProblem(''); setWhyNow(''); setViewpoint(''); setLinks(''); setDraft(null);
             await load();
           });
         }}>
@@ -115,6 +117,7 @@ function LiveWorkbench() {
           <label>Core viewpoint<textarea value={viewpoint} onChange={(event) => setViewpoint(event.target.value)} required /></label>
           <label>Source problem<textarea value={problem} onChange={(event) => setProblem(event.target.value)} required /></label>
           <label>Why now<input value={whyNow} onChange={(event) => setWhyNow(event.target.value)} required /></label>
+          <label>Source links<textarea value={links} onChange={(event) => setLinks(event.target.value)} placeholder="One URL per line (optional)" /></label>
           <div className="workstation-brief-grid">
             {(Object.keys(brief) as Array<keyof typeof brief>).map((key) => (
               <label key={key}>{key}<input value={brief[key]} onChange={(event) => updateBrief(key, event.target.value)} required /></label>
@@ -135,7 +138,9 @@ function LiveWorkbench() {
             const hash = artifactHashes[work.id] ?? work.approvedArtifactHash ?? '';
             const failedStage = failedStages[work.id];
             return <div className="workstation-mini-row" key={work.id}>
-              <strong>{work.title}</strong><span>{work.status}</span>
+              <strong>{work.title}</strong><span>{work.status}{work.currentStage ? ` · ${work.currentStage}` : ''}</span>
+              {work.stageStartedAt ? <small className="muted">started {new Date(work.stageStartedAt).toLocaleTimeString()}</small> : null}
+              {work.waitingReason ? <small className="error">{work.waitingReason}</small> : null}
               {work.status === 'PROCESSING' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.cancelWork(work.id); await load(); })}>Stop</button> : null}
               <button type="button" className="secondary" disabled={work.status === 'CANCELLED'} onClick={() => void run(async () => {
                 const result = await adminApi.produceWork(work.id, failedStage ? { fromStage: failedStage } : undefined);
@@ -145,11 +150,23 @@ function LiveWorkbench() {
                 await load();
               })}>{failedStage ? `Retry from ${failedStage}` : 'Run recipe'}</button>
               {hash && (work.status === 'REVIEW_READY' || work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED') ? <>
+                <button type="button" className="secondary" onClick={() => void run(async () => { const packet = await adminApi.getReview(work.id); setReviewPackets((current) => ({ ...current, [work.id]: packet })); })}>Review</button>
                 {work.status === 'REVIEW_READY' ? <button type="button" onClick={() => void run(async () => { await adminApi.approveWork(work.id, hash); await load(); })}>Approve</button> : null}
                 {work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.publishWebsite(work.id, hash); await load(); })}>Website</button> : null}
+                {work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.verifyWebsite(work.id); await load(); })}>Verify website</button> : null}
                 <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.prepareWechatDraft(work.id, hash); await load(); })}>WeChat draft</button>
                 {exportDestination.trim() ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.exportWork(work.id, exportDestination); await load(); })}>Export work</button> : null}
               </> : null}
+              {reviewPackets[work.id] ? <details className="workstation-review" open>
+                <summary>Review packet</summary>
+                <p><strong>Original:</strong> {reviewPackets[work.id].original.text?.slice(0, 300) ?? 'not readable'}</p>
+                <p><strong>Core viewpoint:</strong> {reviewPackets[work.id].original.coreViewpoint}</p>
+                <p><strong>Candidate hash:</strong> {reviewPackets[work.id].candidate?.hash ?? '—'}</p>
+                <p><strong>Risks:</strong> {JSON.stringify(reviewPackets[work.id].risks ?? {})}</p>
+                <p><strong>Edits:</strong> {JSON.stringify(reviewPackets[work.id].edits ?? {})}</p>
+                <p><strong>Covers:</strong> {reviewPackets[work.id].covers ? 'portrait + landscape ready' : 'missing'}</p>
+                <p><strong>Platforms:</strong> {reviewPackets[work.id].platforms.website ? 'website ready' : 'website missing'} / {reviewPackets[work.id].platforms.wechat ? 'wechat ready' : 'wechat missing'}</p>
+              </details> : null}
             </div>;
           })}
         </div>

@@ -25,18 +25,18 @@ function createWorkHarness(options: { executionExists?: boolean } = {}) {
     async findByIdempotencyKey(key) { return works.find((work) => work.idempotencyKey === key) ?? null; },
     async list() { return works; },
     async createForExecution(input: NewWorkRecord) {
-      const work: WorkRecord = { ...input, status: 'DRAFT_READY', approvedArtifactHash: null, createdAt: now, updatedAt: now };
+      const work: WorkRecord = { ...input, status: 'DRAFT_READY', approvedArtifactHash: null, currentStage: null, stageStartedAt: null, lastOutputAt: null, waitingReason: null, createdAt: now, updatedAt: now };
       works.push(work); return work;
     },
     async createFromDraft(input: NewManualWorkRecord) {
       manualChains.push(input);
-      const work: WorkRecord = { id: input.id, executionId, idempotencyKey: input.idempotencyKey, title: input.title, status: 'DRAFT_READY', manifestPath: input.manifestPath, coreViewpoint: input.coreViewpoint, protectedClaims: input.protectedClaims, approvedArtifactHash: null, createdAt: now, updatedAt: now };
+      const work: WorkRecord = { id: input.id, executionId, idempotencyKey: input.idempotencyKey, title: input.title, status: 'DRAFT_READY', manifestPath: input.manifestPath, coreViewpoint: input.coreViewpoint, protectedClaims: input.protectedClaims, approvedArtifactHash: null, currentStage: null, stageStartedAt: null, lastOutputAt: null, waitingReason: null, createdAt: now, updatedAt: now };
       works.push(work); return work;
     },
   };
   const artifacts: ArtifactRepositoryPort = {
     async createOriginal(workId, files) {
-      const manifest: WorkManifest = { workId, version: 1, originalCreatedAt: now.toISOString(), originalFiles: files.map((file) => ({ name: file.originalName, mimeType: file.mimeType, size: file.size, sha256: 'a'.repeat(64), role: file.role })) };
+      const manifest: WorkManifest = { workId, version: 1, originalCreatedAt: now.toISOString(), originalFiles: files.map((file) => ({ name: file.originalName, mimeType: file.mimeType, size: file.size, sha256: 'a'.repeat(64), role: file.role })), originalLinks: [] };
       manifests.push(manifest); return manifest;
     },
     async readManifest(workId) { return manifests.find((manifest) => manifest.workId === workId) ?? null; },

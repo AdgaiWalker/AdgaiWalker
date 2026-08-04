@@ -36,4 +36,15 @@ describe('FsArtifactRepository', () => {
     }]);
     expect(manifest.originalFiles[0].name).toBe('private.txt');
   });
+
+  it('keeps submitted reference links in the immutable manifest', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'walker-artifact-'));
+    roots.push(tempRoot);
+    const repo = new FsArtifactRepository(tempRoot);
+    const manifest = await repo.createOriginal('work-links', [{
+      originalName: 'draft.md', mimeType: 'text/markdown', size: 8,
+      bytes: new TextEncoder().encode('draft'), role: 'draft',
+    }], ['https://example.com/source']);
+    expect(manifest.originalLinks).toEqual(['https://example.com/source']);
+  });
 });

@@ -10,7 +10,7 @@ export class FsArtifactRepository implements ArtifactRepositoryPort {
     this.root = path.resolve(root);
   }
 
-  async createOriginal(workId: string, files: OriginalFileInput[]): Promise<WorkManifest> {
+  async createOriginal(workId: string, files: OriginalFileInput[], links: string[] = []): Promise<WorkManifest> {
     this.assertWorkId(workId);
     const workDir = this.resolveWork(workId);
     const manifestPath = path.join(workDir, 'manifest.json');
@@ -49,6 +49,7 @@ export class FsArtifactRepository implements ArtifactRepositoryPort {
         version: 1,
         originalCreatedAt: new Date().toISOString(),
         originalFiles,
+        originalLinks: links.map((link) => link.trim()).filter(Boolean),
       };
       const tempPath = `${manifestPath}.tmp`;
       await fs.writeFile(tempPath, JSON.stringify(manifest, null, 2), { flag: 'wx' });
@@ -64,7 +65,8 @@ export class FsArtifactRepository implements ArtifactRepositoryPort {
     this.assertWorkId(workId);
     try {
       const value = await fs.readFile(path.join(this.resolveWork(workId), 'manifest.json'), 'utf8');
-      return JSON.parse(value) as WorkManifest;
+      const parsed = JSON.parse(value) as WorkManifest;
+      return { ...parsed, originalLinks: parsed.originalLinks ?? [] };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
       throw error;

@@ -89,7 +89,7 @@ describe('AI workstation three-work acceptance harness', () => {
       const draft = `# Draft ${index + 1}\n\n[${id}] A real user problem and the author's first-person viewpoint.`;
       await original.createOriginal(id, [{ originalName: 'draft.md', mimeType: 'text/markdown', bytes: Buffer.from(draft), size: Buffer.byteLength(draft), role: 'draft' }]);
       const now = new Date();
-      workMap.set(id, { id, executionId: `execution-${id}`, idempotencyKey: `key-${id}`, title: `Draft ${index + 1}`, status: 'DRAFT_READY', manifestPath: `${id}/manifest.json`, coreViewpoint: 'Explain the problem before showing the tool.', protectedClaims: [], approvedArtifactHash: null, createdAt: now, updatedAt: now });
+      workMap.set(id, { id, executionId: `execution-${id}`, idempotencyKey: `key-${id}`, title: `Draft ${index + 1}`, status: 'DRAFT_READY', manifestPath: `${id}/manifest.json`, coreViewpoint: 'Explain the problem before showing the tool.', protectedClaims: [], approvedArtifactHash: null, currentStage: null, stageStartedAt: null, lastOutputAt: null, waitingReason: null, createdAt: now, updatedAt: now });
       const first = await production.run(id, draft);
       if (id === 'work-2') {
         expect(first.status).toBe('FAILED');

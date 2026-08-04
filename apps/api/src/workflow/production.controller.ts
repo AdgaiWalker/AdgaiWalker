@@ -21,7 +21,7 @@ export class ProductionController {
     return this.production.acceptManualArtifact(id, body.artifact as StageArtifact);
   }
 
-  @Post(':id/cancel')
+  @Post(':id/produce/cancel')
   cancel(@Param('id') id: string) {
     return this.production.cancel(id);
   }
