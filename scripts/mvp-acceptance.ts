@@ -44,6 +44,16 @@ async function apiWorks(): Promise<Map<string, JsonRecord>> {
   }
 }
 
+async function apiPublications(workId: string): Promise<JsonRecord[]> {
+  try {
+    const response = await fetch(`${API_URL}/works/${encodeURIComponent(workId)}/publications`);
+    if (!response.ok) return [];
+    return await response.json() as JsonRecord[];
+  } catch {
+    return [];
+  }
+}
+
 async function auditWork(workId: string, api: Map<string, JsonRecord>): Promise<{ evidence: MvpEvidence; result: ReturnType<typeof evaluateMvpEvidence> }> {
   const workDir = path.join(WORK_ROOT, workId);
   const manifestPath = path.join(workDir, 'manifest.json');
@@ -57,6 +67,9 @@ async function auditWork(workId: string, api: Map<string, JsonRecord>): Promise<
   const reviewOutput = (review?.artifact.output ?? {}) as JsonRecord;
   const packagePath = path.join(workDir, 'publish', 'wechat.json');
   const packageData = await readJson(packagePath);
+  const publications = await apiPublications(workId);
+  const websitePublication = publications.find((publication) => publication.channel === 'WEBSITE');
+  const wechatPublication = publications.find((publication) => publication.channel === 'WECHAT');
   const stageCounts = await Promise.all(STAGES.map(async (stage) => {
     const dir = path.join(workDir, 'stages', stage);
     if (!(await exists(dir))) return 0;
@@ -76,8 +89,8 @@ async function auditWork(workId: string, api: Map<string, JsonRecord>): Promise<
     mobilePreview: typeof packageData.mobilePreviewHtml === 'string' && packageData.mobilePreviewHtml.includes('data-preview-width="390"'),
     exportComplete: await exists(path.join(exportDir, 'manifest.json')) && await exists(path.join(exportDir, 'original')) && exportedStages.every(Boolean) && await exists(path.join(exportDir, 'publish', 'wechat.json')),
     recoveryVerified: stageCounts.some((count) => count >= 3),
-    websitePublished: apiWork.status === 'PUBLISHED' || apiWork.websitePublicationStatus === 'PUBLISHED' || apiWork.websiteVerified === true,
-    wechatDraftSaved: apiWork.wechatPublicationStatus === 'DRAFT_SAVED' || apiWork.wechatDraftSaved === true,
+    websitePublished: websitePublication?.status === 'PUBLISHED' || apiWork.status === 'PUBLISHED' || apiWork.websitePublicationStatus === 'PUBLISHED' || apiWork.websiteVerified === true,
+    wechatDraftSaved: (wechatPublication?.status === 'WAITING_USER' && typeof wechatPublication.url === 'string' && wechatPublication.url.startsWith('wechat://draft/')) || apiWork.wechatDraftSaved === true,
   };
   return { evidence, result: evaluateMvpEvidence(evidence) };
 }

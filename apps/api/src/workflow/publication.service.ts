@@ -23,6 +23,12 @@ export class PublicationService {
     @Optional() @Inject(WECHAT_DRAFT_SESSION) private readonly wechatSession?: WechatDraftSessionPort,
   ) {}
 
+  async list(workId: string) {
+    if (!this.prisma.isWritable()) throw storageUnavailable();
+    if (!(await this.works.findById(workId))) throw validationError('work-not-found');
+    return this.publications.list(workId);
+  }
+
   async publishWebsite(workId: string, artifactHash: string) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     const work = await this.works.findById(workId);

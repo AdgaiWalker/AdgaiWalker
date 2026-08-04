@@ -49,4 +49,10 @@ describe('PublicationService', () => {
     expect(result.publication.status).toBe('WAITING_USER');
     expect(result.publication.url).toBe('wechat://draft/draft-123');
   });
+
+  it('lists independent publication states for one work', async () => {
+    const h = harness();
+    h.publications.list = async () => [{ id: 'website-1', submissionId: 'work-1', channel: 'WEBSITE', artifactHash: 'approved-hash', status: 'FAILED', url: 'https://iwalk.pro/posts/ai-draft', lastError: 'remote-content-not-found', publishedAt: null, createdAt: new Date(), updatedAt: new Date() }];
+    await expect(h.service.list('work-1')).resolves.toMatchObject([{ channel: 'WEBSITE', status: 'FAILED' }]);
+  });
 });
