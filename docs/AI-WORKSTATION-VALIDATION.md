@@ -54,6 +54,6 @@
    - `https://iwalk.pro/posts/codex-5a70cd`
    三个页面均返回 HTTP 200 且标题与正文可见；数据库中的三条 Website Publication 已重试为 `PUBLISHED`。
 2. WeChat：草稿包已生成，Publication 停在 `WAITING_USER`；当前运行态 Adapter 返回 `wechat-session-unavailable`，尚未连接正常登录会话保存草稿。
-3. Codex CLI：版本可调用，但 `codex exec --json --ephemeral` 在本机 30 秒超时；三篇真实作品使用当前会话人工兜底 Artifact，不能宣称已完成外部 Codex 正常路径。
+3. Codex CLI：已用 `gpt-5.6-sol` 完成一次只读结构化调用（约 116 秒，期间发生重连）；三篇真实作品仍使用当前会话人工兜底 Artifact，因此不能宣称三篇已完成外部 Codex 正常路径。
 
-公众号草稿与 Codex CLI 是当前仍未完成的两项证据；在它们补齐并由作者确认内容质量、观点保护和主动操作时间前，不能把 Goal 标记为 complete。
+公众号草稿与三篇真实作品的正常 Codex Artifact 仍是当前未完成的两项证据；在它们补齐并由作者确认内容质量、观点保护和主动操作时间前，不能把 Goal 标记为 complete。
