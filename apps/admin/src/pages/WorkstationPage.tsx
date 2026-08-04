@@ -1,3 +1,7 @@
+import { useCallback, useEffect, useState } from 'react';
+import { adminApi, type WorkbenchSnapshot } from '../api/admin-api';
+import { useAdminAction } from '../hooks/useAdminAction';
+
 type ScaffoldStatus = 'READY' | 'NOT_IMPLEMENTED';
 
 export interface WorkstationScaffoldItem {
@@ -63,6 +67,73 @@ function ScaffoldCard({ item }: { item: WorkstationScaffoldItem }) {
   );
 }
 
+function LiveWorkbench() {
+  const [snapshot, setSnapshot] = useState<WorkbenchSnapshot | null>(null);
+  const [title, setTitle] = useState('');
+  const [problem, setProblem] = useState('');
+  const [whyNow, setWhyNow] = useState('');
+  const [viewpoint, setViewpoint] = useState('');
+  const [draft, setDraft] = useState<File | null>(null);
+  const [brief, setBrief] = useState({ audience: '', scenario: '', problem: '', keyQuestion: '', intendedAction: '' });
+  const { err, run } = useAdminAction();
+
+  const load = useCallback(async () => {
+    await run(async () => setSnapshot(await adminApi.workbench()));
+  }, [run]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const updateBrief = (key: keyof typeof brief, value: string) => setBrief((current) => ({ ...current, [key]: value }));
+
+  return (
+    <section className="panel workstation-live" aria-labelledby="live-workbench-title">
+      <div className="workstation-section-head">
+        <div>
+          <h2 id="live-workbench-title">Live workbench</h2>
+          <p>Create one human-owned draft and inspect the persisted work snapshot.</p>
+        </div>
+        <button type="button" className="secondary" onClick={() => void load()}>Refresh</button>
+      </div>
+      <div className="workstation-live-grid">
+        <form onSubmit={(event) => {
+          event.preventDefault();
+          if (!draft) return;
+          void run(async () => {
+            await adminApi.createWork({
+              idempotencyKey: `admin-${Date.now()}`,
+              title, sourceProblem: problem, whyNow, coreViewpoint: viewpoint,
+              protectedClaims: [], contentBrief: brief, draft,
+            });
+            setTitle(''); setProblem(''); setWhyNow(''); setViewpoint(''); setDraft(null);
+            await load();
+          });
+        }}>
+          <label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
+          <label>Core viewpoint<textarea value={viewpoint} onChange={(event) => setViewpoint(event.target.value)} required /></label>
+          <label>Source problem<textarea value={problem} onChange={(event) => setProblem(event.target.value)} required /></label>
+          <label>Why now<input value={whyNow} onChange={(event) => setWhyNow(event.target.value)} required /></label>
+          <div className="workstation-brief-grid">
+            {(Object.keys(brief) as Array<keyof typeof brief>).map((key) => (
+              <label key={key}>{key}<input value={brief[key]} onChange={(event) => updateBrief(key, event.target.value)} required /></label>
+            ))}
+          </div>
+          <label>Human draft<input type="file" accept=".md,.mdx,.txt,text/markdown,text/plain" onChange={(event) => setDraft(event.target.files?.[0] ?? null)} required /></label>
+          <button type="submit">Create draft work</button>
+          {err ? <p className="error">{err}</p> : null}
+        </form>
+        <div>
+          <h3>Current snapshot</h3>
+          <p className="muted">Topics: {snapshot?.topics.length ?? '—'}</p>
+          <p className="muted">Open actions: {snapshot?.openActions.length ?? '—'}</p>
+          <p className="muted">Video log: {snapshot?.videoLog.length ?? '—'}</p>
+          <p className="muted">Works: {snapshot?.activeWorks.length ?? '—'}</p>
+          {snapshot?.activeWorks.map((work) => <div className="workstation-mini-row" key={work.id}><strong>{work.title}</strong><span>{work.status}</span></div>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function WorkstationPage() {
   return (
     <div>
@@ -97,6 +168,8 @@ export function WorkstationPage() {
           ))}
         </div>
       </section>
+
+      <LiveWorkbench />
 
       <section aria-labelledby="pipeline-title">
         <div className="workstation-section-head">

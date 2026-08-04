@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { DeliveryForm, ReviewOutcome } from '@walker/shared';
+import type { Prisma } from '@prisma/client';
+import type { ContentBrief, DeliveryForm, ReviewOutcome } from '@walker/shared';
 import type {
   ExecutionRecord,
   ExecutionRepositoryPort,
@@ -26,21 +27,34 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
     deliveryNote: string | null;
     outcome: string | null;
     evidence: string | null;
+    contentBrief: unknown;
     createdAt: Date;
     updatedAt: Date;
   }): ExecutionRecord {
-    return { ...row };
+    return { ...row, contentBrief: row.contentBrief as ContentBrief | null };
   }
 
-  async create(input: { id: string; seedId: string }): Promise<ExecutionRecord> {
+  async create(input: { id: string; seedId: string; contentBrief?: ContentBrief | null }): Promise<ExecutionRecord> {
     const row = await this.db().execution.create({
-      data: { id: input.id, seedId: input.seedId, status: 'doing' },
+      data: {
+        id: input.id,
+        seedId: input.seedId,
+        status: 'doing',
+        contentBrief: input.contentBrief === undefined
+          ? undefined
+          : (input.contentBrief as unknown as Prisma.InputJsonValue),
+      },
     });
     return this.map(row);
   }
 
   async findById(id: string): Promise<ExecutionRecord | null> {
     const row = await this.db().execution.findUnique({ where: { id } });
+    return row ? this.map(row) : null;
+  }
+
+  async findBySeedId(seedId: string): Promise<ExecutionRecord | null> {
+    const row = await this.db().execution.findFirst({ where: { seedId }, orderBy: { createdAt: 'asc' } });
     return row ? this.map(row) : null;
   }
 

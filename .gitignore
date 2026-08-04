@@ -90,3 +90,7 @@ tmp/
 
 # Local isolated implementation worktrees
 .worktrees/
+
+# AI content workstation local artifacts
+var/works/
+var/uploads/

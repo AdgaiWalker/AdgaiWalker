@@ -37,6 +37,8 @@ model Seed {
   severity      String?
   selfInterest  String?
   primaryClueId String?
+  workflowStatus String  @default("INBOX")
+  whyNow         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -66,12 +68,52 @@ model Execution {
   deliveryNote  String?
   outcome       String?
   evidence      String?
+  contentBrief  Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   seed Seed @relation(fields: [seedId], references: [id], onDelete: Cascade)
+  submission Submission?
 
   @@index([seedId])
+}
+
+model Submission {
+  id                   String   @id
+  executionId          String   @unique
+  idempotencyKey       String   @unique
+  title                String
+  status               String   @default("DRAFT_READY")
+  manifestPath         String
+  coreViewpoint        String
+  protectedClaims      Json
+  approvedArtifactHash String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Action {
+  id          String   @id
+  title       String
+  note        String?
+  kind        String   @default("TASK")
+  entityType  String?
+  entityId    String?
+  status      String   @default("OPEN")
+  plannedDate String?
+  completedAt DateTime?
+  source      String   @default("HUMAN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([plannedDate])
+  @@index([entityType, entityId])
 }
 
 model GuestQuota {

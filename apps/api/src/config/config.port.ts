@@ -4,6 +4,8 @@ export interface AppConfigPort {
   isAiEnabled(): boolean;
   getPort(): number;
   getNodeEnv(): string;
+  getWorkRootDir(): string;
+  getWorkMaxUploadBytes(): number;
 }
 
 export const APP_CONFIG = Symbol('APP_CONFIG');

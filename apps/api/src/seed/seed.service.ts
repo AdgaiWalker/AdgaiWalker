@@ -5,6 +5,9 @@ import {
   FEATURE_FAIL_CODES,
   isInterestLevel,
   isValidTwoQuestions,
+  assertTopicTransition,
+  normalizeContentBrief,
+  type ContentBrief,
   type CluePoolStatus,
   type InterestLevel,
   type SeedClueLink,
@@ -32,6 +35,7 @@ import {
   type SeedRepositoryPort,
 } from '../ports/seed.repository';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
+import { ACTION_REPOSITORY, type ActionRepositoryPort } from '../ports/action.repository';
 
 @Injectable()
 export class SeedService {
@@ -42,6 +46,7 @@ export class SeedService {
     @Inject(EXECUTION_REPOSITORY)
     private readonly executions: ExecutionRepositoryPort,
     @Inject(FEATURE_EVENT) private readonly events: FeatureEventPort,
+    @Inject(ACTION_REPOSITORY) private readonly actions?: ActionRepositoryPort,
   ) {}
 
   async list(limit = DEFAULT_LIST_LIMIT) {
@@ -53,6 +58,33 @@ export class SeedService {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     if (!title.trim()) throw validationError('title-required');
     return this.seeds.create({ id: newId(), title: title.trim() });
+  }
+
+  async updateTopic(
+    seedId: string,
+    input: { title?: string; workflowStatus?: import('@walker/shared').TopicStatus; whyNow?: string | null },
+  ) {
+    if (!this.prisma.isWritable()) throw storageUnavailable();
+    const seed = await this.seeds.findById(seedId);
+    if (!seed) throw validationError('seed-not-found');
+    if (input.workflowStatus === 'SELECTED') {
+      throw validationError('selected-requires-human-promote');
+    }
+    if (input.workflowStatus) {
+      try {
+        assertTopicTransition(seed.workflowStatus, input.workflowStatus);
+      } catch (error) {
+        throw validationError(error instanceof Error ? error.message : 'invalid-topic-transition');
+      }
+    }
+    if (input.title !== undefined && !input.title.trim()) {
+      throw validationError('title-required');
+    }
+    return this.seeds.updateTopic(seedId, {
+      title: input.title?.trim(),
+      workflowStatus: input.workflowStatus,
+      whyNow: input.whyNow === undefined ? undefined : input.whyNow?.trim() || null,
+    });
   }
 
   async linkClue(seedId: string, clueId: string, asPrimary = false) {
@@ -72,12 +104,20 @@ export class SeedService {
   }
 
   /** 主选：必须 in-pool 线索，否则 missing-clue */
-  async promote(seedId: string, clueId: string) {
+  async promote(
+    seedId: string,
+    clueId: string,
+    input?: { whyNow?: string; brief?: ContentBrief },
+  ) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     const seed = await this.seeds.findById(seedId);
     if (!seed) throw validationError('seed-not-found');
     const clue = await this.clues.findById(clueId);
     if (!clue) throw validationError('clue-not-found');
+
+    if (this.actions && !input?.brief) {
+      throw validationError('content-brief-incomplete');
+    }
 
     await this.ensureClueLinked(seedId, clueId, seed.links);
 
@@ -104,8 +144,40 @@ export class SeedService {
       throw missingClue();
     }
 
+    const normalizedBrief = input?.brief
+      ? (() => {
+          try {
+            return normalizeContentBrief(input.brief);
+          } catch (error) {
+            throw validationError(error instanceof Error ? error.message : 'content-brief-incomplete');
+          }
+        })()
+      : null;
     const result = await this.seeds.setPrimary(seedId, clueId);
-    await this.executions.create({ id: newId(), seedId });
+    const execution = await this.executions.findBySeedId(seedId);
+    const ensuredExecution = execution ?? (await this.executions.create({
+      id: newId(),
+      seedId,
+      contentBrief: normalizedBrief,
+    }));
+    if (this.seeds.updateTopic) {
+      await this.seeds.updateTopic(seedId, {
+        workflowStatus: 'SELECTED',
+        whyNow: input?.whyNow?.trim() || null,
+      });
+    }
+    if (this.actions && normalizedBrief) {
+      await this.actions.ensureOpenForEntity({
+        id: newId(),
+        title: `Write first draft: ${refreshed.title}`,
+        note: normalizedBrief.keyQuestion,
+        kind: 'TASK',
+        entityType: 'EXECUTION',
+        entityId: ensuredExecution.id,
+        plannedDate: null,
+        source: 'SYSTEM',
+      });
+    }
     await this.events.record({
       id: newId(),
       featureKey: 'seed.promote',

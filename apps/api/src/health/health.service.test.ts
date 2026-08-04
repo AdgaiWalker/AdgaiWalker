@@ -17,6 +17,8 @@ function stubConfig(partial: Partial<AppConfigPort> = {}): AppConfigPort {
     isAiEnabled: () => false,
     getPort: () => 8788,
     getNodeEnv: () => 'test',
+    getWorkRootDir: () => 'var/works',
+    getWorkMaxUploadBytes: () => 100 * 1024 * 1024,
     ...partial,
   };
 }

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { CluePoolStatus, InterestLevel, SeedLinkRole } from '@walker/shared';
+import type { CluePoolStatus, InterestLevel, SeedLinkRole, TopicStatus } from '@walker/shared';
 import type { SeedRecord, SeedRepositoryPort } from '../ports/seed.repository';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { storageUnavailable } from '../common/http-error';
@@ -26,6 +26,8 @@ export class PrismaSeedRepository implements SeedRepositoryPort {
       severity: row.severity as InterestLevel | null,
       selfInterest: row.selfInterest as InterestLevel | null,
       primaryClueId: row.primaryClueId,
+      workflowStatus: row.workflowStatus as TopicStatus,
+      whyNow: row.whyNow,
       createdAt: row.createdAt,
       links: row.links.map((l) => ({
         clueId: l.clueId,
@@ -111,5 +113,20 @@ export class PrismaSeedRepository implements SeedRepositoryPort {
       data: { severity: q.severity, selfInterest: q.selfInterest },
     });
     return (await this.load(seedId))!;
+  }
+
+  async updateTopic(
+    id: string,
+    input: { title?: string; workflowStatus?: TopicStatus; whyNow?: string | null },
+  ): Promise<SeedRecord> {
+    await this.db().seed.update({
+      where: { id },
+      data: {
+        title: input.title,
+        workflowStatus: input.workflowStatus,
+        whyNow: input.whyNow,
+      },
+    });
+    return (await this.load(id))!;
   }
 }
