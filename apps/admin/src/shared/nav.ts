@@ -31,6 +31,11 @@ export const adminNavGroups: AdminNavGroup[] = [
     title: '焦点',
     items: [
       {
+        path: ADMIN_ROUTES.workstation,
+        label: '工作台',
+        icon: LayoutDashboard,
+      },
+      {
         path: ADMIN_ROUTES.today,
         label: '今日',
         icon: LayoutDashboard,
