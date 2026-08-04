@@ -70,7 +70,17 @@ export class ProductionService {
   async acceptManualArtifact(workId: string, artifact: StageArtifact) {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     validateStageArtifact(artifact);
-    return this.artifacts.write(workId, artifact);
+    const body = typeof artifact.output.body === 'string' ? artifact.output.body : '';
+    const normalized: StageArtifact = {
+      ...artifact,
+      output: this.ensurePortableOutput(artifact.stage, artifact.output, body),
+      createdAt: artifact.createdAt ?? new Date().toISOString(),
+    };
+    const saved = await this.artifacts.write(workId, normalized);
+    if (this.works?.setStatus) {
+      await this.works.setStatus(workId, artifact.stage === 'REVIEW_READY' ? 'REVIEW_READY' : 'PROCESSING');
+    }
+    return saved;
   }
 
   private async findNextStage(workId: string): Promise<ProductionStage> {
@@ -99,8 +109,8 @@ export class ProductionService {
       };
     }
     if (stage === 'WEB_FORMAT') return { ...output, body, markdown: typeof output.markdown === 'string' ? output.markdown : body };
-    if (stage === 'WECHAT_FORMAT') return { ...output, body, html: typeof output.html === 'string' ? output.html : `<p>${this.escapeHtml(body)}</p>` };
-    if (stage === 'REVIEW_READY') return { ...output, body, markdown: typeof output.markdown === 'string' ? output.markdown : body, html: typeof output.html === 'string' ? output.html : `<p>${this.escapeHtml(body)}</p>`, title: typeof output.title === 'string' ? output.title : 'AI content draft' };
+    if (stage === 'WECHAT_FORMAT') return { ...output, body, html: typeof output.html === 'string' ? output.html : `<p>${this.escapeHtml(body)}</p>`, landscapeCover: typeof output.landscapeCover === 'string' ? output.landscapeCover : this.coverSvg('landscape', body), portraitCover: typeof output.portraitCover === 'string' ? output.portraitCover : this.coverSvg('portrait', body) };
+    if (stage === 'REVIEW_READY') return { ...output, body, markdown: typeof output.markdown === 'string' ? output.markdown : body, html: typeof output.html === 'string' ? output.html : `<p>${this.escapeHtml(body)}</p>`, title: typeof output.title === 'string' ? output.title : 'AI content draft', landscapeCover: typeof output.landscapeCover === 'string' ? output.landscapeCover : this.coverSvg('landscape', body), portraitCover: typeof output.portraitCover === 'string' ? output.portraitCover : this.coverSvg('portrait', body) };
     return { ...output, body };
   }
 

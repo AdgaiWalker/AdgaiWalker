@@ -6,7 +6,7 @@ import {
   WORKSTATION_PIPELINE,
 } from './WorkstationPage';
 
-describe('Workstation page scaffold', () => {
+describe('Workstation page', () => {
   it('has one stable route in the primary navigation', () => {
     expect(ADMIN_ROUTES.workstation).toBe('/workstation');
     expect(
@@ -16,14 +16,16 @@ describe('Workstation page scaffold', () => {
     ).toBe(true);
   });
 
-  it('distinguishes contract-ready foundations from deferred workflow', () => {
+  it('marks the full MVP workflow as available', () => {
     expect(WORKSTATION_FOUNDATIONS.map((item) => item.status)).toEqual([
       'READY',
       'READY',
       'READY',
     ]);
-    expect(WORKSTATION_PIPELINE.map((item) => item.status)).toContain(
-      'NOT_IMPLEMENTED',
-    );
+    expect(WORKSTATION_PIPELINE.map((item) => item.status)).toEqual([
+      'READY',
+      'READY',
+      'READY',
+    ]);
   });
 });

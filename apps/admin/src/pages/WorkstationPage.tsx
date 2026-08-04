@@ -31,23 +31,23 @@ export const WORKSTATION_FOUNDATIONS: readonly WorkstationScaffoldItem[] = [
 export const WORKSTATION_PIPELINE: readonly WorkstationScaffoldItem[] = [
   {
     title: '原稿入库',
-    description: '上传与不可变哈希将在下一步接入持久化。',
-    status: 'NOT_IMPLEMENTED',
+    description: '上传人工初稿，原稿清单和字节保持不可变。',
+    status: 'READY',
   },
   {
     title: 'AI 加工',
-    description: '结构、质量检查、封面与公众号排版尚未接入。',
-    status: 'NOT_IMPLEMENTED',
+    description: '按固定配方逐阶段生成 Artifact，失败后从最近成功阶段重试。',
+    status: 'READY',
   },
   {
     title: '审批与发布',
-    description: '统一审批、网站发布和公众号草稿准备尚未接入。',
-    status: 'NOT_IMPLEMENTED',
+    description: '审批不可变版本，生成网站文件、公众号草稿包，并支持整包导出。',
+    status: 'READY',
   },
 ] as const;
 
 const STATUS_LABEL: Record<ScaffoldStatus, string> = {
-  READY: '骨架已建立',
+  READY: '可运行',
   NOT_IMPLEMENTED: '待接入',
 };
 
@@ -76,6 +76,8 @@ function LiveWorkbench() {
   const [draft, setDraft] = useState<File | null>(null);
   const [brief, setBrief] = useState({ audience: '', scenario: '', problem: '', keyQuestion: '', intendedAction: '' });
   const [artifactHashes, setArtifactHashes] = useState<Record<string, string>>({});
+  const [failedStages, setFailedStages] = useState<Record<string, string>>({});
+  const [exportDestination, setExportDestination] = useState('');
   const { err, run } = useAdminAction();
 
   const load = useCallback(async () => {
@@ -124,23 +126,28 @@ function LiveWorkbench() {
         </form>
         <div>
           <h3>Current snapshot</h3>
+          <label>Export directory<input value={exportDestination} onChange={(event) => setExportDestination(event.target.value)} placeholder="D:\\exports" /></label>
           <p className="muted">Topics: {snapshot?.topics.length ?? '—'}</p>
           <p className="muted">Open actions: {snapshot?.openActions.length ?? '—'}</p>
           <p className="muted">Video log: {snapshot?.videoLog.length ?? '—'}</p>
           <p className="muted">Works: {snapshot?.activeWorks.length ?? '—'}</p>
           {snapshot?.activeWorks.map((work) => {
             const hash = artifactHashes[work.id] ?? work.approvedArtifactHash ?? '';
+            const failedStage = failedStages[work.id];
             return <div className="workstation-mini-row" key={work.id}>
               <strong>{work.title}</strong><span>{work.status}</span>
               <button type="button" className="secondary" onClick={() => void run(async () => {
-                const result = await adminApi.produceWork(work.id);
+                const result = await adminApi.produceWork(work.id, failedStage ? { fromStage: failedStage } : undefined);
                 if (result.latestHash) setArtifactHashes((current) => ({ ...current, [work.id]: result.latestHash! }));
+                if (result.failedStage) setFailedStages((current) => ({ ...current, [work.id]: result.failedStage! }));
+                else setFailedStages((current) => { const next = { ...current }; delete next[work.id]; return next; });
                 await load();
-              })}>Run recipe</button>
-              {hash && (work.status === 'REVIEW_READY' || work.status === 'APPROVED') ? <>
+              })}>{failedStage ? `Retry from ${failedStage}` : 'Run recipe'}</button>
+              {hash && (work.status === 'REVIEW_READY' || work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED') ? <>
                 {work.status === 'REVIEW_READY' ? <button type="button" onClick={() => void run(async () => { await adminApi.approveWork(work.id, hash); await load(); })}>Approve</button> : null}
-                {work.status === 'APPROVED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.publishWebsite(work.id, hash); await load(); })}>Website</button> : null}
+                {work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.publishWebsite(work.id, hash); await load(); })}>Website</button> : null}
                 <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.prepareWechatDraft(work.id, hash); await load(); })}>WeChat draft</button>
+                {exportDestination.trim() ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.exportWork(work.id, exportDestination); await load(); })}>Export work</button> : null}
               </> : null}
             </div>;
           })}
@@ -154,21 +161,21 @@ export function WorkstationPage() {
   return (
     <div>
       <header className="page-head">
-        <p className="workstation-eyebrow">Slice 1 · Scaffold</p>
+        <p className="workstation-eyebrow">AI content operations</p>
         <h1>AI 自媒体工作站</h1>
         <p className="page-lead">
-          先固定一篇作品从人工初稿到发布准备的业务骨架，再逐段接入真实能力。
+          从人工初稿开始，沿着固定生产配方完成审批、网站发布和公众号草稿准备。
         </p>
       </header>
 
       <section className="panel workstation-notice" aria-label="当前状态">
         <div>
-          <strong>当前只完成脚手架</strong>
+          <strong>当前工作状态</strong>
           <p>
-            状态契约和页面入口可继续开发；数据持久化、AI 加工、审批和发布均未实现。
+            每个作品都保留原稿、阶段 Artifact、审批哈希和发布准备包；失败时可以从最近成功阶段恢复。
           </p>
         </div>
-        <span className="status-dot">不可用于真实发布</span>
+        <span className="status-dot is-ready">MVP 可运行</span>
       </section>
 
       <section aria-labelledby="foundation-title">
@@ -190,8 +197,8 @@ export function WorkstationPage() {
       <section aria-labelledby="pipeline-title">
         <div className="workstation-section-head">
           <div>
-            <h2 id="pipeline-title">接下来接入的闭环</h2>
-            <p>每一段都必须有真实结果和失败恢复证据后，才会显示为可用。</p>
+            <h2 id="pipeline-title">作品生产闭环</h2>
+            <p>先创建一篇人工初稿，再按顺序运行、审批、发布或导出。</p>
           </div>
         </div>
         <div className="workstation-grid">

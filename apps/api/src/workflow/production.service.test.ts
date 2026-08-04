@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentRunnerPort } from '../ports/agent-runner.port';
+import type { WorkStatus } from '@walker/shared';
 import type { PrismaPort } from '../ports/prisma.port';
 import type { StageArtifactRecord, StageArtifactRepositoryPort } from '../ports/stage-artifact.repository';
+import type { WorkRepositoryPort } from '../ports/work.repository';
 import { ProductionService } from './production.service';
 
 function harness(failStage?: string) {
@@ -25,7 +27,7 @@ function harness(failStage?: string) {
     },
   };
   const prisma: PrismaPort = { getClient: () => null, isWritable: () => true, async ping() { return true; } };
-  return { service: new ProductionService(prisma, runner, artifacts), writes, get calls() { return calls; } };
+  return { service: new ProductionService(prisma, runner, artifacts), prisma, runner, artifacts, writes, get calls() { return calls; } };
 }
 
 describe('ProductionService', () => {
@@ -47,5 +49,19 @@ describe('ProductionService', () => {
     const recovered = await h.service.run('work-2', '# original draft', { fromStage: 'QUALITY_CHECK', allowFailure: false });
     expect(recovered.status).toBe('REVIEW_READY');
     expect(h.writes.map((item) => item.stage)).toEqual(['NORMALIZE', 'EDIT', 'QUALITY_CHECK', 'FREEZE_BODY', 'COVER', 'WEB_FORMAT', 'WECHAT_FORMAT', 'REVIEW_READY']);
+  });
+
+  it('moves a manually accepted review artifact into the approval queue', async () => {
+    const statuses: string[] = [];
+    const h = harness();
+    const service = new ProductionService(
+      h.prisma,
+      h.runner,
+      h.artifacts,
+      { setStatus: async (_id: string, status: WorkStatus) => { statuses.push(status); return {} as never; } } as unknown as WorkRepositoryPort,
+    );
+    const saved = await service.acceptManualArtifact('work-3', { recipeVersion: 1, stage: 'REVIEW_READY', output: { title: 'manual', body: 'manual body' } });
+    expect(statuses).toEqual(['REVIEW_READY']);
+    expect(saved.artifact.output.landscapeCover).toEqual(expect.stringContaining('<svg'));
   });
 });

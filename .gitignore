@@ -92,5 +92,6 @@ tmp/
 .worktrees/
 
 # AI content workstation local artifacts
+var/
 var/works/
 var/uploads/
