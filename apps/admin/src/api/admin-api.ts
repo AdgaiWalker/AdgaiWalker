@@ -150,6 +150,8 @@ export const adminApi = {
   },
   produceWork: (id: string, body?: { originalText?: string; fromStage?: string }) =>
     adminRequest<{ status: string; latestHash?: string; failedStage?: string; error?: string }>(`/works/${id}/produce`, { method: 'POST', body: JSON.stringify(body ?? {}) }),
+  cancelWork: (id: string) =>
+    adminRequest<{ status: 'CANCELLED'; workId: string }>(`/works/${id}/cancel`, { method: 'POST' }),
   acceptManualArtifact: (id: string, artifact: unknown) =>
     adminRequest<{ hash: string }>(`/works/${id}/artifacts`, { method: 'POST', body: JSON.stringify({ artifact }) }),
   approveWork: (id: string, artifactHash: string) =>

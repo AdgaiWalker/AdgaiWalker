@@ -13,10 +13,13 @@ export interface ProductionRunOptions {
 
 export type ProductionRunResult =
   | { status: 'REVIEW_READY'; latestHash: string | null; completedStages: ProductionStage[] }
-  | { status: 'FAILED'; failedStage: ProductionStage; error: string; latestHash: string | null; completedStages: ProductionStage[] };
+  | { status: 'FAILED'; failedStage: ProductionStage; error: string; latestHash: string | null; completedStages: ProductionStage[] }
+  | { status: 'CANCELLED'; latestHash: string | null; completedStages: ProductionStage[] };
 
 @Injectable()
 export class ProductionService {
+  private readonly cancelled = new Set<string>();
+
   constructor(
     @Inject(PRISMA) private readonly prisma: PrismaPort,
     @Inject(AGENT_RUNNER) private readonly runner: AgentRunnerPort,
@@ -27,6 +30,11 @@ export class ProductionService {
   async run(workId: string, originalText: string, options: ProductionRunOptions = {}): Promise<ProductionRunResult> {
     if (!this.prisma.isWritable()) throw storageUnavailable();
     if (!originalText.trim()) throw validationError('original-text-required');
+    if (this.cancelled.has(workId)) {
+      const completedStages = (await this.artifacts.list(workId)).map((item) => item.stage).filter((stage, index, all) => all.indexOf(stage) === index);
+      const latestHash = (await this.artifacts.list(workId)).at(-1)?.hash ?? null;
+      return { status: 'CANCELLED', latestHash, completedStages };
+    }
     await this.works?.setStatus?.(workId, 'PROCESSING');
     const from = options.fromStage ?? await this.findNextStage(workId);
     const start = PRODUCTION_STAGES.indexOf(from);
@@ -37,6 +45,10 @@ export class ProductionService {
     previousHash = priorAtStart?.hash ?? null;
 
     for (const stage of PRODUCTION_STAGES.slice(start)) {
+      if (this.cancelled.has(workId)) {
+        await this.works?.setStatus?.(workId, 'CANCELLED');
+        return { status: 'CANCELLED', latestHash: previousHash, completedStages };
+      }
       const prompt = this.buildPrompt(stage, originalText, prior, previousHash);
       try {
         const result = await this.runner.run({ prompt, cwd: process.cwd() });
@@ -65,6 +77,13 @@ export class ProductionService {
     }
     await this.works?.setStatus?.(workId, 'REVIEW_READY');
     return { status: 'REVIEW_READY', latestHash: previousHash, completedStages };
+  }
+
+  async cancel(workId: string) {
+    if (!this.prisma.isWritable()) throw storageUnavailable();
+    this.cancelled.add(workId);
+    await this.works?.setStatus?.(workId, 'CANCELLED');
+    return { status: 'CANCELLED' as const, workId };
   }
 
   async acceptManualArtifact(workId: string, artifact: StageArtifact) {

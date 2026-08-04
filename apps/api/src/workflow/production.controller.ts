@@ -20,4 +20,9 @@ export class ProductionController {
   acceptManual(@Param('id') id: string, @Body() body: { artifact?: StageArtifact }) {
     return this.production.acceptManualArtifact(id, body.artifact as StageArtifact);
   }
+
+  @Post(':id/cancel')
+  cancel(@Param('id') id: string) {
+    return this.production.cancel(id);
+  }
 }

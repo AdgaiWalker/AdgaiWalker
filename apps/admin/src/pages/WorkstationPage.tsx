@@ -136,7 +136,8 @@ function LiveWorkbench() {
             const failedStage = failedStages[work.id];
             return <div className="workstation-mini-row" key={work.id}>
               <strong>{work.title}</strong><span>{work.status}</span>
-              <button type="button" className="secondary" onClick={() => void run(async () => {
+              {work.status === 'PROCESSING' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.cancelWork(work.id); await load(); })}>Stop</button> : null}
+              <button type="button" className="secondary" disabled={work.status === 'CANCELLED'} onClick={() => void run(async () => {
                 const result = await adminApi.produceWork(work.id, failedStage ? { fromStage: failedStage } : undefined);
                 if (result.latestHash) setArtifactHashes((current) => ({ ...current, [work.id]: result.latestHash! }));
                 if (result.failedStage) setFailedStages((current) => ({ ...current, [work.id]: result.failedStage! }));

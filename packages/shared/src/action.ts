@@ -9,6 +9,7 @@ export const ACTION_ENTITY_TYPES = [
   'EXECUTION',
   'SUBMISSION',
   'PUBLICATION',
+  'FEEDBACK',
 ] as const;
 export type ActionEntityType = (typeof ACTION_ENTITY_TYPES)[number];
 

@@ -64,4 +64,20 @@ describe('ProductionService', () => {
     expect(statuses).toEqual(['REVIEW_READY']);
     expect(saved.artifact.output.landscapeCover).toEqual(expect.stringContaining('<svg'));
   });
+
+  it('can terminate a queued run without deleting successful artifacts', async () => {
+    const h = harness();
+    const statuses: string[] = [];
+    const service = new ProductionService(
+      h.prisma,
+      h.runner,
+      h.artifacts,
+      { setStatus: async (_id: string, status: WorkStatus) => { statuses.push(status); return {} as never; } } as unknown as WorkRepositoryPort,
+    );
+    await service.cancel('work-cancelled');
+    const result = await service.run('work-cancelled', '# original draft');
+    expect(result.status).toBe('CANCELLED');
+    expect(h.writes).toHaveLength(0);
+    expect(statuses).toEqual(['CANCELLED']);
+  });
 });

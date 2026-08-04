@@ -169,6 +169,9 @@ model ContentFeedback {
   contentId String
   signal    String
   note      String?
+  source    String   @default("unknown")
+  convertedSeedId String?
+  convertedActionId String?
   createdAt DateTime @default(now())
 
   @@index([contentId])
