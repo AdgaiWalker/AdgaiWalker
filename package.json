@@ -29,7 +29,8 @@
     "verify:stage1": "tsx scripts/verify-stage1.ts",
     "accept:dual-entry": "tsx scripts/accept-dual-entry.ts",
     "accept:deep": "tsx scripts/accept-deep.ts",
-    "accept": "tsx scripts/accept-dual-entry.ts && tsx scripts/accept-deep.ts"
+    "accept": "tsx scripts/accept-dual-entry.ts && tsx scripts/accept-deep.ts",
+    "accept:ai-workstation:mvp": "tsx scripts/mvp-acceptance.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.32",
