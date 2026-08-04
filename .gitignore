@@ -87,3 +87,6 @@ tmp/
 
 # Grok TUI local MCP / session config
 .grok/
+
+# Local isolated implementation worktrees
+.worktrees/
