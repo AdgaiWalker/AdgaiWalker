@@ -2,14 +2,15 @@
 
 更新时间：2026-08-04
 
-这份记录只保留当前可重复检查的证据。正式网站部署与正常登录公众号会话仍属于外部验收，不在本地成功上报。
+这份记录只保留当前可重复检查的证据。正式网站已完成部署并经远程标题/正文验证；正常登录公众号会话仍属于外部验收。
 
 ## 代码与自动化验证
 
-- 最新工作站提交：`14754f9`（正常会话公众号草稿 Adapter）；前置提交 `f12ed5b`（进度、审批包、网站远程验证）。
-- API：19 个测试文件，46 个测试通过。
+- 最新工作站提交：`2ef71a9`（Publication 查询与验收审计）；内容发布提交 `0cd96d3`。
+- API：19 个测试文件，47 个测试通过。
 - Admin：2 个测试文件，4 个测试通过。
 - API、Admin、Web、Shared 的 typecheck/build 均通过。
+- `pnpm accept:ai-workstation:mvp` 已运行：三篇本地证据全部通过；网站已通过，公众号草稿仍待登录会话。
 - SQLite schema 已通过 `prisma db push`；PostgreSQL schema 与迁移同步维护。
 
 ## P0 覆盖
@@ -45,10 +46,14 @@
 
 独立导出目录：`D:\walker-exports-v3\<workId>`。每份导出均包含原稿、八阶段结果、双封面、390px 预览和 `publish/wechat.json`。
 
-## 未完成的外部验收
+## 当前外部验收状态
 
-1. Website：三个正式 URL 当前 HTTP 200 但正文不包含对应标题；远程验证器明确返回 `remote-content-not-found`。本地只生成了 `content/log` 源文件，没有自动 push Git/Vercel。
+1. Website：三个正式 URL 已由 GitHub/Vercel 部署并验证通过：
+   - `https://iwalk.pro/posts/419a2f`
+   - `https://iwalk.pro/posts/ai-20dc86`
+   - `https://iwalk.pro/posts/codex-5a70cd`
+   三个页面均返回 HTTP 200 且标题与正文可见；数据库中的三条 Website Publication 已重试为 `PUBLISHED`。
 2. WeChat：草稿包已生成，Publication 停在 `WAITING_USER`；当前运行态 Adapter 返回 `wechat-session-unavailable`，尚未连接正常登录会话保存草稿。
 3. Codex CLI：版本可调用，但 `codex exec --json --ephemeral` 在本机 30 秒超时；三篇真实作品使用当前会话人工兜底 Artifact，不能宣称已完成外部 Codex 正常路径。
 
-只有上述三项外部证据补齐，并由作者确认内容质量、观点保护和主动操作时间后，才能把 Goal 标记为 complete。
+公众号草稿与 Codex CLI 是当前仍未完成的两项证据；在它们补齐并由作者确认内容质量、观点保护和主动操作时间前，不能把 Goal 标记为 complete。
