@@ -172,7 +172,7 @@ function renderPage({
     .replace(/\s*<title>[\s\S]*?<\/title>/i, '')
     .replace(
       '</head>',
-      `  ${head}\n  <script type="application/ld+json">${escapeJsonForHtml(schema)}</script>\n</head>`,
+      `  ${head}\n  <script id="site-json-ld" type="application/ld+json">${escapeJsonForHtml(schema)}</script>\n</head>`,
     )
     .replace('<div id="root"></div>', `<div id="root">${body}</div>`);
 

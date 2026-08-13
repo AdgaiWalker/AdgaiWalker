@@ -4,6 +4,7 @@
  */
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
+import { RouteMetadata } from './components/RouteMetadata';
 import { HomePage } from './pages/HomePage';
 import { PostsPage } from './pages/PostsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
@@ -42,6 +43,7 @@ const browseBase = strip(WEB_ROUTES.browse);
 export function App() {
   return (
     <BrowserRouter>
+      <RouteMetadata />
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />

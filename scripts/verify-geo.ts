@@ -24,7 +24,7 @@ function assert(condition: unknown, message: string): asserts condition {
 
 function extractJsonLd(html: string, label: string): unknown {
   const match = html.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/i,
+    /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i,
   );
   assert(match, `${label} has no JSON-LD`);
   try {
