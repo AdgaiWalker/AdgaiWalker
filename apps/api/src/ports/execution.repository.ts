@@ -1,4 +1,4 @@
-import type { DeliveryForm, ReviewOutcome } from '@walker/shared';
+import type { ContentBrief, DeliveryForm, ReviewOutcome } from '@walker/shared';
 
 export interface ExecutionRecord {
   id: string;
@@ -9,12 +9,14 @@ export interface ExecutionRecord {
   deliveryNote: string | null;
   outcome: string | null;
   evidence: string | null;
+  contentBrief: ContentBrief | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ExecutionRepositoryPort {
-  create(input: { id: string; seedId: string }): Promise<ExecutionRecord>;
+  create(input: { id: string; seedId: string; contentBrief?: ContentBrief | null }): Promise<ExecutionRecord>;
+  findBySeedId(seedId: string): Promise<ExecutionRecord | null>;
   findById(id: string): Promise<ExecutionRecord | null>;
   list(limit: number): Promise<ExecutionRecord[]>;
   deliver(

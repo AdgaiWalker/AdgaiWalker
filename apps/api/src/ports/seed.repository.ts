@@ -1,4 +1,4 @@
-import type { CluePoolStatus, InterestLevel, SeedLinkRole } from '@walker/shared';
+import type { CluePoolStatus, InterestLevel, SeedLinkRole, TopicStatus } from '@walker/shared';
 
 export interface SeedLinkRecord {
   clueId: string;
@@ -12,6 +12,8 @@ export interface SeedRecord {
   severity: InterestLevel | null;
   selfInterest: InterestLevel | null;
   primaryClueId: string | null;
+  workflowStatus: TopicStatus;
+  whyNow: string | null;
   links: SeedLinkRecord[];
   createdAt: Date;
 }
@@ -35,6 +37,10 @@ export interface SeedRepositoryPort {
   updateTwoQuestions(
     seedId: string,
     q: { severity: InterestLevel; selfInterest: InterestLevel },
+  ): Promise<SeedRecord>;
+  updateTopic(
+    id: string,
+    input: { title?: string; workflowStatus?: TopicStatus; whyNow?: string | null },
   ): Promise<SeedRecord>;
 }
 

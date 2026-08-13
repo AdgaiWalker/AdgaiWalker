@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T23:22:10.657Z",
+  "generatedAt": "2026-08-13T01:37:30.712Z",
   "items": [
     {
       "slug": "lobster-core-value",
@@ -52,6 +52,127 @@
           "description": "让小白不用学习、直接调用 Skill 的 Skill"
         }
       ]
+    },
+    {
+      "slug": "codex-5a70cd",
+      "title": "Codex 入门与第一次成功",
+      "date": "2026-08-04T15:00:15.719Z",
+      "updated": "2026-08-04T00:00:00.000Z",
+      "author": "duola",
+      "type": "knowledge",
+      "form": "tutorial",
+      "domain": "coding",
+      "intent": "teach",
+      "valueMode": "utility",
+      "status": "",
+      "summary": "把一个真实问题拆开，给出可以立刻开始的最小行动。",
+      "body": "> 做一件以前做不到的事情！想接触 CC、想接触命令行对话的你——了解 AI 或大概用过一阵子界面版 IDE，现在让我们驾驭 agent。\n\n**本章内容**：自动化安装 CC 及 node 全栈开发环境、选择外接模型、CC 管理、基础命令。\n\n**目的**：掌握 CC 工具，而不是 model 本身，用马具更好地控制 AI。\n\n## 常见问题与办法（提前预览，有问题即看）\n\n1. 看不懂英文——浏览器下载飞书 app，快捷键 `Ctrl+Shift+S`，点击翻译。\n2. CC 用不了——去看第 4 节。\n3. 后缀 `.md` 文档打不开或阅读困难——应用商店下载 Typedown。\n4. 看不到做的界面——默认浏览器为 Chrome，提示词「帮我启动项目」，如果没有画面，打开开发者模式修 bug。\n\n> 后续用 AI 更顺畅，推荐看 [0、得到一台好用的电脑](https://lcndccjmtf4f.feishu.cn/wiki/J8jDwimY9ieoxSktXpCccVKhngf)，并推荐截图勾画软件 ZoomIt。\n\n## 0、token 渠道\n\n- DeepSeek、GLM、Kimi、MiniMax 等官网购买国产模型。\n- 个人自用 GPT 中转（省钱多学习）：https://sanyeee.hnao.me/ ——9 小时从调查到写 3200 字研究报告，6 元消耗。\n\n## 1、做一个以前不敢想的点子\n\n先从一个身边触手可及的小事开始：一个个人博客、一个梦想中的马里奥、一个粒子交互的花朵——一件别人能做到、原来你做不到的事情。\n\n如果没想到，可以到 https://www.iwalk.pro/ 抽（Spark）一个点子！\n\n## 2、下载 CodeBuddy\n\n[戳这里安装：腾讯云代码助手 CodeBuddy](https://www.codebuddy.cn/ide/)\n\n> 不需要 API key，有免费使用额度。安装时，哪有选项点哪里。\n\n如果你只是想做 PPT、Excel、普通教学，CodeBuddy 够用；科研人员最好用 Codex。\n\n## 3、在工作界面，自动化安装基础开发环境\n\n![CodeBuddy 工作界面](/learn/cc/img1.png)\n\n给 agent 发这段提示词，让它自动装好环境：\n\n```plain text\n在 Windows（winget）或 macOS（brew）上自动检测并安装 Git、Node.js LTS、PostgreSQL 最新版，已安装的跳过；配置 npm registry 为国内镜像 https://registry.npmmirror.com；全局安装 @anthropic-ai/claude-code、@openai/codex、@google/gemini-cli；最后验证所有版本，全部安装成功，只需告诉结果。\n```\n\n或更细的版本：\n\n```plain text\n帮我安装 git、最新版本 node.js.lts、npm、postgresql\n默认用户为国内环境，尽量用国内方式安装。\n首先检测 Windows 系统环境，如果没有，帮我安装 winget。\n帮我用 winget 装：\nwinget install Git.Git\nwinget install OpenJS.NodeJS.LTS\n刷新环境后 npm config set registry https://registry.npmmirror.com\nnpm 装完后，继续装三个 AI CLI：\nnpm install -g @anthropic-ai/claude-code\nnpm install -g @openai/codex\nnpm install -g @google/gemini-cli\n最后验证版本。如果没有安装成功，请自行决定。\n```\n\n手动安装 Chrome 浏览器：https://www.google.cn/chrome\n\n> 科普：agent = harness + model\n\n## 4、CC 管理（按需而配，新手只配 apikey）\n\n### 一、下载 cc-switch\n\n管理 token apikey、MCP、skill 等外接工具。\n\n- Windows：`CC-Switch-v3.15.0-Windows.msi`\n- macOS：`CC-Switch-v3.15.0-macOS.dmg`\n- 其他系统版本：https://github.com/farion1231/cc-switch/releases\n- cc-switch 官网：https://ccswitch.io/zh/\n\n### 二、YOLO 模式\n\nClaude Code 自由奔跑模式，不用点授权，但也有概率误删重要文件——AI 通病。\n\n**cc-switch 安装（稳定推荐）**，配置：\n\n```json\n{\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\"\n  }\n}\n```\n\n**或提示词安装**：\n\n```plain text\n帮我在 ~/.claude/settings.json 文件配置以下\n{\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\"\n  }\n}\n```\n\n> 科普：关于模式本质——缰绳的松紧程度。\n\n## 5、对话常用基础命令——/ 和 @\n\n终端启动：`claude`\n\n对话调用文件：`@文件xxx`\n\n![CC 操作手册目录](/learn/cc/img2.png)\n\n**基础 skill：**\n\n- `/superpower`——一个说出想法、引领你想法成真的技能。\n- `/init`——调查工作区，生成 `CLAUDE.md`，后续对话不用再介绍项目。\n- `/clear`——重置本次对话记忆。\n- `/model`——切换模型。\n\n![/model 设置界面](/learn/cc/img3.png)\n\n- `/resume`——切换历史聊天。\n\n![/resume 历史会话](/learn/cc/img4.png)\n\n---\n\n做到这，相信你不仅敢信、也敢干了吧！加入我们一起做学徒，为了做得更好。一直更新的 [iwalk.pro](https://www.iwalk.pro/about)。",
+      "tags": [
+        "AI",
+        "Codex",
+        "Claude Code",
+        "入门"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "/learn/cc/img1.png",
+      "url": "",
+      "visibility": "public",
+      "published": true,
+      "hall": "condition",
+      "series": "",
+      "seriesOrder": null,
+      "related": [],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-1",
+        "readable": true,
+        "citable": false,
+        "actionable": false,
+        "reason": "包含第三方渠道和关闭权限保护的高风险旧步骤，不应由 AI 直接执行。"
+      },
+      "resources": []
+    },
+    {
+      "slug": "ai-20dc86",
+      "title": "低成本 AI 社群的真实问题",
+      "date": "2026-08-04T15:00:15.457Z",
+      "updated": "2026-08-04T00:00:00.000Z",
+      "author": "duola",
+      "type": "knowledge",
+      "form": "resource",
+      "domain": "community",
+      "intent": "share",
+      "valueMode": "utility",
+      "status": "",
+      "summary": "把一个真实问题拆开，给出可以立刻开始的最小行动。",
+      "body": "## 我在每个群干什么\n\n| 群 | 我在里面干什么 | 我用的什么 |\n|---|---|---|\n| **Antigravity 官方群** | 用切号插件解决多账号切换 | 切号工具，遇到 bug 去群里问 |\n| **廉价 AI 探索群** | 找性价比最高的 AI 方案 | 各种 AI API 的低价渠道信息 |\n| **Codex 中转群** | 用 API 中转服务请求各家模型 | 中转 API，日常开发在用 |\n| **Cockpit 插件交流群** | 用 Cockpit 买 Gemini token | Gemini 低价额度 |\n\n---\n\n## 说明\n\n**以上群全部免费加入**，不收费，不为任何群带货。分享只是因为我自己在用，觉得还不错。\n\n如果你还想知道更多我在用的 AI 学习群、工具群，可以联系我，备注来意即可。**加我时请附上你从 iwalk.pro 哪个页面来的**（复制链接就行），这样我知道你是从哪里看到我的。\n\n我还用了一些不方便公开列出链接的群——不是什么秘密，只是有些群主不想被广泛传播。感兴趣的话直接联系我，我会根据你的需求介绍。",
+      "tags": [
+        "AI",
+        "社群",
+        "低成本"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "",
+      "visibility": "public",
+      "published": true,
+      "hall": "kit",
+      "series": "",
+      "seriesOrder": null,
+      "related": [],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-1",
+        "readable": true,
+        "citable": false,
+        "actionable": false,
+        "reason": "群组与第三方渠道可能变化，仅可作为个人使用背景。"
+      },
+      "resources": []
+    },
+    {
+      "slug": "419a2f",
+      "title": "把害怕开始变成可执行动作",
+      "date": "2026-08-04T15:00:14.264Z",
+      "updated": "2026-08-04T00:00:00.000Z",
+      "author": "duola",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "life",
+      "intent": "record",
+      "valueMode": "existence",
+      "status": "",
+      "summary": "把一个真实问题拆开，给出可以立刻开始的最小行动。",
+      "body": "## 不甘心\n\n我不甘心困在小小的时空里。\n\n生活费两千，我的饭量大，够活。但算上 AI 的花费，有时候这个月花多了，下顿饭就没着落。有一次钱花超了，蹲在那儿，脑子里突然冒出一个念头：以后不靠父母，我会不会真的蹲在哪个楼梯角挨饿？\n\n空乘专业读着，但眼睛不过关，这条路走不了。\n\n我从小就停不下来——手机、网络、外面的世界，什么都好奇。接触了新东西就想拿来用，用着用着遇到问题，一个一个解决，解决完那一刻很爽。如果有一天因为钱，被框死在流水线上，每天重复同样的动作，对我来说是折磨。\n\n两条路都不通：一条走不了，一条我不想走。\n\n那我就自己找一条。\n\n马哲给了我方法，AI 给了我路。我不是在学 AI，我是在用 AI 解决真实问题。因为我要去置换更多的自由、和更大的空间。这也是 [[ferry-theory|Ferry]] 的起点。\n\n## 三样东西自然长出来了\n\n在一件一件事的过程中，三样东西慢慢积累起来了。不是我刻意设计的，是做着做着回头一看，发现它们已经在那里了。\n\n**工具库。** 没有钱，就到处找白嫖工具。找到一个，反复用，好用就留下。不是为了收藏，是对效率和性价比的追求——便宜、好用、能解决问题。时间长了，积攒了一批经过验证的工具。\n\n**点子库。** 每一个过程中，我都会观察和发现。这件事是怎么运作的？这些东西之间有什么关系？那个方法能不能用到这件事上？好奇心驱动，新旧交替之间，点子一个个冒出来。有些现在用不上，但先记下来——未来可能刚好戳中一个需求。\n\n**思考。** 做完一件事，回头想想，哪里可以更快、哪里可以更好。复盘不是弥补不足，是为了下次走得更远。\n\n这三样东西各有各的驱动力：工具来自对效率的追求，点子来自好奇心，思考来自对更好生活的渴望。它们不是计划出来的，是**现实困境和未来渴望相互碰撞的产物**。\n\n## 有一天回头看，发现这是一个系统\n\n需求来了，我会从这三样东西里取：\n\n先确认——这件事有没有必要做？我真正需要的是什么？\n\n然后理清场景——我是谁，我在哪，我要干什么。找到痛点，哪里和我的期望不符。\n\n接着最小验证——最简方案先做出来，能用就行。不追求完美，先跑起来。\n\n边用边改——用着用着发现不好用，再迭代。需求是不断循环的，系统也在不断生长。\n\n在这个过程里，三样东西各自发挥作用：\n\n- **[[affordable-ai-community|工具库]]**匹配需求——找到合适的工具直接用\n- **思考**帮我想清楚——翻以前的文章，省掉重复思考的时间\n- **[[ideas-beyond-time|点子库]]**让事情更有趣——查一查以前有没有相关的点子，说不定能让这个项目多一个意想不到的角度\n\n## 加上 AI，变成了第二大脑\n\n现在这个系统加上 AI，开始变成我的第二大脑。\n\n有需求来了，AI 帮我从工具库里匹配对应的工具，从思考记录里找到相关的内容，从点子库里检索可能用得上的想法。\n\n省掉的不是时间，是\"从零开始\"。\n\n过去走过的路、犯过的错、冒出来的灵感，都沉淀在这个系统里。AI 把它们连接起来，在需要的时候送到我面前。\n\n## 这不是一个教程\n\n那些怕的事和让我好奇的事，都变成了往前走的理由。\n\n我不是在教你怎么搭一个系统。我只是不甘心，就动手了。做着做着，因为需要，它自然长出来了。\n\n其实我最怕的，是不做会后悔。",
+      "tags": [
+        "生活",
+        "AI",
+        "个人系统"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "",
+      "visibility": "public",
+      "published": true,
+      "hall": "lab",
+      "series": "",
+      "seriesOrder": null,
+      "related": [],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-1",
+        "readable": true,
+        "citable": false,
+        "actionable": false,
+        "reason": "包含个人脆弱经历，仅可作为背景阅读。"
+      },
+      "resources": []
     },
     {
       "slug": "used-macbook-guide",

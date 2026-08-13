@@ -3,6 +3,7 @@
  */
 export const ADMIN_ROUTES = {
   today: '/',
+  workstation: '/workstation',
   clues: '/clues',
   seeds: '/seeds',
   executions: '/executions',

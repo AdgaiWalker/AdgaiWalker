@@ -7,6 +7,11 @@ export * from './nextstep.js';
 export * from './next-actions.js';
 export * from './json-request.js';
 export * from './content.js';
+export * from './topic.js';
+export * from './action.js';
+export * from './work.js';
+export * from './production.js';
+export * from './mvp-acceptance.js';
 
 export * from './feature-keys.js';
 export * from './rate-limits.js';

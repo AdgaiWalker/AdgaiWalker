@@ -82,7 +82,9 @@ function main(): void {
   }
 
   console.log(`[prisma-env] provider=${provider} cmd=${cmd}`);
-  console.log(`[prisma-env] DATABASE_URL=${process.env.DATABASE_URL ?? '(unset)'}`);
+  console.log(
+    `[prisma-env] DATABASE_URL=${process.env.DATABASE_URL ? '(configured)' : '(unset)'}`,
+  );
 
   if (cmd === 'generate') {
     process.exit(runPrisma(['generate', `--schema=${schema}`]));

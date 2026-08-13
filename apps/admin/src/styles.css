@@ -549,6 +549,82 @@ th {
   color: var(--adm-muted);
 }
 
+.status-dot.is-ready {
+  color: var(--adm-ok);
+  background: color-mix(in srgb, var(--adm-ok) 8%, transparent);
+}
+
+.workstation-eyebrow {
+  margin: 0 0 0.4rem;
+  color: var(--adm-brand);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workstation-notice {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workstation-notice p {
+  margin: 0.25rem 0 0;
+  color: var(--adm-muted);
+  font-size: 0.86rem;
+}
+
+.workstation-section-head {
+  margin: 1.4rem 0 0.65rem;
+}
+
+.workstation-section-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+}
+
+.workstation-section-head p {
+  margin: 0.2rem 0 0;
+  color: var(--adm-muted);
+  font-size: 0.82rem;
+}
+
+.workstation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.workstation-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  background: var(--adm-card);
+  box-shadow: var(--adm-shadow);
+}
+
+.workstation-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.workstation-card h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.workstation-card p {
+  margin: 0.5rem 0 0;
+  color: var(--adm-muted);
+  font-size: 0.8rem;
+}
+
 @media (max-width: 800px) {
   .layout {
     grid-template-columns: 1fr;
@@ -561,6 +637,12 @@ th {
   }
   .adm-main {
     padding: 1.15rem 1rem 2.5rem;
+  }
+  .workstation-grid {
+    grid-template-columns: 1fr;
+  }
+  .workstation-notice {
+    flex-direction: column;
   }
 }
 

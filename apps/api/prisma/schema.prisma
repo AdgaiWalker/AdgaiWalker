@@ -37,6 +37,8 @@ model Seed {
   severity      String?
   selfInterest  String?
   primaryClueId String?
+  workflowStatus String  @default("INBOX")
+  whyNow         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -66,12 +68,75 @@ model Execution {
   deliveryNote  String?
   outcome       String?
   evidence      String?
+  contentBrief  Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   seed Seed @relation(fields: [seedId], references: [id], onDelete: Cascade)
+  submission Submission?
 
   @@index([seedId])
+}
+
+model Submission {
+  id                   String   @id
+  executionId          String   @unique
+  idempotencyKey       String   @unique
+  title                String
+  status               String   @default("DRAFT_READY")
+  manifestPath         String
+  coreViewpoint        String
+  protectedClaims      Json
+  approvedArtifactHash String?
+  currentStage         String?
+  stageStartedAt       DateTime?
+  lastOutputAt         DateTime?
+  waitingReason        String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  publications Publication[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Action {
+  id          String   @id
+  title       String
+  note        String?
+  kind        String   @default("TASK")
+  entityType  String?
+  entityId    String?
+  status      String   @default("OPEN")
+  plannedDate String?
+  completedAt DateTime?
+  source      String   @default("HUMAN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([plannedDate])
+  @@index([entityType, entityId])
+}
+
+model Publication {
+  id            String   @id
+  submissionId  String
+  channel       String
+  artifactHash  String
+  status        String   @default("PENDING")
+  url           String?
+  lastError     String?
+  publishedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, channel])
+  @@index([status])
 }
 
 model GuestQuota {
@@ -104,6 +169,9 @@ model ContentFeedback {
   contentId String
   signal    String
   note      String?
+  source    String   @default("unknown")
+  convertedSeedId String?
+  convertedActionId String?
   createdAt DateTime @default(now())
 
   @@index([contentId])

@@ -8,6 +8,7 @@ import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
 import { SeedsPage } from './pages/SeedsPage';
 import { TodayPage } from './pages/TodayPage';
+import { WorkstationPage } from './pages/WorkstationPage';
 import { ADMIN_ROUTES } from './shared/routes';
 
 export function App() {
@@ -15,6 +16,10 @@ export function App() {
     <Routes>
       <Route element={<AdminShell />}>
         <Route path={ADMIN_ROUTES.today} element={<TodayPage />} />
+        <Route
+          path={ADMIN_ROUTES.workstation}
+          element={<WorkstationPage />}
+        />
         <Route path={ADMIN_ROUTES.clues} element={<CluesPage />} />
         <Route path={ADMIN_ROUTES.seeds} element={<SeedsPage />} />
         <Route path={ADMIN_ROUTES.executions} element={<ExecutionsPage />} />

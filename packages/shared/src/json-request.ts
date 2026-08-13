@@ -23,13 +23,16 @@ export async function fetchJson<T>(
 ): Promise<JsonRequestResult<T>> {
   let res: Response;
   try {
+    const headers = new Headers(init?.headers);
+    const isFormData =
+      typeof FormData !== 'undefined' && init?.body instanceof FormData;
+    if (!isFormData && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
     res = await fetch(url, {
       credentials: 'include',
       ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init?.headers as Record<string, string> | undefined),
-      },
+      headers,
     });
   } catch {
     /* 断网 / 代理挂 / 无 API 主机 */

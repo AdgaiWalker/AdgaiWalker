@@ -18,6 +18,8 @@ function stubConfig(partial: Partial<AppConfigPort> = {}): AppConfigPort {
     getHost: () => '127.0.0.1',
     getPort: () => 8788,
     getNodeEnv: () => 'test',
+    getWorkRootDir: () => 'var/works',
+    getWorkMaxUploadBytes: () => 100 * 1024 * 1024,
     ...partial,
   };
 }
