@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch --tsconfig tsconfig.json src/main.ts",
     "start": "tsx --tsconfig tsconfig.json src/main.ts",
+    "start:prod": "node dist/main.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prisma:generate": "tsx ../../scripts/prisma-env.ts generate",

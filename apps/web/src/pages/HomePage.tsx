@@ -10,10 +10,12 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   Bookmark,
-  Heart,
+  BookOpen,
+  FlaskConical,
+  FolderKanban,
+  Lightbulb,
   MessageCircleQuestion,
   PenLine,
-  Rocket,
 } from 'lucide-react';
 import { getRecentPosts, getByType } from '../content';
 import { GreetingCard } from '../components/GreetingCard';
@@ -56,6 +58,8 @@ export function HomePage() {
           className="pop-in home-dual-lead meta"
           style={{ animationDelay: '0.02s' }}
         >
+          <span className="home-mobile-kicker">今天，从这里继续</span>
+          <h1 className="home-mobile-title">想解决一个问题，还是逛逛新的可能？</h1>
           <p style={{ margin: 0 }}>
             {dualEntry.ask.label}拿下一步 · {dualEntry.browse.label}
             {dualEntry.browse.title}。同一过程，两个入口。
@@ -76,7 +80,6 @@ export function HomePage() {
         </div>
 
         <div className="home-grid">
-          <div className="home-col">
             <div
               className="directory-card panel-glass pop-in draggable-card"
               style={{ animationDelay: '0.04s' }}
@@ -95,7 +98,7 @@ export function HomePage() {
                   to={`${dualEntry.browse.path}/${encodeURIComponent(featured.slug)}`}
                   className="directory-trace"
                 >
-                  <span className="directory-trace-label">最近</span>
+                  <span className="directory-trace-label">本周证据</span>
                   <span className="directory-trace-title">{featured.title}</span>
                   <ArrowRight size={12} aria-hidden />
                 </Link>
@@ -107,32 +110,44 @@ export function HomePage() {
             </div>
 
             <div
-              className="panel-glass pop-in draggable-card home-panel"
+              className="panel-glass pop-in draggable-card home-panel home-quick-panel"
               style={{ animationDelay: '0.12s' }}
             >
+              <div className="mobile-section-head">
+                <span>去逛逛</span>
+                <small>五条支路，随便拐进一条</small>
+              </div>
               {/* 与侧栏一致：不重复类型总览，只放正交深页 */}
               <div className="quick-grid">
                 <Link to={WEB_ROUTES.toolsResources} className="quick-link">
                   <Bookmark size={15} aria-hidden />
                   <span>资源</span>
                 </Link>
-                <Link to={WEB_ROUTES.ferry} className="quick-link">
-                  <Rocket size={15} aria-hidden />
-                  <span>Ferry</span>
+                <Link to={WEB_ROUTES.tutorials} className="quick-link">
+                  <BookOpen size={15} aria-hidden />
+                  <span>教程</span>
                 </Link>
-                <Link to={WEB_ROUTES.about} className="quick-link">
-                  <PenLine size={15} aria-hidden />
-                  <span>关于</span>
+                <Link to={WEB_ROUTES.ideas} className="quick-link">
+                  <Lightbulb size={15} aria-hidden />
+                  <span>点子</span>
                 </Link>
-                <Link to={WEB_ROUTES.support} className="quick-link">
-                  <Heart size={15} aria-hidden />
-                  <span>支持</span>
+                <Link to={WEB_ROUTES.projects} className="quick-link">
+                  <FolderKanban size={15} aria-hidden />
+                  <span>项目</span>
+                </Link>
+                <Link to={WEB_ROUTES.lab} className="quick-link">
+                  <FlaskConical size={15} aria-hidden />
+                  <span>札记</span>
                 </Link>
               </div>
             </div>
 
+            <div className="home-col home-col-greeting pop-in draggable-card">
+              <GreetingCard sparks={sparks} />
+            </div>
+
             <div
-              className="panel-glass pop-in draggable-card home-panel home-panel-pad"
+              className="panel-glass pop-in draggable-card home-panel home-panel-pad home-recent-panel"
               style={{ animationDelay: '0.2s' }}
             >
               <div className="recent-header">
@@ -143,13 +158,16 @@ export function HomePage() {
                   <ArrowRight size={12} aria-hidden style={{ display: 'inline' }} />
                 </Link>
               </div>
-              <div>
-                {recentPosts.map((p) => (
+              <div className="recent-rail">
+                {recentPosts.map((p, index) => (
                   <Link
                     key={p.slug}
                     to={`${dualEntry.browse.path}/${encodeURIComponent(p.slug)}`}
                     className="recent-item"
                   >
+                    <span className="recent-item-index" aria-hidden>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
                     <span className="recent-item-title">{p.title}</span>
                     <span className="recent-item-date">
                       {formatDateCompact(parseIsoDate(p.date))}
@@ -158,11 +176,6 @@ export function HomePage() {
                 ))}
               </div>
             </div>
-          </div>
-
-          <div className="home-col home-col-greeting pop-in draggable-card">
-            <GreetingCard sparks={sparks} />
-          </div>
         </div>
       </div>
     </div>

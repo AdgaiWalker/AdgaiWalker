@@ -8,6 +8,7 @@ tags:
   - 协议
   - 人机协作
 type: project
+hall: showcase
 form: project
 domain: philosophy
 intent: think

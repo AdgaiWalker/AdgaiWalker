@@ -1,11 +1,6 @@
 /**
  * 资源页（页）
- * 职责：编排分区导航与数据；卡片用 ResourceCard 块。
- *
- * 依赖：tools-data、tools-sections 配置、ResourceCard
- * 调用：无 HTTP
- * 触发：/tools/resources
- * 实现：锚点分区 + 网格
+ * 扁平陈列：不做赛道/分类筛选；分区仅作阅读锚点。
  */
 import { ExternalLink, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -32,14 +27,14 @@ export function ToolsResourcesPage() {
           资源
         </h1>
         <p className="page-lead">
-          duola 实际在用的 AI 资源。
+          实际在用的群、工具与引路人。
           <strong>以下群/服务/产品与本人无任何利益关系</strong>
           ，只是用户分享。卡住请先去{' '}
           <Link to={WEB_ROUTES.ask}>{dualEntry.ask.cta}</Link>。
         </p>
       </header>
 
-      <nav className="section-nav" aria-label="资源分区">
+      <nav className="section-nav" aria-label="本页锚点">
         {TOOLS_SECTIONS.map((sec) => {
           const Icon = toolsSectionIcon(sec.icon);
           return (
@@ -53,8 +48,10 @@ export function ToolsResourcesPage() {
 
       <section id="info-source" className="resource-section panel-glass">
         <SectionTitle id="info-source" />
-        <h3 className="sub-title">AI 学习氛围群</h3>
-        <p className="section-hint">有二维码的直接扫。博主维护的群，关注他们加入。</p>
+        <h3 className="sub-title">氛围群</h3>
+        <p className="section-hint">
+          有二维码的直接扫。博主维护的群，关注他们加入。
+        </p>
         <div className="res-grid">
           {communities.map((c) => (
             <ResourceCard

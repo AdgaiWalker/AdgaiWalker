@@ -1,6 +1,7 @@
 ---
 title: 设计为人与内容搭桥
 date: 2026-05-31T16:00:00.000Z
+updated: 2026-05-31T16:00:00.000Z
 tags:
   - 设计
   - 产品
@@ -22,6 +23,7 @@ aiUsePolicy:
   citable: true
   actionable: false
 type: knowledge
+hall: lab
 published: true
 summary: 好的设计，让用户与内容双向奔赴。把自己当成最懒最挑剔的用户，用减法哲学求解人与内容的最小路径，降低认知负担。
 visibility: public

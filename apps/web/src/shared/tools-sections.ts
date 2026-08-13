@@ -45,9 +45,9 @@ export const TOOLS_SECTIONS: readonly ToolsSectionDef[] = [
   },
   {
     id: 'infra',
-    label: '基础设施',
+    label: '部署',
     icon: 'server',
-    hint: '服务器、域名与辅助站点。',
+    hint: '服务器、域名与上线相关。',
   },
   {
     id: 'bloggers',

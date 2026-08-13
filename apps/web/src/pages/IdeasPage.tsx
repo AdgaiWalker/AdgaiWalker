@@ -1,26 +1,34 @@
 /**
- * 点子桌（页）
- * 职责：卡牌 + 状态筛选；状态规则在 idea-status。
+ * 点子（页）— 内容五类：实验中未对准需求的苗
  */
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Lightbulb } from 'lucide-react';
-import { getByType } from '../content';
+import { ArrowRight, Lightbulb } from 'lucide-react';
+import { getAllByHall, getByType } from '../content';
 import { ContentCard } from '../components/ContentCard';
-import { STATUS_LABELS } from '../shared/constants';
-import { dualEntry } from '../shared/dual-entry';
 import {
   IDEA_STATUS_FILTERS,
   isThinkingStatus,
   matchesIdeaFilter,
   type IdeaStatusFilter,
 } from '../shared/idea-status';
+import { dualEntry } from '../shared/dual-entry';
+import { WEB_ROUTES } from '../shared/routes';
 
 export function IdeasPage() {
-  const ideas = useMemo(() => getByType('idea'), []);
+  const byType = useMemo(() => getByType('idea'), []);
+  const byHall = useMemo(
+    () => getAllByHall('showcase').filter((i) => i.type === 'idea'),
+    [],
+  );
+  const ideas = useMemo(() => {
+    const map = new Map(byType.map((i) => [i.slug, i]));
+    for (const i of byHall) map.set(i.slug, i);
+    return [...map.values()];
+  }, [byType, byHall]);
+
   const [filter, setFilter] = useState<IdeaStatusFilter>('all');
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
-
   const filtered = ideas.filter((i) => matchesIdeaFilter(i.status, filter));
 
   return (
@@ -28,21 +36,25 @@ export function IdeasPage() {
       <header className="ideas-intro panel-glass">
         <div>
           <h1 className="page-title" style={{ marginBottom: 8 }}>
-            <Lightbulb
-              size={22}
-              className="page-title-icon"
-              aria-hidden
-            />
+            <Lightbulb size={22} className="page-title-icon" aria-hidden />
             点子
           </h1>
           <p className="page-lead" style={{ margin: 0 }}>
-            点子是不分时空的资产。共 {ideas.length} 条 · 当前显示 {filtered.length}{' '}
-            条。详情仍在「逛」阅读。
+            实验中的苗：还没对准需求、或未完整做成。谈点子的哲学在「札记」。共{' '}
+            {ideas.length} 条。
           </p>
         </div>
-        <Link to={dualEntry.browse.path} className="btn-secondary">
-          去逛全部
-        </Link>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <Link to={WEB_ROUTES.projects} className="btn-secondary">
+            项目
+          </Link>
+          <Link to={WEB_ROUTES.lab} className="btn-secondary">
+            札记
+          </Link>
+          <Link to={dualEntry.browse.path} className="btn-secondary">
+            去逛
+          </Link>
+        </div>
       </header>
 
       <div className="filter-tabs" role="tablist" aria-label="点子状态">
@@ -81,10 +93,7 @@ export function IdeasPage() {
                   onReveal={
                     blurred
                       ? () =>
-                          setRevealed((prev) => ({
-                            ...prev,
-                            [item.slug]: true,
-                          }))
+                          setRevealed((r) => ({ ...r, [item.slug]: true }))
                       : undefined
                   }
                 />
@@ -94,11 +103,14 @@ export function IdeasPage() {
         </div>
       )}
 
-      <p className="meta" style={{ marginTop: '1.25rem' }}>
-        状态：
-        {Object.entries(STATUS_LABELS)
-          .map(([k, v]) => `${v}(${k})`)
-          .join(' · ')}
+      <p style={{ marginTop: '1.25rem' }}>
+        <Link
+          to={WEB_ROUTES.lab}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+        >
+          札记里谈「点子」的哲学
+          <ArrowRight size={14} />
+        </Link>
       </p>
     </div>
   );

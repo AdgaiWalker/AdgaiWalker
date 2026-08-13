@@ -31,6 +31,49 @@ export const SITE_EMAIL = 'praxiswalker@gmail.com';
 /** Ferry 主题线 frontmatter 名（与 content:gen series 一致） */
 export const FERRY_SERIES_NAME = 'Ferry';
 
+/** 前进三部曲主题线 frontmatter 名（与 content:gen series 一致） */
+export const ADVANCE_TRILOGY_SERIES_NAME = '前进三部曲';
+
+/**
+ * 实验室主题线（配置）
+ * 我的记录 + 哲学思考；与教程/资源/跟学正交。
+ * path 为空时只在实验室枢纽内联列出，不设专页。
+ */
+export type LabLineDef = {
+  series: string;
+  /** 侧栏/枢纽短标 */
+  label: string;
+  /** 一条人话：这条线是什么 */
+  blurb: string;
+  /** WEB_ROUTES 键；无专页则省略 */
+  routeKey?: 'advanceTrilogy' | 'ferry';
+};
+
+export const LAB_LINES: readonly LabLineDef[] = [
+  {
+    series: ADVANCE_TRILOGY_SERIES_NAME,
+    label: '前进三部曲',
+    blurb: '我自己的：为什么走、路上存什么、走向哪',
+    routeKey: 'advanceTrilogy',
+  },
+  {
+    series: FERRY_SERIES_NAME,
+    label: 'Ferry',
+    blurb: '哲学协议：差距→行动、做减法、螺旋进化',
+    routeKey: 'ferry',
+  },
+  {
+    series: '设计思考',
+    label: '设计思考',
+    blurb: '为人搭桥、做减法——设计侧的实验笔记',
+  },
+  {
+    series: '站志',
+    label: '站志',
+    blurb: '启航与停靠：站本身的痕迹',
+  },
+] as const;
+
 /** 站外链接 SSOT（壳/关于/名片共用，勿散落硬编码） */
 export const SITE_LINKS = {
   email: SITE_EMAIL,

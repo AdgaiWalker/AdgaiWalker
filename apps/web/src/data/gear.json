@@ -1,0 +1,209 @@
+{
+  "methodology": "AI 是我的核心生产资料——省 token 就是省时间，省时间就是省钱。硬件为 AI 服务。选装备三步：性能达标 → 同性能最低价 → 售后当隐藏红利。不追新款，比核心数。闲鱼是穷学生的武器库。",
+  "scenes": [
+    {
+      "key": "ai-model",
+      "label": "Model — 当前主力模型",
+      "description": "模型随市场变化随时换，这部分需要经常更新。以下为近期参考价，需自己盯。获取渠道：闲鱼成品号、跨区兑换、合约窗口——渠道逻辑不变。当前主力：Grok、GPT、Gemini，DeepSeek 备用。",
+      "items": [
+        {
+          "name": "Grok（主力）",
+          "price": "印度区兑换",
+          "why": "马斯克的 AI。跨区兑换便宜，近期参考 ¥50 可覆盖 1–3 月。",
+          "guide": "/posts/ai-low-cost-access",
+          "links": []
+        },
+        {
+          "name": "GPT（主力）",
+          "price": "闲鱼成品号",
+          "why": "最成熟的通用模型。正常价 ¥100+/月，闲鱼有低价成品号，近期参考约 ¥20。",
+          "links": []
+        },
+        {
+          "name": "Gemini（主力）",
+          "price": "闲鱼成品号",
+          "why": "谷歌模型，适合设计场景。近期参考 ¥10–20/年。",
+          "links": []
+        },
+        {
+          "name": "DeepSeek（备用）",
+          "price": "免费额度 / 低价",
+          "why": "国产模型，有免费额度。主力挂了或需要中文场景时顶上。",
+          "links": []
+        }
+      ]
+    },
+    {
+      "key": "ai-harness",
+      "label": "Harness — 驾驭模型的马具",
+      "description": "模型会换，马具是方法论——不过时。主力：Pi、Codex；备用：Claude Code。",
+      "items": [
+        {
+          "name": "Pi（主力）",
+          "price": "按 API 用量",
+          "why": "终端 AI 编码 agent，全程对话驱动开发。",
+          "links": []
+        },
+        {
+          "name": "Codex（主力）",
+          "price": "按 API 用量",
+          "why": "专业级 AI 编程 + agent，接入最强模型与大厂插件生态。和 Pi 搭配覆盖主力场景。",
+          "links": []
+        },
+        {
+          "name": "Claude Code（备用）",
+          "price": "按 API 用量",
+          "why": "老牌可靠，主力挂了顶上。",
+          "links": []
+        }
+      ]
+    },
+    {
+      "key": "community",
+      "label": "支付与社群",
+      "description": "不是工具本身，但给工具提供土壤。",
+      "items": [
+        {
+          "name": "Apple Pay 跨区支付",
+          "price": "免费",
+          "why": "苹果生态在各国区注册方便，用 Apple Pay 直接买海外 AI 会员，比国内渠道便宜且体验舒服。",
+          "guide": "/posts/apple-pay-cross-region",
+          "links": []
+        },
+        {
+          "name": "海拉鲁会员群",
+          "price": "¥400 一次性",
+          "why": "筛选门槛 → 技术圈 + 人脉 + 1 对 1 辅导。给的东西远超票价。",
+          "links": []
+        }
+      ]
+    },
+    {
+      "key": "main-device",
+      "label": "主力设备",
+      "description": "满足创作和开发的最低配置：MacBook ¥2,800 + 便携屏 ¥350 = ¥3,150 就能干活。大屏、游戏本、显示器都是锦上添花。",
+      "items": [
+        {
+          "name": "MacBook M1 Pro (16G+512G) — 无头骑士",
+          "price": "¥2,800 二手",
+          "why": "特制版 M1，核心数不输 M2，稳定不报错。省 token 省时间。无屏幕，需外接显示器。",
+          "guide": "/posts/used-macbook-guide",
+          "links": [
+            { "platform": "闲鱼", "url": "" }
+          ]
+        },
+        {
+          "name": "惠普暗影精灵 乐享版 (32G+1.5T)",
+          "price": "¥8,000（含升级）",
+          "why": "御三家最低价。售后是隐藏私教——不懂就打客服电话，十几次一对一教学。打游戏、技术实验、直播都在这台上。",
+          "guide": "/posts/hp-aftersales-tutor",
+          "links": [
+            { "platform": "京东", "url": "" },
+            { "platform": "闲鱼", "url": "" }
+          ]
+        },
+        {
+          "name": "iPhone 13 Pro — 工作机",
+          "price": "闲鱼 ¥2,000–3,000",
+          "why": "苹果生态联动：和 Mac 无缝接力、Apple Pay 跨区买 AI 会员。工作专用。（拿我妈的，她换新机给我了。）",
+          "links": [
+            { "platform": "闲鱼", "url": "" }
+          ]
+        },
+        {
+          "name": "Redmi K80 — 游戏机 + 电话",
+          "price": "¥2,000 左右",
+          "why": "安卓游戏机+日常电话。和 iPhone 分工明确。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        },
+        {
+          "name": "27 寸 2K 显示器（京喜）",
+          "price": "¥400",
+          "why": "京喜是京东旗下，直接对接生产厂家，无中间商。同参数最低价。在家接 MacBook，大屏开发+打游戏。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        },
+        {
+          "name": "15.6 寸 2K 便携显示器（无牌组装）",
+          "price": "¥350 闲鱼",
+          "why": "外出时和无头骑士联动办公。接受组装机，价格锚在 ¥350 附近。",
+          "links": [
+            { "platform": "闲鱼", "url": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "survival",
+      "label": "续命装备",
+      "description": "断电、过热、电脑崩了——这些东西替你挡过灾。",
+      "items": [
+        {
+          "name": "充电宝 20000mAh / 100W",
+          "price": "~¥90 闲鱼",
+          "why": "能充游戏本，断电+火车站两场实战续命。兼容 USB + Type-C 全系设备。",
+          "links": [
+            { "platform": "闲鱼", "url": "" },
+            { "platform": "京东", "url": "" }
+          ]
+        },
+        {
+          "name": "固态硬盘 ×2（笔记本款）",
+          "price": "~¥320 两块",
+          "why": "自己加装扩容。笔记本用的 M.2 或 2.5 寸小盘。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        },
+        {
+          "name": "烧烤架散热",
+          "price": "¥20–25",
+          "why": "游戏本架上去，底部悬空散热。替代上百块的散热底座。",
+          "links": []
+        },
+        {
+          "name": "U 盘系统盘 (≥8G)",
+          "price": "¥20–40",
+          "why": "电脑崩了能自救。务必提前制作好，别等崩了再做。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "accessories",
+      "label": "默认配件",
+      "description": "不折腾的选择——已经卷赢的赛道，闭眼选就行。",
+      "items": [
+        {
+          "name": "罗技鼠标",
+          "price": "¥50–150",
+          "why": "鼠标赛道卷赢了，闭眼选。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        },
+        {
+          "name": "小米台灯",
+          "price": "¥60–150",
+          "why": "宿舍书桌够用，设计不丑。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        },
+        {
+          "name": "绿联 扩展坞 / 数据线 / 转接头",
+          "price": "¥30–100",
+          "why": "电子配件默认选绿联，质量靠谱，京东有保障。",
+          "links": [
+            { "platform": "京东", "url": "" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 ---
 title: 关于人与 Skill
 date: 2026-06-08T16:00:00.000Z
+updated: 2026-06-08T16:00:00.000Z
 tags:
   - Skill
   - 哲学
@@ -8,6 +9,7 @@ tags:
   - AI
   - 实践
 type: knowledge
+hall: lab
 form: diary
 domain: philosophy
 intent: reflect

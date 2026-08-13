@@ -1,0 +1,96 @@
+# Windows 单机运行基线
+
+## 结论
+
+这台 2 核 2GB Windows Server 先采用**单进程、单库、双表面**：公开 LM Wiki 继续由 Vercel 托管；腾讯云只运行一个 Nest 进程和一个 Caddy 进程；私有 Admin 只经 SSH 隧道访问。
+
+```text
+访客 → www.iwalk.pro (Vercel 静态 Wiki)
+                └─ /api/* → Caddy 公共路由白名单 → Nest :8788 → SQLite
+
+站主 → SSH 隧道 → Caddy 127.0.0.1:8790 → Admin 静态文件
+                                      └─ /api/* → Nest :8788 → 同一 SQLite
+```
+
+业务真相仍只有一套：`Clue → Seed → Execution → Evidence`。公开入口负责产生线索，私有工作台负责推进、交付与检验。后续 Agent 运行时接入同一过程，不另建第二套任务系统。
+
+## 为什么不是 Docker / 本机 PostgreSQL / 微服务
+
+Windows 与宝塔当前已占用大部分 2GB 内存。第一阶段禁止在本机增加 Docker、Redis、本机 PostgreSQL或多份 Nest 进程。SQLite 对当前单实例、低并发、小生产足够；达到迁移条件后，再把数据库适配器切到托管 PostgreSQL，Nest 契约不变。
+
+迁移到 PostgreSQL 的触发条件满足任一即可：
+
+- 需要两个以上 API/Worker 进程并发写；
+- SQLite 写锁开始形成可观测等待；
+- 需要数据库级高可用或时间点恢复；
+- 过程数据量或备份恢复时间超出单机可控范围。
+
+## 网络边界
+
+- Nest 默认只监听 `127.0.0.1:8788`，不能从公网直连。
+- Caddy 公网面只转发 `health`、`intake`、点赞、内容反馈、搜索缺口和只读 support。
+- `/clues`、`/seeds`、`/executions`、`/metrics`、`/admin/content` 以及写 support 不进入公网路由。
+- Admin 静态站只监听 `127.0.0.1:8790`。
+
+私有工作台连接：
+
+```bash
+ssh -N -L 5174:127.0.0.1:8790 walker-tencent
+```
+
+然后访问 `http://127.0.0.1:5174`。
+
+## 构建与运行
+
+运行时目录固定分层：`C:\Walker\app` 是 Git 工作树，`C:\Walker\data` 是持久数据，`C:\Walker\bin` 是运行工具。更新或替换 app 时不得覆盖 data。服务器上安装 Node、pnpm、Git、Caddy 后：
+
+```powershell
+Set-Location C:\Walker\app
+pnpm install --frozen-lockfile
+pnpm build:shared
+pnpm db:generate
+pnpm db:push
+pnpm build:api
+pnpm build:admin
+```
+
+`apps\api\.env` 不进 Git，首期至少包含：
+
+```dotenv
+WALKER_DB_PROVIDER=sqlite
+DATABASE_URL=file:C:/Walker/data/walker.db
+HOST=127.0.0.1
+PORT=8788
+NODE_ENV=production
+AI_ENABLED=false
+```
+
+前台运行验证：
+
+```powershell
+powershell -NoProfile -File C:\Walker\app\ops\windows\run-api.ps1
+powershell -NoProfile -File C:\Walker\app\ops\windows\run-caddy.ps1 -PublicApiHost api.example.com
+```
+
+在配置开机任务前，必须先验证：
+
+```powershell
+curl.exe http://127.0.0.1:8788/health
+curl.exe http://127.0.0.1:8790/api/health
+```
+
+验证通过后，以管理员 PowerShell 注册并立即启动开机任务：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\install-tasks.ps1
+```
+
+默认公共入口仍只绑定本机测试地址 `http://127.0.0.1:8080`。准备好 API 域名与 HTTPS 后，重新执行并显式传入正式域名：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\install-tasks.ps1 -PublicApiHost api.example.com
+```
+
+## 尚未切流
+
+只有在 API 域名、HTTPS、公共路由白名单、SQLite 备份和 intake 冒烟全部通过后，才修改 `vercel.json` 增加 `/api/:path*` 反代。切流前生产事实仍是“静态 Wiki 可用，公网写路径未通”。

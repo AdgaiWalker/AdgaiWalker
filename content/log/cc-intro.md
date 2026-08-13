@@ -1,10 +1,12 @@
 ---
 title: CC入门
 date: 2026-06-17
+updated: 2026-06-17
 type: learn
+hall: kit
 level: 入门
 emoji: 🤖
-description: 做一件以前做不到的事——从零驾驭 Claude Code 命令行 agent，自动化装好全栈开发环境。
+summary: 做一件以前做不到的事——从零驾驭 Claude Code 命令行 agent，自动化装好全栈开发环境。
 series: 跟学
 seriesOrder: 1
 visibility: public
@@ -13,6 +15,13 @@ category: 学习
 domain: ai
 form: lesson
 intent: teach
+valueMode: utility
+aiUsePolicy:
+  level: AI-2
+  readable: true
+  citable: true
+  actionable: true
+  reason: 面向初学者的公开操作教程，可供 AI 引用与整理为步骤。
 ---
 
 > 做一件以前做不到的事情！想接触 CC、想接触命令行对话的你——了解 AI 或大概用过一阵子界面版 IDE，现在让我们驾驭 agent。

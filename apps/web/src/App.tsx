@@ -13,10 +13,19 @@ import { IdeasPage } from './pages/IdeasPage';
 import { IdeasNewRedirectPage } from './pages/IdeasNewRedirectPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { FerryPage } from './pages/FerryPage';
+import { AdvanceTrilogyPage } from './pages/AdvanceTrilogyPage';
+import { LabPage } from './pages/LabPage';
+import { ShowcasePage } from './pages/ShowcasePage';
+import { ConditionPage } from './pages/ConditionPage';
+import { KitPage } from './pages/KitPage';
+import { ExchangePage } from './pages/ExchangePage';
+import { TutorialsPage } from './pages/TutorialsPage';
 import { LearnPage } from './pages/LearnPage';
 import { LearnGuideRedirectPage } from './pages/LearnGuideRedirectPage';
 import { AboutPage } from './pages/AboutPage';
+import { MePage } from './pages/MePage';
 import { SupportPage } from './pages/SupportPage';
+import { GearPage } from './pages/GearPage';
 import { AccountLoginShellPage } from './pages/AccountLoginShellPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { dualEntry } from './shared/dual-entry';
@@ -41,7 +50,17 @@ export function App() {
           <Route path={ideasBase} element={<IdeasPage />} />
           <Route path={`${ideasBase}/new`} element={<IdeasNewRedirectPage />} />
           <Route path={strip(WEB_ROUTES.projects)} element={<ProjectsPage />} />
+          <Route path={strip(WEB_ROUTES.tutorials)} element={<TutorialsPage />} />
+          <Route path={strip(WEB_ROUTES.condition)} element={<ConditionPage />} />
+          <Route path={strip(WEB_ROUTES.kit)} element={<KitPage />} />
+          <Route path={strip(WEB_ROUTES.lab)} element={<LabPage />} />
+          <Route path={strip(WEB_ROUTES.showcase)} element={<ShowcasePage />} />
+          <Route path={strip(WEB_ROUTES.exchange)} element={<ExchangePage />} />
           <Route path={strip(WEB_ROUTES.ferry)} element={<FerryPage />} />
+          <Route
+            path={strip(WEB_ROUTES.advanceTrilogy)}
+            element={<AdvanceTrilogyPage />}
+          />
           <Route path={learnBase} element={<LearnPage />} />
           <Route
             path={`${learnBase}/guide/:level/:tool`}
@@ -63,6 +82,8 @@ export function App() {
             element={<ToolsResourcesPage />}
           />
           <Route path={strip(WEB_ROUTES.about)} element={<AboutPage />} />
+          <Route path={strip(WEB_ROUTES.me)} element={<MePage />} />
+          <Route path={strip(WEB_ROUTES.gear)} element={<GearPage />} />
           <Route path={strip(WEB_ROUTES.support)} element={<SupportPage />} />
           <Route
             path={strip(WEB_ROUTES.login)}

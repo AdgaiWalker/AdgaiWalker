@@ -7,10 +7,12 @@ import { spawnSync } from 'node:child_process';
 import { repoRoot } from './lib/paths';
 import { runOrExit } from './lib/run';
 
+runOrExit('pnpm', ['check:content-fields']);
 runOrExit('pnpm', ['content:gen']);
 runOrExit('pnpm', ['--filter', '@walker/web', 'build']);
 runOrExit('pnpm', ['exec', 'tsx', 'scripts/prerender-web.ts']);
 runOrExit('pnpm', ['exec', 'tsx', 'scripts/emit-static-feeds.ts']);
+runOrExit('pnpm', ['exec', 'tsx', 'scripts/verify-geo.ts']);
 
 const pf = spawnSync(
   'pnpm',

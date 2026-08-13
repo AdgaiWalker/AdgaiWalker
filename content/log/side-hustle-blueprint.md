@@ -1,6 +1,7 @@
 ---
 title: "副业蓝图 — 从零到一的服务型副业规划技能"
 date: 2026-06-07
+updated: 2026-06-07
 tags:
   - AI
   - 副业
@@ -8,6 +9,7 @@ tags:
   - Claude-Code-Skill
   - 产品
 type: project
+hall: showcase
 form: project
 layout: immersive
 domain: product

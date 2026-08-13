@@ -73,7 +73,14 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
           onClick={(e) => e.stopPropagation()}
           title="小红书"
         >
-          <span className="icon-wrap" style={{ background: 'rgba(255,36,66,0.08)', color: '#ff2442', fontWeight: 700, fontSize: 11 }}>
+          <span
+            className="icon-wrap"
+            style={{
+              background: 'rgba(255,36,66,0.08)',
+              color: '#ff2442',
+              fontWeight: 700,
+            }}
+          >
             红
           </span>
           小红书

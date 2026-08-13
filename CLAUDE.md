@@ -142,7 +142,7 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 | Vercel 项目 | **`adgai-walker`**（账号/团队 `praxiswalker-6245`） |
 | 生产域名 | **https://www.iwalk.pro**（`iwalk.pro` → www） |
 | 触发方式 | **`git push origin main` → Vercel 自动 Production 部署** |
-| 构建 | 根 `vercel.json`：`pnpm build:web` → `apps/web/dist`（含 content:gen、预渲染、rss/llms、pagefind） |
+| 构建 | 根 `vercel.json`：`pnpm build:web` → `apps/web/dist`（含字段门禁、语义预渲染、sitemap、RSS/JSON Feed、llms、GEO 校验、pagefind） |
 
 ```text
 改代码 → commit → push main → Vercel 构建 web → 发布 www.iwalk.pro
@@ -155,9 +155,12 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 - 因此公网 **intake / 点赞写 / Admin 写** 仍不可用；本地 `dev:api` + PG 可全绿  
 - `GET /api/health` 生产 **404**；裸 `/health` 可能被 SPA 吞成 HTML——**不是** Nest health  
 
+**腾讯云首期运行边界（2C2G Windows）：** 单 Nest + SQLite + Caddy；Nest/Admin 仅监听回环，公网 Caddy 只放公开 API 白名单，Admin 经 `ssh walker-tencent` 隧道访问。禁止在当前机器堆 Docker、Redis、本机 PostgreSQL 或多份 Nest。运行手册见 `ops/windows/README.md`。
+
 **`vercel.json` 规则：**
 
-- SPA：`/((?!api/).*)` → `/index.html`（**排除 `/api/*`，禁止把 API 落到 HTML**）  
+- 首页、内容枢纽与文章由构建期静态 HTML 承载；已知客户端路由才显式 rewrite 到 `/index.html`  
+- 未知路径与 `/api/*` 不进 SPA fallback，保持真实 404，避免 soft-404 和 API 落到 HTML  
 - 上 Nest 后须在 rewrites **最前**加：`/api/:path*` → `https://<真实-API-主机>/:path*`（Nest 无全局 `/api` 前缀）  
 - 旧中文 slug → 英文 slug 的 301 在 `redirects`  
 

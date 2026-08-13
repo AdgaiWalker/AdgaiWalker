@@ -1,8 +1,10 @@
 ---
 title: 卡牌桌点子页面 — 页面本身就是一个点子
 date: 2026-05-31
+updated: 2026-05-31
 tags: [设计, 前端, 交互, 卡牌隐喻]
 type: idea
+hall: showcase
 form: idea
 domain: coding
 intent: showcase

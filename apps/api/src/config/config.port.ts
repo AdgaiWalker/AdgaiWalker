@@ -2,6 +2,7 @@
 export interface AppConfigPort {
   getDatabaseUrl(): string | undefined;
   isAiEnabled(): boolean;
+  getHost(): string;
   getPort(): number;
   getNodeEnv(): string;
 }

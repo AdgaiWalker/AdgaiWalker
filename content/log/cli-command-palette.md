@@ -1,8 +1,10 @@
 ---
 title: CLI 命令面板 — 卡牌式技能加载器
 date: 2026-05-31
+updated: 2026-05-31
 tags: [AI, 产品, 企业场景, 交互设计]
 type: idea
+hall: showcase
 form: idea
 domain: product
 intent: think

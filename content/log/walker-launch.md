@@ -4,6 +4,7 @@ date: 2026-04-29
 updated: 2026-05-31
 tags: [随想, 哲学]
 type: knowledge
+hall: lab
 series: 站志
 seriesOrder: 1
 published: true
@@ -12,7 +13,7 @@ form: article
 domain: philosophy
 intent: record
 valueMode: existence
-author: "Walker"
+author: "duola"
 action: "书于"
 location: "行舟"
 environment: "夜雨"

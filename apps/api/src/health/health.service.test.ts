@@ -15,6 +15,7 @@ function stubConfig(partial: Partial<AppConfigPort> = {}): AppConfigPort {
   return {
     getDatabaseUrl: () => undefined,
     isAiEnabled: () => false,
+    getHost: () => '127.0.0.1',
     getPort: () => 8788,
     getNodeEnv: () => 'test',
     ...partial,

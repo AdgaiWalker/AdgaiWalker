@@ -10,7 +10,7 @@ form: article
 domain: life
 intent: record
 valueMode: existence
-author: "Walker"
+author: "duola"
 action: "落笔于"
 location: "607寝"
 environment: "夜"
@@ -21,6 +21,7 @@ aiUsePolicy:
   actionable: false
   reason: 包含个人脆弱内容，仅可读作背景
 type: knowledge
+hall: lab
 published: true
 series: 前进三部曲
 seriesOrder: 1
@@ -70,7 +71,7 @@ summary: "不甘心困在小小的时空里，用有限的资源争取更大的�
 
 在这个过程里，三样东西各自发挥作用：
 
-- **[[affordable-ai-community|工具库]]**匹配需求——找到合适的工具直接用
+- **[工具库](/tools/resources)**匹配需求——找到合适的工具直接用
 - **思考**帮我想清楚——翻以前的文章，省掉重复思考的时间
 - **[[ideas-beyond-time|点子库]]**让事情更有趣——查一查以前有没有相关的点子，说不定能让这个项目多一个意想不到的角度
 

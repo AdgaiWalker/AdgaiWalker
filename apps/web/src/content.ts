@@ -17,13 +17,23 @@ export interface ContentItem {
   slug: string;
   title: string;
   date: string;
+  updated?: string;
+  author?: string;
   type: string;
+  form?: string;
+  domain?: string;
+  intent?: string;
+  valueMode?: string;
+  /** 生产链厅 condition|kit|lab|showcase|exchange */
+  hall?: string;
   status?: string;
   summary: string;
   body: string;
   tags: string[];
   level?: string;
   emoji?: string;
+  image?: string;
+  url?: string;
   visibility: string;
   published: boolean;
   series?: string;
@@ -31,6 +41,19 @@ export interface ContentItem {
   related?: string[];
   version?: number | null;
   previousVersion?: string;
+  aiUsePolicy?: {
+    level: string;
+    readable: boolean;
+    citable: boolean;
+    actionable: boolean;
+    reason: string;
+  };
+  resources?: Array<{
+    name: string;
+    url: string;
+    type: string;
+    description: string;
+  }>;
 }
 
 const raw = data as { items?: ContentItem[] };
@@ -69,6 +92,20 @@ export function getPublishedContentItems(): ContentItem[] {
 
 export function getByType(type: string): ContentItem[] {
   return items.filter((d) => d.type === type);
+}
+
+/** 按生产链厅筛选（content-halls + frontmatter hall） */
+export function getByHall(hall: string): ContentItem[] {
+  const key = hall.trim();
+  if (!key) return [];
+  return getBrowseItems().filter((d) => (d.hall ?? '') === key);
+}
+
+/** 含 tool 等未进逛的条目（器具厅需要） */
+export function getAllByHall(hall: string): ContentItem[] {
+  const key = hall.trim();
+  if (!key) return [];
+  return items.filter((d) => (d.hall ?? '') === key);
 }
 
 export function getPostBySlug(slug: string): ContentItem | undefined {

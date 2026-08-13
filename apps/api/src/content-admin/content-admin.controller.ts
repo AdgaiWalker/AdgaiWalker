@@ -6,6 +6,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   Put,
 } from '@nestjs/common';
@@ -13,7 +14,10 @@ import { ContentAdminService } from './content-admin.service';
 
 @Controller('admin/content')
 export class ContentAdminController {
-  constructor(private readonly content: ContentAdminService) {}
+  constructor(
+    @Inject(ContentAdminService)
+    private readonly content: ContentAdminService,
+  ) {}
 
   @Get()
   list() {

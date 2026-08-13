@@ -4,7 +4,56 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build:web",
   "outputDirectory": "apps/web/dist",
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/xml; charset=utf-8" }
+      ]
+    },
+    {
+      "source": "/rss.xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" },
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/feed.json",
+      "headers": [
+        { "key": "Content-Type", "value": "application/feed+json; charset=utf-8" },
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/llms-full.txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    },
+    {
+      "source": "/posts/:slug/index.md",
+      "headers": [
+        { "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+      ]
+    }
+  ],
   "redirects": [
+    {
+      "source": "/sitemap-index.xml",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
     {
       "source": "/posts/Walker启航",
       "destination": "/posts/walker-launch",
@@ -127,38 +176,120 @@
     },
     {
       "source": "/posts/点子共促",
-      "destination": "/posts/idea-cocreate",
+      "destination": "/tools/resources",
       "permanent": true
     },
     {
       "source": "/posts/点子共促/",
-      "destination": "/posts/idea-cocreate",
+      "destination": "/tools/resources",
       "permanent": true
     },
     {
       "source": "/posts/平价AI社区",
-      "destination": "/posts/affordable-ai-community",
+      "destination": "/tools/resources",
       "permanent": true
     },
     {
       "source": "/posts/平价AI社区/",
-      "destination": "/posts/affordable-ai-community",
+      "destination": "/tools/resources",
+      "permanent": true
+    },
+    {
+      "source": "/posts/affordable-ai-community",
+      "destination": "/tools/resources",
+      "permanent": true
+    },
+    {
+      "source": "/posts/affordable-ai-community/",
+      "destination": "/tools/resources",
       "permanent": true
     },
     {
       "source": "/posts/无题-关于人与skill",
-      "destination": "/posts/on-people-and-skill",
+      "destination": "/lab",
       "permanent": true
     },
     {
       "source": "/posts/无题-关于人与skill/",
-      "destination": "/posts/on-people-and-skill",
+      "destination": "/lab",
       "permanent": true
     }
   ],
   "rewrites": [
     {
-      "source": "/((?!api/).*)",
+      "source": "/tools",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tools/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ideas",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ideas/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/projects",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/projects/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tutorials",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/condition",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/kit",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/lab",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/showcase",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/exchange",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/advance",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/learn",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/learn/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/content",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/gear",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/support",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
       "destination": "/index.html"
     }
   ]

@@ -1,0 +1,73 @@
+# Public surface: only the visitor-facing API contract is reachable from the Internet.
+# WALKER_PUBLIC_API_HOST example: api.example.com
+{$WALKER_PUBLIC_API_HOST} {
+  encode zstd gzip
+
+  route {
+    @health {
+      method GET
+      path /health
+    }
+    handle @health {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @intake {
+      method POST
+      path /intake
+    }
+    handle @intake {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @likes {
+      method GET POST
+      path /likes
+    }
+    handle @likes {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @content_feedback {
+      method POST
+      path /content-feedback
+    }
+    handle @content_feedback {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @search_events {
+      method POST
+      path /search-events
+    }
+    handle @search_events {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @support {
+      method GET
+      path /support
+    }
+    handle @support {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    respond "Not Found" 404
+  }
+}
+
+# Private owner surface: reachable only through an SSH tunnel.
+# Example: ssh -N -L 5174:127.0.0.1:8790 walker-tencent
+http://127.0.0.1:8790 {
+  bind 127.0.0.1
+
+  route {
+    handle_path /api/* {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    root * {$WALKER_ADMIN_DIST}
+    try_files {path} /index.html
+    file_server
+  }
+}

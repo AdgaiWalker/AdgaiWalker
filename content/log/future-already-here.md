@@ -16,6 +16,7 @@ aiUsePolicy:
   citable: true
   actionable: false
 type: knowledge
+hall: lab
 published: true
 series: 前进三部曲
 seriesOrder: 3

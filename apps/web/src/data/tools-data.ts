@@ -1,6 +1,6 @@
 /**
  * ToolsResourcesPage 的数据源
- * 新增/修改资源只改此文件，不改页面组件
+ * 新增/修改资源只改此文件；不做赛道/分类筛选。
  */
 
 export interface Community {
@@ -9,7 +9,7 @@ export interface Community {
   badge: string;
   qrCode?: string;
   featured?: boolean;
-  /** 博主名 — 有此字段表示通过关注博主加入，不直接放二维码 */
+  /** 博主名 — 有此字段表示通过关注博主加入 */
   blogger?: string;
 }
 
@@ -94,12 +94,6 @@ export const aiResources: AIResource[] = [
     qrCode: '/images/qr/644241363.png',
   },
   {
-    name: 'Codex 中转群 (874615899)',
-    desc: 'API 中转服务，我目前稳定在用的一家。',
-    badge: 'API中转',
-    qrCode: '/images/qr/874615899.png',
-  },
-  {
     name: 'Cockpit 插件交流群 (921917596)',
     desc: '用 Cockpit 买 Gemini token，低价 Gemini 额度。',
     badge: 'Gemini Token',
@@ -121,9 +115,20 @@ export const infra: InfraEntry[] = [
   { name: '雨云', desc: '国内服务器，性价比高。' },
   { name: '腾讯云', desc: '国内服务器，配合 CodeBuddy 自动部署。' },
   { name: '阿里云', desc: '国内服务器。' },
-  { name: 'Specship', desc: '国外域名注册，免备案，适合不想备案的场景。' },
-  { name: '禾维 AI (hvoy.ai)', desc: 'API 中转站真假检测、价格对比，买中转前先测再选。', url: 'https://hvoy.ai/' },
-  { name: '哪域名 (nazhumi)', desc: '域名比价，各后缀注册/续费/转入价格一目了然。', url: 'https://www.nazhumi.com/' },
+  {
+    name: 'Specship',
+    desc: '国外域名注册，免备案，适合不想备案的场景。',
+  },
+  {
+    name: '禾维 AI (hvoy.ai)',
+    desc: 'API 中转站真假检测、价格对比，买中转前先测再选。',
+    url: 'https://hvoy.ai/',
+  },
+  {
+    name: '哪域名 (nazhumi)',
+    desc: '域名比价，各后缀注册/续费/转入价格一目了然。',
+    url: 'https://www.nazhumi.com/',
+  },
 ];
 
 export const bloggers: Blogger[] = [
@@ -171,23 +176,18 @@ export const bloggers: Blogger[] = [
 
 export const skills: SkillEntry[] = [
   {
-    name: 'Superpowers',
-    desc: 'AI 编程代理的技能框架。像产品经理一样，通过对话一步步引导出需求和设计，然后自动拆分任务、驱动子代理开发。让 AI 从"直接写代码"变成"先想清楚再做"。',
-    url: 'https://github.com/obra/superpowers',
+    name: 'Agency-Craft',
+    desc: 'Agent / 技能编排相关（自用与共创）。',
+    url: 'https://github.com/AdgaiWalker/Agency-Craft',
+  },
+  {
+    name: 'emilkowalski/skills',
+    desc: 'Emil Kowalski 技能集（动效与设计工程等）。',
+    url: 'https://github.com/emilkowalski/skills/tree/main',
   },
   {
     name: 'HAI Stack',
-    desc: '从屎山代码到大师级应用。海哥出品，非专业 vibe 人都应该下载。',
-    url: 'https://github.com/hylarucoder/hai-stack',
-  },
-  {
-    name: 'Skill-Craft',
-    desc: '我做的健壮技能制作方法论。6 阶段流程：问题建模 → 草稿 → 真实测试 → 审计分级 → 做减法 → 通用化。第一版必然是错的，真实测试才能暴露问题。',
-    url: 'https://github.com/AdgaiWalker/Walkcraft-Skill-Craft',
-  },
-  {
-    name: '副业蓝图',
-    desc: '我做的副业规划 AI 技能。从零到一规划服务型副业：平台选择、定价策略、上架文案、客户筛选。8 阶段流程，历经 8 次迭代。',
-    url: 'https://github.com/AdgaiWalker/Walker-skills-test/tree/main/side-hustle-blueprint',
+    desc: '从屎山代码到大师级应用。海哥出品。',
+    url: 'https://github.com/hylarucoder/hai-stack/tree/main',
   },
 ];

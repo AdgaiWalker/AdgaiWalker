@@ -16,6 +16,7 @@ aiUsePolicy:
   citable: true
   actionable: false
 type: knowledge
+hall: lab
 published: true
 series: 前进三部曲
 seriesOrder: 2
@@ -29,7 +30,7 @@ summary: "老师说过，文字是可以穿越时空的共鸣。点子也是。�
 
 钱不多，但那晚上的感觉不是钱。是帮上人了，被认可了。
 
-还有[[affordable-ai-community]]里的学生党，和我一样没什么钱，问有没有便宜的 AI 能用。我把珍藏的渠道分享给了他们。现在他们在群里积极交流问题、分享资源。
+还有一起找低价 AI 的学生党，和我一样没什么钱，问有没有便宜的 AI 能用。我把珍藏的渠道分享给了他们。现在他们在群里积极交流问题、分享资源。
 
 这些事不大。但帮上人的那一刻，我知道这件事有价值。
 

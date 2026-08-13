@@ -4,6 +4,7 @@ date: 2026-04-25
 updated: 2026-05-31
 tags: [哲学, AI, 随想]
 type: knowledge
+hall: lab
 published: true
 summary: 做减法不是少做，是想清楚再做。一次关于极简与架构设计的对话，从中提炼出「减少概念数量」的原则。
 form: article

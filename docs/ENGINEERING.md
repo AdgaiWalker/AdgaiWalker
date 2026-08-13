@@ -48,8 +48,8 @@ pnpm exec tsx scripts/probe-production.ts
 
 | 环境 | 配置 |
 |------|------|
-| 本地默认 | `WALKER_DB_PROVIDER=sqlite` · `DATABASE_URL=file:…` · `schema.prisma` · `db:push` |
-| 未来 PG | `WALKER_DB_PROVIDER=postgresql` · PG URL · `schema.postgresql.prisma` · `db:migrate` |
+| 本地 / 2GB 单机首期 | `WALKER_DB_PROVIDER=sqlite` · `DATABASE_URL=file:…` · `schema.prisma` · `db:push` |
+| 多进程或高可用阶段 | `WALKER_DB_PROVIDER=postgresql` · 托管 PG URL · `schema.postgresql.prisma` · `db:migrate` |
 
 选择逻辑：`scripts/prisma-env.ts`（依赖 URL / WALKER_DB_PROVIDER）。
 
@@ -85,11 +85,31 @@ pnpm exec tsx scripts/probe-production.ts
 **现状：** 只托管 **web 静态**。公网 **无 Nest/PG**；`GET /api/health` → 404。本地 API+PG 可绿。  
 **禁止** API 未绿时称「生产切流已完成」。
 
+### 腾讯云 2C2G Windows 首期边界
+
+目标运行面见 [`../ops/windows/README.md`](../ops/windows/README.md)：
+
+- Vercel 继续托管公开 Wiki；腾讯云只承载一个 Nest + 一个 Caddy。
+- Nest 默认绑定 `127.0.0.1:8788`；公网只经 Caddy 的方法+路径白名单进入。
+- Admin 只监听回环地址，经 `ssh -N -L 5174:127.0.0.1:8790 walker-tencent` 使用。
+- 首期过程库使用 SQLite；当前 2GB Windows 不安装 Docker、Redis 或本机 PostgreSQL。
+- 两个以上写进程、写锁等待、数据库高可用或恢复要求出现时，再迁托管 PostgreSQL。
+
 ### SPA 与 `/api`
 
-- 现 rewrite：`/((?!api/).*)` → `/index.html`（**排除 `/api`**）  
+- 构建期为首页、内容枢纽和文章输出独立静态 HTML；已知客户端路由显式 rewrite 到 `/index.html`  
+- 未知路径与 `/api/*` 不进 SPA fallback，返回真实 404，避免 soft-404 / API HTML 伪响应  
 - Nest 上线后 rewrites **最前**加：`/api/:path*` → `https://<API主机>/:path*`（Nest 无全局 `/api` 前缀）  
 - 本地 Vite：`/api` proxy → `8788` 并 strip  
+
+### 静态索引与 GEO
+
+`pnpm build:web` 使用同一份公开内容集合生成语义文章 HTML、canonical/OG/JSON-LD、`sitemap.xml`、RSS、JSON Feed、`llms.txt`、`llms-full.txt` 与逐篇 Markdown alternate；随后执行 `verify:geo`，最后建 Pagefind 索引。
+
+- `content/log` 仍是唯一内容真相源；GEOFlow 如启用完整后台，只能隔离作为草稿/审核工具，审核结果经 Git 写回这里。
+- `aiUsePolicy.readable` 决定是否生成机器可读稿；`citable` / `actionable` 会原样写进 AI 使用边界，不能在下游擅自放宽。
+- `robots.txt` 只指向 `https://www.iwalk.pro/sitemap.xml`；sitemap、feeds 与文章预渲染共用同一筛选集合。
+- `pnpm check:content-fields` 与 `pnpm verify:geo` 是生产构建门禁。
 
 ### 生产环境变量（名，不含值）
 
@@ -101,10 +121,10 @@ Admin 写盘仅本机；**不会**自动同步 GitHub。
 
 ### 切流最短步骤
 
-1. 生产 PG + `migrate deploy`  
-2. 部署 Nest，直连 `/health` 且 `db:true`  
-3. Vercel 配 `/api` rewrite  
-4. 生产 `POST /api/intake` 冒烟  
+1. 腾讯云 SQLite 初始化 + 备份恢复演练  
+2. 部署 Nest/Caddy，回环 `/health` 且 `db:true`，公网只开放白名单路由  
+3. API 域名与 HTTPS 就绪后，Vercel 配 `/api` rewrite  
+4. 生产 `POST /api/intake` 冒烟，并确认管理端点公网 404  
 5. 更新 `docs/STATUS.md`  
 
 ## 6. 运行时模块（依赖 / 调用 / 触发 / 实现）

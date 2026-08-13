@@ -14,7 +14,10 @@ const PATHS = [
   '/api/health',
   '/health',
   '/rss.xml',
+  '/feed.json',
   '/llms.txt',
+  '/llms-full.txt',
+  '/sitemap.xml',
   '/pagefind/pagefind.js',
   '/posts/design-for-people',
 ];

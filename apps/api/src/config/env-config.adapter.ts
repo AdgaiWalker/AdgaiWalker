@@ -13,8 +13,13 @@ export class EnvConfigAdapter implements AppConfigPort {
     return process.env.AI_ENABLED === 'true';
   }
 
+  getHost(): string {
+    return process.env.HOST?.trim() || '127.0.0.1';
+  }
+
   getPort(): number {
-    return Number(process.env.PORT ?? 8788);
+    const port = Number(process.env.PORT ?? 8788);
+    return Number.isInteger(port) && port > 0 && port <= 65_535 ? port : 8788;
   }
 
   getNodeEnv(): string {

@@ -3,6 +3,7 @@ title: Ferry 理论建构：从差距到行动的映射
 date: 2026-05-23
 tags: [哲学, AI, Ferry]
 type: knowledge
+hall: lab
 series: Ferry
 seriesOrder: 1
 published: true

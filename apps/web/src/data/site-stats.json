@@ -20,7 +20,9 @@
     { "date": "2026.05.16", "text": "v3 — UX/UI 全面重构" },
     { "date": "2026.05.26", "text": "四柱系统成型（思考/资源/点子/项目）" },
     { "date": "2026.05.27", "text": "三篇核心文章发布 + 关于网站页上线" },
-    { "date": "2026.05.31", "text": "Hockney 审计 + Giscus 评论 + Upstash Redis" }
+    { "date": "2026.05.31", "text": "Hockney 审计 + Giscus 评论 + Upstash Redis" },
+    { "date": "2026.07.21", "text": "从 Astro 重构到 React monorepo" },
+    { "date": "2026.07.21", "text": "工作流：线索 → 题苗 → 交付 → 检验" }
   ],
   "personalTimeline": [
     { "date": "2025.08", "title": "全速驶入 AI 数字深海", "desc": "因为自创项目需要，全身心投入 AI 工程落地实践。从写下第一行 Python 和第一个自适应 Prompt 开始，开启硬核数字航线。", "icon": "lucide:anchor" },

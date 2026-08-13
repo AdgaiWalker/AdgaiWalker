@@ -14,13 +14,16 @@ async function bootstrap() {
   app.use((req: Request, res: Response, next: NextFunction) =>
     requestId.use(req, res, next),
   );
+  app.enableShutdownHooks();
+  const host = config.getHost();
   const port = config.getPort();
-  await app.listen(port);
+  await app.listen(port, host);
   // eslint-disable-next-line no-console
   console.log(
     JSON.stringify({
       level: 'info',
       msg: 'api_started',
+      host,
       port,
       aiEnabled: config.isAiEnabled(),
     }),

@@ -9,6 +9,7 @@ tags:
   - 迭代
   - Claude-Code
 type: project
+hall: showcase
 form: project
 domain: ai
 intent: teach

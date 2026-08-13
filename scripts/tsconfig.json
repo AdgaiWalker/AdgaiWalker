@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "types": ["node"],
-    "rootDir": ".",
+    "rootDir": "..",
     "baseUrl": "."
   },
   "include": ["./**/*.ts"],

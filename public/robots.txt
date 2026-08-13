@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://iwalk.pro/sitemap-index.xml
+Sitemap: https://www.iwalk.pro/sitemap.xml
