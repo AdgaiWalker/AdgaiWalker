@@ -110,25 +110,21 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
     title: 'Ferry · Walker',
     description: '从差距到行动、做减法并持续迭代的思考线。',
     canonicalPath: WEB_ROUTES.ferry,
-    indexable: false,
   },
   [WEB_ROUTES.advanceTrilogy]: {
     title: '前进三部曲 · Walker',
     description: '为什么走、路上留下什么，以及想走向哪里。',
     canonicalPath: WEB_ROUTES.advanceTrilogy,
-    indexable: false,
   },
   [WEB_ROUTES.learn]: {
     title: '学习 · Walker',
     description: '沿着真实任务进入教程和学习路径。',
     canonicalPath: WEB_ROUTES.learn,
-    indexable: false,
   },
   [WEB_ROUTES.gear]: {
     title: '装备 · Walker',
     description: 'duola 当前使用的设备与工作组合。',
     canonicalPath: WEB_ROUTES.gear,
-    indexable: false,
   },
   [WEB_ROUTES.support]: {
     title: '支持 · Walker',

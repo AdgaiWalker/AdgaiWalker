@@ -85,3 +85,24 @@ export function toContentDoc(
 export function isPostType(type: string): boolean {
   return ['knowledge', 'idea', 'project', 'learn'].includes(type);
 }
+
+/** Resolve a wiki slug to a public href; return undefined to keep plain text. */
+export type WikiLinkResolver = (slug: string) => string | undefined;
+
+/** Turn `[[slug]]` / `[[slug|label]]` into markdown links when the slug is public. */
+export function expandWikiLinks(
+  markdown: string,
+  resolveHref: WikiLinkResolver,
+): string {
+  return markdown.replace(
+    /\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]/g,
+    (full, rawSlug: string, rawLabel?: string) => {
+      const slug = rawSlug.trim();
+      const label = (rawLabel ?? slug).trim();
+      if (!slug || !label) return full;
+      const href = resolveHref(slug);
+      if (!href) return label;
+      return `[${label}](${href})`;
+    },
+  );
+}

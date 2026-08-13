@@ -9,7 +9,7 @@ form: tutorial
 domain: coding
 intent: teach
 valueMode: utility
-summary: "把一个真实问题拆开，给出可以立刻开始的最小行动。"
+summary: "从装环境、配 token 到第一次用 Codex / Claude Code 跑通一个真实点子：新手把 agent 用起来的最短路径。"
 aiUsePolicy:
   level: AI-1
   readable: true

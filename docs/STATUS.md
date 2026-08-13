@@ -83,7 +83,7 @@
 | 教程 | `/tutorials` | how-to + 跟学；`/condition` `/kit` 重定向至此 |
 | 点子 / 项目 / 札记 | `/ideas` `/projects` `/lab` | 实验三态 |
 | 站 / 我 / 硬件 | `/about` `/me` `/gear` | Walker=站名；duola=人；硬件在「我」下二级 |
-| 兼容 | `/showcase` | → 项目或点子 |
+| 兼容 | `/showcase` `/condition` `/kit` `/content` `/ideas/new` | 生产 301 到项目 / 教程 / 逛 / 卡 |
 
 内容五类与 frontmatter `hall` 对齐；`affordable-ai-community` 已删，旧链 301→资源页。
 

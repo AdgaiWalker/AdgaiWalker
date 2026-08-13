@@ -97,7 +97,9 @@ pnpm exec tsx scripts/probe-production.ts
 
 ### SPA 与 `/api`
 
-- 构建期为首页、内容枢纽和文章输出独立静态 HTML；已知客户端路由显式 rewrite 到 `/index.html`  
+- 构建期为首页、内容枢纽、文章和已知客户端壳输出独立静态 HTML  
+- 旧兼容路径（`/condition` `/kit` `/showcase` `/content` `/ideas/new`）走 **301**，禁止先吐首页再靠客户端跳  
+- 仅无静态文件的客户端子路径（目前 `/learn/:path*`）rewrite 到对应壳 HTML，禁止 rewrite 到首页  
 - 未知路径与 `/api/*` 不进 SPA fallback，返回真实 404，避免 soft-404 / API HTML 伪响应  
 - Nest 上线后 rewrites **最前**加：`/api/:path*` → `https://<API主机>/:path*`（Nest 无全局 `/api` 前缀）  
 - 本地 Vite：`/api` proxy → `8788` 并 strip  
@@ -109,6 +111,9 @@ pnpm exec tsx scripts/probe-production.ts
 - `content/log` 仍是唯一内容真相源；GEOFlow 如启用完整后台，只能隔离作为草稿/审核工具，审核结果经 Git 写回这里。
 - `aiUsePolicy.readable` 决定是否生成机器可读稿；`citable` / `actionable` 会原样写进 AI 使用边界，不能在下游擅自放宽。
 - `robots.txt` 只指向 `https://www.iwalk.pro/sitemap.xml`；sitemap、feeds 与文章预渲染共用同一筛选集合。
+- `/learn` `/gear` `/advance` `/projects/ferry` 有独立内容，进 sitemap；`/tools` `/support` `/login` `/exchange` 保持 `noindex`。
+- 文章首屏必须展开已知 `[[slug]]` 为站内链接；悬空 wiki 链降为纯文本。
+- `/tools` 等壳页首屏必须带自己的 canonical + `noindex`，禁止复用首页 HTML。
 - `pnpm check:content-fields` 与 `pnpm verify:geo` 是生产构建门禁。
 
 ### 生产环境变量（名，不含值）

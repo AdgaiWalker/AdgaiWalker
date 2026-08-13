@@ -5,16 +5,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { expandWikiLinks } from '../packages/shared/src/content.ts';
 import type {
   GeneratedContent,
   GeneratedContentItem,
 } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
-import { contentJsonPath, webDistDir } from './lib/paths';
+import { contentJsonPath, fromRoot, webDistDir } from './lib/paths';
 import {
   absoluteUrl,
   AUTHOR,
   INDEXABLE_STATIC_ROUTES,
+  SPA_SHELL_ROUTES,
   SITE_DESCRIPTION,
   SITE_LANGUAGE,
   SITE_NAME,
@@ -102,6 +104,7 @@ function metaTags({
   modified = '',
   tags = [],
   markdownPath = '',
+  indexable = true,
 }: {
   title: string;
   description: string;
@@ -112,6 +115,7 @@ function metaTags({
   modified?: string;
   tags?: string[];
   markdownPath?: string;
+  indexable?: boolean;
 }): string {
   const canonical = absoluteUrl(pathname);
   const socialImage = image || defaultImageUrl();
@@ -140,6 +144,7 @@ function metaTags({
   return `<title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}" />
   <meta name="author" content="${escapeHtml(AUTHOR.name)}" />
+  <meta name="robots" content="${indexable ? 'index, follow' : 'noindex, follow'}" />
   <link rel="canonical" href="${escapeHtml(canonical)}" />
   <link rel="alternate" type="application/rss+xml" title="${SITE_NAME} RSS" href="${absoluteUrl('/rss.xml')}" />
   <link rel="alternate" type="application/feed+json" title="${SITE_NAME} JSON Feed" href="${absoluteUrl('/feed.json')}" />
@@ -207,7 +212,10 @@ function sanitizeRenderedUrls(html: string): string {
 }
 
 function renderMarkdown(markdown: string): string {
-  const rendered = marked.parse(markdown, {
+  const expanded = expandWikiLinks(markdown, (slug) =>
+    docsBySlug.has(slug) ? `/posts/${encodeURIComponent(slug)}` : undefined,
+  );
+  const rendered = marked.parse(expanded, {
     gfm: true,
     breaks: false,
     renderer: rendererWithEscapedHtml(),
@@ -317,6 +325,13 @@ const homepageBody = `<main data-pagefind-body>
     <nav aria-label="主要入口">
       <a href="/tools">卡：拿下一步</a>
       <a href="/posts">逛：读证据</a>
+      <a href="/tutorials">教程</a>
+      <a href="/learn">学习</a>
+      <a href="/ideas">点子</a>
+      <a href="/projects">项目</a>
+      <a href="/lab">札记</a>
+      <a href="/gear">装备</a>
+      <a href="/about">关于本站</a>
     </nav>
   </header>
   <section aria-labelledby="latest-heading">
@@ -386,6 +401,84 @@ writeCollectionRoute({
   items: publicItems.filter((item) => item.type === 'tool'),
   hrefFor: (item) => `/tools/resources#${encodeURIComponent(item.slug)}`,
 });
+
+writeCollectionRoute({
+  pathname: '/learn',
+  title: '学习 · Walker',
+  heading: '学习',
+  description: '沿着真实任务进入教程和学习路径。',
+  items: docs.filter((item) => item.type === 'learn'),
+});
+
+writeCollectionRoute({
+  pathname: '/advance',
+  title: '前进三部曲 · Walker',
+  heading: '前进三部曲',
+  description: '为什么走、路上留下什么，以及想走向哪里。',
+  items: docs
+    .filter((item) => item.series === '前进三部曲')
+    .sort((a, b) => (a.seriesOrder ?? 0) - (b.seriesOrder ?? 0)),
+});
+
+writeCollectionRoute({
+  pathname: '/projects/ferry',
+  title: 'Ferry · Walker',
+  heading: 'Ferry',
+  description: '从差距到行动、做减法并持续迭代的思考线。',
+  items: docs
+    .filter((item) => item.series === 'Ferry')
+    .sort((a, b) => (a.seriesOrder ?? 0) - (b.seriesOrder ?? 0)),
+});
+
+const gearData = JSON.parse(
+  fs.readFileSync(fromRoot('apps/web/src/data/gear.json'), 'utf8'),
+) as {
+  methodology: string;
+  scenes: Array<{
+    key: string;
+    label: string;
+    description: string;
+    items: Array<{ name: string; price: string; why: string; guide?: string }>;
+  }>;
+};
+const gearTitle = '装备 · Walker';
+const gearDescription = 'duola 当前使用的设备与工作组合。';
+const gearBody = `<main data-pagefind-body>
+  <header><h1>哆啦与硬件</h1><p>${escapeHtml(gearDescription)}</p></header>
+  <p>${escapeHtml(gearData.methodology)}</p>
+  ${gearData.scenes
+    .map(
+      (scene) => `<section>
+    <h2>${escapeHtml(scene.label)}</h2>
+    <p>${escapeHtml(scene.description)}</p>
+    <ul>${scene.items
+      .map((item) => {
+        const name = item.guide
+          ? `<a href="${escapeHtml(item.guide)}">${escapeHtml(item.name)}</a>`
+          : escapeHtml(item.name);
+        return `<li>${name} — ${escapeHtml(item.price)}。${escapeHtml(item.why)}</li>`;
+      })
+      .join('')}</ul>
+  </section>`,
+    )
+    .join('')}
+  <p><a href="/tutorials">相关教程</a></p>
+</main>`;
+writeRoute(
+  '/gear',
+  renderPage({
+    head: metaTags({
+      title: gearTitle,
+      description: gearDescription,
+      pathname: '/gear',
+    }),
+    body: gearBody,
+    schema: {
+      '@context': 'https://schema.org',
+      '@graph': commonGraph('/gear', gearTitle, gearDescription),
+    },
+  }),
+);
 
 const postsTitle = '证据 · Walker';
 const postsDescription =
@@ -618,7 +711,30 @@ for (const doc of docs) {
     }),
   );
 }
+for (const route of SPA_SHELL_ROUTES) {
+  writeRoute(
+    route.pathname,
+    renderPage({
+      head: metaTags({
+        title: route.title,
+        description: route.description,
+        pathname: route.pathname,
+        indexable: false,
+      }),
+      body: `<main>
+    <header>
+      <h1>${escapeHtml(route.heading)}</h1>
+      <p>${escapeHtml(route.description)}</p>
+    </header>
+  </main>`,
+      schema: {
+        '@context': 'https://schema.org',
+        '@graph': commonGraph(route.pathname, route.title, route.description),
+      },
+    }),
+  );
+}
 
 console.log(
-  `prerendered ${INDEXABLE_STATIC_ROUTES.length} semantic hub pages + ${docs.length} semantic article pages`,
+  `prerendered ${INDEXABLE_STATIC_ROUTES.length} hub pages + ${SPA_SHELL_ROUTES.length} SPA shells + ${docs.length} articles`,
 );

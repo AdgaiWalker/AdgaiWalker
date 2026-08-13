@@ -213,84 +213,37 @@
       "source": "/posts/无题-关于人与skill/",
       "destination": "/lab",
       "permanent": true
+    },
+    {
+      "source": "/condition",
+      "destination": "/tutorials",
+      "permanent": true
+    },
+    {
+      "source": "/kit",
+      "destination": "/tutorials",
+      "permanent": true
+    },
+    {
+      "source": "/showcase",
+      "destination": "/projects",
+      "permanent": true
+    },
+    {
+      "source": "/content",
+      "destination": "/posts",
+      "permanent": true
+    },
+    {
+      "source": "/ideas/new",
+      "destination": "/tools",
+      "permanent": true
     }
   ],
   "rewrites": [
     {
-      "source": "/tools",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/tools/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/ideas",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/ideas/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/projects",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/projects/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/tutorials",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/condition",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/kit",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/lab",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/showcase",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/exchange",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/advance",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/learn",
-      "destination": "/index.html"
-    },
-    {
       "source": "/learn/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/content",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/gear",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/support",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/login",
-      "destination": "/index.html"
+      "destination": "/learn/index.html"
     }
   ]
 }

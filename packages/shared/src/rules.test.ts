@@ -21,7 +21,7 @@ import {
 } from './loop.js';
 import { isErrorCode } from './errors.js';
 import { ruleNextStep, matchNextStepBucket } from './nextstep.js';
-import { resolveVisibility, toContentDoc, isPostType } from './content.js';
+import { resolveVisibility, toContentDoc, isPostType, expandWikiLinks } from './content.js';
 import { FEATURE_KEYS, isFeatureKey } from './feature-keys.js';
 import {
   FEATURE_FAIL_CODES,
@@ -208,6 +208,21 @@ describe('内容解析', () => {
     expect(doc.title).toBe('你好');
     expect(doc.slug).toBe('hello');
     expect(isPostType('knowledge')).toBe(true);
+  });
+});
+
+describe('wiki 内链', () => {
+  const known: Record<string, string> = {
+    'ferry-theory': '/posts/ferry-theory',
+    'fear-as-fuel': '/posts/fear-as-fuel',
+  };
+
+  it('expands known slugs and labels, leaves unknown as text', () => {
+    const source =
+      '见 [[ferry-theory|Ferry]] 与 [[fear-as-fuel]]，以及 [[nl-programming|自然语言编程心法]]。';
+    expect(expandWikiLinks(source, (slug) => known[slug])).toBe(
+      '见 [Ferry](/posts/ferry-theory) 与 [fear-as-fuel](/posts/fear-as-fuel)，以及 自然语言编程心法。',
+    );
   });
 });
 

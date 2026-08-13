@@ -59,4 +59,32 @@ describe('RouteMetadata', () => {
       document.querySelector('#site-json-ld')?.textContent,
     ).toContain('CollectionPage');
   });
+
+  it('marks the ask route noindex with its own canonical', async () => {
+    renderAt('/tools');
+
+    await waitFor(() => {
+      expect(document.title).toBe('卡 · Walker');
+    });
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://www.iwalk.pro/tools');
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('noindex, follow');
+  });
+
+  it('keeps content hubs indexable with their own canonical', async () => {
+    renderAt('/learn');
+
+    await waitFor(() => {
+      expect(document.title).toBe('学习 · Walker');
+    });
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://www.iwalk.pro/learn');
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('index, follow');
+  });
 });

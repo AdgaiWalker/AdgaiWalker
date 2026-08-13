@@ -159,7 +159,8 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 
 **`vercel.json` 规则：**
 
-- 首页、内容枢纽与文章由构建期静态 HTML 承载；已知客户端路由才显式 rewrite 到 `/index.html`  
+- 首页、内容枢纽、文章与已知客户端壳由构建期静态 HTML 承载  
+- 旧兼容路径走 `redirects` 301；仅无静态文件的客户端子路径才 rewrite 到对应壳，禁止 rewrite 到首页  
 - 未知路径与 `/api/*` 不进 SPA fallback，保持真实 404，避免 soft-404 和 API 落到 HTML  
 - 上 Nest 后须在 rewrites **最前**加：`/api/:path*` → `https://<真实-API-主机>/:path*`（Nest 无全局 `/api` 前缀）  
 - 旧中文 slug → 英文 slug 的 301 在 `redirects`  

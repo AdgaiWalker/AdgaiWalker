@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
 import { marked } from 'marked';
+import { expandWikiLinks } from '@walker/shared';
 import {
   getPostBySlug,
   getRelatedPosts,
@@ -86,7 +87,13 @@ function PostDetailBody({
   const versions = getVersionChain(post.slug);
 
   const { html, toc } = useMemo(() => {
-    const rawHtml = marked.parse(post.body, { async: false }) as string;
+    const markdown = expandWikiLinks(post.body, (slug) => {
+      const target = getPostBySlug(slug);
+      return target
+        ? `${dualEntry.browse.path}/${encodeURIComponent(target.slug)}`
+        : undefined;
+    });
+    const rawHtml = marked.parse(markdown, { async: false }) as string;
     const safe = sanitizeHtml(rawHtml);
     return buildArticleOutline(safe);
   }, [post.body]);

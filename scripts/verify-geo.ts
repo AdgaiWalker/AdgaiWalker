@@ -6,7 +6,7 @@ import path from 'node:path';
 import type { GeneratedContent } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
 import { contentJsonPath, webDistDir } from './lib/paths';
-import { absoluteUrl, INDEXABLE_STATIC_ROUTES } from './lib/site';
+import { absoluteUrl, INDEXABLE_STATIC_ROUTES, SPA_SHELL_ROUTES } from './lib/site';
 
 function fail(message: string): never {
   throw new Error(`GEO verification failed: ${message}`);
@@ -47,6 +47,17 @@ assert(
   'duplicate public slugs',
 );
 
+const placeholderSummary = '把一个真实问题拆开，给出可以立刻开始的最小行动。';
+const summaries = browseItems.map((item) => item.summary.trim());
+assert(
+  new Set(summaries).size === summaries.length,
+  'duplicate public summaries',
+);
+assert(
+  !summaries.includes(placeholderSummary),
+  'placeholder summary leaked into public content',
+);
+
 for (const item of browseItems) {
   assert(item.summary.trim(), `${item.slug} has no summary`);
   assert(item.aiUsePolicy.level, `${item.slug} has no AI use policy level`);
@@ -62,12 +73,34 @@ for (const route of INDEXABLE_STATIC_ROUTES) {
     route === '/' ? 'index.html' : path.join(route.replace(/^\//, ''), 'index.html');
   const html = read(relativePath);
   const label = relativePath;
-  assert(html.includes('<link rel="canonical"'), `${label} has no canonical`);
+  const canonical = absoluteUrl(route);
+  assert(html.includes(`rel="canonical" href="${canonical}"`), `${label} canonical mismatch`);
+  assert(html.includes('name="robots" content="index, follow"'), `${label} is not indexable`);
   assert(html.includes('property="og:title"'), `${label} has no Open Graph title`);
   assert(html.includes('name="twitter:card"'), `${label} has no Twitter card`);
   assert(/<script type="module"[^>]+src="\/assets\//.test(html), `${label} lost Vite JS`);
   assert(/<link rel="stylesheet"[^>]+href="\/assets\//.test(html), `${label} lost Vite CSS`);
   extractJsonLd(html, label);
+}
+
+for (const route of SPA_SHELL_ROUTES) {
+  const relativePath = path.join(route.pathname.replace(/^\//, ''), 'index.html');
+  const html = read(relativePath);
+  const canonical = absoluteUrl(route.pathname);
+  assert(
+    html.includes(`rel="canonical" href="${canonical}"`),
+    `${route.pathname} leaked another page's canonical`,
+  );
+  assert(
+    html.includes('name="robots" content="noindex, follow"'),
+    `${route.pathname} is missing noindex`,
+  );
+  assert(html.includes(`<title>${route.title}</title>`), `${route.pathname} title mismatch`);
+  assert(
+    !html.includes('想解决一个问题，还是逛逛新的可能？'),
+    `${route.pathname} still serves homepage first paint`,
+  );
+  extractJsonLd(html, route.pathname);
 }
 
 for (const item of browseItems) {
@@ -78,6 +111,10 @@ for (const item of browseItems) {
   assert(html.includes('<h1>'), `${item.slug} has no h1`);
   assert(html.includes('class="prose-md"'), `${item.slug} has no semantic body`);
   assert(html.includes(`rel="canonical" href="${canonical}"`), `${item.slug} canonical mismatch`);
+  assert(
+    !/\[\[[^\]]+\]\]/.test(html),
+    `${item.slug} still has unresolved wiki links`,
+  );
   assert(!html.includes('<pre class="body">'), `${item.slug} still uses raw Markdown pre`);
   assert(!html.includes('entry-hint.js'), `${item.slug} references removed entry-hint.js`);
   assert(!/\s(?:href|src)="javascript:/i.test(html), `${item.slug} contains unsafe URL`);
