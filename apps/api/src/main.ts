@@ -7,6 +7,11 @@ import { RequestIdMiddleware } from './observability/request-id.middleware';
 
 async function bootstrap() {
   const config = new EnvConfigAdapter();
+  if (config.getNodeEnv() === 'production' && !process.env.WALKER_ADMIN_TOKEN?.trim()) {
+    throw new Error(
+      'WALKER_ADMIN_TOKEN is required in production (admin routes have no other credential)',
+    );
+  }
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });

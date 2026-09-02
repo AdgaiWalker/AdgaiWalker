@@ -54,7 +54,12 @@ Start-ScheduledTask -TaskName "WalkerGateway"
 Start-Sleep -Seconds 6
 
 $apiHealth = Invoke-RestMethod "http://127.0.0.1:8788/health"
-$adminHealth = Invoke-RestMethod "http://127.0.0.1:8790/api/health"
+
+# Admin 面有 basic auth，健康检查需带凭据（与 run-caddy.ps1 同一凭据文件）。
+$adminAuthFile = "C:\Walker\data\admin-basic-auth.txt"
+$pair = (Get-Content $adminAuthFile -Raw).Trim()
+$basic = "Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pair))
+$adminHealth = Invoke-RestMethod "http://127.0.0.1:8790/api/health" -Headers @{ Authorization = $basic }
 
 Write-Output ("API_HEALTH=" + ($apiHealth | ConvertTo-Json -Compress))
 Write-Output ("ADMIN_HEALTH=" + ($adminHealth | ConvertTo-Json -Compress))

@@ -57,9 +57,13 @@
 }
 
 # Private owner surface: reachable only through an SSH tunnel.
+# Second defense layer: basic auth. WALKER_ADMIN_BASIC_AUTH = "user <bcrypt>"
+# is derived from C:\Walker\data\admin-basic-auth.txt by run-caddy.ps1.
 # Example: ssh -N -L 5174:127.0.0.1:8790 walker-tencent
 http://127.0.0.1:8790 {
   bind 127.0.0.1
+
+  basic_auth {$WALKER_ADMIN_BASIC_AUTH}
 
   route {
     handle_path /api/* {

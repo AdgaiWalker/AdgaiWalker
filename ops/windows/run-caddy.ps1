@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$PublicApiHost,
   [string]$Root = "C:\Walker\app",
-  [string]$Caddy = "C:\Walker\bin\caddy.exe"
+  [string]$Caddy = "C:\Walker\bin\caddy.exe",
+  [string]$AdminAuthFile = "C:\Walker\data\admin-basic-auth.txt"
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,6 +19,23 @@ if (-not (Test-Path $config)) {
 if (-not (Test-Path $adminDist)) {
   throw "Missing Admin build: $adminDist"
 }
+
+# 管理 basic auth（第二道防线）。凭据文件格式 user:password（明文，仅存服务器 data 目录，不进 Git）。
+if (-not (Test-Path $AdminAuthFile)) {
+  throw "Missing admin basic-auth file: $AdminAuthFile (format: user:password)"
+}
+$pair = (Get-Content $AdminAuthFile -Raw).Trim()
+$sep = $pair.IndexOf(':')
+if ($sep -lt 1) {
+  throw "Invalid admin basic-auth file format: expected user:password"
+}
+$user = $pair.Substring(0, $sep)
+$password = $pair.Substring($sep + 1)
+$hash = (& $Caddy hash-password --plaintext $password).Trim()
+if ($hash -notmatch '^\$2') {
+  throw "caddy hash-password returned unexpected output"
+}
+$env:WALKER_ADMIN_BASIC_AUTH = "$user $hash"
 
 $env:WALKER_PUBLIC_API_HOST = $PublicApiHost
 $env:WALKER_ADMIN_DIST = $adminDist
