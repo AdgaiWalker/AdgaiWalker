@@ -20,6 +20,7 @@ export class AppModule implements NestModule {
       .exclude(
         { path: 'health', method: RequestMethod.GET },
         { path: 'intake', method: RequestMethod.POST },
+        { path: 'assistant', method: RequestMethod.POST },
         { path: 'likes', method: RequestMethod.GET },
         { path: 'likes', method: RequestMethod.POST },
         { path: 'content-feedback', method: RequestMethod.POST },

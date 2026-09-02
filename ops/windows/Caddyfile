@@ -20,6 +20,14 @@
       reverse_proxy 127.0.0.1:8788
     }
 
+    @assistant {
+      method POST
+      path /assistant
+    }
+    handle @assistant {
+      reverse_proxy 127.0.0.1:8788
+    }
+
     @likes {
       method GET POST
       path /likes
@@ -63,7 +71,9 @@
 http://127.0.0.1:8790 {
   bind 127.0.0.1
 
-  basic_auth {$WALKER_ADMIN_USER} {$WALKER_ADMIN_HASH}
+  basic_auth {
+    {$WALKER_ADMIN_USER} {$WALKER_ADMIN_HASH}
+  }
 
   route {
     handle_path /api/* {
