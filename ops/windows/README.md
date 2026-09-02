@@ -33,7 +33,7 @@ Windows 与宝塔当前已占用大部分 2GB 内存。第一阶段禁止在本�
 - Admin 静态站只监听 `127.0.0.1:8790`。
 - **第二道防线（凭据）**：
   - Nest 对白名单之外的所有路由要求管理凭据（`apps/api/src/auth/admin-token.middleware.ts`），凭据来自 `apps/api/.env` 的 `WALKER_ADMIN_TOKEN`；白名单在 `app.module.ts` 中逐条对齐 Caddyfile，两侧需同步修改。生产环境未配置该 token 时 API 拒绝启动。
-  - Caddy Admin 面启用 basic auth（`WALKER_ADMIN_BASIC_AUTH`），由 `run-caddy.ps1` 从 `C:\Walker\data\admin-basic-auth.txt`（格式 `user:password`，明文仅存服务器 data 目录，不进 Git）实时派生 bcrypt 哈希。浏览器首次访问会弹一次密码框，Basic 头随后被 Caddy 转发给 Nest，由 Nest 校验密码部分等于 token。
+  - Caddy Admin 面启用 basic auth（块形式，user/hash 经环境变量 `WALKER_ADMIN_USER` / `WALKER_ADMIN_HASH` 注入），由 `run-caddy.ps1` 从 `C:\Walker\data\admin-basic-auth.txt`（格式 `user:password`，明文仅存服务器 data 目录，不进 Git）实时派生 bcrypt 哈希。**密码必须与 `WALKER_ADMIN_TOKEN` 一致**。浏览器首次访问会弹一次密码框，Basic 头随后被 Caddy 转发给 Nest，由 Nest 校验密码部分等于 token。
 
 脚本/curl 调用管理接口时带 `x-admin-token` 头即可：
 
