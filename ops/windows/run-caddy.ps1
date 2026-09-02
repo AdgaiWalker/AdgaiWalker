@@ -35,7 +35,9 @@ $hash = (& $Caddy hash-password --plaintext $password).Trim()
 if ($hash -notmatch '^\$2') {
   throw "caddy hash-password returned unexpected output"
 }
-$env:WALKER_ADMIN_BASIC_AUTH = "$user $hash"
+# 两个独立变量：Caddyfile 的 {$VAR} 展开不跨 token，"user hash" 合成一个变量会被误读。
+$env:WALKER_ADMIN_USER = $user
+$env:WALKER_ADMIN_HASH = $hash
 
 $env:WALKER_PUBLIC_API_HOST = $PublicApiHost
 $env:WALKER_ADMIN_DIST = $adminDist
