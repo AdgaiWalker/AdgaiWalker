@@ -127,14 +127,14 @@
 - [x] 凭据 scp（不读内容）、`.env`（AI_ENABLED=true、预算 200/日）、WalkerApi/WalkerGateway 双任务重启 ✅
 - [x] **端到端验收**：盒子 `/health` ok+aiEnabled=true；`POST /assistant` 真问「duola 是谁」→ AI 真答（6.8s 热启动，sessionId 为 harness 真会话）✅
 
-### T3.4 Vercel 反代与切流 🔄（等一条 DNS 记录）
+### T3.4 Vercel 反代与切流 ✅（2026-09-03 完成，生产全链路真答通过）
 
-- [x] Caddy 双任务按正式域名 `api.iwalk.pro` 重注册（DNS 就绪后证书自动签发）✅
-- [ ] **等用户**：在 Spaceship DNS 加 A 记录 `api.iwalk.pro → 43.163.4.104`（或授权 AI 驾驶浏览器操作 Spaceship）
-- [ ] DNS 生效后验证 `curl https://api.iwalk.pro/health` → 200
-- [ ] `vercel.json` 加 `/api/*` → `https://api.iwalk.pro` 反代（保留现有 301 表；验证通过后才提交推送，防合流切坏）
-- [ ] 生产验收：真问全链路、熔断演练、`pnpm accept` 绿
-- [ ] STATUS.md 记「生产切流」+ 验证盒起算；GitHub 恢复后推送积压提交（806d85a 等 3 个）
+- [x] 用户在 Spaceship 加 A 记录 `api.iwalk.pro → 43.163.4.104`（授权 AI 驾驶浏览器完成登录与导航，用户填最后一条记录）✅
+- [x] DNS 即时生效（权威+公共解析均返回 43.163.4.104）；Caddy 自动签发 Let's Encrypt 证书，`https://api.iwalk.pro/health` → 200 ✅
+- [x] `vercel.json` rewrites `/api/*` → `https://api.iwalk.pro`（保留全部 301 表）✅
+- [x] 推送 `e3826f0`（GitHub 网络恢复，积压提交全部上库）→ Vercel 自动部署 ✅
+- [x] **生产验收**：`https://www.iwalk.pro/api/health` ok；`POST /api/assistant` 真问 → AI 真答 9.4s（aiUsedFlag=true）✅
+- [x] STATUS.md 记「生产切流：已完成（2026-09-03）」，验证盒起算 ✅
 
 ## P3 按证据启动（不排期，触发条件见 PRD 5.3 / 10 节）
 
@@ -164,3 +164,6 @@ SSE 流式 / ACP profile 升级（需 cancel 时）/ 索引式注入（>50 篇�
 | 2026-08-30 | 对话框加 Enter 发送（Shift+Enter 换行，输入法组词中不触发）；`?q=` 只在值变化时同步 | 排查「无法发送」时发现：长命 IAB 标签页热更 25+ 次会重置组件态清空输入；且该面板中途出现输入投递失效（鼠标键盘事件均不达页面，JS 层正常）——环境问题非产品问题，产品流程已在 DOM 级全链路验证（问→AI 答→引用链接→徽标） |
 | 2026-08-30 | 预算按 UTC+8 日期键计数；存储失败 fail-open | 站点中文时区跨日重置直觉正确；熔断是成本保险丝，不能因观测存储故障把回答也熔掉 |
 | 2026-08-30 | 盒子 runtime 定案方案 b（npm `dsh@0.1.2-alpha.3` + `DSH_RUNTIME_BIN` 指向），本地默认仍 clone | alpha.3 有 profile 首用自动初始化（rc.2 实测没有）；免传 1GB+ clone；两形态均实测 pong |
+| 2026-09-03 | runtime 变量改名 `WALKER_DSH_RUNTIME_BIN` 且子进程 cwd 用 `.dsh-assistant` | dsh 启动安全机制拒绝 .env 文件里的 `DSH_*` 变量（探针定位）；cwd 含 .env 的目录会触发该检查 |
+| 2026-09-03 | 公网白名单双侧（app.module + Caddyfile）同步放行 `POST /assistant` | 与并行会话的 admin 凭据认证（`5e01b15`）集成；`GET /assistant/runs` 保持管理口拦截 |
+| 2026-09-03 | 生产切流走正式域名 + HTTPS 全链（api.iwalk.pro），不用 8080 明文直连 | ops 基线要求域名+HTTPS 通过后才切；Vercel→盒子之间不裸奔访客流量 |
