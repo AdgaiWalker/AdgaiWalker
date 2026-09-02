@@ -1,4 +1,4 @@
-# 站内助手 runtime 安装（一次性；对应 docs/TODO-SITE-ASSISTANT.md T3.2/T3.3）
+﻿# 站内助手 runtime 安装（一次性；对应 docs/TODO-SITE-ASSISTANT.md T3.2/T3.3）
 # 前置：Node 22+ 与 npm 已装；盒子以 C:\Walker\bin 为运行工具目录。
 # 用法：powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\install-dsh.ps1
 $ErrorActionPreference = "Stop"
