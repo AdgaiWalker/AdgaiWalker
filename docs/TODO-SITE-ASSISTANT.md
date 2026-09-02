@@ -113,10 +113,15 @@
 - [x] 本地端到端验证：apps/api 的 SDK client(rc.2) → npm runtime(alpha.3) → **pong 1.3s**；适配器加 `DSH_RUNTIME_BIN` 覆盖（生产指 npm bin，本地默认仍 clone），经适配器本体再验 **pong 3.2s** ✅
 - [x] `ops/windows/install-dsh.ps1` 安装脚本 + ops README 助手部署节 ✅
 
-### T3.3 盒子部署 ⛔ 被防火墙阻塞（2026-08-30）
+### T3.3 盒子部署 🔄（2026-08-30，SSH 已通，部署进行中）
 
-- [ ] SSH 被远端关闭：本对话出口 IP `54.179.46.241`（AWS 段，Mac 代理出口）不在腾讯云防火墙 TCP 22 白名单；本机无腾讯云 CLI/云 API 凭据，无法自改——**等用户：控制台把 22 端口源更新为 `54.179.46.241/32`，或关掉 Mac 代理用既有白名单 IP**
-- [ ] 上线步骤（SSH 通后）：clone 仓库到 `C:\Walker\app` → pnpm install/build 链 → `install-dsh.ps1` → 放置凭据 → `.env` 追加（见 ops README 助手册）→ `install-tasks.ps1` → `dsh-win32` 诊断 → `/health` 验证
+- [x] 防火墙 TCP 22 来源改 `42.100.162.125/32`（经腾讯云控制台网页，AI 驾驶浏览器 + 用户扫码登录完成）✅
+- [x] 盒子基线确认：`C:\Walker`（app/bin/data/logs），Node v24.19.0 / Git 2.53 / Caddy 2.11.4 / pnpm 全就绪 ✅
+- [x] 代码：盒子在 `6dd8dce`（落后）；stash 盒上旧改动（host 绑定等已被主线全覆盖）→ 备份未跟踪旧脚本 → 拉取 `2496e8e`（161 文件）✅
+- [x] 构建：pnpm install --frozen-lockfile（5m35s，含 dsh Windows postinstall）→ build:shared → db:generate/push → build:api（零错）→ build:admin（4.3s）✅
+- [x] `install-dsh.ps1` 首跑暴露 PowerShell 中文无 BOM 解析错 → 加 BOM 提交推送（`1f8f18e`）✅
+- [ ] ⛔ **SSH 中断**：构建完成后 sshd 无 banner（TCP 可连）——判断为 2C2G 构建后内存耗尽/swap 抖动，等缓解后重试；恢复后继续：install-dsh.ps1 → scp 凭据 → .env 追加（见 ops README）→ 重启服务 → /health
+- [ ] `dsh-win32` 诊断跑一遍
 
 ### T3.4 Vercel 反代与切流（待 T3.3）
 

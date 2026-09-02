@@ -2,17 +2,22 @@
  * 规则兜底适配器 — AI 关闭 / 降级时的非空回答（PRD 非协商第 1 条）。
  * 无状态：热门推荐取内容索引前三条，出口引导卡口与邮箱。
  */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { AssistantRunResult } from '@walker/shared';
 import type {
   AssistantAskInput,
   AssistantRunnerPort,
 } from '../ports/assistant-runner.port';
-import type { SiteContentIndexPort } from '../ports/site-content-index.port';
+import {
+  SITE_CONTENT_INDEX,
+  type SiteContentIndexPort,
+} from '../ports/site-content-index.port';
 
 @Injectable()
 export class RuleAssistantAdapter implements AssistantRunnerPort {
-  constructor(private readonly index: SiteContentIndexPort) {}
+  constructor(
+    @Inject(SITE_CONTENT_INDEX) private readonly index: SiteContentIndexPort,
+  ) {}
 
   async ask(input: AssistantAskInput): Promise<AssistantRunResult> {
     let entries: Awaited<ReturnType<SiteContentIndexPort['loadCitable']>> = [];
