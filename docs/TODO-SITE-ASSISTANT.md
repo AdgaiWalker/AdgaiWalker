@@ -167,3 +167,5 @@ SSE 流式 / ACP profile 升级（需 cancel 时）/ 索引式注入（>50 篇�
 | 2026-09-03 | runtime 变量改名 `WALKER_DSH_RUNTIME_BIN` 且子进程 cwd 用 `.dsh-assistant` | dsh 启动安全机制拒绝 .env 文件里的 `DSH_*` 变量（探针定位）；cwd 含 .env 的目录会触发该检查 |
 | 2026-09-03 | 公网白名单双侧（app.module + Caddyfile）同步放行 `POST /assistant` | 与并行会话的 admin 凭据认证（`5e01b15`）集成；`GET /assistant/runs` 保持管理口拦截 |
 | 2026-09-03 | 生产切流走正式域名 + HTTPS 全链（api.iwalk.pro），不用 8080 明文直连 | ops 基线要求域名+HTTPS 通过后才切；Vercel→盒子之间不裸奔访客流量 |
+| 2026-09-03 | 助手提问门槛从 4 字降为 2 字（`isValidAssistantBody`，前后端同步），与卡口规则解耦 | 用户实测：纯中文 2 字被禁发。中文信息密度高，「你好」应能发；卡口 /tools 保持 4 字反刷屏规则不变 |
+| 2026-09-03 | SSH 熔断期间用腾讯云 TAT「执行命令」做盒子运维（git pull+build+重启一条龙，23s ExitCode 0） | Windows OpenSSH 短连接频次熔断反复出现；TAT 不走 22 端口，是可靠的带外运维通道，后续盒子更新优先走它 |
