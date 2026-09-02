@@ -51,33 +51,33 @@ export function resolveRuntimePaths(): { bin: string; cwd: string } | null {
   return { bin, cwd: dir };
 }
 
-function assistantEnv(): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    DSH_HOME:
-      process.env.ASSISTANT_DSH_HOME?.trim() ||
-      path.join(os.homedir(), '.dsh-assistant'),
-    DSH_PERMISSION_MODE: 'read-only',
-  };
-}
-
 export function buildDefaultRuntimeFactory(
   provider = 'deepseek-official',
   model = 'deepseek-v4-flash',
 ): HarnessRuntimeFactory | null {
-  // 优先：DSH_RUNTIME_BIN 直接指向已构建的 dsh bin（生产/盒子 npm 安装形态，无需 tsx）
-  const binOverride = process.env.DSH_RUNTIME_BIN?.trim();
+  // 助手专用环境：DSH_HOME 独立目录；子进程 cwd 必须是中立目录（dsh 启动时
+  // 会扫描 cwd 的 .env 并拒绝其中出现的 DSH_* 启动变量，见探针 2026-09-03）
+  const dshHome =
+    process.env.ASSISTANT_DSH_HOME?.trim() ||
+    path.join(os.homedir(), '.dsh-assistant');
+  const childEnv = {
+    ...process.env,
+    DSH_HOME: dshHome,
+    DSH_PERMISSION_MODE: 'read-only',
+  };
+  // 优先：WALKER_DSH_RUNTIME_BIN 指向已构建的 dsh bin（生产/盒子 npm 安装形态）
+  const binOverride = process.env.WALKER_DSH_RUNTIME_BIN?.trim();
   if (binOverride) {
     return () =>
       new DeepSeekHarness({
-        cwd: process.cwd(),
+        cwd: dshHome,
         provider,
         model,
         launch: {
           command: process.execPath,
           args: [binOverride, '--profile', 'sdk'],
-          cwd: process.cwd(),
-          env: assistantEnv(),
+          cwd: dshHome,
+          env: childEnv,
           requestTimeoutMs: 60_000,
         },
       }) as unknown as HarnessRuntimeLike;
@@ -94,7 +94,7 @@ export function buildDefaultRuntimeFactory(
         command: process.execPath,
         args: ['--import', 'tsx/esm', paths.bin, '--profile', 'sdk'],
         cwd: paths.cwd,
-        env: assistantEnv(),
+        env: childEnv,
         requestTimeoutMs: 60_000,
       },
     }) as unknown as HarnessRuntimeLike;

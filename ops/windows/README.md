@@ -84,7 +84,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\in
 
 ```dotenv
 AI_ENABLED=true
-DSH_RUNTIME_BIN=C:/Walker/bin/node_modules/@deepseek-ai/dsh/lib/bin.js
+WALKER_DSH_RUNTIME_BIN=C:/Walker/bin/node_modules/@deepseek-ai/dsh/lib/bin.js
 ASSISTANT_DSH_HOME=C:/Users/<用户名>/.dsh-assistant
 ASSISTANT_DAILY_LIMIT=200
 ```
