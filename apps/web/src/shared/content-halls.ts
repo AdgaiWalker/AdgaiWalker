@@ -44,9 +44,9 @@ export const CONTENT_HALLS: readonly ContentHallDef[] = [
   },
   {
     id: 'showcase',
-    label: '展柜',
+    label: '探索',
     hint: 'Work',
-    blurb: '点子（未对准需求）与项目（已做成）——劳动产品陈列。',
+    blurb: '向外做事：点子可以持续推进，项目是被明确立项的持续交付。',
     routeKey: 'showcase',
   },
   {

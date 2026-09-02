@@ -10,9 +10,10 @@ import { PostsPage } from './pages/PostsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { ToolsPage } from './pages/ToolsPage';
 import { ToolsResourcesPage } from './pages/ToolsResourcesPage';
-import { IdeasPage } from './pages/IdeasPage';
+import { AskPage } from './pages/AskPage';
 import { IdeasNewRedirectPage } from './pages/IdeasNewRedirectPage';
-import { ProjectsPage } from './pages/ProjectsPage';
+import { ExplorePage } from './pages/ExplorePage';
+import { ExploreLegacyRedirectPage } from './pages/ExploreLegacyRedirectPage';
 import { FerryPage } from './pages/FerryPage';
 import { AdvanceTrilogyPage } from './pages/AdvanceTrilogyPage';
 import { LabPage } from './pages/LabPage';
@@ -49,9 +50,16 @@ export function App() {
           <Route index element={<HomePage />} />
           <Route path={browseBase} element={<PostsPage />} />
           <Route path={`${browseBase}/:slug`} element={<PostDetailPage />} />
-          <Route path={ideasBase} element={<IdeasPage />} />
+          <Route path={strip(WEB_ROUTES.explore)} element={<ExplorePage />} />
+          <Route
+            path={ideasBase}
+            element={<ExploreLegacyRedirectPage view="idea" />}
+          />
           <Route path={`${ideasBase}/new`} element={<IdeasNewRedirectPage />} />
-          <Route path={strip(WEB_ROUTES.projects)} element={<ProjectsPage />} />
+          <Route
+            path={strip(WEB_ROUTES.projects)}
+            element={<ExploreLegacyRedirectPage view="project" />}
+          />
           <Route path={strip(WEB_ROUTES.tutorials)} element={<TutorialsPage />} />
           <Route path={strip(WEB_ROUTES.condition)} element={<ConditionPage />} />
           <Route path={strip(WEB_ROUTES.kit)} element={<KitPage />} />
@@ -79,6 +87,7 @@ export function App() {
             element={<Navigate to={dualEntry.browse.path} replace />}
           />
           <Route path={strip(WEB_ROUTES.ask)} element={<ToolsPage />} />
+          <Route path={strip(WEB_ROUTES.assistant)} element={<AskPage />} />
           <Route
             path={strip(WEB_ROUTES.toolsResources)}
             element={<ToolsResourcesPage />}

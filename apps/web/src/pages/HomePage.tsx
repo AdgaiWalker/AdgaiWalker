@@ -11,9 +11,8 @@ import {
   ArrowRight,
   Bookmark,
   BookOpen,
+  Compass,
   FlaskConical,
-  FolderKanban,
-  Lightbulb,
   MessageCircleQuestion,
   PenLine,
 } from 'lucide-react';
@@ -115,7 +114,7 @@ export function HomePage() {
             >
               <div className="mobile-section-head">
                 <span>去逛逛</span>
-                <small>五条支路，随便拐进一条</small>
+                <small>四条支路，随便拐进一条</small>
               </div>
               {/* 与侧栏一致：不重复类型总览，只放正交深页 */}
               <div className="quick-grid">
@@ -127,13 +126,9 @@ export function HomePage() {
                   <BookOpen size={15} aria-hidden />
                   <span>教程</span>
                 </Link>
-                <Link to={WEB_ROUTES.ideas} className="quick-link">
-                  <Lightbulb size={15} aria-hidden />
-                  <span>点子</span>
-                </Link>
-                <Link to={WEB_ROUTES.projects} className="quick-link">
-                  <FolderKanban size={15} aria-hidden />
-                  <span>项目</span>
+                <Link to={WEB_ROUTES.explore} className="quick-link">
+                  <Compass size={15} aria-hidden />
+                  <span>探索</span>
                 </Link>
                 <Link to={WEB_ROUTES.lab} className="quick-link">
                   <FlaskConical size={15} aria-hidden />

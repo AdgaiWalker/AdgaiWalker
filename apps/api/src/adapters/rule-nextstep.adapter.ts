@@ -14,6 +14,8 @@ export class RuleNextStepAdapter implements NextStepStrategyPort {
       nextStep: r.nextStep,
       bucketId: r.bucketId,
       aiUsedFlag: false,
+      suggestedSlug: null,
+      suggestedTitle: null,
     };
   }
 }

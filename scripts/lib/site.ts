@@ -6,7 +6,7 @@ export const SITE_ORIGIN = 'https://www.iwalk.pro';
 export const SITE_NAME = 'Walker';
 export const SITE_TITLE = 'Walker · 用 AI 走自己的路';
 export const SITE_DESCRIPTION =
-  'duola 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、项目与札记。';
+  'duola 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
 export const SITE_LANGUAGE = 'zh-CN';
 
 /** 这些路由在构建期拥有独立静态正文与 metadata，可以进入 sitemap。 */
@@ -15,8 +15,7 @@ export const INDEXABLE_STATIC_ROUTES = [
   '/posts',
   '/tutorials',
   '/learn',
-  '/ideas',
-  '/projects',
+  '/explore',
   '/projects/ferry',
   '/lab',
   '/advance',
@@ -33,6 +32,12 @@ export const SPA_SHELL_ROUTES = [
     title: '卡 · Walker',
     heading: '你卡在哪？',
     description: '说清一个真实卡点，拿到可以立即开始的下一步。',
+  },
+  {
+    pathname: '/ask',
+    title: '问站内助手 · Walker',
+    heading: '问站内助手',
+    description: '了解站主、找内容、问路径；回答只依据站内可引用的内容。',
   },
   {
     pathname: '/support',
@@ -58,7 +63,9 @@ export const SPA_SHELL_ROUTES = [
 export const LEGACY_REDIRECTS = [
   { source: '/condition', destination: '/tutorials' },
   { source: '/kit', destination: '/tutorials' },
-  { source: '/showcase', destination: '/projects' },
+  { source: '/showcase', destination: '/explore' },
+  { source: '/ideas', destination: '/explore?view=idea' },
+  { source: '/projects', destination: '/explore?view=project' },
   { source: '/content', destination: '/posts' },
   { source: '/ideas/new', destination: '/tools' },
 ] as const;

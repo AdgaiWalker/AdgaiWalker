@@ -37,6 +37,8 @@ export function ToolsPage() {
               nextStep: intake.result.nextStep,
               bucketId: intake.result.bucketId,
               aiUsedFlag: intake.result.aiUsedFlag,
+              suggestedSlug: intake.result.suggestedSlug,
+              suggestedTitle: intake.result.suggestedTitle,
             }
           : null
       }

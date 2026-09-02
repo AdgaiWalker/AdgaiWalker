@@ -41,7 +41,7 @@ resources:
 
 ## 用 Skill-Craft 方法论打造的技能
 
-这个技能不是一次写成的。它用 [Skill-Craft](/projects#walkcraft-skill-craft) 方法论迭代了 8 个版本，6 个假设被证伪，最终稳定在 8 阶段流程。
+这个技能不是一次写成的。它用 [Skill-Craft](/posts/walkcraft-skill-craft) 方法论迭代了 8 个版本，6 个假设被证伪，最终稳定在 8 阶段流程。
 
 ## 8 阶段流程
 

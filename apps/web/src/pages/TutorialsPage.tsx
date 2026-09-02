@@ -1,5 +1,5 @@
 /**
- * 教程（页）— 内容五类之一
+ * 教程（页）— 照着能做的步骤与跟学入口
  * 渠道/硬件等 how-to + 跟学课；数据：hall=condition ∪ type=learn
  */
 import { Link } from 'react-router-dom';

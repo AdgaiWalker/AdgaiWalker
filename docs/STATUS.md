@@ -62,7 +62,7 @@
 | api | `pnpm dev:api` → :8788 · `GET /health` |
 | admin | `pnpm dev:admin` → :5174 |
 | DB | 默认 SQLite `apps/api`；可选本机 PG |
-| 公开内容 | `content:gen` → 约 **19** 篇（hall：condition / kit / showcase / lab） |
+| 公开内容 | `content:gen` → 约 **23** 篇（hall：condition / kit / showcase / lab） |
 | 探针脚本 | `pnpm exec tsx scripts/probe-production.ts` |
 
 ## 公开面 IA（本地已实现 · 进生产靠 push）
@@ -73,7 +73,8 @@
 卡 CTA · 搜索
 逛
 拿：资源 · 教程
-实验：点子 · 项目 · 札记
+实验：探索 · 札记
+探索：全部 · 点子 · 项目
 关于：站 · 我 → 硬件 · 支持
 ```
 
@@ -81,11 +82,11 @@
 |------|------|------|
 | 资源 | `/tools/resources` | 扁平清单，无赛道筛选；分区「部署」等为锚点 |
 | 教程 | `/tutorials` | how-to + 跟学；`/condition` `/kit` 重定向至此 |
-| 点子 / 项目 / 札记 | `/ideas` `/projects` `/lab` | 实验三态 |
+| 探索 / 札记 | `/explore` `/lab` | 实验的行动面 / 认识面 |
 | 站 / 我 / 硬件 | `/about` `/me` `/gear` | Walker=站名；duola=人；硬件在「我」下二级 |
-| 兼容 | `/showcase` `/condition` `/kit` `/content` `/ideas/new` | 生产 301 到项目 / 教程 / 逛 / 卡 |
+| 兼容 | `/ideas` `/projects` `/showcase` `/condition` `/kit` `/content` `/ideas/new` | 生产 301 到探索视图 / 教程 / 逛 / 卡 |
 
-内容五类与 frontmatter `hall` 对齐；`affordable-ai-community` 已删，旧链 301→资源页。
+公开展示与 frontmatter `hall` 对齐；点子 / 项目由 `type` 明确归属，`status` 只描述推进程度。`affordable-ai-community` 已删，旧链 301→资源页。
 
 ## 验证盒记录（摘）
 
@@ -102,6 +103,7 @@
 主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。  
 公开面：分型/卡牌/时间线+标签、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。  
 Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。  
+AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手引擎（DeepSeek Harness 0.1.2-alpha.1 经 SDK spawn，独立 DSH_HOME 只读，整库进 prompt，Run 合同 fail-closed，本地 e2e 三问全通含多轮；见 `docs/PRD-SITE-ASSISTANT.md` / `TODO-SITE-ASSISTANT.md`，web 对话框与公网未交付）。  
 **不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar 中台做进本站、canvas、MDX 块组件全量。  
 **远景保留、不进近端验收：** 知识→工作站→具身回灌；点子社区与智能微体站；内容分发参照 NorthStar 能力（见 VISION）。
 

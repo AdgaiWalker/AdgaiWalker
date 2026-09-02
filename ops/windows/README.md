@@ -65,6 +65,23 @@ NODE_ENV=production
 AI_ENABLED=false
 ```
 
+### 站内助手 runtime（AI 开启前执行一次）
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\install-dsh.ps1
+```
+
+脚本安装 `@deepseek-ai/dsh@0.1.2-alpha.3` 到 `C:\Walker\bin`、初始化助手专用 `%USERPROFILE%\.dsh-assistant`（deepseek + read-only）并预热 sdk profile。之后在 `apps\api\.env` 追加：
+
+```dotenv
+AI_ENABLED=true
+DSH_RUNTIME_BIN=C:/Walker/bin/node_modules/@deepseek-ai/dsh/lib/bin.js
+ASSISTANT_DSH_HOME=C:/Users/<用户名>/.dsh-assistant
+ASSISTANT_DAILY_LIMIT=200
+```
+
+凭据 `%USERPROFILE%\.dsh-assistant\.credentials.yaml` 人工放置（DeepSeek key，不经 git）。Nest 会以只读沙箱子进程形态拉起 runtime；内存预算实测约 224MB 常驻。
+
 前台运行验证：
 
 ```powershell

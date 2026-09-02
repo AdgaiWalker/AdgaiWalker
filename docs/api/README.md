@@ -41,7 +41,8 @@
 | 方法 | 路径 | 鉴权 | 请求 | 成功 |
 |------|------|------|------|------|
 | GET | `/health` | 无 | — | `{ ok, db, aiEnabled }` |
-| POST | `/intake` | 无（写 anon cookie） | `{ body: string, source?: string }` | **201** `{ clueId, nextStep, bucketId, aiUsedFlag, poolStatus }` |
+| POST | `/intake` | 无（写 anon cookie） | `{ body: string, source?: string }` | **201** `{ clueId, nextStep, bucketId, aiUsedFlag, suggestedSlug, suggestedTitle, poolStatus }` |
+| POST | `/assistant` | 无（写 anon cookie） | `{ body: string, source?: string, sessionId?: string \| null }`；`sessionId` 复用多轮会话 | **201** `{ sessionId, answer, citations: [{slug}], aiUsedFlag, elapsedMs }`（AI 关/超时/降级时 `aiUsedFlag:false`，回答为规则兜底） |
 | GET | `/likes?path=` | 无 | query `path` | `{ path, count }` |
 | POST | `/likes` | 无 | `{ path: string }` | `{ path, count }` |
 | POST | `/content-feedback` | 无 | `{ contentId, signal, note? }` signal: `useful` \| `needs-more` \| `outdated` | `{ id, contentId, signal }` |

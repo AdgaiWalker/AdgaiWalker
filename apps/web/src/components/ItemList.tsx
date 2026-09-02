@@ -20,12 +20,15 @@ export function ItemList({
   items,
   detailBase = dualEntry.browse.path,
   compact = false,
+  editorial = false,
   /** 当前逛页 query（不含 ?），写入详情 state */
   browseSearch = '',
 }: {
   items: ContentItem[];
   detailBase?: string;
   compact?: boolean;
+  /** 编辑式内容流：只展示文章本身，隐藏内部分类与状态。 */
+  editorial?: boolean;
   browseSearch?: string;
 }) {
   if (items.length === 0) {
@@ -41,7 +44,9 @@ export function ItemList({
     : undefined;
 
   return (
-    <ul className={`post-list${compact ? ' is-compact' : ''}`}>
+    <ul
+      className={`post-list${compact ? ' is-compact' : ''}${editorial ? ' is-editorial' : ''}`}
+    >
       {items.map((p) => {
         const statusLabel = p.status ? STATUS_LABELS[p.status] ?? p.status : '';
         const mins = estimateReadingMinutes(p.body || p.summary || p.title);
@@ -54,20 +59,22 @@ export function ItemList({
               state={returnState}
               className="post-list-hit"
             >
-              <Icon size={15} className="post-list-icon" aria-hidden />
+              {!editorial ? (
+                <Icon size={15} className="post-list-icon" aria-hidden />
+              ) : null}
               <div className="post-list-main">
                 <div className="post-list-title-row">
                   <span className="post-list-title">{p.title}</span>
-                  {statusLabel ? (
+                  {!editorial && statusLabel ? (
                     <span className="status-pill">{statusLabel}</span>
                   ) : null}
                 </div>
                 <div className="post-list-meta meta">
                   {formatDateLocale(parseIsoDate(p.date))}
-                  {` · ${space.label}`}
+                  {!editorial ? ` · ${space.label}` : ''}
                   {` · ${mins} 分钟`}
                 </div>
-                {!compact && p.summary ? (
+                {(!compact || editorial) && p.summary ? (
                   <p className="post-list-summary">{p.summary}</p>
                 ) : null}
               </div>

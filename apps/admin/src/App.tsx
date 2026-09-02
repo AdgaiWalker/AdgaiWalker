@@ -4,6 +4,7 @@ import { AiGatewayPage } from './pages/AiGatewayPage';
 import { ContentEditPage } from './pages/ContentEditPage';
 import { ContentListPage } from './pages/ContentListPage';
 import { CluesPage } from './pages/CluesPage';
+import { AssistantQuestionsPage } from './pages/AssistantQuestionsPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
 import { SeedsPage } from './pages/SeedsPage';
@@ -22,6 +23,10 @@ export function App() {
         />
         <Route path={ADMIN_ROUTES.clues} element={<CluesPage />} />
         <Route path={ADMIN_ROUTES.seeds} element={<SeedsPage />} />
+        <Route
+          path={ADMIN_ROUTES.assistant}
+          element={<AssistantQuestionsPage />}
+        />
         <Route path={ADMIN_ROUTES.executions} element={<ExecutionsPage />} />
         <Route path={ADMIN_ROUTES.metrics} element={<MetricsPage />} />
         <Route path={ADMIN_ROUTES.content} element={<ContentListPage />} />

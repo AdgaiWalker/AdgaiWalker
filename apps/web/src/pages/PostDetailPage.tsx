@@ -7,7 +7,13 @@
  */
 import { useMemo } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Link2,
+} from 'lucide-react';
 import { marked } from 'marked';
 import { expandWikiLinks } from '@walker/shared';
 import {
@@ -209,6 +215,27 @@ function PostDetailBody({
                       {v.version != null ? ` · v${v.version}` : ''}
                     </Link>
                   )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {post.resources?.length ? (
+          <section className="article-footer-block" aria-label="项目入口">
+            <h2>
+              <ExternalLink size={16} aria-hidden />
+              项目入口
+            </h2>
+            <ul>
+              {post.resources.map((resource) => (
+                <li key={`${resource.type}:${resource.url}`}>
+                  <a href={resource.url} target="_blank" rel="noreferrer">
+                    {resource.name}
+                  </a>
+                  {resource.description ? (
+                    <span className="meta"> — {resource.description}</span>
+                  ) : null}
                 </li>
               ))}
             </ul>

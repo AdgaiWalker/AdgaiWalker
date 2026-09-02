@@ -5,7 +5,6 @@ import { PrismaSeedRepository } from './adapters/prisma-seed.repository';
 import { PrismaExecutionRepository } from './adapters/prisma-execution.repository';
 import { InMemoryRateLimiter } from './adapters/memory-rate-limit.adapter';
 import { PrismaGuestQuotaAdapter } from './adapters/prisma-guest-quota.adapter';
-import { RuleNextStepAdapter } from './adapters/rule-nextstep.adapter';
 import { PrismaFeatureEventAdapter } from './adapters/prisma-feature-event.adapter';
 import { PRISMA } from './ports/prisma.port';
 import { CLUE_REPOSITORY } from './ports/clue.repository';
@@ -52,11 +51,22 @@ import { PrismaWorkRepository } from './adapters/prisma-work.repository';
 import { ARTIFACT_REPOSITORY } from './ports/artifact.repository';
 import { FsArtifactRepository } from './adapters/fs-artifact.repository';
 import { APP_CONFIG, type AppConfigPort } from './config/config.port';
+import { SITE_CONTENT_INDEX } from './ports/site-content-index.port';
+import { FsSiteContentIndex } from './adapters/fs-site-content-index';
+import { AiNextStepAdapter } from './adapters/ai-nextstep.adapter';
+import { ASSISTANT_RUNNER } from './ports/assistant-runner.port';
+import { ASSISTANT_REPOSITORY } from './ports/assistant.repository';
+import { PrismaAssistantRepository } from './adapters/prisma-assistant.repository';
+import { RuleAssistantAdapter } from './adapters/rule-assistant.adapter';
+import { HarnessAssistantAdapter } from './adapters/harness-assistant.adapter';
+import { AssistantService } from './assistant/assistant.service';
+import { AssistantController } from './assistant/assistant.controller';
 import { WorkbenchService } from './workbench/workbench.service';
 import { WorkbenchController } from './workbench/workbench.controller';
 import { ProductionService } from './workflow/production.service';
 import { ProductionController } from './workflow/production.controller';
-import { AGENT_RUNNER } from './ports/agent-runner.port';
+import { AGENT_RUNNER, type AgentRunnerPort } from './ports/agent-runner.port';
+import type { SiteContentIndexPort } from './ports/site-content-index.port';
 import { CodexAgentRunner } from './adapters/codex-agent.runner';
 import { STAGE_ARTIFACT_REPOSITORY } from './ports/stage-artifact.repository';
 import { FsStageArtifactRepository } from './adapters/fs-stage-artifact.repository';
@@ -81,6 +91,7 @@ import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-dra
 @Module({
   controllers: [
     IntakeController,
+    AssistantController,
     ClueController,
     SeedController,
     ExecutionController,
@@ -116,7 +127,29 @@ import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-dra
     },
     { provide: RATE_LIMIT, useClass: InMemoryRateLimiter },
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
-    { provide: NEXT_STEP_STRATEGY, useClass: RuleNextStepAdapter },
+    { provide: SITE_CONTENT_INDEX, useClass: FsSiteContentIndex },
+    { provide: ASSISTANT_REPOSITORY, useClass: PrismaAssistantRepository },
+    { provide: RuleAssistantAdapter, useClass: RuleAssistantAdapter },
+    {
+      // 助手双实现：harness AI 内嵌规则兜底（AI 可关/超时/坏输出全降级）；
+      // 每日预算熔断在 AssistantService 前置，触顶直接路由到规则版
+      provide: ASSISTANT_RUNNER,
+      inject: [APP_CONFIG, SITE_CONTENT_INDEX, RuleAssistantAdapter],
+      useFactory: (
+        config: AppConfigPort,
+        index: SiteContentIndexPort,
+        rule: RuleAssistantAdapter,
+      ) => new HarnessAssistantAdapter(config, index, rule),
+    },
+    AssistantService,
+    {
+      // AI 策略内嵌规则兜底：AI_ENABLED≠true 或 runner 失败时行为与规则版一致
+      provide: NEXT_STEP_STRATEGY,
+      inject: [APP_CONFIG, AGENT_RUNNER, SITE_CONTENT_INDEX],
+      useFactory:
+        (config: AppConfigPort, runner: AgentRunnerPort, index: SiteContentIndexPort) =>
+          new AiNextStepAdapter(config, runner, index),
+    },
     { provide: FEATURE_EVENT, useClass: PrismaFeatureEventAdapter },
     IntakeService,
     ClueService,

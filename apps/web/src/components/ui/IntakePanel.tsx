@@ -8,6 +8,8 @@ export type IntakeResultView = {
   nextStep: string;
   bucketId: string;
   aiUsedFlag: boolean;
+  suggestedSlug?: string | null;
+  suggestedTitle?: string | null;
 };
 
 export type IntakePanelProps = {
@@ -129,6 +131,14 @@ export function IntakePanel({
         <div className="success-hero" aria-live="polite">
           <p className="success-hero-label">下一步</p>
           <p className="next-step">{result.nextStep}</p>
+          {result.suggestedSlug ? (
+            <p className="success-meta">
+              相关阅读：
+              <Link to={`/posts/${result.suggestedSlug}`}>
+                {result.suggestedTitle || result.suggestedSlug}
+              </Link>
+            </p>
+          ) : null}
           <p className="success-meta">
             已收到 · 桶 {result.bucketId}
             {result.aiUsedFlag ? ' · AI' : ' · 规则'}

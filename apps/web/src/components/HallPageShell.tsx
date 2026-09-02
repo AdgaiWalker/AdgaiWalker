@@ -1,5 +1,5 @@
 /**
- * 厅/类页壳（块）— 底栏链到内容五类（非旧生产链文案）
+ * 厅/类页壳（块）— 底栏链到公开内容路径
  */
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -11,8 +11,7 @@ import { WEB_ROUTES } from '../shared/routes';
 const CONTENT_LINKS = [
   { label: '资源', href: WEB_ROUTES.toolsResources },
   { label: '教程', href: WEB_ROUTES.tutorials },
-  { label: '点子', href: WEB_ROUTES.ideas },
-  { label: '项目', href: WEB_ROUTES.projects },
+  { label: '探索', href: WEB_ROUTES.explore },
   { label: '札记', href: WEB_ROUTES.lab },
   { label: '逛', href: dualEntry.browse.path },
 ] as const;
@@ -52,7 +51,7 @@ export function HallPageShell({
 
       {children}
 
-      <nav className="hall-chain meta" aria-label="内容五类">
+      <nav className="hall-chain meta" aria-label="内容路径">
         <span className="hall-chain-label">内容</span>
         {CONTENT_LINKS.filter((l) => l.label !== currentLabel).map((l) => (
           <Link key={l.href} to={l.href} className="hall-chain-link">

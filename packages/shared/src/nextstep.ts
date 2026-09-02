@@ -74,3 +74,75 @@ export function ruleNextStep(body: string): {
 export function listNextStepBuckets(): readonly Bucket[] {
   return BUCKETS;
 }
+
+/** AI nextStep 输出契约：结构化校验不通过一律拒收（调用方降级规则版） */
+
+const NEXT_STEP_BUCKET_IDS: readonly NextStepBucketId[] = [
+  'learn-ai',
+  'writing',
+  'coding',
+  'form',
+  'productivity',
+  'default',
+];
+
+export function isNextStepBucketId(value: unknown): value is NextStepBucketId {
+  return (
+    typeof value === 'string' &&
+    (NEXT_STEP_BUCKET_IDS as readonly string[]).includes(value)
+  );
+}
+
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\([^)]*\)/g;
+
+/** nextStep 以纯文本展示：折叠 markdown 链接为文字、去尖括号、压空白 */
+export function sanitizeNextStepText(raw: string): string {
+  return raw
+    .replace(MARKDOWN_LINK_RE, '$1')
+    .replace(/[<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export const AI_NEXT_STEP_MAX_LENGTH = 200;
+
+export interface AiNextStepOutput {
+  bucketId: NextStepBucketId;
+  nextStep: string;
+  /** 仅接受 citable 集合内的 slug；否则强制 null（AI 边界不可放宽） */
+  suggestedSlug: string | null;
+}
+
+/**
+ * 校验 AI 产出的 nextStep JSON。返回 null 表示拒收整个输出。
+ * suggestedSlug 不合法时不拒收整体，只降为 null——fail-closed 在边界上。
+ */
+export function parseAiNextStepOutput(
+  raw: unknown,
+  citableSlugs: ReadonlySet<string>,
+): AiNextStepOutput | null {
+  let candidate = raw;
+  if (typeof candidate === 'string') {
+    try {
+      candidate = JSON.parse(candidate);
+    } catch {
+      return null;
+    }
+  }
+  if (!candidate || typeof candidate !== 'object') return null;
+  const obj = candidate as Record<string, unknown>;
+  if (!isNextStepBucketId(obj.bucketId)) return null;
+  if (typeof obj.nextStep !== 'string') return null;
+  const nextStep = sanitizeNextStepText(obj.nextStep);
+  if (nextStep.length < 4 || nextStep.length > AI_NEXT_STEP_MAX_LENGTH) {
+    return null;
+  }
+  let suggestedSlug: string | null = null;
+  if (
+    typeof obj.suggestedSlug === 'string' &&
+    citableSlugs.has(obj.suggestedSlug)
+  ) {
+    suggestedSlug = obj.suggestedSlug;
+  }
+  return { bucketId: obj.bucketId, nextStep, suggestedSlug };
+}

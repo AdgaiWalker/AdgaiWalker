@@ -1,59 +1,56 @@
 /**
  * 逛列表（页）— 公开证据唯一总览
- * 职责：类型分段 + 可折叠标签 + 年份列表；默认安静可扫。
+ * 职责：札记入口 + 可折叠标签 + 年份列表；默认安静可扫。
  *
- * 依赖：content.getBrowseItems、posts-timeline、BROWSE_SPACES
- * 触发：dualEntry.browse.path；?type= 深链
+ * 依赖：content.getBrowseItems/getAllByHall、posts-timeline
+ * 触发：dualEntry.browse.path；兼容清理旧 ?type= 深链
  */
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ChevronDown, Hash, SlidersHorizontal } from 'lucide-react';
-import { getBrowseItems } from '../content';
-import { ItemList } from '../components/ItemList';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
-  BROWSE_SPACES,
-  type ContentSpaceId,
-} from '../shared/content-spaces';
+  ArrowRight,
+  ChevronDown,
+  Hash,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { getAllByHall, getBrowseItems } from '../content';
+import { ItemList } from '../components/ItemList';
 import { dualEntry } from '../shared/dual-entry';
 import {
   filterTimelineItems,
   groupPostsByYear,
   listFrequentTags,
   tagFilterKey,
-  typeFilterKey,
   type TimelineFilterKey,
 } from '../shared/posts-timeline';
-
-function parseTypeParam(raw: string | null): ContentSpaceId {
-  if (!raw) return 'all';
-  const hit = BROWSE_SPACES.find((s) => s.id === raw);
-  return hit ? hit.id : 'all';
-}
+import { WEB_ROUTES } from '../shared/routes';
 
 export function PostsPage() {
   const all = useMemo(() => getBrowseItems(), []);
+  const labCount = useMemo(() => getAllByHall('lab').length, []);
   const [searchParams, setSearchParams] = useSearchParams();
-  const typeParam = searchParams.get('type');
-  const space = parseTypeParam(typeParam);
   const [tagFilter, setTagFilter] = useState<TimelineFilterKey>('all');
   const [tagsOpen, setTagsOpen] = useState(false);
 
-  /* 侧栏深链改 type 时清标签 */
+  /* 旧分类深链统一回全部内容，保留其他 query。 */
   useEffect(() => {
-    setTagFilter('all');
-    setTagsOpen(false);
-  }, [typeParam]);
+    if (!searchParams.has('type')) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('type');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
-  const bySpace = useMemo(() => {
-    if (space === 'all') return all;
-    return filterTimelineItems(all, typeFilterKey(space));
-  }, [all, space]);
+  const browseSearch = useMemo(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('type');
+    return next.toString();
+  }, [searchParams]);
 
-  const tags = useMemo(() => listFrequentTags(bySpace), [bySpace]);
+  const tags = useMemo(() => listFrequentTags(all), [all]);
 
   const visible = useMemo(
-    () => filterTimelineItems(bySpace, tagFilter),
-    [bySpace, tagFilter],
+    () => filterTimelineItems(all, tagFilter),
+    [all, tagFilter],
   );
   const byYear = useMemo(() => groupPostsByYear(visible), [visible]);
 
@@ -62,20 +59,8 @@ export function PostsPage() {
       ? tagFilter.slice(4)
       : null;
 
-  function selectSpace(id: ContentSpaceId) {
-    setTagFilter('all');
-    setTagsOpen(false);
-    if (id === 'all') {
-      setSearchParams({}, { replace: true });
-    } else {
-      setSearchParams({ type: id }, { replace: true });
-    }
-  }
-
   const countLabel =
-    space !== 'all' || tagFilter !== 'all'
-      ? `${visible.length} / ${all.length}`
-      : `${all.length}`;
+    tagFilter !== 'all' ? `${visible.length} / ${all.length}` : `${all.length}`;
 
   return (
     <div className="browse-page">
@@ -87,27 +72,22 @@ export function PostsPage() {
         </p>
       </header>
 
-      {/* 一级：类型分段（唯一 sticky chrome） */}
-      <div
-        className="browse-segment surface-chrome"
-        role="tablist"
-        aria-label="类型"
+      <Link
+        to={WEB_ROUTES.lab}
+        className="browse-lab-entry surface-l2"
+        aria-label={`进入札记，共 ${labCount} 篇`}
       >
-        {BROWSE_SPACES.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            role="tab"
-            aria-selected={space === s.id}
-            className={`browse-seg${space === s.id ? ' is-active' : ''}`}
-            onClick={() => selectSpace(s.id)}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+        <span className="browse-lab-copy">
+          <strong className="browse-lab-title">札记</strong>
+          <span className="browse-lab-blurb">
+            经验与思考，在实践中持续生长
+          </span>
+        </span>
+        <span className="browse-lab-count meta">{labCount} 篇</span>
+        <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
+      </Link>
 
-      {/* 二级：标签默认折叠 */}
+      {/* 唯一辅助查找：标签默认折叠 */}
       {tags.length > 0 ? (
         <div className="browse-refine">
           <button
@@ -172,8 +152,8 @@ export function PostsPage() {
             <div className="browse-list-card surface-l2">
               <ItemList
                 items={items}
-                compact
-                browseSearch={searchParams.toString()}
+                editorial
+                browseSearch={browseSearch}
               />
             </div>
           </section>

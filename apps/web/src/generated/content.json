@@ -1,6 +1,271 @@
 {
-  "generatedAt": "2026-08-13T05:16:09.603Z",
+  "generatedAt": "2026-09-01T15:23:17.828Z",
   "items": [
+    {
+      "slug": "dorazoom",
+      "title": "DoraZoom — macOS 屏幕讲解与标注工具",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "author": "duola",
+      "type": "project",
+      "form": "project",
+      "domain": "product",
+      "intent": "share",
+      "valueMode": "utility",
+      "status": "verified",
+      "summary": "哆啦个人版 macOS 屏幕讲解工具：快速缩放、圈画、白板/黑板、截图、OCR、录屏、摄像头画中画和滚动长截图。当前已完成并进入本地日常使用。",
+      "body": "## 项目定位\n\nDoraZoom 是哆啦个人版的 macOS 屏幕讲解工具，基于 Microsoft Sysinternals ZoomIt for Mac 官方源码改造。它把 Windows ZoomIt 的高频讲解体验带到 Mac，并针对输入法、权限、剪贴板、录屏和多显示器做原生适配。\n\n## 当前状态\n\n**已完成，可投入本地使用。** 当前有日常版 `DoraZoom.app` 和隔离权限的开发版 `DoraZoom Dev.app`；功能实现与本地自动化验收已经收口。\n\n## 现在能做什么\n\n- 静态缩放、实时缩放、原比例绘画；\n- 自由画笔、直线、矩形、椭圆、箭头、高亮、模糊、实色遮挡和编号标记；\n- 使用 AppKit 原生文本系统输入中日韩文字；\n- 白板、黑板、休息计时器和 DemoType；\n- 全屏、区域和窗口录制，支持摄像头画中画；\n- 截图到剪贴板或文件、OCR、滚动长截图；\n- 通过权限中心、状态菜单和可配置快捷键管理日常使用。\n\n## 怎么使用\n\n日常版使用 `Control+1` 到 `Control+8` 进入缩放、绘画、计时、录屏、截图、DemoType 和长截图等功能。白板、黑板和文字标注是在画布内使用的工具，不是新的全局快捷键。\n\n当前项目所有者可以直接运行本地日常版。外部用户目前应从源码构建；稳定的公众下载地址需要用当前最新源码重新生成安装包后再开放。\n\n## 已有证据\n\n2026-08-20 本地复核：`swift test` 构建成功，219 项测试全部通过。测试覆盖缩放、标注、隐私遮挡、多显示器、原生文字编辑、截图、录屏、权限、设置、计时、DemoType、产品身份和生命周期。\n\n本地已存在可运行 App 和 ZIP 产物，项目也提供统一交付脚本进行构建、验签、打包和残留审计。\n\n## 当前边界\n\n- 自动化主要通过进程内模拟边界验证，不能冒充真实 TCC、真实全局输入、真实麦克风/摄像头和外部播放器验收；\n- 现有 ZIP 早于当前源码，本页暂不提供可能过期的二进制下载；\n- 当前源码有大量尚未提交的新迭代，公开分发前应重新运行完整交付门禁并生成新包；\n- 本项目保留上游 MIT 许可证与归属。\n\n## 下一步\n\n产品功能不再扩张。下一步只做交付收口：冻结当前源码、运行完整交付门禁、生成与源码一致的新 ZIP，再补稳定下载地址和最短安装说明。",
+      "tags": [
+        "macOS",
+        "屏幕缩放",
+        "标注",
+        "录屏"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "https://github.com/AdgaiWalker/zoomit",
+      "visibility": "public",
+      "published": true,
+      "hall": "showcase",
+      "series": "桌面项目",
+      "seriesOrder": 5,
+      "related": [
+        "molan-ai-file-assistant",
+        "itab-agent-spaces"
+      ],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-4",
+        "readable": true,
+        "citable": true,
+        "actionable": true,
+        "reason": "项目已有可运行 macOS App、交付脚本和自动化证据；公开下载仍需使用最新源码重新打包。"
+      },
+      "resources": [
+        {
+          "name": "DoraZoom GitHub",
+          "url": "https://github.com/AdgaiWalker/zoomit",
+          "type": "github",
+          "description": "macOS 源码、产品文档、测试与交付脚本"
+        }
+      ]
+    },
+    {
+      "slug": "goout",
+      "title": "GoOut — 多场景个人统筹 Agent",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "author": "duola",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "intent": "share",
+      "valueMode": "utility",
+      "status": "building",
+      "summary": "把同一天的创作、外出和生活需求编译成可验证、可执行、可恢复的行动计划。LLM 负责理解和解释，确定性代码负责约束、求解与复核。",
+      "body": "## 项目定位\n\nGoOut 是一个单人自用的个人统筹 Agent。它不把创作、外出和生活拆成三个互不相干的模式，而是把它们放进同一天、同一组资源和同一套约束里统一排程。\n\n核心分工是：LLM 负责把自然语言结构化、发现需要澄清的地方并解释结果；时间窗、依赖、地点、交通、资源冲突、求解和可行性复核交给确定性代码。\n\n## 当前状态\n\n**实现中。** 当前优先用本地 Web Demo 验证最小闭环，iOS 保留原生能力和本地数据边界，Python 后端承载合同、规划、事件、记忆、Research Tool 与持久化证据。\n\n## 现在能做什么\n\n- 把混合的创作、出行和生活要求整理成统一 Canonical Scenario；\n- 对硬时间窗、依赖、资源容量和主动/被动并行做确定性排程；\n- 对事件影响的未来子图局部重排，并生成 PlanVersion 与 Diff；\n- 区分可行、不可行和信息不足，不让 LLM 假装证明可行；\n- 保存可见、可修改、可禁用和可删除的用户记忆候选。\n\n## 怎么使用\n\n目前适合开发验证，不是面向普通用户的一键安装产品。开发者需要分别启动后端和本地 Web Demo；模型与 Research Tool 使用各自的 BYOK 配置。iOS 侧仍以 Simulator 和本地边界验证为主。\n\n## 已有证据\n\n2026-08-20 本地复核：后端共收集 148 项测试，其中 142 项通过。143 项非 PostgreSQL 测试中有 1 项失败；另外 5 项 PostgreSQL 集成测试因为本次环境没有提供 `TEST_DATABASE_URL` 而失败。\n\n已有的工程证据覆盖 Schema、事件、计划版本、局部重排、独立复核、记忆生命周期、SSE、BYOK 隔离和固定 ScenarioBench。\n\n## 当前边界\n\n- “今天”的计划开始时间目前存在一个真实回归：没有按当前本地时间截断；\n- PostgreSQL 集成证据需要带测试数据库重新运行；\n- 物理 iPhone、公开分发和 30 天自然使用验证尚未完成；\n- 当前 GitHub 版本还没有包含全部本地推进内容。\n\n## 下一步\n\n先修复当天开始时间回归并恢复全绿，再完成带 PostgreSQL 的集成复核；之后继续用真实日程验证局部重排、长期记忆和移动端体验，而不是先扩更多场景名词。",
+      "tags": [
+        "AI Agent",
+        "统筹规划",
+        "iOS",
+        "确定性"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "https://github.com/AdgaiWalker/goout",
+      "visibility": "public",
+      "published": true,
+      "hall": "showcase",
+      "series": "桌面点子",
+      "seriesOrder": 2,
+      "related": [
+        "vibe0s",
+        "itab-agent-spaces",
+        "molan-ai-file-assistant"
+      ],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-4",
+        "readable": true,
+        "citable": true,
+        "actionable": false,
+        "reason": "架构、合同和测试证据可读；产品仍在实现中，暂不作为可直接依赖的成品推荐。"
+      },
+      "resources": [
+        {
+          "name": "GoOut GitHub",
+          "url": "https://github.com/AdgaiWalker/goout",
+          "type": "github",
+          "description": "Web 验证闭环、后端、iOS、合同与研究证据"
+        }
+      ]
+    },
+    {
+      "slug": "itab-agent-spaces",
+      "title": "iTab Agent Spaces — 把新标签页变成 Agent 任务空间",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "author": "duola",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "intent": "share",
+      "valueMode": "utility",
+      "status": "building",
+      "summary": "由 iTab 持有桌面、Space、Page 和 Card 的产品外壳，由 DeepSeek Harness 负责模型、会话与执行，让任务、文件和运行结果留在同一个空间里。",
+      "body": "## 项目定位\n\niTab Agent Spaces 把熟悉的新标签页改造成一个本地 Agent 任务空间：壁纸、时钟、搜索、网址和组件仍属于 iTab；模型配置、Workspace、Session、Run 和完整 Conversation 仍由 DeepSeek Harness 持有。\n\n两个系统通过同源 Bridge 协作，不在浏览器状态里复制第二份执行真相。\n\n## 当前状态\n\n**实现中。** Space、Page、Card、Desk I/O、Agent Command Bar、运行投影和 Harness 桥接已经形成闭环，当前仍在推进任意工作台的时空交互和插件化。\n\n## 现在能做什么\n\n- 在一个 Space 里建立多个网格或专注 Page；\n- 把网址、文件路径、Workspace 和运行痕迹作为 Card 组织；\n- 明确选择本次允许 Agent 读取的资源，而不是默认倾倒整个工作区；\n- 执行前预览当前桌、Handle 和写回文件；\n- 启动、查看、取消 Harness Session，并把完成结果固定回来源 Page；\n- 对移动、缩放、删除等结构操作执行撤销。\n\n## 怎么使用\n\n当前需要本地启动两个服务：先启动 DeepSeek Harness 的 Web profile，再启动 iTab。iTab 开发服务器通过同一 Origin 代理 Harness RPC；模型、Reasoning 和凭据仍在 Harness 中配置。\n\n没有有效文件 Handle 时不会创建 Session；运行痕迹卡只保存 `sessionId`，内容继续从 Harness 读取。\n\n## 已有证据\n\n2026-08-20 本地复核：iTab 自身 43 项测试全部通过，覆盖数据迁移、Page/Card 结构、Desk I/O、插件贡献、Harness RPC、运行状态、任务取消、失败草稿、结果提取、引用去重和同源代理。\n\n内嵌的 DeepSeek Harness 工作树独立维护，本地比其远端多 1 个提交。\n\n## 当前边界\n\n- 仍是本地开发者工作台，不是公开部署的网站；\n- iTab 主仓本地比远端多 2 个提交，并有一批未提交的新结构；\n- 文件 Card 保存的是本地路径引用，不复制文件内容；跨设备同步尚不在当前闭环内；\n- Shell 与 Harness 的职责虽然已拆开，但仍需继续用真实长任务验证恢复和写回体验。\n\n## 下一步\n\n先把当前 Page/Card/Presentation 改造收成可回退的提交，再验证长任务、失败恢复和多桌切换；插件化只接真实出现的第三类能力，不提前造空扩展点。",
+      "tags": [
+        "Agent",
+        "工作台",
+        "浏览器",
+        "DeepSeek Harness"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "https://github.com/AdgaiWalker/itab",
+      "visibility": "public",
+      "published": true,
+      "hall": "showcase",
+      "series": "桌面点子",
+      "seriesOrder": 3,
+      "related": [
+        "vibe0s",
+        "goout",
+        "molan-ai-file-assistant"
+      ],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-4",
+        "readable": true,
+        "citable": true,
+        "actionable": false,
+        "reason": "本地闭环和合同已有测试；仍依赖开发环境与 Harness，不作为稳定成品推荐。"
+      },
+      "resources": [
+        {
+          "name": "iTab GitHub",
+          "url": "https://github.com/AdgaiWalker/itab",
+          "type": "github",
+          "description": "Agent Spaces 产品外壳与本地任务空间"
+        },
+        {
+          "name": "DeepSeek Harness",
+          "url": "https://github.com/AdgaiWalker/deepseek-harness",
+          "type": "github",
+          "description": "模型、Workspace、Session、Run 与完整执行追溯"
+        }
+      ]
+    },
+    {
+      "slug": "molan-ai-file-assistant",
+      "title": "墨览 — 跨手机与电脑的 AI 文件助手",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "author": "duola",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "intent": "share",
+      "valueMode": "utility",
+      "status": "building",
+      "summary": "手机先把收到的文件读起来，再把主动收集的文件同步到电脑，转换成 AI 可读内容，并让处理结果回到手机。覆盖原生移动端、桌面端、CLI 与共享合同。",
+      "body": "## 项目定位\n\n墨览不是单纯的 Markdown 阅读器，也不是把文件全量上传到云端的网盘。它从“手机收到文件后不好读、电脑上的 AI 又拿不到整洁材料”这个断点出发，建立阅读、收集、转换、同步和 AI 使用的跨端链路。\n\n默认原则是文件留在本地，用户主动选择收集与同步；跨平台共享的是版本化合同，不复制一套含糊的数据模型。\n\n## 当前状态\n\n**实现中。** 上一阶段任务清单已经收口，但桌面提示词工作台、原生端展示和官网仍有新的本地改动，所以它属于“阶段完成后继续推进”，不是整个产品完结。\n\n## 现在能做什么\n\n- 在 Android、iOS 和 Electron 侧打开并阅读 Markdown、JSON 等文件；\n- 用桌面端与 `molan` CLI 把 Office、PDF、PPT、Excel 等材料转成 Markdown 或结构化 JSON；\n- 通过本地收件箱执行 `push`、`pull`、`read`，让 AI/Agent 使用稳定的 JSON 输出；\n- 管理提示词快贴、文件索引、转换结果与本地同步状态；\n- 用共享 JSON Schema 约束文档、版本、文件对象、派生产物和 AI 结果。\n\n## 怎么使用\n\n当前最稳定的入口是桌面端和 CLI。桌面端提供阅读、转换、收件箱与提示词界面；CLI 面向 AI/Agent，通过 `--json` 返回可解析结果。移动端仍应按各自原生工程运行和验收，不把旧移动基线当作当前主实现。\n\n## 已有证据\n\n2026-08-20 本地复核：当前 TODO 快照为 46/46；桌面 TypeScript 检查通过，7 个测试文件中的 41 项测试全部通过，覆盖转换、错误呈现、收件箱、桌面同步和提示词展示逻辑。\n\n仓库还保存 Android、iOS、合同、CLI 和发布批次的独立验证入口。\n\n## 当前边界\n\n- 当前没有可供公众直接下载的统一安装包；\n- 真机、账号主体、正式同步环境、真实 AI 客户端和发布渠道属于不同外部批次，不能用本地模板代替；\n- 本地目录约 15 GB，其中包含依赖、构建产物和视频证据，不代表源码体量；\n- 官网是内嵌独立 Git 工作树，当前没有独立远端，发布归属需要先收口。\n\n## 下一步\n\n先完成正在推进的桌面提示词工作台与原生端展示改造，再把官网、产品身份、安装包和跨端真实证据分别收口；不把“本地测试全绿”直接写成“已经公开发布”。",
+      "tags": [
+        "文件阅读",
+        "AI",
+        "跨端",
+        "Office 转换"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "https://github.com/AdgaiWalker/molan-ai-file-assistant",
+      "visibility": "public",
+      "published": true,
+      "hall": "showcase",
+      "series": "桌面点子",
+      "seriesOrder": 4,
+      "related": [
+        "itab-agent-spaces",
+        "goout",
+        "dorazoom"
+      ],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-4",
+        "readable": true,
+        "citable": true,
+        "actionable": false,
+        "reason": "文件合同、转换工具和桌面能力可检查；公开安装、跨端真实环境与发布链仍在推进。"
+      },
+      "resources": [
+        {
+          "name": "墨览 GitHub",
+          "url": "https://github.com/AdgaiWalker/molan-ai-file-assistant",
+          "type": "github",
+          "description": "Android、iOS、Electron、CLI、合同与验证记录"
+        }
+      ]
+    },
+    {
+      "slug": "vibe0s",
+      "title": "vibe0s — 让 AI 帮你选 Skill、排流程、留方法",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "author": "duola",
+      "type": "project",
+      "form": "project",
+      "domain": "ai",
+      "intent": "share",
+      "valueMode": "utility",
+      "status": "validating",
+      "summary": "面向不会挑 Skill、不会组织 AI 工作流的人：先把目标说清，再选择最少够用的能力推进，最后把做成的方法沉淀下来。当前仍在真实任务中验证。",
+      "body": "## 项目定位\n\nvibe0s 解决的不是“再做一个万能 Skill”，而是一个更靠前的问题：已经装了很多 Skill，却不知道当前任务该用哪个、先后怎么排、什么时候该停。\n\n它把这件事拆成三个动作：\n\n- **vibe-check**：把模糊感觉变成由人确认的目标；\n- **vibe-flow**：从已有能力里选择最少够用的 Skill，安排依赖、顺序与并行；\n- **vibe-recipe**：把一次做成的方法提炼出来，再换一个真实任务验证能否复用。\n\n## 当前状态\n\n**验证中。** 三件套、协议、案例和安装脚本已经存在，但“是否普遍减少学习成本、沟通轮次和 Token”还没有足够的跨用户数据，暂不把它写成已经成立的效果承诺。\n\n## 现在能做什么\n\n- 目标说不清时，把真正需要人决定的取舍收敛出来；\n- 面对多个 Skill 时，先排除没有独特价值的能力，再安排执行网络；\n- 在任务完成后，把固定步骤与可替换变量分开，形成可再次验证的方法；\n- 用 Agency Contract 保存目标、边界、决策、验收和交接状态。\n\n## 怎么使用\n\n最简单的入口只有一句：\n\n```text\n使用 $vibe-flow，帮我选择合适的 Skill，把这件事推进到可以检查的结果。\n```\n\n如果目标仍然模糊，流程会转交给 `vibe-check`；如果结果值得复用，再进入 `vibe-recipe`。它不会替人决定真正想要什么，也不会自动接受风险或验收结果。\n\n## 已有证据\n\n2026-08-20 本地复核：55 项协议、合同、安装、卸载、身份和流程测试全部通过。仓库中已有真实 README 改写案例以及可检查的证据关联评估记录。\n\n## 当前边界\n\n- 目前证据主要来自项目作者自己的任务；\n- 自动测试能证明结构和交接规则一致，不能证明所有人都会更快或做得更好；\n- 仓库正在删减旧网站和旧设计材料，现阶段以 Skill、协议、案例与测试为核心。\n\n## 下一步\n\n继续用不同类型的真实任务验证三件套，记录失败、返工和人为裁决点，再决定哪些规则应该稳定下来，哪些只适合保留为实验。",
+      "tags": [
+        "AI",
+        "Skill",
+        "人机协作",
+        "工作流"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "https://github.com/AdgaiWalker/vibe0s",
+      "visibility": "public",
+      "published": true,
+      "hall": "showcase",
+      "series": "桌面项目",
+      "seriesOrder": 1,
+      "related": [
+        "goout",
+        "itab-agent-spaces",
+        "ferry-spec"
+      ],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-4",
+        "readable": true,
+        "citable": true,
+        "actionable": false,
+        "reason": "项目本身是 AI Skill 协作协议；当前可阅读和试用，但效果仍需更多真实任务验证。"
+      },
+      "resources": [
+        {
+          "name": "vibe0s GitHub",
+          "url": "https://github.com/AdgaiWalker/vibe0s",
+          "type": "github",
+          "description": "三个 Skill、协作协议、案例与测试"
+        }
+      ]
+    },
     {
       "slug": "lobster-core-value",
       "title": "龙虾的核心价值",
@@ -14,7 +279,7 @@
       "valueMode": "both",
       "status": "",
       "summary": "OpenClaw（龙虾架构）的真正价值不在外壳，而在网关：上连模型与 Agent，下连软件与硬件， 横向承接人类意图。刚性环节用代码保确定性，柔性环节用 Skill 保弹性—— 刚柔一体，Agent 才能从软件聊天走向物理世界生产力。",
-      "body": "## 许多人不知道龙虾真正的价值\n\nOpenClaw（龙虾架构）的价值核心，不在「壳」，而在连接四面八方的枢纽——**网关**。  \n它为 AGI 提供了一种可落地的可能性。\n\n**网关是它的中枢神经。**\n\n- **向上**：连接不同模态模型、不同 Agent  \n- **向下**：连接软件、Skill、MCP、CLI、硬件设备  \n- **横向**：承接人类意图——交互面板，以及微信、钉钉等聊天入口  \n- **贯穿**：AI 状态、记忆、容错与约束\n\n![OpenClaw 本地系统架构图：Gateway 居中路由，串联 Agent 与本地资源](/images/openclaw-gateway.jpg)\n\n---\n\n## 刚柔一体：不同环节，选不同要素\n\n我最近在做一套让小白不用学习、直接调用 Skill 的 Skill——[vibeOs](https://github.com/AdgaiWalker/vibeOs)。\n\n开发时碰到一个关键难点：\n\n> **同一条业务链路的不同环节，需要不同的稳定性，才能保证安全。**\n\n软件的结果确定性很高；Skill 则更像抽卡——有弹性，也有波动。\n\n所以我决定：按业务特性，在不同环节选择不同要素。\n\n### 刚性环节 · 高稳定性 → 用确定性代码\n\n涉及资金扣费、数据写入、物理硬件控制等核心节点，**坚决零容错**。\n\n### 柔性环节 · 高容错 / 高创造 → 用文字（提示词或 Skill）\n\n涉及创意发散、UI 灵感、逻辑推理等，采取柔软政策：  \n把 Skill 解耦为原子化的**「经验文字模块」**，按需轻量化加载——  \n既享受高容错的红利，又大幅压低 Token 成本。\n\n---\n\n## 网关的真正价值\n\n这正是网关（Gateway）充当中枢的真正价值——  \n**让生态里的不同要素，各自发挥真正价值。**\n\n| 要素 | 角色 |\n|------|------|\n| 文字 / Skill | 驱动创造性 |\n| 代码 | 给予确定结果 |\n| 规则 | 予以兜底 |\n\n把确定性留给底层软件，把弹性留给 Skill。  \nAgent 才能真正从「软件聊天」，走向「物理世界生产力」。\n\n---\n\n## 一个还没有答案的问题\n\n但是，真正到达了 AGI，人该何去何从？  \n我们是否要把「做与不做」的决策权交给 AI？\n\n这件事，我还没有确切的答案。\n\n---\n\n**文字驱动创造性，代码给予确定结果，规则予以兜底。**",
+      "body": "## 许多人不知道龙虾真正的价值\n\nOpenClaw（龙虾架构）的价值核心，不在「壳」，而在连接四面八方的枢纽——**网关**。  \n它为 AGI 提供了一种可落地的可能性。\n\n**网关是它的中枢神经。**\n\n- **向上**：连接不同模态模型、不同 Agent  \n- **向下**：连接软件、Skill、MCP、CLI、硬件设备  \n- **横向**：承接人类意图——交互面板，以及微信、钉钉等聊天入口  \n- **贯穿**：AI 状态、记忆、容错与约束\n\n![OpenClaw 本地系统架构图：Gateway 居中路由，串联 Agent 与本地资源](/images/openclaw-gateway.jpg)\n\n---\n\n## 刚柔一体：不同环节，选不同要素\n\n我最近在做一套让小白不用学习、直接调用 Skill 的 Skill——[vibe0s](https://github.com/AdgaiWalker/vibe0s)。\n\n开发时碰到一个关键难点：\n\n> **同一条业务链路的不同环节，需要不同的稳定性，才能保证安全。**\n\n软件的结果确定性很高；Skill 则更像抽卡——有弹性，也有波动。\n\n所以我决定：按业务特性，在不同环节选择不同要素。\n\n### 刚性环节 · 高稳定性 → 用确定性代码\n\n涉及资金扣费、数据写入、物理硬件控制等核心节点，**坚决零容错**。\n\n### 柔性环节 · 高容错 / 高创造 → 用文字（提示词或 Skill）\n\n涉及创意发散、UI 灵感、逻辑推理等，采取柔软政策：  \n把 Skill 解耦为原子化的**「经验文字模块」**，按需轻量化加载——  \n既享受高容错的红利，又大幅压低 Token 成本。\n\n---\n\n## 网关的真正价值\n\n这正是网关（Gateway）充当中枢的真正价值——  \n**让生态里的不同要素，各自发挥真正价值。**\n\n| 要素 | 角色 |\n|------|------|\n| 文字 / Skill | 驱动创造性 |\n| 代码 | 给予确定结果 |\n| 规则 | 予以兜底 |\n\n把确定性留给底层软件，把弹性留给 Skill。  \nAgent 才能真正从「软件聊天」，走向「物理世界生产力」。\n\n---\n\n## 一个还没有答案的问题\n\n但是，真正到达了 AGI，人该何去何从？  \n我们是否要把「做与不做」的决策权交给 AI？\n\n这件事，我还没有确切的答案。\n\n---\n\n**文字驱动创造性，代码给予确定结果，规则予以兜底。**",
       "tags": [
         "OpenClaw",
         "AGI",
@@ -25,7 +290,7 @@
       "level": "",
       "emoji": "",
       "image": "/images/openclaw-gateway.jpg",
-      "url": "https://github.com/AdgaiWalker/vibeOs",
+      "url": "https://github.com/AdgaiWalker/vibe0s",
       "visibility": "public",
       "published": true,
       "hall": "lab",
@@ -46,8 +311,8 @@
       },
       "resources": [
         {
-          "name": "vibeOs",
-          "url": "https://github.com/AdgaiWalker/vibeOs",
+          "name": "vibe0s",
+          "url": "https://github.com/AdgaiWalker/vibe0s",
           "type": "github",
           "description": "让小白不用学习、直接调用 Skill 的 Skill"
         }
@@ -219,24 +484,24 @@
       "resources": []
     },
     {
-      "slug": "hp-aftersales-tutor",
-      "title": "艺术生把惠普售后当私教，不花钱修电脑",
+      "slug": "ai-low-cost-access",
+      "title": "我每个月在 AI 模型上的花销，不到正常价格的三分之一",
       "date": "2026-07-25T00:00:00.000Z",
       "updated": "2026-07-25T00:00:00.000Z",
       "author": "duola",
       "type": "knowledge",
       "form": "tutorial",
-      "domain": "life",
+      "domain": "ai",
       "intent": "teach",
       "valueMode": "utility",
       "status": "",
-      "summary": "外面修电脑一次一两百。我靠惠普两年售后，学会了装系统、清灰、排查硬件——不用欠人情，问到就是赚到。代价：一次翻车，花了 200 块教训。",
-      "body": "惠普两年保修期内，我没花过一分钱维修费。重装系统、清灰咨询、排查硬件——全是打售后电话学的。不用欠人情，问到就是赚到。\n\n中间翻过一次车：自己拆机换风扇，螺丝拧花了，花 200 块救场。但这笔账算下来，我还是赚了。\n\n三条路我都试过：\n\n| 路子 | 花费 | 你得到什么 |\n|------|------|-----------|\n| 维修店 | ¥100–200/次 | 一台能用的电脑，修完走人 |\n| 懂电脑的师哥 | 欠人情 | 他会的能教你，不会的他也讲不清 |\n| **惠普售后** | ¥0（两年保修） | 一台能用的电脑 + 手把手教 + 不问就亏了 |\n\n---\n\n## 第一次自己装系统\n\n电脑用了一年多，C 盘满了，开机慢。我想重装系统，但从没自己弄过。\n\n打惠普售后。先让他帮我把正事办了——系统诊断、确认可以重装。然后我说：「能教我自己装吗？一步不落那种。」\n\n他发了一份教程，每一步写好了该点什么、该选什么。中间我卡在分区那一步，不确定要不要删，截图问他。他回：「别删，选覆盖安装。」\n\n装完了。一切正常。\n\n那之后电脑再出问题，我的第一反应不是「得找人修」，是「先打售后问一下」。\n\n---\n\n## 顺便学到的冷知识\n\n朋友问我：C 盘 200 多个 G，每次开机都扫描一遍，会不会缩短硬盘寿命？\n\n我问售后。他说：**确实会。** 系统盘文件越多，读写负担越重，长期伤固态。建议 C 盘保持 200G 到 300G——够用又不会拖累速度。\n\n这种东西没人主动告诉你。你花钱找维修店，人家修完就走了。你找师哥，他不一定知道这个。但你打售后，他手上有原厂资料。\n\n---\n\n## 翻车：风扇被我修坏了\n\n先说一句：**非理工科学生不建议自己拆机。** 自己拆过之后，售后一般就不管这台机器的硬件保修了。我下面说的是亲身经历，但不是推荐你照着做。打电话问售后学软件层面的东西（重装系统、排查问题）完全没问题——那是你的保修权利。拆机是另一回事。\n\n不是每次都顺利。\n\n有一次风扇坏了。我想着经济有限，自己拆机换。拧螺丝——笔记本的螺丝又小又软，我蛮力一拧，螺丝槽花了。\n\n放假回成都，只能找人修。花了 200 块，就是把那颗螺丝取出来、把坏风扇卸掉、再装好。风扇是我自己提前在闲鱼买的适配型号，这个没白买。\n\n这 200 块教会我三件事：\n\n1. **笔记本螺丝别蛮力拧。** 手感不对就停，换个角度再试。\n2. **先判断是什么毛病。** 风扇不转可能是供电线松了，根本不是风扇坏了。先排查再动手。\n3. **拆机前至少看三遍同型号视频。** 你电脑的螺丝位置跟教程里的肯定不完全一样。\n\n翻车了不要紧。我把这 200 块的教训写在这里，你看到就省下了。\n\n---\n\n## 学会了还能挣回来\n\n我有个师哥，也是学生。在学校给同学装系统，一次收 50 块。他花的成本？一个 U 盘，一份教程。你花二三十学会的东西，是可以变成收入的。\n\n但师哥有他的局限。我找过他学硬件——他懂，但有些东西讲不明白。不是他不想教，是他自己也是自学的，没有系统化的解释能力。\n\n售后不一样。他面对过成百上千个同样型号的问题，有标准教程，有原厂拆机图。你问一个问题，他能从根上讲起。\n\n最关键的是——**不用欠人情。** 师哥帮你一次两次可以，三次四次你自己也不好意思。售后是你的保修权利，不问才是亏了。\n\n---\n\n## 其他可以问售后的\n\n**清灰。** 重度用户半年清一次。不知道从哪拆？问售后要你这个型号的拆机图，他们手上有原厂资料。但是——还记得上面说的吗？自己拆过之后硬件保修就悬了。等你保修期过了再动手也不迟。\n\n**重装系统。** 买一个 U 盘（8G 以上，二三十块），打电话要教程，跟着走。中间卡住了截图问。这个完全不涉及拆机，放心打。\n\n**换硬盘、加内存。** 先打电话问你的型号支持什么规格——哪个接口、最大多少容量、单面还是双面颗粒。问清楚了再决定自己动手还是找人。\n\n---\n\n有些人的两年保修是两年修修补补。我的两年保修是两年一对一私教——打电话不花钱，教得比师哥还明白，不用欠人情。\n\n一根螺丝拧花的 200 块教训，换来了以后永远不用再花维修费的能力。这买卖不亏。",
+      "summary": "闲鱼成品号、跨区兑换、合约窗口——三个渠道让我用很低的价格用到 GPT、Grok、Gemini。价格随时变，渠道逻辑不变。",
+      "body": "我在模型上的花销，正常渠道一个月要一两百。我实际花的，不到三分之一。\n\n三个渠道：闲鱼成品号、跨区兑换、合约窗口。价格随时变，但渠道逻辑不过时。\n\n## 闲鱼成品号\n\n搜「GPT 会员」「Grok 账号」「Gemini 会员」。出来的不是官方商品，是有人把已经开好会员的账号直接卖给你。\n\n正常 GPT 会员月付 100 多。闲鱼上有人批量开号，一个成品号卖二三十。你拿到手直接登录用，用完这个月再买下一个。\n\n怎么判断靠不靠谱：看卖家信用分、看近期评价有没有人说「用了几天就掉了」、优先选标注「质保期内」的。别贪最便宜的，中间价位的通常最稳。\n\nGrok 和 Gemini 同理。Gemini 有时候一二十块能买到一年以上的会员——因为谷歌在不同区搞活动，有人批量薅了来卖。\n\n## 跨区兑换\n\nGrok 在印度区的定价比美区低很多。正常 30 美金一个月，印度区兑换下来，近期合约 50 块人民币能覆盖一到三个月。\n\n你需要一个印度区 Google 账号，然后用印度区的支付方式（或者找代付）。这个门槛比闲鱼高一点，但价格更低也更稳定。\n\nGPT 的跨区路径是土耳其区。比印度区麻烦一些，我没亲自试过，但圈子里有人这么走。\n\n## 合约窗口\n\nAI 公司偶尔搞活动——新用户送一个月、年付打折、邀请返利。这些窗口不会一直开，但一直会有新的。\n\n海拉鲁会员群里经常有人发这类消息。400 块入群费里，光是这类信息就值回票价了。\n\n没加群的话，自己盯这几个地方：Reddit 的 AI 工具板块、Twitter/X 上你关注的 AI 博主、闲鱼搜索关键词时顺手看一眼。\n\n## 提醒\n\n上面提到的具体价格，可能你读到的时候已经变了。但三个渠道不会变：闲鱼成品号、跨区兑换、等合约窗口。\n\n你不要只看价格。几十块的成品号用三天被卖家找回，比你花正价更亏。先小金额试一次，确认靠谱了再用。",
       "tags": [
-        "硬件",
+        "AI",
         "省钱",
         "学生",
-        "教程"
+        "方法论"
       ],
       "level": "",
       "emoji": "",
@@ -245,10 +510,10 @@
       "visibility": "public",
       "published": true,
       "hall": "condition",
-      "series": "哆啦和他的硬件",
+      "series": "软件与渠道",
       "seriesOrder": 1,
       "related": [
-        "walker-launch"
+        "hp-aftersales-tutor"
       ],
       "version": null,
       "previousVersion": "",
@@ -305,24 +570,24 @@
       "resources": []
     },
     {
-      "slug": "ai-low-cost-access",
-      "title": "我每个月在 AI 模型上的花销，不到正常价格的三分之一",
+      "slug": "hp-aftersales-tutor",
+      "title": "艺术生把惠普售后当私教，不花钱修电脑",
       "date": "2026-07-25T00:00:00.000Z",
       "updated": "2026-07-25T00:00:00.000Z",
       "author": "duola",
       "type": "knowledge",
       "form": "tutorial",
-      "domain": "ai",
+      "domain": "life",
       "intent": "teach",
       "valueMode": "utility",
       "status": "",
-      "summary": "闲鱼成品号、跨区兑换、合约窗口——三个渠道让我用很低的价格用到 GPT、Grok、Gemini。价格随时变，渠道逻辑不变。",
-      "body": "我在模型上的花销，正常渠道一个月要一两百。我实际花的，不到三分之一。\n\n三个渠道：闲鱼成品号、跨区兑换、合约窗口。价格随时变，但渠道逻辑不过时。\n\n## 闲鱼成品号\n\n搜「GPT 会员」「Grok 账号」「Gemini 会员」。出来的不是官方商品，是有人把已经开好会员的账号直接卖给你。\n\n正常 GPT 会员月付 100 多。闲鱼上有人批量开号，一个成品号卖二三十。你拿到手直接登录用，用完这个月再买下一个。\n\n怎么判断靠不靠谱：看卖家信用分、看近期评价有没有人说「用了几天就掉了」、优先选标注「质保期内」的。别贪最便宜的，中间价位的通常最稳。\n\nGrok 和 Gemini 同理。Gemini 有时候一二十块能买到一年以上的会员——因为谷歌在不同区搞活动，有人批量薅了来卖。\n\n## 跨区兑换\n\nGrok 在印度区的定价比美区低很多。正常 30 美金一个月，印度区兑换下来，近期合约 50 块人民币能覆盖一到三个月。\n\n你需要一个印度区 Google 账号，然后用印度区的支付方式（或者找代付）。这个门槛比闲鱼高一点，但价格更低也更稳定。\n\nGPT 的跨区路径是土耳其区。比印度区麻烦一些，我没亲自试过，但圈子里有人这么走。\n\n## 合约窗口\n\nAI 公司偶尔搞活动——新用户送一个月、年付打折、邀请返利。这些窗口不会一直开，但一直会有新的。\n\n海拉鲁会员群里经常有人发这类消息。400 块入群费里，光是这类信息就值回票价了。\n\n没加群的话，自己盯这几个地方：Reddit 的 AI 工具板块、Twitter/X 上你关注的 AI 博主、闲鱼搜索关键词时顺手看一眼。\n\n## 提醒\n\n上面提到的具体价格，可能你读到的时候已经变了。但三个渠道不会变：闲鱼成品号、跨区兑换、等合约窗口。\n\n你不要只看价格。几十块的成品号用三天被卖家找回，比你花正价更亏。先小金额试一次，确认靠谱了再用。",
+      "summary": "外面修电脑一次一两百。我靠惠普两年售后，学会了装系统、清灰、排查硬件——不用欠人情，问到就是赚到。代价：一次翻车，花了 200 块教训。",
+      "body": "惠普两年保修期内，我没花过一分钱维修费。重装系统、清灰咨询、排查硬件——全是打售后电话学的。不用欠人情，问到就是赚到。\n\n中间翻过一次车：自己拆机换风扇，螺丝拧花了，花 200 块救场。但这笔账算下来，我还是赚了。\n\n三条路我都试过：\n\n| 路子 | 花费 | 你得到什么 |\n|------|------|-----------|\n| 维修店 | ¥100–200/次 | 一台能用的电脑，修完走人 |\n| 懂电脑的师哥 | 欠人情 | 他会的能教你，不会的他也讲不清 |\n| **惠普售后** | ¥0（两年保修） | 一台能用的电脑 + 手把手教 + 不问就亏了 |\n\n---\n\n## 第一次自己装系统\n\n电脑用了一年多，C 盘满了，开机慢。我想重装系统，但从没自己弄过。\n\n打惠普售后。先让他帮我把正事办了——系统诊断、确认可以重装。然后我说：「能教我自己装吗？一步不落那种。」\n\n他发了一份教程，每一步写好了该点什么、该选什么。中间我卡在分区那一步，不确定要不要删，截图问他。他回：「别删，选覆盖安装。」\n\n装完了。一切正常。\n\n那之后电脑再出问题，我的第一反应不是「得找人修」，是「先打售后问一下」。\n\n---\n\n## 顺便学到的冷知识\n\n朋友问我：C 盘 200 多个 G，每次开机都扫描一遍，会不会缩短硬盘寿命？\n\n我问售后。他说：**确实会。** 系统盘文件越多，读写负担越重，长期伤固态。建议 C 盘保持 200G 到 300G——够用又不会拖累速度。\n\n这种东西没人主动告诉你。你花钱找维修店，人家修完就走了。你找师哥，他不一定知道这个。但你打售后，他手上有原厂资料。\n\n---\n\n## 翻车：风扇被我修坏了\n\n先说一句：**非理工科学生不建议自己拆机。** 自己拆过之后，售后一般就不管这台机器的硬件保修了。我下面说的是亲身经历，但不是推荐你照着做。打电话问售后学软件层面的东西（重装系统、排查问题）完全没问题——那是你的保修权利。拆机是另一回事。\n\n不是每次都顺利。\n\n有一次风扇坏了。我想着经济有限，自己拆机换。拧螺丝——笔记本的螺丝又小又软，我蛮力一拧，螺丝槽花了。\n\n放假回成都，只能找人修。花了 200 块，就是把那颗螺丝取出来、把坏风扇卸掉、再装好。风扇是我自己提前在闲鱼买的适配型号，这个没白买。\n\n这 200 块教会我三件事：\n\n1. **笔记本螺丝别蛮力拧。** 手感不对就停，换个角度再试。\n2. **先判断是什么毛病。** 风扇不转可能是供电线松了，根本不是风扇坏了。先排查再动手。\n3. **拆机前至少看三遍同型号视频。** 你电脑的螺丝位置跟教程里的肯定不完全一样。\n\n翻车了不要紧。我把这 200 块的教训写在这里，你看到就省下了。\n\n---\n\n## 学会了还能挣回来\n\n我有个师哥，也是学生。在学校给同学装系统，一次收 50 块。他花的成本？一个 U 盘，一份教程。你花二三十学会的东西，是可以变成收入的。\n\n但师哥有他的局限。我找过他学硬件——他懂，但有些东西讲不明白。不是他不想教，是他自己也是自学的，没有系统化的解释能力。\n\n售后不一样。他面对过成百上千个同样型号的问题，有标准教程，有原厂拆机图。你问一个问题，他能从根上讲起。\n\n最关键的是——**不用欠人情。** 师哥帮你一次两次可以，三次四次你自己也不好意思。售后是你的保修权利，不问才是亏了。\n\n---\n\n## 其他可以问售后的\n\n**清灰。** 重度用户半年清一次。不知道从哪拆？问售后要你这个型号的拆机图，他们手上有原厂资料。但是——还记得上面说的吗？自己拆过之后硬件保修就悬了。等你保修期过了再动手也不迟。\n\n**重装系统。** 买一个 U 盘（8G 以上，二三十块），打电话要教程，跟着走。中间卡住了截图问。这个完全不涉及拆机，放心打。\n\n**换硬盘、加内存。** 先打电话问你的型号支持什么规格——哪个接口、最大多少容量、单面还是双面颗粒。问清楚了再决定自己动手还是找人。\n\n---\n\n有些人的两年保修是两年修修补补。我的两年保修是两年一对一私教——打电话不花钱，教得比师哥还明白，不用欠人情。\n\n一根螺丝拧花的 200 块教训，换来了以后永远不用再花维修费的能力。这买卖不亏。",
       "tags": [
-        "AI",
+        "硬件",
         "省钱",
         "学生",
-        "方法论"
+        "教程"
       ],
       "level": "",
       "emoji": "",
@@ -331,10 +596,10 @@
       "visibility": "public",
       "published": true,
       "hall": "condition",
-      "series": "软件与渠道",
+      "series": "哆啦和他的硬件",
       "seriesOrder": 1,
       "related": [
-        "hp-aftersales-tutor"
+        "walker-launch"
       ],
       "version": null,
       "previousVersion": "",
@@ -344,47 +609,6 @@
         "citable": true,
         "actionable": false,
         "reason": ""
-      },
-      "resources": []
-    },
-    {
-      "slug": "codex-intro",
-      "title": "Codex入门",
-      "date": "2026-06-17T00:00:00.000Z",
-      "updated": "2026-06-17T00:00:00.000Z",
-      "author": "duola",
-      "type": "learn",
-      "form": "lesson",
-      "domain": "ai",
-      "intent": "teach",
-      "valueMode": "utility",
-      "status": "",
-      "summary": "专业级 AI 编程——用 Codex 接入最强模型与大厂插件生态。",
-      "body": "本文适用一切网络环境，外接模型（DeepSeek、中转等）可正常使用 Codex 插件功能。\n\n为什么需要 Codex？CodeBuddy 界面差不多，难道不行吗？——专业级生态和最强模型：CodeBuddy 有的，它有；CodeBuddy 没有的，许多专业级大厂插件都在里面。\n\n> **电脑要求**\n至少能流畅玩 4399 小游戏，苹果 8G 内存单窗口可运行，其余系统一律 16G 往上。\n\n[哔哩哔哩视频：BV1Tf4y1b7cN](https://www.bilibili.com/video/BV1Tf4y1b7cN)\n\n## 一、token 渠道\n\n**国内渠道：**\n\n- DeepSeek、GLM、Kimi、MiniMax 等官网购买国产模型。\n- 个人自用 GPT 中转（省钱多学习）：https://sanye.mom/ ——9 小时从调查到写 3200 字研究报告，6 元消耗。\n\n**官方 GPT（需科学上网）：**\n\n- 正版稳定自己直冲 Plus：[87 元开通 ChatGPT Plus 的保姆级教程（还白送 Codex）](https://chaojifeng.feishu.cn/wiki/WcNzwwqbHimSRJkuaQfcini9nWb)\n\n> **免手机验证**\n直接充值会员就不需要手机验证。\n\n## 二、Codex 安装——Windows 商店下载「Codex」\n\n![Windows 商店下载 Codex](/learn/codex/img1.png)\n\n在 Windows 商店搜索「Codex」下载安装。\n\n## 三、下载 Codex++，用 Codex++ 启动 Codex\n\n非官方登录缺功能，用 Codex++ 就能补全，和正版用着一样。充了官方 Plus 会员的不用看。\n\n需要 token 售卖方提供：接入网址、api key。\n\n- 安装包：`CodexPlusPlus-1.1.9-windows-x64-setup.exe`\n\n[CodexPlusPlus 备用下载](https://github.com/BigPizzaV3/CodexPlusPlus/releases) — GitHub Releases，官方安装包不可用时使用。\n\n## 四、英文改中文，改完重启\n\n![Codex++ 设置界面](/learn/codex/img2.png)\n\n![Codex++ 界面](/learn/codex/img3.png)\n\n在 Codex++ 设置里把语言改为「中文（中国）」，工作模式可选「适用于编程」或「适用于日常」，权限按需开关。\n\n如果依然不行，请在电脑下载飞书 app，屏幕翻译快捷键 `Ctrl+Shift+S`，或用手机夸克翻译直拍。\n\n## 五、生产环境（按需删减）\n\n**基础开发环境：**\n\n### 1. 安装浏览器\n先安装 [Google 浏览器](https://www.google.cn/chrome)，然后把下面的提示词发送给 Codex。\n\n### 基础开发环境安装 Prompt\n\n```text\n在 Windows（winget）或 macOS（brew）上自动检测并安装 Git、Node.js LTS、PostgreSQL 最新版，已安装的跳过；配置 npm registry 为国内镜像 https://registry.npmmirror.com；全局安装 @anthropic-ai/claude-code、@openai/codex、@google/gemini-cli；最后验证所有版本，全部安装成功，只需告诉结果。\n```\n\n**MCP：** 帮我安装 Chrome DevTools MCP。\n\n**非基础 skill 和 MCP：**\n\n- 论文 nature skill：https://github.com/Yuan1z0825/nature-skills\n\n---\n\n> 认真做大众认可的教学。有问题，社群交流、学习、资源——[iwalk.pro/about](https://www.iwalk.pro/about)",
-      "tags": [
-        "AI",
-        "Codex",
-        "入门",
-        "agent"
-      ],
-      "level": "入门",
-      "emoji": "🧪",
-      "image": "/learn/codex/img1.png",
-      "url": "",
-      "visibility": "public",
-      "published": true,
-      "hall": "kit",
-      "series": "跟学",
-      "seriesOrder": 2,
-      "related": [],
-      "version": null,
-      "previousVersion": "",
-      "aiUsePolicy": {
-        "level": "AI-2",
-        "readable": true,
-        "citable": true,
-        "actionable": true,
-        "reason": "面向初学者的公开操作教程，可供 AI 引用与整理为步骤。"
       },
       "resources": []
     },
@@ -430,6 +654,47 @@
       "resources": []
     },
     {
+      "slug": "codex-intro",
+      "title": "Codex入门",
+      "date": "2026-06-17T00:00:00.000Z",
+      "updated": "2026-06-17T00:00:00.000Z",
+      "author": "duola",
+      "type": "learn",
+      "form": "lesson",
+      "domain": "ai",
+      "intent": "teach",
+      "valueMode": "utility",
+      "status": "",
+      "summary": "专业级 AI 编程——用 Codex 接入最强模型与大厂插件生态。",
+      "body": "本文适用一切网络环境，外接模型（DeepSeek、中转等）可正常使用 Codex 插件功能。\n\n为什么需要 Codex？CodeBuddy 界面差不多，难道不行吗？——专业级生态和最强模型：CodeBuddy 有的，它有；CodeBuddy 没有的，许多专业级大厂插件都在里面。\n\n> **电脑要求**\n至少能流畅玩 4399 小游戏，苹果 8G 内存单窗口可运行，其余系统一律 16G 往上。\n\n[哔哩哔哩视频：BV1Tf4y1b7cN](https://www.bilibili.com/video/BV1Tf4y1b7cN)\n\n## 一、token 渠道\n\n**国内渠道：**\n\n- DeepSeek、GLM、Kimi、MiniMax 等官网购买国产模型。\n- 个人自用 GPT 中转（省钱多学习）：https://sanye.mom/ ——9 小时从调查到写 3200 字研究报告，6 元消耗。\n\n**官方 GPT（需科学上网）：**\n\n- 正版稳定自己直冲 Plus：[87 元开通 ChatGPT Plus 的保姆级教程（还白送 Codex）](https://chaojifeng.feishu.cn/wiki/WcNzwwqbHimSRJkuaQfcini9nWb)\n\n> **免手机验证**\n直接充值会员就不需要手机验证。\n\n## 二、Codex 安装——Windows 商店下载「Codex」\n\n![Windows 商店下载 Codex](/learn/codex/img1.png)\n\n在 Windows 商店搜索「Codex」下载安装。\n\n## 三、下载 Codex++，用 Codex++ 启动 Codex\n\n非官方登录缺功能，用 Codex++ 就能补全，和正版用着一样。充了官方 Plus 会员的不用看。\n\n需要 token 售卖方提供：接入网址、api key。\n\n- 安装包：`CodexPlusPlus-1.1.9-windows-x64-setup.exe`\n\n[CodexPlusPlus 备用下载](https://github.com/BigPizzaV3/CodexPlusPlus/releases) — GitHub Releases，官方安装包不可用时使用。\n\n## 四、英文改中文，改完重启\n\n![Codex++ 设置界面](/learn/codex/img2.png)\n\n![Codex++ 界面](/learn/codex/img3.png)\n\n在 Codex++ 设置里把语言改为「中文（中国）」，工作模式可选「适用于编程」或「适用于日常」，权限按需开关。\n\n如果依然不行，请在电脑下载飞书 app，屏幕翻译快捷键 `Ctrl+Shift+S`，或用手机夸克翻译直拍。\n\n## 五、生产环境（按需删减）\n\n**基础开发环境：**\n\n### 1. 安装浏览器\n先安装 [Google 浏览器](https://www.google.cn/chrome)，然后把下面的提示词发送给 Codex。\n\n### 基础开发环境安装 Prompt\n\n```text\n在 Windows（winget）或 macOS（brew）上自动检测并安装 Git、Node.js LTS、PostgreSQL 最新版，已安装的跳过；配置 npm registry 为国内镜像 https://registry.npmmirror.com；全局安装 @anthropic-ai/claude-code、@openai/codex、@google/gemini-cli；最后验证所有版本，全部安装成功，只需告诉结果。\n```\n\n**MCP：** 帮我安装 Chrome DevTools MCP。\n\n**非基础 skill 和 MCP：**\n\n- 论文 nature skill：https://github.com/Yuan1z0825/nature-skills\n\n---\n\n> 认真做大众认可的教学。有问题，社群交流、学习、资源——[iwalk.pro/about](https://www.iwalk.pro/about)",
+      "tags": [
+        "AI",
+        "Codex",
+        "入门",
+        "agent"
+      ],
+      "level": "入门",
+      "emoji": "🧪",
+      "image": "/learn/codex/img1.png",
+      "url": "",
+      "visibility": "public",
+      "published": true,
+      "hall": "kit",
+      "series": "跟学",
+      "seriesOrder": 2,
+      "related": [],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-2",
+        "readable": true,
+        "citable": true,
+        "actionable": true,
+        "reason": "面向初学者的公开操作教程，可供 AI 引用与整理为步骤。"
+      },
+      "resources": []
+    },
+    {
       "slug": "side-hustle-blueprint",
       "title": "副业蓝图 — 从零到一的服务型副业规划技能",
       "date": "2026-06-07T00:00:00.000Z",
@@ -442,7 +707,7 @@
       "valueMode": "utility",
       "status": "verified",
       "summary": "帮用户从零到一规划并上线服务型副业的 AI 技能。8 阶段流程，双入口设计，历经 8 次迭代。核心创新：止痛药/维生素判断、学习曲线定价（新手不降价）、信任四层体系。",
-      "body": "## 用 Skill-Craft 方法论打造的技能\n\n这个技能不是一次写成的。它用 [Skill-Craft](/projects#walkcraft-skill-craft) 方法论迭代了 8 个版本，6 个假设被证伪，最终稳定在 8 阶段流程。\n\n## 8 阶段流程\n\n```\n阶段1: 摸底（双入口：供给出发 / 需求出发）\n→ 阶段2: 身份匹配与商业可行性分析\n→ 阶段3: 市场调研（双重验证）\n→ 阶段4: 设计服务套餐\n→ 阶段5: 客户筛选\n→ 阶段6: 写平台文案\n→ 阶段7: 商品展示素材\n→ 阶段8: 输出文件\n```\n\n## 核心创新\n\n### 双入口设计\n用户可以从\"我会什么\"或\"我看到什么市场机会\"两个方向进入，在需求匹配点汇合。不管从哪条路来，最终都要走到\"客户需求 ↔ 你的能力\"匹配。\n\n### 止痛药 vs 维生素\n不是所有需求都一样。紧急痛点的服务最容易起步——客户主动搜索、马上付钱、不太比价。起步阶段优先选止痛药。\n\n### 学习曲线定价\n新手做一单比熟手慢是正常的，但客户拿到的是同样的结果，所以**不应该降价**。前期的时间亏损 = 投资给自己的学费。\n\n### 信任四层体系\n护城河解决\"凭什么选你\"，信任体系解决\"凭什么信你\"：外观信任 → 能力信任 → 保障信任 → 口碑信任。\n\n## 经验回流\n\n这个技能的开发经验已经回流到 Skill-Craft 经验库：\n- **Case 002**：6 个被证伪的假设、7 个关键决策、5 轮迭代\n- **Pattern 002**：技能即守门员——决策逻辑放主文件，具体数据放 references\n\n这是 Ferry「否定之否定」的实际运作：枝的经验滋养干，干变强后下一个枝受益。",
+      "body": "## 用 Skill-Craft 方法论打造的技能\n\n这个技能不是一次写成的。它用 [Skill-Craft](/posts/walkcraft-skill-craft) 方法论迭代了 8 个版本，6 个假设被证伪，最终稳定在 8 阶段流程。\n\n## 8 阶段流程\n\n```\n阶段1: 摸底（双入口：供给出发 / 需求出发）\n→ 阶段2: 身份匹配与商业可行性分析\n→ 阶段3: 市场调研（双重验证）\n→ 阶段4: 设计服务套餐\n→ 阶段5: 客户筛选\n→ 阶段6: 写平台文案\n→ 阶段7: 商品展示素材\n→ 阶段8: 输出文件\n```\n\n## 核心创新\n\n### 双入口设计\n用户可以从\"我会什么\"或\"我看到什么市场机会\"两个方向进入，在需求匹配点汇合。不管从哪条路来，最终都要走到\"客户需求 ↔ 你的能力\"匹配。\n\n### 止痛药 vs 维生素\n不是所有需求都一样。紧急痛点的服务最容易起步——客户主动搜索、马上付钱、不太比价。起步阶段优先选止痛药。\n\n### 学习曲线定价\n新手做一单比熟手慢是正常的，但客户拿到的是同样的结果，所以**不应该降价**。前期的时间亏损 = 投资给自己的学费。\n\n### 信任四层体系\n护城河解决\"凭什么选你\"，信任体系解决\"凭什么信你\"：外观信任 → 能力信任 → 保障信任 → 口碑信任。\n\n## 经验回流\n\n这个技能的开发经验已经回流到 Skill-Craft 经验库：\n- **Case 002**：6 个被证伪的假设、7 个关键决策、5 轮迭代\n- **Pattern 002**：技能即守门员——决策逻辑放主文件，具体数据放 references\n\n这是 Ferry「否定之否定」的实际运作：枝的经验滋养干，干变强后下一个枝受益。",
       "tags": [
         "AI",
         "副业",
@@ -533,50 +798,6 @@
       "resources": []
     },
     {
-      "slug": "cli-command-palette",
-      "title": "CLI 命令面板 — 卡牌式技能加载器",
-      "date": "2026-05-31T00:00:00.000Z",
-      "updated": "2026-05-31T00:00:00.000Z",
-      "author": "duola",
-      "type": "idea",
-      "form": "idea",
-      "domain": "product",
-      "intent": "think",
-      "valueMode": "utility",
-      "status": "validating",
-      "summary": "面向企业用户的 CLI 命令面板，用卡牌隐喻将技能/MCP/工具装载到槽位，点击即出。像小时候打牌一样——装一张卡，打一张卡，产出一份内容。",
-      "body": "一个cli 交互面板，面向企业人群做固定的事。在命令面板，放几个skill槽和mcp槽，工具市场按钮导航。idea源于小时候玩西普大陆，一款4399卡牌打怪升级游戏。\n\n这个idea需要结合当时的业务场景。我有一个想象的场景去验证，需要一个验证。目前还停留于idea层面，可以有一个状态，就是已验证，未验证。如果深入去讲，我就会去讲具体的使用场景是怎么描述的。\n\n根据用户的习惯，根据这些企业用户，直接去看了，把这个skill直接装插到上面。从技能市场，或者工具市场，MCP市场，把东西放到加载点击槽，从弹出的窗口直接导入。导入之后，点击锁定，就加载成功了。\n\n加载成功之后，这个技能就能够像小时候玩的一些卡牌游戏，点一张卡牌，然后对面受到伤害，进行输出。输入生产，生产输出。这是我对于这个业务场景的一个场景需求。这个点子的交互原型已经在 [[card-table]] 上实现了。\n\n然后还可以加一个交互，在对话框的基础上。如果感觉哪儿改的不对，点完之后产品出来了，可以进行一个再调整。\n\n其实在这个基础上还能发展，根据生活场景的不同，需求也不同，业务需求也不同。这个业务不光指工作上，还指生活上的一些，比如拍拍照，修修图，然后直接扔给AI。就是这些技能槽，点点按按就能得到精美的照片，或者照片墙。",
-      "tags": [
-        "AI",
-        "产品",
-        "企业场景",
-        "交互设计"
-      ],
-      "level": "",
-      "emoji": "",
-      "image": "",
-      "url": "",
-      "visibility": "public",
-      "published": true,
-      "hall": "showcase",
-      "series": "交互点子",
-      "seriesOrder": 2,
-      "related": [
-        "card-table",
-        "design-for-people"
-      ],
-      "version": null,
-      "previousVersion": "",
-      "aiUsePolicy": {
-        "level": "AI-2",
-        "readable": true,
-        "citable": true,
-        "actionable": false,
-        "reason": ""
-      },
-      "resources": []
-    },
-    {
       "slug": "card-table",
       "title": "卡牌桌点子页面 — 页面本身就是一个点子",
       "date": "2026-05-31T00:00:00.000Z",
@@ -622,23 +843,24 @@
       "resources": []
     },
     {
-      "slug": "ideas-beyond-time",
-      "title": "点子是不分时空的资产",
-      "date": "2026-05-27T00:00:00.000Z",
+      "slug": "cli-command-palette",
+      "title": "CLI 命令面板 — 卡牌式技能加载器",
+      "date": "2026-05-31T00:00:00.000Z",
       "updated": "2026-05-31T00:00:00.000Z",
       "author": "duola",
-      "type": "knowledge",
-      "form": "article",
-      "domain": "ai",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
       "intent": "think",
-      "valueMode": "both",
-      "status": "",
-      "summary": "老师说过，文字是可以穿越时空的共鸣。点子也是。存的时候不知道何时取出，但 AI 让取出的成本越来越低。",
-      "body": "## 十块钱\n\n有一次直播，我在研究AI(OpenClaw)，直播间的人跟着一起聊。他们不会用，我教了。那天晚上挣了十块钱，是我挣得最多的一次。\n\n钱不多，但那晚上的感觉不是钱。是帮上人了，被认可了。\n\n还有一起找低价 AI 的学生党，和我一样没什么钱，问有没有便宜的 AI 能用。我把珍藏的渠道分享给了他们。现在他们在群里积极交流问题、分享资源。\n\n这些事不大。但帮上人的那一刻，我知道这件事有价值。\n\n## \"想法不值钱\"\n\n5月25日，一个做产品经理的朋友跟我说过：\"想法不值钱，执行才值钱。\"\n\n我理解他的意思。在 AI 之前，执行的成本很高，想得再多，做不出来就什么都不是。\n\n但现在不一样了。验证一个想法，不到十块钱。AI 可以替你执行，替你验证。执行的门槛被打下来了，反过来说，**能冒出点子的那个人，变得更重要了。**\n\n执行可以被替代，但冒出点子只有人能做。\n\n我们的分歧不在这句话对不对，在衡量标准不一样。他的标准是能不能挣钱，我的标准是能不能帮上人。\n\n帮上人了，世界因为我变了一点点，哪怕很小——这就是值。\n\n如果把标准放在别人那里，不稳定，会影响道心。标准在自己手里，路才走得稳。\n\n## 穿越时空的共鸣\n\n老师说：\"文字是可以穿越时空的共鸣，传递着那一时刻时空的情感。\"\n\n我当时没有完全懂，但记住了。我是一个很爱遗忘的人，能记住的话，一定是重要的。\n\n后来某一天，这句话突然从记忆里冒出来。我发现现在感受到的东西，和当时老师说话时感受到的，是同一个东西。两段时空的感受，通过一句话，连上了。\n\n老师说过的，正在发生。\n\n点子和文字一样。存的时候不知道何时取出，但你知道它会被取出来。我还没有等到那一天——但我相信它会来。\n\n## 对的时空，点子比执行更值钱\n\n点子存着，不是白费的。\n\n过去存的点子，未来某个时刻的需求，加上 AI 的执行能力——三样东西碰在一起，就是一个时间置换。\n\n是不是真正产生了价值，要看是不是满足了人本身的需求。对于需要帮助的人，点子变成了真的东西。对于我来说，过去的点子帮上了别人——也是一个惊喜。\n\n对的时空，想法比执行更值钱。\n\n---\n\n*点子是时间的存款。存的时候不用问利息，到期了自己会找上门。*",
+      "valueMode": "utility",
+      "status": "validating",
+      "summary": "面向企业用户的 CLI 命令面板，用卡牌隐喻将技能/MCP/工具装载到槽位，点击即出。像小时候打牌一样——装一张卡，打一张卡，产出一份内容。",
+      "body": "一个cli 交互面板，面向企业人群做固定的事。在命令面板，放几个skill槽和mcp槽，工具市场按钮导航。idea源于小时候玩西普大陆，一款4399卡牌打怪升级游戏。\n\n这个idea需要结合当时的业务场景。我有一个想象的场景去验证，需要一个验证。目前还停留于idea层面，可以有一个状态，就是已验证，未验证。如果深入去讲，我就会去讲具体的使用场景是怎么描述的。\n\n根据用户的习惯，根据这些企业用户，直接去看了，把这个skill直接装插到上面。从技能市场，或者工具市场，MCP市场，把东西放到加载点击槽，从弹出的窗口直接导入。导入之后，点击锁定，就加载成功了。\n\n加载成功之后，这个技能就能够像小时候玩的一些卡牌游戏，点一张卡牌，然后对面受到伤害，进行输出。输入生产，生产输出。这是我对于这个业务场景的一个场景需求。这个点子的交互原型已经在 [[card-table]] 上实现了。\n\n然后还可以加一个交互，在对话框的基础上。如果感觉哪儿改的不对，点完之后产品出来了，可以进行一个再调整。\n\n其实在这个基础上还能发展，根据生活场景的不同，需求也不同，业务需求也不同。这个业务不光指工作上，还指生活上的一些，比如拍拍照，修修图，然后直接扔给AI。就是这些技能槽，点点按按就能得到精美的照片，或者照片墙。",
       "tags": [
         "AI",
-        "点子",
-        "思考"
+        "产品",
+        "企业场景",
+        "交互设计"
       ],
       "level": "",
       "emoji": "",
@@ -646,18 +868,17 @@
       "url": "",
       "visibility": "public",
       "published": true,
-      "hall": "lab",
-      "series": "前进三部曲",
+      "hall": "showcase",
+      "series": "交互点子",
       "seriesOrder": 2,
       "related": [
-        "fear-as-fuel",
-        "future-already-here",
-        "idea-cocreate"
+        "card-table",
+        "design-for-people"
       ],
       "version": null,
       "previousVersion": "",
       "aiUsePolicy": {
-        "level": "AI-3",
+        "level": "AI-2",
         "readable": true,
         "citable": true,
         "actionable": false,
@@ -706,6 +927,50 @@
         "citable": false,
         "actionable": false,
         "reason": "包含个人脆弱内容，仅可读作背景"
+      },
+      "resources": []
+    },
+    {
+      "slug": "ideas-beyond-time",
+      "title": "点子是不分时空的资产",
+      "date": "2026-05-27T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "author": "duola",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "ai",
+      "intent": "think",
+      "valueMode": "both",
+      "status": "",
+      "summary": "老师说过，文字是可以穿越时空的共鸣。点子也是。存的时候不知道何时取出，但 AI 让取出的成本越来越低。",
+      "body": "## 十块钱\n\n有一次直播，我在研究AI(OpenClaw)，直播间的人跟着一起聊。他们不会用，我教了。那天晚上挣了十块钱，是我挣得最多的一次。\n\n钱不多，但那晚上的感觉不是钱。是帮上人了，被认可了。\n\n还有一起找低价 AI 的学生党，和我一样没什么钱，问有没有便宜的 AI 能用。我把珍藏的渠道分享给了他们。现在他们在群里积极交流问题、分享资源。\n\n这些事不大。但帮上人的那一刻，我知道这件事有价值。\n\n## \"想法不值钱\"\n\n5月25日，一个做产品经理的朋友跟我说过：\"想法不值钱，执行才值钱。\"\n\n我理解他的意思。在 AI 之前，执行的成本很高，想得再多，做不出来就什么都不是。\n\n但现在不一样了。验证一个想法，不到十块钱。AI 可以替你执行，替你验证。执行的门槛被打下来了，反过来说，**能冒出点子的那个人，变得更重要了。**\n\n执行可以被替代，但冒出点子只有人能做。\n\n我们的分歧不在这句话对不对，在衡量标准不一样。他的标准是能不能挣钱，我的标准是能不能帮上人。\n\n帮上人了，世界因为我变了一点点，哪怕很小——这就是值。\n\n如果把标准放在别人那里，不稳定，会影响道心。标准在自己手里，路才走得稳。\n\n## 穿越时空的共鸣\n\n老师说：\"文字是可以穿越时空的共鸣，传递着那一时刻时空的情感。\"\n\n我当时没有完全懂，但记住了。我是一个很爱遗忘的人，能记住的话，一定是重要的。\n\n后来某一天，这句话突然从记忆里冒出来。我发现现在感受到的东西，和当时老师说话时感受到的，是同一个东西。两段时空的感受，通过一句话，连上了。\n\n老师说过的，正在发生。\n\n点子和文字一样。存的时候不知道何时取出，但你知道它会被取出来。我还没有等到那一天——但我相信它会来。\n\n## 对的时空，点子比执行更值钱\n\n点子存着，不是白费的。\n\n过去存的点子，未来某个时刻的需求，加上 AI 的执行能力——三样东西碰在一起，就是一个时间置换。\n\n是不是真正产生了价值，要看是不是满足了人本身的需求。对于需要帮助的人，点子变成了真的东西。对于我来说，过去的点子帮上了别人——也是一个惊喜。\n\n对的时空，想法比执行更值钱。\n\n---\n\n*点子是时间的存款。存的时候不用问利息，到期了自己会找上门。*",
+      "tags": [
+        "AI",
+        "点子",
+        "思考"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "",
+      "visibility": "public",
+      "published": true,
+      "hall": "lab",
+      "series": "前进三部曲",
+      "seriesOrder": 2,
+      "related": [
+        "fear-as-fuel",
+        "future-already-here",
+        "idea-cocreate"
+      ],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-3",
+        "readable": true,
+        "citable": true,
+        "actionable": false,
+        "reason": ""
       },
       "resources": []
     },

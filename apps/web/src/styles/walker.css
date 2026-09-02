@@ -1791,48 +1791,60 @@ body::before {
   line-height: 1.45;
 }
 
-/* iOS 式分段控件：唯一一级筛选 chrome */
-.browse-segment {
-  position: sticky;
-  top: 0.55rem;
-  z-index: 12;
+/* 札记：从统一内容流进入深度思考的单一路径 */
+.browse-lab-entry {
   display: flex;
-  padding: 3px;
-  margin: 0 0 0.75rem;
-  border-radius: 12px;
-  gap: 2px;
-}
-.browse-seg {
-  flex: 1 1 0;
-  min-width: 0;
+  align-items: center;
+  gap: 0.8rem;
   min-height: var(--hit-min);
-  padding: 0.35rem 0.4rem;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--color-parchment-dim);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  color: inherit;
+  text-decoration: none;
   transition:
     transform var(--press-ms) ease-out,
     background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.15s ease,
+    box-shadow 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.browse-seg:hover {
-  color: var(--color-parchment);
+.browse-lab-entry:hover {
+  border-color: color-mix(in srgb, var(--color-brand) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-brand) 4%, var(--material-l2));
 }
-.browse-seg:active {
+.browse-lab-entry:active {
   transform: scale(var(--press-scale));
 }
-.browse-seg.is-active {
-  background: var(--color-card);
-  color: var(--color-parchment);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 0 0 0.5px color-mix(in srgb, var(--color-border) 80%, transparent);
+.browse-lab-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+.browse-lab-title {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+.browse-lab-blurb {
+  color: var(--color-parchment-dim);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.browse-lab-count {
+  flex-shrink: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+.browse-lab-arrow {
+  flex-shrink: 0;
+  color: var(--color-brand);
+  transition: transform 0.18s ease;
+}
+.browse-lab-entry:hover .browse-lab-arrow {
+  transform: translateX(2px);
 }
 
 /* 标签：默认折叠 */
@@ -2025,6 +2037,9 @@ body::before {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.post-list.is-editorial .post-list-hit {
+  gap: 0;
 }
 
 /* ========== 沉浸阅读舞台 ========== */
@@ -2357,12 +2372,12 @@ body::before {
     justify-content: flex-start;
     text-align: left;
   }
-  .browse-segment {
-    top: 0.35rem;
+  .browse-lab-entry {
+    gap: 0.6rem;
+    padding: 0.8rem 0.85rem;
   }
-  .browse-seg {
-    font-size: 0.8125rem;
-    padding: 0.3rem 0.2rem;
+  .browse-lab-count {
+    display: none;
   }
 }
 
@@ -2415,11 +2430,14 @@ body::before {
 }
 @media (prefers-reduced-motion: reduce) {
   .post-list-hit:active,
-  .browse-seg:active,
+  .browse-lab-entry:active,
   .browse-tag:active,
   .browse-refine-toggle:active,
   .article-neighbor:active,
   .reading-chrome-back:active {
+    transform: none;
+  }
+  .browse-lab-entry:hover .browse-lab-arrow {
     transform: none;
   }
 }
@@ -3565,4 +3583,46 @@ textarea {
   .gear-row-links {
     justify-content: flex-start;
   }
+}
+
+/* ── 站内助手对话面板（/ask）── */
+.assistant-panel {
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.assistant-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.assistant-msg {
+  margin: 0;
+  line-height: 1.7;
+}
+.assistant-msg-user {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px 12px 2px 12px;
+  background: var(--color-surface-quiet, rgba(127, 150, 160, 0.14));
+  color: var(--color-parchment);
+}
+.assistant-msg-bot {
+  align-self: flex-start;
+  max-width: 92%;
+  padding: 10px 12px;
+  border-radius: 12px 12px 12px 2px;
+  border: 1px solid var(--color-border, rgba(127, 150, 160, 0.25));
+}
+.assistant-msg-bot > p:first-child {
+  margin-top: 0;
+  white-space: pre-wrap;
+}
+.assistant-msg-bot .success-meta {
+  margin-bottom: 0;
+}
+.assistant-msg-bot .success-meta a {
+  margin-right: 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }

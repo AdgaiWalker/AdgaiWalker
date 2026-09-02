@@ -11,6 +11,9 @@ export interface IntakeResult {
   nextStep: string;
   bucketId: string;
   aiUsedFlag: boolean;
+  /** AI 策略附带的可引用文章推荐（规则版为 null） */
+  suggestedSlug?: string | null;
+  suggestedTitle?: string | null;
   poolStatus: string;
 }
 
@@ -19,11 +22,34 @@ export interface LikeResult {
   count: number;
 }
 
+export interface AssistantCitationView {
+  slug: string;
+}
+
+export interface AssistantResult {
+  sessionId: string;
+  answer: string;
+  citations: AssistantCitationView[];
+  aiUsedFlag: boolean;
+  elapsedMs: number;
+}
+
 export const publicApi = {
   intake(body: string, source = 'tools-visitor'): Promise<IntakeResult> {
     return publicRequest<IntakeResult>('/intake', {
       method: 'POST',
       body: JSON.stringify({ body, source }),
+    });
+  },
+
+  assistant(
+    body: string,
+    sessionId?: string | null,
+    source = 'assistant-panel',
+  ): Promise<AssistantResult> {
+    return publicRequest<AssistantResult>('/assistant', {
+      method: 'POST',
+      body: JSON.stringify({ body, sessionId: sessionId ?? null, source }),
     });
   },
 

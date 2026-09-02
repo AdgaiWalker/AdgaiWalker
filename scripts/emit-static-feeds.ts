@@ -212,7 +212,7 @@ const llms = [
   '## 主要入口',
   '',
   `- [首页](${SITE_ORIGIN}/): 站点入口`,
-  `- [证据](${absoluteUrl('/posts')}): 教程、点子、项目与札记`,
+  `- [证据](${absoluteUrl('/posts')}): 教程、探索与札记`,
   `- [关于本站](${absoluteUrl('/about')}): 站点目标与边界`,
   `- [关于 duola](${AUTHOR.url}): 作者身份`,
   `- [RSS](${absoluteUrl('/rss.xml')})`,

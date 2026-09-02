@@ -205,7 +205,19 @@ if (fs.existsSync(contentLogDir)) {
   }
 }
 
-docs.sort((a, b) => (a.date < b.date ? 1 : -1));
+docs.sort((a, b) => {
+  const byDate = b.date.localeCompare(a.date);
+  if (byDate !== 0) return byDate;
+  if (
+    a.series &&
+    a.series === b.series &&
+    a.seriesOrder != null &&
+    b.seriesOrder != null
+  ) {
+    return a.seriesOrder - b.seriesOrder;
+  }
+  return a.title.localeCompare(b.title, 'zh-CN');
+});
 fs.mkdirSync(webGeneratedDir, { recursive: true });
 fs.writeFileSync(
   contentJsonPath,

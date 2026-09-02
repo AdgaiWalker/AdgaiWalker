@@ -6,12 +6,12 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Bookmark,
   BookOpen,
+  Compass,
   Cpu,
   FlaskConical,
-  FolderKanban,
   Globe,
   Heart,
-  Lightbulb,
+  MessageCircle,
   PenLine,
   User,
 } from 'lucide-react';
@@ -41,6 +41,11 @@ export const readNavGroup: NavGroup = {
       icon: PenLine,
       primary: true,
     },
+    {
+      label: '助手',
+      href: WEB_ROUTES.assistant,
+      icon: MessageCircle,
+    },
   ],
 };
 
@@ -64,14 +69,9 @@ export const experimentNavGroup: NavGroup = {
   title: '实验',
   items: [
     {
-      label: '点子',
-      href: WEB_ROUTES.ideas,
-      icon: Lightbulb,
-    },
-    {
-      label: '项目',
-      href: WEB_ROUTES.projects,
-      icon: FolderKanban,
+      label: '探索',
+      href: WEB_ROUTES.explore,
+      icon: Compass,
     },
     {
       label: '札记',

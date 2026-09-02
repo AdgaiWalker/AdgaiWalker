@@ -1,11 +1,11 @@
-/** 兼容 /showcase → 项目（点子请去 /ideas） */
+/** 兼容 /showcase → 探索；旧 tab=ideas 保留点子视图。 */
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { WEB_ROUTES } from '../shared/routes';
+import { explorationHref } from '../shared/exploration';
 
 export function ShowcasePage() {
   const [params] = useSearchParams();
   if (params.get('tab') === 'ideas') {
-    return <Navigate to={WEB_ROUTES.ideas} replace />;
+    return <Navigate to={explorationHref('idea')} replace />;
   }
-  return <Navigate to={WEB_ROUTES.projects} replace />;
+  return <Navigate to={explorationHref()} replace />;
 }

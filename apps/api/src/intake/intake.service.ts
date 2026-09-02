@@ -151,6 +151,8 @@ export class IntakeService {
       nextStep: step.nextStep,
       bucketId: step.bucketId,
       aiUsedFlag: step.aiUsedFlag,
+      suggestedSlug: step.suggestedSlug ?? null,
+      suggestedTitle: step.suggestedTitle ?? null,
       poolStatus: clue.poolStatus,
     };
   }

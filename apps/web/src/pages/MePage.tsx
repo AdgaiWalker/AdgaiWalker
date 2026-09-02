@@ -11,6 +11,7 @@ import {
   Cpu,
   Globe,
   Mail,
+  MessageCircle,
   Ship,
   type LucideIcon,
 } from 'lucide-react';
@@ -48,6 +49,10 @@ export function MePage() {
             </Link>
             <Link to={WEB_ROUTES.about} className="btn-secondary">
               关于本站
+            </Link>
+            <Link to={WEB_ROUTES.assistant} className="btn-secondary">
+              <MessageCircle size={16} />
+              问站内助手
             </Link>
           </div>
         </div>

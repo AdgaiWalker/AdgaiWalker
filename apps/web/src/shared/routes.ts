@@ -13,9 +13,12 @@ export const WEB_ROUTES = {
   me: '/me',
   support: '/support',
   learn: '/learn',
+  /** 实验的行动面：点子 → 项目 */
+  explore: '/explore',
+  /** 旧公开路径，仅用于兼容跳转 */
   ideas: '/ideas',
   projects: '/projects',
-  /** 内容五类：教程（渠道/跟学等） */
+  /** 教程（渠道/跟学等） */
   tutorials: '/tutorials',
   /** 札记（原实验室枢纽） */
   lab: '/lab',
@@ -29,6 +32,8 @@ export const WEB_ROUTES = {
   advanceTrilogy: '/advance',
   toolsResources: '/tools/resources',
   gear: '/gear',
+  /** 站内助手对话页（noindex 壳；卡口见 dualEntry.ask） */
+  assistant: '/ask',
   ask: dualEntry.ask.path,
   browse: dualEntry.browse.path,
 } as const;

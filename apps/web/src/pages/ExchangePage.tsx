@@ -1,5 +1,5 @@
 /**
- * 交换 — 非内容五类一级；深页保留，链回五类
+ * 交换 — 非公开内容一级；深页保留，链回内容路径
  */
 import { Link } from 'react-router-dom';
 import { ArrowRight, HandCoins } from 'lucide-react';
@@ -17,7 +17,7 @@ export function ExchangePage() {
     <HallPageShell
       title="交换"
       icon={HandCoins}
-      lead="对外价值面（非内容五类一级）。有货再升格；现在只挂苗。"
+      lead="对外价值面（非公开内容一级）。有货再升格；现在只挂苗。"
       aside={
         <Link to={WEB_ROUTES.support} className="btn-secondary">
           支持

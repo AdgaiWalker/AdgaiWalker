@@ -13,7 +13,7 @@ const SITE_ORIGIN = 'https://www.iwalk.pro';
 const SITE_NAME = 'Walker';
 const SITE_TITLE = 'Walker · 用 AI 走自己的路';
 const SITE_DESCRIPTION =
-  'duola 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、项目与札记。';
+  'duola 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
 const DEFAULT_IMAGE = `${SITE_ORIGIN}/images/hero-bg.png`;
 const PERSON_ID = `${SITE_ORIGIN}/me#person`;
 
@@ -34,7 +34,7 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
   [WEB_ROUTES.browse]: {
     title: '证据 · Walker',
     description:
-      'duola 公开的教程、点子、项目与札记：来自真实实践，可按主题阅读与引用。',
+      'duola 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。',
     canonicalPath: WEB_ROUTES.browse,
   },
   [WEB_ROUTES.tutorials]: {
@@ -42,15 +42,11 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
     description: '来自真实使用的步骤与经验：搞到条件、跟上工具，照着可以开始做。',
     canonicalPath: WEB_ROUTES.tutorials,
   },
-  [WEB_ROUTES.ideas]: {
-    title: '点子 · Walker',
-    description: '实验中的苗：尚未对准需求，或还没有完整做成的想法与交互原型。',
-    canonicalPath: WEB_ROUTES.ideas,
-  },
-  [WEB_ROUTES.projects]: {
-    title: '项目 · Walker',
-    description: '已经做出来、可查看、可链接、可检验的公开交付。',
-    canonicalPath: WEB_ROUTES.projects,
+  [WEB_ROUTES.explore]: {
+    title: '探索 · Walker',
+    description:
+      '从一个念头开始，在实践里逐渐长成：点子可以持续推进，项目是被明确立项的持续交付。',
+    canonicalPath: WEB_ROUTES.explore,
   },
   [WEB_ROUTES.lab]: {
     title: '札记 · Walker',

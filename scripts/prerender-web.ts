@@ -5,13 +5,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { expandWikiLinks } from '../packages/shared/src/content.ts';
+import { expandWikiLinks } from '../packages/shared/src/content';
 import type {
   GeneratedContent,
   GeneratedContentItem,
 } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
 import { contentJsonPath, fromRoot, webDistDir } from './lib/paths';
+import { WEB_ROUTES } from '../apps/web/src/shared/routes';
 import {
   absoluteUrl,
   AUTHOR,
@@ -327,8 +328,7 @@ const homepageBody = `<main data-pagefind-body>
       <a href="/posts">逛：读证据</a>
       <a href="/tutorials">教程</a>
       <a href="/learn">学习</a>
-      <a href="/ideas">点子</a>
-      <a href="/projects">项目</a>
+      <a href="${WEB_ROUTES.explore}">探索</a>
       <a href="/lab">札记</a>
       <a href="/gear">装备</a>
       <a href="/about">关于本站</a>
@@ -370,23 +370,21 @@ writeCollectionRoute({
 });
 
 writeCollectionRoute({
-  pathname: '/ideas',
-  title: '点子 · Walker',
-  heading: '点子',
-  description: '实验中的苗：尚未对准需求，或还没有完整做成的想法与交互原型。',
-  items: docs.filter((item) => item.type === 'idea'),
+  pathname: WEB_ROUTES.explore,
+  title: '探索 · Walker',
+  heading: '探索',
+  description:
+    '从一个念头开始，在实践里逐渐长成：点子可以持续推进，项目是被明确立项的持续交付。',
+  items: docs.filter(
+    (item) =>
+      item.hall === 'showcase' ||
+      item.type === 'idea' ||
+      item.type === 'project',
+  ),
 });
 
 writeCollectionRoute({
-  pathname: '/projects',
-  title: '项目 · Walker',
-  heading: '项目',
-  description: '已经做出来、可查看、可链接、可检验的公开交付。',
-  items: docs.filter((item) => item.type === 'project'),
-});
-
-writeCollectionRoute({
-  pathname: '/lab',
+  pathname: WEB_ROUTES.lab,
   title: '札记 · Walker',
   heading: '札记',
   description: '实验中沉淀的经验与思考；观点保留形成时的边界，并通过实践继续更新。',
@@ -482,9 +480,13 @@ writeRoute(
 
 const postsTitle = '证据 · Walker';
 const postsDescription =
-  'duola 公开的教程、点子、项目与札记：来自真实实践，可按主题阅读与引用。';
+  'duola 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。';
+const labCount = docs.filter((doc) => doc.hall === 'lab').length;
 const postsBody = `<main data-pagefind-body>
   <header><h1>证据</h1><p>${escapeHtml(postsDescription)}</p></header>
+  <nav aria-label="内容路径">
+    <a href="${WEB_ROUTES.lab}"><strong>札记</strong> — 经验与思考，在实践中持续生长 · ${labCount} 篇</a>
+  </nav>
   <ol>${docs
     .map(
       (doc) => `<li>
@@ -542,7 +544,7 @@ writeRoute(
       description: aboutDescription,
       pathname: '/about',
     }),
-    body: `<main data-pagefind-body><article><h1>关于 Walker</h1><p>${escapeHtml(aboutDescription)}</p><h2>现在能做什么</h2><p>从「卡」描述真实问题并拿下一步，或从「逛」阅读教程、点子、项目与札记。</p><h2>边界</h2><p>Walker 是站名；人是 duola，知识主权在人。公开内容是知识库的可读切片，不是批量生成的公知堆。</p><p><a href="/me">关于 duola</a> · <a href="/posts">阅读证据</a></p></article></main>`,
+    body: `<main data-pagefind-body><article><h1>关于 Walker</h1><p>${escapeHtml(aboutDescription)}</p><h2>现在能做什么</h2><p>从「卡」描述真实问题并拿下一步，或从「逛」阅读教程、探索与札记。</p><h2>边界</h2><p>Walker 是站名；人是 duola，知识主权在人。公开内容是知识库的可读切片，不是批量生成的公知堆。</p><p><a href="/me">关于 duola</a> · <a href="/posts">阅读证据</a></p></article></main>`,
     schema: {
       '@context': 'https://schema.org',
       '@graph': [

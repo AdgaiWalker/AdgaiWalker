@@ -8,6 +8,18 @@ export interface Clue {
   createdAt: string;
 }
 
+export interface AssistantQuestion {
+  id: string;
+  sessionId: string;
+  question: string;
+  answer: string;
+  citations: string[];
+  aiUsedFlag: boolean;
+  elapsedMs: number;
+  source: string;
+  createdAt: string;
+}
+
 export interface Seed {
   id: string;
   title: string;
@@ -91,6 +103,8 @@ export const adminApi = {
       body: JSON.stringify({ poolStatus }),
     }),
   seeds: () => adminRequest<Seed[]>('/seeds'),
+  assistantQuestions: () =>
+    adminRequest<AssistantQuestion[]>('/assistant/runs?limit=100'),
   createSeed: (title: string) =>
     adminRequest<Seed>('/seeds', {
       method: 'POST',

@@ -10,6 +10,7 @@ import { ArrowRight, Ship } from 'lucide-react';
 import { getPostsBySeries } from '../content';
 import { ContentCard } from '../components/ContentCard';
 import { FERRY_SERIES_NAME } from '../shared/constants';
+import { explorationHref } from '../shared/exploration';
 import { WEB_ROUTES } from '../shared/routes';
 
 export function FerryPage() {
@@ -26,7 +27,7 @@ export function FerryPage() {
             Ferry
           </h1>
           <p className="page-lead" style={{ margin: 0 }}>
-            人机协作世界协议：从差距到行动、做减法、螺旋进化。理论属札记；做成的协议与技能属项目（共{' '}
+            人机协作世界协议：从差距到行动、做减法、螺旋进化。理论属札记；做成的协议与技能属探索中的项目（共{' '}
             {posts.length} 篇）。
           </p>
         </div>
@@ -40,11 +41,11 @@ export function FerryPage() {
             <ArrowRight size={14} />
           </Link>
           <Link
-            to={WEB_ROUTES.projects}
+            to={explorationHref('project')}
             className="btn-secondary"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            项目
+            探索中的项目
             <ArrowRight size={14} />
           </Link>
         </div>
@@ -84,14 +85,14 @@ export function FerryPage() {
                   <h2 id="ferry-delivered" className="lab-line-title">
                     做成的交付
                   </h2>
-                  <p className="lab-line-blurb meta">协议与技能产品——进项目。</p>
+                  <p className="lab-line-blurb meta">协议与技能产品——进探索的项目视图。</p>
                 </div>
                 <Link
-                  to={WEB_ROUTES.projects}
+                  to={explorationHref('project')}
                   className="btn-secondary"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
-                  全部项目
+                  全部探索项目
                   <ArrowRight size={14} />
                 </Link>
               </div>

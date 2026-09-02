@@ -4,6 +4,7 @@ export * from './seed.js';
 export * from './execution.js';
 export * from './loop.js';
 export * from './nextstep.js';
+export * from './assistant.js';
 export * from './next-actions.js';
 export * from './json-request.js';
 export * from './content.js';

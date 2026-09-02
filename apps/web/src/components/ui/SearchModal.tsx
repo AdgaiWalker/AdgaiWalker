@@ -5,6 +5,7 @@ import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'rea
 import { X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { SearchHit } from '../../shared/search-content';
+import { WEB_ROUTES } from '../../shared/routes';
 
 export type SearchModalProps = {
   open: boolean;
@@ -115,7 +116,22 @@ export function SearchModal({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
         />
-        {note ? <p className="meta">{note}</p> : null}
+        {note ? (
+          <p className="meta">
+            {note}
+            {note === '无结果' && query.trim() ? (
+              <>
+                {' '}
+                <Link
+                  to={`${WEB_ROUTES.assistant}?q=${encodeURIComponent(query.trim())}`}
+                  onClick={onClose}
+                >
+                  问站内助手 →
+                </Link>
+              </>
+            ) : null}
+          </p>
+        ) : null}
         <ul className="post-list">
           {hits.map((h) => (
             <li key={h.url}>

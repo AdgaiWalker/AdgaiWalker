@@ -185,3 +185,39 @@ model SearchMiss {
 
   @@index([createdAt])
 }
+
+model AssistantSession {
+  id          String   @id
+  anonId      String
+  sessionId   String
+  runner      String   @default("harness")
+  lastActiveAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([anonId, sessionId])
+  @@index([anonId])
+}
+
+model AssistantRun {
+  id         String   @id
+  sessionId  String
+  question   String
+  answer     String
+  citations  String   @default("[]")
+  aiUsedFlag Boolean
+  elapsedMs  Int      @default(0)
+  traceId    String?
+  source     String   @default("assistant-panel")
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model AssistantBudget {
+  date      String   @id
+  requests  Int      @default(0)
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  updatedAt DateTime @updatedAt
+}

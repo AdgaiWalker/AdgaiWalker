@@ -22,7 +22,7 @@ summary: >-
 related:
   - walkcraft-skill-craft
   - on-people-and-skill
-url: https://github.com/AdgaiWalker/vibeOs
+url: https://github.com/AdgaiWalker/vibe0s
 aiUsePolicy:
   level: AI-2
   readable: true
@@ -30,8 +30,8 @@ aiUsePolicy:
   actionable: false
   reason: 架构观点与实践笔记，可供引用；不含可直接执行的完整流程。
 resources:
-  - name: vibeOs
-    url: https://github.com/AdgaiWalker/vibeOs
+  - name: vibe0s
+    url: https://github.com/AdgaiWalker/vibe0s
     type: github
     description: 让小白不用学习、直接调用 Skill 的 Skill
 ---
@@ -54,7 +54,7 @@ OpenClaw（龙虾架构）的价值核心，不在「壳」，而在连接四面
 
 ## 刚柔一体：不同环节，选不同要素
 
-我最近在做一套让小白不用学习、直接调用 Skill 的 Skill——[vibeOs](https://github.com/AdgaiWalker/vibeOs)。
+我最近在做一套让小白不用学习、直接调用 Skill 的 Skill——[vibe0s](https://github.com/AdgaiWalker/vibe0s)。
 
 开发时碰到一个关键难点：
 

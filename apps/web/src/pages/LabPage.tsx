@@ -1,5 +1,5 @@
 /**
- * 札记（页）— 内容五类：实验中的经验与思考
+ * 札记（页）— 实验的认识面：经验与思考
  * 路由仍为 /lab（兼容）；侧栏文案「札记」。
  */
 import { Link } from 'react-router-dom';
@@ -38,15 +38,12 @@ export function LabPage() {
             札记
           </h1>
           <p className="page-lead" style={{ margin: 0 }}>
-            经验与思考——实验中沉淀的意识。教程在「教程」，点子/项目是另外两类实验产物。
+            经验与思考——实验中沉淀的意识。探索是向外做事，札记是向内形成认识。
           </p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <Link to={WEB_ROUTES.ideas} className="btn-secondary">
-            点子
-          </Link>
-          <Link to={WEB_ROUTES.projects} className="btn-secondary">
-            项目
+          <Link to={WEB_ROUTES.explore} className="btn-secondary">
+            探索
           </Link>
         </div>
       </header>
@@ -108,7 +105,7 @@ export function LabPage() {
         </div>
       )}
 
-      <nav className="hall-chain meta" aria-label="内容五类">
+      <nav className="hall-chain meta" aria-label="内容路径">
         <span className="hall-chain-label">内容</span>
         <Link to={WEB_ROUTES.toolsResources} className="hall-chain-link">
           资源 <ArrowRight size={12} aria-hidden />
@@ -116,11 +113,8 @@ export function LabPage() {
         <Link to={WEB_ROUTES.tutorials} className="hall-chain-link">
           教程 <ArrowRight size={12} aria-hidden />
         </Link>
-        <Link to={WEB_ROUTES.ideas} className="hall-chain-link">
-          点子 <ArrowRight size={12} aria-hidden />
-        </Link>
-        <Link to={WEB_ROUTES.projects} className="hall-chain-link">
-          项目 <ArrowRight size={12} aria-hidden />
+        <Link to={WEB_ROUTES.explore} className="hall-chain-link">
+          探索 <ArrowRight size={12} aria-hidden />
         </Link>
         <Link to={dualEntry.browse.path} className="hall-chain-link">
           逛 <ArrowRight size={12} aria-hidden />

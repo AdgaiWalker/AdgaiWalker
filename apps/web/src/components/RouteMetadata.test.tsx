@@ -75,14 +75,14 @@ describe('RouteMetadata', () => {
   });
 
   it('keeps content hubs indexable with their own canonical', async () => {
-    renderAt('/learn');
+    renderAt('/explore?view=project');
 
     await waitFor(() => {
-      expect(document.title).toBe('学习 · Walker');
+      expect(document.title).toBe('探索 · Walker');
     });
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
-    ).toBe('https://www.iwalk.pro/learn');
+    ).toBe('https://www.iwalk.pro/explore');
     expect(
       document.querySelector('meta[name="robots"]')?.getAttribute('content'),
     ).toBe('index, follow');

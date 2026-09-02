@@ -226,7 +226,17 @@
     },
     {
       "source": "/showcase",
-      "destination": "/projects",
+      "destination": "/explore",
+      "permanent": true
+    },
+    {
+      "source": "/ideas",
+      "destination": "/explore?view=idea",
+      "permanent": true
+    },
+    {
+      "source": "/projects",
+      "destination": "/explore?view=project",
       "permanent": true
     },
     {

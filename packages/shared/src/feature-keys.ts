@@ -12,6 +12,7 @@ export const FEATURE_KEYS = {
   'seed.promote': '主选成功',
   'execution.review': '检验写入成功',
   'content.feedback': '内容反馈提交成功',
+  'assistant.ask': '站内助手问答',
 } as const;
 
 export type FeatureKey = keyof typeof FEATURE_KEYS;
