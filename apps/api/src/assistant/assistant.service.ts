@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   FEATURE_FAIL_CODES,
   RATE_LIMITS,
-  isValidClueBody,
+  isValidAssistantBody,
   type AssistantRunResult,
 } from '@walker/shared';
 import { newId } from '../common/ids';
@@ -97,7 +97,7 @@ export class AssistantService {
       throw rateLimited();
     }
 
-    if (!isValidClueBody(input.body)) {
+    if (!isValidAssistantBody(input.body)) {
       throw validationError('assistant-body-too-short');
     }
 

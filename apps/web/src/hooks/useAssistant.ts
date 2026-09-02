@@ -1,7 +1,7 @@
 /**
  * useAssistant — 站内助手编排：消息流状态 + 门面提交 + 多轮 sessionId（内存态）
  */
-import { isValidClueBody } from '@walker/shared';
+import { isValidAssistantBody } from '@walker/shared';
 import { useCallback, useRef, useState } from 'react';
 import { formatApiError } from '../api/format-api-error';
 import { publicApi, type AssistantResult } from '../api/public-api';
@@ -18,7 +18,7 @@ export function useAssistant() {
 
   const send = useCallback(async (raw: string) => {
     const text = raw.trim();
-    if (!isValidClueBody(text) || loading) return;
+    if (!isValidAssistantBody(text) || loading) return;
     setLoading(true);
     setError(null);
     setMessages((prev) => [...prev, { role: 'user', text }]);

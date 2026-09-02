@@ -2,11 +2,22 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSISTANT_ANSWER_MAX_LENGTH,
   ASSISTANT_MAX_CITATIONS,
+  isValidAssistantBody,
   parseAssistantOutput,
   sanitizeAnswerText,
 } from './assistant.js';
 
 const CITABLE = new Set(['used-macbook-guide', 'ai-low-cost-access', 'cc-intro']);
+
+describe('助手提问校验', () => {
+  it('2 字中文成句即可；1 字与纯空白不行', () => {
+    expect(isValidAssistantBody('你好')).toBe(true);
+    expect(isValidAssistantBody('  你好  ')).toBe(true);
+    expect(isValidAssistantBody('hi')).toBe(true);
+    expect(isValidAssistantBody('好')).toBe(false);
+    expect(isValidAssistantBody('   ')).toBe(false);
+  });
+});
 
 describe('助手 Run 合同', () => {
   it('合法输出通过；字符串包裹 JSON 也能解析', () => {

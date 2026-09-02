@@ -124,6 +124,23 @@ describe('AssistantService 每日预算熔断', () => {
     expect(d.runner.ask).toHaveBeenCalledTimes(1);
   });
 
+  it('2 字中文放行（对话语境，与卡口 4 字规则解耦）', async () => {
+    const d = makeDeps();
+    const r = await serviceFor(true, d).ask({ ...ask, body: '你好' });
+    expect(d.runner.ask).toHaveBeenCalledTimes(1);
+    expect(r.answer).toBe('AI 回答。');
+  });
+
+  it('1 字仍拒收', async () => {
+    const d = makeDeps();
+    await expect(
+      serviceFor(true, d).ask({ ...ask, body: '好' }),
+    ).rejects.toSatisfy((e: { message?: string }) =>
+      String(e.message).includes('assistant-body-too-short'),
+    );
+    expect(d.runner.ask).not.toHaveBeenCalled();
+  });
+
   it('触顶当日按 UTC+8 日期键计数（跨日自然重置）', async () => {
     const dates: string[] = [];
     const d = makeDeps();

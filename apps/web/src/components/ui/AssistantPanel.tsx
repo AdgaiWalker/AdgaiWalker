@@ -104,7 +104,7 @@ export function AssistantPanel({
               if (draftOk && !loading) onSubmit();
             }
           }}
-          placeholder="例如：duola 是谁？想学 AI 从哪开始？（Enter 发送，Shift+Enter 换行）"
+          placeholder="例如：duola 是谁？想学 AI 从哪开始？（两字起送，Enter 发送，Shift+Enter 换行）"
           disabled={loading}
           style={{ marginTop: 8 }}
         />

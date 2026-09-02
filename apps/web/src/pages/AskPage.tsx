@@ -1,7 +1,7 @@
 /**
  * 问助手页 — useAssistant 编排 + ?q= 预填（来自搜索无结果升级）
  */
-import { isValidClueBody } from '@walker/shared';
+import { isValidAssistantBody } from '@walker/shared';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AssistantPanel } from '../components/ui/AssistantPanel';
@@ -22,7 +22,7 @@ export function AskPage() {
     if (q) setDraft(q);
   }, [q]);
 
-  const draftOk = isValidClueBody(draft);
+  const draftOk = isValidAssistantBody(draft);
 
   return (
     <AssistantPanel

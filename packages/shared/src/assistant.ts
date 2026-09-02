@@ -26,6 +26,13 @@ export const ASSISTANT_ANSWER_MIN_LENGTH = 4;
 export const ASSISTANT_ANSWER_MAX_LENGTH = 1200;
 export const ASSISTANT_MAX_CITATIONS = 3;
 
+/** 助手提问最短：trim 后 ≥ 2（对话语境，中文两字即成句；与卡口 4 字规则解耦） */
+export const ASSISTANT_BODY_MIN_LENGTH = 2;
+
+export function isValidAssistantBody(body: string): boolean {
+  return body.trim().length >= ASSISTANT_BODY_MIN_LENGTH;
+}
+
 const MARKDOWN_LINK_RE = /\[([^\]]+)\]\([^)]*\)/g;
 
 /** 回答以纯文本渲染：折叠 markdown 链接为文字、去尖括号、压多余空行 */
