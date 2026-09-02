@@ -109,11 +109,18 @@ AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关�
 
 ## 未交付（生产运行时）
 
-1. 公网 Nest + SQLite 首期（达迁移条件后转托管 PG）  
-2. Vercel `/api` → API 主机  
-3. 生产 intake 探针绿后：本页标「生产切流：已完成」+ 验证盒正式起算  
+1. ~~公网 Nest + SQLite 首期~~ → **已完成（2026-09-03）**：腾讯云新加坡 Windows 盒子常驻 Nest :8788（SQLite，只绑 127.0.0.1），Caddy 公网白名单反代 `https://api.iwalk.pro`（Let's Encrypt 自动证书）；站内助手引擎（DeepSeek Harness 只读沙箱）同机部署并真答通过  
+2. ~~Vercel `/api` → API 主机~~ → **已完成（2026-09-03）**：vercel.json rewrites `/api/*` → `https://api.iwalk.pro`  
+3. ~~生产 intake 探针绿后标切流~~ → 见下方「生产切流」
 
-可选配置：Giscus 四 env、赞赏二维码 URL。管理面已去令牌。
+## 生产切流：已完成（2026-09-03）
+
+- 公开 API 面：`https://api.iwalk.pro`（Caddy 白名单逐条对齐 `apps/api/src/app.module.ts`；管理路由需凭据，双防线）
+- 访客链路：www.iwalk.pro（Vercel 静态）→ `/api/*` 反代 → 盒子 Caddy → Nest 8788 → SQLite / DeepSeek Harness
+- 站内助手：`POST /api/assistant` 公开（AI 可关、预算 200 问/日熔断、citations fail-closed）；问题池在 admin（SSH 隧道 + basic auth）
+- 正式验证盒自 2026-09-03 起算；运行基线见 `ops/windows/README.md`，助手运维见 `docs/PRD-SITE-ASSISTANT.md`
+
+可选配置：Giscus 四 env、赞赏二维码 URL。
 
 ## 下一步（优先级）
 

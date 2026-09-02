@@ -113,21 +113,28 @@
 - [x] 本地端到端验证：apps/api 的 SDK client(rc.2) → npm runtime(alpha.3) → **pong 1.3s**；适配器加 `DSH_RUNTIME_BIN` 覆盖（生产指 npm bin，本地默认仍 clone），经适配器本体再验 **pong 3.2s** ✅
 - [x] `ops/windows/install-dsh.ps1` 安装脚本 + ops README 助手部署节 ✅
 
-### T3.3 盒子部署 🔄（2026-08-30，SSH 已通，部署进行中）
+### T3.3 盒子部署 ✅（2026-09-03 完成，端到端真答通过）
 
-- [x] 防火墙 TCP 22 来源改 `42.100.162.125/32`（经腾讯云控制台网页，AI 驾驶浏览器 + 用户扫码登录完成）✅
+- [x] 防火墙 TCP 22 来源改 `42.100.162.125/32`（AI 驾驶腾讯云控制台网页 + 用户扫码登录）✅
 - [x] 盒子基线确认：`C:\Walker`（app/bin/data/logs），Node v24.19.0 / Git 2.53 / Caddy 2.11.4 / pnpm 全就绪 ✅
 - [x] 代码：盒子在 `6dd8dce`（落后）；stash 盒上旧改动（host 绑定等已被主线全覆盖）→ 备份未跟踪旧脚本 → 拉取 `2496e8e`（161 文件）✅
 - [x] 构建：pnpm install --frozen-lockfile（5m35s，含 dsh Windows postinstall）→ build:shared → db:generate/push → build:api（零错）→ build:admin（4.3s）✅
 - [x] `install-dsh.ps1` 首跑暴露 PowerShell 中文无 BOM 解析错 → 加 BOM 提交推送（`1f8f18e`）✅
-- [ ] ⛔ **SSH 中断**：构建完成后 sshd 无 banner（TCP 可连）——判断为 2C2G 构建后内存耗尽/swap 抖动，等缓解后重试；恢复后继续：install-dsh.ps1 → scp 凭据 → .env 追加（见 ops README）→ 重启服务 → /health
-- [ ] `dsh-win32` 诊断跑一遍
+- [x] **事故与恢复**：构建后 2C2G 内存耗尽 sshd 僵死（TCP 可连无 banner）→ 经控制台网关 API 提交 RebootInstances 重启 → 恢复 ✅
+- [x] **DI 回归**：`RuleAssistantAdapter` 由手动 new 改为 provider 后接口参数无法解析 → 显式 `@Inject(SITE_CONTENT_INDEX)`（77 测试全绿）；GitHub 断连改 scp 单文件直修盒子 ✅
+- [x] **并行会话集成**：另一会话上线 admin 凭据认证（`5e01b15`，Nest token + Caddy basic auth），公网白名单漏 `POST /assistant` → app.module + Caddyfile 双侧补齐 ✅
+- [x] **dsh 启动安全机制**：runtime 拒绝从 .env 继承 `DSH_RUNTIME_BIN`（探针定位）→ 改名 `WALKER_DSH_RUNTIME_BIN` + 子进程 cwd 换中立 `.dsh-assistant` 目录 ✅
+- [x] 凭据 scp（不读内容）、`.env`（AI_ENABLED=true、预算 200/日）、WalkerApi/WalkerGateway 双任务重启 ✅
+- [x] **端到端验收**：盒子 `/health` ok+aiEnabled=true；`POST /assistant` 真问「duola 是谁」→ AI 真答（6.8s 热启动，sessionId 为 harness 真会话）✅
 
-### T3.4 Vercel 反代与切流（待 T3.3）
+### T3.4 Vercel 反代与切流 🔄（等一条 DNS 记录）
 
-- [ ] `vercel.json`：`/api/*` → 盒子 8788（保留现有 301 表与 headers）
-- [ ] 生产验收：`/api/health` 200、真问全链路、熔断演练、`pnpm accept` 绿
-- [ ] STATUS.md 记「生产切流」+ 验证盒起算
+- [x] Caddy 双任务按正式域名 `api.iwalk.pro` 重注册（DNS 就绪后证书自动签发）✅
+- [ ] **等用户**：在 Spaceship DNS 加 A 记录 `api.iwalk.pro → 43.163.4.104`（或授权 AI 驾驶浏览器操作 Spaceship）
+- [ ] DNS 生效后验证 `curl https://api.iwalk.pro/health` → 200
+- [ ] `vercel.json` 加 `/api/*` → `https://api.iwalk.pro` 反代（保留现有 301 表；验证通过后才提交推送，防合流切坏）
+- [ ] 生产验收：真问全链路、熔断演练、`pnpm accept` 绿
+- [ ] STATUS.md 记「生产切流」+ 验证盒起算；GitHub 恢复后推送积压提交（806d85a 等 3 个）
 
 ## P3 按证据启动（不排期，触发条件见 PRD 5.3 / 10 节）
 
