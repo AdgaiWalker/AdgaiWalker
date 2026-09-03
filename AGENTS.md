@@ -25,6 +25,7 @@
 - **Windows 保留文件名**（`nul`、`con` 等）在 Mac 上能提交、服务器上无法检出（`error: invalid path`）——提交前别把这类文件加进 Git。
 - OpenSSH（Windows）会话断开会杀死该会话的整棵子进程树：需要存活的远程进程用 `Start-Process` 脱离或 schtasks 注册后 `Start-ScheduledTask`。
 - `git pull` 撞脏工作树前先 `git reset --hard origin/main`（data/env 都在 Git 外，安全）。
+- **重启网关后必须核 443**：`netstat -ano | findstr ":443"`。WalkerGateway 任务参数可能被重置回 8080 测试模式（install-tasks.ps1 重注册漏 `-PublicApiHost api.iwalk.pro` 即复现）→ 用正式域名重跑注册脚本；老 caddy 占端口时 `schtasks /End` 杀不掉（实例引用丢失）→ 直接 `taskkill /PID <pid> /F` 再 `/Run`；起进程必须走计划任务（`/Run`），SSH 里 `Start-Process` 起的会随会话被杀（先 `/End` 清僵尸实例再 `/Run`）。网关重启后首个 AI 请求可能因 harness 冷启动超 15s 走规则兜底——自愈行为，非故障。
 - DeepSeek Harness（dsh）安全机制：**拒绝从 .env 文件继承 `DSH_*` 启动变量**——生产用 `WALKER_DSH_RUNTIME_BIN` / `ASSISTANT_DSH_HOME`（见 `ops/windows/README.md`），且子进程 cwd 必须是不含 .env 的中立目录。
 - SSH 不通时先按下方「腾讯云服务器连接」查防火墙来源 IP（家宽 IP 会轮换）。
 
