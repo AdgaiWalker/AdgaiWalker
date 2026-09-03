@@ -86,6 +86,10 @@ import { WEBSITE_DEPLOYMENT_VERIFIER } from './ports/website-deployment-verifier
 import { HttpWebsiteDeploymentVerifier } from './adapters/http-website-deployment-verifier';
 import { WECHAT_DRAFT_SESSION } from './ports/wechat-draft-session.port';
 import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-draft-session';
+import { CREDENTIAL_REPOSITORY } from './ports/credential.repository';
+import { PrismaCredentialRepository } from './adapters/prisma-credential.repository';
+import { CredentialsService } from './credentials/credentials.service';
+import { CredentialsController } from './credentials/credentials.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -108,6 +112,7 @@ import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-dra
     ReviewController,
     PublicationController,
     ExportController,
+    CredentialsController,
   ],
   providers: [
     { provide: PRISMA, useClass: PrismaAdapter },
@@ -129,6 +134,7 @@ import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-dra
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
     { provide: SITE_CONTENT_INDEX, useClass: FsSiteContentIndex },
     { provide: ASSISTANT_REPOSITORY, useClass: PrismaAssistantRepository },
+    { provide: CREDENTIAL_REPOSITORY, useClass: PrismaCredentialRepository },
     { provide: RuleAssistantAdapter, useClass: RuleAssistantAdapter },
     {
       // 助手双实现：harness AI 内嵌规则兜底（AI 可关/超时/坏输出全降级）；
@@ -161,6 +167,7 @@ import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-dra
     SearchEventsService,
     ContentAdminService,
     SupportService,
+    CredentialsService,
     ActionService,
     WorkService,
     WorkbenchService,

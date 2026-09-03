@@ -11,5 +11,6 @@ export const ADMIN_ROUTES = {
   metrics: '/metrics',
   content: '/content',
   contentEdit: '/content/:slug',
+  credentials: '/credentials',
   aiGateway: '/ai-gateway',
 } as const;

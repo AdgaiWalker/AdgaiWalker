@@ -5,6 +5,7 @@ import { ContentEditPage } from './pages/ContentEditPage';
 import { ContentListPage } from './pages/ContentListPage';
 import { CluesPage } from './pages/CluesPage';
 import { AssistantQuestionsPage } from './pages/AssistantQuestionsPage';
+import { CredentialsPage } from './pages/CredentialsPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
 import { SeedsPage } from './pages/SeedsPage';
@@ -31,6 +32,10 @@ export function App() {
         <Route path={ADMIN_ROUTES.metrics} element={<MetricsPage />} />
         <Route path={ADMIN_ROUTES.content} element={<ContentListPage />} />
         <Route path="/content/:slug" element={<ContentEditPage />} />
+        <Route
+          path={ADMIN_ROUTES.credentials}
+          element={<CredentialsPage />}
+        />
         <Route path={ADMIN_ROUTES.aiGateway} element={<AiGatewayPage />} />
         <Route
           path="*"

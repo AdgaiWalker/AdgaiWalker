@@ -228,3 +228,17 @@ model AssistantBudget {
   tokensOut Int      @default(0)
   updatedAt DateTime @updatedAt
 }
+
+/// 管理凭据库：密文存储（AES-256-GCM），明文绝不入库、绝不进 Git。
+model Credential {
+  id         String   @id
+  name       String   @unique
+  provider   String
+  ciphertext String
+  iv         String
+  authTag    String
+  last4      String
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

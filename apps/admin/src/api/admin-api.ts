@@ -37,6 +37,15 @@ export interface Execution {
   outcome: string | null;
 }
 
+export interface CredentialRecord {
+  id: string;
+  name: string;
+  provider: string;
+  last4: string;
+  note: string | null;
+  updatedAt: string;
+}
+
 export interface Action {
   id: string;
   title: string;
@@ -207,6 +216,21 @@ export const adminApi = {
       `/admin/content/${encodeURIComponent(slug)}`,
       { method: 'PUT', body: JSON.stringify({ raw }) },
     ),
+
+  credentials: {
+    list: () => adminRequest<CredentialRecord[]>('/credentials'),
+    upsert: (input: { name: string; provider: string; secret: string; note?: string }) =>
+      adminRequest<CredentialRecord>('/credentials', {
+        method: 'PUT',
+        body: JSON.stringify(input),
+      }),
+    reveal: (id: string) =>
+      adminRequest<{ name: string; provider: string; secret: string }>(
+        `/credentials/${id}/reveal`,
+      ),
+    remove: (id: string) =>
+      adminRequest<{ ok: true }>(`/credentials/${id}`, { method: 'DELETE' }),
+  },
 
   health: () => adminRequest<{ ok: boolean; db: boolean; aiEnabled: boolean }>('/health'),
 };

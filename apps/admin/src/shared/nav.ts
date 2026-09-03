@@ -8,6 +8,7 @@ import {
   ClipboardList,
   FileText,
   Inbox,
+  KeyRound,
   LayoutDashboard,
   MessageCircle,
   Server,
@@ -58,6 +59,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     title: '站',
     items: [
       { path: ADMIN_ROUTES.content, label: '内容', icon: FileText },
+      { path: ADMIN_ROUTES.credentials, label: '凭据', icon: KeyRound },
       { path: ADMIN_ROUTES.aiGateway, label: '系统', icon: Server },
     ],
   },
