@@ -41,13 +41,16 @@ Windows 与宝塔当前已占用大部分 2GB 内存。第一阶段禁止在本�
 curl -H "x-admin-token: <WALKER_ADMIN_TOKEN>" http://127.0.0.1:8790/api/clues
 ```
 
-私有工作台连接：
+私有工作台连接（主路径走 Tailscale 虚拟内网，与 VPN / 出口 IP 无关）：
 
 ```bash
 ssh -N -L 5174:127.0.0.1:8790 walker-tencent
 ```
 
 然后访问 `http://127.0.0.1:5174`（首次会要求输入 `admin-basic-auth.txt` 中的凭据）。
+
+- `walker-tencent`（`100.115.242.59`）走 Tailscale；服务器端已加 `--unattended`，无用户会话也常驻。两端设备须登录同一 Tailscale 账号。
+- `walker-tencent-public`（`43.163.4.104`）为公网备用路径，仅当腾讯云防火墙 22 端口白名单含当前出口 IP 时可用。
 
 ## 构建与运行
 
