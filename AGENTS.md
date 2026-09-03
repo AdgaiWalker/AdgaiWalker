@@ -11,14 +11,20 @@
 
 - 访客：`www.iwalk.pro`（Vercel 静态，push main 自动发）→ `/api/*` 反代 → `api.iwalk.pro`（盒子上 Caddy + Let's Encrypt）→ Nest `127.0.0.1:8788` → SQLite / DeepSeek Harness。
 - **公网白名单双侧同步**：放行新公开路由必须同时改 `apps/api/src/app.module.ts`（exclude 表）和 `ops/windows/Caddyfile`，漏一侧即 401/404。管理路由另有 `WALKER_ADMIN_TOKEN` + Caddy basic auth 双防线。
+- **管理凭据体系**：Basic 密码必须等于 `WALKER_ADMIN_TOKEN`（Nest 中间件校验）。改密码 = 同步改服务器 `apps/api/.env` 的 `WALKER_ADMIN_TOKEN` + `C:\Walker\data\admin-basic-auth.txt`（格式 `user:password`，明文仅存 data 目录）→ 重启 WalkerApi 和 WalkerGateway。脚本调管理接口带 `x-admin-token` 头。凭据管理后台（`/credentials` 页）用 AES-256-GCM 落库，主密钥 `WALKER_CREDENTIAL_MASTER_KEY` 只存服务器 `.env`，**密钥数据永不进 Git**。
 - 盒子（腾讯云轻量，Windows Server 2C2G，新加坡）运行目录 `C:\Walker`：`app`（Git 工作树）/ `data`（持久数据，**不得覆盖**）/ `bin`（node/pnpm/git/caddy/dsh）/ `logs`。
 
 ## 盒子部署与运维坑（实测教训）
 
 - 部署流：SSH 进盒子 → `cd C:\Walker\app && git pull origin main` → `pnpm build:shared` → `pnpm build:api`（admin 改了再 build:admin）→ `schtasks /End + /Run /TN WalkerApi`（网关是 `WalkerGateway`）。
-- **SSH 会熔断**：短连接多次后出现 `Connection closed by ... port 22`（sshd 频次限制，等几分钟也不一定恢复）。带外替代：腾讯云控制台 → 实例 → 「执行命令」（TAT，不走 22 端口），可远程 git pull + 构建 + 重启，实测 23 秒跑完全套。
+- **SSH 会熔断**：短连接多次后出现 `Connection closed by ... port 22`（两个成因：开 VPN 后出口 IP 不在防火墙白名单 → 走 Tailscale 主路径即解；构建打满 2G 内存把 sshd 僵死 → 控制台重启实例）。带外替代：腾讯云控制台 → 实例 → 「执行命令」（TAT，不走 22 端口），可远程 git pull + 构建 + 重启，实测 23 秒跑完全套。
 - 2C2G 内存紧张：**构建（tsc/vite）可能把 sshd 打僵死**（TCP 可连但无 banner）→ 控制台重启实例可解；避免在 API 服务运行时跑重构建。
-- PowerShell 脚本含中文必须带 **UTF-8 BOM**，否则 Windows PowerShell 按 ANSI 解析报错。
+- PowerShell 脚本含中文必须带 **UTF-8 BOM**，否则 Windows PowerShell 按 ANSI 解析报错。给服务器写的 `.ps1` 一律 **纯 ASCII 注释**最稳。
+- PowerShell 5 下 `$ErrorActionPreference='Stop'` 会把原生命令（pnpm/node）的 stderr 输出当终止错误杀掉脚本：要么 `'Continue'` + 检查 `$LASTEXITCODE`，要么把输出 `| Out-Null`。
+- Caddy `basic_auth` 只支持**块形式**（行内参数会把第一个参数误读为哈希算法名）；Caddyfile 的 `{$VAR}` 占位符展开不跨 token，"user hash" 必须拆成两个环境变量。
+- **Windows 保留文件名**（`nul`、`con` 等）在 Mac 上能提交、服务器上无法检出（`error: invalid path`）——提交前别把这类文件加进 Git。
+- OpenSSH（Windows）会话断开会杀死该会话的整棵子进程树：需要存活的远程进程用 `Start-Process` 脱离或 schtasks 注册后 `Start-ScheduledTask`。
+- `git pull` 撞脏工作树前先 `git reset --hard origin/main`（data/env 都在 Git 外，安全）。
 - DeepSeek Harness（dsh）安全机制：**拒绝从 .env 文件继承 `DSH_*` 启动变量**——生产用 `WALKER_DSH_RUNTIME_BIN` / `ASSISTANT_DSH_HOME`（见 `ops/windows/README.md`），且子进程 cwd 必须是不含 .env 的中立目录。
 - SSH 不通时先按下方「腾讯云服务器连接」查防火墙来源 IP（家宽 IP 会轮换）。
 
@@ -32,23 +38,23 @@
 
 ## 腾讯云服务器连接
 
-本机已经配置好 SSH 公钥认证和连接别名。需要操作项目服务器时，直接运行：
+服务器已接入 Tailscale（tailnet `AdgaiWalker@github`，服务器节点名 `walker-server`，虚拟 IP `100.115.242.59`；Mac 是 `happymacbook-pro`）。**主路径走虚拟内网，与 VPN / 出口 IP 无关**：
 
 ```bash
-ssh walker-tencent
+ssh walker-tencent            # 100.115.242.59（Tailscale，永远可用）
+ssh walker-tencent-public     # 43.163.4.104（公网备用，仅当防火墙白名单含当前出口 IP）
 ```
 
-开始服务器操作前，可用以下命令进行非交互验证：
+非交互验证：
 
 ```bash
 ssh -o BatchMode=yes -o ConnectTimeout=15 walker-tencent "whoami && hostname"
 ```
 
+- 主路径不通时先查两端 Tailscale 是否在线：`/Applications/Tailscale.app/Contents/MacOS/Tailscale status`（Mac）/ `tailscale status`（服务器）。服务器端已加 `--unattended`，无用户会话也常驻。
+- 公网备用路径被拒（`Connection closed ... port 22`）通常是 VPN 改变了出口 IP：`curl -fsS https://api.ipify.org` 查当前 IP → 腾讯云防火墙把 TCP 22 来源更新为 `<IP>/32`。**优先修 Tailscale 路径，别依赖这条**。
+- 服务器端重启 Tailscale 入网用 Auth Key（管理后台 Settings → Keys 生成，单次使用）+ `--unattended`；不带 `--unattended` 会在无用户会话时自动掉线。
 - 连接参数和私钥位置由本机 SSH 配置管理，不要在仓库中复制 IP、用户名、密钥内容或基础设施细节。
 - 不得读取、输出、提交、上传或转发私钥内容。
-- 当前执行环境的公网出口 IP 可能在不同对话间变化。如果连接超时或被远端关闭：
-  1. 运行 `curl -fsS https://api.ipify.org` 获取本次对话的公网出口 IP；
-  2. 在腾讯云实例防火墙中，把 TCP 22 的 SSH 规则来源更新为 `<当前公网IP>/32`；
-  3. 再次运行上面的非交互验证命令。
 - 连接失败时不要直接重装系统、重置密码或创建新密钥。
 - 未经用户明确授权，不得重装系统、重置密码、删除服务器数据或替换 SSH 密钥。
