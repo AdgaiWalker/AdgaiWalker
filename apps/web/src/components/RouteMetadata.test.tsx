@@ -74,6 +74,20 @@ describe('RouteMetadata', () => {
     ).toBe('noindex, follow');
   });
 
+  it('gives the assistant route its own noindex metadata instead of the 404 fallback', async () => {
+    renderAt('/ask');
+
+    await waitFor(() => {
+      expect(document.title).toBe('问站内助手 · Walker');
+    });
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://www.iwalk.pro/ask');
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('noindex, follow');
+  });
+
   it('keeps content hubs indexable with their own canonical', async () => {
     renderAt('/explore?view=project');
 

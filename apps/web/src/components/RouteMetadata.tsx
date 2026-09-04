@@ -78,6 +78,12 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
     canonicalPath: WEB_ROUTES.ask,
     indexable: false,
   },
+  [WEB_ROUTES.assistant]: {
+    title: '问站内助手 · Walker',
+    description: '了解站主、找内容、问路径；回答只依据站内已公开且可引用的内容。',
+    canonicalPath: WEB_ROUTES.assistant,
+    indexable: false,
+  },
   [WEB_ROUTES.condition]: {
     title: '条件 · Walker',
     description: '先把工具、渠道和现实条件准备好，再开始行动。',
