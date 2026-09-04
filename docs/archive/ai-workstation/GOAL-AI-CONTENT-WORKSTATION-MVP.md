@@ -1,3 +1,5 @@
+> **历史文档**：AI 自媒体工作站 MVP（2026-08）验证期文档。对应功能代码仍在 `apps/api`（workstation / workflow 模块）随生产运行，但本文档不再是现行规划依据；现行助手规划见 `docs/PRD-SITE-ASSISTANT.md`。
+
 # Goal Document: AdgaiWalker AI 自媒体工作站 MVP
 
 ## Go / No-Go

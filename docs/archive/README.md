@@ -9,6 +9,7 @@
 | `process/` | deploy / cutover / s1 时钟长文 |
 | `conventions/` | 旧分层、模块图、命名、redirects 细则 |
 | `api-astro-era/` | Astro 时代 API（废止） |
+| `ai-workstation/` | AI 自媒体工作站 MVP 三件套（PRD / Goal / 验收，验证已完成） |
 | `design*` · `cycles*` · `adr/` · `notes/` · `AI赋能/` | 设计稿、周期、笔记 |
 
 需要细节时再打开；**禁止**以归档为「当前该怎么做」的唯一依据。

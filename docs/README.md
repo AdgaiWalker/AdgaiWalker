@@ -16,5 +16,5 @@
 
 冲突时：**代码 + `api/README` + PRODUCT/ENGINEERING/STATUS + `Claude.md` > VISION 与 `archive/`**。近端行为以 PRODUCT 为准。
 
-历史 PRD / Goal / 切流长文 / 旧分层全文 / Astro 契约 → [`archive/`](./archive/)。  
+历史 PRD / Goal / 切流长文 / 旧分层全文 / Astro 契约 / AI 工作站 MVP 三件套（`archive/ai-workstation/`，2026-08 验证期）→ [`archive/`](./archive/)。  
 **禁止**把 `archive/api-astro-era` 当现行契约。
