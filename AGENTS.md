@@ -16,7 +16,7 @@
 
 ## 盒子部署与运维坑（实测教训）
 
-- 部署流：SSH 进盒子 → `cd C:\Walker\app && git pull origin main` → `pnpm build:shared` → `pnpm build:api`（admin 改了再 build:admin）→ `schtasks /End + /Run /TN WalkerApi`（网关是 `WalkerGateway`）。
+- 部署流：SSH 进盒子（**优先 `ssh walker-tencent`，走 Tailscale 主路径**，与出口 IP/防火墙无关；`walker-tencent-public` 仅应急）→ `cd C:\Walker\app && git pull origin main` → `pnpm build:shared` → `pnpm build:api`（admin 改了再 build:admin）→ `schtasks /End + /Run /TN WalkerApi`（网关是 `WalkerGateway`）。
 - **SSH 会熔断**：短连接多次后出现 `Connection closed by ... port 22`（两个成因：开 VPN 后出口 IP 不在防火墙白名单 → 走 Tailscale 主路径即解；构建打满 2G 内存把 sshd 僵死 → 控制台重启实例）。带外替代：腾讯云控制台 → 实例 → 「执行命令」（TAT，不走 22 端口），可远程 git pull + 构建 + 重启，实测 23 秒跑完全套。
 - 2C2G 内存紧张：**构建（tsc/vite）可能把 sshd 打僵死**（TCP 可连但无 banner）→ 控制台重启实例可解；避免在 API 服务运行时跑重构建。
 - PowerShell 脚本含中文必须带 **UTF-8 BOM**，否则 Windows PowerShell 按 ANSI 解析报错。给服务器写的 `.ps1` 一律 **纯 ASCII 注释**最稳。
