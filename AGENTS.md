@@ -7,6 +7,14 @@
 1. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 2. `docs/README.md`（文档地图与权威级）→ 3. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
 改站内助手必须先读 `docs/PRD-SITE-ASSISTANT.md` + `docs/TODO-SITE-ASSISTANT.md`。`docs/archive/` 是退役方案，禁止当现行契约。
 
+## 仓库结构与验证门禁
+
+- monorepo：`apps/web`（访客静态站）/ `apps/admin`（站主工作台）/ `apps/api`（Nest）/ `packages/shared`（纯函数与契约，双端共用）/ `scripts/`（构建与预渲染）/ `content/log`（内容唯一真相源）/ `ops/windows`（盒子部署物料）。
+- `apps/api` 是六边形分层：`ports/`（Symbol 接口）→ `adapters/`（实现）→ 用例 service → `kernel.module.ts` 统一接线。新增能力先定 port 再写 adapter。
+- `apps/web` 运行时只读 `apps/web/src/generated/content.json`，禁止在 web 里做 fs / 直连内容目录。
+- 改动后验证链：`pnpm typecheck` → `pnpm test:shared && pnpm test:api && pnpm test:web` → 改了 web 再 `pnpm build:web && pnpm verify:geo`（GEO 是构建门禁）→ 改了内容先 `pnpm check:content-fields`。
+- 改生产拓扑 / 部署流程 / 产品行为后，**必须回写文档**（AGENTS.md / PRD / TODO / STATUS / api/README 对应处），保持文档与生产一致。
+
 ## 生产拓扑（2026-09-03 切流后）
 
 - 访客：`www.iwalk.pro`（Vercel 静态，push main 自动发）→ `/api/*` 反代 → `api.iwalk.pro`（盒子上 Caddy + Let's Encrypt）→ Nest `127.0.0.1:8788` → SQLite / DeepSeek Harness。
