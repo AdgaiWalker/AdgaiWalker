@@ -143,6 +143,10 @@ export function IntakePanel({
             已收到 · 桶 {result.bucketId}
             {result.aiUsedFlag ? ' · AI' : ' · 规则'}
           </p>
+          <p className="success-meta">
+            也想了解站主或找内容？
+            <Link to="/ask">问小影</Link>
+          </p>
         </div>
       ) : null}
     </div>

@@ -9,7 +9,7 @@ tags:
   - Claude-Code-Skill
   - 产品
 type: project
-hall: showcase
+hall: exchange
 form: project
 layout: immersive
 domain: product
