@@ -138,28 +138,48 @@
 
 ## P4 体验批次「小影」（2026-09-05 立项）
 
-背景：上线后实测体验不佳（首问 12-15s 干等、无流式、引用显示 slug 非标题、无空态引导、开发者话术吓访客、助手无名无人格锚点）。产品决策（用户 2026-09-05 拍板）：助手命名**小影**、第三人称管家、主页名片卡入口、「小影 + 我卡住了 = 一个 Agent 两张面」（认知/行动）、流式按建议先行、不引第三方轮子（GitHub 调研结论：平台级太重，通用 widget 形状不符，仅借鉴 SSE 渲染模式）。
+背景：上线后实测体验不佳（首问 12-15s 干等、无流式、引用显示 slug 非标题、无空态引导、开发者话术吓访客、助手无名无人格锚点）。产品决策（用户 2026-09-05 拍板）：助手命名**小影**、第三人称管家、主页名片卡入口、「小影 + 我卡住了 = 一个 Agent 两张面」（认知/行动）、流式按建议先行。
 
-### 第一批：快赢（目标半天）
+**GitHub 复用结论（2026-09-05 调研，防止重议）**：平台级（Chatwoot）太重养不起；通用 widget（OpenAI 代理型）形状不符（绕开 harness 地基）。**可复用**：① SSE 逐字渲染模式（matthiasn/sse-chat、medium 教程的标准几十行，自写不引依赖）② useChat 交互范式（中止/自动滚动/占位 UI 模式，抄思路不抄包）③ context-chat 的全局预算/限流分层思想（已实现）。核心流式链路（harness 低层 subscribe → Nest SSE → 前端）为本仓特有，自写。
 
-- [ ] T4.1 命名统一：nav「助手」→「小影」；SearchModal 升级链接「问站内助手→」→「问小影→」；`site.ts` 的 /ask 壳标题改「小影 · Walker」；AskPage document.title 同步
-- [ ] T4.2 /ask 重排为对话流优先：砍大标题/lead/开发者话术框；顶部窄栏「● 小影 · duola 的管家」（呼吸点）；服务提示缩为输入框下一行灰字（「回答只依据站内公开内容，答不上会说不知道 · 去卡口→」）
-- [ ] T4.3 空态引导：3 张示例卡（duola 是谁 / 想学 AI 从哪开始 / 这站能帮我什么），点击即发送
-- [ ] T4.4 引用渲染修复：citations 显示文章真实标题（前端按 slug 查 generated content.json），不再是 slug 串
-- [ ] T4.5 主页小影伴生卡：duola 身份卡右下伴生小卡（约 60% 尺寸，深色底=「影子」意象、呼吸绿点、一句话「我是小影，duola 的管家。关于这个站，问我就好。」+ 单按钮「开始问→」/ask）；画布可拖拽/缩放兼容，默认位置首屏可见
-- [ ] T4.6 人设 prompt：`buildFirstTurnPrompt` 开场改为「你是小影，duola 的管家，以第三人称介绍他与这个站；仅引用他原话时可用第一人称引述」；RuleAssistantAdapter 兜底文案同步小影口吻
-- [ ] T4.7 验收门：全局无「问站内助手」残留；主页卡可见可点可拖；示例卡可点直发；typecheck + test:web + build:web + verify:geo 绿；AI 关闭时小影规则口吻兜底；浏览器实测留证
+优先级依据：**先改观感零风险项（文案/命名/渲染 bug），再动布局，最后动链路**——每层独立验收，任一层失败不阻塞下层回退。
 
-自决预案：小影卡与画布 z-index/变换冲突 → 降级为固定卡片（不可拖）并记日志；示例卡发送复用 useAssistant.send（不另立状态）。
+### 第一批 T4.A 快赢·文案与渲染（零结构风险，~2h）
 
-### 第二批：流式与指标（目标一天，第一批验收后启动）
+- [ ] T4.A1 全局改名「小影」：`nav.ts`（助手→小影）、`SearchModal.tsx`（问站内助手→→问小影→）、`site.ts` /ask 壳标题改「小影 · Walker」、AskPage 页内标题；grep 全仓「问站内助手」清零
+  - 验收：`grep -rn "问站内助手" apps/web scripts` 零命中；typecheck 绿
+- [ ] T4.A2 引用渲染真实标题：`AssistantPanel` 收到 citations 后按 slug 查 `content.ts`（getPostBySlug 已有），显示 `《{title}》`；查不到（管理侧旧数据）回退 slug 原文
+  - 复用：站内已有 content.json 索引，零新依赖
+  - 验收：本地问「想学 AI」引用显示《CC入门》而非 cc-intro
+- [ ] T4.A3 开发者话术删除：AssistantPanel 删 serviceNote 蓝框与「你的问题」label；提示缩为输入框下一行灰字「回答只依据站内公开内容，答不上会说不知道 · 去卡口拿行动建议→」
+  - 自决：SERVICE_NOTE 常量整个删除（生产已有真 AI，旧文案过时）
+- [ ] T4.A4 人设 prompt 换小影：`buildFirstTurnPrompt` 第一句改「你是小影，duola 的管家，以第三人称介绍他与这个站；仅引用他原话时可用第一人称引述」；`RuleAssistantAdapter` 兜底文案改「（规则模式）我是小影…」口吻
+  - 验收：api 测试里断言新文案的用例更新后全绿；本地真问「你是谁」自报「小影」
 
-- [ ] T4.8 harness 流式订阅：适配器经低层 `HarnessClient.subscribe()` 收 `assistant/chunk` 通知（SDK run() 只回终值，流式必须走低层）
-- [ ] T4.9 Nest SSE 端点：`POST /assistant` 增加 `stream:true` 分支或 `GET /assistant/stream`，chunk 透传 + 会话/预算/校验复用现有网关层；15s 预算改为「首字节超时」
-- [ ] T4.10 前端流式渲染：逐字显示 + 「停止生成」按钮（AbortController）；SSE 模式借鉴 matthiasn/sse-chat 等开源模式，不引新依赖
-- [ ] T4.11 合同兼容：Run 合同不动——流式结束后仍走 parseAssistantOutput 校验 citations（fail-closed 不因流式放宽）
-- [ ] T4.12 指标落位：首问延迟分布 / 二问率（同 sessionId 关联）/ 兜底率，从现有 FeatureEvent 计算，admin 问题池页加健康度摘要
-- [ ] T4.13 验收门：首问 1s 内出首字；停止可用且不留脏会话；预算熔断与流式共存（熔断时不流式直接规则回答）；全部测试绿 + 生产演练一次
+### 第二批 T4.B 布局·对话流与主页卡（~3h）
+
+- [ ] T4.B1 /ask 对话流重排：AssistantPanel 改为「顶部窄栏（● 小影 · duola 的管家，呼吸点动画）+ 中部对话流（flex-1 滚动）+ 底部输入条固定」三段式；标题/lead 移除
+  - 复用：现有 `walker.css` 变量体系；呼吸点用 CSS animation（不引库）
+- [ ] T4.B2 空态示例卡：messages 为空时渲染 3 张 chip（duola 是谁 / 想学 AI 从哪开始 / 这站能帮我什么），onClick 直接 `send(text)`（复用 useAssistant，不另立状态）
+  - 自决：示例问题文案若与真实回答效果差，可替换为更具体问句，记日志
+- [ ] T4.B3 发送按钮态修复：禁用态灰度 + not-allowed 光标（现在淡蓝/深蓝难辨）
+- [ ] T4.B4 主页小影伴生卡：HomePage 画布加卡（深色底「影子」意象、呼吸绿点、一句话「我是小影，duola 的管家。关于这个站，问我就好。」+「开始问 →」→/ask）；尺寸约身份卡 60%，默认锚在身份卡右下
+  - 自决：画布变换（transform 缩放/拖拽体系）冲突则降级为画布外固定卡片并记日志；不新建形象资产（无头像，用明暗对比表达）
+  - 验收：首屏可见、可点直达 /ask、拖拽不报错、⌘缩放正常
+- [ ] T4.B5 第一批+第二批合并验收：build:web + verify:geo + test:web 全绿；浏览器实测（空态点示例→AI 答→引用带标题）；AI_ENABLED=false 走小影规则兜底
+
+### 第三批 T4.C 流式与指标（链路改造，~1 天）
+
+- [ ] T4.C1 **探针先行**：本地写最小脚本经 `HarnessClient`（低层，`start/initialize/prompt/subscribe`）跑一问，确认 `session.event` 通知里 `assistant/chunk` 的实际字段名与频率（协议文档没写死频率，实测为准）；把 chunk 形状记入本文件决策日志
+- [ ] T4.C2 适配器流式方法：`AssistantRunnerPort` 加可选 `askStream(input, onChunk)`；`HarnessAssistantAdapter` 实现走低层 client（run() 只回终值，流式必须 subscribe）；单飞锁/超时/重拉策略与 ask() 一致
+  - 自决：若 chunk 事件实际不可用（rc 版本差异），降级方案=前端假流式（整体回答按字定时显示）——观感优先，记日志标注
+- [ ] T4.C3 Nest SSE 端点：`POST /assistant` 加 `Accept: text/event-stream` 分支（同路径免改前端契约）或独立 `/assistant/stream`——按 Nest `@Sse()` 装饰器惯用法实现；限流/预算/anon-cookie 全复用；首字节 15s 超时（替代整答超时）；预算触顶不流式直接规则回答
+  - 复用：Nest 内置 SSE 支持（`@nestjs/common` 的 `@Sse`），零新依赖
+- [ ] T4.C4 前端流式渲染：useAssistant 加 stream 模式（fetch ReadableStream 读 SSE，逐字 append）；「停止生成」按钮（AbortController，断流后保留已收文字并标注「已停止」）；自动滚动到底（用户上滚时暂停，回底恢复——useChat 范式）
+  - 复用：sse-chat 的 SSE parse 模式（split on \n\n）自写 ~30 行
+- [ ] T4.C5 合同兼容：流式结束仍调 `parseAssistantOutput` 校验 citations（fail-closed 不放宽）；流式中途文本不落库，落库以校验后终值为准
+- [ ] T4.C6 指标落位：FeatureEvent 已有 attempt/success/fail + elapsedMs；补 firstChunkMs prop；二问率=admin 问题池页按 sessionId 聚合显示；兜底率=aiUsedFlag=false 占比
+- [ ] T4.C7 第三批验收门：首问首字 ≤1.5s（本地实测）；停止可用不留脏会话；熔断时直接规则回答（不流式）；typecheck+三端测试绿；生产部署演练一次（TAT 或 SSH）
 
 ## P3 按证据启动（不排期，触发条件见 PRD 5.3 / 10 节）
 
