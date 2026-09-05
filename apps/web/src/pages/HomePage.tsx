@@ -13,7 +13,7 @@ import {
   BookOpen,
   Compass,
   FlaskConical,
-  MessageCircleQuestion,
+  MessageCircle,
   PenLine,
 } from 'lucide-react';
 import { getRecentPosts, getByType } from '../content';
@@ -60,19 +60,23 @@ export function HomePage() {
           <span className="home-mobile-kicker">今天，从这里继续</span>
           <h1 className="home-mobile-title">想解决一个问题，还是逛逛新的可能？</h1>
           <p style={{ margin: 0 }}>
-            {dualEntry.ask.label}拿下一步 · {dualEntry.browse.label}
-            {dualEntry.browse.title}。同一过程，两个入口。
+            {dualEntry.browse.label}
+            {dualEntry.browse.title}。有疑问问小影，卡住了去卡口。
           </p>
           <div className="home-dual-cta">
-            <Link to={dualEntry.ask.path} className="btn-primary">
-              <MessageCircleQuestion size={16} aria-hidden />
-              {dualEntry.ask.cta}
+            <Link to={WEB_ROUTES.assistant} className="btn-primary">
+              <MessageCircle size={16} aria-hidden />
+              问小影
             </Link>
             <Link to={dualEntry.browse.path} className="btn-secondary">
               <PenLine size={16} aria-hidden />
               {dualEntry.browse.cta}
             </Link>
           </div>
+          <p className="meta" style={{ margin: '6px 0 0' }}>
+            想拿具体行动下一步？去
+            <Link to={dualEntry.ask.path}>卡口</Link>
+          </p>
           <p className="home-canvas-hint meta">
             拖拽卡片 · Ctrl/⌘+滚轮缩放 · 离开再进恢复默认
           </p>
@@ -139,17 +143,28 @@ export function HomePage() {
 
             <div className="home-col home-col-greeting pop-in draggable-card">
               <GreetingCard sparks={sparks} />
-              <Link to={WEB_ROUTES.assistant} className="xiaoying-card">
-                <span className="assistant-dot" aria-hidden />
-                <span className="xiaoying-name">小影</span>
-                <span className="xiaoying-line">
-                  duola 的管家。关于这个站，问我就好。
-                </span>
-                <span className="xiaoying-cta">
-                  开始问
-                  <ArrowRight size={12} aria-hidden style={{ display: 'inline' }} />
-                </span>
-              </Link>
+              <div className="xiaoying-card xiaoying-card-lg">
+                <div className="xiaoying-head">
+                  <span className="assistant-dot" aria-hidden />
+                  <span className="xiaoying-name">小影</span>
+                  <span className="xiaoying-line">
+                    duola 的管家 · 关于这个站，问我就好
+                  </span>
+                </div>
+                <div className="xiaoying-actions">
+                  <Link to={WEB_ROUTES.assistant} className="btn-primary">
+                    开始问
+                    <ArrowRight
+                      size={13}
+                      aria-hidden
+                      style={{ display: 'inline' }}
+                    />
+                  </Link>
+                  <Link to={dualEntry.ask.path} className="btn-ghost">
+                    我卡住了
+                  </Link>
+                </div>
+              </div>
             </div>
 
             <div

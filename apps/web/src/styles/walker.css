@@ -3869,3 +3869,53 @@ textarea {
     height: min(66vh, 520px);
   }
 }
+
+/* ── 小影大卡（方案 A：升格为与身份卡同量级的主入口）── */
+.xiaoying-card-lg {
+  display: block;
+  grid-template-columns: none;
+  padding: 16px 18px;
+}
+.xiaoying-card-lg .xiaoying-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.xiaoying-card-lg .xiaoying-line {
+  font-size: 0.88rem;
+  width: auto;
+}
+.xiaoying-card-lg .xiaoying-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.xiaoying-card-lg .xiaoying-actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--color-brand, #2f6fed);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.xiaoying-card-lg .xiaoying-actions .btn-primary:hover {
+  filter: brightness(1.1);
+}
+.xiaoying-card-lg .xiaoying-actions .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 236, 242, 0.35);
+  color: #e7ecf2;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.xiaoying-card-lg .xiaoying-actions .btn-ghost:hover {
+  border-color: rgba(231, 236, 242, 0.7);
+}
