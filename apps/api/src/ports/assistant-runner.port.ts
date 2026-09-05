@@ -15,6 +15,11 @@ export interface AssistantAskInput {
 
 export interface AssistantRunnerPort {
   ask(input: AssistantAskInput): Promise<AssistantRunResult>;
+  /** 可选流式实现：增量回调 onText，终值仍走 Run 合同；未实现时调用方回落 ask */
+  askStream?(
+    input: AssistantAskInput,
+    onText: (delta: string) => void,
+  ): Promise<AssistantRunResult>;
 }
 
 export const ASSISTANT_RUNNER = Symbol('ASSISTANT_RUNNER');

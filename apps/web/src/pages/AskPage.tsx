@@ -9,7 +9,7 @@ import { useAssistant } from '../hooks/useAssistant';
 
 export function AskPage() {
   const [params] = useSearchParams();
-  const { messages, loading, error, send, reset } = useAssistant();
+  const { messages, loading, streaming, error, send, stop, reset } = useAssistant();
   const [draft, setDraft] = useState(() => params.get('q') ?? '');
 
   // 搜索升级跳入只预填，不自动发送——发送即产生一次 AI 调用，让访客确认。
@@ -26,10 +26,12 @@ export function AskPage() {
       draft={draft}
       draftOk={draftOk}
       loading={loading}
+      streaming={streaming}
       error={error}
       messages={messages}
       onDraftChange={setDraft}
       onSubmit={() => void send(draft)}
+      onStop={stop}
       onReset={() => {
         reset();
         setDraft('');

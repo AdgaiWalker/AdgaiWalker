@@ -32,11 +32,14 @@ import type {
 /** 访客同步等待预算；超时降级规则兜底 */
 export const ASSISTANT_ASK_TIMEOUT_MS = 15_000;
 
-/** 与 SDK RunResult 对齐的最小面（测试可注入假件） */
+/** 与 SDK RunResult 对齐的最小面（测试可注入假件）；onNotification 为流式钩子 */
 export interface HarnessRuntimeLike {
   run(
     input: string,
-    opts?: { sessionId?: string },
+    opts?: {
+      sessionId?: string;
+      onNotification?: (n: unknown) => void;
+    },
   ): Promise<{ sessionId: string; finalResponse: unknown }>;
   close(): Promise<void>;
 }
@@ -143,6 +146,24 @@ export class HarnessAssistantAdapter
   }
 
   async ask(input: AssistantAskInput): Promise<AssistantRunResult> {
+    return this.runGuarded(input, undefined);
+  }
+
+  /**
+   * 流式变体：text-delta 增量回调 onText（跳过 reasoning），终值仍走完整校验。
+   * AI 关 / 无 runtime / 异常 → 非流式兜底（回调一次整体文本，保持前端契约统一）。
+   */
+  async askStream(
+    input: AssistantAskInput,
+    onText: (delta: string) => void,
+  ): Promise<AssistantRunResult> {
+    return this.runGuarded(input, onText);
+  }
+
+  private async runGuarded(
+    input: AssistantAskInput,
+    onText?: (delta: string) => void,
+  ): Promise<AssistantRunResult> {
     if (!this.config.isAiEnabled()) return this.fallback.ask(input);
     if (!this.factory) this.factory = buildDefaultRuntimeFactory();
     if (!this.factory) return this.fallback.ask(input);
@@ -171,6 +192,21 @@ export class HarnessAssistantAdapter
 
       const runPromise = this.runtime.run(prompt, {
         sessionId: input.sessionId ?? undefined,
+        ...(onText
+          ? {
+              onNotification: (raw: unknown) => {
+                const n = raw as {
+                  method?: string;
+                  params?: { event?: { type?: string; data?: { chunk?: { type?: string; text?: string } } } };
+                };
+                if (n.method !== 'session.event') return;
+                const ev = n.params?.event;
+                if (ev?.type !== 'assistant/chunk') return;
+                const chunk = ev.data?.chunk;
+                if (chunk?.type === 'text-delta' && chunk.text) onText(chunk.text);
+              },
+            }
+          : {}),
       });
       const timed = await Promise.race([
         runPromise,

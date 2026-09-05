@@ -10,11 +10,13 @@ export type AssistantPanelProps = {
   draft: string;
   draftOk: boolean;
   loading: boolean;
+  streaming?: boolean;
   error: string | null;
   messages: readonly AssistantMessage[];
   onDraftChange: (text: string) => void;
   onSubmit: () => void;
   onReset: () => void;
+  onStop?: () => void;
   onAskExample?: (text: string) => void;
 };
 
@@ -22,11 +24,13 @@ export function AssistantPanel({
   draft,
   draftOk,
   loading,
+  streaming,
   error,
   messages,
   onDraftChange,
   onSubmit,
   onReset,
+  onStop,
   onAskExample,
 }: AssistantPanelProps) {
   return (
@@ -58,11 +62,13 @@ export function AssistantPanel({
         draft={draft}
         draftOk={draftOk}
         loading={loading}
+        streaming={streaming}
         error={error}
         messages={messages}
         onDraftChange={onDraftChange}
         onSubmit={onSubmit}
         onAskExample={onAskExample}
+        onStop={onStop}
       />
     </div>
   );

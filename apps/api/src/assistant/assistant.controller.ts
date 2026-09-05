@@ -50,4 +50,47 @@ export class AssistantController {
     const n = limit ? Number(limit) : 50;
     return this.assistant.listRuns(Number.isFinite(n) ? n : 50);
   }
+
+  /**
+   * 流式问答（SSE）：事件序列 text → done；text 携增量、done 携 Run 合同终值。
+   * 兜底路径（AI 关/预算触顶/流式异常）只发 done（answer 为整体文本），前端契约统一。
+   */
+  @Post('stream')
+  async stream(
+    @Body() body: { body?: string; source?: string; sessionId?: string | null },
+    @Req() req: Request,
+    @Res() res: Response,
+    @Headers('cookie') cookieHeader?: string,
+  ) {
+    const anonId = resolveOrSetAnonId(cookieHeader, res);
+    const ipKey = extractClientIpKey(req);
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    const send = (event: string, data: unknown) => {
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+    try {
+      const result = await this.assistant.askStream(
+        {
+          body: body.body ?? '',
+          source: body.source ?? 'assistant-stream',
+          anonId,
+          ipKey,
+          sessionId: body.sessionId ?? null,
+          isAuthenticated: false,
+        },
+        (delta) => send('text', { delta }),
+      );
+      send('done', result);
+    } catch (error) {
+      send('error', {
+        message:
+          error instanceof Error ? error.message : 'assistant-stream-failed',
+      });
+    } finally {
+      res.end();
+    }
+  }
 }

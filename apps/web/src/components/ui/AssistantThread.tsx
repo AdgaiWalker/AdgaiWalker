@@ -18,11 +18,13 @@ export type AssistantThreadProps = {
   draft: string;
   draftOk: boolean;
   loading: boolean;
+  streaming?: boolean;
   error: string | null;
   messages: readonly AssistantMessage[];
   onDraftChange: (text: string) => void;
   onSubmit: () => void;
   onAskExample?: (text: string) => void;
+  onStop?: () => void;
   /** 输入框 label/aria 前缀（整页与悬浮窗区分） */
   idPrefix?: string;
   /** 悬浮窗隐藏底部「去卡口」脚注（窗内已有窄栏出口） */
@@ -33,11 +35,13 @@ export function AssistantThread({
   draft,
   draftOk,
   loading,
+  streaming = false,
   error,
   messages,
   onDraftChange,
   onSubmit,
   onAskExample,
+  onStop,
   idPrefix = 'assistant',
   compact = false,
 }: AssistantThreadProps) {
@@ -95,14 +99,32 @@ export function AssistantThread({
                       })}
                     </p>
                   ) : null}
-                  <p className="success-meta">{m.aiUsedFlag ? 'AI' : '规则'}</p>
+                  <p className="success-meta">
+                    {m.aiUsedFlag ? 'AI' : '规则'}
+                    {m.stopped ? ' · 已停止' : ''}
+                  </p>
                 </div>
               ),
             )}
             {loading ? (
-              <p className="meta" aria-live="polite">
-                小影正在想…（最长约 15 秒，超时会给固定回答）
-              </p>
+              streaming ? (
+                <p className="meta assistant-streaming" aria-live="polite">
+                  小影正在说…
+                  {onStop ? (
+                    <button
+                      type="button"
+                      className="assistant-stop"
+                      onClick={onStop}
+                    >
+                      停止
+                    </button>
+                  ) : null}
+                </p>
+              ) : (
+                <p className="meta" aria-live="polite">
+                  小影正在想…（最长约 15 秒，超时会给固定回答）
+                </p>
+              )
             ) : null}
           </div>
         )}

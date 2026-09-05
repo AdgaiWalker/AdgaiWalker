@@ -22,7 +22,7 @@
 
     @assistant {
       method POST
-      path /assistant
+      path /assistant /assistant/stream
     }
     handle @assistant {
       reverse_proxy 127.0.0.1:8788

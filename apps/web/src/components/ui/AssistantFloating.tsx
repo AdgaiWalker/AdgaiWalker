@@ -18,7 +18,7 @@ export function AssistantFloating({
   onClose: () => void;
   returnFocusTarget?: HTMLElement | null;
 }) {
-  const { messages, loading, error, send, reset } = useAssistant();
+  const { messages, loading, streaming, error, send, stop, reset } = useAssistant();
   const [draft, setDraft] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -84,6 +84,7 @@ export function AssistantFloating({
         draft={draft}
         draftOk={draftOk}
         loading={loading}
+        streaming={streaming}
         error={error}
         messages={messages}
         onDraftChange={setDraft}

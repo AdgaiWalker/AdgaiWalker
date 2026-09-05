@@ -53,6 +53,51 @@ export const publicApi = {
     });
   },
 
+  /** 流式问答（SSE）：onText 增量回调；返回 done 终值；abort 信号支持停止 */
+  assistantStream(
+    body: string,
+    sessionId: string | null,
+    onText: (delta: string) => void,
+    signal?: AbortSignal,
+    source = 'assistant-stream',
+  ): Promise<AssistantResult> {
+    return publicRequest<Response>('/assistant/stream', {
+      method: 'POST',
+      body: JSON.stringify({ body, sessionId, source }),
+      signal,
+      raw: true,
+    }).then(async (res) => {
+      if (!res.body) throw new Error('stream-unavailable');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let done: AssistantResult | null = null;
+      for (;;) {
+        const { value, done: finished } = await reader.read();
+        if (finished) break;
+        buffer += decoder.decode(value, { stream: true });
+        // SSE 帧以空行分隔；event: X + data: {...}
+        let sep: number;
+        while ((sep = buffer.indexOf('\n\n')) >= 0) {
+          const frame = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          const eventLine = frame
+            .split('\n')
+            .find((l) => l.startsWith('event: '));
+          const dataLine = frame.split('\n').find((l) => l.startsWith('data: '));
+          if (!dataLine) continue;
+          const payload = JSON.parse(dataLine.slice(6));
+          const kind = eventLine?.slice(7);
+          if (kind === 'text' && payload.delta) onText(payload.delta);
+          else if (kind === 'done') done = payload as AssistantResult;
+          else if (kind === 'error') throw new Error(payload.message);
+        }
+      }
+      if (!done) throw new Error('stream-closed-without-done');
+      return done;
+    });
+  },
+
   getLikeCount(path: string): Promise<LikeResult> {
     return publicRequest<LikeResult>(
       `/likes?path=${encodeURIComponent(path)}`,

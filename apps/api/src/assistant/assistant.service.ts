@@ -71,7 +71,40 @@ export class AssistantService {
   async ask(
     input: AssistantAskServiceInput,
   ): Promise<AssistantAskServiceResult> {
-    const actorType = input.isAuthenticated ? 'user' : 'guest';
+    const gate = await this.preflight(input);
+    const result = await this.dispatch(gate.askInput, gate.useFallback, undefined);
+    await this.settle(input, gate.actorType, result);
+    return this.toResult(result);
+  }
+
+  /**
+   * 流式变体：AI 且预算未触顶时走 askStream（text-delta 增量回调）；
+   * 其余情形（AI 关/触顶/实现缺失/异常）非流式兜底，onText 一次性回调整体文本。
+   */
+  async askStream(
+    input: AssistantAskServiceInput,
+    onText: (delta: string) => void,
+  ): Promise<AssistantAskServiceResult> {
+    const gate = await this.preflight(input);
+    let result: AssistantRunResult;
+    if (!gate.useFallback && this.runner.askStream) {
+      try {
+        result = await this.runner.askStream(gate.askInput, onText);
+      } catch {
+        result = await this.fallback.ask(gate.askInput);
+        onText(result.answer);
+      }
+    } else {
+      result = await this.dispatch(gate.askInput, gate.useFallback, undefined);
+      onText(result.answer);
+    }
+    await this.settle(input, gate.actorType, result);
+    return this.toResult(result);
+  }
+
+  /** 网关前置：事件、限流、校验、预算判定（ask/askStream 共用） */
+  private async preflight(input: AssistantAskServiceInput) {
+    const actorType: 'guest' | 'user' = input.isAuthenticated ? 'user' : 'guest';
     void this.safeEvent({
       featureKey: 'assistant.ask',
       event: 'attempt',
@@ -108,7 +141,7 @@ export class AssistantService {
     };
 
     // 每日 AI 预算熔断：触顶当日直接规则兜底（成本保险丝在网关，不指望模型自觉）
-    let result: AssistantRunResult;
+    let useFallback = false;
     if (this.config.isAiEnabled()) {
       let used = 0;
       try {
@@ -123,15 +156,27 @@ export class AssistantService {
           actorType,
           failCode: 'budget-exceeded',
         });
-        result = await this.fallback.ask(askInput);
-      } else {
-        result = await this.runner.ask(askInput);
+        useFallback = true;
       }
-    } else {
-      result = await this.runner.ask(askInput);
     }
+    return { actorType, askInput, useFallback };
+  }
 
-    // 观测性落库：失败不阻断回答
+  private dispatch(
+    askInput: { sessionId: string | null; text: string; visitorKey: string },
+    useFallback: boolean,
+    _unused?: undefined,
+  ): Promise<AssistantRunResult> {
+    if (useFallback) return this.fallback.ask(askInput);
+    return this.runner.ask(askInput);
+  }
+
+  /** 观测性落库 + success 事件（ask/askStream 共用；失败不阻断回答） */
+  private async settle(
+    input: AssistantAskServiceInput,
+    actorType: 'guest' | 'user',
+    result: AssistantRunResult,
+  ) {
     try {
       await this.repo.upsertSession({
         id: newId(),
@@ -165,7 +210,9 @@ export class AssistantService {
         elapsedMs: result.elapsedMs,
       },
     });
+  }
 
+  private toResult(result: AssistantRunResult): AssistantAskServiceResult {
     return {
       sessionId: result.sessionId,
       answer: result.answer,
