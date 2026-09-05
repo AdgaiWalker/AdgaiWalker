@@ -184,18 +184,18 @@
 - [x] T4.D6 验收门：主页/文章页/资源页均可唤起且独立对话；`/ask` 页无悬浮按钮；Esc/关闭按钮/再点按钮三种关闭路径；typecheck + test:web + build:web + verify:geo 绿；浏览器实测留证（含 390px 移动宽度模拟）
   - 自决预案：画布页（transform 缩放上下文）内 Portal 定位异常 → Portal 挂 body + fixed 定位（默认即是），与画布变换解耦
 
-### 第三批 T4.C 流式与指标（链路改造，~1 天）
+### 第三批 T4.C 流式与指标 ✅（2026-09-05 完成，0238011；T4.C6 指标部分：usage 事件已确认携带 token 计量，admin 聚合展示留 P3）
 
-- [ ] T4.C1 **探针先行**：本地写最小脚本经 `HarnessClient`（低层，`start/initialize/prompt/subscribe`）跑一问，确认 `session.event` 通知里 `assistant/chunk` 的实际字段名与频率（协议文档没写死频率，实测为准）；把 chunk 形状记入本文件决策日志
-- [ ] T4.C2 适配器流式方法：`AssistantRunnerPort` 加可选 `askStream(input, onChunk)`；`HarnessAssistantAdapter` 实现走低层 client（run() 只回终值，流式必须 subscribe）；单飞锁/超时/重拉策略与 ask() 一致
+- [x] T4.C1 **探针先行**：本地写最小脚本经 `HarnessClient`（低层，`start/initialize/prompt/subscribe`）跑一问，确认 `session.event` 通知里 `assistant/chunk` 的实际字段名与频率（协议文档没写死频率，实测为准）；把 chunk 形状记入本文件决策日志
+- [x] T4.C2 适配器流式方法：`AssistantRunnerPort` 加可选 `askStream(input, onChunk)`；`HarnessAssistantAdapter` 实现走低层 client（run() 只回终值，流式必须 subscribe）；单飞锁/超时/重拉策略与 ask() 一致
   - 自决：若 chunk 事件实际不可用（rc 版本差异），降级方案=前端假流式（整体回答按字定时显示）——观感优先，记日志标注
-- [ ] T4.C3 Nest SSE 端点：`POST /assistant` 加 `Accept: text/event-stream` 分支（同路径免改前端契约）或独立 `/assistant/stream`——按 Nest `@Sse()` 装饰器惯用法实现；限流/预算/anon-cookie 全复用；首字节 15s 超时（替代整答超时）；预算触顶不流式直接规则回答
+- [x] T4.C3 Nest SSE 端点：`POST /assistant` 加 `Accept: text/event-stream` 分支（同路径免改前端契约）或独立 `/assistant/stream`——按 Nest `@Sse()` 装饰器惯用法实现；限流/预算/anon-cookie 全复用；首字节 15s 超时（替代整答超时）；预算触顶不流式直接规则回答
   - 复用：Nest 内置 SSE 支持（`@nestjs/common` 的 `@Sse`），零新依赖
-- [ ] T4.C4 前端流式渲染：useAssistant 加 stream 模式（fetch ReadableStream 读 SSE，逐字 append）；「停止生成」按钮（AbortController，断流后保留已收文字并标注「已停止」）；自动滚动到底（用户上滚时暂停，回底恢复——useChat 范式）
+- [x] T4.C4 前端流式渲染：useAssistant 加 stream 模式（fetch ReadableStream 读 SSE，逐字 append）；「停止生成」按钮（AbortController，断流后保留已收文字并标注「已停止」）；自动滚动到底（用户上滚时暂停，回底恢复——useChat 范式）
   - 复用：sse-chat 的 SSE parse 模式（split on \n\n）自写 ~30 行
-- [ ] T4.C5 合同兼容：流式结束仍调 `parseAssistantOutput` 校验 citations（fail-closed 不放宽）；流式中途文本不落库，落库以校验后终值为准
-- [ ] T4.C6 指标落位：FeatureEvent 已有 attempt/success/fail + elapsedMs；补 firstChunkMs prop；二问率=admin 问题池页按 sessionId 聚合显示；兜底率=aiUsedFlag=false 占比
-- [ ] T4.C7 第三批验收门：首问首字 ≤1.5s（本地实测）；停止可用不留脏会话；熔断时直接规则回答（不流式）；typecheck+三端测试绿；生产部署演练一次（TAT 或 SSH）
+- [x] T4.C5 合同兼容：流式结束仍调 `parseAssistantOutput` 校验 citations（fail-closed 不放宽）；流式中途文本不落库，落库以校验后终值为准
+- [x] T4.C6 指标落位：FeatureEvent 已有 attempt/success/fail + elapsedMs；补 firstChunkMs prop；二问率=admin 问题池页按 sessionId 聚合显示；兜底率=aiUsedFlag=false 占比
+- [x] T4.C7 第三批验收门：首问首字 ≤1.5s（本地实测）；停止可用不留脏会话；熔断时直接规则回答（不流式）；typecheck+三端测试绿；生产部署演练一次（TAT 或 SSH）
 
 ### T4.E 结构重盘衍生项（2026-09-05 立项，源自全站结构重分析）
 
