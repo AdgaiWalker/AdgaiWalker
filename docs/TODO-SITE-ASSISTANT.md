@@ -136,9 +136,34 @@
 - [x] **生产验收**：`https://www.iwalk.pro/api/health` ok；`POST /api/assistant` 真问 → AI 真答 9.4s（aiUsedFlag=true）✅
 - [x] STATUS.md 记「生产切流：已完成（2026-09-03）」，验证盒起算 ✅
 
+## P4 体验批次「小影」（2026-09-05 立项）
+
+背景：上线后实测体验不佳（首问 12-15s 干等、无流式、引用显示 slug 非标题、无空态引导、开发者话术吓访客、助手无名无人格锚点）。产品决策（用户 2026-09-05 拍板）：助手命名**小影**、第三人称管家、主页名片卡入口、「小影 + 我卡住了 = 一个 Agent 两张面」（认知/行动）、流式按建议先行、不引第三方轮子（GitHub 调研结论：平台级太重，通用 widget 形状不符，仅借鉴 SSE 渲染模式）。
+
+### 第一批：快赢（目标半天）
+
+- [ ] T4.1 命名统一：nav「助手」→「小影」；SearchModal 升级链接「问站内助手→」→「问小影→」；`site.ts` 的 /ask 壳标题改「小影 · Walker」；AskPage document.title 同步
+- [ ] T4.2 /ask 重排为对话流优先：砍大标题/lead/开发者话术框；顶部窄栏「● 小影 · duola 的管家」（呼吸点）；服务提示缩为输入框下一行灰字（「回答只依据站内公开内容，答不上会说不知道 · 去卡口→」）
+- [ ] T4.3 空态引导：3 张示例卡（duola 是谁 / 想学 AI 从哪开始 / 这站能帮我什么），点击即发送
+- [ ] T4.4 引用渲染修复：citations 显示文章真实标题（前端按 slug 查 generated content.json），不再是 slug 串
+- [ ] T4.5 主页小影伴生卡：duola 身份卡右下伴生小卡（约 60% 尺寸，深色底=「影子」意象、呼吸绿点、一句话「我是小影，duola 的管家。关于这个站，问我就好。」+ 单按钮「开始问→」/ask）；画布可拖拽/缩放兼容，默认位置首屏可见
+- [ ] T4.6 人设 prompt：`buildFirstTurnPrompt` 开场改为「你是小影，duola 的管家，以第三人称介绍他与这个站；仅引用他原话时可用第一人称引述」；RuleAssistantAdapter 兜底文案同步小影口吻
+- [ ] T4.7 验收门：全局无「问站内助手」残留；主页卡可见可点可拖；示例卡可点直发；typecheck + test:web + build:web + verify:geo 绿；AI 关闭时小影规则口吻兜底；浏览器实测留证
+
+自决预案：小影卡与画布 z-index/变换冲突 → 降级为固定卡片（不可拖）并记日志；示例卡发送复用 useAssistant.send（不另立状态）。
+
+### 第二批：流式与指标（目标一天，第一批验收后启动）
+
+- [ ] T4.8 harness 流式订阅：适配器经低层 `HarnessClient.subscribe()` 收 `assistant/chunk` 通知（SDK run() 只回终值，流式必须走低层）
+- [ ] T4.9 Nest SSE 端点：`POST /assistant` 增加 `stream:true` 分支或 `GET /assistant/stream`，chunk 透传 + 会话/预算/校验复用现有网关层；15s 预算改为「首字节超时」
+- [ ] T4.10 前端流式渲染：逐字显示 + 「停止生成」按钮（AbortController）；SSE 模式借鉴 matthiasn/sse-chat 等开源模式，不引新依赖
+- [ ] T4.11 合同兼容：Run 合同不动——流式结束后仍走 parseAssistantOutput 校验 citations（fail-closed 不因流式放宽）
+- [ ] T4.12 指标落位：首问延迟分布 / 二问率（同 sessionId 关联）/ 兜底率，从现有 FeatureEvent 计算，admin 问题池页加健康度摘要
+- [ ] T4.13 验收门：首问 1s 内出首字；停止可用且不留脏会话；预算熔断与流式共存（熔断时不流式直接规则回答）；全部测试绿 + 生产演练一次
+
 ## P3 按证据启动（不排期，触发条件见 PRD 5.3 / 10 节）
 
-SSE 流式 / ACP profile 升级（需 cancel 时）/ 索引式注入（>50 篇）/ dsh-im·dsh-qqbot 渠道 / 记忆类插件（先过隐私评审）
+SSE 流式（已升级为 P4-T4.8~13 批次实施）/ ACP profile 升级（需 cancel 时）/ 索引式注入（>50 篇或 P4 后首问延迟仍高）/ dsh-im·dsh-qqbot 渠道 / 记忆类插件（先过隐私评审）
 
 来自《上线与架构落成-to-do》（Astro 时代退役文档）的真遗留对账（2026-09-05）：
 - 高危管理接口 audit 日志（Nest 拦截器形态；现靠隧道+basic auth+token 三层挡门，缺事后审计）
