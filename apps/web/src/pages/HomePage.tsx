@@ -139,6 +139,17 @@ export function HomePage() {
 
             <div className="home-col home-col-greeting pop-in draggable-card">
               <GreetingCard sparks={sparks} />
+              <Link to={WEB_ROUTES.assistant} className="xiaoying-card">
+                <span className="assistant-dot" aria-hidden />
+                <span className="xiaoying-name">小影</span>
+                <span className="xiaoying-line">
+                  duola 的管家。关于这个站，问我就好。
+                </span>
+                <span className="xiaoying-cta">
+                  开始问
+                  <ArrowRight size={12} aria-hidden style={{ display: 'inline' }} />
+                </span>
+              </Link>
             </div>
 
             <div

@@ -23,8 +23,6 @@ export function AskPage() {
 
   return (
     <AssistantPanel
-      title="小影"
-      lead="duola 的管家。关于站主、站内内容或学习路径，直接问；答不上会老实说不知道。"
       draft={draft}
       draftOk={draftOk}
       loading={loading}
@@ -36,6 +34,7 @@ export function AskPage() {
         reset();
         setDraft('');
       }}
+      onAskExample={(text) => void send(text)}
     />
   );
 }
