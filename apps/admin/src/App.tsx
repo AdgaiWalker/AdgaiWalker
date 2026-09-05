@@ -5,6 +5,7 @@ import { ContentEditPage } from './pages/ContentEditPage';
 import { ContentListPage } from './pages/ContentListPage';
 import { CluesPage } from './pages/CluesPage';
 import { AssistantQuestionsPage } from './pages/AssistantQuestionsPage';
+import { InsightsPage } from './pages/InsightsPage';
 import { CredentialsPage } from './pages/CredentialsPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
@@ -28,6 +29,7 @@ export function App() {
           path={ADMIN_ROUTES.assistant}
           element={<AssistantQuestionsPage />}
         />
+        <Route path={ADMIN_ROUTES.insights} element={<InsightsPage />} />
         <Route path={ADMIN_ROUTES.executions} element={<ExecutionsPage />} />
         <Route path={ADMIN_ROUTES.metrics} element={<MetricsPage />} />
         <Route path={ADMIN_ROUTES.content} element={<ContentListPage />} />

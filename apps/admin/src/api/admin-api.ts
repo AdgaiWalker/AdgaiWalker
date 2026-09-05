@@ -112,6 +112,11 @@ export const adminApi = {
       body: JSON.stringify({ poolStatus }),
     }),
   seeds: () => adminRequest<Seed[]>('/seeds'),
+  insightsSignals: () =>
+    adminRequest<unknown>('/insights/signals?days=30'),
+  insightReportGenerate: () =>
+    adminRequest<unknown>('/insights/report', { method: 'POST' }),
+  insightReports: () => adminRequest<unknown>('/insights/reports?limit=10'),
   assistantQuestions: () =>
     adminRequest<AssistantQuestion[]>('/assistant/runs?limit=100'),
   createSeed: (title: string) =>

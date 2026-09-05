@@ -7,6 +7,7 @@ export const ADMIN_ROUTES = {
   clues: '/clues',
   seeds: '/seeds',
   assistant: '/assistant',
+  insights: '/insights',
   executions: '/executions',
   metrics: '/metrics',
   content: '/content',

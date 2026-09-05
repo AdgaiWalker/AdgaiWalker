@@ -48,8 +48,8 @@ export const adminNavGroups: AdminNavGroup[] = [
   {
     title: '过程',
     items: [
+      { path: ADMIN_ROUTES.insights, label: '需求', icon: MessageCircle },
       { path: ADMIN_ROUTES.clues, label: '线索', icon: Inbox },
-      { path: ADMIN_ROUTES.assistant, label: '助手问题', icon: MessageCircle },
       { path: ADMIN_ROUTES.seeds, label: '题苗', icon: Sprout },
       { path: ADMIN_ROUTES.executions, label: '执行', icon: ClipboardList },
       { path: ADMIN_ROUTES.metrics, label: '数', icon: BarChart3 },

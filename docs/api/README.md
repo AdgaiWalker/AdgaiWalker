@@ -57,6 +57,9 @@
 | PATCH | `/clues/:id/pool` | `{ poolStatus }` | 池状态 |
 | GET | `/seeds?limit=` | — | 题苗列表 |
 | POST | `/seeds` | `{ title }` | 新建题苗 |
+| GET | `/insights/signals?days=N` | 无 | 四源需求信号聚合（问了小影/卡口提问/搜索没找到/文章反馈）→ `{ signals, frequency, gaps, contentTitles }` |
+| POST | `/insights/report` | 无 | 生成需求周报（分析 Run：harness 归纳近 7 天信号 → 主题/缺口/建议四分类，落 InsightReport） |
+| GET | `/insights/reports?limit=N` | 无 | 周报历史 |
 | POST | `/seeds/:id/link` | `{ clueId, asPrimary? }` | 挂线索 |
 | POST | `/seeds/:id/promote` | `{ clueId }` | 主选 → 建执行卡 |
 | POST | `/seeds/:id/two-questions` | `{ severity, selfInterest }` | 两问 |

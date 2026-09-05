@@ -246,3 +246,14 @@ SSE 流式（已升级为 P4-T4.8~13 批次实施）/ ACP profile 升级（需 c
 | 2026-09-03 | 生产切流走正式域名 + HTTPS 全链（api.iwalk.pro），不用 8080 明文直连 | ops 基线要求域名+HTTPS 通过后才切；Vercel→盒子之间不裸奔访客流量 |
 | 2026-09-03 | 助手提问门槛从 4 字降为 2 字（`isValidAssistantBody`，前后端同步），与卡口规则解耦 | 用户实测：纯中文 2 字被禁发。中文信息密度高，「你好」应能发；卡口 /tools 保持 4 字反刷屏规则不变 |
 | 2026-09-03 | SSH 熔断期间用腾讯云 TAT「执行命令」做盒子运维（git pull+build+重启一条龙，23s ExitCode 0） | Windows OpenSSH 短连接频次熔断反复出现；TAT 不走 22 端口，是可靠的带外运维通道，后续盒子更新优先走它 |
+
+## P5 需求信号中心（2026-09-05 立项并完成）
+
+决策：零比喻语言原则（需求/问题/搜索/反馈/选题）；四源主动信号（不加浏览埋点）；手动触发分析（不建 cron）；harness 复用跑分析 Run（可追溯+可挂工具）；唯一新表 InsightReport。
+
+- [x] T5.A 信号中心：`/insights/signals` 四源聚合（93 条实测）+ 高频榜（归一化频次）+ 内容缺口（miss 对照站内标题按词匹配）+ admin「需求」页（问题池并入，转题苗改「转选题」）
+- [x] T5.B 分析 Run：`POST /insights/report` harness 驱动（复用 runtime 基建零新增），输出走 `parseInsightReport` 合同校验（主题/缺口/建议 write|build|post|business 四分类带证据），实测自动区分测试数据与真实需求
+- [x] T5.C 周报 UI + 逐条建议「转选题」（人工，红线不破）+ 历史回看
+- 验收：shared 59 / api 90 测试绿；admin 需求页 DOM 全要素实测；零比喻审查（本页零比喻，旧页重组另立）
+
+不做（Razor 记录）：实时 AI 打标 / 向量聚类 / 浏览埋点 / cron / 第五张信号表 / 自动转选题。

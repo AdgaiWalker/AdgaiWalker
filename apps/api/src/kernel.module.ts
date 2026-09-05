@@ -60,6 +60,8 @@ import { PrismaAssistantRepository } from './adapters/prisma-assistant.repositor
 import { RuleAssistantAdapter } from './adapters/rule-assistant.adapter';
 import { HarnessAssistantAdapter } from './adapters/harness-assistant.adapter';
 import { AssistantService } from './assistant/assistant.service';
+import { InsightsService } from './insights/insights.service';
+import { InsightsController } from './insights/insights.controller';
 import { AssistantController } from './assistant/assistant.controller';
 import { WorkbenchService } from './workbench/workbench.service';
 import { WorkbenchController } from './workbench/workbench.controller';
@@ -96,6 +98,7 @@ import { CredentialsController } from './credentials/credentials.controller';
   controllers: [
     IntakeController,
     AssistantController,
+    InsightsController,
     ClueController,
     SeedController,
     ExecutionController,
@@ -148,6 +151,7 @@ import { CredentialsController } from './credentials/credentials.controller';
       ) => new HarnessAssistantAdapter(config, index, rule),
     },
     AssistantService,
+    InsightsService,
     {
       // AI 策略内嵌规则兜底：AI_ENABLED≠true 或 runner 失败时行为与规则版一致
       provide: NEXT_STEP_STRATEGY,
