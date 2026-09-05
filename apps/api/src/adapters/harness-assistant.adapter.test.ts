@@ -162,9 +162,10 @@ describe('HarnessAssistantAdapter', () => {
     expect(thrown.aiUsedFlag).toBe(false);
   });
 
-  it('首条 prompt：人设 + 资料正文 + 问题', () => {
+  it('首条 prompt：小影人设 + 资料正文 + 问题', () => {
     const p = buildFirstTurnPrompt(ENTRIES, '你好');
-    expect(p).toContain('站内助手');
+    expect(p).toContain('你是小影');
+    expect(p).toContain('第三人称');
     expect(p).toContain('闲鱼购买 MacBook 的完整攻略');
     expect(p).toContain('访客问题：你好');
   });

@@ -28,8 +28,8 @@ export class RuleAssistantAdapter implements AssistantRunnerPort {
     }
     const top = entries.slice(0, 3);
     const lines = [
-      '（规则模式）站内助手当前未启用 AI，这段是固定回答。',
-      '站主 duola：艺术生，在用 AI 解决真实问题；这个站是「知识库 → 工作站 → 回灌」的公开样板。',
+      '（规则模式）我是小影，duola 的管家——当前 AI 未启用，这段是固定回答。',
+      'duola：艺术生，在用 AI 解决真实问题；这个站是「知识库 → 工作站 → 回灌」的公开样板。',
     ];
     if (top.length) {
       lines.push(

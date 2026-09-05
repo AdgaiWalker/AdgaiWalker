@@ -78,7 +78,7 @@ describe('RouteMetadata', () => {
     renderAt('/ask');
 
     await waitFor(() => {
-      expect(document.title).toBe('问站内助手 · Walker');
+      expect(document.title).toBe('小影 · Walker');
     });
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),

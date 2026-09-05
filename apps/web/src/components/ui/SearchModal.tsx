@@ -126,7 +126,7 @@ export function SearchModal({
                   to={`${WEB_ROUTES.assistant}?q=${encodeURIComponent(query.trim())}`}
                   onClick={onClose}
                 >
-                  问站内助手 →
+                  问小影 →
                 </Link>
               </>
             ) : null}

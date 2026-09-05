@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { getPostBySlug } from '../../content';
 import type { AssistantMessage } from '../../hooks/useAssistant';
 import { dualEntry } from '../../shared/dual-entry';
 
@@ -15,7 +16,6 @@ export type AssistantPanelProps = {
   loading: boolean;
   error: string | null;
   messages: readonly AssistantMessage[];
-  serviceNote?: string | null;
   onDraftChange: (text: string) => void;
   onSubmit: () => void;
   onReset: () => void;
@@ -29,7 +29,6 @@ export function AssistantPanel({
   loading,
   error,
   messages,
-  serviceNote = null,
   onDraftChange,
   onSubmit,
   onReset,
@@ -45,12 +44,6 @@ export function AssistantPanel({
     <div className="instrument-page">
       <h1 className="page-title">{title}</h1>
       <p className="page-lead">{lead}</p>
-
-      {serviceNote ? (
-        <p className="instrument-service-note meta" role="note">
-          {serviceNote}
-        </p>
-      ) : null}
 
       <div className="surface-l2 instrument-panel assistant-panel" ref={logRef}>
         {messages.length === 0 ? (
@@ -68,11 +61,14 @@ export function AssistantPanel({
                   {m.citations.length ? (
                     <p className="success-meta">
                       相关：
-                      {m.citations.map((slug) => (
-                        <Link key={slug} to={`/posts/${slug}`}>
-                          《{slug}》
-                        </Link>
-                      ))}
+                      {m.citations.map((slug) => {
+                        const post = getPostBySlug(slug);
+                        return (
+                          <Link key={slug} to={`/posts/${slug}`}>
+                            《{post?.title ?? slug}》
+                          </Link>
+                        );
+                      })}
                     </p>
                   ) : null}
                   <p className="success-meta">
@@ -133,6 +129,10 @@ export function AssistantPanel({
             {error}
           </div>
         ) : null}
+
+        <p className="meta" style={{ marginTop: 10, marginBottom: 0 }}>
+          回答只依据站内公开内容，答不上会说不知道 · 想做成某事？去卡口拿行动建议
+        </p>
       </div>
     </div>
   );

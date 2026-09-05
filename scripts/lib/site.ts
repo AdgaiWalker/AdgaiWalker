@@ -35,9 +35,9 @@ export const SPA_SHELL_ROUTES = [
   },
   {
     pathname: '/ask',
-    title: '问站内助手 · Walker',
-    heading: '问站内助手',
-    description: '了解站主、找内容、问路径；回答只依据站内可引用的内容。',
+    title: '小影 · Walker',
+    heading: '小影',
+    description: 'duola 的管家小影。关于站主与这个站，问就行。',
   },
   {
     pathname: '/support',

@@ -42,7 +42,7 @@ export const readNavGroup: NavGroup = {
       primary: true,
     },
     {
-      label: '助手',
+      label: '小影',
       href: WEB_ROUTES.assistant,
       icon: MessageCircle,
     },

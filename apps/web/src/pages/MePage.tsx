@@ -52,7 +52,7 @@ export function MePage() {
             </Link>
             <Link to={WEB_ROUTES.assistant} className="btn-secondary">
               <MessageCircle size={16} />
-              问站内助手
+              问小影
             </Link>
           </div>
         </div>
