@@ -9,7 +9,9 @@ import { useContentSearch } from '../hooks/useContentSearch';
 import { useSearchHotkey } from '../hooks/useSearchHotkey';
 import { applySiteTheme } from '../lib/theme';
 import { dualEntry } from '../shared/dual-entry';
+import { WEB_ROUTES } from '../shared/routes';
 import { SearchModal } from './ui/SearchModal';
+import { AssistantFloating } from './ui/AssistantFloating';
 import { AppSidebar } from './shell/AppSidebar';
 import { HomeChrome } from './shell/HomeChrome';
 import { MobileBar } from './shell/MobileBar';
@@ -35,10 +37,14 @@ export function AppShell() {
   const browseHref = browseHrefFromState(location.state);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const searchTriggerRef = useRef<HTMLElement | null>(null);
+  const assistantButtonRef = useRef<HTMLButtonElement>(null);
   const askActive = pathname === dualEntry.ask.path;
+  // /ask 自身已有完整对话，不叠悬浮窗与按钮
+  const assistantPage = pathname === WEB_ROUTES.assistant;
   const search = useContentSearch(searchOpen);
 
   const openSearch = useCallback((trigger?: HTMLElement) => {
@@ -120,6 +126,27 @@ export function AppShell() {
     };
   }, [menuOpen]);
 
+  const assistantLauncher = assistantPage ? null : (
+    <button
+      ref={assistantButtonRef}
+      type="button"
+      className="assistant-fab"
+      aria-label={assistantOpen ? '关闭小影' : '问小影'}
+      aria-expanded={assistantOpen}
+      onClick={() => setAssistantOpen((v) => !v)}
+    >
+      <span className="assistant-dot" aria-hidden />
+      小影
+    </button>
+  );
+  const assistantFloating = assistantPage ? null : (
+    <AssistantFloating
+      open={assistantOpen}
+      onClose={() => setAssistantOpen(false)}
+      returnFocusTarget={assistantButtonRef.current}
+    />
+  );
+
   const searchModal = (
     <SearchModal
       open={searchOpen}
@@ -138,6 +165,8 @@ export function AppShell() {
         <HomeChrome onOpenSearch={openSearch} searchOpen={searchOpen} />
         <Outlet />
         {searchModal}
+        {assistantLauncher}
+        {assistantFloating}
       </>
     );
   }
@@ -157,6 +186,8 @@ export function AppShell() {
           <Outlet />
         </main>
         {searchModal}
+        {assistantLauncher}
+        {assistantFloating}
       </div>
     );
   }
@@ -190,6 +221,8 @@ export function AppShell() {
         <Outlet />
       </main>
       {searchModal}
+      {assistantLauncher}
+      {assistantFloating}
     </div>
   );
 }
