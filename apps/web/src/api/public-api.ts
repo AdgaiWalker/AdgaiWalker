@@ -3,6 +3,7 @@
  */
 import type { ContentFeedbackSignal } from '../shared/content-feedback';
 import { publicRequest } from './http';
+import { ApiError } from './http';
 
 export type { ContentFeedbackSignal };
 
@@ -53,22 +54,24 @@ export const publicApi = {
     });
   },
 
-  /** 流式问答（SSE）：onText 增量回调；返回 done 终值；abort 信号支持停止 */
-  assistantStream(
+  /** 流式问答（SSE）：onText 增量回调；返回 done 终值；abort 信号支持停止。
+   *  自包含 fetch（不走 publicRequest）——流式路径不依赖 JSON 门面的模块实例，dev/prod 行为一致。 */
+  async assistantStream(
     body: string,
     sessionId: string | null,
     onText: (delta: string) => void,
     signal?: AbortSignal,
     source = 'assistant-stream',
   ): Promise<AssistantResult> {
-    return publicRequest<Response>('/assistant/stream', {
+    const res = await fetch('/api/assistant/stream', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ body, sessionId, source }),
       signal,
-      raw: true,
-    }).then(async (res) => {
-      if (!res.body) throw new Error('stream-unavailable');
-      const reader = res.body.getReader();
+    });
+    if (!res.ok || !res.body) throw new ApiError(`http-${res.status}`);
+    const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let done: AssistantResult | null = null;
@@ -95,7 +98,6 @@ export const publicApi = {
       }
       if (!done) throw new Error('stream-closed-without-done');
       return done;
-    });
   },
 
   getLikeCount(path: string): Promise<LikeResult> {
