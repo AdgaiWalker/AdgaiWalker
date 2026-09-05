@@ -144,29 +144,29 @@
 
 优先级依据：**先改观感零风险项（文案/命名/渲染 bug），再动布局，最后动链路**——每层独立验收，任一层失败不阻塞下层回退。
 
-### 第一批 T4.A 快赢·文案与渲染（零结构风险，~2h）
+### 第一批 T4.A 快赢·文案与渲染 ✅（2026-09-05，d97d9f3）
 
-- [ ] T4.A1 全局改名「小影」：`nav.ts`（助手→小影）、`SearchModal.tsx`（问站内助手→→问小影→）、`site.ts` /ask 壳标题改「小影 · Walker」、AskPage 页内标题；grep 全仓「问站内助手」清零
+- [x] T4.A1 全局改名「小影」：`nav.ts`（助手→小影）、`SearchModal.tsx`（问站内助手→→问小影→）、`site.ts` /ask 壳标题改「小影 · Walker」、AskPage 页内标题；grep 全仓「问站内助手」清零
   - 验收：`grep -rn "问站内助手" apps/web scripts` 零命中；typecheck 绿
-- [ ] T4.A2 引用渲染真实标题：`AssistantPanel` 收到 citations 后按 slug 查 `content.ts`（getPostBySlug 已有），显示 `《{title}》`；查不到（管理侧旧数据）回退 slug 原文
+- [x] T4.A2 引用渲染真实标题：`AssistantPanel` 收到 citations 后按 slug 查 `content.ts`（getPostBySlug 已有），显示 `《{title}》`；查不到（管理侧旧数据）回退 slug 原文
   - 复用：站内已有 content.json 索引，零新依赖
   - 验收：本地问「想学 AI」引用显示《CC入门》而非 cc-intro
-- [ ] T4.A3 开发者话术删除：AssistantPanel 删 serviceNote 蓝框与「你的问题」label；提示缩为输入框下一行灰字「回答只依据站内公开内容，答不上会说不知道 · 去卡口拿行动建议→」
+- [x] T4.A3 开发者话术删除：AssistantPanel 删 serviceNote 蓝框与「你的问题」label；提示缩为输入框下一行灰字「回答只依据站内公开内容，答不上会说不知道 · 去卡口拿行动建议→」
   - 自决：SERVICE_NOTE 常量整个删除（生产已有真 AI，旧文案过时）
-- [ ] T4.A4 人设 prompt 换小影：`buildFirstTurnPrompt` 第一句改「你是小影，duola 的管家，以第三人称介绍他与这个站；仅引用他原话时可用第一人称引述」；`RuleAssistantAdapter` 兜底文案改「（规则模式）我是小影…」口吻
+- [x] T4.A4 人设 prompt 换小影：`buildFirstTurnPrompt` 第一句改「你是小影，duola 的管家，以第三人称介绍他与这个站；仅引用他原话时可用第一人称引述」；`RuleAssistantAdapter` 兜底文案改「（规则模式）我是小影…」口吻
   - 验收：api 测试里断言新文案的用例更新后全绿；本地真问「你是谁」自报「小影」
 
-### 第二批 T4.B 布局·对话流与主页卡（~3h）
+### 第二批 T4.B 布局·对话流与主页卡 ✅（2026-09-05，780d1a8；小影卡走 greeting 列内伴生——继承画布拖拽，未触发降级预案）
 
-- [ ] T4.B1 /ask 对话流重排：AssistantPanel 改为「顶部窄栏（● 小影 · duola 的管家，呼吸点动画）+ 中部对话流（flex-1 滚动）+ 底部输入条固定」三段式；标题/lead 移除
+- [x] T4.B1 /ask 对话流重排：AssistantPanel 改为「顶部窄栏（● 小影 · duola 的管家，呼吸点动画）+ 中部对话流（flex-1 滚动）+ 底部输入条固定」三段式；标题/lead 移除
   - 复用：现有 `walker.css` 变量体系；呼吸点用 CSS animation（不引库）
-- [ ] T4.B2 空态示例卡：messages 为空时渲染 3 张 chip（duola 是谁 / 想学 AI 从哪开始 / 这站能帮我什么），onClick 直接 `send(text)`（复用 useAssistant，不另立状态）
+- [x] T4.B2 空态示例卡：messages 为空时渲染 3 张 chip（duola 是谁 / 想学 AI 从哪开始 / 这站能帮我什么），onClick 直接 `send(text)`（复用 useAssistant，不另立状态）
   - 自决：示例问题文案若与真实回答效果差，可替换为更具体问句，记日志
-- [ ] T4.B3 发送按钮态修复：禁用态灰度 + not-allowed 光标（现在淡蓝/深蓝难辨）
-- [ ] T4.B4 主页小影伴生卡：HomePage 画布加卡（深色底「影子」意象、呼吸绿点、一句话「我是小影，duola 的管家。关于这个站，问我就好。」+「开始问 →」→/ask）；尺寸约身份卡 60%，默认锚在身份卡右下
+- [x] T4.B3 发送按钮态修复：禁用态灰度 + not-allowed 光标（现在淡蓝/深蓝难辨）
+- [x] T4.B4 主页小影伴生卡：HomePage 画布加卡（深色底「影子」意象、呼吸绿点、一句话「我是小影，duola 的管家。关于这个站，问我就好。」+「开始问 →」→/ask）；尺寸约身份卡 60%，默认锚在身份卡右下
   - 自决：画布变换（transform 缩放/拖拽体系）冲突则降级为画布外固定卡片并记日志；不新建形象资产（无头像，用明暗对比表达）
   - 验收：首屏可见、可点直达 /ask、拖拽不报错、⌘缩放正常
-- [ ] T4.B5 第一批+第二批合并验收：build:web + verify:geo + test:web 全绿；浏览器实测（空态点示例→AI 答→引用带标题）；AI_ENABLED=false 走小影规则兜底
+- [x] T4.B5 第一批+第二批合并验收：build:web + verify:geo + test:web 全绿；浏览器实测（空态点示例→AI 答→引用带标题）；AI_ENABLED=false 走小影规则兜底
 
 ### 第三批 T4.C 流式与指标（链路改造，~1 天）
 
