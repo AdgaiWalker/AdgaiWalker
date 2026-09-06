@@ -30,8 +30,13 @@ apps/agent（新 pnpm workspace 包，Cordis 组合）
 
 ## 原子任务
 
-- [ ] **A0 骨架与参照核对**｜monorepo 新建 `apps/agent`（pnpm workspace、tsconfig、typecheck 接入根链）；**学习材料：`agent-runtime-backup/nano-cordis`（下午可读完的最小 Cordis 语义，含 composition/persistence 测试范本）+ dsh clone 的 `packages/bundle/sdk-minimal/cordis.patch.yml` 与 persona/system-prompt 插件**；依赖锁定：`@deepseek-ai/cordis`（与 dsh 同源）+ `@modelcontextprotocol/server` v2。｜验收：`pnpm -r typecheck` 含新包通过；空组合能以 stdio 起 MCP server 并响应 initialize。
-- [ ] **A1 knowledge 插件**｜读 `content.json`（路径可 env 覆盖，默认 monorepo 构建产物）；只收 `aiUsePolicy.readable=true` 条目入索引；提供 `search(text)`（标题/标签/摘要简单打分即可，不上向量）、`get(slug)`、`byDomain(domain)`。｜验收：单测覆盖 citable=false 过滤与检索排序；content.json 缺失时报错不空转。
+> **2026-09-06 优先级变更（站主指令）**：主线暂停，判断代理脚手架提前解冻——A0/A1/A2/A3 于当日完成（详见各勾选与验收实录），A4 以 stub 形态落地（回写 FeatureEvent 留待主线恢复后接），A5 dogfooding 由站主择时执行。
+
+- [x] **A0 骨架与参照核对**（2026-09-06 完成）｜`apps/agent` 建包（pnpm workspace、typecheck 接入根链 `pnpm -r run typecheck`）；依赖锁定 `@deepseek-ai/cordis@^4.0.1`（与 dsh 同源）+ `@modelcontextprotocol/server@2.0.0` + `zod@4`。｜验收实录：根链 typecheck 含 agent 通过；stdio 冒烟 initialize 返回 `walker-judgment 0.1.0`，tools/list 四工具齐。
+- [x] **A1 knowledge 插件**（2026-09-06 完成）｜读 `content.json`（`WALKER_CONTENT_JSON` 可覆盖）；`readable=false` 永不入索引、空索引拒启；search（标题3/标签2/摘要1 打分，仅 citable，命中理由随行）/ get（仅 readable）/ methodology（domain 聚合）/ citableList。｜验收实录：3 项单测全过（私有内容不入索引、可读不可引用不进检索但可精读、空索引拒启）。
+- [x] **A2 persona 插件**（2026-09-06 完成，简版）｜判断注入常量（第三人称、保持原意注明 slug、没有就说没写过、duola 判断与调用方推理分层标注）；工具描述共用口径。｜验收：模板随 search/list 返回（冒烟中 persona 随行确认）。
+- [x] **A3 mcp 插件**（2026-09-06 完成）｜四工具：`search_judgment` / `read_article` / `list_methodology` / `list_citable`（原定「一个资源」以工具形式提供——脚手架决策，资源形式待 registerResource API 核实后可换）；全部返回带 slug 出处。｜验收实录：stdio 冒烟真实检索命中（`molan-ai-file-assistant` 等标签命中理由随行）；未命中 slug 如实返回 `not-readable`。
+- [ ] **A4 telemetry 插件**｜**stub 已落地**（结构化 JSON 行走 **stderr**——stdout 是 MCP 协议通道；永不抛错）；待接主站 FeatureEvent 管理端点（`x-admin-token`，featureKey=`agent.mcp`）。｜验收：假端点断言事件体；端点不可达时工具调用仍成功（待接线时补测）。
 - [ ] **A2 persona 插件**｜站主决策人设模板：第三人称、方法论优先、答不了就直说、输出建议附出处 slug；模板文本放本包常量（不进 shared——它不是双端合同）。｜验收：模板单测断言关键规则在场；与 A3 工具描述共同构成调用方可见的「使用说明」。
 - [ ] **A3 mcp 插件**｜三个工具：`search_judgment(query) → [{slug,title,summary,why}]`、`read_article(slug) → {title,body,tags,aiUsePolicy}`（仅 readable）、`list_methodology(domain?) → 高频 form/intent 聚合清单`；一个资源：citable 清单。**所有返回带 slug**；返回结构借鉴 llm-wiki-compiler 的 context-pack（紧凑证据包 + 引用随行），v1 用关键词/标签打分即可，不引 BM25/图扩展。｜验收：MCP 客户端断言工具 schema 与返回结构；citable=false 内容不出现在任何工具返回（负向测试）。
 - [ ] **A4 telemetry 插件**｜计数回写主站 `POST` 管理事件端点（`x-admin-token` 走 env；端点沿用现有 FeatureEvent 面）；失败本地记日志不阻断。｜验收：假端点断言事件体（featureKey=`agent.mcp`，attempt/success）；端点不可达时工具调用仍成功。

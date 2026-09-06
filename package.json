@@ -21,6 +21,7 @@
     "test:shared": "pnpm --filter @walker/shared test",
     "test:api": "pnpm build:shared && pnpm --filter @walker/api test",
     "test:web": "pnpm --filter @walker/web test",
+    "test:agent": "pnpm --filter @walker/agent test",
     "typecheck": "pnpm build:shared && pnpm -r run typecheck && tsc -p scripts/tsconfig.json",
     "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "db:generate": "tsx scripts/prisma-env.ts generate",
