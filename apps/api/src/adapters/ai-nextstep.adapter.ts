@@ -85,7 +85,9 @@ export class AiNextStepAdapter implements NextStepStrategyPort {
         suggestedSlug: parsed.suggestedSlug,
         suggestedTitle: suggested?.title ?? null,
       };
-    } catch {
+    } catch (error) {
+      // 降级原因落日志（AI 可用率排查；失败如实，不假装 AI）
+      console.error('[nextstep] AI 降级：', error instanceof Error ? error.message : error);
       return this.fallback.generate(body);
     }
   }

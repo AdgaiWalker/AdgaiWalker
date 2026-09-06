@@ -266,12 +266,16 @@ export class HarnessAssistantAdapter
       ]);
       if (!timed) {
         // 超时/取消：吞掉迟到结果的拒绝，弃结果；关掉可能僵死的 runtime，下一问重拉新实例
+        console.error(`[assistant] 降级(timeout/abort)：queued=${Date.now() - started}ms budget=${remainingMs}ms aborted=${input.signal?.aborted ?? false}`);
         runPromise.catch(() => {});
         this.dropRuntime();
         return this.fallback.ask(input);
       }
       const parsed = parseAssistantOutput(timed.finalResponse, citableSlugs);
-      if (!parsed) return this.fallback.ask(input);
+      if (!parsed) {
+        console.error('[assistant] 降级(bad-output)：终值未过 parseAssistantOutput 合同校验');
+        return this.fallback.ask(input);
+      }
       return {
         answer: parsed.answer,
         citations: parsed.citations,
@@ -279,8 +283,9 @@ export class HarnessAssistantAdapter
         aiUsedFlag: true,
         elapsedMs: Date.now() - started,
       };
-    } catch {
-      // 传输断/协议错：丢弃实例，下一问重建
+    } catch (error) {
+      // 传输断/协议错：丢弃实例，下一问重建（降级原因落日志，供 AI 可用率排查）
+      console.error('[assistant] 降级(runtime)：', error instanceof Error ? error.message : error);
       this.dropRuntime();
       return this.fallback.ask(input);
     } finally {
