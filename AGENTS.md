@@ -4,15 +4,16 @@
 
 ## 文档阅读顺序
 
-1. 根 `PLAN.md`（主执行计划：北极星 · 宪法 · 主线排期 · 冻结条款）→ 2. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 3. `docs/README.md`（文档地图与权威级）→ 4. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
+1. 根 `PLAN.md`（主执行计划：北极星 · 宪法 · 主线排期 · 冻结条款）→ 2. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 3. `docs/README.md`（文档地图）+ `docs/ARCHITECTURE.md`（架构图面：当前态/最终/飞轮）→ 4. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
 改站内助手必须先读 `docs/PRD-SITE-ASSISTANT.md` + `docs/TODO-SITE-ASSISTANT.md`。`docs/archive/` 是退役方案，禁止当现行契约。
 
 ## 仓库结构与验证门禁
 
-- monorepo：`apps/web`（访客静态站）/ `apps/admin`（站主工作台）/ `apps/api`（Nest）/ `packages/shared`（纯函数与契约，双端共用）/ `scripts/`（构建与预渲染）/ `content/log`（内容唯一真相源）/ `ops/windows`（盒子部署物料）。
+- monorepo：`apps/web`（访客静态站）/ `apps/admin`（站主工作台，默认首页=流水线）/ `apps/api`（Nest）/ `apps/agent`（判断代理 · Cordis 组合 + MCP stdio，读 content.json，aiUsePolicy fail-closed）/ `packages/shared`（纯函数与契约，多端共用）/ `scripts/`（构建与预渲染）/ `content/log`（内容唯一真相源）/ `ops/windows`（盒子部署物料）。
+- 主计划与图面：`PLAN.md`（排期/冻结条款/宪法）与 `docs/ARCHITECTURE.md`（当前态/最终架构/飞轮）是拓扑与排期权威，改动须回写。
 - `apps/api` 是六边形分层：`ports/`（Symbol 接口）→ `adapters/`（实现）→ 用例 service → `kernel.module.ts` 统一接线。新增能力先定 port 再写 adapter。
 - `apps/web` 运行时只读 `apps/web/src/generated/content.json`，禁止在 web 里做 fs / 直连内容目录。
-- 改动后验证链：`pnpm typecheck` → `pnpm test:shared && pnpm test:api && pnpm test:web` → 改了 web 再 `pnpm build:web && pnpm verify:geo`（GEO 是构建门禁）→ 改了内容先 `pnpm check:content-fields`。
+- 改动后验证链：`pnpm typecheck` → `pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent` → 改了 web 再 `pnpm build:web && pnpm verify:geo`（GEO 是构建门禁）→ 改了内容先 `pnpm check:content-fields`。
 - 测试库隔离：`apps/api` 的 vitest 把 `DATABASE_URL` 强制改写到独立 `walker.test.db`（globalSetup 每次删库重建 schema；显式设 `API_TEST_DB_URL` 可指定 PG），测试绝不写开发库。真实 kernel 接线的集成测用 `Test.createTestingModule` + `KernelModule`（假 runner/临时目录用 `overrideProvider`/env 覆盖，见 `promote.kernel.integration.test.ts`、`workstation.chain.integration.test.ts`）。
 - 改生产拓扑 / 部署流程 / 产品行为后，**必须回写文档**（AGENTS.md / PRD / TODO / STATUS / api/README 对应处），保持文档与生产一致。
 
@@ -34,7 +35,10 @@
 - **Windows 保留文件名**（`nul`、`con` 等）在 Mac 上能提交、服务器上无法检出（`error: invalid path`）——提交前别把这类文件加进 Git。
 - OpenSSH（Windows）会话断开会杀死该会话的整棵子进程树：需要存活的远程进程用 `Start-Process` 脱离或 schtasks 注册后 `Start-ScheduledTask`。
 - **拉代码前必须先跑 `pnpm check:content-dirty`**：Admin 保存的文章直接写 `content/log`（Git 管内），`git reset --hard origin/main` 会连带丢掉未提交/未推送的内容修改。脚本发现内容脏即 exit 1——先 `pnpm content:publish --push` 发布或备份到 data 目录；仅代码树脏（content/ 干净）时才允许 `git reset --hard origin/main`。内容提交只走 `pnpm content:publish`（pathspec 限定 + 无关暂存检测，不会夹带代码）。
-- **重启 API 后必须核 8788 归属**：`schtasks /End` 可能杀不掉占端口的僵尸旧进程（任务实例引用丢失），新实例起失败时 8788 仍是旧 dist 在跑（症状：新功能 404 或行为像旧版，如秒回规则兜底）。核法：`netstat -ano | findstr :8788` 对比 PID，变了才算换血；没变就 `taskkill /PID <旧PID> /F` 再 `/Run`。
+- **重启 API 后必须核 8788 归属**：`schtasks /End` 可能杀不掉占端口的僵尸旧进程（任务实例引用丢失），新实例起失败时 8788 仍是旧 dist 在跑（症状：新功能 404 或行为像旧版，如秒回规则兜底）。核法：`netstat -ano | findstr :8788` 对比 PID，变了才算换血；没变就 `taskkill /PID <旧PID> /F` 再 `/Run`。**End/Run 序列被中断会留下半重启状态（health 版本与实际 dist 不一致的窗口）**——2026-09-06 实测造成助手假性降级，重启后自愈。
+- **改 `.env` 用 `Set-Content -Encoding UTF8`**：PS5 默认编码会重写整文件；跑 `run-api.ps1` 的进程输出（含 AI 降级原因）落 `C:\Walker\logs\api.log`——排查 AI 兜底/异常第一现场。
+- **dsh 短调用（≤60s 预算，即卡口 nextStep）用常驻实例、长调用（工作站配方）独立实例**：超时/取消**不丢**常驻实例（会话超时不污染 runtime，只有传输故障才重建）；重启后首个 AI 请求可能冷启动超 15s 走规则兜底——自愈非故障，第二问即恢复。
+- **给 prompt 追加输出合同前先确认调用方没自带合同**：双合同冲突实测把生成从 7s 拖到 45s+，15s 预算必超（2026-09-06 A/B 探针）。
 - **重启网关后必须核 443**：`netstat -ano | findstr ":443"`。WalkerGateway 任务参数可能被重置回 8080 测试模式（install-tasks.ps1 重注册漏 `-PublicApiHost api.iwalk.pro` 即复现）→ 用正式域名重跑注册脚本；老 caddy 占端口时 `schtasks /End` 杀不掉（实例引用丢失）→ 直接 `taskkill /PID <pid> /F` 再 `/Run`；起进程必须走计划任务（`/Run`），SSH 里 `Start-Process` 起的会随会话被杀（先 `/End` 清僵尸实例再 `/Run`）。网关重启后首个 AI 请求可能因 harness 冷启动超 15s 走规则兜底——自愈行为，非故障。
 - DeepSeek Harness（dsh）安全机制：**拒绝从 .env 文件继承 `DSH_*` 启动变量**——生产用 `WALKER_DSH_RUNTIME_BIN` / `ASSISTANT_DSH_HOME`（见 `ops/windows/README.md`），且子进程 cwd 必须是不含 .env 的中立目录。
 - SSH 不通时**先确认走的是 Tailscale 主路径**（`ssh walker-tencent` 即是，2026-09-03 实测直连 155ms 稳定）；只有公网备用路径 `walker-tencent-public` 才需要按防火墙白名单更新来源 IP（家宽 IP 会轮换）。
