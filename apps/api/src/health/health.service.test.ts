@@ -30,7 +30,7 @@ describe('HealthService', () => {
     const config = stubConfig({ isAiEnabled: () => false });
     const service = new HealthService(config, stubPrisma(false));
     const result = await service.getHealth();
-    expect(result).toEqual({ ok: true, db: false, aiEnabled: false });
+    expect(result).toEqual({ ok: true, db: false, aiEnabled: false, version: null });
   });
 
   it('库 ping 成功时 db=true；AI 开关透传', async () => {
@@ -43,6 +43,17 @@ describe('HealthService', () => {
       ok: true,
       db: true,
       aiEnabled: true,
+      version: null,
     });
+  });
+
+  it('WALKER_BUILD_VERSION 配置时透出可读构建标识', async () => {
+    process.env.WALKER_BUILD_VERSION = ' 12b4f0d ';
+    try {
+      const service = new HealthService(stubConfig(), stubPrisma(true));
+      await expect(service.getHealth()).resolves.toMatchObject({ version: '12b4f0d' });
+    } finally {
+      delete process.env.WALKER_BUILD_VERSION;
+    }
   });
 });

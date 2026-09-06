@@ -121,21 +121,38 @@ export class IntakeService {
     }
     const source = sourceRaw as ClueSource;
 
-    const step = await this.nextStep.generate(input.body.trim());
-    const clue = await this.clues.create({
-      id: newId(),
-      body: input.body.trim(),
-      source,
-      poolStatus: 'candidate',
-      anonId: input.isAuthenticated ? null : input.anonId,
-    });
-
+    // 预留/释放语义：先原子扣配额，配额拒绝时不产生任何线索；
+    // AI 调用留在预留之后、建线索之前（不进事务）；建线索失败补偿释放，
+    // 不留「扣了次数没线索」的反向孤儿。模型消耗无法回滚，属已知边界。
     if (!input.isAuthenticated) {
-      const ok = await this.guestQuota.consume(input.anonId);
-      if (!ok) {
-        // 竞态：刚耗尽
+      const reserved = await this.guestQuota.consume(input.anonId);
+      if (!reserved) {
+        await this.events.record({
+          id: newId(),
+          featureKey: 'match.intake',
+          event: 'fail',
+          actorType,
+          failCode: FEATURE_FAIL_CODES.guestQuotaExceeded,
+        });
         throw guestQuotaExceeded();
       }
+    }
+
+    const step = await this.nextStep.generate(input.body.trim());
+    let clue;
+    try {
+      clue = await this.clues.create({
+        id: newId(),
+        body: input.body.trim(),
+        source,
+        poolStatus: 'candidate',
+        anonId: input.isAuthenticated ? null : input.anonId,
+      });
+    } catch (error) {
+      if (!input.isAuthenticated) {
+        await this.guestQuota.release(input.anonId).catch(() => {});
+      }
+      throw error;
     }
 
     await this.events.record({

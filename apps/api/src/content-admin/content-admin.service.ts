@@ -72,20 +72,29 @@ export class ContentAdminService {
     }
   }
 
-  /** 异步触发 monorepo content:gen，失败只记日志不阻断保存 */
+  /**
+   * 异步触发 monorepo content:gen，失败只记日志不阻断保存。
+   * cwd 用 pnpm-workspace.yaml 定位 monorepo 根（「存在 package.json」会误中 app 目录，
+   * 那里没有 content:gen 脚本）；非零退出同样记录，不再静默吞掉。
+   */
   private scheduleContentGen(): void {
     if (process.env.CONTENT_GEN_ON_SAVE === 'false') return;
-    const cwdCandidates = [
-      process.cwd(),
-      path.resolve(process.cwd(), '../..'),
-      path.resolve(process.cwd(), '..'),
-    ];
-    const cwd =
-      cwdCandidates.find((c) => fs.existsSync(path.join(c, 'package.json'))) ??
-      process.cwd();
+    let dir: string | undefined = process.cwd();
+    while (dir && !fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
+      const parent = path.dirname(dir);
+      if (parent === dir) {
+        dir = undefined;
+        break;
+      }
+      dir = parent;
+    }
+    if (!dir) {
+      this.log.warn('content:gen skipped: monorepo 根未找到（无 pnpm-workspace.yaml）');
+      return;
+    }
 
     const child = spawn('pnpm', ['content:gen'], {
-      cwd,
+      cwd: dir,
       stdio: 'ignore',
       detached: true,
       shell: process.platform === 'win32',
@@ -93,6 +102,9 @@ export class ContentAdminService {
     child.unref();
     child.on('error', (err) => {
       this.log.warn(`content:gen spawn failed: ${err.message}`);
+    });
+    child.on('close', (code) => {
+      if (code !== 0) this.log.warn(`content:gen exited with ${code ?? 'signal'}`);
     });
   }
 }

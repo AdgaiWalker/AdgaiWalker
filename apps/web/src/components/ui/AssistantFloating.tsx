@@ -90,8 +90,10 @@ export function AssistantFloating({
         onDraftChange={setDraft}
         onSubmit={() => void send(draft)}
         onAskExample={(text) => void send(text)}
+        onStop={stop}
         idPrefix="assistant-float"
         compact
+        inputRef={inputRef}
       />
     </div>,
     document.body,

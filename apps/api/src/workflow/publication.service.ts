@@ -1,4 +1,5 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { missingPublishedPostFields } from '@walker/shared';
 import { newId } from '../common/ids';
 import { storageUnavailable, validationError } from '../common/http-error';
 import { CONTENT_FILE_REPOSITORY, type ContentFileRepositoryPort } from '../ports/content-file.repository';
@@ -41,24 +42,27 @@ export class PublicationService {
     const slug = slugify(`${title}-${work.id.slice(-6)}`);
     const markdown = typeof output.markdown === 'string' ? output.markdown : typeof output.body === 'string' ? output.body : '';
     if (!markdown.trim()) throw validationError('website-markdown-missing');
-    const raw = [
-      '---',
-      `title: ${yamlString(title)}`,
-      `date: ${new Date().toISOString()}`,
-      'type: knowledge',
-      'published: true',
-      `summary: ${yamlString(typeof output.summary === 'string' ? output.summary : title)}`,
-      '---',
-      '',
-      markdown,
-      '',
-    ].join('\n');
+    // frontmatter 合同与 build:web 门禁同源（shared PUBLISHED_POST_REQUIRED_FIELDS）：
+    // 缺字段在写盘前就拒绝，绝不产出过不了构建的文件
+    const frontmatter = buildPostFrontmatter({ title, output });
+    const missing = missingPublishedPostFields(frontmatter);
+    if (missing.length > 0) throw validationError(`website-frontmatter-incomplete:${missing.join(',')}`);
+    const raw = `${renderFrontmatterYaml(frontmatter)}\n\n${markdown}\n`;
     const saved = await this.files.save(slug, raw);
     const base = (process.env.PUBLIC_SITE_URL?.trim() || 'https://iwalk.pro').replace(/\/$/, '');
     const url = `${base}/posts/${encodeURIComponent(saved.slug)}`;
-    const verification = this.websiteVerifier ? await this.websiteVerifier.verify(url, { title }) : { ok: true };
-    const publication = await this.publications.upsert({ id: newId(), submissionId: workId, channel: 'WEBSITE', artifactHash, status: verification.ok ? 'PUBLISHED' : 'FAILED', url, lastError: verification.ok ? null : verification.reason ?? 'remote-verification-failed', publishedAt: verification.ok ? new Date() : null });
-    if (this.works.setStatus) await this.works.setStatus(workId, verification.ok ? 'PARTIALLY_PUBLISHED' : 'APPROVED', artifactHash);
+    // 保存 ≠ 发布：文件只落盘到 content/log，上线走 pnpm content:publish（commit+push+Vercel），
+    // 之后由 verifyWebsite 校验线上 URL 才翻 PUBLISHED。这里如实记录 PREPARED。
+    const publication = await this.publications.upsert({
+      id: newId(),
+      submissionId: workId,
+      channel: 'WEBSITE',
+      artifactHash,
+      status: 'PREPARED',
+      url,
+      lastError: null,
+      publishedAt: null,
+    });
     return publication;
   }
 
@@ -111,8 +115,60 @@ function slugify(value: string): string {
   return slug || 'work';
 }
 
-function yamlString(value: string): string {
-  return JSON.stringify(value.replace(/[\r\n]+/g, ' ').trim());
+/**
+ * 组装公开文章 frontmatter。工作站产出的默认口径：article / product / share / utility；
+ * 模型输出里带了合法同名字段时优先采用。aiUsePolicy 固定 AI-2（AI 加工、人工审核后发布），
+ * 与站内既有人工审核文章一致，readable/citable/actionable 全开。
+ */
+function buildPostFrontmatter(input: { title: string; output: Record<string, unknown> }): Record<string, unknown> {
+  const pick = (key: string, fallback: string): string => {
+    const v = input.output[key];
+    return typeof v === 'string' && v.trim() ? v.trim() : fallback;
+  };
+  return {
+    title: input.title,
+    date: new Date().toISOString(),
+    updated: new Date().toISOString().slice(0, 10),
+    type: 'knowledge',
+    published: true,
+    tags: Array.isArray(input.output.tags)
+      ? input.output.tags.filter((t): t is string => typeof t === 'string')
+      : [],
+    form: pick('form', 'article'),
+    domain: pick('domain', 'product'),
+    intent: pick('intent', 'share'),
+    valueMode: pick('valueMode', 'utility'),
+    summary: pick('summary', input.title),
+    aiUsePolicy: {
+      level: 'AI-2',
+      readable: true,
+      citable: true,
+      actionable: true,
+      reason: '工作站产出：AI 加工、人工审核批准后发布',
+    },
+  };
+}
+
+/** 确定性 YAML 输出（本函数只为 buildPostFrontmatter 的固定形状服务：标量/字符串数组/一层对象） */
+function renderFrontmatterYaml(data: Record<string, unknown>): string {
+  const scalar = (value: unknown): string =>
+    typeof value === 'boolean' || typeof value === 'number'
+      ? String(value)
+      : JSON.stringify(String(value).replace(/[\r\n]+/g, ' ').trim());
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(data)) {
+    if (Array.isArray(value)) {
+      lines.push(`${key}: ${JSON.stringify(value.map((v) => String(v).replace(/[\r\n]+/g, ' ').trim()))}`);
+    } else if (value !== null && typeof value === 'object') {
+      lines.push(`${key}:`);
+      for (const [childKey, childValue] of Object.entries(value as Record<string, unknown>)) {
+        lines.push(`  ${childKey}: ${scalar(childValue)}`);
+      }
+    } else {
+      lines.push(`${key}: ${scalar(value)}`);
+    }
+  }
+  return `---\n${lines.join('\n')}\n---`;
 }
 
 function escapeHtml(value: string): string {

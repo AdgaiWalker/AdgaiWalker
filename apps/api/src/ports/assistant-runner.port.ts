@@ -6,11 +6,13 @@
 import type { AssistantRunResult } from '@walker/shared';
 
 export interface AssistantAskInput {
-  /** null 表示新会话；非空为上一轮返回的会话标识 */
+  /** null 表示新会话；非空为上一轮返回的会话标识（网关已校验归属） */
   sessionId: string | null;
   text: string;
   /** 访客标识（anon-id），供实现方做会话命名与审计 */
   visitorKey: string;
+  /** 端到端取消：浏览器断流时网关置 abort，实现方应停止等待并走规则兜底 */
+  signal?: AbortSignal;
 }
 
 export interface AssistantRunnerPort {

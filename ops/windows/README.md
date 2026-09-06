@@ -94,6 +94,23 @@ ASSISTANT_DAILY_LIMIT=200
 
 凭据 `%USERPROFILE%\.dsh-assistant\.credentials.yaml` 人工放置（DeepSeek key，不经 git）。Nest 会以只读沙箱子进程形态拉起 runtime；内存预算实测约 224MB 常驻。
 
+### 卡口 nextStep runtime（CodexAgentRunner）
+
+访客卡口的 AI nextStep 走 `CodexAgentRunner` 子进程（`codex exec`）。安全边界：spawn 一律 `shell:false`，访客 prompt 只经 stdin 传入，命令行永不携带外部文本。因此 Windows 上 **`CODEX_CLI_PATH` 必须指向可直接 spawn 的真实可执行文件**（`.exe`，或 npm 安装包的 `.js` 入口——runner 自动用 node 启动），不能指向 `.cmd` shim（现代 Node 拒绝免 shell 执行 `.cmd`）。
+
+**当前状态（2026-09-06 SSH 实查）**：盒子未安装 codex、`.env` 未配 `CODEX_CLI_PATH`——卡口 AI 自上线起一直走规则兜底（`aiUsedFlag=false` 如实标注），属稳定现状而非故障，无需处理。
+
+将来要真正启用卡口 AI 时（需产品决策，含引入 codex 模型凭据）：
+
+```powershell
+# 1) 安装到 C:\Walker\bin（示例）
+Set-Location C:\Walker\bin
+npm install @openai/codex
+# 2) 在 apps\api\.env 追加（.js 入口，runner 自动用 node 启动）
+#    CODEX_CLI_PATH=C:/Walker/bin/node_modules/@openai/codex/bin/codex.js
+# 3) 配置 codex 自身凭据后重启 WalkerApi，卡口提问验证 aiUsedFlag=true
+```
+
 前台运行验证：
 
 ```powershell
@@ -120,6 +137,51 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\in
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\install-tasks.ps1 -PublicApiHost api.example.com
 ```
 
-## 尚未切流
+## 部署验证清单（每次部署后逐项核对）
 
-只有在 API 域名、HTTPS、公共路由白名单、SQLite 备份和 intake 冒烟全部通过后，才修改 `vercel.json` 增加 `/api/:path*` 反代。切流前生产事实仍是“静态 Wiki 可用，公网写路径未通”。
+重启 WalkerApi / WalkerGateway 之后，health 200 不等于新版在服务。按序执行：
+
+```powershell
+# 1) 版本标识：部署时在 apps\api\.env 写 WALKER_BUILD_VERSION=<git short SHA>，
+#    health 必须回出同一个值，才算「跑的确实是这次构建」
+curl.exe -sS https://api.iwalk.pro/health
+#    期望 {"ok":true,"db":true,"aiEnabled":true,"version":"<本次 SHA>"}
+
+# 2) 8788 归属（schtasks /End 可能杀不掉僵尸旧进程，见 AGENTS.md 坑清单）
+netstat -ano | findstr :8788
+
+# 3) 443 归属（网关）
+netstat -ano | findstr ":443"
+
+# 4) 路由隔离：公开路由 404/401 边界（匿名管理面必须 404）
+curl.exe -sS -o NUL -w "%{http_code}" https://www.iwalk.pro/api/clues
+#    期望 401 或 404；/api/health 期望 200
+```
+
+web 与 API 是两条独立发布链：Vercel（push main 自动发）与盒子（git pull + build + schtasks）。两条都要核，缺一不可声称「新版已上线」。
+
+## 备份与恢复（对象清单 + 演练记录）
+
+**恢复对象（缺一即不可完整重建）：**
+
+| 对象 | 位置 | 说明 |
+|---|---|---|
+| 过程数据 | `C:\Walker\data\walker.db`（SQLite） | 线索/题苗/执行/会话/作品/发布/凭据密文 |
+| 加密主密钥 | 服务器 `apps\api\.env` 的 `WALKER_CREDENTIAL_MASTER_KEY` | **只在 .env，丢失则凭据密文永久不可解** |
+| 运行配置 | `apps\api\.env`（token、DSH 路径、预算等） | 与 Git 之外 |
+| 原稿与阶段产物 | `C:\Walker\app\var\works\`（或 WORK_ROOT_DIR 指向处） | 人工初稿原文、阶段 Artifact、发布准备包 |
+| 未发布内容 | `content\log\` 下未 commit 的修改 | 部署前先 `pnpm check:content-dirty` 保护 |
+| 助手 runtime | `%USERPROFILE%\.dsh-assistant`（含 .credentials.yaml） | DeepSeek key 人工放置 |
+| 管理凭据 | `C:\Walker\data\admin-basic-auth.txt` | 明文仅存 data 目录 |
+
+**备份方式（最低基线）：** 定期把 `C:\Walker\data` 整目录 + `.env` + `var\works` + `.dsh-assistant\.credentials.yaml` 复制到盒子外（对象存储 / 本机另一块盘）；SQLite 备份用 `sqlite3 walker.db ".backup 'walker-backup.db'"`（在线一致快照）。
+
+**恢复演练记录（如实填写；没演练过就不算具备恢复能力）：**
+
+| 日期 | 恢复到 | 结果 | 备注 |
+|---|---|---|---|
+| — | — | **尚未演练** | 首次演练后在此登记（异机重放 .env + data + var\works → 起服务 → health/登录/助手各核一项） |
+
+## 尚未切流（历史）
+
+2026-09-03 已完成切流（详见 `docs/STATUS.md`）。以下为切流前的门槛原文，留作核对口径：只有在 API 域名、HTTPS、公共路由白名单、SQLite 备份和 intake 冒烟全部通过后，才修改 `vercel.json` 增加 `/api/:path*` 反代。

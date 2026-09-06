@@ -190,7 +190,7 @@ export function parseInsightReport(raw: unknown): InsightReportData | null {
     if (!s || typeof s !== 'object') continue;
     const { kind, text, evidence } = s as Record<string, unknown>;
     if (typeof text !== 'string' || !text.trim()) continue;
-    if (!(kind in INSIGHT_SUGGESTION_LABELS)) continue;
+    if (typeof kind !== 'string' || !(kind in INSIGHT_SUGGESTION_LABELS)) continue;
     suggestions.push({
       kind: kind as InsightSuggestionKind,
       text,

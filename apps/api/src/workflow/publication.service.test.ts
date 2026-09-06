@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PUBLISHED_POST_REQUIRED_FIELDS } from '@walker/shared';
 import type { ContentFileRepositoryPort } from '../ports/content-file.repository';
 import type { PrismaPort } from '../ports/prisma.port';
 import type { PublicationRepositoryPort } from '../ports/publication.repository';
@@ -23,20 +24,49 @@ describe('PublicationService', () => {
     const h = harness();
     await expect(h.service.publishWebsite('work-1', 'wrong-hash')).rejects.toThrow('artifact-hash-mismatch');
     const result = await h.service.publishWebsite('work-1', 'approved-hash');
-    expect(result.status).toBe('PUBLISHED');
+    expect(result.status).toBe('PREPARED');
     expect(result.url).toContain('/posts/ai-draft');
     expect(h.savedRaw).toContain('published: true');
   });
 
-  it('does not claim website publication when the public URL cannot be verified', async () => {
+  it('produces frontmatter that passes the shared build gate (all required fields present)', async () => {
     const h = harness();
-    const service = new PublicationService(
+    await h.service.publishWebsite('work-1', 'approved-hash');
+    const frontmatterBlock = h.savedRaw.split('---')[1] ?? '';
+    for (const field of PUBLISHED_POST_REQUIRED_FIELDS) {
+      expect(frontmatterBlock).toContain(`${field}:`);
+    }
+    expect(h.savedRaw).toContain('form: "article"');
+    expect(h.savedRaw).toContain('level: "AI-2"');
+    expect(h.savedRaw).toMatch(/updated: "\d{4}-\d{2}-\d{2}"/);
+  });
+
+  it('saves the file as PREPARED and does not claim publication before remote verification', async () => {
+    const h = harness();
+    const result = await h.service.publishWebsite('work-1', 'approved-hash');
+    expect(result.status).toBe('PREPARED');
+    expect(result.publishedAt).toBeNull();
+    expect(result.lastError).toBeNull();
+  });
+
+  it('verifyWebsite flips to PUBLISHED only when the remote URL is verified', async () => {
+    const h = harness();
+    const failing = new PublicationService(
       h.prisma, h.works, h.stages, h.publications, h.files, undefined,
       { verify: async () => ({ ok: false, reason: 'remote-content-not-found' }) },
     );
-    const result = await service.publishWebsite('work-1', 'approved-hash');
-    expect(result.status).toBe('FAILED');
-    expect(result.lastError).toBe('remote-content-not-found');
+    h.publications.find = async () => ({ id: 'pub-1', submissionId: 'work-1', channel: 'WEBSITE', artifactHash: 'approved-hash', status: 'PREPARED', url: 'https://iwalk.pro/posts/ai-draft', lastError: null, publishedAt: null, createdAt: new Date(), updatedAt: new Date() });
+    const failed = await failing.verifyWebsite('work-1');
+    expect(failed.status).toBe('FAILED');
+    expect(failed.lastError).toBe('remote-content-not-found');
+
+    const passing = new PublicationService(
+      h.prisma, h.works, h.stages, h.publications, h.files, undefined,
+      { verify: async () => ({ ok: true }) },
+    );
+    const published = await passing.verifyWebsite('work-1');
+    expect(published.status).toBe('PUBLISHED');
+    expect(published.publishedAt).toBeTruthy();
   });
 
   it('records a normal-session WeChat draft id while keeping public release manual', async () => {

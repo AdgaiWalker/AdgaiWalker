@@ -37,7 +37,7 @@ const ruleResult: AssistantRunResult = {
   elapsedMs: 0,
 };
 
-function makeDeps(opts: { bumpReturns?: number; bumpThrows?: boolean } = {}) {
+function makeDeps(opts: { bumpReturns?: number; bumpThrows?: boolean; sessionOwner?: { anonId: string; runner: string } | null; findThrows?: boolean } = {}) {
   const runner: AssistantRunnerPort = { ask: vi.fn(async () => aiResult) };
   const fallback: AssistantRunnerPort = { ask: vi.fn(async () => ruleResult) };
   const events: FeatureEventPort = {
@@ -50,6 +50,10 @@ function makeDeps(opts: { bumpReturns?: number; bumpThrows?: boolean } = {}) {
   };
   const repo: AssistantRepositoryPort = {
     upsertSession: vi.fn(async () => {}),
+    findSession: vi.fn(async () => {
+      if (opts.findThrows) throw new Error('storage down');
+      return opts.sessionOwner ?? null;
+    }),
     saveRun: vi.fn(async () => {}),
     listRuns: vi.fn(async () => []),
     bumpRequests: vi.fn(async () => {
@@ -152,5 +156,33 @@ describe('AssistantService 每日预算熔断', () => {
     );
     await serviceFor(true, d).ask(ask);
     expect(dates[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('会话归属：自己的 harness 会话才续轮', async () => {
+    const d = makeDeps({ sessionOwner: { anonId: 'anon-1', runner: 'harness' } });
+    await serviceFor(true, d).ask({ ...ask, sessionId: 'dsh-session-1' });
+    expect((d.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBe('dsh-session-1');
+  });
+
+  it('会话归属：他人的 sessionId 不续轮（开新会话，不报错）', async () => {
+    const d = makeDeps({ sessionOwner: { anonId: 'anon-someone-else', runner: 'harness' } });
+    const r = await serviceFor(true, d).ask({ ...ask, sessionId: 'dsh-session-1' });
+    expect(r.answer).toBe('AI 回答。');
+    expect((d.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBeNull();
+  });
+
+  it('会话归属：未知会话 / 规则会话 / 存储失败一律开新会话（fail-closed）', async () => {
+    const unknown = makeDeps({ sessionOwner: null });
+    await serviceFor(true, unknown).ask({ ...ask, sessionId: 'never-seen' });
+    expect((unknown.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBeNull();
+
+    const ruleOwned = makeDeps({ sessionOwner: { anonId: 'anon-1', runner: 'rule' } });
+    await serviceFor(true, ruleOwned).ask({ ...ask, sessionId: 'rule-session' });
+    expect((ruleOwned.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBeNull();
+
+    const broken = makeDeps({ findThrows: true });
+    const r = await serviceFor(true, broken).ask({ ...ask, sessionId: 'dsh-session-1' });
+    expect(r.answer).toBe('AI 回答。');
+    expect((broken.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBeNull();
   });
 });

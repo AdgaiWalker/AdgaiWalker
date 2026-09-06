@@ -47,6 +47,11 @@ export interface WorkRepositoryPort {
   createForExecution(input: NewWorkRecord): Promise<WorkRecord>;
   createFromDraft(input: NewManualWorkRecord): Promise<WorkRecord>;
   setStatus?(id: string, status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord>;
+  /**
+   * 条件状态更新：当前状态命中 unless 时跳过写入并返回现状（迟到结果不得覆盖终态，
+   * 如取消后完成的生产循环不得把 CANCELLED 改写成 REVIEW_READY）。返回 null 表示 work 不存在。
+   */
+  setStatusUnless?(id: string, unless: readonly WorkStatus[], status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord | null>;
   setProgress?(id: string, input: {
     currentStage?: ProductionStage | null;
     stageStartedAt?: Date | null;

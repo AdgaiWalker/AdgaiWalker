@@ -5,6 +5,34 @@
 
 export type ContentVisibility = 'public' | 'draft' | 'private';
 
+/**
+ * 公开文章 frontmatter 必需字段合同。
+ * build:web 的字段门禁（scripts/check-content-fields.ts）与工作站网站发布器
+ * （apps/api PublicationService）共用这一份清单：发布物必须先过校验再落盘，
+ * 门禁不迁就生成物，生成物必须天然过门禁。
+ */
+export const PUBLISHED_POST_REQUIRED_FIELDS = [
+  'form',
+  'domain',
+  'intent',
+  'valueMode',
+  'aiUsePolicy',
+  'updated',
+  'summary',
+] as const;
+
+export type PublishedPostRequiredField = (typeof PUBLISHED_POST_REQUIRED_FIELDS)[number];
+
+/** 返回缺失/为空的必需字段（空数组即通过）；判空口径与 check-content-fields 一致 */
+export function missingPublishedPostFields(
+  data: Record<string, unknown>,
+): PublishedPostRequiredField[] {
+  return PUBLISHED_POST_REQUIRED_FIELDS.filter((field) => {
+    const v = data[field];
+    return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+  });
+}
+
 export interface ContentDoc {
   slug: string;
   title: string;

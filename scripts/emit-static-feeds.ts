@@ -105,8 +105,8 @@ const llmItems = browseItems.filter((item) => item.aiUsePolicy.readable);
 
 fs.mkdirSync(webDistDir, { recursive: true });
 
+// RSS 与 JSON Feed 的条目契约 = 全部 browse 条目（verify-geo 按此双侧校验），不设上限
 const rssItems = browseItems
-  .slice(0, 40)
   .map((item) => {
     const link = absoluteUrl(articlePath(item));
     const published = isoDate(item.date);

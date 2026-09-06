@@ -219,8 +219,18 @@ docs.sort((a, b) => {
   return a.title.localeCompare(b.title, 'zh-CN');
 });
 fs.mkdirSync(webGeneratedDir, { recursive: true });
-fs.writeFileSync(
-  contentJsonPath,
-  JSON.stringify({ generatedAt: new Date().toISOString(), items: docs }, null, 2),
-);
-console.log(`wrote ${docs.length} items → ${contentJsonPath}`);
+const nextPayload = JSON.stringify({ generatedAt: new Date().toISOString(), items: docs }, null, 2);
+// 内容未变时不重写：generatedAt 时间戳不应在每次构建制造无意义 diff
+let unchanged = false;
+try {
+  const existing = JSON.parse(fs.readFileSync(contentJsonPath, 'utf8')) as { items?: unknown };
+  unchanged = JSON.stringify(existing.items) === JSON.stringify(docs);
+} catch {
+  /* 无旧文件或旧文件损坏 → 正常写入 */
+}
+if (unchanged) {
+  console.log(`content unchanged (${docs.length} items); keep existing content.json`);
+} else {
+  fs.writeFileSync(contentJsonPath, nextPayload);
+  console.log(`wrote ${docs.length} items → ${contentJsonPath}`);
+}

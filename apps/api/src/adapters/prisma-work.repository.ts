@@ -93,6 +93,16 @@ export class PrismaWorkRepository implements WorkRepositoryPort {
     return this.map(row);
   }
 
+  async setStatusUnless(id: string, unless: readonly WorkStatus[], status: WorkStatus, approvedArtifactHash?: string | null): Promise<WorkRecord | null> {
+    const db = this.db();
+    await db.submission.updateMany({
+      where: { id, NOT: { status: { in: [...unless] } } },
+      data: { status, approvedArtifactHash },
+    });
+    const row = await db.submission.findUnique({ where: { id } });
+    return row ? this.map(row) : null;
+  }
+
   async setProgress(id: string, input: {
     currentStage?: import('@walker/shared').ProductionStage | null;
     stageStartedAt?: Date | null;

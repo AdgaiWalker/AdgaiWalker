@@ -202,10 +202,12 @@ export const adminApi = {
       approvedArtifactHash: string | null;
     }>(`/works/${id}/review`),
   returnWork: (id: string) => adminRequest<Work>(`/works/${id}/return`, { method: 'POST' }),
+  workPublications: (id: string) =>
+    adminRequest<Array<{ channel: string; status: string; url: string | null; lastError: string | null }>>(`/works/${id}/publications`),
   publishWebsite: (id: string, artifactHash: string) =>
-    adminRequest<{ status: string; url: string | null }>(`/works/${id}/publish/website`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
+    adminRequest<{ status: string; url: string | null; lastError: string | null }>(`/works/${id}/publish/website`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
   verifyWebsite: (id: string) =>
-    adminRequest<{ status: string; url: string | null }>(`/works/${id}/publish/website/verify`, { method: 'POST' }),
+    adminRequest<{ status: string; url: string | null; lastError: string | null }>(`/works/${id}/publish/website/verify`, { method: 'POST' }),
   prepareWechatDraft: (id: string, artifactHash: string) =>
     adminRequest<{ packagePath: string; publication: { status: string } }>(`/works/${id}/publish/wechat-draft`, { method: 'POST', body: JSON.stringify({ artifactHash }) }),
   exportWork: (id: string, destination: string) =>

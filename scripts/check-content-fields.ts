@@ -1,22 +1,18 @@
 /**
  * check-content-fields — 校验 content/log frontmatter 必需字段
- * 依赖：gray-matter、paths.contentLogDir
+ * 依赖：gray-matter、paths.contentLogDir、@walker/shared（字段清单与工作站发布器共用）
  * 触发：可选手工 / CI
  */
 import { readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import matter from 'gray-matter';
+import {
+  missingPublishedPostFields,
+  PUBLISHED_POST_REQUIRED_FIELDS,
+} from '@walker/shared';
 import { contentLogDir, repoRoot } from './lib/paths';
 
-const REQUIRED_FIELDS = [
-  'form',
-  'domain',
-  'intent',
-  'valueMode',
-  'aiUsePolicy',
-  'updated',
-  'summary',
-] as const;
+const REQUIRED_FIELDS = PUBLISHED_POST_REQUIRED_FIELDS;
 
 async function collectMarkdownFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -35,11 +31,7 @@ async function collectMarkdownFiles(dir: string): Promise<string[]> {
 async function checkFile(filePath: string): Promise<{ file: string; missing: string[] }> {
   const parsed = matter.read(filePath);
   const data = (parsed.data || {}) as Record<string, unknown>;
-  const missing = REQUIRED_FIELDS.filter((field) => {
-    const v = data[field];
-    return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
-  });
-  return { file: filePath, missing: [...missing] };
+  return { file: filePath, missing: [...missingPublishedPostFields(data)] };
 }
 
 async function main(): Promise<void> {

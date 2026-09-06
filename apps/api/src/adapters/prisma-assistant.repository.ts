@@ -26,6 +26,11 @@ export class PrismaAssistantRepository implements AssistantRepositoryPort {
     });
   }
 
+  async findSession(sessionId: string): Promise<{ anonId: string; runner: string } | null> {
+    const row = await this.db()?.assistantSession.findFirst({ where: { sessionId } });
+    return row ? { anonId: row.anonId, runner: row.runner } : null;
+  }
+
   async saveRun(input: AssistantRunInput): Promise<void> {
     await this.db()?.assistantRun.create({ data: input });
   }

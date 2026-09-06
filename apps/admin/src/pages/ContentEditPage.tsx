@@ -15,6 +15,7 @@ export function ContentEditPage() {
   const { err, run } = useAdminAction();
   const [savedAt, setSavedAt] = useState('');
   const [publishHint, setPublishHint] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!slug) return;
@@ -64,19 +65,27 @@ export function ContentEditPage() {
         />
         <button
           type="button"
+          disabled={saving}
           onClick={() =>
             void run(async () => {
-              const doc = await adminApi.contentSave(slug, raw);
-              setRaw(doc.raw);
-              setTitle(doc.title);
-              setSavedAt(new Date().toLocaleString('zh-CN'));
-              setPublishHint(true);
+              const submitted = raw;
+              setSaving(true);
+              try {
+                const doc = await adminApi.contentSave(slug, submitted);
+                // 仅当保存期间用户没有继续输入时才回写服务端版本，后到响应不得覆盖新输入
+                setRaw((current) => (current === submitted ? doc.raw : current));
+                setTitle(doc.title);
+                setSavedAt(new Date().toLocaleString('zh-CN'));
+                setPublishHint(true);
+              } finally {
+                setSaving(false);
+              }
             })
           }
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8 }}
         >
           <Save size={16} aria-hidden />
-          保存到 content/log
+          {saving ? '保存中…' : '保存到 content/log'}
         </button>
       </div>
     </div>

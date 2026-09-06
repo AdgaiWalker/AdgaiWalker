@@ -14,7 +14,7 @@ const EXAMPLES = [
 ] as const;
 
 const SERVICE_NOTE =
-  '本页需要处理服务。本地：终端跑 pnpm dev:api。公网目前多半只有网站、没有真·卡写入——失败时会说明原因，不会假装成功。';
+  '描述卡点后直接提交：站点的处理服务在公网已真实可用（写入线索并返回下一步建议）。失败时会说明原因，不会假装成功。';
 
 export function ToolsPage() {
   const intake = useIntake();

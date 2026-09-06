@@ -45,6 +45,37 @@ export function sanitizeAnswerText(raw: string): string {
     .trim();
 }
 
+/**
+ * 从流式累积的模型 JSON 输出中提取 answer 字段已闭合的文本（服务端与浏览器共用）。
+ * 这是流式展示合同：text-delta 流的是 JSON 原文，出网关 / 进浏览器前必须裁剪成
+ * 纯答案文本——citations 数组、JSON 语法噪声一律不外发。终值仍由 parseAssistantOutput
+ * 完整校验并整体覆盖，本函数只服务流式期间的干净显示。容忍 `"answer" : "` 的空白变体。
+ */
+export function extractStreamedAnswer(buffer: string): string {
+  const startMatch = buffer.match(/"answer"\s*:\s*"/);
+  if (!startMatch || startMatch.index === undefined) return '';
+  let i = startMatch.index + startMatch[0].length;
+  let out = '';
+  while (i < buffer.length) {
+    const ch = buffer[i];
+    if (ch === '\\' && i + 1 < buffer.length) {
+      const next = buffer[i + 1];
+      if (next === 'n') out += '\n';
+      else if (next === '"') out += '"';
+      else if (next === '\\') out += '\\';
+      else if (next === 'r') out += '';
+      else if (next === 't') out += '\t';
+      else out += ch + next;
+      i += 2;
+      continue;
+    }
+    if (ch === '"') break; // answer 值闭合，其后（citations 等）不外发
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
 function extractCitationSlugs(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const slugs: string[] = [];

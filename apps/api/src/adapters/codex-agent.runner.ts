@@ -22,16 +22,34 @@ export function parseCodexJsonl(raw: string): { output: unknown; events: unknown
   throw new Error('runner-output-missing');
 }
 
+/**
+ * 解析 codex 启动目标。安全边界：spawn 一律 shell:false，命令行只允许固定 flag 与本机路径；
+ * 任何调用方数据（尤其访客 prompt）只经 stdin 传入，永不成为 shell 语法。
+ * Windows 上 shell:false 无法执行 npm 的 .cmd shim（现代 Node 直接拒绝），因此：
+ * - CODEX_CLI_PATH 指到 .js 入口 → 用当前 node 启动；
+ * - 其余（.exe 或 unix 可执行）直接 spawn；默认 `codex` 在 Windows 依赖 PATH 里的 codex.exe。
+ */
+export function resolveCodexCommand(
+  raw: string | undefined,
+  platform: NodeJS.Platform = process.platform,
+): { file: string; prefix: string[] } {
+  const command = raw?.trim() || 'codex';
+  if (platform === 'win32' && /\.(js|mjs|cjs)$/i.test(command)) {
+    return { file: process.execPath, prefix: [command] };
+  }
+  return { file: command, prefix: [] };
+}
+
 @Injectable()
 export class CodexAgentRunner implements AgentRunnerPort {
   async run(input: AgentRunInput): Promise<AgentRunResult> {
     const started = Date.now();
-    const command = process.env.CODEX_CLI_PATH?.trim() || 'codex';
-    const args = ['exec', '--json', '--ephemeral', '-s', 'read-only', '-C', input.cwd];
+    const { file, prefix } = resolveCodexCommand(process.env.CODEX_CLI_PATH);
+    const args = [...prefix, 'exec', '--json', '--ephemeral', '-s', 'read-only', '-C', input.cwd];
     if (input.outputSchemaPath) args.push('--output-schema', input.outputSchemaPath);
-    args.push(input.prompt);
+    args.push('-');
     return new Promise((resolve, reject) => {
-      const child = spawn(command, args, { cwd: input.cwd, shell: process.platform === 'win32', windowsHide: true });
+      const child = spawn(file, args, { cwd: input.cwd, shell: false, windowsHide: true });
       let stdout = '';
       let stderr = '';
       let settled = false;
@@ -51,6 +69,9 @@ export class CodexAgentRunner implements AgentRunnerPort {
       input.signal?.addEventListener('abort', abort, { once: true });
       child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
       child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+      // stdin 写入失败（如目标进程早退触发 EPIPE）不在这里终结：由 exit code / 输出解析兜底报错
+      child.stdin.on('error', () => {});
+      child.stdin.end(input.prompt, 'utf8');
       child.on('error', (error) => {
         if (settled) return;
         settled = true;

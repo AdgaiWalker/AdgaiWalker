@@ -68,6 +68,11 @@ export class AssistantController {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
+    // 端到端取消：访客断流（关页/点停止）时 abort 服务端等待，runtime 不再空跑
+    const disconnect = new AbortController();
+    req.on('close', () => {
+      if (!res.writableEnded) disconnect.abort();
+    });
     const send = (event: string, data: unknown) => {
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
@@ -80,6 +85,7 @@ export class AssistantController {
           ipKey,
           sessionId: body.sessionId ?? null,
           isAuthenticated: false,
+          signal: disconnect.signal,
         },
         (delta) => send('text', { delta }),
       );

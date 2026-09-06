@@ -29,6 +29,8 @@ export type AssistantThreadProps = {
   idPrefix?: string;
   /** 悬浮窗隐藏底部「去卡口」脚注（窗内已有窄栏出口） */
   compact?: boolean;
+  /** 外部焦点控制（如悬浮窗打开时聚焦）；不传则内部自建 */
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export function AssistantThread({
@@ -44,8 +46,10 @@ export function AssistantThread({
   onStop,
   idPrefix = 'assistant',
   compact = false,
+  inputRef: externalInputRef,
 }: AssistantThreadProps) {
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const internalInputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = externalInputRef ?? internalInputRef;
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

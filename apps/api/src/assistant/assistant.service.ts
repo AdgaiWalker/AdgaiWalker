@@ -40,6 +40,8 @@ export interface AssistantAskServiceInput {
   ipKey: string;
   sessionId?: string | null;
   isAuthenticated?: boolean;
+  /** 端到端取消（流式）：浏览器断流时由控制器置 abort */
+  signal?: AbortSignal;
 }
 
 export interface AssistantAskServiceResult {
@@ -53,6 +55,12 @@ export interface AssistantAskServiceResult {
 @Injectable()
 export class AssistantService {
   private readonly dailyLimit: number;
+  /**
+   * 预算存储失效时的进程内兜底计数（fail-open 是既定决策，但兜底保证
+   * 故障期间仍有软性成本上限；进程重启即重置，如实记录失效事件）
+   */
+  private budgetFallbackDate = '';
+  private budgetFallbackCount = 0;
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfigPort,
@@ -134,20 +142,49 @@ export class AssistantService {
       throw validationError('assistant-body-too-short');
     }
 
+    // 会话归属校验：只有「已登记 + 属于当前访客 + harness 会话」才允许续轮；
+    // 未知/他人/规则会话/存储不可用一律降级为新会话（fail-closed，不阻断提问）。
+    // 拿到他人 sessionId 的访客无法续接或污染对方上下文。
+    let sessionId: string | null = null;
+    if (input.sessionId) {
+      try {
+        const owned = await this.repo.findSession(input.sessionId);
+        if (owned && owned.anonId === input.anonId && owned.runner === 'harness') {
+          sessionId = input.sessionId;
+        }
+      } catch {
+        sessionId = null;
+      }
+    }
+
     const askInput = {
-      sessionId: input.sessionId ?? null,
+      sessionId,
       text: input.body.trim(),
       visitorKey: input.anonId,
+      ...(input.signal ? { signal: input.signal } : {}),
     };
 
     // 每日 AI 预算熔断：触顶当日直接规则兜底（成本保险丝在网关，不指望模型自觉）
     let useFallback = false;
     if (this.config.isAiEnabled()) {
+      const dateKey = todayCN();
       let used = 0;
       try {
-        used = await this.repo.bumpRequests(todayCN());
+        used = await this.repo.bumpRequests(dateKey);
       } catch {
-        used = 0; // 存储不可用时不阻断（fail-open），照常走 AI
+        // 存储不可用时不阻断（fail-open），改用进程内兜底计数并如实记录失效
+        if (this.budgetFallbackDate !== dateKey) {
+          this.budgetFallbackDate = dateKey;
+          this.budgetFallbackCount = 0;
+        }
+        this.budgetFallbackCount += 1;
+        used = this.budgetFallbackCount;
+        void this.safeEvent({
+          featureKey: 'assistant.ask',
+          event: 'fail',
+          actorType,
+          failCode: 'budget-storage-failed',
+        });
       }
       if (used > this.dailyLimit) {
         void this.safeEvent({
@@ -163,7 +200,7 @@ export class AssistantService {
   }
 
   private dispatch(
-    askInput: { sessionId: string | null; text: string; visitorKey: string },
+    askInput: { sessionId: string | null; text: string; visitorKey: string; signal?: AbortSignal },
     useFallback: boolean,
     _unused?: undefined,
   ): Promise<AssistantRunResult> {

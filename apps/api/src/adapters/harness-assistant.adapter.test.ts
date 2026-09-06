@@ -96,6 +96,25 @@ function adapterFor(runtime: HarnessRuntimeLike, timeoutMs = 80) {
   return new HarnessAssistantAdapter(config(true), index, fallback, () => runtime, timeoutMs);
 }
 
+/** 按 text-delta 序列推送通知的假 runtime（模拟流式 JSON 输出） */
+function streamingRuntime(chunks: string[]): HarnessRuntimeLike {
+  return {
+    async run(_prompt, opts) {
+      for (const chunk of chunks) {
+        opts?.onNotification?.({
+          method: 'session.event',
+          params: { event: { type: 'assistant/chunk', data: { chunk: { type: 'text-delta', text: chunk } } } },
+        });
+      }
+      return {
+        sessionId: 'dsh-stream-1',
+        finalResponse: JSON.stringify({ answer: '完整校验后的回答', citations: [] }),
+      };
+    },
+    async close() {},
+  };
+}
+
 describe('HarnessAssistantAdapter', () => {
   it('AI 关：不建 runtime，直接兜底', async () => {
     let spawned = 0;
@@ -168,5 +187,64 @@ describe('HarnessAssistantAdapter', () => {
     expect(p).toContain('第三人称');
     expect(p).toContain('闲鱼购买 MacBook 的完整攻略');
     expect(p).toContain('访客问题：你好');
+  });
+
+  it('流式只外发裁剪后的 answer 文本；原始 JSON 与 citations 不出网关，终值整体覆盖', async () => {
+    const rt = streamingRuntime([
+      '{"ans',
+      'wer":"你好',
+      '，这里是答案","citations":["used-macbook-guide"]}',
+    ]);
+    const seen: string[] = [];
+    const r = await adapterFor(rt).askStream(
+      { sessionId: null, text: '你好', visitorKey: 'v1' },
+      (delta) => seen.push(delta),
+    );
+    expect(seen.join('')).toBe('你好，这里是答案');
+    expect(seen.join('')).not.toContain('citations');
+    expect(r.aiUsedFlag).toBe(true);
+    expect(r.answer).toBe('完整校验后的回答');
+  });
+
+  it('排队时间计入 deadline：锁被占满预算的后来者不开 runtime 直接兜底', async () => {
+    let calls = 0;
+    const rt: HarnessRuntimeLike = {
+      async run() {
+        calls += 1;
+        await new Promise((r) => setTimeout(r, 40));
+        return { sessionId: 's', finalResponse: JSON.stringify({ answer: '回答内容足够长', citations: [] }) };
+      },
+      async close() {},
+    };
+    const a = adapterFor(rt, 30);
+    const first = a.ask({ sessionId: null, text: '第一问', visitorKey: 'v1' });
+    const second = a.ask({ sessionId: null, text: '第二问', visitorKey: 'v2' });
+    const r2 = await second;
+    expect(r2.aiUsedFlag).toBe(false);
+    await first;
+    // 第一问自身 40ms > 30ms 预算同样超时兜底；第二问在排队中耗尽预算，从未触达 runtime
+    expect(calls).toBe(1);
+  });
+
+  it('端到端取消：abort 后不等 runtime，弃结果走兜底并关闭实例', async () => {
+    let closed = 0;
+    const rt: HarnessRuntimeLike = {
+      async run() {
+        return new Promise<{ sessionId: string; finalResponse: unknown }>(() => {});
+      },
+      async close() {
+        closed += 1;
+      },
+    };
+    const a = adapterFor(rt, 5_000);
+    const ac = new AbortController();
+    const pending = a.askStream(
+      { sessionId: null, text: '问题', visitorKey: 'v1', signal: ac.signal },
+      () => {},
+    );
+    setTimeout(() => ac.abort(), 10);
+    const r = await pending;
+    expect(r.aiUsedFlag).toBe(false);
+    expect(closed).toBe(1);
   });
 });

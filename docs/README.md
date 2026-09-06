@@ -13,6 +13,7 @@
 | [`api/README.md`](./api/README.md) | **Nest API 契约** |
 | [`PRD-SITE-ASSISTANT.md`](./PRD-SITE-ASSISTANT.md) | **站内助手规划**（活跃 PRD；冲突时低于上行四文档） |
 | [`TODO-SITE-ASSISTANT.md`](./TODO-SITE-ASSISTANT.md) | **站内助手执行清单**（P0–P3 任务与验收） |
+| [`TODO-OPTIMIZATION.md`](./TODO-OPTIMIZATION.md) | **全站优化执行清单**（T0–T4 分批任务与验收，源自 2026-09-05 完整分析） |
 
 冲突时：**代码 + `api/README` + PRODUCT/ENGINEERING/STATUS + `Claude.md` > VISION 与 `archive/`**。近端行为以 PRODUCT 为准。
 

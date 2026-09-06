@@ -33,6 +33,8 @@ export interface AssistantRunRecord {
 
 export interface AssistantRepositoryPort {
   upsertSession(input: AssistantSessionInput): Promise<void>;
+  /** 会话归属查询：网关续轮前校验 sessionId 属于当前访客（隐私边界） */
+  findSession(sessionId: string): Promise<{ anonId: string; runner: string } | null>;
   saveRun(input: AssistantRunInput): Promise<void>;
   /** 问题池：倒序最近记录（管理侧筛选用，AI 不参与） */
   listRuns(limit: number): Promise<AssistantRunRecord[]>;

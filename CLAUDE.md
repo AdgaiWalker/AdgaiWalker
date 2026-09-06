@@ -106,8 +106,7 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 
 ## Admin 鉴权
 
-**当前无管理令牌。** Admin UI 与 `/clues` 等过程 API 直接可访问。  
-公网暴露 Nest 时须用防火墙 / 内网 / 反向代理隔离，勿依赖已删除的 Bearer。
+**生产已启用双层管理凭据**（2026-09-03 切流后）：Nest `AdminTokenMiddleware` 校验 Basic 密码 = `WALKER_ADMIN_TOKEN`（生产缺该 env 直接拒启）；公网另有 Caddy basic auth 双防线。公开白名单见 `apps/api/src/app.module.ts`（与 `ops/windows/Caddyfile` 双侧同步，漏一侧即 401/404）。脚本调管理接口带 `x-admin-token` 头。凭据体系与改密流程见 `AGENTS.md`「生产拓扑」。
 
 ## 功能开发清单
 

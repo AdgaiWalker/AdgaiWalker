@@ -82,7 +82,11 @@ describe('AI workstation three-work acceptance harness', () => {
     };
     const production = new ProductionService(prisma, runner, stages, works);
     const review = new ReviewService(prisma, works, stages);
-    const publication = new PublicationService(prisma, works, stages, publicationRepo, files, packageRepo);
+    const publication = new PublicationService(
+      prisma, works, stages, publicationRepo, files, packageRepo,
+      // 模拟「content:publish 上线后线上可访问」
+      { verify: async () => ({ ok: true }) },
+    );
     const exporter = new WorkExportService(root);
 
     for (const [index, id] of ['work-1', 'work-2', 'work-3'].entries()) {
@@ -106,9 +110,13 @@ describe('AI workstation three-work acceptance harness', () => {
       expect(reviewReady).toBeTruthy();
       const approved = await review.approve(id, reviewReady!.hash);
       expect(approved.status).toBe('APPROVED');
-      await publication.publishWebsite(id, reviewReady!.hash);
-      const prepared = await publication.prepareWechat(id, reviewReady!.hash);
-      expect(prepared.packagePath.replaceAll('\\', '/')).toContain('publish/wechat.json');
+      // 新发布合同：保存只到 PREPARED；线上校验通过才 PUBLISHED，微信草稿后才 COMPLETED
+      const prepared = await publication.publishWebsite(id, reviewReady!.hash);
+      expect(prepared.status).toBe('PREPARED');
+      const verified = await publication.verifyWebsite(id);
+      expect(verified.status).toBe('PUBLISHED');
+      const wechat = await publication.prepareWechat(id, reviewReady!.hash);
+      expect(wechat.packagePath.replaceAll('\\', '/')).toContain('publish/wechat.json');
       const exported = await exporter.export(id, exportRoot);
       await expect(fs.access(path.join(exported.path, 'manifest.json'))).resolves.toBeUndefined();
       await expect(fs.access(path.join(exported.path, 'publish', 'wechat.json'))).resolves.toBeUndefined();

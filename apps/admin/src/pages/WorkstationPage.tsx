@@ -76,17 +76,39 @@ function LiveWorkbench() {
   const [links, setLinks] = useState('');
   const [draft, setDraft] = useState<File | null>(null);
   const [brief, setBrief] = useState({ audience: '', scenario: '', problem: '', keyQuestion: '', intendedAction: '' });
-  const [artifactHashes, setArtifactHashes] = useState<Record<string, string>>({});
   const [failedStages, setFailedStages] = useState<Record<string, string>>({});
   const [reviewPackets, setReviewPackets] = useState<Record<string, Awaited<ReturnType<typeof adminApi.getReview>>>>({});
+  const [publications, setPublications] = useState<Record<string, Array<{ channel: string; status: string; url: string | null; lastError: string | null }>>>({});
+  const [publishHints, setPublishHints] = useState<Record<string, string>>({});
   const [exportDestination, setExportDestination] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  // 幂等键按「一份草稿」保持稳定：重试不重复建 work；新建成功后才换新键
+  const [draftKey, setDraftKey] = useState(() => `admin-${Date.now()}`);
   const { err, run } = useAdminAction();
 
+  /** 纯读取：不自带错误处理，由调用方的 run 统一兜住（避免外层成功清除内层失败） */
   const load = useCallback(async () => {
-    await run(async () => setSnapshot(await adminApi.workbench()));
-  }, [run]);
+    setSnapshot(await adminApi.workbench());
+  }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  /** 审阅包与发布记录都从服务端恢复：刷新页面不丢 Review/Approve/发布状态入口 */
+  const loadWorkState = useCallback(async (workId: string) => {
+    const [packet, pubs] = await Promise.all([adminApi.getReview(workId), adminApi.workPublications(workId)]);
+    setReviewPackets((current) => ({ ...current, [workId]: packet }));
+    setPublications((current) => ({ ...current, [workId]: pubs }));
+  }, []);
+
+  useEffect(() => {
+    void run(async () => {
+      await load();
+      try {
+        const works = await adminApi.works();
+        await Promise.all(works.filter((w) => ['REVIEW_READY', 'APPROVED', 'PARTIALLY_PUBLISHED'].includes(w.status)).map((w) => loadWorkState(w.id)));
+      } catch {
+        // 审阅包/发布记录恢复失败不阻塞列表展示；操作时再按需拉取
+      }
+    });
+  }, [load, loadWorkState, run]);
 
   const updateBrief = (key: keyof typeof brief, value: string) => setBrief((current) => ({ ...current, [key]: value }));
 
@@ -102,15 +124,21 @@ function LiveWorkbench() {
       <div className="workstation-live-grid">
         <form onSubmit={(event) => {
           event.preventDefault();
-          if (!draft) return;
+          if (!draft || submitting) return;
           void run(async () => {
-            await adminApi.createWork({
-              idempotencyKey: `admin-${Date.now()}`,
-              title, sourceProblem: problem, whyNow, coreViewpoint: viewpoint,
-              protectedClaims: [], contentBrief: brief, links: links.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean), draft,
-            });
-            setTitle(''); setProblem(''); setWhyNow(''); setViewpoint(''); setLinks(''); setDraft(null);
-            await load();
+            setSubmitting(true);
+            try {
+              await adminApi.createWork({
+                idempotencyKey: draftKey,
+                title, sourceProblem: problem, whyNow, coreViewpoint: viewpoint,
+                protectedClaims: [], contentBrief: brief, links: links.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean), draft,
+              });
+              setTitle(''); setProblem(''); setWhyNow(''); setViewpoint(''); setLinks(''); setDraft(null);
+              setDraftKey(`admin-${Date.now()}`);
+              await load();
+            } finally {
+              setSubmitting(false);
+            }
           });
         }}>
           <label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
@@ -124,7 +152,7 @@ function LiveWorkbench() {
             ))}
           </div>
           <label>Human draft<input type="file" accept=".md,.mdx,.txt,text/markdown,text/plain" onChange={(event) => setDraft(event.target.files?.[0] ?? null)} required /></label>
-          <button type="submit">Create draft work</button>
+          <button type="submit" disabled={submitting}>{submitting ? '创建中…' : 'Create draft work'}</button>
           {err ? <p className="error">{err}</p> : null}
         </form>
         <div>
@@ -135,8 +163,13 @@ function LiveWorkbench() {
           <p className="muted">Video log: {snapshot?.videoLog.length ?? '—'}</p>
           <p className="muted">Works: {snapshot?.activeWorks.length ?? '—'}</p>
           {snapshot?.activeWorks.map((work) => {
-            const hash = artifactHashes[work.id] ?? work.approvedArtifactHash ?? '';
             const failedStage = failedStages[work.id];
+            const packet = reviewPackets[work.id];
+            const candidateHash = packet?.candidate?.hash ?? null;
+            const approvedHash = work.approvedArtifactHash;
+            const reviewable = work.status === 'REVIEW_READY' || work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED';
+            const publishable = (work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED') && approvedHash;
+            const websitePub = publications[work.id]?.find((p) => p.channel === 'WEBSITE') ?? null;
             return <div className="workstation-mini-row" key={work.id}>
               <strong>{work.title}</strong><span>{work.status}{work.currentStage ? ` · ${work.currentStage}` : ''}</span>
               {work.stageStartedAt ? <small className="muted">started {new Date(work.stageStartedAt).toLocaleTimeString()}</small> : null}
@@ -144,28 +177,70 @@ function LiveWorkbench() {
               {work.status === 'PROCESSING' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.cancelWork(work.id); await load(); })}>Stop</button> : null}
               <button type="button" className="secondary" disabled={work.status === 'CANCELLED'} onClick={() => void run(async () => {
                 const result = await adminApi.produceWork(work.id, failedStage ? { fromStage: failedStage } : undefined);
-                if (result.latestHash) setArtifactHashes((current) => ({ ...current, [work.id]: result.latestHash! }));
                 if (result.failedStage) setFailedStages((current) => ({ ...current, [work.id]: result.failedStage! }));
                 else setFailedStages((current) => { const next = { ...current }; delete next[work.id]; return next; });
                 await load();
+                await loadWorkState(work.id);
               })}>{failedStage ? `Retry from ${failedStage}` : 'Run recipe'}</button>
-              {hash && (work.status === 'REVIEW_READY' || work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED') ? <>
-                <button type="button" className="secondary" onClick={() => void run(async () => { const packet = await adminApi.getReview(work.id); setReviewPackets((current) => ({ ...current, [work.id]: packet })); })}>Review</button>
-                {work.status === 'REVIEW_READY' ? <button type="button" onClick={() => void run(async () => { await adminApi.approveWork(work.id, hash); await load(); })}>Approve</button> : null}
-                {work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.publishWebsite(work.id, hash); await load(); })}>Website</button> : null}
-                {work.status === 'APPROVED' || work.status === 'PARTIALLY_PUBLISHED' ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.verifyWebsite(work.id); await load(); })}>Verify website</button> : null}
-                <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.prepareWechatDraft(work.id, hash); await load(); })}>WeChat draft</button>
+              {reviewable ? <>
+                <button type="button" className="secondary" onClick={() => void run(async () => { await loadWorkState(work.id); })}>Review</button>
+                {work.status === 'REVIEW_READY' ? <button type="button" disabled={!candidateHash} onClick={() => void run(async () => {
+                  // 审批绑定服务端审阅包里的候选 hash：所见即所批，刷新后仍可恢复
+                  let hashForApproval = candidateHash;
+                  if (!hashForApproval) {
+                    const fresh = await adminApi.getReview(work.id);
+                    setReviewPackets((current) => ({ ...current, [work.id]: fresh }));
+                    hashForApproval = fresh.candidate?.hash ?? null;
+                  }
+                  if (!hashForApproval) throw new Error('没有可审批的候选（先运行配方到 REVIEW_READY）');
+                  await adminApi.approveWork(work.id, hashForApproval);
+                  await load();
+                })}>Approve</button> : null}
+              </> : null}
+              {publishable ? <>
+                <button type="button" className="secondary" onClick={() => void run(async () => {
+                  const pub = await adminApi.publishWebsite(work.id, approvedHash);
+                  await loadWorkState(work.id);
+                  setPublishHints((current) => ({
+                    ...current,
+                    [work.id]: pub.status === 'PREPARED'
+                      ? '内容文件已保存到 content/log。下一步：pnpm content:publish --push 上线，Vercel 部署完成后再点 Verify website。'
+                      : `发布状态：${pub.status}${pub.lastError ? `（${pub.lastError}）` : ''}`,
+                  }));
+                  await load();
+                })}>Website</button>
+                <button type="button" className="secondary" onClick={() => void run(async () => {
+                  const pub = await adminApi.verifyWebsite(work.id);
+                  await loadWorkState(work.id);
+                  setPublishHints((current) => ({
+                    ...current,
+                    [work.id]: pub.status === 'PUBLISHED' ? `已上线：${pub.url ?? ''}` : `校验未通过：${pub.lastError ?? pub.status}`,
+                  }));
+                  await load();
+                })}>Verify website</button>
+                <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.prepareWechatDraft(work.id, approvedHash); await load(); })}>WeChat draft</button>
                 {exportDestination.trim() ? <button type="button" className="secondary" onClick={() => void run(async () => { await adminApi.exportWork(work.id, exportDestination); await load(); })}>Export work</button> : null}
               </> : null}
-              {reviewPackets[work.id] ? <details className="workstation-review" open>
-                <summary>Review packet</summary>
-                <p><strong>Original:</strong> {reviewPackets[work.id].original.text?.slice(0, 300) ?? 'not readable'}</p>
-                <p><strong>Core viewpoint:</strong> {reviewPackets[work.id].original.coreViewpoint}</p>
-                <p><strong>Candidate hash:</strong> {reviewPackets[work.id].candidate?.hash ?? '—'}</p>
-                <p><strong>Risks:</strong> {JSON.stringify(reviewPackets[work.id].risks ?? {})}</p>
-                <p><strong>Edits:</strong> {JSON.stringify(reviewPackets[work.id].edits ?? {})}</p>
-                <p><strong>Covers:</strong> {reviewPackets[work.id].covers ? 'portrait + landscape ready' : 'missing'}</p>
-                <p><strong>Platforms:</strong> {reviewPackets[work.id].platforms.website ? 'website ready' : 'website missing'} / {reviewPackets[work.id].platforms.wechat ? 'wechat ready' : 'wechat missing'}</p>
+              {websitePub ? <small className="muted">网站发布：{websitePub.status}{websitePub.url ? ` · ${websitePub.url}` : ''}{websitePub.lastError ? ` · ${websitePub.lastError}` : ''}</small> : null}
+              {publishHints[work.id] ? <small className="muted">{publishHints[work.id]}</small> : null}
+              {packet ? <details className="workstation-review" open>
+                <summary>Review packet（候选 {packet.candidate ? packet.candidate.hash.slice(0, 10) : '—'}）</summary>
+                {packet.candidate ? <>
+                  <p><strong>候选标题：</strong>{String(packet.candidate.output.title ?? '')}</p>
+                  <details>
+                    <summary>完整候选正文（审批即批准此版本）</summary>
+                    <pre className="workstation-candidate">{String(packet.candidate.output.markdown ?? packet.candidate.output.body ?? '')}</pre>
+                  </details>
+                </> : <p className="muted">暂无候选（先运行配方）</p>}
+                <details>
+                  <summary>原稿全文</summary>
+                  <pre className="workstation-candidate">{packet.original.text ?? 'not readable'}</pre>
+                </details>
+                <p><strong>Core viewpoint:</strong> {packet.original.coreViewpoint}</p>
+                <p><strong>Risks:</strong> {JSON.stringify(packet.risks ?? {})}</p>
+                <p><strong>Edits:</strong> {JSON.stringify(packet.edits ?? {})}</p>
+                <p><strong>Covers:</strong> {packet.covers ? 'portrait + landscape ready' : 'missing'}</p>
+                <p><strong>Platforms:</strong> {packet.platforms.website ? 'website ready' : 'website missing'} / {packet.platforms.wechat ? 'wechat ready' : 'wechat missing'}</p>
               </details> : null}
             </div>;
           })}

@@ -24,7 +24,7 @@
 
 ## 盒子部署与运维坑（实测教训）
 
-- 部署流：SSH 进盒子（**优先 `ssh walker-tencent`，走 Tailscale 主路径**，与出口 IP/防火墙无关；`walker-tencent-public` 仅应急）→ `cd C:\Walker\app && git pull origin main` → `pnpm build:shared` → `pnpm build:api`（admin 改了再 build:admin）→ `schtasks /End + /Run /TN WalkerApi`（网关是 `WalkerGateway`）。
+- 部署流：SSH 进盒子（**优先 `ssh walker-tencent`，走 Tailscale 主路径**，与出口 IP/防火墙无关；`walker-tencent-public` 仅应急）→ `cd C:\Walker\app && pnpm check:content-dirty && git pull origin main` → lockfile 变了再 `pnpm install --frozen-lockfile` → `pnpm build:shared` → `pnpm build:api`（admin 改了再 build:admin）→ 更新 `apps\api\.env` 的 `WALKER_BUILD_VERSION=<git rev-parse --short HEAD>` → `schtasks /End + /Run /TN WalkerApi`（网关是 `WalkerGateway`）→ 按 `ops/windows/README.md`「部署验证清单」四步核对（health 回显 version/8788 归属/443/路由隔离）。
 - **SSH 会熔断**：短连接多次后出现 `Connection closed by ... port 22`（两个成因：开 VPN 后出口 IP 不在防火墙白名单 → 走 Tailscale 主路径即解；构建打满 2G 内存把 sshd 僵死 → 控制台重启实例）。带外替代：腾讯云控制台 → 实例 → 「执行命令」（TAT，不走 22 端口），可远程 git pull + 构建 + 重启，实测 23 秒跑完全套。
 - 2C2G 内存紧张：**构建（tsc/vite）可能把 sshd 打僵死**（TCP 可连但无 banner）→ 控制台重启实例可解；避免在 API 服务运行时跑重构建。
 - PowerShell 脚本含中文必须带 **UTF-8 BOM**，否则 Windows PowerShell 按 ANSI 解析报错。给服务器写的 `.ps1` 一律 **纯 ASCII 注释**最稳。
@@ -32,7 +32,7 @@
 - Caddy `basic_auth` 只支持**块形式**（行内参数会把第一个参数误读为哈希算法名）；Caddyfile 的 `{$VAR}` 占位符展开不跨 token，"user hash" 必须拆成两个环境变量。
 - **Windows 保留文件名**（`nul`、`con` 等）在 Mac 上能提交、服务器上无法检出（`error: invalid path`）——提交前别把这类文件加进 Git。
 - OpenSSH（Windows）会话断开会杀死该会话的整棵子进程树：需要存活的远程进程用 `Start-Process` 脱离或 schtasks 注册后 `Start-ScheduledTask`。
-- `git pull` 撞脏工作树前先 `git reset --hard origin/main`（data/env 都在 Git 外，安全）。
+- **拉代码前必须先跑 `pnpm check:content-dirty`**：Admin 保存的文章直接写 `content/log`（Git 管内），`git reset --hard origin/main` 会连带丢掉未提交/未推送的内容修改。脚本发现内容脏即 exit 1——先 `pnpm content:publish --push` 发布或备份到 data 目录；仅代码树脏（content/ 干净）时才允许 `git reset --hard origin/main`。内容提交只走 `pnpm content:publish`（pathspec 限定 + 无关暂存检测，不会夹带代码）。
 - **重启 API 后必须核 8788 归属**：`schtasks /End` 可能杀不掉占端口的僵尸旧进程（任务实例引用丢失），新实例起失败时 8788 仍是旧 dist 在跑（症状：新功能 404 或行为像旧版，如秒回规则兜底）。核法：`netstat -ano | findstr :8788` 对比 PID，变了才算换血；没变就 `taskkill /PID <旧PID> /F` 再 `/Run`。
 - **重启网关后必须核 443**：`netstat -ano | findstr ":443"`。WalkerGateway 任务参数可能被重置回 8080 测试模式（install-tasks.ps1 重注册漏 `-PublicApiHost api.iwalk.pro` 即复现）→ 用正式域名重跑注册脚本；老 caddy 占端口时 `schtasks /End` 杀不掉（实例引用丢失）→ 直接 `taskkill /PID <pid> /F` 再 `/Run`；起进程必须走计划任务（`/Run`），SSH 里 `Start-Process` 起的会随会话被杀（先 `/End` 清僵尸实例再 `/Run`）。网关重启后首个 AI 请求可能因 harness 冷启动超 15s 走规则兜底——自愈行为，非故障。
 - DeepSeek Harness（dsh）安全机制：**拒绝从 .env 文件继承 `DSH_*` 启动变量**——生产用 `WALKER_DSH_RUNTIME_BIN` / `ASSISTANT_DSH_HOME`（见 `ops/windows/README.md`），且子进程 cwd 必须是不含 .env 的中立目录。

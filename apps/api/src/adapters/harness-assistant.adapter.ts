@@ -16,6 +16,7 @@ import path from 'node:path';
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
 import { DeepSeekHarness } from '@deepseek-ai/dsh-sdk-client';
 import {
+  extractStreamedAnswer,
   parseAssistantOutput,
   type AssistantRunResult,
 } from '@walker/shared';
@@ -29,8 +30,11 @@ import type {
   SiteContentIndexPort,
 } from '../ports/site-content-index.port';
 
-/** 访客同步等待预算；超时降级规则兜底 */
+/** 访客同步等待预算；超时降级规则兜底（从入队起算，排队时间也计入） */
 export const ASSISTANT_ASK_TIMEOUT_MS = 15_000;
+
+/** 排队容量：单飞锁下等待的后来者超过此数直接规则兜底，不让访客无限排队 */
+export const ASSISTANT_MAX_QUEUE_WAITERS = 3;
 
 /** 与 SDK RunResult 对齐的最小面（测试可注入假件）；onNotification 为流式钩子 */
 export interface HarnessRuntimeLike {
@@ -134,6 +138,8 @@ export class HarnessAssistantAdapter
   private runtime: HarnessRuntimeLike | null = null;
   private factory: HarnessRuntimeFactory | null;
   private lock: Promise<unknown> = Promise.resolve();
+  /** 单飞锁下正在排队等待的请求数（队列容量熔断用） */
+  private waiters = 0;
 
   constructor(
     private readonly config: AppConfigPort,
@@ -168,15 +174,28 @@ export class HarnessAssistantAdapter
     if (!this.factory) this.factory = buildDefaultRuntimeFactory();
     if (!this.factory) return this.fallback.ask(input);
 
-    // 单飞：同一时刻只有一个 runtime 活动
+    // 队列容量：单飞锁下等待者过多时不再排队，直接规则兜底
+    if (this.waiters >= ASSISTANT_MAX_QUEUE_WAITERS) {
+      return this.fallback.ask(input);
+    }
+
+    // deadline 从入队起算：排队时间同样消耗访客的同步等待预算
+    const started = Date.now();
+    this.waiters += 1;
     const prev = this.lock;
     let release!: () => void;
     this.lock = new Promise<void>((r) => {
       release = r;
     });
     await prev.catch(() => {});
+    this.waiters -= 1;
 
-    const started = Date.now();
+    const remainingMs = this.timeoutMs - (Date.now() - started);
+    if (remainingMs <= 0 || input.signal?.aborted) {
+      release();
+      return this.fallback.ask(input);
+    }
+
     try {
       if (!this.runtime) this.runtime = this.factory();
       let entries: SiteContentFullEntry[] = [];
@@ -189,6 +208,20 @@ export class HarnessAssistantAdapter
       const prompt = input.sessionId
         ? input.text
         : buildFirstTurnPrompt(entries, input.text);
+
+      // 流式展示合同：text-delta 只在裁剪出「answer 字段已闭合文本」的新增部分时外发，
+      // 原始模型 JSON（含 citations、语法噪声）绝不直接出网关；终值仍走完整校验
+      let streamedBuffer = '';
+      let visibleLength = 0;
+      const forwardStream = (raw: string) => {
+        if (!onText) return;
+        streamedBuffer += raw;
+        const visible = extractStreamedAnswer(streamedBuffer);
+        if (visible.length > visibleLength) {
+          onText(visible.slice(visibleLength));
+          visibleLength = visible.length;
+        }
+      };
 
       const runPromise = this.runtime.run(prompt, {
         sessionId: input.sessionId ?? undefined,
@@ -203,17 +236,22 @@ export class HarnessAssistantAdapter
                 const ev = n.params?.event;
                 if (ev?.type !== 'assistant/chunk') return;
                 const chunk = ev.data?.chunk;
-                if (chunk?.type === 'text-delta' && chunk.text) onText(chunk.text);
+                if (chunk?.type === 'text-delta' && chunk.text) forwardStream(chunk.text);
               },
             }
           : {}),
       });
+      // 端到端取消：浏览器断流时网关 abort，视同超时处理（弃结果 + 重建实例）
+      const abortPromise = input.signal
+        ? new Promise<null>((r) => input.signal!.addEventListener('abort', () => r(null), { once: true }))
+        : null;
       const timed = await Promise.race([
         runPromise,
-        new Promise<null>((r) => setTimeout(() => r(null), this.timeoutMs)),
+        new Promise<null>((r) => setTimeout(() => r(null), remainingMs)),
+        ...(abortPromise ? [abortPromise] : []),
       ]);
       if (!timed) {
-        // 超时：吞掉迟到结果的拒绝，弃结果；关掉可能僵死的 runtime，下一问重拉新实例
+        // 超时/取消：吞掉迟到结果的拒绝，弃结果；关掉可能僵死的 runtime，下一问重拉新实例
         runPromise.catch(() => {});
         this.dropRuntime();
         return this.fallback.ask(input);

@@ -3,7 +3,8 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { extractAnswerText, useAssistant } from './useAssistant';
+import { extractStreamedAnswer } from '@walker/shared';
+import { useAssistant } from './useAssistant';
 import { publicApi } from '../api/public-api';
 
 vi.mock('../api/public-api', () => ({
@@ -93,11 +94,16 @@ describe('useAssistant', () => {
   });
 });
 
-describe('extractAnswerText（流式 JSON 增量提取）', () => {
+describe('extractStreamedAnswer（流式 JSON 增量提取，shared 合同）', () => {
   it('从部分 JSON 缓冲中提取已闭合的 answer 文本', () => {
-    expect(extractAnswerText('{"ans')).toBe('');
-    expect(extractAnswerText('{\"answer\":\"你好')).toBe('你好');
-    expect(extractAnswerText('{\"answer\":\"你好呀，欢迎')).toBe('你好呀，欢迎');
-    expect(extractAnswerText('{\"answer\":\"两行\\n文本\",\"citations\":[]')).toBe('两行\n文本');
+    expect(extractStreamedAnswer('{"ans')).toBe('');
+    expect(extractStreamedAnswer('{\"answer\":\"你好')).toBe('你好');
+    expect(extractStreamedAnswer('{\"answer\":\"你好呀，欢迎')).toBe('你好呀，欢迎');
+    expect(extractStreamedAnswer('{\"answer\":\"两行\\n文本\",\"citations\":[]')).toBe('两行\n文本');
+  });
+
+  it('容忍冒号与引号间的空白变体；citations 尾巴不外发', () => {
+    expect(extractStreamedAnswer('{ "answer" : "白名单变体" , "citations": ["x"] }')).toBe('白名单变体');
+    expect(extractStreamedAnswer('{"answer":"收尾","citations":["a","b"]}')).toBe('收尾');
   });
 });

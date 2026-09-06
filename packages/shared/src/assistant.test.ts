@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSISTANT_ANSWER_MAX_LENGTH,
   ASSISTANT_MAX_CITATIONS,
+  extractStreamedAnswer,
   isValidAssistantBody,
   parseAssistantOutput,
   sanitizeAnswerText,
@@ -81,5 +82,18 @@ describe('助手 Run 合同', () => {
     expect(sanitizeAnswerText('看[这篇](/posts/x)再动手')).toBe('看这篇再动手');
     expect(sanitizeAnswerText('<b>hi</b>')).toBe('bhi/b');
     expect(sanitizeAnswerText('段一\n\n\n\n段二  \n尾')).toBe('段一\n\n段二\n尾');
+  });
+});
+
+describe('extractStreamedAnswer（流式展示合同）', () => {
+  it('只提取 answer 已闭合文本；citations 尾巴与 JSON 噪声不外发', () => {
+    expect(extractStreamedAnswer('{"answer":"你好')).toBe('你好');
+    expect(extractStreamedAnswer('{"answer":"答案","citations":["used-macbook-guide"]}')).toBe('答案');
+    expect(extractStreamedAnswer('{"ans')).toBe('');
+  });
+
+  it('容忍 "answer" 与冒号后的空白变体；转义字符还原', () => {
+    expect(extractStreamedAnswer('{ "answer" : "变体" }')).toBe('变体');
+    expect(extractStreamedAnswer('{"answer":"换行\\n引号\\"反斜杠\\\\","citations":[]}')).toBe('换行\n引号"反斜杠\\');
   });
 });

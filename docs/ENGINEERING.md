@@ -82,8 +82,8 @@ pnpm exec tsx scripts/probe-production.ts
 | 触发 | **`git push origin main` 自动 Production** |
 | 构建 | `vercel.json`：`pnpm build:web` → `apps/web/dist` |
 
-**现状：** 只托管 **web 静态**。公网 **无 Nest/PG**；`GET /api/health` → 404。本地 API+PG 可绿。  
-**禁止** API 未绿时称「生产切流已完成」。
+**现状（2026-09-03 切流后）：** Vercel 托管 **web 静态**，并把 `/api/*` rewrites → `https://api.iwalk.pro`（盒子 Caddy + Nest）。同源 `/api/health` 200。  
+**禁止**在探针未绿时声称「新版已上线」——web 与 API 是两条独立发布链，须分别核验。
 
 ### 腾讯云 2C2G Windows 首期边界
 

@@ -18,13 +18,22 @@ import { PrismaGuestQuotaAdapter } from './adapters/prisma-guest-quota.adapter';
 import { RuleNextStepAdapter } from './adapters/rule-nextstep.adapter';
 import { InMemoryRateLimiter } from './adapters/memory-rate-limit.adapter';
 import { PrismaFeatureEventAdapter } from './adapters/prisma-feature-event.adapter';
+import { PrismaActionRepository } from './adapters/prisma-action.repository';
 import { newId } from './common/ids';
 
 /**
- * 真实 PG 路径集成测（需 DATABASE_URL）。
- * 驱动 shipped Intake/Seed/Execution 用例，不重实现业务。
+ * 推进核集成测：驱动 shipped Intake/Seed/Execution 用例，不重实现业务。
+ * DATABASE_URL 由 vitest.config.ts 强制指向独立测试库。
  */
 const url = process.env.DATABASE_URL;
+
+const brief = {
+  audience: '想入门 AI 的独立开发者',
+  scenario: '选型阶段不知道从哪开始',
+  problem: '工具太多无法判断哪个适合自己',
+  keyQuestion: '按什么顺序评估 AI 工具？',
+  intendedAction: '按清单跑通第一轮选型',
+};
 
 describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
   let prismaPort: PrismaPort;
@@ -51,6 +60,7 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
     const guest = new PrismaGuestQuotaAdapter(prismaPort);
     const rate = new InMemoryRateLimiter();
     const next = new RuleNextStepAdapter();
+    const actionRepo = new PrismaActionRepository(prismaPort);
     intake = new IntakeService(
       prismaPort,
       clueRepo,
@@ -60,7 +70,7 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
       events,
     );
     clues = new ClueService(prismaPort, clueRepo, events);
-    seeds = new SeedService(prismaPort, seedRepo, clueRepo, execRepo, events);
+    seeds = new SeedService(prismaPort, seedRepo, clueRepo, execRepo, events, actionRepo);
     executions = new ExecutionService(prismaPort, execRepo, seedRepo, events);
   });
 
@@ -72,8 +82,8 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
   it('无线索主选 → missing-clue', async () => {
     const seed = await seeds.create(`t-${newId().slice(0, 6)}`);
     const clue = await clues.createManual('这是一条仅 candidate 线索正文');
-    // 不入池直接 promote
-    await expect(seeds.promote(seed.id, clue.id)).rejects.toSatisfy(
+    // 不入池直接 promote（带 brief，才能走到 missing-clue 校验）
+    await expect(seeds.promote(seed.id, clue.id, { brief })).rejects.toSatisfy(
       (e: { getResponse?: () => { code?: string } }) =>
         e.getResponse?.()?.code === 'missing-clue',
     );
@@ -93,7 +103,7 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
 
     await clues.setPoolStatus(r.clueId, 'in-pool');
     const seed = await seeds.create(`闭环-${Date.now()}`);
-    await seeds.promote(seed.id, r.clueId);
+    await seeds.promote(seed.id, r.clueId, { brief });
 
     const full = await seeds.list(20);
     const s = full.find((x) => x.id === seed.id)!;
@@ -136,6 +146,35 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
       (e: { getResponse?: () => { code?: string } }) =>
         e.getResponse?.()?.code === 'guest-quota-exceeded',
     );
+  });
+
+  it('并发同游客 intake：配额恰好消费一次，只落一条线索，拒绝不留孤儿', async () => {
+    const anonId = `anon-race-${newId()}`;
+    const results = await Promise.allSettled([
+      intake.intake({ body: '并发场景第一问描述足够长', anonId, ipKey: `ip-r1-${newId()}` }),
+      intake.intake({ body: '并发场景第二问描述足够长', anonId, ipKey: `ip-r2-${newId()}` }),
+    ]);
+    const fulfilled = results.filter((r) => r.status === 'fulfilled');
+    const quotaRejected = results.filter(
+      (r) =>
+        r.status === 'rejected' &&
+        (r.reason as { getResponse?: () => { code?: string } })?.getResponse?.()?.code === 'guest-quota-exceeded',
+    );
+    expect(fulfilled).toHaveLength(1);
+    expect(quotaRejected).toHaveLength(1);
+
+    const quotaRow = await client.guestQuota.findUnique({ where: { anonId } });
+    expect(quotaRow?.usedCount).toBe(1);
+    // 拒绝的那次不留任何线索；成功的那次恰好一条
+    expect(await client.clue.count({ where: { anonId } })).toBe(1);
+
+    await expect(
+      intake.intake({ body: '第三次同样应被配额拦住', anonId, ipKey: `ip-r3-${newId()}` }),
+    ).rejects.toSatisfy(
+      (e: { getResponse?: () => { code?: string } }) =>
+        e.getResponse?.()?.code === 'guest-quota-exceeded',
+    );
+    expect(await client.clue.count({ where: { anonId } })).toBe(1);
   });
 
   it('无存储时写路径 storage-unavailable', async () => {

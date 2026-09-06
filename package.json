@@ -27,6 +27,7 @@
     "db:push": "tsx scripts/prisma-env.ts push",
     "db:migrate": "tsx scripts/prisma-env.ts migrate",
     "check:content-fields": "tsx scripts/check-content-fields.ts",
+    "check:content-dirty": "tsx scripts/check-uncommitted-content.ts",
     "verify:geo": "tsx scripts/verify-geo.ts",
     "verify:stage1": "tsx scripts/verify-stage1.ts",
     "accept:dual-entry": "tsx scripts/accept-dual-entry.ts",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.32",
+    "@walker/shared": "workspace:*",
     "gray-matter": "^4.0.3",
     "pagefind": "^1.3.0",
     "tsx": "^4.20.3",

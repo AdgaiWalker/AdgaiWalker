@@ -30,6 +30,30 @@ function harness(failStage?: string) {
   return { service: new ProductionService(prisma, runner, artifacts), prisma, runner, artifacts, writes, get calls() { return calls; } };
 }
 
+/** 可暂停 runner：在途阶段既不成功也不失败，只在收到取消信号时以 runner-aborted 拒绝 */
+function gatedRunner(): AgentRunnerPort {
+  return {
+    async run(input) {
+      return new Promise((_resolve, reject) => {
+        input.signal?.addEventListener('abort', () => reject(new Error('runner-aborted')), { once: true });
+      });
+    },
+  };
+}
+
+/** 带终态保护的状态仓库：复刻 Prisma setStatusUnless 语义供测试观察 */
+function statusStore(initial: WorkStatus = 'DRAFT_READY') {
+  const state = { status: initial, writes: [] as string[] };
+  const repo = {
+    async findById() { return { status: state.status } as never; },
+    async setStatus(_id: string, status: WorkStatus) { state.status = status; state.writes.push(status); return {} as never; },
+    async setStatusUnless(_id: string, unless: readonly WorkStatus[], status: WorkStatus) {
+      if (unless.includes(state.status)) { state.writes.push(`blocked:${status}`); return {} as never; }
+      state.status = status; state.writes.push(status); return {} as never; },
+  } as unknown as WorkRepositoryPort;
+  return { state, repo };
+}
+
 describe('ProductionService', () => {
   it('writes each successful stage as a new artifact and reaches review ready', async () => {
     const h = harness();
@@ -129,5 +153,28 @@ describe('ProductionService', () => {
       stage: 'QUALITY_CHECK',
       output: { body: '正文', risks: [{ severity: 'high', resolved: false, message: '未核实事实' }] },
     })).rejects.toThrow('quality-risk-unresolved');
+  });
+
+  it('cancel during an in-flight stage aborts the runner and CANCELLED stays terminal', async () => {
+    const h = harness();
+    const store = statusStore();
+    const service = new ProductionService(h.prisma, gatedRunner(), h.artifacts, store.repo);
+    const pending = service.run('work-late', '# draft');
+    await service.cancel('work-late');
+    const result = await pending;
+    expect(result.status).toBe('CANCELLED');
+    expect(store.state.status).toBe('CANCELLED');
+    // 取消后迟到的完成不得写 REVIEW_READY（写入记录里不允许出现 REVIEW_READY）
+    expect(store.state.writes).not.toContain('REVIEW_READY');
+  });
+
+  it('rejects a second concurrent run for the same work (run mutex)', async () => {
+    const h = harness();
+    const store = statusStore();
+    const service = new ProductionService(h.prisma, gatedRunner(), h.artifacts, store.repo);
+    const first = service.run('work-mutex', '# draft');
+    await expect(service.run('work-mutex', '# draft')).rejects.toThrow('work-already-running');
+    await service.cancel('work-mutex');
+    await expect(first).resolves.toMatchObject({ status: 'CANCELLED' });
   });
 });
