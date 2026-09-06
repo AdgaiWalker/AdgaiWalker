@@ -79,10 +79,15 @@ export class DshAgentRunner implements AgentRunnerPort {
       if (!this.resident) this.resident = factory();
       return await this.execute(this.resident, input, false);
     } catch (error) {
-      // 常驻实例疑似失活：丢弃，下次短调用重拉（对齐助手 dropRuntime 策略）
-      const dead = this.resident;
-      this.resident = null;
-      void dead?.close().catch(() => {});
+      // 超时/取消不丢常驻实例：单次会话超时（模型方差，实测 5–15s 波动）不污染
+      // runtime——丢实例会让每次短调用都付冷启动税，在 15s 预算边缘反复翻车。
+      // 仅传输/协议类故障才重建实例。
+      const msg = error instanceof Error ? error.message : String(error);
+      if (!/runner-timeout|runner-aborted/.test(msg)) {
+        const dead = this.resident;
+        this.resident = null;
+        void dead?.close().catch(() => {});
+      }
       throw error;
     } finally {
       release();
