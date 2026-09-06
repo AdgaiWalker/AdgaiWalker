@@ -69,7 +69,7 @@ import { ProductionService } from './workflow/production.service';
 import { ProductionController } from './workflow/production.controller';
 import { AGENT_RUNNER, type AgentRunnerPort } from './ports/agent-runner.port';
 import type { SiteContentIndexPort } from './ports/site-content-index.port';
-import { CodexAgentRunner } from './adapters/codex-agent.runner';
+import { DshAgentRunner } from './adapters/dsh-agent.runner';
 import { STAGE_ARTIFACT_REPOSITORY } from './ports/stage-artifact.repository';
 import { FsStageArtifactRepository } from './adapters/fs-stage-artifact.repository';
 import { ReviewService } from './workflow/review.service';
@@ -191,7 +191,14 @@ import { CredentialsController } from './credentials/credentials.controller';
       inject: [APP_CONFIG],
       useFactory: (config: AppConfigPort) => new FsPublicationPackageRepository(config.getWorkRootDir()),
     },
-    { provide: AGENT_RUNNER, useClass: CodexAgentRunner },
+    // AGENT_RUNTER 统一走 dsh（2026-09-06 定案）：卡口 nextStep + 工作站配方共用，
+    // 与助手/洞察同一运行时家族；站主面无规则兜底，失败如实抛错
+    {
+      provide: AGENT_RUNNER,
+      inject: [APP_CONFIG],
+      useFactory: (config: import('./config/config.port').AppConfigPort) =>
+        new DshAgentRunner(config),
+    },
     {
       provide: STAGE_ARTIFACT_REPOSITORY,
       inject: [APP_CONFIG],

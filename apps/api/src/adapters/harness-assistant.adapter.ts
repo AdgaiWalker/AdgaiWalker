@@ -50,6 +50,24 @@ export interface HarnessRuntimeLike {
 
 export type HarnessRuntimeFactory = () => HarnessRuntimeLike;
 
+/**
+ * dsh 子进程环境（所有 dsh 消费方共用：助手 / 工作站 runner / 洞察周报）。
+ * 会话遥测默认显式关闭（P0-1）：访客问答绝不经 OTLP 出网；探针期显式设
+ * DSH_TELEMETRY_ENABLED_OVERRIDE 才重开。cwd 中立目录要求见 factory 注释。
+ */
+export function dshChildEnv(dshHome: string): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) env[key] = value;
+  }
+  env.DSH_HOME = dshHome;
+  env.DSH_PERMISSION_MODE = 'read-only';
+  if (!process.env.DSH_TELEMETRY_ENABLED_OVERRIDE) {
+    env.DSH_TELEMETRY_DISABLED = '1';
+  }
+  return env;
+}
+
 export function resolveRuntimePaths(): { bin: string; cwd: string } | null {
   const fromEnv = process.env.DSH_RUNTIME_DIR?.trim();
   const dir = fromEnv || path.join(os.homedir(), 'Desktop/deepseek-harness');
@@ -67,11 +85,7 @@ export function buildDefaultRuntimeFactory(
   const dshHome =
     process.env.ASSISTANT_DSH_HOME?.trim() ||
     path.join(os.homedir(), '.dsh-assistant');
-  const childEnv = {
-    ...process.env,
-    DSH_HOME: dshHome,
-    DSH_PERMISSION_MODE: 'read-only',
-  };
+  const childEnv = dshChildEnv(dshHome);
   // 优先：WALKER_DSH_RUNTIME_BIN 指向已构建的 dsh bin（生产/盒子 npm 安装形态）
   const binOverride = process.env.WALKER_DSH_RUNTIME_BIN?.trim();
   if (binOverride) {

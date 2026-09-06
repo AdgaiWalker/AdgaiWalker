@@ -113,7 +113,7 @@ curl -sS -H "x-admin-token: $WALKER_ADMIN_TOKEN" http://127.0.0.1:8788/clues
 | 持久化 | 生产 SQLite + Prisma（PG 迁移已补齐，启用前须空库重放验证） | 缺库写路径 → `storage-unavailable` |
 | 游客配额 | `GuestQuota` 原子条件消耗 | 并发恰好消费一次；拒绝不留线索 |
 | 限流 | **进程内内存** `InMemoryRateLimiter` | **单实例有效**；多副本需换适配器 |
-| AI | `AI_ENABLED=true` 才调模型；助手 200 问/日预算熔断（存储失效时进程内兜底计数） | 任何降级 `aiUsedFlag:false` 如实标注 |
+| AI | `AI_ENABLED=true` 才调模型；**运行时统一为 dsh**（助手/卡口 nextStep/工作站配方/洞察周报同家族） | 助手 200 问/日预算熔断（存储失效进程内兜底）；访客面任何降级 `aiUsedFlag:false` 如实标注；站主面（配方）无兜底、失败如实 FAILED |
 
 ## 前端门面
 

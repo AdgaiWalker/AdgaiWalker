@@ -12,6 +12,7 @@ import type {
 import {
   HarnessAssistantAdapter,
   buildFirstTurnPrompt,
+  dshChildEnv,
   type HarnessRuntimeLike,
 } from './harness-assistant.adapter';
 
@@ -246,5 +247,24 @@ describe('HarnessAssistantAdapter', () => {
     const r = await pending;
     expect(r.aiUsedFlag).toBe(false);
     expect(closed).toBe(1);
+  });
+});
+
+describe('dshChildEnv（P0-1 会话遥测默认关闭）', () => {
+  it('默认注入 DSH_TELEMETRY_DISABLED=1，且不含 undefined 值', () => {
+    const env = dshChildEnv('/neutral/home');
+    expect(env.DSH_TELEMETRY_DISABLED).toBe('1');
+    expect(env.DSH_HOME).toBe('/neutral/home');
+    expect(env.DSH_PERMISSION_MODE).toBe('read-only');
+    expect(Object.values(env).every((v) => v !== undefined)).toBe(true);
+  });
+
+  it('探针期显式设 DSH_TELEMETRY_ENABLED_OVERRIDE 时不注入关闭变量', () => {
+    process.env.DSH_TELEMETRY_ENABLED_OVERRIDE = '1';
+    try {
+      expect(dshChildEnv('/x').DSH_TELEMETRY_DISABLED).toBeUndefined();
+    } finally {
+      delete process.env.DSH_TELEMETRY_ENABLED_OVERRIDE;
+    }
   });
 });

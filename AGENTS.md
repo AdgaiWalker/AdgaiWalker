@@ -4,7 +4,7 @@
 
 ## 文档阅读顺序
 
-1. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 2. `docs/README.md`（文档地图与权威级）→ 3. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
+1. 根 `PLAN.md`（主执行计划：北极星 · 宪法 · 主线排期 · 冻结条款）→ 2. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 3. `docs/README.md`（文档地图与权威级）→ 4. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
 改站内助手必须先读 `docs/PRD-SITE-ASSISTANT.md` + `docs/TODO-SITE-ASSISTANT.md`。`docs/archive/` 是退役方案，禁止当现行契约。
 
 ## 仓库结构与验证门禁
@@ -13,6 +13,7 @@
 - `apps/api` 是六边形分层：`ports/`（Symbol 接口）→ `adapters/`（实现）→ 用例 service → `kernel.module.ts` 统一接线。新增能力先定 port 再写 adapter。
 - `apps/web` 运行时只读 `apps/web/src/generated/content.json`，禁止在 web 里做 fs / 直连内容目录。
 - 改动后验证链：`pnpm typecheck` → `pnpm test:shared && pnpm test:api && pnpm test:web` → 改了 web 再 `pnpm build:web && pnpm verify:geo`（GEO 是构建门禁）→ 改了内容先 `pnpm check:content-fields`。
+- 测试库隔离：`apps/api` 的 vitest 把 `DATABASE_URL` 强制改写到独立 `walker.test.db`（globalSetup 每次删库重建 schema；显式设 `API_TEST_DB_URL` 可指定 PG），测试绝不写开发库。真实 kernel 接线的集成测用 `Test.createTestingModule` + `KernelModule`（假 runner/临时目录用 `overrideProvider`/env 覆盖，见 `promote.kernel.integration.test.ts`、`workstation.chain.integration.test.ts`）。
 - 改生产拓扑 / 部署流程 / 产品行为后，**必须回写文档**（AGENTS.md / PRD / TODO / STATUS / api/README 对应处），保持文档与生产一致。
 
 ## 生产拓扑（2026-09-03 切流后）
@@ -38,11 +39,14 @@
 - DeepSeek Harness（dsh）安全机制：**拒绝从 .env 文件继承 `DSH_*` 启动变量**——生产用 `WALKER_DSH_RUNTIME_BIN` / `ASSISTANT_DSH_HOME`（见 `ops/windows/README.md`），且子进程 cwd 必须是不含 .env 的中立目录。
 - SSH 不通时**先确认走的是 Tailscale 主路径**（`ssh walker-tencent` 即是，2026-09-03 实测直连 155ms 稳定）；只有公网备用路径 `walker-tencent-public` 才需要按防火墙白名单更新来源 IP（家宽 IP 会轮换）。
 
-## 站内助手 / AI 红线（改助手代码前必读）
+## 站内助手 / AI / 工作站红线（改相关代码前必读）
 
 - **AI 可关**：`AI_ENABLED≠true` 时一切 AI 功能走规则兜底，回答仍非空；任何降级（超时/坏输出/预算触顶）都路由到规则版，`aiUsedFlag` 如实标注。
 - **aiUsePolicy fail-closed**：模型输出经 `parseAssistantOutput` / `parseAiNextStepOutput` 校验，引用 slug 必须 ⊆ citable 集合；citations/参数来自网关与索引，不信任模型原文。
-- **禁止 AI 自动主选**：问题池转题苗、线索 promote 永远人工点击。
+- **公开输入永不进命令行**：子进程一律经 node + args 直启（无 shell），调用方数据（访客 prompt、配方 prompt）只走数据通道（dsh 为 JSON-RPC stdin），永不成为命令行参数（见 `ops/windows/README.md`）。
+- **流式只出裁剪文本**：text-delta 经 shared `extractStreamedAnswer` 裁剪后才出网关，原始模型 JSON（含 citations）不外发；终值校验后由 `done` 事件整体覆盖；助手会话归属 fail-closed（未知/他人/规则会话一律开新会话）。
+- **工作站诚实语义**：网站发布保存 = `PREPARED` ≠ 已发布（上线走 `pnpm content:publish --push`，`verifyWebsite` 过线上校验才 `PUBLISHED`）；取消 CANCELLED 是稳定终态，迟到结果不得覆盖（`setStatusUnless`）；同 work 运行互斥；审批绑定服务端审阅包 candidate.hash；发布 frontmatter 与构建门禁共用 shared `PUBLISHED_POST_REQUIRED_FIELDS`，缺字段写盘前即拒，不放宽门禁迁就生成物。
+- **禁止 AI 自动主选**：问题池转题苗、线索 promote 永远人工点击；主选必带完整 brief（选题五问）。
 - Nest DI：接口 token 注入必须显式 `@Inject(TOKEN)`，构造函数裸接口参数在 provider 化后会炸（已踩过）。
 - 诚实原则：失败如实报错，不假装成功（全站产品气质，见 `docs/PRODUCT.md`）。
 

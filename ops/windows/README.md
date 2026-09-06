@@ -94,22 +94,11 @@ ASSISTANT_DAILY_LIMIT=200
 
 凭据 `%USERPROFILE%\.dsh-assistant\.credentials.yaml` 人工放置（DeepSeek key，不经 git）。Nest 会以只读沙箱子进程形态拉起 runtime；内存预算实测约 224MB 常驻。
 
-### 卡口 nextStep runtime（CodexAgentRunner）
+### 卡口 nextStep / 工作站配方 runtime（DshAgentRunner）
 
-访客卡口的 AI nextStep 走 `CodexAgentRunner` 子进程（`codex exec`）。安全边界：spawn 一律 `shell:false`，访客 prompt 只经 stdin 传入，命令行永不携带外部文本。因此 Windows 上 **`CODEX_CLI_PATH` 必须指向可直接 spawn 的真实可执行文件**（`.exe`，或 npm 安装包的 `.js` 入口——runner 自动用 node 启动），不能指向 `.cmd` shim（现代 Node 拒绝免 shell 执行 `.cmd`）。
+2026-09-06 起卡口 nextStep 与工作站配方统一走 `DshAgentRunner`（与站内助手/洞察周报同一 dsh 运行时家族，per-run 实例、跑完即关）。安全边界不变：经 node + args 直启（无 shell），调用方文本走 JSON-RPC stdin，永不进命令行。内存注记：2C2G 并发 dsh 实例 ≤2（工作站配方互斥已保 1 + 助手常驻 1）。
 
-**当前状态（2026-09-06 SSH 实查）**：盒子未安装 codex、`.env` 未配 `CODEX_CLI_PATH`——卡口 AI 自上线起一直走规则兜底（`aiUsedFlag=false` 如实标注），属稳定现状而非故障，无需处理。
-
-将来要真正启用卡口 AI 时（需产品决策，含引入 codex 模型凭据）：
-
-```powershell
-# 1) 安装到 C:\Walker\bin（示例）
-Set-Location C:\Walker\bin
-npm install @openai/codex
-# 2) 在 apps\api\.env 追加（.js 入口，runner 自动用 node 启动）
-#    CODEX_CLI_PATH=C:/Walker/bin/node_modules/@openai/codex/bin/codex.js
-# 3) 配置 codex 自身凭据后重启 WalkerApi，卡口提问验证 aiUsedFlag=true
-```
+历史注记：此前卡口/配方绑定 CodexAgentRunner（`codex exec`），但生产从未安装 codex、一直规则兜底；该实现与 `CODEX_CLI_PATH` 配置项已于 2026-09-06 随 dsh 统一决策移除。
 
 前台运行验证：
 
@@ -160,6 +149,25 @@ curl.exe -sS -o NUL -w "%{http_code}" https://www.iwalk.pro/api/clues
 
 web 与 API 是两条独立发布链：Vercel（push main 自动发）与盒子（git pull + build + schtasks）。两条都要核，缺一不可声称「新版已上线」。
 
+## 周期运维
+
+**dsh 会话缓存清理（每月一次，默认 90 天保留）**——会话目录是运行时缓存，权威问答记录在 SQLite 的 AssistantRun 表，删除后下一问自动重建会话：
+
+```powershell
+# 干跑（默认，只统计不删）
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\prune-dsh-sessions.ps1
+# 确认后执行删除
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\prune-dsh-sessions.ps1 -Execute
+```
+
+可选注册为每月计划任务（管理员 PowerShell）：
+
+```powershell
+schtasks /Create /TN WalkerDshPrune /SC MONTHLY /TR "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\prune-dsh-sessions.ps1 -Execute" /ST 04:00
+```
+
+会话遥测已在代码层默认关闭（`DSH_TELEMETRY_DISABLED=1`，访客问答不经 OTLP 出网）；探针期重开需设 `DSH_TELEMETRY_ENABLED_OVERRIDE` 并重启 WalkerApi。
+
 ## 备份与恢复（对象清单 + 演练记录）
 
 **恢复对象（缺一即不可完整重建）：**
@@ -172,6 +180,7 @@ web 与 API 是两条独立发布链：Vercel（push main 自动发）与盒子�
 | 原稿与阶段产物 | `C:\Walker\app\var\works\`（或 WORK_ROOT_DIR 指向处） | 人工初稿原文、阶段 Artifact、发布准备包 |
 | 未发布内容 | `content\log\` 下未 commit 的修改 | 部署前先 `pnpm check:content-dirty` 保护 |
 | 助手 runtime | `%USERPROFILE%\.dsh-assistant`（含 .credentials.yaml） | DeepSeek key 人工放置 |
+| dsh 会话缓存 | `%USERPROFILE%\.dsh-assistant\sessions\**\*.jsonl.zstd` | **运行时缓存，不属恢复对象**；prune 脚本按 90 天清理（见「周期运维」） |
 | 管理凭据 | `C:\Walker\data\admin-basic-auth.txt` | 明文仅存 data 目录 |
 
 **备份方式（最低基线）：** 定期把 `C:\Walker\data` 整目录 + `.env` + `var\works` + `.dsh-assistant\.credentials.yaml` 复制到盒子外（对象存储 / 本机另一块盘）；SQLite 备份用 `sqlite3 walker.db ".backup 'walker-backup.db'"`（在线一致快照）。
