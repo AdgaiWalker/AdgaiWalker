@@ -117,6 +117,11 @@ export const adminApi = {
   insightReportGenerate: () =>
     adminRequest<unknown>('/insights/report', { method: 'POST' }),
   insightReports: () => adminRequest<unknown>('/insights/reports?limit=10'),
+  insightSeedFromSuggestion: (body: { kind: string; text: string; evidence?: string }) =>
+    adminRequest<{ id: string; title: string; reused: boolean }>('/insights/suggestions/seed', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   assistantQuestions: () =>
     adminRequest<AssistantQuestion[]>('/assistant/runs?limit=100'),
   createSeed: (title: string) =>

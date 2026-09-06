@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query } from '@nestjs/common';
 import { InsightsService } from './insights.service';
 
 /** 管理侧需求信号中心（token 防线内，不进公网白名单） */
@@ -28,5 +28,17 @@ export class InsightsController {
   reports(@Query('limit') limit?: string) {
     const n = limit ? Number(limit) : 10;
     return this.insights.listReports(Number.isFinite(n) ? n : 10);
+  }
+
+  /** 周报建议 → INBOX 题苗（仅 write 类；幂等；主选仍人工） */
+  @Post('suggestions/seed')
+  seedFromSuggestion(
+    @Body() body: { kind?: string; text?: string; evidence?: string },
+  ) {
+    return this.insights.createSeedFromSuggestion({
+      kind: body.kind ?? '',
+      text: body.text ?? '',
+      evidence: body.evidence,
+    });
   }
 }

@@ -60,3 +60,19 @@ describe('IntakePanel（展示块 UX）', () => {
     expect(screen.getByText(/桶 learn-ai/)).toBeInTheDocument();
   });
 });
+
+describe('IntakePanel 共创回执（M4）', () => {
+  it('成功结果展示「已进入站主的选题池」回执', () => {
+    render(
+      <MemoryRouter>
+        <IntakePanel
+          {...base}
+          bodyOk
+          remaining={0}
+          result={{ nextStep: '先写五条大纲', bucketId: 'learn-ai', aiUsedFlag: true }}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/这个问题已进入站主的选题池/)).toBeInTheDocument();
+  });
+});

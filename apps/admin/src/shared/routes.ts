@@ -2,7 +2,8 @@
  * 管理端固定路径 SSOT
  */
 export const ADMIN_ROUTES = {
-  today: '/',
+  pipeline: '/',
+  today: '/today',
   workstation: '/workstation',
   clues: '/clues',
   seeds: '/seeds',

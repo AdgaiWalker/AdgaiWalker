@@ -70,6 +70,7 @@
 | GET | `/assistant/runs?limit=` | — | 助手问题池（转题苗人工触发） |
 | GET | `/insights/signals?days=N` | — | 四源需求信号聚合 |
 | POST | `/insights/report` / GET `/insights/reports` | — | 需求周报（harness 归纳） |
+| POST | `/insights/suggestions/seed` | `{ kind, text, evidence? }` | 周报建议→INBOX 题苗（仅 write；7 天同题幂等；evidence→whyNow；主选仍人工五问） |
 | GET/PUT | `/admin/content`… | PUT `{ raw }` | 内容文件读写（保存后异步 `content:gen`；上线走 `pnpm content:publish --push`） |
 | GET/PUT | `/credentials`… | AES-256-GCM 密文 | 凭据库（`reveal` 须二次确认） |
 

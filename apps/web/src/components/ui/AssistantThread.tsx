@@ -168,6 +168,10 @@ export function AssistantThread({
         </button>
       </div>
 
+      <p className="meta" style={{ margin: '4px 0 0' }}>
+        问过的问题会进入站主的选题池——你的问题可能变成下一篇文章
+      </p>
+
       {error ? (
         <div className="alert-fail" role="alert">
           {error}

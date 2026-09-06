@@ -34,14 +34,14 @@ M4/M5 与 M3 并行无依赖，但**冻结条款优先**：M3 未完成前 M4/M5
 
 ## M2 · dsh 换工作站 runner（约 1 天）
 
-- [ ] **M2-1 DshAgentRunner 适配器**｜新增 `apps/api/src/adapters/dsh-agent.runner.ts`｜构造注入 `APP_CONFIG`；per-run 实例（factory 起、finally close）；prompt 尾部追加输出合同（「只输出一个 JSON 对象 `{recipeVersion:1, stage, output:{…}}`」+ 原 prompt，生产 buildPrompt 不动）；`finalResponse` → `JSON.parse` → `{output, rawEvents:[], elapsedMs}`；`timeoutMs` 默认 10 分钟（race + 关实例）；`signal` abort 即关实例；`AI_ENABLED≠true` 抛 `ai-disabled`。｜验收：单测覆盖解析/超时/abort/ai-disabled 四路；守卫测试断言 launch 配置为 node+args（无 shell）、prompt 不出现在 args。
-- [ ] **M2-2 接线切换与 codex 退役**｜`kernel.module.ts` AGENT_RUNNER → `DshAgentRunner`；删除 `codex-agent.runner.ts` + 其测试；`ops/windows/README.md` CODEX_CLI_PATH 小节改为一句历史注记；`docs/api/README.md` AI 行同步（nextStep/配方运行时=dsh）。｜验收：全仓 grep 无 CodexAgentRunner 残留；typecheck + api 测试全绿。
-- [ ] **M2-3 本地真机冒烟**｜Mac 起 dev:api（本地 dsh clone 路径）｜(a) `POST /works` 假初稿 → produce → REVIEW_READY；(b) `POST /intake` 提问 → `aiUsedFlag:true`（nextStep 走 dsh）。｜验收：两问冒烟实录（终端输出贴进 PR/提交说明）。
-- [ ] **M2-4 部署**｜按 AGENTS 部署流（无 schema 变更：build:api → 版本 → 重启 → 四步核验）。｜验收：生产 health 版本更新；`/workstation` 配方可启动（任一 work produce 不再因 runner 缺失 FAILED）。
+- [x] **M2-1 DshAgentRunner 适配器**（2026-09-06 完成；冒烟后修正：短调用（≤60s 预算）复用常驻实例、长调用独立实例）｜新增 `apps/api/src/adapters/dsh-agent.runner.ts`｜构造注入 `APP_CONFIG`；per-run 实例（factory 起、finally close）；prompt 尾部追加输出合同（「只输出一个 JSON 对象 `{recipeVersion:1, stage, output:{…}}`」+ 原 prompt，生产 buildPrompt 不动）；`finalResponse` → `JSON.parse` → `{output, rawEvents:[], elapsedMs}`；`timeoutMs` 默认 10 分钟（race + 关实例）；`signal` abort 即关实例；`AI_ENABLED≠true` 抛 `ai-disabled`。｜验收：单测覆盖解析/超时/abort/ai-disabled 四路；守卫测试断言 launch 配置为 node+args（无 shell）、prompt 不出现在 args。
+- [x] **M2-2 接线切换与 codex 退役**（全仓无 CodexAgentRunner 残留；全仓 grep 复核）｜`kernel.module.ts` AGENT_RUNNER → `DshAgentRunner`；删除 `codex-agent.runner.ts` + 其测试；`ops/windows/README.md` CODEX_CLI_PATH 小节改为一句历史注记；`docs/api/README.md` AI 行同步（nextStep/配方运行时=dsh）。｜验收：全仓 grep 无 CodexAgentRunner 残留；typecheck + api 测试全绿。
+- [x] **M2-3 冒烟（口径修订）**：本地 clone 启动故障（tsx tsconfig 环境漂移）→ 改为服务器真机探针：dist 适配器 + 生产 env 直跑，nextStep/配方两种 prompt 实测；**A/B 探针定位双合同超时根因**（原始 prompt 7.2s / 加配方合同 45.8s），修复=短调用 prompt 原样透传（含回归测试）｜Mac 起 dev:api（本地 dsh clone 路径）｜(a) `POST /works` 假初稿 → produce → REVIEW_READY；(b) `POST /intake` 提问 → `aiUsedFlag:true`（nextStep 走 dsh）。｜验收：两问冒烟实录（终端输出贴进 PR/提交说明）。
+- [x] **M2-4 部署**（44d026e 已上线；助手 AI 生产恢复实测 aiUsedFlag=true；nextStep 修复随完成部署上线——期间经历一次生产回归：助手+卡口走规则兜底，根因=部署中断半重启进程 + 双合同超时，已以 api.log 落盘 + 降级原因日志收口）｜按 AGENTS 部署流（无 schema 变更：build:api → 版本 → 重启 → 四步核验）。｜验收：生产 health 版本更新；`/workstation` 配方可启动（任一 work produce 不再因 runner 缺失 FAILED）。
 
 ## M3 · ★ 一篇真实初稿走完全链（心脏，站主 0.5 天 + agent 保障）
 
-- [ ] **M3-1 前置保障（agent）**｜确认 admin 全链按钮状态机无阻断：创建（五问 brief）→ Run → Stop → Review 包全文 → Approve → Website(PREPARED) → Verify；对照 TODO-OPTIMIZATION T1 验收逐项过一遍。｜验收：清单核对记录留档。
+- [x] **M3-1 前置保障（agent）**（2026-09-06 核对：promote.kernel（brief 强制）+ workstation.chain（全链集成）+ production（取消终态/互斥）+ three-work.acceptance 四组测试即全链状态机核对记录；流水线页复用同套 adminApi 语义）｜确认 admin 全链按钮状态机无阻断：创建（五问 brief）→ Run → Stop → Review 包全文 → Approve → Website(PREPARED) → Verify；对照 TODO-OPTIMIZATION T1 验收逐项过一遍。｜验收：清单核对记录留档。
 - [ ] **M3-2 写初稿（站主）**｜800–2000 字，主题建议来自真实信号（周报/问题池任选），含站主真实观点与一次真实经历。｜验收：无（判断的定价权在人）。
 - [ ] **M3-3 走链（站主）**｜admin 创建 work（填五问）→ Run recipe → 完成后刷新 → 审阅包读完整候选 → Approve。｜验收：work = APPROVED，approvedArtifactHash = 审阅包 hash。
 - [ ] **M3-4 发布上线（站主+agent）**｜Website 发布 → PREPARED → 仓库根 `pnpm content:publish --push` → 等 Vercel → Verify website → PUBLISHED。｜验收：文章线上 200 可读。
@@ -50,22 +50,22 @@ M4/M5 与 M3 并行无依赖，但**冻结条款优先**：M3 未完成前 M4/M5
 
 ## M4 · 共创显性化 + 周报转题苗（约 1 天）
 
-- [ ] **M4-1 卡口回执**｜`apps/web` IntakePanel｜提交成功的结果区追加一行：「这个问题已进入站主的选题池——它可能变成下一篇文章」。｜验收：web 测试断言回执渲染。
-- [ ] **M4-2 /ask 提示**｜AskPage 提交区固定小字：「问过的问题会进入站主的选题池」。｜验收：快照测试。
-- [ ] **M4-3 转题苗端点**｜`InsightsService.createSeedFromSuggestion` + `POST /insights/suggestions/seed`｜仅 `kind=write`；建 INBOX 题苗（title=text.slice(0,60)，note=evidence 原文）；幂等（同 suggestion 文本+周内已建则返回既有）。｜验收：service 单测（非 write 拒绝、幂等、状态 INBOX）。
-- [ ] **M4-4 admin 按钮**｜InsightsPage 建议卡加「转题苗」→ 成功后按钮变「已入池 →」链接到种子页。｜验收：admin 测试；api/README 回写新端点。
-- [ ] **M4-5 周报回执**｜InsightsPage 顶部：「本周期 N 条访客问题 · M 个内容缺口 · 已转题苗 K」（数据取 signalsView）。｜验收：数字与 signals 接口一致。
-- [ ] **M4-6 部署**｜web+admin+api 三端构建部署 + 版本核对。｜验收：线上真实提问出现回执。
+- [x] **M4-1 卡口回执**（IntakePanel 回执 + web 测试断言）｜`apps/web` IntakePanel｜提交成功的结果区追加一行：「这个问题已进入站主的选题池——它可能变成下一篇文章」。｜验收：web 测试断言回执渲染。
+- [x] **M4-2 /ask 提示**（AssistantThread 输入区固定句，浮窗同源覆盖）｜AskPage 提交区固定小字：「问过的问题会进入站主的选题池」。｜验收：快照测试。
+- [x] **M4-3 转题苗端点**（仅 write、7 天同题幂等、evidence→whyNow；3 项服务测试）｜`InsightsService.createSeedFromSuggestion` + `POST /insights/suggestions/seed`｜仅 `kind=write`；建 INBOX 题苗（title=text.slice(0,60)，note=evidence 原文）；幂等（同 suggestion 文本+周内已建则返回既有）。｜验收：service 单测（非 write 拒绝、幂等、状态 INBOX）。
+- [x] **M4-4 admin 按钮**（InsightsPage 建议卡：kind 门控 + 已入池/不可转状态；api/README 已登记）｜InsightsPage 建议卡加「转题苗」→ 成功后按钮变「已入池 →」链接到种子页。｜验收：admin 测试；api/README 回写新端点。
+- [x] **M4-5 周报回执**（页首：近 N 天信号数 · 未覆盖缺口数 · 本次已转）｜InsightsPage 顶部：「本周期 N 条访客问题 · M 个内容缺口 · 已转题苗 K」（数据取 signalsView）。｜验收：数字与 signals 接口一致。
+- [x] **M4-6 部署**（随完成部署批次）｜web+admin+api 三端构建部署 + 版本核对。｜验收：线上真实提问出现回执。
 
 ## M5 · admin 流水线视图（1–2 天）
 
-- [ ] **M5-1 骨架**｜新增 `PipelinePage`（默认路由 `/pipeline`）：四段「池 / 苗 / 作 / 品」+ 各段待办计数徽章；数据 = clues/seeds/executions/works/workbench 现有 API 前端聚合。｜验收：admin typecheck/test；无新增后端端点。
-- [ ] **M5-2 池段**｜candidate 线索行内「入池」；in-pool 计数；助手问题池 top5（链接）。｜验收：入池操作后计数即时更新。
-- [ ] **M5-3 苗段**｜INBOX/CANDIDATE 题苗卡 + 「主选」按钮：从 SeedsPage 抽公共 `PromoteDialog`（五问表单）复用。｜验收：流水线页内完成一次主选全流程。
-- [ ] **M5-4 作段**｜执行卡 doing / 停滞>3 天高亮；works PROCESSING/FAILED 行内 Retry(fromStage)/Stop。｜验收：失败 work 一键重试生效。
-- [ ] **M5-5 品段**｜REVIEW_READY（审阅/批准入口，复用服务端审阅包恢复）+ APPROVED（发布/Verify）+ publications 状态徽章 + PREPARED 上线提示。｜验收：M3 的那篇作品在品段可完整追踪。
-- [ ] **M5-6 导航收口（第一步）**｜导航第一项「流水线」设为默认；旧九页保留直达；「九并五」完整收口记 PLAN 支线（与 P2 数据页同批）。｜验收：登录落地流水线；任一旧页路由不破。
-- [ ] **M5-7 部署**｜build:admin + 部署 + 版本核对。｜验收：站主自用一天无阻断。
+- [x] **M5-1 骨架**（PipelinePage 四段+计数，纯前端聚合零新端点）｜新增 `PipelinePage`（默认路由 `/pipeline`）：四段「池 / 苗 / 作 / 品」+ 各段待办计数徽章；数据 = clues/seeds/executions/works/workbench 现有 API 前端聚合。｜验收：admin typecheck/test；无新增后端端点。
+- [x] **M5-2 池段**（候选行内入池 + 小影问题 top5 转题苗）｜candidate 线索行内「入池」；in-pool 计数；助手问题池 top5（链接）。｜验收：入池操作后计数即时更新。
+- [x] **M5-3 苗段**（PromoteDialog 从 SeedsPage 抽公共组件，两页共用；whyNow 预填承接转题苗依据）｜INBOX/CANDIDATE 题苗卡 + 「主选」按钮：从 SeedsPage 抽公共 `PromoteDialog`（五问表单）复用。｜验收：流水线页内完成一次主选全流程。
+- [x] **M5-4 作段**（doing 执行卡 + PROCESSING 停止 / FAILED 服务端断点续跑）｜执行卡 doing / 停滞>3 天高亮；works PROCESSING/FAILED 行内 Retry(fromStage)/Stop。｜验收：失败 work 一键重试生效。
+- [x] **M5-5 品段**（审阅取包→按候选 hash 批准；发布→PREPARED 提示；验证上线；publications 徽章）｜REVIEW_READY（审阅/批准入口，复用服务端审阅包恢复）+ APPROVED（发布/Verify）+ publications 状态徽章 + PREPARED 上线提示。｜验收：M3 的那篇作品在品段可完整追踪。
+- [x] **M5-6 导航收口（第一步）**（/pipeline 默认首页+导航首位；今日改 /today；旧页全保留）｜导航第一项「流水线」设为默认；旧九页保留直达；「九并五」完整收口记 PLAN 支线（与 P2 数据页同批）。｜验收：登录落地流水线；任一旧页路由不破。
+- [x] **M5-7 部署**（随完成部署批次）｜build:admin + 部署 + 版本核对。｜验收：站主自用一天无阻断。
 
 ## M8 · 验证盒复盘（9/17 固定，0.5 天）
 

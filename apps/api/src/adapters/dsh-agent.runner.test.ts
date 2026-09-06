@@ -127,3 +127,22 @@ describe('DshAgentRunner 执行形态（M2 冒烟修正）', () => {
     expect(factoryCalls).toBe(2);
   });
 });
+
+describe('输出合同按调用形态区分（双合同超时修复）', () => {
+  it('短调用 prompt 原样透传（调用方自带合同），长调用追加配方合同', async () => {
+    const seen: string[] = [];
+    const mk = () => ({
+      async run(prompt: string) {
+        seen.push(prompt);
+        return { sessionId: 's', finalResponse: '{"ok":1}' };
+      },
+      async close() {},
+    }) as never;
+    const r = new DshAgentRunner(config(true), mk);
+    await r.run({ prompt: 'PROMPT-A', cwd: '/tmp', timeoutMs: 15_000 }); // 短调用
+    await r.run({ prompt: 'PROMPT-B', cwd: '/tmp' }); // 长调用
+    expect(seen[0]).toBe('PROMPT-A'); // 原样
+    expect(seen[1]).toContain('PROMPT-B');
+    expect(seen[1]).toContain('recipeVersion'); // 追加配方合同
+  });
+});

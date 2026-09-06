@@ -9,6 +9,7 @@ import { InsightsPage } from './pages/InsightsPage';
 import { CredentialsPage } from './pages/CredentialsPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
+import { PipelinePage } from './pages/PipelinePage';
 import { SeedsPage } from './pages/SeedsPage';
 import { TodayPage } from './pages/TodayPage';
 import { WorkstationPage } from './pages/WorkstationPage';
@@ -18,6 +19,7 @@ export function App() {
   return (
     <Routes>
       <Route element={<AdminShell />}>
+        <Route path={ADMIN_ROUTES.pipeline} element={<PipelinePage />} />
         <Route path={ADMIN_ROUTES.today} element={<TodayPage />} />
         <Route
           path={ADMIN_ROUTES.workstation}
@@ -41,7 +43,7 @@ export function App() {
         <Route path={ADMIN_ROUTES.aiGateway} element={<AiGatewayPage />} />
         <Route
           path="*"
-          element={<Navigate to={ADMIN_ROUTES.today} replace />}
+          element={<Navigate to={ADMIN_ROUTES.pipeline} replace />}
         />
       </Route>
     </Routes>

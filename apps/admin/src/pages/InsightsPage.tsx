@@ -101,6 +101,19 @@ export function InsightsPage() {
   }, [run]);
 
   const latest = reports[0];
+  const gapCount = view?.gaps.filter((g) => !g.covered).length ?? 0;
+  const convertedCount = Object.values(converted).filter(Boolean).length;
+
+  const seedFromSuggestion = (s: Suggestion, key: string) =>
+    void run(async () => {
+      const created = await adminApi.insightSeedFromSuggestion({
+        kind: s.kind,
+        text: s.text,
+        evidence: s.evidence,
+      });
+      setConverted((prev) => ({ ...prev, [key]: true }));
+      if (created.reused) return; // 幂等复用既有题苗，不重复提示
+    });
 
   return (
     <div>
@@ -108,6 +121,10 @@ export function InsightsPage() {
         <h1>需求</h1>
         <p className="page-lead">
           访客问过什么、搜过什么、反馈过什么——决定接下来写什么、做什么
+        </p>
+        <p className="meta" style={{ marginTop: 4 }}>
+          近 {view?.days ?? 30} 天：{view?.signals.length ?? 0} 条访客信号 · {gapCount} 个未覆盖内容缺口
+          {convertedCount ? ` · 本次已转题苗 ${convertedCount}` : ''}
         </p>
       </header>
       {err ? <p className="alert-fail">{err}</p> : null}
@@ -144,30 +161,27 @@ export function InsightsPage() {
             ) : null}
             <h4>建议（人工确认后才转选题）</h4>
             <ul>
-              {latest.report.suggestions.map((s, i) => (
-                <li key={i} style={{ margin: '6px 0' }}>
-                  <span className="meta">[{KIND_LABEL[s.kind]}]</span> {s.text}
-                  <button
-                    type="button"
-                    style={{ marginLeft: 10 }}
-                    disabled={converted[`${latest.id}-${i}`]}
-                    onClick={() =>
-                      void run(async () => {
-                        await adminApi.createSeed(s.text.slice(0, 120));
-                        setConverted((prev) => ({
-                          ...prev,
-                          [`${latest.id}-${i}`]: true,
-                        }));
-                      })
-                    }
-                  >
-                    {converted[`${latest.id}-${i}`] ? '已转选题' : '转选题'}
-                  </button>
-                  {s.evidence ? (
-                    <span className="meta"> 依据：{s.evidence}</span>
-                  ) : null}
-                </li>
-              ))}
+              {latest.report.suggestions.map((s, i) => {
+                const key = `${latest.id}-${i}`;
+                const convertible = s.kind === 'write';
+                return (
+                  <li key={key} style={{ margin: '6px 0' }}>
+                    <span className="meta">[{KIND_LABEL[s.kind]}]</span> {s.text}
+                    <button
+                      type="button"
+                      style={{ marginLeft: 10 }}
+                      disabled={converted[key] || !convertible}
+                      title={convertible ? undefined : '仅「写文章」类建议可转题苗；其他类别请在「做产品/自媒体/商业」里自行登记'}
+                      onClick={() => seedFromSuggestion(s, key)}
+                    >
+                      {converted[key] ? '已入池' : convertible ? '转题苗' : '不可转'}
+                    </button>
+                    {s.evidence ? (
+                      <span className="meta"> 依据：{s.evidence}</span>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
             <p className="meta">
               生成于 {new Date(latest.createdAt).toLocaleString('zh-CN')}

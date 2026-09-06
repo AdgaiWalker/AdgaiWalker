@@ -14,6 +14,7 @@ import {
   type InsightReportData,
 } from '@walker/shared';
 import { newId } from '../common/ids';
+import { validationError } from '../common/http-error';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { SITE_CONTENT_INDEX, type SiteContentIndexPort } from '../ports/site-content-index.port';
 import { buildDefaultRuntimeFactory } from '../adapters/harness-assistant.adapter';
@@ -192,5 +193,37 @@ export class InsightsService {
       report: JSON.parse(r.report) as InsightReportData,
       createdAt: r.createdAt.toISOString(),
     }));
+  }
+
+  /**
+   * 周报建议 → INBOX 题苗（M4-3）。红线：仅 kind=write 的建议可转（AI 不自动主选，
+   * 主选仍需人工五问）；evidence 作为 whyNow 依据入苗；7 天内同题幂等复用既有。
+   */
+  async createSeedFromSuggestion(input: {
+    kind: string;
+    text: string;
+    evidence?: string;
+  }): Promise<{ id: string; title: string; reused: boolean }> {
+    const client = this.prisma.getClient();
+    if (!client) throw new Error('storage-unavailable');
+    if (input.kind !== 'write') throw validationError('only-write-suggestions');
+    const title = input.text.trim().slice(0, 60);
+    if (!title) throw validationError('suggestion-text-required');
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+    const existing = await client.seed.findFirst({
+      where: { title, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (existing) return { id: existing.id, title: existing.title, reused: true };
+    const id = newId();
+    await client.seed.create({
+      data: {
+        id,
+        title,
+        workflowStatus: 'INBOX',
+        whyNow: input.evidence?.trim().slice(0, 200) ?? null,
+      },
+    });
+    return { id, title, reused: false };
   }
 }

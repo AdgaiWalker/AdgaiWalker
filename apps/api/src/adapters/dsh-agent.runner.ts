@@ -27,7 +27,12 @@ export const DSH_STAGE_TIMEOUT_MS = 10 * 60 * 1000;
 /** 短调用阈值：显式预算不超过它视为短调用（复用常驻实例） */
 export const DSH_SHORT_CALL_MS = 60_000;
 
-/** 追加输出合同：配方 prompt 由 ProductionService 构造，这里只声明 JSON 输出契约 */
+/**
+ * 追加输出合同（仅工作站配方长调用使用）。ProductionService 的配方 prompt 没有自带
+ * 输出格式指令，这里补上 JSON 契约。短调用（卡口 nextStep）的 prompt 自带合同
+ * （buildAiNextStepPrompt），再追加会造成双合同冲突——实测把生成从 7s 拖到 45s+
+ * （2026-09-06 生产 A/B 探针），15s 预算必然超时，因此短调用一律原样透传。
+ */
 export function withJsonOutputContract(prompt: string): string {
   return [
     prompt,
@@ -72,7 +77,7 @@ export class DshAgentRunner implements AgentRunnerPort {
     await prev.catch(() => {});
     try {
       if (!this.resident) this.resident = factory();
-      return await this.execute(this.resident, input);
+      return await this.execute(this.resident, input, false);
     } catch (error) {
       // 常驻实例疑似失活：丢弃，下次短调用重拉（对齐助手 dropRuntime 策略）
       const dead = this.resident;
@@ -91,7 +96,7 @@ export class DshAgentRunner implements AgentRunnerPort {
   ): Promise<AgentRunResult> {
     const runtime = factory();
     try {
-      return await this.execute(runtime, input);
+      return await this.execute(runtime, input, true);
     } finally {
       void runtime.close().catch(() => {});
     }
@@ -100,9 +105,11 @@ export class DshAgentRunner implements AgentRunnerPort {
   private async execute(
     runtime: HarnessRuntimeLike,
     input: AgentRunInput,
+    appendContract: boolean,
   ): Promise<AgentRunResult> {
     const started = Date.now();
-    const runPromise: Promise<RunOutcome> = runtime.run(withJsonOutputContract(input.prompt), {});
+    const prompt = appendContract ? withJsonOutputContract(input.prompt) : input.prompt;
+    const runPromise: Promise<RunOutcome> = runtime.run(prompt, {});
     const timed = await Promise.race([
       runPromise,
       new Promise<null>((r) => setTimeout(() => r(null), input.timeoutMs ?? DSH_STAGE_TIMEOUT_MS)),
