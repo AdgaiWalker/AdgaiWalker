@@ -20,7 +20,48 @@
 4. **诚实降级**：AI 可关；失败如实标注（aiUsedFlag / degradeReason）；引用必须带出处——对人和对机器调用方一视同仁。
 5. **判断的定价权在人**：主选、审批、发布永远是站主的点击；AI 只起草和建议。
 
-## 2. 架构边界（论文 arXiv:2608.25512 + 实测定案）
+## 2. 架构边界（论文 arXiv:2608.25512 + 实测定案 · 完整图面见 [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)）
+
+**最终架构（定稿图）：**
+
+```mermaid
+flowchart TB
+    subgraph faces["三个面"]
+        direction LR
+        F_WEB["👤 访客 · Web（骨架不变）"]
+        F_ADMIN["🛠 站主 · admin 流水线 + 数据页"]
+        F_MCP["🤖 外部 AI · MCP"]
+    end
+    subgraph static["静态服务面 · Nest 单实例 —— 状态的持久正确"]
+        GATE2["网关 + 观测采集"]
+        PIPE["流水线用例：预留-补偿 · 条件终态 · PREPARED 链"]
+        DSH2["dsh · 唯一 AI 运行时<br/>小影 · 卡口 · 工作站配方 · 周报"]
+        OBS[("观测真相源")]
+        DB2[("SQLite · content/log · 原稿+hash")]
+    end
+    subgraph dynamic["动态组合面 · Cordis（apps/agent）—— 能力的动态正确"]
+        CORE["Cordis 核心：可逆效应 + 响应式协效应"]
+        KP["knowledge"]
+        PP["persona"]
+        MP["mcp 工具"]
+        TP["telemetry"]
+        FUT["未来组件：ask · 检索后端 · 具身接口（热装卸）"]
+    end
+    EXT2["他人的 agent"]
+    CJ2[("content.json · Git 真相源")]
+    FAR["具身智能 · 远期"]
+
+    F_WEB & F_ADMIN --> GATE2 --> PIPE --> DB2
+    PIPE --> DSH2
+    GATE2 --> OBS
+    CJ2 -->|"协效应：发布→知识刷新"| KP
+    KP & PP --> MP
+    EXT2 <-->|"调用 / 带出处返回"| MP
+    TP --> OBS
+    FUT -.-> CORE
+    CJ2 -->|"知识 / citable 引用"| PIPE
+    MP -.->|"v2/v3 同一扇门"| FAR
+```
 
 - **两面**：
   - **静态服务面**（Nest，单实例）——状态的持久正确。业务层手工时间可组合性：配额预留-补偿、条件终态（setStatusUnless）、PREPARED→PUBLISHED 链。
@@ -32,11 +73,11 @@
 
 | # | 事项 | 谁 | 量级 | 验收锚点 | 状态 |
 |---|---|---|---|---|---|
-| 1 | 观测 P0：遥测代码级关闭 + dsh 会话 90 天清理脚本 | agent | 0.5d | TODO-OBSERVABILITY P0 三项 | 待办 |
-| 2 | dsh 换工作站 AGENT_RUNNER + 集成测 | agent | 1d | 生产配方可跑；假 runner 全链测试过 | 待办 |
+| 1 | 观测 P0：遥测代码级关闭 + dsh 会话 90 天清理脚本 | agent | 0.5d | TODO-OBSERVABILITY P0 三项 | ✅ 生产 |
+| 2 | dsh 换工作站 AGENT_RUNNER + 集成测 | agent | 1d | 生产配方可跑；假 runner 全链测试过 | ✅ 生产（含两次根因修复，详见 TODO-MAINLINE M2 实录） |
 | 3 | **★ 一篇真实初稿走完全链**（创建→加工→刷新审阅→批准→发布→线上验证） | **站主** | 站主 0.5d | 文章进 content/log，线上可访问，循环计数 0→1 | **心脏** |
-| 4 | 共创文案三句 + 周报建议一键转题苗 | agent | 1d | 卡口/小影回执文案上线；建议可生成题苗草稿 | 待办 |
-| 5 | admin 流水线视图（九页并五，流水线默认首页） | agent | 1–2d | 池→苗→作→品单视图可追踪 | 待办 |
+| 4 | 共创文案三句 + 周报建议一键转题苗 | agent | 1d | 卡口/小影回执文案上线；建议可生成题苗草稿 | ✅ 生产 |
+| 5 | admin 流水线视图（九页并五，流水线默认首页） | agent | 1–2d | 池→苗→作→品单视图可追踪 | ✅ 生产 |
 | 6 | 判断代理 v1（apps/agent · Cordis · MCP） | agent | 1–2d | TODO-AGENT A0–A6；dogfooding 实录 | **A0–A3 ✅ A4 stub**（2026-09-06 提前解冻）；余 A5 dogfooding / A6 文档收尾 |
 | 7 | 观测 P1（token/首字延迟/排队/降级原因落库） | agent | 1–2d | 线上真发一问，AssistantRun 新列有值 | 初稿后 |
 | 8 | 验证盒复盘 | 站主+agent | 0.5d | **9 月 17 日**，拿真数据说话 | 已定日程 |
