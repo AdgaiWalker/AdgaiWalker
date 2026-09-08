@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { WEB_ROUTES } from '../../shared/routes';
 import { IntakePanel } from './IntakePanel';
 
 const base = {
@@ -58,6 +59,33 @@ describe('IntakePanel（展示块 UX）', () => {
     );
     expect(screen.getByText('先写五条大纲')).toBeInTheDocument();
     expect(screen.getByText(/桶 learn-ai/)).toBeInTheDocument();
+  });
+
+  it('相关阅读与问小影走路由 SSOT', () => {
+    render(
+      <MemoryRouter>
+        <IntakePanel
+          {...base}
+          bodyOk
+          remaining={0}
+          result={{
+            nextStep: '先写五条大纲',
+            bucketId: 'learn-ai',
+            aiUsedFlag: false,
+            suggestedSlug: 'cc-intro',
+            suggestedTitle: '标题甲',
+          }}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: '标题甲' })).toHaveAttribute(
+      'href',
+      `${base.browsePath}/cc-intro`,
+    );
+    expect(screen.getByRole('link', { name: '问小影' })).toHaveAttribute(
+      'href',
+      WEB_ROUTES.assistant,
+    );
   });
 });
 

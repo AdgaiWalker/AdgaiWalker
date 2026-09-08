@@ -127,8 +127,9 @@ P2 数据页（等数据存在）、观测 P3 全部（按触发条件）、Cord
 | `docs/TODO-MAINLINE.md` | 主线 M2/M3/M4/M5/M8 原子任务（M1→OBS·P0，M6→AGENT，M7→OBS·P1 交叉引用） |
 | `docs/TODO-OBSERVABILITY.md` | 观测与数据（P0–P3，原子任务） |
 | `docs/TODO-AGENT.md` | 判断代理 v1（A0–A7，四插件架构） |
-| `docs/TODO-OPTIMIZATION.md` | 2026-09-05 分析的 T0–T4 优化批（已完成，留档） |
 | `docs/STATUS.md` / `docs/ENGINEERING.md` / `docs/api/README.md` | 生产状态 / 工程事实 / API 契约 |
 | `ops/windows/README.md` | 盒子运维：部署验证清单、备份恢复、runtime |
 | `docs/PRD-SITE-ASSISTANT.md` | 站内助手 PRD 与技术决策 |
 | `AGENTS.md` / `CLAUDE.md` | 项目级 agent 指令 / 工程约定 |
+
+已完成清单不在现行索引：`docs/archive/TODO-OPTIMIZATION.md`（T0–T4）、`docs/archive/TODO-SITE-ASSISTANT.md`（助手执行实录）。

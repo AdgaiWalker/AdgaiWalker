@@ -24,7 +24,8 @@ export function GiscusComments({ term }: { term: string }) {
   const cfg = readGiscusConfig();
 
   useEffect(() => {
-    if (!cfg || !hostRef.current || !term) return;
+    const next = readGiscusConfig();
+    if (!next || !hostRef.current || !term) return;
     const host = hostRef.current;
     host.innerHTML = '';
 
@@ -32,10 +33,10 @@ export function GiscusComments({ term }: { term: string }) {
     script.src = 'https://giscus.app/client.js';
     script.async = true;
     script.crossOrigin = 'anonymous';
-    script.setAttribute('data-repo', cfg.repo);
-    script.setAttribute('data-repo-id', cfg.repoId);
-    script.setAttribute('data-category', cfg.category);
-    script.setAttribute('data-category-id', cfg.categoryId);
+    script.setAttribute('data-repo', next.repo);
+    script.setAttribute('data-repo-id', next.repoId);
+    script.setAttribute('data-category', next.category);
+    script.setAttribute('data-category-id', next.categoryId);
     script.setAttribute('data-mapping', 'specific');
     script.setAttribute('data-term', term);
     script.setAttribute('data-strict', '1');
@@ -49,7 +50,7 @@ export function GiscusComments({ term }: { term: string }) {
     return () => {
       host.innerHTML = '';
     };
-  }, [cfg, term]);
+  }, [term]);
 
   if (!cfg) return null;
 

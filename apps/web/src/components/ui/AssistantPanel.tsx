@@ -38,7 +38,7 @@ export function AssistantPanel({
       <header className="assistant-head">
         <span className="assistant-dot" aria-hidden />
         <span className="assistant-name">小影</span>
-        <span className="meta">duola 的管家 · 在线</span>
+        <span className="meta">Dora 的管家 · 在线</span>
         {messages.length ? (
           <button
             type="button"

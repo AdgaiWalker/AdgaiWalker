@@ -6,7 +6,7 @@
  * - 15s 超时：弃结果走兜底，并关闭僵死 runtime，下一问自动重拉
  * - 输出必须过 parseAssistantOutput（citations ⊆ citable，fail-closed）
  *
- * 启动配方（2026-08-30 实测通过，见 docs/TODO-SITE-ASSISTANT.md 决策日志）：
+ * 启动配方（2026-08-30 实测通过，见 docs/archive/TODO-SITE-ASSISTANT.md 决策日志）：
  * clone 的 bin.ts 经 tsx 启动，cwd 必须指 clone 目录（避免宿主仓库的
  * 依赖解析污染）；DSH_HOME 独立于开发者 ~/.dsh；DSH_PERMISSION_MODE=read-only。
  */

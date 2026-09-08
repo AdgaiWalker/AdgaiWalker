@@ -5,7 +5,7 @@
 ## 文档阅读顺序
 
 1. 根 `PLAN.md`（主执行计划：北极星 · 宪法 · 主线排期 · 冻结条款）→ 2. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 3. `docs/README.md`（文档地图）+ `docs/ARCHITECTURE.md`（架构图面：当前态/最终/飞轮）→ 4. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
-改站内助手必须先读 `docs/PRD-SITE-ASSISTANT.md` + `docs/TODO-SITE-ASSISTANT.md`。`docs/archive/` 是退役方案，禁止当现行契约。
+改站内助手必须先读 `docs/PRD-SITE-ASSISTANT.md`。执行实录与决策日志在 `docs/archive/TODO-SITE-ASSISTANT.md`（已完成，禁止当待办队列）。`docs/archive/` 是退役方案，禁止当现行契约。
 
 ## 仓库结构与验证门禁
 

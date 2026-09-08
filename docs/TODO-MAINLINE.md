@@ -41,7 +41,7 @@ M4/M5 与 M3 并行无依赖，但**冻结条款优先**：M3 未完成前 M4/M5
 
 ## M3 · ★ 一篇真实初稿走完全链（心脏，站主 0.5 天 + agent 保障）
 
-- [x] **M3-1 前置保障（agent）**（2026-09-06 核对：promote.kernel（brief 强制）+ workstation.chain（全链集成）+ production（取消终态/互斥）+ three-work.acceptance 四组测试即全链状态机核对记录；流水线页复用同套 adminApi 语义）｜确认 admin 全链按钮状态机无阻断：创建（五问 brief）→ Run → Stop → Review 包全文 → Approve → Website(PREPARED) → Verify；对照 TODO-OPTIMIZATION T1 验收逐项过一遍。｜验收：清单核对记录留档。
+- [x] **M3-1 前置保障（agent）**（2026-09-06 核对：promote.kernel（brief 强制）+ workstation.chain（全链集成）+ production（取消终态/互斥）+ three-work.acceptance 四组测试即全链状态机核对记录；流水线页复用同套 adminApi 语义）｜确认 admin 全链按钮状态机无阻断：创建（五问 brief）→ Run → Stop → Review 包全文 → Approve → Website(PREPARED) → Verify；对照 archive/TODO-OPTIMIZATION T1 验收逐项过一遍。｜验收：清单核对记录留档。
 - [ ] **M3-2 写初稿（站主）**｜800–2000 字，主题建议来自真实信号（周报/问题池任选），含站主真实观点与一次真实经历。｜验收：无（判断的定价权在人）。
 - [ ] **M3-3 走链（站主）**｜admin 创建 work（填五问）→ Run recipe → 完成后刷新 → 审阅包读完整候选 → Approve。｜验收：work = APPROVED，approvedArtifactHash = 审阅包 hash。
 - [ ] **M3-4 发布上线（站主+agent）**｜Website 发布 → PREPARED → 仓库根 `pnpm content:publish --push` → 等 Vercel → Verify website → PUBLISHED。｜验收：文章线上 200 可读。

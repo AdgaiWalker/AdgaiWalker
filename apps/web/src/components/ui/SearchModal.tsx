@@ -1,11 +1,15 @@
 /**
- * SearchModal — 展示块：搜索对话框 UI（无 content 扫描 / 无 API / 无 document 监听）
+ * SearchModal — 「搜索或问小影」一体面板。
+ * 搜索 query/hits 受控于壳侧 useContentSearch；面板内自有 useAssistant 会话（与 /ask 独立）。
+ * 回车或点「问问小影」在面板内提问，不跳页。
  */
-import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { ArrowLeft, MessageCircle, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { isValidAssistantBody } from '@walker/shared';
+import { useAssistant } from '../../hooks/useAssistant';
 import type { SearchHit } from '../../shared/search-content';
-import { WEB_ROUTES } from '../../shared/routes';
+import { AssistantThread } from './AssistantThread';
 
 export type SearchModalProps = {
   open: boolean;
@@ -28,9 +32,17 @@ export function SearchModal({
 }: SearchModalProps) {
   const backdropRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const assistantInputRef = useRef<HTMLTextAreaElement>(null);
+  const [mode, setMode] = useState<'search' | 'assistant'>('search');
+  const [draft, setDraft] = useState('');
+  const { messages, loading, streaming, error, send, stop, reset } =
+    useAssistant();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setMode('search');
+      return;
+    }
     const backdrop = backdropRef.current;
     if (!backdrop) return;
 
@@ -62,7 +74,22 @@ export function SearchModal({
     };
   }, [open, returnFocusTarget]);
 
+  // 切到对话视图后把焦点带进对话输入框
+  useEffect(() => {
+    if (!open || mode !== 'assistant') return;
+    const timer = window.setTimeout(() => {
+      assistantInputRef.current?.focus();
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [open, mode]);
+
   if (!open) return null;
+
+  const ask = (text: string) => {
+    if (!isValidAssistantBody(text)) return;
+    setMode('assistant');
+    void send(text);
+  };
 
   const trapFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -74,7 +101,7 @@ export function SearchModal({
 
     const focusable = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), a[href]',
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]',
       ),
     ).filter((element) => element.offsetParent !== null);
     if (!focusable.length) return;
@@ -100,47 +127,110 @@ export function SearchModal({
       onKeyDown={trapFocus}
     >
       <div
-        className="search-panel panel-glass"
+        className={`search-panel panel-glass${mode === 'assistant' ? ' is-assistant' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="search-panel-head">
-          <h2 id="search-dialog-title">搜索</h2>
-          <button type="button" aria-label="关闭搜索" onClick={onClose}>
-            <X size={20} aria-hidden />
-          </button>
-        </div>
-        <input
-          ref={inputRef}
-          autoFocus
-          placeholder="搜索标题或正文…（⌘K）"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-        />
-        {note ? (
-          <p className="meta">
-            {note}
-            {note === '无结果' && query.trim() ? (
-              <>
-                {' '}
-                <Link
-                  to={`${WEB_ROUTES.assistant}?q=${encodeURIComponent(query.trim())}`}
-                  onClick={onClose}
+        {mode === 'assistant' ? (
+          <>
+            <div className="search-panel-head">
+              <h2 id="search-dialog-title">问小影</h2>
+              <button type="button" aria-label="关闭" onClick={onClose}>
+                <X size={20} aria-hidden />
+              </button>
+            </div>
+            <div className="search-assistant-bar">
+              <button
+                type="button"
+                className="search-assistant-back"
+                onClick={() => {
+                  setMode('search');
+                  inputRef.current?.focus();
+                }}
+              >
+                <ArrowLeft size={14} aria-hidden />
+                返回搜索
+              </button>
+              {messages.length ? (
+                <button
+                  type="button"
+                  className="search-assistant-back"
+                  onClick={() => {
+                    reset();
+                    setDraft('');
+                  }}
                 >
-                  问小影 →
-                </Link>
-              </>
+                  新对话
+                </button>
+              ) : null}
+            </div>
+            <AssistantThread
+              draft={draft}
+              draftOk={isValidAssistantBody(draft)}
+              loading={loading}
+              streaming={streaming}
+              error={error}
+              messages={messages}
+              onDraftChange={setDraft}
+              onSubmit={() => ask(draft)}
+              onAskExample={(text) => ask(text)}
+              onStop={stop}
+              idPrefix="search-assistant"
+              compact
+              inputRef={assistantInputRef}
+            />
+          </>
+        ) : (
+          <>
+            <div className="search-panel-head">
+              <h2 id="search-dialog-title">搜索或问小影</h2>
+              <button type="button" aria-label="关闭搜索" onClick={onClose}>
+                <X size={20} aria-hidden />
+              </button>
+            </div>
+            <input
+              ref={inputRef}
+              autoFocus
+              placeholder="搜索或问小影…（⌘K）"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  ask(query);
+                }
+              }}
+            />
+            {note ? (
+              <p className="meta">
+                {note}
+                {note === '无结果' && isValidAssistantBody(query) ? (
+                  <>—— 试试下面问问小影</>
+                ) : null}
+              </p>
             ) : null}
-          </p>
-        ) : null}
-        <ul className="post-list">
-          {hits.map((h) => (
-            <li key={h.url}>
-              <Link to={h.url} onClick={onClose}>
-                {h.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
+            {isValidAssistantBody(query) ? (
+              <button
+                type="button"
+                className="search-ask-row"
+                onClick={() => ask(query)}
+              >
+                <MessageCircle size={15} aria-hidden />
+                <span>
+                  问问小影：<strong>{query.trim()}</strong>
+                </span>
+              </button>
+            ) : null}
+            <ul className="post-list">
+              {hits.map((h) => (
+                <li key={h.url}>
+                  <Link to={h.url} onClick={onClose}>
+                    {h.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
     </div>
   );

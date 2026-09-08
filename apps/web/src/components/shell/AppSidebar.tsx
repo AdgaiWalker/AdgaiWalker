@@ -8,7 +8,6 @@ import {
   Mail,
   MessageCircleQuestion,
   Rss,
-  Search,
   X,
 } from 'lucide-react';
 import { SITE_LINKS } from '../../shared/constants';
@@ -18,12 +17,11 @@ import {
   sidebarNavGroups,
   type NavItem,
 } from '../../shared/nav';
+import { WEB_ROUTES } from '../../shared/routes';
 
 type Props = {
   menuOpen: boolean;
   askActive: boolean;
-  onOpenSearch: (trigger?: HTMLElement) => void;
-  searchOpen?: boolean;
   onClose: () => void;
   sidebarRef?: RefObject<HTMLElement | null>;
 };
@@ -102,8 +100,6 @@ function NavLinkRow({
 export function AppSidebar({
   menuOpen,
   askActive,
-  onOpenSearch,
-  searchOpen = false,
   onClose,
   sidebarRef,
 }: Props) {
@@ -120,7 +116,7 @@ export function AppSidebar({
     >
       <div className="app-sidebar-top">
         <div className="app-sidebar-title-row">
-          <Link to="/" className="app-sidebar-title" aria-label="首页">
+          <Link to={WEB_ROUTES.home} className="app-sidebar-title" aria-label="首页">
             Walker
           </Link>
           {menuOpen ? (
@@ -144,18 +140,6 @@ export function AppSidebar({
           <MessageCircleQuestion size={15} aria-hidden strokeWidth={2.25} />
           <span>{dualEntry.ask.cta}</span>
         </Link>
-
-        <button
-          type="button"
-          className="app-search"
-          aria-haspopup="dialog"
-          aria-expanded={searchOpen}
-          onClick={(event) => onOpenSearch(event.currentTarget)}
-        >
-          <Search size={14} aria-hidden strokeWidth={2} />
-          <span>搜索</span>
-          <kbd className="app-search-kbd">⌘K</kbd>
-        </button>
       </div>
 
       <nav className="app-sidebar-scroll" aria-label="站内">

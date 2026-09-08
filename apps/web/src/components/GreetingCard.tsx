@@ -43,13 +43,13 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
       }}
     >
       <div className="avatar-ring">
-        <img src="/images/duola.jpg" alt="duola" />
+        <img src="/images/duola.jpg" alt="Dora" />
       </div>
       <div className="greeting-time-tag">{tag}</div>
       <h2 className="greeting-heading">
-        我是<strong>duola</strong>，很高兴认识你！
+        I&apos;m <strong>Dora</strong>, Nice to meet you.
       </h2>
-      <p className="greeting-sub">用 AI 走自己的路 · 存点子</p>
+      <p className="greeting-sub">用好 AI 做好事</p>
 
       <div className="social-row">
         <a

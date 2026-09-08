@@ -6,7 +6,7 @@
 ## 总览（一句话）
 
 **生产双入口已通（2026-09-03 切流）：能逛、能真卡真写、站内助手真答。**  
-近端重心 = 工作站交付链跑通真实初稿、内容持续增长（执行清单见 [`TODO-OPTIMIZATION.md`](./TODO-OPTIMIZATION.md)）。
+近端重心 = 工作站交付链跑通真实初稿、内容持续增长（执行清单见 [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) M3）。
 
 | 项 | 值 |
 |----|-----|
@@ -112,7 +112,7 @@
 主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。  
 公开面：分型/卡牌/时间线+标签、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。  
 Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。  
-AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（web 对话框 /ask + 浮窗 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md` / `TODO-SITE-ASSISTANT.md`）。
+AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（/ask 整页 + 右下 AskBar 合并搜索面板 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md`；执行实录 `docs/archive/TODO-SITE-ASSISTANT.md`）。
 **不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar 中台做进本站、canvas、MDX 块组件全量。  
 **远景保留、不进近端验收：** 知识→工作站→具身回灌；点子社区与智能微体站；内容分发参照 NorthStar 能力（见 VISION）。
 
@@ -134,6 +134,6 @@ AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关�
 
 ## 下一步（优先级）
 
-1. **工作站真实初稿全链跑通**（创建→加工→刷新→审阅→批准→构建→发布验证）→ 见 [`TODO-OPTIMIZATION.md`](./TODO-OPTIMIZATION.md) T1 收尾度量  
+1. **工作站真实初稿全链跑通**（创建→加工→刷新→审阅→批准→构建→发布验证）→ 见 [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) M3  
 2. **内容增长**：按需求信号中心的内容缺口持续产出  
 3. **要推 VISION 中层** → 知识可引用进 nextStep 的最小切片  

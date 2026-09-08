@@ -1,6 +1,6 @@
 /**
  * AppShell — 壳布局
- * 职责：首页画布 / 阅读沉浸 / 常规侧栏；自适应断点由 CSS。
+ * 职责：首页画布 / 阅读沉浸 / 常规侧栏；搜索/提问入口只经 AskBar + ⌘K（/ask 页不挂）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, matchPath } from 'react-router-dom';
@@ -11,7 +11,7 @@ import { applySiteTheme } from '../lib/theme';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
 import { SearchModal } from './ui/SearchModal';
-import { AssistantFloating } from './ui/AssistantFloating';
+import { AskBar } from './ui/AskBar';
 import { AppSidebar } from './shell/AppSidebar';
 import { HomeChrome } from './shell/HomeChrome';
 import { MobileBar } from './shell/MobileBar';
@@ -32,19 +32,15 @@ function browseHrefFromState(state: unknown): string {
 export function AppShell() {
   const location = useLocation();
   const { pathname } = location;
-  const isHome = pathname === '/';
+  const isHome = pathname === WEB_ROUTES.home;
   const reading = isPostDetail(pathname);
   const browseHref = browseHrefFromState(location.state);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const searchTriggerRef = useRef<HTMLElement | null>(null);
-  const assistantButtonRef = useRef<HTMLButtonElement>(null);
   const askActive = pathname === dualEntry.ask.path;
-  // /ask 自身已有完整对话，不叠悬浮窗与按钮
-  const assistantPage = pathname === WEB_ROUTES.assistant;
   const search = useContentSearch(searchOpen);
 
   const openSearch = useCallback((trigger?: HTMLElement) => {
@@ -126,27 +122,6 @@ export function AppShell() {
     };
   }, [menuOpen]);
 
-  const assistantLauncher = assistantPage ? null : (
-    <button
-      ref={assistantButtonRef}
-      type="button"
-      className="assistant-fab"
-      aria-label={assistantOpen ? '关闭小影' : '问小影'}
-      aria-expanded={assistantOpen}
-      onClick={() => setAssistantOpen((v) => !v)}
-    >
-      <span className="assistant-dot" aria-hidden />
-      小影
-    </button>
-  );
-  const assistantFloating = assistantPage ? null : (
-    <AssistantFloating
-      open={assistantOpen}
-      onClose={() => setAssistantOpen(false)}
-      returnFocusTarget={assistantButtonRef.current}
-    />
-  );
-
   const searchModal = (
     <SearchModal
       open={searchOpen}
@@ -159,14 +134,18 @@ export function AppShell() {
     />
   );
 
+  const askBar =
+    pathname === WEB_ROUTES.assistant ? null : (
+      <AskBar onOpen={openSearch} open={searchOpen} />
+    );
+
   if (isHome) {
     return (
       <>
-        <HomeChrome onOpenSearch={openSearch} searchOpen={searchOpen} />
+        <HomeChrome />
         <Outlet />
+        {askBar}
         {searchModal}
-        {assistantLauncher}
-        {assistantFloating}
       </>
     );
   }
@@ -175,19 +154,12 @@ export function AppShell() {
   if (reading) {
     return (
       <div className="app-layout is-reading">
-        <MobileBar
-          reading
-          browseHref={browseHref}
-          onToggleMenu={() => setMenuOpen((v) => !v)}
-          onOpenSearch={openSearch}
-          searchOpen={searchOpen}
-        />
+        <MobileBar reading browseHref={browseHref} />
         <main className="app-main app-main-reading">
           <Outlet />
         </main>
+        {askBar}
         {searchModal}
-        {assistantLauncher}
-        {assistantFloating}
       </div>
     );
   }
@@ -199,8 +171,6 @@ export function AppShell() {
         menuButtonRef={menuButtonRef}
         inactive={menuOpen}
         onToggleMenu={() => setMenuOpen((v) => !v)}
-        onOpenSearch={openSearch}
-        searchOpen={searchOpen}
       />
       <button
         type="button"
@@ -212,17 +182,14 @@ export function AppShell() {
       <AppSidebar
         menuOpen={menuOpen}
         askActive={askActive}
-        onOpenSearch={openSearch}
-        searchOpen={searchOpen}
         onClose={() => setMenuOpen(false)}
         sidebarRef={sidebarRef}
       />
       <main className="app-main app-main-browse" inert={menuOpen}>
         <Outlet />
       </main>
+      {askBar}
       {searchModal}
-      {assistantLauncher}
-      {assistantFloating}
     </div>
   );
 }

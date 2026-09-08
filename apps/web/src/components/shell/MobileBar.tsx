@@ -1,16 +1,17 @@
 /**
  * MobileBar — 内页移动顶栏
  * 阅读模式：← 证据 回逛（与桌面 chrome 同路径语义）
+ * 搜索入口在 AppShell 的 AskBar，本栏不再放搜索按钮。
  */
 import type { RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Menu } from 'lucide-react';
 import { dualEntry } from '../../shared/dual-entry';
+import { WEB_ROUTES } from '../../shared/routes';
 
 type Props = {
-  onToggleMenu: () => void;
-  onOpenSearch: (trigger?: HTMLElement) => void;
-  searchOpen?: boolean;
+  /** 非阅读模式必填；阅读顶栏不用菜单 */
+  onToggleMenu?: () => void;
   menuOpen?: boolean;
   menuButtonRef?: RefObject<HTMLButtonElement | null>;
   inactive?: boolean;
@@ -21,8 +22,6 @@ type Props = {
 
 export function MobileBar({
   onToggleMenu,
-  onOpenSearch,
-  searchOpen = false,
   menuOpen = false,
   menuButtonRef,
   inactive = false,
@@ -44,15 +43,6 @@ export function MobileBar({
           <ArrowLeft size={18} aria-hidden />
           <span>{dualEntry.browse.title}</span>
         </Link>
-        <button
-          type="button"
-          className="btn-ghost"
-          aria-haspopup="dialog"
-          aria-expanded={searchOpen}
-          onClick={(event) => onOpenSearch(event.currentTarget)}
-        >
-          搜索
-        </button>
       </div>
     );
   }
@@ -74,7 +64,7 @@ export function MobileBar({
         <Menu size={20} />
       </button>
       <Link
-        to="/"
+        to={WEB_ROUTES.home}
         className="mobile-bar-brand"
       >
         Walker
@@ -85,15 +75,6 @@ export function MobileBar({
       >
         卡住了
       </Link>
-      <button
-        type="button"
-        className="btn-ghost"
-        aria-haspopup="dialog"
-        aria-expanded={searchOpen}
-        onClick={(event) => onOpenSearch(event.currentTarget)}
-      >
-        搜索
-      </button>
     </div>
   );
 }

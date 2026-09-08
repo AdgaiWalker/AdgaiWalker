@@ -3,6 +3,7 @@
  */
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { WEB_ROUTES } from '../../shared/routes';
 
 export type IntakeResultView = {
   nextStep: string;
@@ -48,7 +49,7 @@ export function IntakePanel({
   result,
   browsePath,
   browseLabel,
-  resourcesHref = '/tools/resources',
+  resourcesHref = WEB_ROUTES.toolsResources,
   serviceNote = null,
   onBodyChange,
   onPickExample,
@@ -134,7 +135,9 @@ export function IntakePanel({
           {result.suggestedSlug ? (
             <p className="success-meta">
               相关阅读：
-              <Link to={`/posts/${result.suggestedSlug}`}>
+              <Link
+                to={`${browsePath}/${encodeURIComponent(result.suggestedSlug)}`}
+              >
                 {result.suggestedTitle || result.suggestedSlug}
               </Link>
             </p>
@@ -148,7 +151,7 @@ export function IntakePanel({
           </p>
           <p className="success-meta">
             也想了解站主或找内容？
-            <Link to="/ask">问小影</Link>
+            <Link to={WEB_ROUTES.assistant}>问小影</Link>
           </p>
         </div>
       ) : null}

@@ -4,6 +4,8 @@
 
 | 目录/文件 | 原用途 |
 |-----------|--------|
+| `TODO-OPTIMIZATION.md` | 2026-09-05 分析的 T0–T4 优化批（2026-09-06 完成，2026-09-08 归档） |
+| `TODO-SITE-ASSISTANT.md` | 站内助手 P0–P5 + T6 执行实录与决策日志（2026-09-08 归档；现行契约仍是 `docs/PRD-SITE-ASSISTANT.md`） |
 | `PRD-*` | 双入口产品全文 |
 | `goals/` | 已完成或过期 Goal |
 | `process/` | deploy / cutover / s1 时钟长文 |

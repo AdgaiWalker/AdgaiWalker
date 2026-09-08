@@ -1,5 +1,5 @@
 /**
- * AssistantThread — 消息流 + 空态示例 + 输入条（纯展示，两壳共用：/ask 整页 / 悬浮窗）。
+ * AssistantThread — 消息流 + 空态示例 + 输入条（纯展示，两壳共用：/ask 整页 / 搜索面板）。
  * 数据 in / 事件 out，无 API；引用渲染真实文章标题。
  */
 import { useEffect, useRef } from 'react';
@@ -9,7 +9,7 @@ import type { AssistantMessage } from '../../hooks/useAssistant';
 import { dualEntry } from '../../shared/dual-entry';
 
 export const ASSISTANT_EXAMPLES = [
-  'duola 是谁？',
+  'Dora 是谁？',
   '想学 AI 从哪开始？',
   '这站能帮我什么？',
 ] as const;
@@ -25,11 +25,11 @@ export type AssistantThreadProps = {
   onSubmit: () => void;
   onAskExample?: (text: string) => void;
   onStop?: () => void;
-  /** 输入框 label/aria 前缀（整页与悬浮窗区分） */
+  /** 输入框 label/aria 前缀（整页与搜索面板区分） */
   idPrefix?: string;
-  /** 悬浮窗隐藏底部「去卡口」脚注（窗内已有窄栏出口） */
+  /** 搜索面板隐藏底部「去卡口」脚注（面板头已有出口） */
   compact?: boolean;
-  /** 外部焦点控制（如悬浮窗打开时聚焦）；不传则内部自建 */
+  /** 外部焦点控制（如面板打开时聚焦）；不传则内部自建 */
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 };
 
@@ -53,7 +53,8 @@ export function AssistantThread({
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+    // jsdom 等环境无 Element.scrollTo，可选调用兜底
+    logRef.current?.scrollTo?.({ top: logRef.current.scrollHeight });
   }, [messages, loading]);
 
   const inputId = `${idPrefix}-input`;
@@ -64,7 +65,7 @@ export function AssistantThread({
         {messages.length === 0 ? (
           <div className="assistant-empty">
             <p className="meta" style={{ marginBottom: 14 }}>
-              关于 duola、站内内容或学习路径，直接问；答不上会老实说不知道。
+              关于 Dora、站内内容或学习路径，直接问；答不上会老实说不知道。
             </p>
             <div className="assistant-examples">
               {ASSISTANT_EXAMPLES.map((ex) => (
@@ -96,7 +97,10 @@ export function AssistantThread({
                       {m.citations.map((slug) => {
                         const post = getPostBySlug(slug);
                         return (
-                          <Link key={slug} to={`/posts/${slug}`}>
+                          <Link
+                            key={slug}
+                            to={`${dualEntry.browse.path}/${encodeURIComponent(slug)}`}
+                          >
                             《{post?.title ?? slug}》
                           </Link>
                         );

@@ -11,7 +11,6 @@ import {
   FlaskConical,
   Globe,
   Heart,
-  MessageCircle,
   PenLine,
   User,
 } from 'lucide-react';
@@ -40,11 +39,6 @@ export const readNavGroup: NavGroup = {
       href: dualEntry.browse.path,
       icon: PenLine,
       primary: true,
-    },
-    {
-      label: '小影',
-      href: WEB_ROUTES.assistant,
-      icon: MessageCircle,
     },
   ],
 };
