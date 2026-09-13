@@ -17,4 +17,6 @@ export const ADMIN_ROUTES = {
   contentEdit: '/content/:slug',
   aiGateway: '/ai-gateway',
   agents: '/agents',
+  /** 结构体检：图谱孤岛/坏链/单向链接清单（PRD-KNOWLEDGE-GRAPH §6.2） */
+  graphHealth: '/graph',
 } as const;

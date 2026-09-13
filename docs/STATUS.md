@@ -42,6 +42,20 @@
 | 匿名 `POST /api/clues` | 404（管理面不裸奔） |
 | `/ask` `/llms.txt` | 200 |
 
+### 2026-09-14（发布 `e7493f1` 后复检）
+
+| 路径 / 项 | 结果 |
+|------|------|
+| `https://api.iwalk.pro/health` | 200 `ok:true, db:true, aiEnabled:true, version:"e7493f1"`（`WALKER_BUILD_VERSION` 回显一致） |
+| 盒子 8788 归属 | 单进程 LISTENING（清掉僵尸旧进程后 `/Run`，PID 与 health 同源） |
+| 盒子 443 归属 | Caddy 网关 LISTENING（含 IPv6/UDP） |
+| 匿名 `https://www.iwalk.pro/api/clues` | 404；`/api/health` 200（路由隔离未破） |
+| `POST /api/admin/events`（带 `x-admin-token`，未登记键） | 400 `unknown-feature-key`（新端点在线 + 字典门禁生效）；无 token → 401 |
+| `GET /api/admin/usage/stats` · `/ai/stats` | 均 200（读新列成功 → `db push` 已落 SQLite） |
+| `POST /api/intake`（正文过短） | 400 `clue-body-too-short`（校验边界在线，未写库） |
+| `https://www.iwalk.pro/tools` · `/tools/result` | 均 200；新页壳标题「下一步 · Walker」+ `noindex, follow` |
+| 内容改名 | `/posts/dorazoom` 等已显示 `Dora`（27 篇作者名由 `duola` 改齐） |
+
 历史（切流前，仅存档）：
 
 ### 2026-07-31（复检）
@@ -104,6 +118,7 @@
 | 2026-07-31 | 生产 API 仍 404；本地 web+api 绿；VISION/公开 IA 工作区就绪 |
 | 2026-09-03 | **生产切流完成**：api.iwalk.pro + `/api/*` 反代 + 助手真答；正式验证盒自当日起算 |
 | 2026-09-05 | 外部完整分析（基线 6b5a5cb）归档 `archive/`；次日据此落地 T0–T4 优化批次 |
+| 2026-09-14 | 发布 `e7493f1` 上生产：卡口对话化 + `/tools/result`、观测三标签、判断代理埋点接线、controller 路由前缀修复；web/API 两条链分别核验绿（探针见上） |
 
 生产卡绿后在此续写 A11 分桶与 +14 天复盘勾选。
 
@@ -113,6 +128,7 @@
 公开面：分型/卡牌/时间线+标签、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。  
 Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。  
 AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（/ask 整页 + 右下 AskBar 合并搜索面板 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md`；执行实录 `docs/archive/TODO-SITE-ASSISTANT.md`）。  
+卡口对话化与观测三标签：已上线（2026-09-14，`e7493f1`）。`/tools` 由单页表单改为对话式（首步选卡点类型只做前端引导，不污染线索正文；提交后逐字呈现 nextStep，折叠区只展示真实判定依据——规则桶语义 / AI 或规则来源 / 命中的站内证据，不编造思维链），配套 `/tools/result` 独立结果页（`noindex`，结果仅在本机会话可还原）。后台「观测」页三标签：使用排行（`/admin/usage/stats`）、AI 状态（`/admin/ai/stats`，含 token 用量与降级原因四分类）、旅程回放（`/admin/journey`）。判断代理经 `POST /admin/events` 回写 `agent.mcp` 事件（`FEATURE_KEYS` 字典门禁 + props 上限，失败不阻断工具调用）。  
 智能体工坊与文件直调：已上线（2026-09-09）。实体智能体角色管理、小影 403 硬核防线、1:1 DSH 供应商模型池配置与 Ping 连通性探测、单次短命直调 `content/log/*.md` 跑完即焚、时序三色甘特图 100% 数据驱动、4 格硬核遥测账单、逐轮审计卡片与独立 `trace.jsonl` 管道（AES-256-GCM 强加密保护，全仓测试全绿；详见 `docs/PRD-AGENT-WORKBENCH.md`）。  
 **不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar 中台做进本站、canvas、MDX 块组件全量。  
 **远景保留、不进近端验收：** 知识→工作站→具身回灌；点子社区与智能微体站；内容分发参照 NorthStar 能力（见 VISION）。

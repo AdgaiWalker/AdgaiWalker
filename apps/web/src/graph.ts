@@ -13,10 +13,14 @@ export function getKnowledgeGraph(): KnowledgeGraph {
   return graph;
 }
 
-/** slug → 正文：查询语法的 content/line/block/section/task 需要正文才能求值 */
+let bodiesCache: Record<string, string> | null = null;
+
+/** slug → 正文：查询语法的 content/line/block/section/task 需要正文才能求值（首次构建后缓存） */
 export function getGraphBodies(): Record<string, string> {
+  if (bodiesCache) return bodiesCache;
   const bodies: Record<string, string> = {};
   for (const item of getAllItems()) bodies[item.slug] = item.body;
+  bodiesCache = bodies;
   return bodies;
 }
 

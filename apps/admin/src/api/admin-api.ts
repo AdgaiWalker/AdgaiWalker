@@ -128,6 +128,31 @@ export interface JourneyEvent {
   text: string;
 }
 
+/** 图谱结构体检（管理侧；与访客面、机器面共用 shared 的同一套判定） */
+export interface GraphIssue {
+  kind:
+    | 'orphan'
+    | 'broken-link'
+    | 'one-way-link'
+    | 'series-without-links'
+    | 'attachment-orphan';
+  nodeId: string;
+  slug: string;
+  title: string;
+  detail: string;
+  members?: string[];
+}
+
+export interface GraphHealth {
+  generatedAt: string;
+  nodeCounts: Record<string, number>;
+  edgeCounts: Record<string, number>;
+  issueCounts: Record<string, number>;
+  issues: GraphIssue[];
+  hubs: Array<{ slug: string; title: string; inDegree: number }>;
+  totals: { notes: number; linkEdges: number; isolatedNotes: number };
+}
+
 export const adminApi = {
   clues: () => adminRequest<Clue[]>('/clues'),
   createClue: (body: string, source?: string) =>
@@ -185,6 +210,7 @@ export const adminApi = {
       },
     ),
   metrics: () => adminRequest<Metrics>('/metrics'),
+  graphHealth: () => adminRequest<GraphHealth>('/graph/health'),
   usageStats: (days = 30) =>
     adminRequest<UsageStats>(`/admin/usage/stats?days=${days}`),
   aiStats: (days = 30) => adminRequest<AiStats>(`/admin/ai/stats?days=${days}`),

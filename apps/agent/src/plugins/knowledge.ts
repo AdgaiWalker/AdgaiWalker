@@ -6,6 +6,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Context, Service } from '@deepseek-ai/cordis';
+import {
+  buildKnowledgeGraph,
+  findGraphNode,
+  graphNeighbors,
+  noteNodeId,
+  type GraphNode,
+  type KnowledgeGraph,
+} from '@walker/shared';
 import type { KnowledgeEntry, MethodologyGroup, SearchHit } from '../types.js';
 
 export interface KnowledgeConfig {
@@ -13,10 +21,30 @@ export interface KnowledgeConfig {
   contentPath: string;
 }
 
+/** 机器面邻居节点：不可引用时只回存在性与位置，不回摘要（PRD-KNOWLEDGE-GRAPH §5.3） */
+export type NeighborNode = {
+  id: string;
+  kind: GraphNode['kind'];
+  slug: string;
+  title: string;
+  /** aiUsePolicy.citable；false 时 summary 一律缺席 */
+  citable: boolean;
+  summary?: string;
+};
+
+export type NeighborsResult = {
+  center: NeighborNode;
+  depth: number;
+  nodes: NeighborNode[];
+  edges: Array<{ source: string; target: string; kind: string }>;
+};
+
 export class KnowledgeService extends Service {
   static readonly provide = 'knowledge';
 
   private readonly entries: KnowledgeEntry[] = [];
+  /** 互引结构：与 web/API 共用 shared 的同一个建图纯函数 */
+  private readonly graph: KnowledgeGraph;
 
   constructor(ctx: Context, config: KnowledgeConfig) {
     super(ctx, 'knowledge');
@@ -43,6 +71,65 @@ export class KnowledgeService extends Service {
       });
     }
     if (this.entries.length === 0) throw new Error('knowledge: 可读条目为 0，拒绝空索引启动');
+
+    // 图只由**已入索引的可读条目**构成：指向不可读文章的链接会成为幽灵节点，
+    // 对机器表现为「存在但不可用」，而不是悄悄带出不可读内容。
+    this.graph = buildKnowledgeGraph({
+      items: this.entries.map((entry) => ({
+        slug: entry.slug,
+        title: entry.title,
+        date: '',
+        type: entry.form ?? '',
+        domain: entry.domain ?? '',
+        tags: entry.tags,
+        summary: entry.summary,
+        body: entry.body,
+      })),
+      now: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * 沿正文互引结构导航（MCP `neighbors`）。
+   * 只回存在性与位置 + citable 摘要；slug 不在机器可读范围时返回 null。
+   */
+  neighbors(slug: string, depth = 1): NeighborsResult | null {
+    const center = findGraphNode(this.graph, noteNodeId(slug));
+    if (!center) return null;
+    const hood = graphNeighbors(this.graph, center.id, depth);
+    const bySlug = new Map(this.entries.map((entry) => [entry.slug, entry]));
+
+    const toNode = (node: GraphNode): NeighborNode => {
+      const entry = node.kind === 'note' ? bySlug.get(node.slug) : undefined;
+      const citable = entry?.citable === true;
+      const title =
+        node.kind === 'note'
+          ? node.title
+          : node.kind === 'tag'
+            ? `#${node.tag}`
+            : node.kind === 'ghost'
+              ? node.slug
+              : node.path.split('/').pop() ?? node.path;
+      return {
+        id: node.id,
+        kind: node.kind,
+        slug: node.kind === 'note' || node.kind === 'ghost' ? node.slug : '',
+        title,
+        citable,
+        ...(citable && entry?.summary ? { summary: entry.summary } : {}),
+      };
+    };
+
+    return {
+      center: toNode(center),
+      depth: hood.depth,
+      nodes: hood.nodes.map(toNode),
+      edges: hood.edges.map((edge) => ({
+        source: edge.source,
+        target: edge.target,
+        kind: edge.kind,
+      })),
+    };
   }
 
   /** 检索：只推 citable=true；命中理由随行（诚实出处） */

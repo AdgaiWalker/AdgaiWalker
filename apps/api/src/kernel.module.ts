@@ -99,6 +99,10 @@ import { AgentUnitController } from './agents/agent-unit.controller';
 import { AgentRunnerService } from './agents/agent-runner.service';
 import { ObservabilityService } from './observability/observability.service';
 import { ObservabilityController } from './observability/observability.controller';
+import { KNOWLEDGE_GRAPH } from './ports/knowledge-graph.port';
+import { FsKnowledgeGraph } from './adapters/fs-knowledge-graph';
+import { GraphService } from './graph/graph.service';
+import { GraphController } from './graph/graph.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -125,6 +129,7 @@ import { ObservabilityController } from './observability/observability.controlle
     ExportController,
     ModelProviderController,
     AgentUnitController,
+    GraphController,
   ],
   providers: [
     { provide: PRISMA, useClass: PrismaAdapter },
@@ -145,8 +150,10 @@ import { ObservabilityController } from './observability/observability.controlle
     { provide: RATE_LIMIT, useClass: InMemoryRateLimiter },
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
     { provide: SITE_CONTENT_INDEX, useClass: FsSiteContentIndex },
+    { provide: KNOWLEDGE_GRAPH, useClass: FsKnowledgeGraph },
     { provide: ASSISTANT_REPOSITORY, useClass: PrismaAssistantRepository },
     ObservabilityService,
+    GraphService,
     { provide: RuleAssistantAdapter, useClass: RuleAssistantAdapter },
     {
       // 助手双实现：harness AI 内嵌规则兜底（AI 可关/超时/坏输出全降级）；

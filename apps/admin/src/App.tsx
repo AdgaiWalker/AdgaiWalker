@@ -10,6 +10,7 @@ import { InsightsPage } from './pages/InsightsPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
 import { DataPage } from './pages/DataPage';
+import { GraphHealthPage } from './pages/GraphHealthPage';
 import { PipelinePage } from './pages/PipelinePage';
 import { SeedsPage } from './pages/SeedsPage';
 import { TodayPage } from './pages/TodayPage';
@@ -36,6 +37,7 @@ export function App() {
         <Route path={ADMIN_ROUTES.executions} element={<ExecutionsPage />} />
         <Route path={ADMIN_ROUTES.metrics} element={<MetricsPage />} />
         <Route path={ADMIN_ROUTES.data} element={<DataPage />} />
+        <Route path={ADMIN_ROUTES.graphHealth} element={<GraphHealthPage />} />
         <Route path={ADMIN_ROUTES.content} element={<ContentListPage />} />
         <Route path="/content/:slug" element={<ContentEditPage />} />
         <Route path={ADMIN_ROUTES.aiGateway} element={<AiGatewayPage />} />

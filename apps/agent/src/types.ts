@@ -29,7 +29,12 @@ export interface MethodologyGroup {
   titles: string[];
 }
 
-export type TelemetryTool = 'search_judgment' | 'read_article' | 'list_methodology' | 'list_citable';
+export type TelemetryTool =
+  | 'search_judgment'
+  | 'read_article'
+  | 'list_methodology'
+  | 'list_citable'
+  | 'neighbors';
 
 export interface TelemetryEvent {
   tool: TelemetryTool;

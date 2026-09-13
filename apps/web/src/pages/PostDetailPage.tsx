@@ -13,15 +13,19 @@ import {
   ChevronRight,
   ExternalLink,
   Link2,
+  Network,
 } from 'lucide-react';
 import { marked } from 'marked';
-import { expandWikiLinks } from '@walker/shared';
+import { expandWikiLinks, findGraphNode, noteNodeId } from '@walker/shared';
 import {
   getPostBySlug,
   getRelatedPosts,
   getSeriesNeighborsForSlug,
   getVersionChain,
 } from '../content';
+import { getGraphBodies, getKnowledgeGraph } from '../graph';
+import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
+import { WEB_ROUTES } from '../shared/routes';
 import type { BrowseReturnState } from '../components/ItemList';
 import { ArticleToc } from '../components/ui/ArticleToc';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
@@ -91,6 +95,11 @@ function PostDetailBody({
   const neighbors = getSeriesNeighborsForSlug(post.slug);
   const related = getRelatedPosts(post.slug);
   const versions = getVersionChain(post.slug);
+  // 局部图（Obsidian Local Graph）：中心是当前文章，depth 默认 1，设置与全局图同一套
+  const graph = getKnowledgeGraph();
+  const graphBodies = getGraphBodies();
+  const graphNode = findGraphNode(graph, noteNodeId(post.slug));
+  const hasBodyLinks = (graphNode?.linkDegree ?? 0) > 0;
 
   const { html, toc } = useMemo(() => {
     const markdown = expandWikiLinks(post.body, (slug) => {
@@ -261,6 +270,36 @@ function PostDetailBody({
             </ul>
           </section>
         ) : null}
+
+        <section className="article-footer-block article-graph-block" aria-label="图谱">
+          <h2>
+            <Network size={16} aria-hidden />
+            图谱
+          </h2>
+          {hasBodyLinks ? (
+            <>
+              <p className="meta">
+                这篇文章在正文互引结构里的位置：默认只看直接互引的文章，可调深度与显示方式。
+              </p>
+              <KnowledgeGraph
+                graph={graph}
+                bodies={graphBodies}
+                browsePath={dualEntry.browse.path}
+                local={{ centerId: noteNodeId(post.slug) }}
+                height={380}
+                compact
+              />
+              <p className="meta">
+                <Link to={WEB_ROUTES.graph}>看整个站的结构</Link>
+              </p>
+            </>
+          ) : (
+            <p className="meta">
+              这篇文章在正文里还没有与任何文章互相引用。孤立不是错误，但读者很难从别处走到它。
+              <Link to={WEB_ROUTES.graph}>看看整个结构</Link>。
+            </p>
+          )}
+        </section>
 
         <div className="article-end">
           <LikeButton

@@ -12,6 +12,7 @@ import {
   Inbox,
   LayoutDashboard,
   MessageCircle,
+  Network,
   Server,
   Sprout,
   Workflow,
@@ -66,6 +67,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     title: '站',
     items: [
       { path: ADMIN_ROUTES.content, label: '内容', icon: FileText },
+      { path: ADMIN_ROUTES.graphHealth, label: '结构', icon: Network },
       { path: ADMIN_ROUTES.data, label: '观测', icon: Activity },
       { path: ADMIN_ROUTES.agents, label: '智能体', icon: Bot },
       { path: ADMIN_ROUTES.aiGateway, label: '系统', icon: Server },

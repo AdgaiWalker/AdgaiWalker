@@ -72,6 +72,30 @@ export class McpService extends Service {
         },
       );
 
+      server.registerTool(
+        'neighbors',
+        {
+          description:
+            '沿正文互引结构导航：返回某篇文章在 depth 跳内的邻居与连线。不可引用的文章只回存在性与位置，不回摘要。',
+          inputSchema: z.object({
+            slug: z.string().min(1),
+            depth: z.number().int().min(1).max(5).optional().describe('展开层数，默认 1'),
+          }),
+        },
+        async ({ slug, depth }) => {
+          const result = knowledge.neighbors(slug, depth ?? 1);
+          telemetry.record({ tool: 'neighbors', ok: result !== null, detail: slug });
+          if (!result) {
+            return text({
+              error: 'not-readable',
+              slug,
+              hint: 'slug 不在机器可读范围内（aiUsePolicy.readable=false 或不存在）',
+            });
+          }
+          return text({ persona: persona.toolBrief(), ...result });
+        },
+      );
+
       ictx.effect(() => async () => {
         await server.close();
       });

@@ -66,6 +66,8 @@ pnpm build:api
 pnpm build:admin
 ```
 
+> **跑 `db:generate` / `build:api` 前必须先停 API**（2026-09-14 实测）：运行中的 node 进程锁着 Prisma 引擎 DLL，generate 会以 `EPERM: rename ... query_engine-windows.dll.node` 失败；`schtasks /End` 之后还要确认 8788 真的释放（僵尸旧进程占着就 `taskkill /PID <pid> /F`），否则新实例起不来、表象仍是旧 dist 在服务。
+
 `apps\api\.env` 不进 Git，首期至少包含：
 
 ```dotenv

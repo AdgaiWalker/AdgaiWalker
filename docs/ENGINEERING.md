@@ -85,6 +85,8 @@ pnpm exec tsx scripts/probe-production.ts
 **现状（2026-09-03 切流后）：** Vercel 托管 **web 静态**，并把 `/api/*` rewrites → `https://api.iwalk.pro`（盒子 Caddy + Nest）。同源 `/api/health` 200。  
 **禁止**在探针未绿时声称「新版已上线」——web 与 API 是两条独立发布链，须分别核验。
 
+**最近一次发布（2026-09-14，构建 `e7493f1`）：** 两条链各自核验通过——Vercel 侧 `/tools` 200、新增 `/tools/result` 壳 200 + `noindex`；盒子侧 `api.iwalk.pro/health` 回出 `version=e7493f1`、8788 单实例归属、443 网关在、管理面公网 404。盒子部署顺序与坑见 `AGENTS.md`「盒子部署与运维坑」。
+
 ### 腾讯云 2C2G Windows 首期边界
 
 目标运行面见 [`../ops/windows/README.md`](../ops/windows/README.md)：

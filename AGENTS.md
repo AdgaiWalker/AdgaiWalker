@@ -27,6 +27,7 @@
 ## 盒子部署与运维坑（实测教训）
 
 - 部署流：SSH 进盒子（**优先 `ssh walker-tencent`，走 Tailscale 主路径**，与出口 IP/防火墙无关；`walker-tencent-public` 仅应急）→ `cd C:\Walker\app && pnpm check:content-dirty && git pull origin main` → lockfile 变了再 `pnpm install --frozen-lockfile` → `pnpm build:shared` → `pnpm build:api`（admin 改了再 build:admin）→ 更新 `apps\api\.env` 的 `WALKER_BUILD_VERSION=<git rev-parse --short HEAD>` → `schtasks /End + /Run /TN WalkerApi`（网关是 `WalkerGateway`）→ 按 `ops/windows/README.md`「部署验证清单」四步核对（health 回显 version/8788 归属/443/路由隔离）。
+- **停服才能换 Prisma 引擎（2026-09-14 实测）**：API 运行时跑 `pnpm db:generate` 必失败——`EPERM: operation not permitted, rename ... query_engine-windows.dll.node`（运行中的 node 锁着引擎 DLL；`db:push` 走同一路径也会连带失败）。部署顺序因此固定为：`schtasks /End /TN WalkerApi` → **核 8788 是否真释放**（僵尸旧进程占着先 `taskkill /PID <pid> /F`）→ `pnpm db:generate` / `build:api` / `build:admin` → 写 `WALKER_BUILD_VERSION` → `schtasks /Run /TN WalkerApi` → 部署验证清单四步。另注：远程默认 shell 是 **cmd**（不是 PowerShell），多层引号易被吞，复杂脚本用 `powershell -EncodedCommand <base64-UTF16LE>` 传。
 - **SSH 会熔断**：短连接多次后出现 `Connection closed by ... port 22`（两个成因：开 VPN 后出口 IP 不在防火墙白名单 → 走 Tailscale 主路径即解；构建打满 2G 内存把 sshd 僵死 → 控制台重启实例）。带外替代：腾讯云控制台 → 实例 → 「执行命令」（TAT，不走 22 端口），可远程 git pull + 构建 + 重启，实测 23 秒跑完全套。
 - 2C2G 内存紧张：**构建（tsc/vite）可能把 sshd 打僵死**（TCP 可连但无 banner）→ 控制台重启实例可解；避免在 API 服务运行时跑重构建。
 - PowerShell 脚本含中文必须带 **UTF-8 BOM**，否则 Windows PowerShell 按 ANSI 解析报错。给服务器写的 `.ps1` 一律 **纯 ASCII 注释**最稳。
