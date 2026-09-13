@@ -65,8 +65,9 @@ export class AssistantController {
     const anonId = resolveOrSetAnonId(cookieHeader, res);
     const ipKey = extractClientIpKey(req);
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
     // 端到端取消：访客断流（关页/点停止）时 abort 服务端等待，runtime 不再空跑
     const disconnect = new AbortController();
@@ -75,6 +76,8 @@ export class AssistantController {
     });
     const send = (event: string, data: unknown) => {
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      const flushable = res as Response & { flush?: () => void };
+      flushable.flush?.();
     };
     try {
       const result = await this.assistant.askStream(

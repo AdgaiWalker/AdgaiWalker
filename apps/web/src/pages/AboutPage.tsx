@@ -4,7 +4,7 @@
  */
 import { Link } from 'react-router-dom';
 import siteStats from '../data/site-stats.json';
-import { MessageCircle, MessageCircleQuestion, PenLine, User } from 'lucide-react';
+import { MessageCircleQuestion, PenLine, User } from 'lucide-react';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
 
@@ -43,10 +43,6 @@ export function AboutPage() {
               <PenLine size={16} />
               {dualEntry.browse.cta}
             </Link>
-            <Link to={WEB_ROUTES.assistant} className="btn-secondary">
-              <MessageCircle size={16} />
-              问小影
-            </Link>
           </div>
         </div>
       </section>
@@ -55,7 +51,7 @@ export function AboutPage() {
         <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>这个站做什么</h2>
         <p style={{ lineHeight: 1.7, color: 'var(--color-parchment-dim)' }}>
           <strong style={{ color: 'var(--color-parchment)' }}>Walker</strong>{' '}
-          是站名；人是 duola，知识主权在人。本站是先跑通的
+          是站名；人是 Dora，知识主权在人。本站是先跑通的
           <strong style={{ color: 'var(--color-parchment)' }}>样板节点</strong>
           ：公开工作台里，资源与教程可拿走；实验分为向外做事的探索，和向内形成认识的札记。它们是知识库的可读切片，不只是展览。
         </p>

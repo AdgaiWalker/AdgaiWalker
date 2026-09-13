@@ -11,8 +11,10 @@ import type {
   GeneratedContentItem,
 } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
-import { contentJsonPath, fromRoot, webDistDir } from './lib/paths';
+import { contentJsonPath, fromRoot, graphJsonPath, webDistDir } from './lib/paths';
 import { WEB_ROUTES } from '../apps/web/src/shared/routes';
+import { buildGraphOutline } from '../apps/web/src/shared/graph-outline';
+import type { KnowledgeGraph } from '../packages/shared/src/graph';
 import {
   absoluteUrl,
   AUTHOR,
@@ -326,6 +328,7 @@ const homepageBody = `<main data-pagefind-body>
     <nav aria-label="主要入口">
       <a href="/tools">卡：拿下一步</a>
       <a href="/posts">逛：读证据</a>
+      <a href="${WEB_ROUTES.graph}">结构：知识图谱</a>
       <a href="/tutorials">教程</a>
       <a href="/learn">学习</a>
       <a href="${WEB_ROUTES.explore}">探索</a>
@@ -395,7 +398,7 @@ writeCollectionRoute({
   pathname: '/tools/resources',
   title: '资源 · Walker',
   heading: '资源',
-  description: 'duola 实际在用或了解的群、工具与引路人；外部服务与本站无利益关系，使用前请自行核验。',
+  description: 'Dora 实际在用或了解的群、工具与引路人；外部服务与本站无利益关系，使用前请自行核验。',
   items: publicItems.filter((item) => item.type === 'tool'),
   hrefFor: (item) => `/tools/resources#${encodeURIComponent(item.slug)}`,
 });
@@ -440,9 +443,9 @@ const gearData = JSON.parse(
   }>;
 };
 const gearTitle = '装备 · Walker';
-const gearDescription = 'duola 当前使用的设备与工作组合。';
+const gearDescription = 'Dora 当前使用的设备与工作组合。';
 const gearBody = `<main data-pagefind-body>
-  <header><h1>哆啦与硬件</h1><p>${escapeHtml(gearDescription)}</p></header>
+  <header><h1>Dora 与硬件</h1><p>${escapeHtml(gearDescription)}</p></header>
   <p>${escapeHtml(gearData.methodology)}</p>
   ${gearData.scenes
     .map(
@@ -480,12 +483,13 @@ writeRoute(
 
 const postsTitle = '证据 · Walker';
 const postsDescription =
-  'duola 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。';
+  'Dora 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。';
 const labCount = docs.filter((doc) => doc.hall === 'lab').length;
 const postsBody = `<main data-pagefind-body>
   <header><h1>证据</h1><p>${escapeHtml(postsDescription)}</p></header>
   <nav aria-label="内容路径">
     <a href="${WEB_ROUTES.lab}"><strong>札记</strong> — 经验与思考，在实践中持续生长 · ${labCount} 篇</a>
+    <a href="${WEB_ROUTES.graph}"><strong>结构</strong> — 看文章之间谁引用了谁</a>
   </nav>
   <ol>${docs
     .map(
@@ -533,9 +537,110 @@ writeRoute(
   }),
 );
 
+const graphTitle = '结构 · Walker';
+const graphDescription =
+  'Walker 公开内容的互引结构：谁引用了谁、哪些文章还没有互相引用。只由正文内链构成，不含模型推断。';
+{
+  // canvas 对爬虫不可见，故 /graph 的静态正文必须是同源的语义化清单（PRD §6.1-C）。
+  const knowledgeGraph = JSON.parse(
+    fs.readFileSync(graphJsonPath, 'utf8'),
+  ) as KnowledgeGraph;
+  const outline = buildGraphOutline(knowledgeGraph);
+  const postHref = (slug: string) => `/posts/${encodeURIComponent(slug)}`;
+  const graphBody = `<main data-pagefind-body>
+  <header>
+    <h1>结构</h1>
+    <p>${escapeHtml(graphDescription)}</p>
+    <p>${outline.entries.length} 篇文章 · ${outline.linkCount} 条正文互引 · ${outline.isolated.length} 篇孤岛 · ${outline.tagCount} 个标签 · ${outline.ghosts.length} 个坏链</p>
+  </header>
+  <section>
+    <h2>互引关系</h2>
+    <ol>${outline.entries
+      .map((entry) => {
+        const links = entry.links
+          .map((link) =>
+            link.resolved
+              ? `<a href="${postHref(link.slug)}">${escapeHtml(link.title)}</a>`
+              : `<span>${escapeHtml(link.slug)}（尚不存在）</span>`,
+          )
+          .join('、');
+        return `<li><article id="${escapeHtml(entry.slug)}"><h3><a href="${postHref(entry.slug)}">${escapeHtml(entry.title)}</a></h3>${links ? `<p>引用：${links}</p>` : '<p>还没有引用任何文章</p>'}</article></li>`;
+      })
+      .join('')}</ol>
+  </section>
+  <section>
+    <h2>孤岛（${outline.isolated.length} 篇）</h2>
+    <p>这些文章在正文里没有与任何文章互相引用；孤立不是错误，但读者很难从别处走到它们。</p>
+    <ul>${outline.isolated
+      .map(
+        (entry) =>
+          `<li><a href="${postHref(entry.slug)}">${escapeHtml(entry.title)}</a></li>`,
+      )
+      .join('')}</ul>
+  </section>
+  ${
+    outline.ghosts.length
+      ? `<section>
+    <h2>被引用但尚不存在的笔记</h2>
+    <ul>${outline.ghosts
+      .map(
+        (ghost) =>
+          `<li>${escapeHtml(ghost.slug)} — 被 ${escapeHtml(ghost.referencedBy.join('、'))} 引用</li>`,
+      )
+      .join('')}</ul>
+  </section>`
+      : ''
+  }
+  <section>
+    <h2>主题线</h2>
+    <ul>${outline.series
+      .map(
+        (series) =>
+          `<li>${escapeHtml(series.name)}（${series.slugs.length} 篇）：${series.slugs.map((slug) => escapeHtml(slug)).join('、')}</li>`,
+      )
+      .join('')}</ul>
+  </section>
+  <p><a href="/posts">查看全部证据</a></p>
+</main>`;
+
+  writeRoute(
+    WEB_ROUTES.graph,
+    renderPage({
+      head: metaTags({
+        title: graphTitle,
+        description: graphDescription,
+        pathname: WEB_ROUTES.graph,
+      }),
+      body: graphBody,
+      schema: {
+        '@context': 'https://schema.org',
+        '@graph': [
+          ...commonGraph(WEB_ROUTES.graph, graphTitle, graphDescription),
+          {
+            '@type': 'CollectionPage',
+            '@id': `${absoluteUrl(WEB_ROUTES.graph)}#collection`,
+            url: absoluteUrl(WEB_ROUTES.graph),
+            name: graphTitle,
+            description: graphDescription,
+            mainEntity: {
+              '@type': 'ItemList',
+              itemListElement: outline.entries.map((entry, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                url: absoluteUrl(postHref(entry.slug)),
+                name: entry.title,
+              })),
+            },
+          },
+        ],
+      },
+    }),
+  );
+}
+
 const aboutTitle = '关于本站 · Walker';
 const aboutDescription =
-  'Walker 是 duola 的个人知识与行动样板站：人的认识沉淀为知识库，服务判断与行动，再由实践回灌知识。';
+  'Walker 是 Dora 的个人知识与行动样板站：人的认识沉淀为知识库，服务判断与行动，再由实践回灌知识。';
 writeRoute(
   '/about',
   renderPage({
@@ -544,7 +649,7 @@ writeRoute(
       description: aboutDescription,
       pathname: '/about',
     }),
-    body: `<main data-pagefind-body><article><h1>关于 Walker</h1><p>${escapeHtml(aboutDescription)}</p><h2>现在能做什么</h2><p>从「卡」描述真实问题并拿下一步，或从「逛」阅读教程、探索与札记。</p><h2>边界</h2><p>Walker 是站名；人是 duola，知识主权在人。公开内容是知识库的可读切片，不是批量生成的公知堆。</p><p><a href="/me">关于 duola</a> · <a href="/posts">阅读证据</a></p></article></main>`,
+    body: `<main data-pagefind-body><article><h1>关于 Walker</h1><p>${escapeHtml(aboutDescription)}</p><h2>现在能做什么</h2><p>从「卡」描述真实问题并拿下一步，或从「逛」阅读教程、探索与札记。</p><h2>边界</h2><p>Walker 是站名；人是 Dora，知识主权在人。公开内容是知识库的可读切片，不是批量生成的公知堆。</p><p><a href="/me">关于 Dora</a> · <a href="/posts">阅读证据</a></p></article></main>`,
     schema: {
       '@context': 'https://schema.org',
       '@graph': [
@@ -562,9 +667,9 @@ writeRoute(
   }),
 );
 
-const meTitle = 'duola · 关于我';
+const meTitle = 'Dora · 关于我';
 const meDescription =
-  'duola，艺术生，在用 AI 解决真实问题：把真实卡点变成可检验的下一步，把走过的路收成公开证据。';
+  'Dora，艺术生，在用 AI 解决真实问题：把真实卡点变成可检验的下一步，把走过的路收成公开证据。';
 writeRoute(
   '/me',
   renderPage({
@@ -575,7 +680,7 @@ writeRoute(
       type: 'profile',
       image: AUTHOR.image,
     }),
-    body: `<main data-pagefind-body><article><img src="/images/duola.jpg" alt="duola" width="500" height="500" /><h1>duola</h1><p>${escapeHtml(meDescription)}</p><p>人是主体；Walker 是站名，不是我的名字。</p><p><a href="${SITE_ORIGIN}/posts">阅读我的公开证据</a></p></article></main>`,
+    body: `<main data-pagefind-body><article><img src="/images/dora.jpg" alt="Dora" width="500" height="500" /><h1>Dora</h1><p>${escapeHtml(meDescription)}</p><p>人是主体；Walker 是站名，不是我的名字。</p><p><a href="${SITE_ORIGIN}/posts">阅读我的公开证据</a></p></article></main>`,
     schema: {
       '@context': 'https://schema.org',
       '@graph': [

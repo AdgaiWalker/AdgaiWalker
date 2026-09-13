@@ -1,12 +1,12 @@
 /**
  * HomePage — 首页画布（页）
- * 职责：身份卡 + 快捷入口 + 最近文章 + Greeting；拖拽/缩放由 useHomeCanvas。
- * 进页默认布局（不持久化位移/缩放）；无主题线导航块。
+ * 职责：小影悬浮桌宠 + 身份卡 + 快捷入口 + 最近文章。
+ * 小影停在页底的坞里；开口只亮当前一句。页的证据区不与坞重叠。
  *
- * 依赖：content、useHomeCanvas、GreetingCard
+ * 依赖：content、XiaoyingHome、GreetingCard
  * 触发：路由 /
  */
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import {
   ArrowRight,
   Bookmark,
@@ -15,16 +15,18 @@ import {
   FlaskConical,
   PenLine,
 } from 'lucide-react';
+import type { AppShellOutletContext } from '../components/AppShell';
+import { XiaoyingHome } from '../components/xiaoying/XiaoyingHome';
 import { getRecentPosts, getByType } from '../content';
 import { GreetingCard } from '../components/GreetingCard';
-import { useHomeCanvas } from '../hooks/useHomeCanvas';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateCompact, parseIsoDate } from '../shared/format';
 import { WEB_ROUTES } from '../shared/routes';
 import { SPARK_FALLBACKS } from '../shared/rules-ui';
 
 export function HomePage() {
-  useHomeCanvas(true);
+  const { petSearchRef } =
+    useOutletContext<AppShellOutletContext>() ?? {};
 
   const knowledgePosts = getRecentPosts(20).filter((p) => p.type === 'knowledge');
   const recentPosts = (
@@ -41,7 +43,8 @@ export function HomePage() {
   const sparks = [...realIdeas, ...SPARK_FALLBACKS];
 
   return (
-    <div id="canvas-container">
+    <div id="canvas-container" className="xiaoying-home">
+      <XiaoyingHome searchRef={petSearchRef} />
       <div id="desktop-canvas">
         <div className="home-grid">
           <div
@@ -53,7 +56,7 @@ export function HomePage() {
               <div>
                 <div className="directory-name">Walker</div>
                 <div className="directory-tagline" id="status-text">
-                  用 AI 走自己的路
+                  用好 AI 做好事
                 </div>
               </div>
             </div>
@@ -138,6 +141,7 @@ export function HomePage() {
           </div>
         </div>
       </div>
+      <div className="xiaoying-dock" aria-hidden="true" />
     </div>
   );
 }

@@ -34,6 +34,17 @@ export function explainErrorCode(code: string | undefined, fallback?: string): s
   return ERROR_CODE_LABELS[code] ?? fallback ?? code;
 }
 
+/** 线索池状态人话（未知值原样返回，不编造） */
+const CLUE_POOL_STATUS_LABELS: Record<string, string> = {
+  candidate: '候选（等站主主选）',
+  'in-pool': '已入池',
+  discarded: '已归档',
+};
+
+export function cluePoolStatusLabel(status: string): string {
+  return CLUE_POOL_STATUS_LABELS[status] ?? status;
+}
+
 export const INTAKE_RULE_HINTS = [
   `描述至少 ${CLUE_BODY_MIN_LENGTH} 个字`,
   `游客可完整体验 ${GUEST_INTAKE_QUOTA} 次（30 天内）`,

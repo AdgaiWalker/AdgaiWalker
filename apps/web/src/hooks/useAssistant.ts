@@ -61,7 +61,8 @@ export function useAssistant() {
         sessionIdRef.current,
         (delta) => {
           streamBuffer += delta;
-          const visible = extractStreamedAnswer(streamBuffer);
+          const extracted = extractStreamedAnswer(streamBuffer);
+          const visible = extracted || streamBuffer;
           setMessages((prev) => {
             const last = prev[prev.length - 1];
             if (!last || last.role !== 'assistant') return prev;

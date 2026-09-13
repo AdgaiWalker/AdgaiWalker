@@ -31,9 +31,13 @@ export const WEB_ROUTES = {
   /** 前进三部曲：畏惧/点子/未来 — 实验室专线 */
   advanceTrilogy: '/advance',
   toolsResources: '/tools/resources',
+  /** 卡结果页：nextStep 的独立呈现（noindex 壳；结果只在本机会话可还原） */
+  toolsResult: `${dualEntry.ask.path}/result`,
   gear: '/gear',
   /** 站内助手对话页（noindex 壳；卡口见 dualEntry.ask） */
   assistant: '/ask',
   ask: dualEntry.ask.path,
   browse: dualEntry.browse.path,
+  /** 知识图谱：文章正文互引结构的可视化（Obsidian Graph View 对齐） */
+  graph: '/graph',
 } as const;

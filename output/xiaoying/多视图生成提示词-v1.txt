@@ -1,0 +1,22 @@
+工具：内置 image_gen
+参考图：assets/xiaoying-concept-v1.png
+产物：assets/xiaoying-modeling-multiview-v1.png
+实际分辨率：1536 × 1024（提示词中的目标尺寸未由生成器兑现）
+用途：Blender 角色造型参考。生成图的尾巴曲率存在跨视图差异，不能视为严格一致的几何投影。
+
+完整提示词：
+Use case: identity-preserve / stylized-concept.
+Input image 1 is the IDENTITY REFERENCE for an original character named Xiaoying (小影). Create a NEW production character turnaround sheet for modeling this exact pet in Blender. Preserve the reference's identity and charm. This is a modeling reference, not a marketing poster.
+
+OUTPUT: one high-resolution landscape sheet, target 3072 x 2048 or higher if possible, six carefully separated views in a clean 3-column by 2-row grid on a flat very pale warm-gray background. Small clear English labels:
+TOP ROW: FRONT | LEFT SIDE | BACK
+BOTTOM ROW: RIGHT SIDE | TOP | 3/4 FORM
+Five true orthographic views without perspective distortion; only 3/4 FORM is an orthographic isometric construction aid. Keep the complete silhouette and tail inside every cell. No overlapping panels. Thin understated guide lines and a common unit scale in each cell, no measurement numbers or claims of exact dimensions. Front, back, left and right elevations must have identical vertical scale and aligned body landmarks within their respective cells. Top view uses the same object scale, fitting its full tail. Give generous room around each full view.
+
+LOCK CHARACTER IDENTITY from reference: compact rounded ink-black shadow beast; large round head directly on a small pear-shaped torso with a very short neck; one upright pointed ear and one softly folded pointed ear; huge warm ivory eye surfaces with large dark pupils; very subtle tiny nose and little friendly closed mouth; very short integrated forepaws and small rounded hind paws; one continuous shadow ribbon tail extending naturally from the lower back. Matte charcoal body, minimal softly velvety appearance, NO fur strands. The distinctive tail is a flattened broad soft ribbon, not a cylindrical furry cat tail. Its cross-section is a softly rounded flattened oval; the root is robust, the middle broadens slightly, and the tip narrows smoothly. All forms should look sculptable, clean, rounded and simple, without excessive surface texture.
+
+ANATOMICAL LOCK: the CHARACTER'S RIGHT ear is upright; the CHARACTER'S LEFT ear folds outward and down. Thus in FRONT view upright ear appears on the viewer's LEFT, and in BACK view upright ear appears on viewer's RIGHT. Do NOT swap ear identity between views. LEFT SIDE means the camera sees the character's anatomical left (folded-ear side), its face points toward the LEFT edge of the sheet. RIGHT SIDE shows the upright-ear side, face points toward the RIGHT edge. Eye geometry, cheeks, head/body ratio, paw count, feet and tail attachment must agree across every angle.
+
+ONE FIXED NEUTRAL MODELING POSE in every panel, simply rotated as a rigid 3D object: head level looking forward, gentle neutral attentive expression, torso upright and centered, both small hind paws planted on ground, short forepaws relaxed slightly away from the torso so their connection is visible. No waving, no action, no different expressions. Preserve the small compact soft proportions of the reference, do not turn it into a tall humanoid. The tail extends BACKWARD from the low central sacral area, with a mild consistent curve toward the character's LEFT and a softly upturned tapered tip. It does not wrap around or obscure the feet or hands; show its full length in both profile views and the top view. Tail shape and pose are identical in all six views, not newly invented per panel. The top view clearly explains the tail's width, curvature, thickness and attachment. No branched tails, loose dots, disconnected parts or detached appendages.
+
+RENDERING: professional animation-studio sculpt reference sheet. Soft even diffuse ambient lighting with subtle neutral rim separation so dark forms are legible, lighter charcoal shading on plane changes, no crushed black areas, no cinematic shadows. Accurate readable volume, gentle restrained AO at joins, sharp clean contours. No props, floating symbols, speech bubbles, action effects, window ledges, pedestals, costumes, collars, machinery, dramatic poses, material swatches, prose, decorative title, watermark or duplicated front views. Prioritize consistent anatomy, useful profile silhouettes, readable tail construction and coherent orthographic proportions over visual spectacle.

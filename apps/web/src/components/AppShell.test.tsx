@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,6 +12,23 @@ vi.mock('../api/public-api', () => ({
     searchMiss: vi.fn(),
   },
 }));
+
+vi.mock('./xiaoying/scene', () => ({
+  mountPet: () => ({ play: vi.fn(), pause: vi.fn(), dispose: vi.fn() }),
+}));
+
+function dispatchSearchHotkey(metaKey: boolean) {
+  window.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'k',
+      code: 'KeyK',
+      metaKey,
+      ctrlKey: !metaKey,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+}
 
 function renderShell(path: string) {
   return render(
@@ -61,6 +78,28 @@ describe('AppShell 搜索入口', () => {
     expect(
       screen.queryByRole('button', { name: '搜索或问小影' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('/ask 页 ⌘K / Ctrl+K 不打开搜索面板', () => {
+    renderShell(WEB_ROUTES.assistant);
+    expect(screen.getByText('ask-stub')).toBeInTheDocument();
+    act(() => {
+      dispatchSearchHotkey(true);
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    act(() => {
+      dispatchSearchHotkey(false);
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('ask-stub')).toBeInTheDocument();
+  });
+
+  it('首页 ⌘K 仍打开搜索面板', () => {
+    renderShell(WEB_ROUTES.home);
+    act(() => {
+      dispatchSearchHotkey(true);
+    });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('逛页不再保留侧栏/移动栏搜索按钮', () => {

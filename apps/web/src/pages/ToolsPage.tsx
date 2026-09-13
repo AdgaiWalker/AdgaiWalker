@@ -1,54 +1,92 @@
-import { IntakePanel } from '../components/ui/IntakePanel';
-import { useIntake } from '../hooks/useIntake';
+/**
+ * 卡（/tools）— 对话式：说清卡点，原地拿到下一步。
+ * 路径与文案读 dualEntry / WEB_ROUTES / INTAKE_TYPES，页面不硬编码。
+ */
+import { useCallback, useEffect, useRef } from 'react';
+import { IntakeChatThread } from '../components/ui/intake/IntakeChatThread';
+import { IntakeComposer } from '../components/ui/intake/IntakeComposer';
+import { useIntakeChat } from '../hooks/useIntakeChat';
 import { dualEntry } from '../shared/dual-entry';
-import { WEB_ROUTES } from '../shared/routes';
+import { INTAKE_TYPES } from '../shared/intake-types';
 import { INTAKE_RULE_HINTS } from '../shared/rules-ui';
 
-const EXAMPLES = [
-  '想学 AI，从哪开始？',
-  '公众号文章写不出来，卡在选题',
-  '改页面有 bug，不知道怎么排查',
-  '要做一个报名表单收集信息',
-  '每天重复加班，想提效',
-  '周报总是拖到最后一刻',
-] as const;
-
 const SERVICE_NOTE =
-  '描述卡点后直接提交：站点的处理服务在公网已真实可用（写入线索并返回下一步建议）。失败时会说明原因，不会假装成功。';
+  '站点处理服务在公网已可用：提交后写入线索并返回下一步建议；失败会说明原因，不会假装成功。';
+
+/** 空态示例：每个卡点类型取一条，点击即发送 */
+const EXAMPLE_CHIPS = INTAKE_TYPES.map((type) => type.examples[0]);
 
 export function ToolsPage() {
-  const intake = useIntake();
+  const chat = useIntakeChat();
+  const { turns, loading } = chat;
+  const logRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // jsdom 等环境无 Element.scrollTo，可选调用兜底
+    logRef.current?.scrollTo?.({ top: logRef.current.scrollHeight });
+  }, [turns, loading]);
+
+  const handleSend = useCallback(() => {
+    void chat.send();
+  }, [chat]);
 
   return (
-    <IntakePanel
-      title={dualEntry.ask.title}
-      lead={dualEntry.ask.lead}
-      ruleHints={INTAKE_RULE_HINTS}
-      examples={EXAMPLES}
-      body={intake.body}
-      bodyOk={intake.bodyOk}
-      remaining={intake.remaining}
-      minLength={intake.minLength}
-      loading={intake.loading}
-      error={intake.error}
-      result={
-        intake.result
-          ? {
-              nextStep: intake.result.nextStep,
-              bucketId: intake.result.bucketId,
-              aiUsedFlag: intake.result.aiUsedFlag,
-              suggestedSlug: intake.result.suggestedSlug,
-              suggestedTitle: intake.result.suggestedTitle,
-            }
-          : null
-      }
-      browsePath={dualEntry.browse.path}
-      browseLabel={dualEntry.browse.label}
-      resourcesHref={WEB_ROUTES.toolsResources}
-      serviceNote={SERVICE_NOTE}
-      onBodyChange={intake.onBodyChange}
-      onPickExample={intake.onPickExample}
-      onSubmit={intake.onSubmit}
-    />
+    <div className="chat-page">
+      <header className="chat-head">
+        <h1 className="page-title">{dualEntry.ask.title}</h1>
+        <p className="page-lead">{dualEntry.ask.lead}</p>
+        <p className="meta chat-service-note" role="note">
+          {SERVICE_NOTE}
+        </p>
+        {turns.length > 0 ? (
+          <button
+            type="button"
+            className="btn-ghost chat-reset"
+            onClick={chat.reset}
+          >
+            重新开始
+          </button>
+        ) : null}
+      </header>
+
+      <div className="assistant-log chat-log" ref={logRef}>
+        {turns.length === 0 ? (
+          <div className="assistant-empty">
+            <p className="meta chat-empty-lead">
+              把卡点写清楚就行：谁、在什么情况下、想达成什么、现在卡在哪。
+            </p>
+            <div className="assistant-examples">
+              {EXAMPLE_CHIPS.map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  className="assistant-example-chip"
+                  disabled={loading}
+                  onClick={() => void chat.send(example)}
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <IntakeChatThread turns={turns} />
+        )}
+      </div>
+
+      <IntakeComposer
+        draft={chat.draft}
+        draftOk={chat.draftOk}
+        remaining={chat.remaining}
+        minLength={chat.minLength}
+        loading={chat.loading}
+        onDraftChange={chat.onDraftChange}
+        onSend={handleSend}
+      />
+
+      <p className="meta chat-footnote">
+        {INTAKE_RULE_HINTS[1]} · {INTAKE_RULE_HINTS[3]}
+      </p>
+    </div>
   );
 }

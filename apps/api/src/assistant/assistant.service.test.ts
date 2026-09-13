@@ -60,6 +60,7 @@ function makeDeps(opts: { bumpReturns?: number; bumpThrows?: boolean; sessionOwn
       if (opts.bumpThrows) throw new Error('storage down');
       return opts.bumpReturns ?? 1;
     }),
+    addTokens: vi.fn(async () => {}),
   };
   const rateLimit: RateLimitPort = { consume: () => true };
   return { runner, fallback, events, repo, rateLimit };
@@ -113,12 +114,16 @@ describe('AssistantService 每日预算熔断', () => {
     expect(d.repo.saveRun).toHaveBeenCalledTimes(1);
   });
 
-  it('AI 关：不消耗预算计数（不调 bumpRequests）', async () => {
+  it('AI 关：不消耗预算计数、不进 runner，结果标注 ai-disabled', async () => {
     const d = makeDeps();
     const r = await serviceFor(false, d).ask(ask);
-    expect(r).toBeTruthy();
+    expect(r.aiUsedFlag).toBe(false);
     expect(d.repo.bumpRequests).not.toHaveBeenCalled();
-    expect(d.runner.ask).toHaveBeenCalledTimes(1);
+    expect(d.runner.ask).not.toHaveBeenCalled();
+    expect(d.fallback.ask).toHaveBeenCalledTimes(1);
+    expect(d.repo.saveRun).toHaveBeenCalledWith(
+      expect.objectContaining({ degradeReason: 'ai-disabled' }),
+    );
   });
 
   it('预算存储失败：fail-open 照常走 AI，不阻断', async () => {
@@ -184,5 +189,67 @@ describe('AssistantService 每日预算熔断', () => {
     const r = await serviceFor(true, broken).ask({ ...ask, sessionId: 'dsh-session-1' });
     expect(r.answer).toBe('AI 回答。');
     expect((broken.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBeNull();
+  });
+});
+
+describe('观测 P1 落库（token / 延迟 / 降级原因）', () => {
+  const aiWithUsage: AssistantRunResult = {
+    ...aiResult,
+    usage: { inputTokens: 1850, outputTokens: 340, cacheReadTokens: 1620 },
+    firstChunkMs: 820,
+    queueWaitMs: 40,
+    degradeReason: null,
+  };
+
+  it('AI 成功：落库带 usage/首字/排队，token 走 addTokens（请求数不重复计）', async () => {
+    const d = makeDeps({ bumpReturns: 5 });
+    (d.runner.ask as ReturnType<typeof vi.fn>).mockResolvedValue(aiWithUsage);
+    await serviceFor(true, d).ask(ask);
+
+    expect(d.repo.saveRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokensIn: 1850,
+        tokensOut: 340,
+        cacheReadTokens: 1620,
+        firstChunkMs: 820,
+        queueWaitMs: 40,
+        degradeReason: null,
+      }),
+    );
+    expect(d.repo.bumpRequests).toHaveBeenCalledTimes(1);
+    expect(d.repo.addTokens).toHaveBeenCalledTimes(1);
+    expect(d.repo.addTokens).toHaveBeenCalledWith(
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      { tokensIn: 1850, tokensOut: 340 },
+    );
+  });
+
+  it('规则路径：无 usage 写 0 与 null，不调 addTokens', async () => {
+    const d = makeDeps({ bumpReturns: 201 });
+    await serviceFor(true, d, 200).ask(ask);
+
+    expect(d.repo.saveRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokensIn: 0,
+        tokensOut: 0,
+        cacheReadTokens: 0,
+        firstChunkMs: null,
+        queueWaitMs: null,
+        degradeReason: 'budget-exceeded',
+      }),
+    );
+    expect(d.repo.addTokens).not.toHaveBeenCalled();
+  });
+
+  it('流式路径 runner 抛错：标 runtime-error 并落库', async () => {
+    const d = makeDeps({ bumpReturns: 3 });
+    d.runner.askStream = vi.fn(async () => {
+      throw new Error('TransportClosedError');
+    });
+    await serviceFor(true, d).askStream(ask, () => {});
+
+    expect(d.repo.saveRun).toHaveBeenCalledWith(
+      expect.objectContaining({ degradeReason: 'runtime-error' }),
+    );
   });
 });

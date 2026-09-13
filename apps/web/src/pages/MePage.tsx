@@ -11,7 +11,6 @@ import {
   Cpu,
   Globe,
   Mail,
-  MessageCircle,
   Ship,
   type LucideIcon,
 } from 'lucide-react';
@@ -33,26 +32,22 @@ export function MePage() {
         <div className="about-hero-overlay" />
         <div className="about-hero-content">
           <img
-            src="/images/duola.jpg"
-            alt="duola"
+            src="/images/dora.jpg"
+            alt="Dora"
             className="about-hero-avatar"
             width={96}
             height={96}
           />
-          <h1 className="about-hero-title">duola</h1>
+          <h1 className="about-hero-title">Dora</h1>
           <p className="about-hero-sub">艺术生，在用 AI 解决真实问题</p>
           <p className="about-hero-era">人是主体；Walker 是站名，不是我的名字。</p>
           <div className="home-dual-cta" style={{ justifyContent: 'center' }}>
             <Link to={WEB_ROUTES.gear} className="btn-secondary">
               <Cpu size={16} />
-              哆啦与硬件
+              Dora 与硬件
             </Link>
             <Link to={WEB_ROUTES.about} className="btn-secondary">
               关于本站
-            </Link>
-            <Link to={WEB_ROUTES.assistant} className="btn-secondary">
-              <MessageCircle size={16} />
-              问小影
             </Link>
           </div>
         </div>
@@ -61,7 +56,7 @@ export function MePage() {
       <section className="panel-glass about-section">
         <h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>关于我</h2>
         <p style={{ lineHeight: 1.7, color: 'var(--color-parchment-dim)' }}>
-          我是 duola。在学、在做、在记：把真实卡点变成可检验的下一步，把走过的路收成教程、资源与札记。
+          我是 Dora。在学、在做、在记：把真实卡点变成可检验的下一步，把走过的路收成教程、资源与札记。
         </p>
         <p style={{ lineHeight: 1.7, color: 'var(--color-parchment-dim)' }}>
           推进社会生产效率，解放人力，让生活更有趣。

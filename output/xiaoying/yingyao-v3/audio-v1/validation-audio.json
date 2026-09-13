@@ -1,0 +1,44 @@
+[
+  {
+    "state": "hello",
+    "label": "招呼",
+    "duration_s": 3.0,
+    "frame_start": 136,
+    "sample_rate": 48000,
+    "channels": 2,
+    "peak_dbfs": -9.07,
+    "rms_dbfs": -25.72,
+    "active_rms_dbfs": -22.17,
+    "true_peak_dbfs": -9.06,
+    "dc_offset": 2.1014122399700721e-07,
+    "clipped_samples": 0
+  },
+  {
+    "state": "receive",
+    "label": "承接",
+    "duration_s": 5.0,
+    "frame_start": 376,
+    "sample_rate": 48000,
+    "channels": 2,
+    "peak_dbfs": -12.39,
+    "rms_dbfs": -29.41,
+    "active_rms_dbfs": -25.71,
+    "true_peak_dbfs": -12.38,
+    "dc_offset": -5.080823850211783e-06,
+    "clipped_samples": 0
+  },
+  {
+    "state": "joy",
+    "label": "开心",
+    "duration_s": 3.0,
+    "frame_start": 811,
+    "sample_rate": 48000,
+    "channels": 2,
+    "peak_dbfs": -8.64,
+    "rms_dbfs": -26.05,
+    "active_rms_dbfs": -21.93,
+    "true_peak_dbfs": -8.63,
+    "dc_offset": -2.3564278690106156e-05,
+    "clipped_samples": 0
+  }
+]

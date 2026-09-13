@@ -1,0 +1,7 @@
+00:00.039  color_management | Using OCIO=/Applications/Blender.app/Contents/Resources/5.2/datafiles/colormanagement/config.ocio
+00:03.636  blend            | Read blend: "/Users/happy/Desktop/AdgaiWalker/output/xiaoying/yingyao-v3/xiaoying-asset.blend"
+00:03.871  reports          | WARNING 库文件, 加载空场景
+Blender 5.2.0 LTS (hash fbe6228777e7 built 2026-07-14 01:31:22)
+02:07.860  render           | Saved: '/Users/happy/Desktop/AdgaiWalker/output/xiaoying/yingyao-v3/09-material-detail.png'
+
+Blender quit

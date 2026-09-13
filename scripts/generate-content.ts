@@ -7,12 +7,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { inferContentHall } from '../apps/web/src/shared/content-halls';
+import { dualEntry } from '../apps/web/src/shared/dual-entry';
+import { buildKnowledgeGraph } from '../packages/shared/src/graph';
+import { loadContentCreatedDates } from './lib/git-created';
 import type {
   AiUsePolicy,
   ContentResource,
   GeneratedContentItem,
 } from './lib/content-model';
-import { contentLogDir, contentJsonPath, webGeneratedDir } from './lib/paths';
+import {
+  contentJsonPath,
+  contentLogDir,
+  graphJsonPath,
+  repoRoot,
+  webGeneratedDir,
+} from './lib/paths';
 
 type Visibility = 'public' | 'draft' | 'private';
 
@@ -163,7 +172,7 @@ if (fs.existsSync(contentLogDir)) {
       author:
         typeof data.author === 'string' && data.author.trim()
           ? data.author.trim()
-          : 'duola',
+          : 'Dora',
       type: String(data.type || 'knowledge'),
       form: typeof data.form === 'string' ? data.form.trim() : '',
       domain: typeof data.domain === 'string' ? data.domain.trim() : '',
@@ -233,4 +242,54 @@ if (unchanged) {
 } else {
   fs.writeFileSync(contentJsonPath, nextPayload);
   console.log(`wrote ${docs.length} items → ${contentJsonPath}`);
+}
+
+// ---- 知识图谱产物（PRD-KNOWLEDGE-GRAPH §5）----
+// 只由公开条目构建；created 取 Git 首次出现时间（Animate 依据）；附件为 content/log 下的非 md 文件。
+const createdDates = loadContentCreatedDates();
+const attachmentFiles = fs.existsSync(contentLogDir)
+  ? fs
+      .readdirSync(contentLogDir)
+      .filter((file) => !/\.(md|mdx)$/i.test(file) && !file.startsWith('.'))
+      .map((file) => path.relative(repoRoot, path.join(contentLogDir, file)))
+  : [];
+
+const graph = buildKnowledgeGraph({
+  items: docs.map((doc) => ({
+    ...doc,
+    created: createdDates.get(`${doc.slug}.md`) ?? createdDates.get(`${doc.slug}.mdx`) ?? '',
+  })),
+  attachments: attachmentFiles,
+  browsePath: dualEntry.browse.path,
+  now: new Date().toISOString(),
+});
+
+let graphUnchanged = false;
+try {
+  const existing = JSON.parse(fs.readFileSync(graphJsonPath, 'utf8')) as {
+    nodes?: unknown;
+    edges?: unknown;
+  };
+  graphUnchanged =
+    JSON.stringify(existing.nodes) === JSON.stringify(graph.nodes) &&
+    JSON.stringify(existing.edges) === JSON.stringify(graph.edges);
+} catch {
+  /* 无旧文件或旧文件损坏 → 正常写入 */
+}
+
+if (graphUnchanged) {
+  console.log(
+    `graph unchanged (${graph.nodes.length} nodes / ${graph.edges.length} edges); keep existing graph.json`,
+  );
+} else {
+  fs.writeFileSync(graphJsonPath, JSON.stringify(graph, null, 2));
+  const counts = graph.nodes.reduce<Record<string, number>>((acc, node) => {
+    acc[node.kind] = (acc[node.kind] ?? 0) + 1;
+    return acc;
+  }, {});
+  console.log(
+    `wrote graph → ${graphJsonPath} (${Object.entries(counts)
+      .map(([kind, total]) => `${kind} ${total}`)
+      .join(' / ')}; ${graph.edges.length} edges)`,
+  );
 }

@@ -208,6 +208,15 @@ model AssistantRun {
   elapsedMs  Int      @default(0)
   traceId    String?
   source     String   @default("assistant-panel")
+  /// 观测 P1：token 用量（多 step 求和；缺失记 0）
+  tokensIn        Int     @default(0)
+  tokensOut       Int     @default(0)
+  cacheReadTokens Int     @default(0)
+  /// 观测 P1：拿锁 → 首字、排队等待
+  firstChunkMs Int?
+  queueWaitMs  Int?
+  /// 观测 P1：降级原因（kebab 词表；正常 AI 回答为 null）
+  degradeReason String?
   createdAt  DateTime @default(now())
 
   @@index([sessionId])
@@ -244,5 +253,62 @@ model InsightReport {
   createdAt     DateTime @default(now())
 
   @@index([weekOf])
+  @@index([createdAt])
+}
+
+/// 模型供应商配置 (1:1 DSH API 配置规范)
+model ModelProvider {
+  id          String      @id // 'deepseek', 'stepfun' 或 c_xxxx (自定义)
+  name        String      // 供应商显示名，如 DeepSeek 官方
+  category    String      @default("custom") // 'official' | 'custom'
+  enabled     Boolean     @default(true)
+  baseUrl     String      // 1. Base URL
+  apiFormat   String      @default("openai-compatible") // 2. API 格式
+  ciphertext  String      // 3. API Key AES-256-GCM 密文
+  iv          String      // AES-256-GCM IV
+  authTag     String      // AES-256-GCM AuthTag
+  last4       String      // API Key 脱敏后4位 (显示 sk-****abcd)
+  modelsJson  String      @default("[]") // 4. 模型池列表与标签 (JSON 数组)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  agents      AgentUnit[]
+}
+
+/// 智能体单位 (以 Agent 为核心的人设与模型挂载)
+model AgentUnit {
+  id          String         @id // 'xiaoying' 或 c_xxxx (自定义)
+  name        String         // 智能体名称
+  icon        String         @default("bot") // 'bot' | 'pen-tool' | 'sparkles'
+  isSystem    Boolean        @default(false) // 小影为 true，后端 403 绝不可删
+  providerId  String?        // 挂载的供应商 ID
+  modelId     String         @default("deepseek-chat") // 挂载的具体模型标识
+  prompt      String         // 系统提示词定义 (System Prompt)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  provider    ModelProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  runs        AgentRun[]
+}
+
+/// 智能体运行履历索引 (B-trace 轨迹轻量索引)
+model AgentRun {
+  id               String      @id @default(cuid())
+  agentId          String
+  targetFile       String?     // 调用的文件相对路径 (如 content/log/xxx.md)
+  instruction      String      // 站主指令
+  output           String      // 最终产物文本
+  model            String      // 调用时的模型标识
+  tokensPrompt     Int         @default(0)
+  tokensCompletion Int         @default(0)
+  tokensCacheHit   Int         @default(0) // 缓存命中 tokens
+  cacheHitPercent  Float       @default(0.0) // 缓存命中百分比 (如 72.5)
+  elapsedMs        Int         @default(0)
+  traceLogPath     String?     // 对应的独立 trace.jsonl 物理路径
+  status           String      @default("SUCCESS") // 'SUCCESS' | 'FAILED'
+  createdAt        DateTime    @default(now())
+
+  agent            AgentUnit   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  @@index([agentId])
   @@index([createdAt])
 }

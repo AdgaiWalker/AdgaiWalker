@@ -10,6 +10,7 @@ import type {
   SiteContentIndexPort,
 } from '../ports/site-content-index.port';
 import {
+  ASSISTANT_MAX_QUEUE_WAITERS,
   HarnessAssistantAdapter,
   buildFirstTurnPrompt,
   dshChildEnv,
@@ -185,7 +186,10 @@ describe('HarnessAssistantAdapter', () => {
   it('首条 prompt：小影人设 + 资料正文 + 问题', () => {
     const p = buildFirstTurnPrompt(ENTRIES, '你好');
     expect(p).toContain('你是小影');
+    expect(p).toContain('Dora');
+    expect(p).not.toContain('duola');
     expect(p).toContain('第三人称');
+    expect(p).toContain('禁止出现 slug');
     expect(p).toContain('闲鱼购买 MacBook 的完整攻略');
     expect(p).toContain('访客问题：你好');
   });
@@ -212,7 +216,8 @@ describe('HarnessAssistantAdapter', () => {
     const rt: HarnessRuntimeLike = {
       async run() {
         calls += 1;
-        await new Promise((r) => setTimeout(r, 40));
+        // 占锁时长须显著大于 30ms 预算（并发跑测试时定时器会被拖慢，余量留足才不 flaky）
+        await new Promise((r) => setTimeout(r, 150));
         return { sessionId: 's', finalResponse: JSON.stringify({ answer: '回答内容足够长', citations: [] }) };
       },
       async close() {},
@@ -222,8 +227,9 @@ describe('HarnessAssistantAdapter', () => {
     const second = a.ask({ sessionId: null, text: '第二问', visitorKey: 'v2' });
     const r2 = await second;
     expect(r2.aiUsedFlag).toBe(false);
+    expect(r2.degradeReason).toBe('queue-deadline');
     await first;
-    // 第一问自身 40ms > 30ms 预算同样超时兜底；第二问在排队中耗尽预算，从未触达 runtime
+    // 第一问自身 150ms > 30ms 预算同样超时兜底；第二问在排队中耗尽预算，从未触达 runtime
     expect(calls).toBe(1);
   });
 
@@ -266,5 +272,129 @@ describe('dshChildEnv（P0-1 会话遥测默认关闭）', () => {
     } finally {
       delete process.env.DSH_TELEMETRY_ENABLED_OVERRIDE;
     }
+  });
+});
+
+describe('观测 P1 采集（token / 首字 / 排队 / 降级原因）', () => {
+  it('step/end usage 多条求和；首字与排队非空；AI 成功原因 null', async () => {
+    const rt: HarnessRuntimeLike = {
+      async run(_prompt, opts) {
+        const notify = (event: unknown) =>
+          opts?.onNotification?.({
+            method: 'session.event',
+            params: { event },
+          });
+        notify({
+          type: 'assistant/chunk',
+          data: { chunk: { type: 'text-delta', text: '{"answer":"你' } },
+        });
+        notify({
+          type: 'step/end',
+          data: { usage: { inputTokens: 100, outputTokens: 20, cacheReadTokens: 60 } },
+        });
+        notify({
+          type: 'step/end',
+          data: { usage: { inputTokens: 50, outputTokens: 10 } },
+        });
+        // 缺 usage 的 step/end：按 0 累加，不抛错
+        notify({ type: 'step/end', data: {} });
+        notify({
+          type: 'assistant/chunk',
+          data: { chunk: { type: 'text-delta', text: '好"}' } },
+        });
+        return {
+          sessionId: 'dsh-obs',
+          finalResponse: JSON.stringify({ answer: '你好，这是回答。', citations: [] }),
+        };
+      },
+      async close() {},
+    };
+
+    const r = await adapterFor(rt).ask({ sessionId: null, text: '你好', visitorKey: 'v1' });
+
+    expect(r.aiUsedFlag).toBe(true);
+    expect(r.usage).toEqual({ inputTokens: 150, outputTokens: 30, cacheReadTokens: 60 });
+    expect(r.firstChunkMs).toBeGreaterThanOrEqual(0);
+    expect(r.queueWaitMs).toBeGreaterThanOrEqual(0);
+    expect(r.degradeReason).toBeNull();
+  });
+
+  it('缺 usage 的 AI 回答：token 记 0，不缺字段', async () => {
+    const r = await adapterFor(makeRuntime('ok')).ask({
+      sessionId: null,
+      text: '问题',
+      visitorKey: 'v1',
+    });
+    expect(r.usage).toEqual({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 });
+  });
+
+  it('降级原因逐路标注：ai-disabled / queue-full / queue-deadline / bad-output / runtime-error / timeout / client-abort', async () => {
+    const off = new HarnessAssistantAdapter(
+      config(false),
+      index,
+      fallback,
+      () => makeRuntime('ok'),
+    );
+    expect(
+      (await off.ask({ sessionId: null, text: '问题', visitorKey: 'v1' })).degradeReason,
+    ).toBe('ai-disabled');
+
+    const full = adapterFor(makeRuntime('ok'));
+    (full as unknown as { waiters: number }).waiters = ASSISTANT_MAX_QUEUE_WAITERS;
+    expect(
+      (await full.ask({ sessionId: null, text: '溢出', visitorKey: 'v1' })).degradeReason,
+    ).toBe('queue-full');
+
+    const queued = adapterFor(makeRuntime('ok'), 30);
+    (queued as unknown as { lock: Promise<unknown> }).lock = new Promise((r) =>
+      setTimeout(r, 80),
+    );
+    expect(
+      (await queued.ask({ sessionId: null, text: '排队太久', visitorKey: 'v1' }))
+        .degradeReason,
+    ).toBe('queue-deadline');
+
+    expect(
+      (
+        await adapterFor(makeRuntime('bad-output')).ask({
+          sessionId: null,
+          text: '问题',
+          visitorKey: 'v1',
+        })
+      ).degradeReason,
+    ).toBe('bad-output');
+
+    expect(
+      (
+        await adapterFor(makeRuntime('throw')).ask({
+          sessionId: null,
+          text: '问题',
+          visitorKey: 'v1',
+        })
+      ).degradeReason,
+    ).toBe('runtime-error');
+
+    expect(
+      (
+        await adapterFor(makeRuntime('slow'), 30).ask({
+          sessionId: null,
+          text: '问题',
+          visitorKey: 'v1',
+        })
+      ).degradeReason,
+    ).toBe('timeout');
+
+    const ac = new AbortController();
+    ac.abort();
+    expect(
+      (
+        await adapterFor(makeRuntime('ok')).ask({
+          sessionId: null,
+          text: '问题',
+          visitorKey: 'v1',
+          signal: ac.signal,
+        })
+      ).degradeReason,
+    ).toBe('client-abort');
   });
 });

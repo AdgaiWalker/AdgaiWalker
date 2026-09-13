@@ -1,0 +1,15 @@
+{
+  "source": "/Users/happy/Desktop/AdgaiWalker/output/xiaoying/yingyao-v3/xiaoying-yingyao-v3.blend",
+  "bytes": 6705748,
+  "vertices": 31478,
+  "fur_strands": 3782,
+  "animations": [
+    "01_Idle",
+    "02_Hello",
+    "03_Listen",
+    "05_Think",
+    "07_Joy",
+    "08_Sleep"
+  ],
+  "note": "Original morphs; sampled 15 fps; baked material; groom reduced to 1/20. Receive/Express props excluded from web trial."
+}

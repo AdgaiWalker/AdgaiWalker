@@ -14,6 +14,8 @@
 | [`STATUS.md`](./STATUS.md) | **状态**（生产探针与时钟） |
 | [`api/README.md`](./api/README.md) | **Nest API 契约** |
 | [`PRD-SITE-ASSISTANT.md`](./PRD-SITE-ASSISTANT.md) | **站内助手规划**（活跃 PRD；冲突时低于上行四文档） |
+| [`PRD-AGENT-WORKBENCH.md`](./PRD-AGENT-WORKBENCH.md) | **后台智能体工坊与文件直调规划**（活跃 PRD；以 Agent 为单位 + 文件直通） |
+| [`PRD-KNOWLEDGE-GRAPH.md`](./PRD-KNOWLEDGE-GRAPH.md) | **知识图谱规划**（活跃 PRD；Obsidian Graph View 逐条对齐 · 访客 `/graph` + 站主体检 + MCP 导航） |
 | [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) | **主线执行清单**（M2 换 runner · M3 初稿全链 · M4 共创/转题苗 · M5 流水线 · M8 复盘，原子任务） |
 | [`TODO-OBSERVABILITY.md`](./TODO-OBSERVABILITY.md) | **观测与数据执行清单**（AI 使用数据 + 交互记录，复用 dsh 会话数据平面） |
 | [`TODO-AGENT.md`](./TODO-AGENT.md) | **判断代理 v1 执行清单**（apps/agent · Cordis 组合 · MCP 暴露站主判断；排在初稿全链之后） |

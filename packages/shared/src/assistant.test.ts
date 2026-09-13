@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSISTANT_ANSWER_MAX_LENGTH,
   ASSISTANT_MAX_CITATIONS,
+  DEGRADE_REASONS,
   extractStreamedAnswer,
+  isDegradeReason,
   isValidAssistantBody,
   parseAssistantOutput,
   sanitizeAnswerText,
+  type AssistantRunResult,
 } from './assistant.js';
 
 const CITABLE = new Set(['used-macbook-guide', 'ai-low-cost-access', 'cc-intro']);
@@ -82,6 +85,53 @@ describe('助手 Run 合同', () => {
     expect(sanitizeAnswerText('看[这篇](/posts/x)再动手')).toBe('看这篇再动手');
     expect(sanitizeAnswerText('<b>hi</b>')).toBe('bhi/b');
     expect(sanitizeAnswerText('段一\n\n\n\n段二  \n尾')).toBe('段一\n\n段二\n尾');
+  });
+});
+
+describe('观测 P1 合同（token / 延迟 / 降级原因）', () => {
+  it('DEGRADE_REASONS 词表完整且可判定', () => {
+    expect(DEGRADE_REASONS).toEqual([
+      'ai-disabled',
+      'budget-exceeded',
+      'timeout',
+      'client-abort',
+      'queue-full',
+      'queue-deadline',
+      'bad-output',
+      'runtime-error',
+    ]);
+    expect(isDegradeReason('timeout')).toBe(true);
+    expect(isDegradeReason('whatever')).toBe(false);
+    expect(isDegradeReason(null)).toBe(false);
+    expect(isDegradeReason(1)).toBe(false);
+  });
+
+  it('新字段全部可选：老调用方不填合法，AI 路径可填全', () => {
+    const legacy: AssistantRunResult = {
+      answer: '规则版的回答仍然非空。',
+      citations: [],
+      sessionId: 's1',
+      aiUsedFlag: false,
+      elapsedMs: 12,
+    };
+    expect(legacy.usage).toBeUndefined();
+    expect(legacy.degradeReason).toBeUndefined();
+
+    const ai: AssistantRunResult = {
+      answer: 'AI 回答。',
+      citations: [{ slug: 'cc-intro' }],
+      sessionId: 's1',
+      aiUsedFlag: true,
+      elapsedMs: 3200,
+      usage: { inputTokens: 1850, outputTokens: 340, cacheReadTokens: 1620 },
+      firstChunkMs: 820,
+      queueWaitMs: 40,
+      degradeReason: null,
+    };
+    expect(ai.usage?.inputTokens).toBe(1850);
+    expect(ai.usage?.cacheReadTokens).toBe(1620);
+    expect(ai.firstChunkMs).toBe(820);
+    expect(ai.degradeReason).toBeNull();
   });
 });
 

@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   AI_NEXT_STEP_MAX_LENGTH,
   isNextStepBucketId,
+  listNextStepBuckets,
+  matchNextStepBucket,
+  matchedNextStepTrigger,
+  nextStepBucketLabel,
   parseAiNextStepOutput,
   sanitizeNextStepText,
 } from './nextstep.js';
@@ -59,5 +63,25 @@ describe('nextStep AI 输出契约', () => {
     expect(isNextStepBucketId('default')).toBe(true);
     expect(isNextStepBucketId('Learn-AI')).toBe(false);
     expect(isNextStepBucketId(1)).toBe(false);
+  });
+});
+
+describe('nextStep 桶标签与命中依据', () => {
+  it('每个桶都有非空中文标签，未知 id 回落 default 不抛错', () => {
+    for (const bucket of listNextStepBuckets()) {
+      expect(bucket.label.length).toBeGreaterThan(0);
+    }
+    expect(nextStepBucketLabel('learn-ai')).toBe('学 AI 入门');
+    expect(nextStepBucketLabel('unknown' as never)).toBe('通用起步');
+  });
+
+  it('命中触发词与规则版桶一致（真实依据，不另造一套判断）', () => {
+    const hit = matchedNextStepTrigger('公众号文章写不出来，卡在选题');
+    expect(hit).toEqual({ bucketId: 'writing', trigger: '公众号' });
+    expect(matchNextStepBucket('公众号文章写不出来，卡在选题')).toBe(hit!.bucketId);
+  });
+
+  it('无命中时返回 null，不编造依据', () => {
+    expect(matchedNextStepTrigger('随便说点什么')).toBeNull();
   });
 });

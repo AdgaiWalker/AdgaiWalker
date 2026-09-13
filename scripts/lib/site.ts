@@ -4,15 +4,16 @@
  */
 export const SITE_ORIGIN = 'https://www.iwalk.pro';
 export const SITE_NAME = 'Walker';
-export const SITE_TITLE = 'Walker · 用 AI 走自己的路';
+export const SITE_TITLE = 'Walker · 用好 AI 做好事';
 export const SITE_DESCRIPTION =
-  'duola 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
+  'Dora 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
 export const SITE_LANGUAGE = 'zh-CN';
 
 /** 这些路由在构建期拥有独立静态正文与 metadata，可以进入 sitemap。 */
 export const INDEXABLE_STATIC_ROUTES = [
   '/',
   '/posts',
+  '/graph',
   '/tutorials',
   '/learn',
   '/explore',
@@ -34,10 +35,16 @@ export const SPA_SHELL_ROUTES = [
     description: '说清一个真实卡点，拿到可以立即开始的下一步。',
   },
   {
+    pathname: '/tools/result',
+    title: '下一步 · Walker',
+    heading: '你的下一步',
+    description: '这次卡点拿到的下一步与依据；结果只在生成它的浏览器里可还原。',
+  },
+  {
     pathname: '/ask',
     title: '小影 · Walker',
     heading: '小影',
-    description: 'duola 的管家小影。关于站主与这个站，问就行。',
+    description: 'Dora 的管家小影。关于站主与这个站，问就行。',
   },
   {
     pathname: '/support',
@@ -70,11 +77,11 @@ export const LEGACY_REDIRECTS = [
   { source: '/ideas/new', destination: '/tools' },
 ] as const;
 
-/** Walker 是站名；人是 duola。 */
+/** Walker 是站名；人是 Dora。 */
 export const AUTHOR = {
-  name: 'duola',
+  name: 'Dora',
   url: `${SITE_ORIGIN}/me`,
-  image: `${SITE_ORIGIN}/images/duola.jpg`,
+  image: `${SITE_ORIGIN}/images/dora.jpg`,
 } as const;
 
 export function absoluteUrl(pathname: string): string {

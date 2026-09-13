@@ -8,7 +8,9 @@ import { RouteMetadata } from './components/RouteMetadata';
 import { HomePage } from './pages/HomePage';
 import { PostsPage } from './pages/PostsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
+import { GraphPage } from './pages/GraphPage';
 import { ToolsPage } from './pages/ToolsPage';
+import { ToolsResultPage } from './pages/ToolsResultPage';
 import { ToolsResourcesPage } from './pages/ToolsResourcesPage';
 import { AskPage } from './pages/AskPage';
 import { IdeasNewRedirectPage } from './pages/IdeasNewRedirectPage';
@@ -50,6 +52,7 @@ export function App() {
           <Route index element={<HomePage />} />
           <Route path={browseBase} element={<PostsPage />} />
           <Route path={`${browseBase}/:slug`} element={<PostDetailPage />} />
+          <Route path={strip(WEB_ROUTES.graph)} element={<GraphPage />} />
           <Route path={strip(WEB_ROUTES.explore)} element={<ExplorePage />} />
           <Route
             path={ideasBase}
@@ -87,6 +90,10 @@ export function App() {
             element={<Navigate to={dualEntry.browse.path} replace />}
           />
           <Route path={strip(WEB_ROUTES.ask)} element={<ToolsPage />} />
+          <Route
+            path={strip(WEB_ROUTES.toolsResult)}
+            element={<ToolsResultPage />}
+          />
           <Route path={strip(WEB_ROUTES.assistant)} element={<AskPage />} />
           <Route
             path={strip(WEB_ROUTES.toolsResources)}

@@ -9,6 +9,7 @@ import {
   RATE_LIMITS,
   isValidAssistantBody,
   type AssistantRunResult,
+  type DegradeReason,
 } from '@walker/shared';
 import { newId } from '../common/ids';
 import { rateLimited, validationError } from '../common/http-error';
@@ -80,7 +81,7 @@ export class AssistantService {
     input: AssistantAskServiceInput,
   ): Promise<AssistantAskServiceResult> {
     const gate = await this.preflight(input);
-    const result = await this.dispatch(gate.askInput, gate.useFallback, undefined);
+    const result = await this.dispatch(gate.askInput, gate.degradeReason);
     await this.settle(input, gate.actorType, result);
     return this.toResult(result);
   }
@@ -95,15 +96,19 @@ export class AssistantService {
   ): Promise<AssistantAskServiceResult> {
     const gate = await this.preflight(input);
     let result: AssistantRunResult;
-    if (!gate.useFallback && this.runner.askStream) {
+    if (!gate.degradeReason && this.runner.askStream) {
       try {
         result = await this.runner.askStream(gate.askInput, onText);
       } catch {
-        result = await this.fallback.ask(gate.askInput);
+        // 流式路径异常：与适配器内部同口径标注，不掩盖原因
+        result = {
+          ...(await this.fallback.ask(gate.askInput)),
+          degradeReason: 'runtime-error',
+        };
         onText(result.answer);
       }
     } else {
-      result = await this.dispatch(gate.askInput, gate.useFallback, undefined);
+      result = await this.dispatch(gate.askInput, gate.degradeReason);
       onText(result.answer);
     }
     await this.settle(input, gate.actorType, result);
@@ -165,8 +170,11 @@ export class AssistantService {
     };
 
     // 每日 AI 预算熔断：触顶当日直接规则兜底（成本保险丝在网关，不指望模型自觉）
-    let useFallback = false;
-    if (this.config.isAiEnabled()) {
+    // 观测 P1：网关级降级原因在此判定（开关 ai-disabled / 预算 budget-exceeded），随结果落库
+    let degradeReason: DegradeReason | null = null;
+    if (!this.config.isAiEnabled()) {
+      degradeReason = 'ai-disabled';
+    } else {
       const dateKey = todayCN();
       let used = 0;
       try {
@@ -193,18 +201,21 @@ export class AssistantService {
           actorType,
           failCode: 'budget-exceeded',
         });
-        useFallback = true;
+        degradeReason = 'budget-exceeded';
       }
     }
-    return { actorType, askInput, useFallback };
+    return { actorType, askInput, degradeReason };
   }
 
-  private dispatch(
+  /** 网关级降级（AI 关 / 预算触顶）直接走规则版并附原因；其余交给 runner 自行降级 */
+  private async dispatch(
     askInput: { sessionId: string | null; text: string; visitorKey: string; signal?: AbortSignal },
-    useFallback: boolean,
-    _unused?: undefined,
+    degradeReason: DegradeReason | null,
   ): Promise<AssistantRunResult> {
-    if (useFallback) return this.fallback.ask(askInput);
+    if (degradeReason) {
+      const result = await this.fallback.ask(askInput);
+      return { ...result, degradeReason };
+    }
     return this.runner.ask(askInput);
   }
 
@@ -231,7 +242,21 @@ export class AssistantService {
         elapsedMs: result.elapsedMs,
         traceId: null,
         source: input.source ?? 'assistant-panel',
+        // 观测 P1：token / 首字 / 排队 / 降级原因（规则路径为 0 与 null）
+        tokensIn: result.usage?.inputTokens ?? 0,
+        tokensOut: result.usage?.outputTokens ?? 0,
+        cacheReadTokens: result.usage?.cacheReadTokens ?? 0,
+        firstChunkMs: result.firstChunkMs ?? null,
+        queueWaitMs: result.queueWaitMs ?? null,
+        degradeReason: result.degradeReason ?? null,
       });
+      // 请求数已在 preflight 计入，这里只累加 token（避免二次计数请求）
+      if (result.usage) {
+        await this.repo.addTokens(todayCN(), {
+          tokensIn: result.usage.inputTokens,
+          tokensOut: result.usage.outputTokens,
+        });
+      }
     } catch {
       /* 存储不可用：回答已产出，优先返回 */
     }

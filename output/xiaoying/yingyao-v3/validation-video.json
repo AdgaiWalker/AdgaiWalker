@@ -1,0 +1,82 @@
+{
+  "duration_s": 36.534,
+  "dimensions": [
+    720.0,
+    540.0
+  ],
+  "frame_count": 548,
+  "bytes": 786224,
+  "required_files_exist": true,
+  "stills": [
+    {
+      "file": "01-hero.png",
+      "dimensions": [
+        1600,
+        1200
+      ]
+    },
+    {
+      "file": "01-idle.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "02-hello.png",
+      "dimensions": [
+        1600,
+        1200
+      ]
+    },
+    {
+      "file": "03-listen.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "04-receive.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "05-think.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "06-express.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "07-joy.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "08-sleep.png",
+      "dimensions": [
+        1100,
+        825
+      ]
+    },
+    {
+      "file": "09-material-detail.png",
+      "dimensions": [
+        1400,
+        1050
+      ]
+    }
+  ]
+}

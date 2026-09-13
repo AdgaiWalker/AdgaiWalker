@@ -15,6 +15,8 @@ export const repoRoot = path.resolve(
 export const contentLogDir = path.join(repoRoot, 'content/log');
 export const webGeneratedDir = path.join(repoRoot, 'apps/web/src/generated');
 export const contentJsonPath = path.join(webGeneratedDir, 'content.json');
+/** 知识图谱产物（PRD-KNOWLEDGE-GRAPH §5.1）：web / api / agent 共读一份 */
+export const graphJsonPath = path.join(webGeneratedDir, 'graph.json');
 export const webDistDir = path.join(repoRoot, 'apps/web/dist');
 export const apiEnvPath = path.join(repoRoot, 'apps/api/.env');
 export const tmpDir = path.join(repoRoot, 'tmp');

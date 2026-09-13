@@ -13,6 +13,7 @@ export const FEATURE_KEYS = {
   'execution.review': '检验写入成功',
   'content.feedback': '内容反馈提交成功',
   'assistant.ask': '站内助手问答',
+  'agent.mcp': '判断代理工具调用（外部 agent 经 MCP）',
 } as const;
 
 export type FeatureKey = keyof typeof FEATURE_KEYS;

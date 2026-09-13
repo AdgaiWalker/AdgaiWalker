@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent 工坊与模型装配 — Walker Admin (Apple Design)</title>
+  <link rel="stylesheet" href="/src/styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* ==========================================================================
+       Apple Design Foundations (WWDC 2018 Fluid Interfaces & WWDC 2026 Craft)
+       - Physical Springs: damping 1.0, response 0.35s
+       - Materials & Translucency: backdrop-filter blur + saturation
+       - Optical Sizing & Hierarchy: SF Pro font stack with strict tracking
+       - Immediate tactile feedback: :active { transform: scale(0.97); }
+       ========================================================================== */
+
+    :root {
+      --system-bg: #f5f5f7;
+      --card-bg: rgba(255, 255, 255, 0.86);
+      --card-bg-solid: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --card-border-subtle: rgba(0, 0, 0, 0.04);
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      --card-shadow-hover: 0 8px 30px -4px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+
+      /* Inset Grouped Backgrounds (macOS / iOS Settings style) */
+      --inset-bg: #fbfbfd;
+      --inset-border: rgba(0, 0, 0, 0.06);
+
+      /* Apple Typography Colors */
+      --label-primary: #1d1d1f;
+      --label-secondary: #6e6e73;
+      --label-tertiary: #86868b;
+      --label-quaternary: #aeaeb2;
+
+      /* Apple Accent Colors */
+      --apple-blue: #0071e3;
+      --apple-blue-hover: #0077ed;
+      --apple-blue-tint: rgba(0, 113, 227, 0.08);
+      --apple-blue-tint-hover: rgba(0, 113, 227, 0.14);
+      --apple-green: #34c759;
+      --apple-green-tint: rgba(52, 199, 89, 0.1);
+      --apple-orange: #ff9500;
+      --apple-purple: #af52de;
+      --apple-red: #ff3b30;
+      --apple-red-tint: rgba(255, 59, 48, 0.08);
+
+      /* Apple Spring Timing Curve (damping 1.0 critically damped) */
+      --spring-physics: cubic-bezier(0.16, 1, 0.3, 1);
+      --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background: var(--system-bg);
+      color: var(--label-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .lucide {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2;
+      vertical-align: middle;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* Tactile response for all interactive elements */
+    button, .interactive-tap {
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active, .interactive-tap:active {
+      transform: scale(0.97);
+      transition: transform 80ms ease-out;
+    }
+
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* 侧边栏：Apple macOS Translucent Sidebar */
+    .sidebar {
+      width: 210px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(25px) saturate(190%);
+      border-right: 1px solid var(--card-border);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .brand-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--label-primary);
+      letter-spacing: -0.02em;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand-title i {
+      color: var(--apple-blue);
+    }
+    .brand-subtitle {
+      font-size: 0.72rem;
+      color: var(--label-secondary);
+      margin-top: 0.2rem;
+      letter-spacing: -0.01em;
+    }
+    .nav-group {
+      margin-top: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.55rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.83rem;
+      font-weight: 500;
+      color: var(--label-secondary);
+      text-decoration: none;
+      transition: all 0.2s var(--spring-physics);
+    }
+    .nav-item:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--label-primary);
+    }
+    .nav-item.active {
+      background: #ffffff;
+      color: var(--label-primary);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+    .nav-item.active i {
+      color: var(--apple-blue);
+    }
+
+    /* 主内容区 */
+    .main-content {
+      flex: 1;
+      padding: 1.75rem 2.25rem 3rem;
+      max-width: 1440px;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    .page-header {
+      margin-bottom: 1.3rem;
+    }
+    .page-title {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      color: var(--label-primary);
+      margin: 0 0 0.2rem;
+    }
+    .page-desc {
+      font-size: 0.84rem;
+      color: var(--label-secondary);
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+    /* ==========================================================================
+       顶部 Agent 角色栏 (Apple Segmented Capsule Bar)
+       ========================================================================== */
+    .agent-capsule-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.4rem;
+      overflow-x: auto;
+      align-items: center;
+      padding: 2px;
+    }
+
+    .agent-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.95rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      box-shadow: var(--card-shadow);
+      transition: all 0.25s var(--spring-physics);
+      min-width: 185px;
+    }
+    .agent-pill:hover {
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: var(--card-shadow-hover);
+      transform: translateY(-1px);
+    }
+    .agent-pill.active {
+      background: #ffffff;
+      border-color: var(--apple-blue);
+      box-shadow: 0 0 0 1.5px var(--apple-blue), 0 4px 14px rgba(0, 113, 227, 0.12);
+    }
+
+    .agent-pill-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--label-secondary);
+      transition: all 0.25s var(--spring-physics);
+    }
+    .agent-pill.active .agent-pill-icon {
+      background: var(--apple-blue);
+      color: #ffffff;
+    }
+
+    .agent-pill-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .agent-pill-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--label-primary);
+    }
+    .agent-pill-model {
+      font-size: 0.71rem;
+      color: var(--label-tertiary);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      margin-top: 0.1rem;
+    }
+
+    .agent-pill-add {
+      border: 1px dashed rgba(0, 0, 0, 0.16);
+      background: rgba(255, 255, 255, 0.5);
+      color: var(--label-secondary);
+      justify-content: center;
+      min-width: 120px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      gap: 0.4rem;
+    }
+    .agent-pill-add:hover {
+      background: #ffffff;
+      border-color: var(--apple-blue);
+      color: var(--apple-blue);
+    }
+
+    /* ==========================================================================
+       双栏网格 (Apple Grid Layout)
+       ========================================================================== */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 505px 1fr;
+      gap: 1.4rem;
+      align-items: start;
+    }
+    @media (max-width: 1180px) {
+      .grid-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Apple-style Card Container */
+    .apple-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(25px) saturate(190%);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 1.35rem 1.4rem;
+      box-shadow: var(--card-shadow);
+      position: relative;
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.05rem;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 650;
+      letter-spacing: -0.018em;
+      color: var(--label-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+    }
+
+    /* ==========================================================================
+       功能 2 & 4: 角色系统提示词 (Persona) + 复制提示词按钮 (Apple Refined)
+       ========================================================================== */
+    .persona-box {
+      border: 1px solid var(--inset-border);
+      border-radius: var(--radius-md);
+      background: var(--inset-bg);
+      padding: 0.9rem 1rem 0.85rem;
+      margin-bottom: 1.25rem;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+      transition: border-color 0.2s var(--spring-physics);
+    }
+    .persona-box:focus-within {
+      border-color: rgba(0, 113, 227, 0.4);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.08);
+    }
+
+    .persona-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.55rem;
+    }
+    .persona-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--label-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .persona-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .persona-stats {
+      font-size: 0.7rem;
+      color: var(--label-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Apple-style Frosted Capsule Copy Button */
+    .btn-copy-prompt {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 550;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      border: 1px solid rgba(0, 113, 227, 0.2);
+      background: var(--apple-blue-tint);
+      color: var(--apple-blue);
+      transition: all 0.2s var(--spring-physics);
+    }
+    .btn-copy-prompt:hover {
+      background: var(--apple-blue-tint-hover);
+      border-color: rgba(0, 113, 227, 0.35);
+    }
+    .btn-copy-prompt.copied {
+      background: var(--apple-green-tint);
+      border-color: rgba(52, 199, 89, 0.3);
+      color: var(--apple-green);
+    }
+
+    .persona-textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      resize: vertical;
+      min-height: 72px;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--label-primary);
+      font-family: inherit;
+      padding: 0;
+    }
+
+    /* ==========================================================================
+       功能 1: 1:1 DSH 模型与提供方配置 (Apple Inset Grouped Settings)
+       ========================================================================== */
+    .dsh-provider-section {
+      background: var(--inset-bg);
+      border: 1px solid var(--inset-border);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.15rem;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.015);
+    }
+
+    .dsh-provider-header {
+      font-size: 0.85rem;
+      font-weight: 650;
+      letter-spacing: -0.015em;
+      color: var(--label-primary);
+      margin: 0 0 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-group {
+      margin-bottom: 0.85rem;
+    }
+    .field-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 550;
+      letter-spacing: 0.01em;
+      color: var(--label-secondary);
+      margin-bottom: 0.3rem;
+    }
+    .field-hint {
+      font-size: 0.68rem;
+      color: var(--label-tertiary);
+      letter-spacing: -0.01em;
+    }
+
+    /* Apple-style Text Inputs */
+    .apple-input, .apple-select {
+      width: 100%;
+      height: 36px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: var(--radius-sm);
+      padding: 0 0.75rem;
+      font-size: 0.82rem;
+      color: var(--label-primary);
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s var(--spring-physics);
+      outline: none;
+      font-family: inherit;
+    }
+    .apple-input:focus, .apple-select:focus {
+      border-color: var(--apple-blue);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+    }
+
+    /* 1:1 DSH 模型目录 (Model Catalog) */
+    .dsh-catalog-box {
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-sm);
+      background: #ffffff;
+      padding: 0.35rem;
+      margin-bottom: 0.55rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .dsh-model-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: rgba(0, 0, 0, 0.015);
+      transition: all 0.18s var(--spring-physics);
+      font-size: 0.79rem;
+    }
+    .dsh-model-row:hover {
+      background: rgba(0, 0, 0, 0.035);
+    }
+    .dsh-model-row.is-active {
+      border-color: rgba(0, 113, 227, 0.3);
+      background: rgba(0, 113, 227, 0.04);
+    }
+
+    .dsh-model-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      flex: 1;
+    }
+    .active-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #d1d5db;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+    .dsh-model-row.is-active .active-dot {
+      background: var(--apple-green);
+      box-shadow: 0 0 6px rgba(52, 199, 89, 0.5);
+    }
+
+    .dsh-model-id {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-weight: 600;
+      color: var(--label-primary);
+    }
+    .dsh-badge {
+      font-size: 0.65rem;
+      padding: 0.12rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--label-secondary);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    .dsh-badge.active-badge {
+      background: var(--label-primary);
+      color: #ffffff;
+    }
+
+    /* Buttons */
+    .apple-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.42rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 550;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s var(--spring-physics);
+    }
+    .apple-btn-primary {
+      background: var(--apple-blue);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+    }
+    .apple-btn-primary:hover {
+      background: var(--apple-blue-hover);
+      box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35);
+    }
+    .apple-btn-dark {
+      background: #1d1d1f;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    .apple-btn-dark:hover {
+      background: #000000;
+    }
+    .apple-btn-secondary {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.12);
+      color: var(--label-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+    .apple-btn-secondary:hover {
+      background: #fbfbfd;
+      border-color: rgba(0, 0, 0, 0.18);
+    }
+    .apple-btn-danger-outline {
+      background: transparent;
+      border-color: rgba(255, 59, 48, 0.25);
+      color: var(--apple-red);
+    }
+    .apple-btn-danger-outline:hover {
+      background: var(--apple-red-tint);
+      border-color: rgba(255, 59, 48, 0.4);
+    }
+    .apple-btn-sm {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.72rem;
+    }
+
+    /* ==========================================================================
+       右栏：文件直调与 B 处 Trace 运行轨迹 (Apple Instruments / Xcode Style)
+       ========================================================================== */
+    .runner-composer {
+      border: 1px solid var(--inset-border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem 0.75rem;
+      background: #ffffff;
+      margin-bottom: 1.15rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+    .runner-composer-top {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.65rem;
+    }
+    .runner-file-select {
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 550;
+      color: var(--label-primary);
+      background: var(--inset-bg);
+      outline: none;
+      transition: all 0.2s var(--spring-physics);
+    }
+    .runner-file-select:focus {
+      border-color: var(--apple-blue);
+    }
+    .runner-input {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 0.83rem;
+      line-height: 1.55;
+      color: var(--label-primary);
+      resize: none;
+      font-family: inherit;
+    }
+    .runner-composer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.6rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      font-size: 0.72rem;
+      color: var(--label-tertiary);
+    }
+
+    /* 时序分解甘特图 (Apple Progress & Activity Capsule) */
+    .timeline-card {
+      border: 1px solid var(--inset-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 0.95rem;
+      background: #ffffff;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.015);
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 0.55rem;
+      color: var(--label-secondary);
+    }
+    .timeline-track {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .seg-input { background: var(--apple-blue); }
+    .seg-model { background: var(--apple-purple); }
+    .seg-tool  { background: var(--apple-orange); }
+
+    /* 遥测指标 (Apple Watch Activity Grid) */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .metric-cell {
+      border: 1px solid var(--inset-border);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem 0.7rem;
+      background: var(--inset-bg);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.015);
+    }
+    .metric-title {
+      font-size: 0.68rem;
+      color: var(--label-tertiary);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.2rem;
+    }
+    .metric-num {
+      font-size: 0.92rem;
+      font-weight: 700;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      color: var(--label-primary);
+    }
+    .metric-num.green {
+      color: var(--apple-green);
+    }
+
+    /* 审计流卡片 */
+    .audit-turn {
+      border: 1px solid var(--inset-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 0.95rem;
+      background: #ffffff;
+      margin-bottom: 0.65rem;
+      font-size: 0.79rem;
+      line-height: 1.5;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.015);
+    }
+
+    /* ==========================================================================
+       Apple Dynamic Island / HUD Capsule Toast
+       ========================================================================== */
+    .apple-hud-toast {
+      position: fixed;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-25px) scale(0.95);
+      background: rgba(29, 29, 31, 0.88);
+      backdrop-filter: blur(28px) saturate(200%);
+      color: #ffffff;
+      padding: 0.6rem 1.25rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: all 0.38s var(--spring-bounce);
+    }
+    .apple-hud-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    /* ==========================================================================
+       Apple Sheet Modal (Interruptible, Springs)
+       ========================================================================== */
+    .apple-modal-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9000;
+      transition: opacity 0.25s var(--spring-physics);
+    }
+    .apple-modal-scrim.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .apple-modal-sheet {
+      width: 440px;
+      background: #ffffff;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+      transform: scale(0.92) translateY(12px);
+      transition: transform 0.35s var(--spring-bounce), opacity 0.25s var(--spring-physics);
+    }
+    .apple-modal-scrim.show .apple-modal-sheet {
+      transform: scale(1) translateY(0);
+    }
+    .modal-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.3rem;
+    }
+    .modal-desc {
+      font-size: 0.78rem;
+      color: var(--label-secondary);
+      margin: 0 0 1.1rem;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      margin-top: 1.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- 侧边栏：Apple macOS Translucent Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-title">
+        <i data-lucide="compass"></i>
+        <span>Walker Admin</span>
+      </div>
+      <div class="brand-subtitle">一人单兵 · 过程可养</div>
+
+      <nav class="nav-group">
+        <a href="/index.html" class="nav-item">
+          <i data-lucide="layout-grid"></i>
+          <span>流水线</span>
+        </a>
+        <a href="/index.html" class="nav-item">
+          <i data-lucide="layers"></i>
+          <span>工作台</span>
+        </a>
+        <a href="/index.html" class="nav-item">
+          <i data-lucide="file-text"></i>
+          <span>文章内容</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item active">
+          <i data-lucide="bot"></i>
+          <span>Agent 工坊</span>
+        </a>
+        <a href="/index.html" class="nav-item">
+          <i data-lucide="activity"></i>
+          <span>系统指标</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主工作区 -->
+    <main class="main-content">
+      <header class="page-header">
+        <h1 class="page-title">Agent 工坊</h1>
+        <p class="page-desc">智能体模型配置、系统角色提示词与 Markdown 文件直调轨迹 (B 处可观测)。</p>
+      </header>
+
+      <!-- 顶部 Agent 角色药丸栏 (功能 3: 增减角色) -->
+      <div class="agent-capsule-bar" id="agentBar">
+        <div class="agent-pill" onclick="selectAgent('xiaoying')" id="pill_xiaoying">
+          <div class="agent-pill-icon"><i data-lucide="bot"></i></div>
+          <div class="agent-pill-meta">
+            <div class="agent-pill-name">小影 (系统内置)</div>
+            <div class="agent-pill-model" id="pillModel_xiaoying">deepseek-chat</div>
+          </div>
+        </div>
+        <div class="agent-pill active" onclick="selectAgent('artisan')" id="pill_artisan">
+          <div class="agent-pill-icon"><i data-lucide="pen-tool"></i></div>
+          <div class="agent-pill-meta">
+            <div class="agent-pill-name">文章工匠</div>
+            <div class="agent-pill-model" id="pillModel_artisan">step-3.7-flash</div>
+          </div>
+        </div>
+        <!-- 增加角色 -->
+        <div class="agent-pill agent-pill-add" onclick="openNewAgentModal()">
+          <i data-lucide="plus"></i>
+          <span>新增角色</span>
+        </div>
+      </div>
+
+      <!-- 双栏主体 -->
+      <div class="grid-container">
+        <!-- 左栏：Agent 提示词 + 照抄 DSH 的 API 配置 -->
+        <div class="apple-card">
+          <div class="card-header-row">
+            <h3 class="card-title">
+              <i data-lucide="sliders-horizontal" style="color: var(--apple-blue);"></i>
+              <span id="labelSettingTitle">角色设置 · 文章工匠</span>
+            </h3>
+            <!-- 功能 3: 删除角色 (自定义角色可见) -->
+            <button type="button" class="apple-btn apple-btn-danger-outline apple-btn-sm" id="btnDeleteAgent" onclick="deleteCurrentAgent()">
+              <i data-lucide="trash-2"></i> 删除此角色
+            </button>
+          </div>
+
+          <!-- 功能 2: 角色提示词 (系统 Persona) + 功能 4: 复制按钮 -->
+          <div class="persona-box">
+            <div class="persona-header">
+              <span class="persona-label">
+                <i data-lucide="sparkles" style="color: var(--apple-purple);"></i>
+                角色提示词 (系统 Persona)
+              </span>
+              <div class="persona-actions">
+                <span id="promptStats" class="persona-stats">0 字</span>
+                <!-- 功能 4: 复制按钮，发送给外部 AI 直接接入 -->
+                <button type="button" class="btn-copy-prompt" onclick="copyPromptToClipboard()" id="btnCopyPrompt" title="复制提示词直接发送给外部 AI (ChatGPT/Claude/DeepSeek) 接入">
+                  <i data-lucide="copy"></i>
+                  <span id="btnCopyPromptText">复制提示词</span>
+                </button>
+              </div>
+            </div>
+            <textarea class="persona-textarea" id="fieldPrompt" rows="3" placeholder="定义 Agent 的角色定位、回答准则与方法论..." oninput="updatePromptStats()"></textarea>
+          </div>
+
+          <!-- ===================================================================
+               功能 1: 1:1 照抄 DeepSeek Harness 的 API 提供方与模型目录
+               =================================================================== -->
+          <div class="dsh-provider-section">
+            <div class="dsh-provider-header">
+              <span>模型与提供方配置 (DSH 原生)</span>
+              <button type="button" class="apple-btn apple-btn-secondary apple-btn-sm" onclick="pingModel()" id="btnPing">
+                <i data-lucide="zap" style="color: var(--apple-orange);"></i> 探测接口
+              </button>
+            </div>
+
+            <!-- API 地址 (Base URL) -->
+            <div class="field-group">
+              <label class="field-label">API 地址 (Base URL)</label>
+              <input type="text" class="apple-input" id="fieldBaseUrl" placeholder="https://api.deepseek.com/v1" />
+            </div>
+
+            <!-- API 协议 & API 密钥 -->
+            <div style="display: grid; grid-template-columns: 1.1fr 1.3fr; gap: 0.65rem;">
+              <div class="field-group">
+                <label class="field-label">API 协议</label>
+                <select class="apple-select" id="fieldApiProtocol">
+                  <option value="openai-completions">openai-completions</option>
+                  <option value="deepseek-native">deepseek-native</option>
+                  <option value="anthropic-messages">anthropic-messages</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">API 密钥</label>
+                <input type="password" class="apple-input" id="fieldApiKey" value="sk-mock-key-secret-123456" />
+              </div>
+            </div>
+
+            <!-- 模型目录 (1:1 DSH Model Catalog) -->
+            <div class="field-group" style="margin-bottom: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label class="field-label" style="margin: 0;">模型目录</label>
+                <span class="field-hint">点击设为当前调用模型</span>
+              </div>
+              <div class="dsh-catalog-box" id="modelCatalogBox"></div>
+
+              <!-- + 添加模型 (1:1 DSH 按钮) -->
+              <button type="button" class="apple-btn apple-btn-secondary" onclick="openAddModelModal()" style="width: 100%; height: 32px; font-size: 0.76rem;">
+                <i data-lucide="plus"></i> 添加模型
+              </button>
+            </div>
+
+            <!-- 保存配置按钮 -->
+            <div style="margin-top: 0.9rem;">
+              <button type="button" class="apple-btn apple-btn-dark" onclick="saveSettings()" style="width: 100%; height: 38px;">
+                <i data-lucide="check"></i> 保存模型配置
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右栏：本地 Markdown 文件直调与运行轨迹 (B 处 · 可观测性) -->
+        <div class="apple-card">
+          <div class="card-header-row">
+            <h3 class="card-title">
+              <i data-lucide="activity" style="color: var(--apple-green);"></i>
+              <span>运行轨迹与结果 (Trace · B 处可观测)</span>
+            </h3>
+            <button type="button" class="apple-btn apple-btn-secondary apple-btn-sm" onclick="toggleJsonl()" title="查看底层 append-only JSONL">
+              <i data-lucide="file-code"></i> trace.jsonl
+            </button>
+          </div>
+
+          <!-- DSH 极简悬浮式执行条 -->
+          <div class="runner-composer">
+            <div class="runner-composer-top">
+              <select class="runner-file-select" id="fieldTargetFile">
+                <option value="content/log/2026-09-08-agent-workbench.md">📁 2026-09-08-agent-workbench.md</option>
+                <option value="content/log/2026-09-03-one-person-sustainable.md">📁 2026-09-03-one-person-sustainable.md</option>
+              </select>
+              <span style="font-size: 0.73rem; color: var(--label-tertiary);">当前角色：<strong id="txtRunnerRole" style="color: var(--label-primary);">文章工匠</strong></span>
+            </div>
+            <textarea class="runner-input" id="fieldInstruction" rows="2" placeholder="输入针对选中文档的具体任务指令...">请通读这篇文章，挑出 3 个最有洞察力的金句并指出一处论述漏洞。</textarea>
+            <div class="runner-composer-bottom">
+              <span>只读沙盒 · 进程随叫随起 · 跑完即焚</span>
+              <button type="button" class="apple-btn apple-btn-primary apple-btn-sm" onclick="runAgentOnFile()" id="btnRun">
+                <i data-lucide="play"></i> 立即执行
+              </button>
+            </div>
+          </div>
+
+          <!-- 时序流甘特图 (Apple Progress Capsule) -->
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <span><strong>时序分解</strong> · 总耗时 1,420ms</span>
+              <div style="display: flex; gap: 0.75rem; font-size: 0.71rem;">
+                <span><span style="color: var(--apple-blue);">■</span> 输入 120ms</span>
+                <span><span style="color: var(--apple-purple);">■</span> 模型推理 1,120ms</span>
+                <span><span style="color: var(--apple-orange);">■</span> 工具 180ms</span>
+              </div>
+            </div>
+            <div class="timeline-track">
+              <div class="seg-input" style="width: 8%;" title="输入装载 (120ms)"></div>
+              <div class="seg-model" style="width: 48%;" title="思考链推理 (620ms)"></div>
+              <div class="seg-tool" style="width: 14%;" title="tool-fs 文件抓取 (180ms)"></div>
+              <div class="seg-model" style="width: 20%;" title="文本生成 (340ms)"></div>
+              <div class="seg-tool" style="width: 10%;" title="tool-editor 校验 (160ms)"></div>
+            </div>
+          </div>
+
+          <!-- 遥测指标 (Apple Activity Grid) -->
+          <div class="metrics-grid">
+            <div class="metric-cell">
+              <div class="metric-title">LLM 推理耗时</div>
+              <div class="metric-num">1,120 ms</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-title">工具调用耗时</div>
+              <div class="metric-num">180 ms</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-title">吐字速率</div>
+              <div class="metric-num">62 tok/s</div>
+            </div>
+            <div class="metric-cell">
+              <div class="metric-title">Prompt 缓存命中</div>
+              <div class="metric-num green">87.5%</div>
+            </div>
+          </div>
+
+          <!-- 逐轮审计卡片 -->
+          <div class="audit-turn">
+            <div style="display: flex; justify-content: space-between; font-size: 0.71rem; color: var(--label-secondary); margin-bottom: 0.3rem;">
+              <span><strong style="color: var(--apple-orange);">tool-fs</strong> 读取本地 Markdown 文件</span>
+              <span>耗时 32ms · 成功</span>
+            </div>
+            <div style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.74rem; background: var(--inset-bg); padding: 0.4rem 0.6rem; border-radius: 6px; color: var(--label-secondary); border: 1px solid var(--inset-border);">
+              tool-fs { path: "content/log/2026-09-08-agent-workbench.md" } ➔ 返回 3,240 字符
+            </div>
+          </div>
+
+          <div class="audit-turn">
+            <div style="display: flex; justify-content: space-between; font-size: 0.71rem; color: var(--label-secondary); margin-bottom: 0.3rem;">
+              <span><strong style="color: var(--apple-purple);">DeepSeek-R1</strong> 助手思考与产出</span>
+              <span>耗时 620ms</span>
+            </div>
+            <div style="font-size: 0.79rem; line-height: 1.55; color: var(--label-primary);">
+              <strong>提炼金句：</strong><br>
+              1. 「以 Agent 为第一等公民，配置自然下沉为随身工具。」<br>
+              2. 「一人可养的系统，守住 2C2G 底线，进程随叫随起、跑完即焚。」<br>
+              3. 「Markdown 文本是唯一真相源，不进数据库倒腾。」
+            </div>
+          </div>
+
+          <!-- JSONL 原生文本查看器 -->
+          <div id="jsonlBox" style="display: none; background: #1d1d1f; color: #f5f5f7; font-family: ui-monospace, 'SF Mono', monospace; font-size: 0.72rem; padding: 0.75rem; border-radius: var(--radius-sm); margin-top: 0.65rem; max-height: 140px; overflow-y: auto; white-space: pre-wrap; line-height: 1.45;">
+{"timestamp":"2026-09-08T23:20:01.120Z","event":"run_start","runId":"run_dsh_88912","agent":"xiaoying","file":"2026-09-08-agent-workbench.md"}
+{"timestamp":"2026-09-08T23:20:01.240Z","event":"tool_call","tool":"tool-fs","params":{"path":"content/log/2026-09-08-agent-workbench.md"},"durationMs":32}
+{"timestamp":"2026-09-08T23:20:01.860Z","event":"model_chunk","tokens":340,"promptTokens":1850,"cachedTokens":1620,"cacheHitRate":0.875}
+{"timestamp":"2026-09-08T23:20:02.540Z","event":"run_finish","status":"success","totalMs":1420,"costTokens":2190}
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==========================================================================
+       Apple Dynamic Island / HUD Capsule Toast
+       ========================================================================== -->
+  <div class="apple-hud-toast" id="appleToast">
+    <i data-lucide="check-circle-2" style="color: #4ade80;"></i>
+    <span id="appleToastText">已复制提示词！</span>
+  </div>
+
+  <!-- ==========================================================================
+       Apple Sheet Modal: 新增角色 (功能 3)
+       ========================================================================== -->
+  <div class="apple-modal-scrim" id="modalNewAgent">
+    <div class="apple-modal-sheet">
+      <h3 class="modal-title">创建新 Agent 角色</h3>
+      <p class="modal-desc">为 Walker 工作流添加专属智能体，可独立设定 Persona 与模型端点。</p>
+      <div class="field-group">
+        <label class="field-label">角色名称</label>
+        <input type="text" class="apple-input" id="inputNewAgentName" placeholder="例如：小红书文案精修、架构评审官" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">默认调用模型</label>
+        <input type="text" class="apple-input" id="inputNewAgentModel" value="deepseek-chat" placeholder="如 deepseek-chat, step-3.7-flash" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="apple-btn apple-btn-secondary" onclick="closeNewAgentModal()">取消</button>
+        <button type="button" class="apple-btn apple-btn-primary" onclick="confirmNewAgent()">创建并切换</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Apple Sheet Modal: 添加模型 (功能 1)
+       ========================================================================== -->
+  <div class="apple-modal-scrim" id="modalAddModel">
+    <div class="apple-modal-sheet">
+      <h3 class="modal-title">添加模型到目录</h3>
+      <p class="modal-desc">注册提供方支持的模型 ID 与上下文能力标签。</p>
+      <div class="field-group">
+        <label class="field-label">模型 ID (Model ID)</label>
+        <input type="text" class="apple-input" id="inputNewModelId" placeholder="例如：deepseek-reasoner, gpt-4o, claude-3-7-sonnet" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">特性标签 (逗号分隔)</label>
+        <input type="text" class="apple-input" id="inputNewModelTags" value="通用, 128K" placeholder="如 思考, 256K, 视觉" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="apple-btn apple-btn-secondary" onclick="closeAddModelModal()">取消</button>
+        <button type="button" class="apple-btn apple-btn-primary" onclick="confirmAddModel()">确认添加</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================================================
+    // 数据仓库 (Agent Store)
+    // ==========================================================================
+    const AGENTS_STORE = {
+      xiaoying: {
+        id: 'xiaoying',
+        name: '小影 (系统内置)',
+        isSystem: true,
+        icon: 'bot',
+        prompt: '你是小影，个人站 Walker 的专属管家与站内助手。以第三人称介绍 duola 与这个站，回答基于 content/log 真实文章，不捏造事实。引用必须包含真实文章 slug。',
+        baseUrl: 'https://api.deepseek.com/v1',
+        apiProtocol: 'deepseek-native',
+        apiKey: 'sk-dsh-production-mock-key-xiaoying',
+        activeModel: 'deepseek-chat',
+        models: [
+          { id: 'deepseek-chat', tags: ['通用', '128K'] },
+          { id: 'deepseek-reasoner', tags: ['思考', 'R1推理'] }
+        ]
+      },
+      artisan: {
+        id: 'artisan',
+        name: '文章工匠',
+        isSystem: false,
+        icon: 'pen-tool',
+        prompt: '你是文章工匠，专门协助站主精修 Markdown 长文，专注于逻辑挑刺、金句提炼与行文结构重构。遇到论述漏洞请直截了当指出，并给出代码块式修改补丁。',
+        baseUrl: 'https://api.stepfun.com/step_plan',
+        apiProtocol: 'anthropic-messages',
+        apiKey: 'sk-step-mock-key-artisan',
+        activeModel: 'step-3.7-flash',
+        models: [
+          { id: 'step-3.7-flash', tags: ['长文本', '256K'] }
+        ]
+      }
+    };
+
+    let currentAgentId = 'artisan';
+
+    // ==========================================================================
+    // 角色切换
+    // ==========================================================================
+    function selectAgent(id) {
+      currentAgentId = id;
+      document.querySelectorAll('.agent-pill').forEach(el => el.classList.remove('active'));
+      const activePill = document.getElementById(`pill_${id}`);
+      if (activePill) activePill.classList.add('active');
+
+      const data = AGENTS_STORE[id];
+      if (!data) return;
+
+      document.getElementById('labelSettingTitle').textContent = `角色设置 · ${data.name}`;
+      document.getElementById('txtRunnerRole').textContent = data.name;
+      document.getElementById('fieldPrompt').value = data.prompt;
+      document.getElementById('fieldBaseUrl').value = data.baseUrl;
+      document.getElementById('fieldApiProtocol').value = data.apiProtocol;
+      document.getElementById('fieldApiKey').value = data.apiKey;
+
+      // 系统角色保护不可删
+      const btnDel = document.getElementById('btnDeleteAgent');
+      if (data.isSystem) {
+        btnDel.style.display = 'none';
+      } else {
+        btnDel.style.display = 'inline-flex';
+      }
+
+      updatePromptStats();
+      renderCatalog(data.models, data.activeModel);
+      refreshIcons();
+    }
+
+    // ==========================================================================
+    // 功能 4: 复制提示词 (Apple 触感反馈 + Dynamic Island HUD 胶囊)
+    // ==========================================================================
+    function copyPromptToClipboard() {
+      const text = document.getElementById('fieldPrompt').value;
+      if (!text || !text.trim()) {
+        showAppleToast('提示词为空，无可复制内容');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btnCopyPrompt');
+        const textSpan = document.getElementById('btnCopyPromptText');
+        btn.classList.add('copied');
+        textSpan.textContent = '已复制！';
+        refreshIcons();
+
+        showAppleToast(`已复制【${AGENTS_STORE[currentAgentId].name}】系统提示词，可直接粘贴给外部 AI 接入！`);
+
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          textSpan.textContent = '复制提示词';
+          refreshIcons();
+        }, 2200);
+      }).catch(() => {
+        showAppleToast('剪贴板写入失败，请检查浏览器权限');
+      });
+    }
+
+    function updatePromptStats() {
+      const val = document.getElementById('fieldPrompt').value || '';
+      document.getElementById('promptStats').textContent = `${val.length} 字`;
+    }
+
+    // ==========================================================================
+    // 功能 1: 1:1 DSH 模型目录渲染
+    // ==========================================================================
+    function renderCatalog(models, activeModel) {
+      const box = document.getElementById('modelCatalogBox');
+      box.innerHTML = '';
+      models.forEach((m, idx) => {
+        const isActive = (m.id === activeModel);
+        const row = document.createElement('div');
+        row.className = `dsh-model-row ${isActive ? 'is-active' : ''}`;
+        row.innerHTML = `
+          <div class="dsh-model-left" onclick="setActiveModel('${m.id}')" title="点击设为默认调用模型">
+            <span class="active-dot"></span>
+            <span class="dsh-model-id">${m.id}</span>
+            ${isActive ? '<span class="dsh-badge active-badge">当前启用</span>' : ''}
+            ${m.tags.map(t => `<span class="dsh-badge">${t}</span>`).join('')}
+          </div>
+          <button type="button" class="apple-btn apple-btn-secondary apple-btn-sm" onclick="removeModel(${idx})" title="删除此模型" style="border: none; padding: 3px 5px; background: transparent;">
+            <i data-lucide="trash-2" style="color: var(--label-tertiary); width: 13px; height: 13px;"></i>
+          </button>
+        `;
+        box.appendChild(row);
+      });
+      refreshIcons();
+    }
+
+    function setActiveModel(modelId) {
+      AGENTS_STORE[currentAgentId].activeModel = modelId;
+      const pillModel = document.getElementById(`pillModel_${currentAgentId}`);
+      if (pillModel) pillModel.textContent = modelId;
+      renderCatalog(AGENTS_STORE[currentAgentId].models, modelId);
+      showAppleToast(`已将【${modelId}】设为当前调用模型`);
+    }
+
+    function openAddModelModal() {
+      document.getElementById('inputNewModelId').value = '';
+      document.getElementById('modalAddModel').classList.add('show');
+    }
+    function closeAddModelModal() {
+      document.getElementById('modalAddModel').classList.remove('show');
+    }
+    function confirmAddModel() {
+      const id = document.getElementById('inputNewModelId').value.trim();
+      if (!id) {
+        showAppleToast('请输入有效的模型 ID');
+        return;
+      }
+      const tags = document.getElementById('inputNewModelTags').value.split(',').map(s => s.trim()).filter(Boolean);
+      AGENTS_STORE[currentAgentId].models.push({ id, tags: tags.length ? tags : ['通用'] });
+      closeAddModelModal();
+      renderCatalog(AGENTS_STORE[currentAgentId].models, AGENTS_STORE[currentAgentId].activeModel);
+      showAppleToast(`已添加模型【${id}】到目录`);
+    }
+
+    function removeModel(idx) {
+      if (AGENTS_STORE[currentAgentId].models.length <= 1) {
+        showAppleToast('至少需要保留一个可用模型');
+        return;
+      }
+      const removed = AGENTS_STORE[currentAgentId].models.splice(idx, 1)[0];
+      if (AGENTS_STORE[currentAgentId].activeModel === removed.id) {
+        AGENTS_STORE[currentAgentId].activeModel = AGENTS_STORE[currentAgentId].models[0].id;
+      }
+      renderCatalog(AGENTS_STORE[currentAgentId].models, AGENTS_STORE[currentAgentId].activeModel);
+      showAppleToast(`已从目录移除【${removed.id}】`);
+    }
+
+    // ==========================================================================
+    // 功能 3: 增减角色 (Apple Sheet Modal)
+    // ==========================================================================
+    function openNewAgentModal() {
+      document.getElementById('inputNewAgentName').value = '';
+      document.getElementById('modalNewAgent').classList.add('show');
+    }
+    function closeNewAgentModal() {
+      document.getElementById('modalNewAgent').classList.remove('show');
+    }
+    function confirmNewAgent() {
+      const name = document.getElementById('inputNewAgentName').value.trim();
+      if (!name) {
+        showAppleToast('角色名称不能为空');
+        return;
+      }
+      const model = document.getElementById('inputNewAgentModel').value.trim() || 'deepseek-chat';
+      const id = 'custom_' + Date.now();
+      AGENTS_STORE[id] = {
+        id,
+        name,
+        isSystem: false,
+        icon: 'sparkles',
+        prompt: `你是${name}，专门负责站主的专属创作与评审任务。`,
+        baseUrl: 'https://api.deepseek.com/v1',
+        apiProtocol: 'deepseek-native',
+        apiKey: 'sk-user-custom-key',
+        activeModel: model,
+        models: [{ id: model, tags: ['通用'] }]
+      };
+
+      const bar = document.getElementById('agentBar');
+      const addBtn = bar.querySelector('.agent-pill-add');
+      const newPill = document.createElement('div');
+      newPill.className = 'agent-pill';
+      newPill.id = `pill_${id}`;
+      newPill.onclick = () => selectAgent(id);
+      newPill.innerHTML = `
+        <div class="agent-pill-icon"><i data-lucide="sparkles"></i></div>
+        <div class="agent-pill-meta">
+          <div class="agent-pill-name">${name}</div>
+          <div class="agent-pill-model" id="pillModel_${id}">${model}</div>
+        </div>
+      `;
+      bar.insertBefore(newPill, addBtn);
+      closeNewAgentModal();
+      selectAgent(id);
+      showAppleToast(`已成功创建角色【${name}】`);
+    }
+
+    function deleteCurrentAgent() {
+      const a = AGENTS_STORE[currentAgentId];
+      if (!a || a.isSystem) {
+        showAppleToast('系统内置角色受保护，不可删除');
+        return;
+      }
+      if (!confirm(`确定删除角色【${a.name}】吗？`)) return;
+
+      delete AGENTS_STORE[currentAgentId];
+      const pill = document.getElementById(`pill_${currentAgentId}`);
+      if (pill) pill.remove();
+      selectAgent('xiaoying');
+      showAppleToast(`已删除角色【${a.name}】`);
+    }
+
+    // ==========================================================================
+    // 保存设置与接口探测
+    // ==========================================================================
+    function pingModel() {
+      const btn = document.getElementById('btnPing');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="loader-2" style="animation: spin 1s linear infinite;"></i> 探测中...`;
+      refreshIcons();
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="check" style="color: var(--apple-green);"></i> 200 OK (82ms)`;
+        showAppleToast('模型接口探测连通正常 (HTTP 200 OK)');
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          refreshIcons();
+        }, 2000);
+      }, 500);
+    }
+
+    function saveSettings() {
+      const a = AGENTS_STORE[currentAgentId];
+      a.prompt = document.getElementById('fieldPrompt').value;
+      a.baseUrl = document.getElementById('fieldBaseUrl').value;
+      a.apiProtocol = document.getElementById('fieldApiProtocol').value;
+      a.apiKey = document.getElementById('fieldApiKey').value;
+      showAppleToast(`已保存智能体【${a.name}】配置（AES-256-GCM 强加密）`);
+    }
+
+    function toggleJsonl() {
+      const box = document.getElementById('jsonlBox');
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function runAgentOnFile() {
+      const btn = document.getElementById('btnRun');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" style="animation: spin 1s linear infinite;"></i> 运行中...`;
+      refreshIcons();
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="play"></i> 立即执行`;
+        refreshIcons();
+        showAppleToast('执行完成，可在下方查阅时序甘特图与工具审计');
+      }, 700);
+    }
+
+    // ==========================================================================
+    // Apple Dynamic Island HUD Toast
+    // ==========================================================================
+    let toastTimeout = null;
+    function showAppleToast(msg) {
+      const toast = document.getElementById('appleToast');
+      document.getElementById('appleToastText').textContent = msg;
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2600);
+    }
+
+    function refreshIcons() {
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+      }
+    }
+
+    // 初始化
+    selectAgent('artisan');
+    window.addEventListener('DOMContentLoaded', refreshIcons);
+  </script>
+</body>
+</html>

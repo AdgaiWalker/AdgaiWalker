@@ -17,6 +17,15 @@ export interface AssistantRunInput {
   elapsedMs: number;
   traceId?: string | null;
   source: string;
+  /** 观测 P1：token 用量（缺失记 0，不记 null） */
+  tokensIn?: number;
+  tokensOut?: number;
+  cacheReadTokens?: number;
+  /** 观测 P1：拿锁 → 首字 / 排队等待（规则路径可为空） */
+  firstChunkMs?: number | null;
+  queueWaitMs?: number | null;
+  /** 观测 P1：降级原因（kebab 词表；正常 AI 回答为 null） */
+  degradeReason?: string | null;
 }
 
 export interface AssistantRunRecord {
@@ -38,8 +47,22 @@ export interface AssistantRepositoryPort {
   saveRun(input: AssistantRunInput): Promise<void>;
   /** 问题池：倒序最近记录（管理侧筛选用，AI 不参与） */
   listRuns(limit: number): Promise<AssistantRunRecord[]>;
-  /** 当日 AI 请求数 +1 并返回累计值（预算熔断用；存储失败由调用方处理） */
-  bumpRequests(date: string): Promise<number>;
+  /**
+   * 当日 AI 请求数 +1（可同时累加 token）并返回累计请求数。
+   * 预算熔断用；存储失败由调用方处理。
+   */
+  bumpRequests(
+    date: string,
+    usage?: { tokensIn: number; tokensOut: number },
+  ): Promise<number>;
+  /**
+   * 只累加 token，不加请求数。
+   * 请求数在 preflight 已计入，回答结束后再记 token 时不能二次计数请求。
+   */
+  addTokens(
+    date: string,
+    usage: { tokensIn: number; tokensOut: number },
+  ): Promise<void>;
 }
 
 export const ASSISTANT_REPOSITORY = Symbol('ASSISTANT_REPOSITORY');

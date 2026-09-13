@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { dualEntry } from './dual-entry';
 import { searchContentItems } from './search-content';
+
+const browse = (slug: string) => `${dualEntry.browse.path}/${slug}`;
 
 const items = [
   {
@@ -30,21 +33,21 @@ describe('searchContentItems', () => {
 
   it('按标题匹配（大小写不敏感）', () => {
     const hits = searchContentItems(items, 'ai 周报');
-    expect(hits).toEqual([{ url: '/posts/a', title: 'AI 周报写法' }]);
+    expect(hits).toEqual([{ url: browse('a'), title: 'AI 周报写法' }]);
   });
 
   it('按摘要匹配', () => {
     const hits = searchContentItems(items, '半小时');
-    expect(hits.some((h) => h.url === '/posts/a')).toBe(true);
+    expect(hits.some((h) => h.url === browse('a'))).toBe(true);
     expect(hits[0]?.title).toBe('AI 周报写法');
   });
 
   it('默认 scope 不扫正文；full 才按正文匹配', () => {
-    expect(searchContentItems(items, 'AI 工具').some((h) => h.url === '/posts/c')).toBe(
+    expect(searchContentItems(items, 'AI 工具').some((h) => h.url === browse('c'))).toBe(
       false,
     );
     expect(
-      searchContentItems(items, 'AI 工具', 12, 'full').some((h) => h.url === '/posts/c'),
+      searchContentItems(items, 'AI 工具', 12, 'full').some((h) => h.url === browse('c')),
     ).toBe(true);
   });
 

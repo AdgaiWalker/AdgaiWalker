@@ -18,4 +18,63 @@ describe('admin workstation transport', () => {
     expect(init?.body).toBeInstanceOf(FormData);
     expect(new Headers(init?.headers).has('Content-Type')).toBe(false);
   });
+
+  it('calls modelProviders list and ping correctly', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify([{ id: 'deepseek', name: 'DeepSeek' }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    await adminApi.modelProviders.list();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/model-providers',
+      expect.objectContaining({ credentials: 'include' }),
+    );
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, latencyMs: 112 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    await adminApi.modelProviders.ping('deepseek');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/model-providers/deepseek/ping',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('calls agents list and runFile correctly', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify([{ id: 'xiaoying', name: '小影' }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    await adminApi.agents.list();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/agents',
+      expect.objectContaining({ credentials: 'include' }),
+    );
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ runId: 'run_123', status: 'SUCCESS' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    await adminApi.agents.runFile('xiaoying', {
+      targetFile: 'content/log/test.md',
+      instruction: '分析文件',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/agents/xiaoying/run-file',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ targetFile: 'content/log/test.md', instruction: '分析文件' }),
+      }),
+    );
+  });
 });
+

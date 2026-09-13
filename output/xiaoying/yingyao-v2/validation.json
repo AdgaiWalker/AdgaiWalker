@@ -1,0 +1,91 @@
+{
+  "body_vertices": 10114,
+  "body_faces": 10240,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "bones": 7,
+  "actions": 7,
+  "samples": [
+    {
+      "frame": 1,
+      "blink": 0.0,
+      "cradle": 0.0,
+      "spread": 0.0,
+      "z_min": 0.02500157617032528,
+      "finite": true
+    },
+    {
+      "frame": 67,
+      "blink": 1.0,
+      "cradle": 0.0,
+      "spread": 0.0,
+      "z_min": 0.02500157617032528,
+      "finite": true
+    },
+    {
+      "frame": 132,
+      "blink": 0.0,
+      "cradle": 0.0,
+      "spread": 0.0,
+      "z_min": 0.00020408257842063904,
+      "finite": true
+    },
+    {
+      "frame": 239,
+      "blink": 0.0,
+      "cradle": 0.0,
+      "spread": 0.0,
+      "z_min": 0.022903895005583763,
+      "finite": true
+    },
+    {
+      "frame": 348,
+      "blink": 0.0,
+      "cradle": 0.20000000298023224,
+      "spread": 0.9200000166893005,
+      "z_min": 0.02500157617032528,
+      "finite": true
+    },
+    {
+      "frame": 451,
+      "blink": 0.0,
+      "cradle": 0.7200000286102295,
+      "spread": 0.0,
+      "z_min": 0.02500157617032528,
+      "finite": true
+    },
+    {
+      "frame": 550,
+      "blink": 0.0,
+      "cradle": 0.0,
+      "spread": 0.550000011920929,
+      "z_min": 0.02500157617032528,
+      "finite": true
+    },
+    {
+      "frame": 650,
+      "blink": 0.0,
+      "cradle": 0.0,
+      "spread": 0.2797359526157379,
+      "z_min": 0.16128310561180115,
+      "finite": true
+    },
+    {
+      "frame": 696,
+      "blink": 0.0,
+      "cradle": 0.0,
+      "spread": 5.2491593706793705e-33,
+      "z_min": 0.02500157617032528,
+      "finite": true
+    }
+  ],
+  "loop_endpoint_errors": {
+    "待机": 1.4997597939553927e-33,
+    "好奇": 1.0798270369542033e-32,
+    "倾听": 3.7493993930529855e-33,
+    "展开选项": 3.7493993930529855e-33,
+    "执行": 1.1998077984301157e-33,
+    "转译": 0.0,
+    "完成反馈": 5.2491593706793705e-33
+  }
+}

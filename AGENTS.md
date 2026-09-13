@@ -21,7 +21,7 @@
 
 - 访客：`www.iwalk.pro`（Vercel 静态，push main 自动发）→ `/api/*` 反代 → `api.iwalk.pro`（盒子上 Caddy + Let's Encrypt）→ Nest `127.0.0.1:8788` → SQLite / DeepSeek Harness。
 - **公网白名单双侧同步**：放行新公开路由必须同时改 `apps/api/src/app.module.ts`（exclude 表）和 `ops/windows/Caddyfile`，漏一侧即 401/404。管理路由另有 `WALKER_ADMIN_TOKEN` + Caddy basic auth 双防线。
-- **管理凭据体系**：Basic 密码必须等于 `WALKER_ADMIN_TOKEN`（Nest 中间件校验）。改密码 = 同步改服务器 `apps/api/.env` 的 `WALKER_ADMIN_TOKEN` + `C:\Walker\data\admin-basic-auth.txt`（格式 `user:password`，明文仅存 data 目录）→ 重启 WalkerApi 和 WalkerGateway。脚本调管理接口带 `x-admin-token` 头。凭据管理后台（`/credentials` 页）用 AES-256-GCM 落库，主密钥 `WALKER_CREDENTIAL_MASTER_KEY` 只存服务器 `.env`，**密钥数据永不进 Git**。
+- **管理凭据体系**：Basic 密码必须等于 `WALKER_ADMIN_TOKEN`（Nest 中间件校验）。改密码 = 同步改服务器 `apps/api/.env` 的 `WALKER_ADMIN_TOKEN` + `C:\Walker\data\admin-basic-auth.txt`（格式 `user:password`，明文仅存 data 目录）→ 重启 WalkerApi 和 WalkerGateway。脚本调管理接口带 `x-admin-token` 头。模型提供方与智能体工坊（`/agents` 页）API 密钥用 AES-256-GCM 落库，主密钥 `WALKER_CREDENTIAL_MASTER_KEY` 只存服务器 `.env`，**密钥数据永不进 Git**。
 - 盒子（腾讯云轻量，Windows Server 2C2G，新加坡）运行目录 `C:\Walker`：`app`（Git 工作树）/ `data`（持久数据，**不得覆盖**）/ `bin`（node/pnpm/git/caddy/dsh）/ `logs`。
 
 ## 盒子部署与运维坑（实测教训）

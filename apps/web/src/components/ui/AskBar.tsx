@@ -7,14 +7,16 @@ import { Search } from 'lucide-react';
 export function AskBar({
   onOpen,
   open = false,
+  isHome = false,
 }: {
   onOpen: (trigger?: HTMLElement) => void;
   open?: boolean;
+  isHome?: boolean;
 }) {
   return (
     <button
       type="button"
-      className="askbar-fab"
+      className={`askbar-fab${isHome ? ' is-home' : ''}`}
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-label="搜索或问小影"

@@ -1,0 +1,95 @@
+{
+  "body_vertices": 8066,
+  "body_faces": 8192,
+  "nonmanifold_edges": 0,
+  "boundary_edges": 0,
+  "state_samples": [
+    {
+      "state": "Idle",
+      "frame": 31,
+      "minimum_body_z": 0.004002339206635952,
+      "above_ground": true
+    },
+    {
+      "state": "Hello",
+      "frame": 167,
+      "minimum_body_z": 0.004002339206635952,
+      "above_ground": true
+    },
+    {
+      "state": "Listen",
+      "frame": 271,
+      "minimum_body_z": 0.005198572762310505,
+      "above_ground": true
+    },
+    {
+      "state": "Receive",
+      "frame": 450,
+      "minimum_body_z": 0.004002339206635952,
+      "above_ground": true
+    },
+    {
+      "state": "Think",
+      "frame": 568,
+      "minimum_body_z": 0.004002339206635952,
+      "above_ground": true
+    },
+    {
+      "state": "Express",
+      "frame": 735,
+      "minimum_body_z": 0.004002339206635952,
+      "above_ground": true
+    },
+    {
+      "state": "Joy",
+      "frame": 839,
+      "minimum_body_z": 0.2840023636817932,
+      "above_ground": true
+    },
+    {
+      "state": "Sleep",
+      "frame": 1006,
+      "minimum_body_z": 0.005761666223406792,
+      "above_ground": true
+    }
+  ],
+  "timeline_samples": 122,
+  "minimum_z": 0.004002339206635952,
+  "minimum_frame": 1,
+  "ground_pass": true,
+  "visible_laid_fibers": 75621,
+  "object_count": 33,
+  "invalid_drivers": [],
+  "reopened_asset": {
+    "scenes": [
+      "XY3 • 小影 / 影鳐工作室"
+    ],
+    "objects": 33,
+    "actions": 8,
+    "rest_attribute_present": true
+  },
+  "loop_actions": [
+    {
+      "action": "XY3 / 01_Idle / 待机 · 安静陪伴",
+      "max_endpoint_delta": 0.0,
+      "pass": true
+    },
+    {
+      "action": "XY3 / 03_Listen / 倾听 · 侧身专注",
+      "max_endpoint_delta": 0.0,
+      "pass": true
+    },
+    {
+      "action": "XY3 / 05_Think / 思考 · 轻摆回望",
+      "max_endpoint_delta": 0.0,
+      "pass": true
+    },
+    {
+      "action": "XY3 / 08_Sleep / 休息 · 收光慢呼吸",
+      "max_endpoint_delta": 0.0,
+      "pass": true
+    }
+  ],
+  "reference_packed": true,
+  "runtime_frame_handlers": 0
+}

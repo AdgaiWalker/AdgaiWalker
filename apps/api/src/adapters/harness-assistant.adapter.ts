@@ -19,6 +19,7 @@ import {
   extractStreamedAnswer,
   parseAssistantOutput,
   type AssistantRunResult,
+  type DegradeReason,
 } from '@walker/shared';
 import type { AppConfigPort } from '../config/config.port';
 import type {
@@ -131,14 +132,15 @@ export function buildFirstTurnPrompt(
       `- slug: ${e.slug}｜标题: ${e.title}${e.tags.length ? `｜标签: ${e.tags.join(' ')}` : ''}\n${e.body}`,
   );
   return [
-    '你是小影，个人站 Walker（iwalk.pro）站主 duola 的管家，替他接待访客。',
+    '你是小影，个人站 Walker（iwalk.pro）站主 Dora 的管家，替她接待访客。',
     '表达规则：',
-    '1. 以第三人称介绍 duola 与这个站（「duola 他…」「这个站…」）；仅当引用他文章原话时，才用引号加第一人称引述。',
+    '1. 以第三人称介绍 Dora 与这个站（「Dora 她…」「这个站…」）；仅当引用她文章原话时，才用引号加第一人称引述。',
     '2. 只依据下方「站点资料」回答；资料里没有的就直接承认不知道，不要编造。',
     '3. 回答口语化、具体，控制在 300 字以内。',
     '4. 如果访客的问题是「想做成某事但卡住了」这类行动问题，简短回应后引导去 /tools 用卡口拿下一步。',
     '5. 每次只输出一个 JSON 对象，不要输出任何其他内容：{"answer":"...","citations":["slug",...]}',
     '6. citations 只能从资料列出的 slug 中选，最多 3 个，没有相关就给空数组。',
+    '7. answer 里只用中文或文章标题称呼内容，禁止出现 slug、路径或内部代号（例如 cc-intro、codex-intro）；slug 只允许出现在 citations 数组。',
     '站点资料（只有这些可引用）：',
     ...pack,
     `访客问题：${question}`,
@@ -184,17 +186,17 @@ export class HarnessAssistantAdapter
     input: AssistantAskInput,
     onText?: (delta: string) => void,
   ): Promise<AssistantRunResult> {
-    if (!this.config.isAiEnabled()) return this.fallback.ask(input);
+    if (!this.config.isAiEnabled()) return this.fallbackWith(input, 'ai-disabled');
     if (!this.factory) this.factory = buildDefaultRuntimeFactory();
-    if (!this.factory) return this.fallback.ask(input);
+    if (!this.factory) return this.fallbackWith(input, 'runtime-error');
 
     // 队列容量：单飞锁下等待者过多时不再排队，直接规则兜底
     if (this.waiters >= ASSISTANT_MAX_QUEUE_WAITERS) {
-      return this.fallback.ask(input);
+      return this.fallbackWith(input, 'queue-full');
     }
 
     // deadline 从入队起算：排队时间同样消耗访客的同步等待预算
-    const started = Date.now();
+    const enqueuedAt = Date.now();
     this.waiters += 1;
     const prev = this.lock;
     let release!: () => void;
@@ -203,12 +205,23 @@ export class HarnessAssistantAdapter
     });
     await prev.catch(() => {});
     this.waiters -= 1;
+    const lockedAt = Date.now();
 
-    const remainingMs = this.timeoutMs - (Date.now() - started);
-    if (remainingMs <= 0 || input.signal?.aborted) {
+    const remainingMs = this.timeoutMs - (lockedAt - enqueuedAt);
+    if (remainingMs <= 0) {
       release();
-      return this.fallback.ask(input);
+      return this.fallbackWith(input, 'queue-deadline');
     }
+    if (input.signal?.aborted) {
+      release();
+      return this.fallbackWith(input, 'client-abort');
+    }
+
+    // 观测 P1：token 求和（step/end）与首字延迟（相对拿锁时刻，不含排队）
+    let tokensIn = 0;
+    let tokensOut = 0;
+    let cacheReadTokens = 0;
+    let firstChunkMs: number | undefined;
 
     try {
       if (!this.runtime) this.runtime = this.factory();
@@ -224,36 +237,56 @@ export class HarnessAssistantAdapter
         : buildFirstTurnPrompt(entries, input.text);
 
       // 流式展示合同：text-delta 只在裁剪出「answer 字段已闭合文本」的新增部分时外发，
-      // 原始模型 JSON（含 citations、语法噪声）绝不直接出网关；终值仍走完整校验
+      // 原始模型 JSON（含 citations、语法噪声）绝不直接出网关；终值仍走完整校验。
+      // 观测 P1：无论是否流式都订阅通知——step/end 的 usage 是 token 的唯一来源。
       let streamedBuffer = '';
       let visibleLength = 0;
-      const forwardStream = (raw: string) => {
-        if (!onText) return;
-        streamedBuffer += raw;
-        const visible = extractStreamedAnswer(streamedBuffer);
-        if (visible.length > visibleLength) {
-          onText(visible.slice(visibleLength));
-          visibleLength = visible.length;
+      const onNotification = (raw: unknown) => {
+        const n = raw as {
+          method?: string;
+          params?: {
+            event?: {
+              type?: string;
+              data?: {
+                chunk?: { type?: string; text?: string };
+                usage?: {
+                  inputTokens?: number;
+                  outputTokens?: number;
+                  cacheReadTokens?: number;
+                };
+              };
+            };
+          };
+        };
+        if (n.method !== 'session.event') return;
+        const event = n.params?.event;
+
+        if (event?.type === 'assistant/chunk') {
+          const chunk = event.data?.chunk;
+          if (chunk?.type !== 'text-delta' || !chunk.text) return;
+          if (firstChunkMs === undefined) firstChunkMs = Date.now() - lockedAt;
+          if (!onText) return;
+          streamedBuffer += chunk.text;
+          const visible = extractStreamedAnswer(streamedBuffer);
+          if (visible.length > visibleLength) {
+            onText(visible.slice(visibleLength));
+            visibleLength = visible.length;
+          }
+          return;
+        }
+
+        if (event?.type === 'step/end') {
+          const usage = event.data?.usage;
+          if (!usage) return;
+          tokensIn += usage.inputTokens ?? 0;
+          tokensOut += usage.outputTokens ?? 0;
+          cacheReadTokens += usage.cacheReadTokens ?? 0;
         }
       };
 
       const runPromise = this.runtime.run(prompt, {
         sessionId: input.sessionId ?? undefined,
-        ...(onText
-          ? {
-              onNotification: (raw: unknown) => {
-                const n = raw as {
-                  method?: string;
-                  params?: { event?: { type?: string; data?: { chunk?: { type?: string; text?: string } } } };
-                };
-                if (n.method !== 'session.event') return;
-                const ev = n.params?.event;
-                if (ev?.type !== 'assistant/chunk') return;
-                const chunk = ev.data?.chunk;
-                if (chunk?.type === 'text-delta' && chunk.text) forwardStream(chunk.text);
-              },
-            }
-          : {}),
+        onNotification,
       });
       // 端到端取消：浏览器断流时网关 abort，视同超时处理（弃结果 + 重建实例）
       const abortPromise = input.signal
@@ -266,31 +299,49 @@ export class HarnessAssistantAdapter
       ]);
       if (!timed) {
         // 超时/取消：吞掉迟到结果的拒绝，弃结果；关掉可能僵死的 runtime，下一问重拉新实例
-        console.error(`[assistant] 降级(timeout/abort)：queued=${Date.now() - started}ms budget=${remainingMs}ms aborted=${input.signal?.aborted ?? false}`);
+        const reason: DegradeReason = input.signal?.aborted
+          ? 'client-abort'
+          : 'timeout';
+        console.error(
+          `[assistant] 降级(${reason})：queued=${Date.now() - enqueuedAt}ms budget=${remainingMs}ms`,
+        );
         runPromise.catch(() => {});
         this.dropRuntime();
-        return this.fallback.ask(input);
+        return this.fallbackWith(input, reason);
       }
       const parsed = parseAssistantOutput(timed.finalResponse, citableSlugs);
       if (!parsed) {
         console.error('[assistant] 降级(bad-output)：终值未过 parseAssistantOutput 合同校验');
-        return this.fallback.ask(input);
+        return this.fallbackWith(input, 'bad-output');
       }
       return {
         answer: parsed.answer,
         citations: parsed.citations,
         sessionId: timed.sessionId,
         aiUsedFlag: true,
-        elapsedMs: Date.now() - started,
+        elapsedMs: Date.now() - enqueuedAt,
+        usage: { inputTokens: tokensIn, outputTokens: tokensOut, cacheReadTokens },
+        firstChunkMs,
+        queueWaitMs: lockedAt - enqueuedAt,
+        degradeReason: null,
       };
     } catch (error) {
-      // 传输断/协议错：丢弃实例，下一问重建（降级原因落日志，供 AI 可用率排查）
+      // 传输断/协议错：丢弃实例，下一问重建（原因随 RunResult 落库，供可用率排查）
       console.error('[assistant] 降级(runtime)：', error instanceof Error ? error.message : error);
       this.dropRuntime();
-      return this.fallback.ask(input);
+      return this.fallbackWith(input, 'runtime-error');
     } finally {
       release();
     }
+  }
+
+  /** 降级统一出口：给规则兜底结果补上原因（rule adapter 保持纯净，不感知观测） */
+  private async fallbackWith(
+    input: AssistantAskInput,
+    reason: DegradeReason,
+  ): Promise<AssistantRunResult> {
+    const result = await this.fallback.ask(input);
+    return { ...result, degradeReason: reason };
   }
 
   private dropRuntime() {

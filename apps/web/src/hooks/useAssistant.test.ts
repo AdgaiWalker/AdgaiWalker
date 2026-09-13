@@ -48,6 +48,7 @@ describe('useAssistant', () => {
     });
     expect(result.current.messages[1]).toMatchObject({
       role: 'assistant',
+      text: 'duola 是艺术生。',
       aiUsedFlag: true,
       citations: ['cc-intro'],
     });
@@ -63,6 +64,48 @@ describe('useAssistant', () => {
       expect.any(Function),
       expect.any(AbortSignal),
     );
+  });
+
+  it('网关已裁剪的纯文本增量直接上屏，不等 JSON 外壳', async () => {
+    let onText: ((delta: string) => void) | undefined;
+    let finish: ((value: {
+      sessionId: string;
+      answer: string;
+      citations: { slug: string }[];
+      aiUsedFlag: boolean;
+      elapsedMs: number;
+    }) => void) | undefined;
+    mocked.mockImplementationOnce((_q, _sid, cb) => {
+      onText = cb;
+      return new Promise((resolve) => {
+        finish = resolve;
+      });
+    });
+    const { result } = renderHook(() => useAssistant());
+    let pending!: Promise<void>;
+    act(() => {
+      pending = result.current.send('Dora 是谁');
+    });
+    await act(async () => {
+      onText?.('Dora 是');
+    });
+    expect(result.current.streaming).toBe(true);
+    expect(result.current.messages[1]).toMatchObject({
+      role: 'assistant',
+      text: 'Dora 是',
+    });
+    await act(async () => {
+      onText?.('站主。');
+      finish?.({
+        sessionId: 's-dora',
+        answer: 'Dora 是站主。',
+        citations: [],
+        aiUsedFlag: true,
+        elapsedMs: 20,
+      });
+      await pending;
+    });
+    expect(result.current.messages[1]).toMatchObject({ text: 'Dora 是站主。' });
   });
 
   it('失败：记录错误，不留空气泡', async () => {

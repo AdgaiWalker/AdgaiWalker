@@ -1,0 +1,188 @@
+{
+  "version": "1.0 sound study",
+  "fps": 30,
+  "sample_rate": 48000,
+  "source": "Original procedural synthesis; no sampled voice, recordings or licensed effects.",
+  "states": [
+    {
+      "state": "hello",
+      "label": "招呼",
+      "duration_s": 3.0,
+      "frame_start": 136,
+      "sample_rate": 48000,
+      "channels": 2,
+      "peak_dbfs": -9.07,
+      "rms_dbfs": -25.72,
+      "active_rms_dbfs": -22.17,
+      "true_peak_dbfs": -9.06,
+      "dc_offset": 2.1014122399700721e-07,
+      "clipped_samples": 0
+    },
+    {
+      "state": "receive",
+      "label": "承接",
+      "duration_s": 5.0,
+      "frame_start": 376,
+      "sample_rate": 48000,
+      "channels": 2,
+      "peak_dbfs": -12.39,
+      "rms_dbfs": -29.41,
+      "active_rms_dbfs": -25.71,
+      "true_peak_dbfs": -12.38,
+      "dc_offset": -5.080823850211783e-06,
+      "clipped_samples": 0
+    },
+    {
+      "state": "joy",
+      "label": "开心",
+      "duration_s": 3.0,
+      "frame_start": 811,
+      "sample_rate": 48000,
+      "channels": 2,
+      "peak_dbfs": -8.64,
+      "rms_dbfs": -26.05,
+      "active_rms_dbfs": -21.93,
+      "true_peak_dbfs": -8.63,
+      "dc_offset": -2.3564278690106156e-05,
+      "clipped_samples": 0
+    }
+  ],
+  "events": [
+    {
+      "state": "hello",
+      "layer": "body",
+      "frame": 150,
+      "relative_s": 0.466667,
+      "duration_s": 0.52,
+      "description": "左翼抬起，轻绒摩擦"
+    },
+    {
+      "state": "hello",
+      "layer": "voice",
+      "frame": 160,
+      "relative_s": 0.8,
+      "duration_s": 0.25,
+      "description": "第一音：轻柔试探"
+    },
+    {
+      "state": "hello",
+      "layer": "voice",
+      "frame": 170,
+      "relative_s": 1.133333,
+      "duration_s": 0.34,
+      "description": "第二音：上扬回应"
+    },
+    {
+      "state": "hello",
+      "layer": "body",
+      "frame": 184,
+      "relative_s": 1.6,
+      "duration_s": 0.43,
+      "description": "第二次挥翼，弱摩擦"
+    },
+    {
+      "state": "hello",
+      "layer": "body",
+      "frame": 207,
+      "relative_s": 2.366667,
+      "duration_s": 0.31,
+      "description": "收翼尾声"
+    },
+    {
+      "state": "receive",
+      "layer": "body",
+      "frame": 392,
+      "relative_s": 0.533333,
+      "duration_s": 1.04,
+      "description": "背部展开成浅盘"
+    },
+    {
+      "state": "receive",
+      "layer": "body",
+      "frame": 439,
+      "relative_s": 2.1,
+      "duration_s": 0.27,
+      "description": "道具显现时柔软承托，无硬碰撞"
+    },
+    {
+      "state": "receive",
+      "layer": "voice",
+      "frame": 445,
+      "relative_s": 2.3,
+      "duration_s": 0.26,
+      "description": "第一音：温和确认"
+    },
+    {
+      "state": "receive",
+      "layer": "voice",
+      "frame": 455,
+      "relative_s": 2.633333,
+      "duration_s": 0.36,
+      "description": "第二音：满足地下落"
+    },
+    {
+      "state": "receive",
+      "layer": "light",
+      "frame": 469,
+      "relative_s": 3.1,
+      "duration_s": 0.28,
+      "description": "眼光峰值的轻暖余音"
+    },
+    {
+      "state": "receive",
+      "layer": "body",
+      "frame": 490,
+      "relative_s": 3.8,
+      "duration_s": 0.72,
+      "description": "背部恢复，轻绒收拢"
+    },
+    {
+      "state": "joy",
+      "layer": "body",
+      "frame": 818,
+      "relative_s": 0.233333,
+      "duration_s": 0.32,
+      "description": "压身蓄力"
+    },
+    {
+      "state": "joy",
+      "layer": "voice",
+      "frame": 832,
+      "relative_s": 0.7,
+      "duration_s": 0.17,
+      "description": "第一音：快速轻呼"
+    },
+    {
+      "state": "joy",
+      "layer": "voice",
+      "frame": 839,
+      "relative_s": 0.933333,
+      "duration_s": 0.25,
+      "description": "第二音：跃起时明亮上扬"
+    },
+    {
+      "state": "joy",
+      "layer": "body",
+      "frame": 862,
+      "relative_s": 1.7,
+      "duration_s": 0.3,
+      "description": "主落地，柔软的噗"
+    },
+    {
+      "state": "joy",
+      "layer": "body",
+      "frame": 869,
+      "relative_s": 1.933333,
+      "duration_s": 0.27,
+      "description": "第二次轻弹"
+    },
+    {
+      "state": "joy",
+      "layer": "body",
+      "frame": 894,
+      "relative_s": 2.766667,
+      "duration_s": 0.2,
+      "description": "落稳的轻绒尾声"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "file": "hello.mp4",
+    "video": {
+      "ffmpeg_version": "7.1 built with Apple clang version 13.1.6 (clang-1316.0.21.2.5)",
+      "codec": "h264",
+      "pix_fmt": "yuv420p(tv, bt709, progressive)",
+      "audio_codec": "aac",
+      "fps": 30.0,
+      "source_size": [
+        720,
+        540
+      ],
+      "size": [
+        720,
+        540
+      ],
+      "rotate": 0,
+      "duration": 3.0
+    },
+    "decoded_video_frames": 90,
+    "decoded_audio_duration_s": 3.008,
+    "audio_peak": 0.3515360951423645,
+    "decode_error": ""
+  },
+  {
+    "file": "receive.mp4",
+    "video": {
+      "ffmpeg_version": "7.1 built with Apple clang version 13.1.6 (clang-1316.0.21.2.5)",
+      "codec": "h264",
+      "pix_fmt": "yuv420p(tv, bt709, progressive)",
+      "audio_codec": "aac",
+      "fps": 30.0,
+      "source_size": [
+        720,
+        540
+      ],
+      "size": [
+        720,
+        540
+      ],
+      "rotate": 0,
+      "duration": 5.0
+    },
+    "decoded_video_frames": 150,
+    "decoded_audio_duration_s": 5.013333333333334,
+    "audio_peak": 0.24028000235557556,
+    "decode_error": ""
+  },
+  {
+    "file": "joy.mp4",
+    "video": {
+      "ffmpeg_version": "7.1 built with Apple clang version 13.1.6 (clang-1316.0.21.2.5)",
+      "codec": "h264",
+      "pix_fmt": "yuv420p(tv, bt709, progressive)",
+      "audio_codec": "aac",
+      "fps": 30.0,
+      "source_size": [
+        720,
+        540
+      ],
+      "size": [
+        720,
+        540
+      ],
+      "rotate": 0,
+      "duration": 3.0
+    },
+    "decoded_video_frames": 90,
+    "decoded_audio_duration_s": 3.008,
+    "audio_peak": 0.36961424350738525,
+    "decode_error": ""
+  },
+  {
+    "file": "sound-preview.mp4",
+    "video": {
+      "ffmpeg_version": "7.1 built with Apple clang version 13.1.6 (clang-1316.0.21.2.5)",
+      "codec": "h264",
+      "pix_fmt": "yuv420p(tv, bt709, progressive)",
+      "audio_codec": "aac",
+      "fps": 30.0,
+      "source_size": [
+        720,
+        540
+      ],
+      "size": [
+        720,
+        540
+      ],
+      "rotate": 0,
+      "duration": 11.0
+    },
+    "decoded_video_frames": 330,
+    "decoded_audio_duration_s": 11.008,
+    "audio_peak": 0.36961424350738525,
+    "decode_error": ""
+  },
+  {
+    "file": "full-motion-with-sound.mp4",
+    "video": {
+      "ffmpeg_version": "7.1 built with Apple clang version 13.1.6 (clang-1316.0.21.2.5)",
+      "codec": "h264",
+      "pix_fmt": "yuv420p(tv, bt709, progressive)",
+      "audio_codec": "aac",
+      "fps": 15.0,
+      "source_size": [
+        720,
+        540
+      ],
+      "size": [
+        720,
+        540
+      ],
+      "rotate": 0,
+      "duration": 36.53
+    },
+    "decoded_video_frames": 548,
+    "decoded_audio_duration_s": 36.544,
+    "audio_peak": 0.36955389380455017,
+    "decode_error": ""
+  }
+]

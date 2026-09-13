@@ -1,0 +1,155 @@
+{
+  "body_vertices": 8066,
+  "body_faces": 8192,
+  "nonmanifold_edges": 0,
+  "boundary_edges": 0,
+  "state_samples": [
+    {
+      "frame": 31,
+      "min_z": 0.0492,
+      "max_z": 1.4222,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.13,
+        "Wing_R": 0.08,
+        "Receive": 0.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 0.0,
+        "Cargo": 0.0
+      }
+    },
+    {
+      "frame": 167,
+      "min_z": 0.07,
+      "max_z": 2.3247,
+      "finite": true,
+      "controls": {
+        "Wing_L": 1.0,
+        "Wing_R": 0.18,
+        "Receive": 0.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 0.0,
+        "Cargo": 0.0
+      }
+    },
+    {
+      "frame": 271,
+      "min_z": 0.0585,
+      "max_z": 1.4126,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.3,
+        "Wing_R": 0.08,
+        "Receive": 0.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 0.0,
+        "Cargo": 0.0
+      }
+    },
+    {
+      "frame": 450,
+      "min_z": 0.07,
+      "max_z": 1.8985,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.225,
+        "Wing_R": 0.225,
+        "Receive": 1.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 0.0,
+        "Cargo": 1.0
+      }
+    },
+    {
+      "frame": 568,
+      "min_z": 0.0495,
+      "max_z": 1.3799,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.08,
+        "Wing_R": 0.28,
+        "Receive": 0.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 0.0,
+        "Cargo": 0.0
+      }
+    },
+    {
+      "frame": 735,
+      "min_z": 0.07,
+      "max_z": 1.3799,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.18,
+        "Wing_R": 0.18,
+        "Receive": 0.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 1.0,
+        "Cargo": 0.0
+      }
+    },
+    {
+      "frame": 839,
+      "min_z": 0.35,
+      "max_z": 2.1026,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.73,
+        "Wing_R": 0.73,
+        "Receive": 0.0,
+        "Rest": 0.0,
+        "Blink_L": 0.0,
+        "Signal": 0.0,
+        "Cargo": 0.0
+      }
+    },
+    {
+      "frame": 1006,
+      "min_z": 0.0336,
+      "max_z": 1.0408,
+      "finite": true,
+      "controls": {
+        "Wing_L": 0.0,
+        "Wing_R": 0.0,
+        "Receive": 0.0,
+        "Rest": 1.0,
+        "Blink_L": 1.0,
+        "Signal": 0.0,
+        "Cargo": 0.0
+      }
+    }
+  ],
+  "drivers_invalid": [],
+  "timeline_samples": 122,
+  "lowest_sample_z": 0.009078043513000011,
+  "lowest_sample_frame": 1,
+  "loop_checks": [
+    {
+      "action": "XY3 / 01_Idle / 待机 · 安静陪伴",
+      "endpoints_match": true,
+      "mismatches": []
+    },
+    {
+      "action": "XY3 / 03_Listen / 倾听 · 侧身专注",
+      "endpoints_match": true,
+      "mismatches": []
+    },
+    {
+      "action": "XY3 / 05_Think / 思考 · 轻摆回望",
+      "endpoints_match": true,
+      "mismatches": []
+    },
+    {
+      "action": "XY3 / 08_Sleep / 休息 · 收光慢呼吸",
+      "endpoints_match": true,
+      "mismatches": []
+    }
+  ],
+  "invalid_material_drivers": []
+}

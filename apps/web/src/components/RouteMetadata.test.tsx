@@ -88,6 +88,32 @@ describe('RouteMetadata', () => {
     ).toBe('noindex, follow');
   });
 
+  it('结果页沿用 noindex，但有独立 canonical', async () => {
+    renderAt('/tools/result');
+
+    await waitFor(() => {
+      expect(document.title).toBe('下一步 · Walker');
+    });
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://www.iwalk.pro/tools/result');
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('noindex, follow');
+  });
+
+  it('关于我页对外身份是 Dora', async () => {
+    renderAt('/me');
+
+    await waitFor(() => {
+      expect(document.title).toBe('Dora · 关于我');
+    });
+    expect(document.querySelector('meta[name="author"]')?.getAttribute('content')).toBe(
+      'Dora',
+    );
+    expect(document.querySelector('#site-json-ld')?.textContent).toContain('"name":"Dora"');
+  });
+
   it('keeps content hubs indexable with their own canonical', async () => {
     renderAt('/explore?view=project');
 

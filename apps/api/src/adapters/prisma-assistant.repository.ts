@@ -55,14 +55,46 @@ export class PrismaAssistantRepository implements AssistantRepositoryPort {
     }));
   }
 
-  async bumpRequests(date: string): Promise<number> {
+  async bumpRequests(
+    date: string,
+    usage?: { tokensIn: number; tokensOut: number },
+  ): Promise<number> {
     const client = this.db();
     if (!client) return 0;
+    const tokensIn = usage?.tokensIn ?? 0;
+    const tokensOut = usage?.tokensOut ?? 0;
     const row = await client.assistantBudget.upsert({
       where: { date },
-      create: { date, requests: 1 },
-      update: { requests: { increment: 1 } },
+      create: { date, requests: 1, tokensIn, tokensOut },
+      update: usage
+        ? {
+            requests: { increment: 1 },
+            tokensIn: { increment: tokensIn },
+            tokensOut: { increment: tokensOut },
+          }
+        : { requests: { increment: 1 } },
     });
     return row.requests;
+  }
+
+  async addTokens(
+    date: string,
+    usage: { tokensIn: number; tokensOut: number },
+  ): Promise<void> {
+    const client = this.db();
+    if (!client) return;
+    await client.assistantBudget.upsert({
+      where: { date },
+      create: {
+        date,
+        requests: 0,
+        tokensIn: usage.tokensIn,
+        tokensOut: usage.tokensOut,
+      },
+      update: {
+        tokensIn: { increment: usage.tokensIn },
+        tokensOut: { increment: usage.tokensOut },
+      },
+    });
   }
 }

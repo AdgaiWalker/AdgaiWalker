@@ -88,10 +88,17 @@ import { WEBSITE_DEPLOYMENT_VERIFIER } from './ports/website-deployment-verifier
 import { HttpWebsiteDeploymentVerifier } from './adapters/http-website-deployment-verifier';
 import { WECHAT_DRAFT_SESSION } from './ports/wechat-draft-session.port';
 import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-draft-session';
-import { CREDENTIAL_REPOSITORY } from './ports/credential.repository';
-import { PrismaCredentialRepository } from './adapters/prisma-credential.repository';
-import { CredentialsService } from './credentials/credentials.service';
-import { CredentialsController } from './credentials/credentials.controller';
+import { MODEL_PROVIDER_REPOSITORY } from './ports/model-provider.repository';
+import { PrismaModelProviderRepository } from './adapters/prisma-model-provider.repository';
+import { AGENT_UNIT_REPOSITORY } from './ports/agent-unit.repository';
+import { PrismaAgentUnitRepository } from './adapters/prisma-agent-unit.repository';
+import { ModelProviderService } from './model-providers/model-provider.service';
+import { ModelProviderController } from './model-providers/model-provider.controller';
+import { AgentUnitService } from './agents/agent-unit.service';
+import { AgentUnitController } from './agents/agent-unit.controller';
+import { AgentRunnerService } from './agents/agent-runner.service';
+import { ObservabilityService } from './observability/observability.service';
+import { ObservabilityController } from './observability/observability.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
@@ -103,6 +110,7 @@ import { CredentialsController } from './credentials/credentials.controller';
     SeedController,
     ExecutionController,
     MetricsController,
+    ObservabilityController,
     LikeController,
     ContentFeedbackController,
     SearchEventsController,
@@ -115,7 +123,8 @@ import { CredentialsController } from './credentials/credentials.controller';
     ReviewController,
     PublicationController,
     ExportController,
-    CredentialsController,
+    ModelProviderController,
+    AgentUnitController,
   ],
   providers: [
     { provide: PRISMA, useClass: PrismaAdapter },
@@ -137,7 +146,7 @@ import { CredentialsController } from './credentials/credentials.controller';
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
     { provide: SITE_CONTENT_INDEX, useClass: FsSiteContentIndex },
     { provide: ASSISTANT_REPOSITORY, useClass: PrismaAssistantRepository },
-    { provide: CREDENTIAL_REPOSITORY, useClass: PrismaCredentialRepository },
+    ObservabilityService,
     { provide: RuleAssistantAdapter, useClass: RuleAssistantAdapter },
     {
       // 助手双实现：harness AI 内嵌规则兜底（AI 可关/超时/坏输出全降级）；
@@ -171,7 +180,6 @@ import { CredentialsController } from './credentials/credentials.controller';
     SearchEventsService,
     ContentAdminService,
     SupportService,
-    CredentialsService,
     ActionService,
     WorkService,
     WorkbenchService,
@@ -210,8 +218,21 @@ import { CredentialsController } from './credentials/credentials.controller';
       inject: [APP_CONFIG],
       useFactory: (config: AppConfigPort) => new FsArtifactRepository(config.getWorkRootDir()),
     },
+    { provide: MODEL_PROVIDER_REPOSITORY, useClass: PrismaModelProviderRepository },
+    { provide: AGENT_UNIT_REPOSITORY, useClass: PrismaAgentUnitRepository },
+    ModelProviderService,
+    AgentUnitService,
+    AgentRunnerService,
   ],
-  exports: [PRISMA, DATABASE],
+  exports: [
+    PRISMA,
+    DATABASE,
+    MODEL_PROVIDER_REPOSITORY,
+    AGENT_UNIT_REPOSITORY,
+    ModelProviderService,
+    AgentUnitService,
+    AgentRunnerService,
+  ],
 })
 export class KernelModule {}
 

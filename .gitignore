@@ -51,6 +51,16 @@ output/playwright/
 # dev server 日志（output/ 下仅 design-qa.md 等文档需要跟踪）
 output/*.log
 
+# 3D 角色资产中间产物（二进制，单目录即数百 MB；源脚本 / 设计文档 / 渲染图仍跟踪）
+output/**/*.blend
+output/**/*.blend1
+output/**/*.wav
+output/**/*.mp4
+output/**/before-*/
+
+# 本机 IDE / agent 本地状态（每台机器各异，不进仓库）
+.codebuddy/
+
 # Codex / dev tooling temp artifacts
 .codex-dev-server*.log
 .codex-doctor-tmp.json

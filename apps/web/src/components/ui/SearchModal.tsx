@@ -1,3 +1,5 @@
+import { XiaoyingPet } from '../xiaoying/XiaoyingPet';
+import { getPetActivity } from '../xiaoying/activity';
 /**
  * SearchModal — 「搜索或问小影」一体面板。
  * 搜索 query/hits 受控于壳侧 useContentSearch；面板内自有 useAssistant 会话（与 /ask 独立）。
@@ -16,9 +18,11 @@ export type SearchModalProps = {
   query: string;
   hits: SearchHit[];
   note: string;
+  seedAsk?: string | null;
   returnFocusTarget?: HTMLElement | null;
   onClose: () => void;
   onQueryChange: (query: string) => void;
+  onSeedAskConsumed?: () => void;
 };
 
 export function SearchModal({
@@ -26,9 +30,11 @@ export function SearchModal({
   query,
   hits,
   note,
+  seedAsk,
   returnFocusTarget,
   onClose,
   onQueryChange,
+  onSeedAskConsumed,
 }: SearchModalProps) {
   const backdropRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +47,7 @@ export function SearchModal({
   useEffect(() => {
     if (!open) {
       setMode('search');
+      stop();
       return;
     }
     const backdrop = backdropRef.current;
@@ -72,7 +79,13 @@ export function SearchModal({
       }
       returnFocus?.focus();
     };
-  }, [open, returnFocusTarget]);
+  }, [open, returnFocusTarget, stop]);
+
+  const ask = (text: string) => {
+    if (!isValidAssistantBody(text)) return;
+    setMode('assistant');
+    void send(text);
+  };
 
   // 切到对话视图后把焦点带进对话输入框
   useEffect(() => {
@@ -83,13 +96,13 @@ export function SearchModal({
     return () => window.clearTimeout(timer);
   }, [open, mode]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open || !seedAsk || !isValidAssistantBody(seedAsk)) return;
+    ask(seedAsk);
+    onSeedAskConsumed?.();
+  }, [open, seedAsk]);
 
-  const ask = (text: string) => {
-    if (!isValidAssistantBody(text)) return;
-    setMode('assistant');
-    void send(text);
-  };
+  if (!open) return null;
 
   const trapFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -130,6 +143,18 @@ export function SearchModal({
         className={`search-panel panel-glass${mode === 'assistant' ? ' is-assistant' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="xiaoying-dialog-companion">
+          <XiaoyingPet
+            variant="companion"
+            activity={getPetActivity(
+              loading,
+              error,
+              mode === 'assistant' ? messages : [],
+              mode === 'assistant' ? Boolean(draft.trim()) : false,
+              mode === 'search' && Boolean(query.trim()),
+            )}
+          />
+        </div>
         {mode === 'assistant' ? (
           <>
             <div className="search-panel-head">

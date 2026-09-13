@@ -1,0 +1,72 @@
+[
+  {
+    "id": "01_Idle",
+    "name": "待机",
+    "start": 1,
+    "end": 96,
+    "duration_seconds": 3.958,
+    "action": "XY_01_Idle",
+    "behavior": "呼吸、轻摆尾、自然眨眼；低干扰循环。",
+    "loopable": true
+  },
+  {
+    "id": "02_Curious",
+    "name": "好奇",
+    "start": 97,
+    "end": 192,
+    "duration_seconds": 3.958,
+    "action": "XY_02_Curious",
+    "behavior": "歪头探看，耳朵轻动，尾端跟随；不碰人的工作内容。",
+    "loopable": true
+  },
+  {
+    "id": "03_Listening",
+    "name": "倾听",
+    "start": 193,
+    "end": 288,
+    "duration_seconds": 3.958,
+    "action": "XY_03_Listening",
+    "behavior": "轻轻前倾、慢点头，动作收敛，留出回应空间。",
+    "loopable": true
+  },
+  {
+    "id": "04_Offering",
+    "name": "展开选项",
+    "start": 289,
+    "end": 408,
+    "duration_seconds": 4.958,
+    "action": "XY_04_Offering",
+    "behavior": "双爪打开、尾巴舒展，再安静等待人的选择。",
+    "loopable": false
+  },
+  {
+    "id": "05_Working",
+    "name": "执行",
+    "start": 409,
+    "end": 504,
+    "duration_seconds": 3.958,
+    "action": "XY_05_Working",
+    "behavior": "双爪交替做小幅操作，尾巴有节奏地协助。",
+    "loopable": true
+  },
+  {
+    "id": "06_Translating",
+    "name": "转译",
+    "start": 505,
+    "end": 624,
+    "duration_seconds": 4.958,
+    "action": "XY_06_Translating",
+    "behavior": "视线与双爪从一侧转向另一侧，表现倾听与传达。",
+    "loopable": false
+  },
+  {
+    "id": "07_Complete",
+    "name": "完成反馈",
+    "start": 625,
+    "end": 696,
+    "duration_seconds": 2.958,
+    "action": "XY_07_Complete",
+    "behavior": "一次轻弹、抬爪回应，随后回到安静姿态。",
+    "loopable": false
+  }
+]

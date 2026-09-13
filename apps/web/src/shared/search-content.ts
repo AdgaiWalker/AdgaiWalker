@@ -1,6 +1,8 @@
 /**
  * 内容搜索纯函数（规则层 · 无 React / 无 IO）
  */
+import { dualEntry } from './dual-entry';
+
 export type SearchHit = { url: string; title: string };
 
 export type SearchableItem = {
@@ -33,7 +35,7 @@ export function searchContentItems(
     })
     .slice(0, limit)
     .map((i) => ({
-      url: `/posts/${encodeURIComponent(i.slug)}`,
+      url: `${dualEntry.browse.path}/${encodeURIComponent(i.slug)}`,
       title: i.title,
     }));
 }

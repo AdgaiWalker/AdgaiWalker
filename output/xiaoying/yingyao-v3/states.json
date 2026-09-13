@@ -1,0 +1,74 @@
+[
+  {
+    "id": "01_Idle",
+    "label": "待机 · 安静陪伴",
+    "start": 1,
+    "end": 120,
+    "duration_s": 4.0,
+    "loop": true,
+    "action": "XY3 / 01_Idle / 待机 · 安静陪伴"
+  },
+  {
+    "id": "02_Hello",
+    "label": "招呼 · 左翼挥手",
+    "start": 136,
+    "end": 225,
+    "duration_s": 3.0,
+    "loop": false,
+    "action": "XY3 / 02_Hello / 招呼 · 左翼挥手"
+  },
+  {
+    "id": "03_Listen",
+    "label": "倾听 · 侧身专注",
+    "start": 241,
+    "end": 360,
+    "duration_s": 4.0,
+    "loop": true,
+    "action": "XY3 / 03_Listen / 倾听 · 侧身专注"
+  },
+  {
+    "id": "04_Receive",
+    "label": "承接 · 温柔托住",
+    "start": 376,
+    "end": 525,
+    "duration_s": 5.0,
+    "loop": false,
+    "action": "XY3 / 04_Receive / 承接 · 温柔托住"
+  },
+  {
+    "id": "05_Think",
+    "label": "思考 · 轻摆回望",
+    "start": 541,
+    "end": 660,
+    "duration_s": 4.0,
+    "loop": true,
+    "action": "XY3 / 05_Think / 思考 · 轻摆回望"
+  },
+  {
+    "id": "06_Express",
+    "label": "表达 · 连接彼此",
+    "start": 676,
+    "end": 795,
+    "duration_s": 4.0,
+    "loop": false,
+    "action": "XY3 / 06_Express / 表达 · 连接彼此"
+  },
+  {
+    "id": "07_Joy",
+    "label": "开心 · 轻弹回应",
+    "start": 811,
+    "end": 900,
+    "duration_s": 3.0,
+    "loop": false,
+    "action": "XY3 / 07_Joy / 开心 · 轻弹回应"
+  },
+  {
+    "id": "08_Sleep",
+    "label": "休息 · 收光慢呼吸",
+    "start": 916,
+    "end": 1095,
+    "duration_s": 6.0,
+    "loop": true,
+    "action": "XY3 / 08_Sleep / 休息 · 收光慢呼吸"
+  }
+]

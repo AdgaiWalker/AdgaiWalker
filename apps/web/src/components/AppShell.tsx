@@ -2,7 +2,7 @@
  * AppShell — 壳布局
  * 职责：首页画布 / 阅读沉浸 / 常规侧栏；搜索/提问入口只经 AskBar + ⌘K（/ask 页不挂）。
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Outlet, useLocation, matchPath } from 'react-router-dom';
 import type { BrowseReturnState } from './ItemList';
 import { useContentSearch } from '../hooks/useContentSearch';
@@ -10,6 +10,7 @@ import { useSearchHotkey } from '../hooks/useSearchHotkey';
 import { applySiteTheme } from '../lib/theme';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
+import type { SearchHit } from '../shared/search-content';
 import { SearchModal } from './ui/SearchModal';
 import { AskBar } from './ui/AskBar';
 import { AppSidebar } from './shell/AppSidebar';
@@ -29,6 +30,15 @@ function browseHrefFromState(state: unknown): string {
   return dualEntry.browse.path;
 }
 
+export type AppShellOutletContext = {
+  openSearch: (trigger?: HTMLElement, ask?: string) => void;
+  onQueryChange: (query: string) => void;
+  query: string;
+  hits: SearchHit[];
+  note: string;
+  petSearchRef: RefObject<HTMLTextAreaElement | null>;
+};
+
 export function AppShell() {
   const location = useLocation();
   const { pathname } = location;
@@ -40,17 +50,29 @@ export function AppShell() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const searchTriggerRef = useRef<HTMLElement | null>(null);
+  const petSearchRef = useRef<HTMLTextAreaElement | null>(null);
+  const [seedAsk, setSeedAsk] = useState<string | null>(null);
   const askActive = pathname === dualEntry.ask.path;
+  const onAskPage = pathname === WEB_ROUTES.assistant;
   const search = useContentSearch(searchOpen);
 
-  const openSearch = useCallback((trigger?: HTMLElement) => {
+  const openSearch = useCallback((trigger?: HTMLElement, ask?: string) => {
+    if (onAskPage) return;
+    if (isHome && !ask && petSearchRef.current && !searchOpen) {
+      petSearchRef.current.focus();
+      return;
+    }
     searchTriggerRef.current = trigger ?? (document.activeElement as HTMLElement | null);
+    setSeedAsk(ask ?? null);
     setMenuOpen(false);
     setSearchOpen(true);
+  }, [onAskPage, isHome, searchOpen]);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSeedAsk(null);
   }, []);
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
 
-  useSearchHotkey(openSearch);
+  useSearchHotkey(openSearch, !onAskPage);
 
   useEffect(() => {
     applySiteTheme();
@@ -122,28 +144,38 @@ export function AppShell() {
     };
   }, [menuOpen]);
 
-  const searchModal = (
+  const searchModal = onAskPage ? null : (
     <SearchModal
       open={searchOpen}
       query={search.query}
       hits={search.hits}
       note={search.note}
+      seedAsk={seedAsk}
       returnFocusTarget={searchTriggerRef.current}
       onClose={closeSearch}
       onQueryChange={search.onQueryChange}
+      onSeedAskConsumed={() => setSeedAsk(null)}
     />
   );
 
-  const askBar =
-    pathname === WEB_ROUTES.assistant ? null : (
-      <AskBar onOpen={openSearch} open={searchOpen} />
-    );
+  const outletContext: AppShellOutletContext = {
+    openSearch,
+    onQueryChange: search.onQueryChange,
+    query: search.query,
+    hits: search.hits,
+    note: search.note,
+    petSearchRef,
+  };
+
+  const askBar = onAskPage ? null : (
+    <AskBar onOpen={openSearch} open={searchOpen} isHome={isHome} />
+  );
 
   if (isHome) {
     return (
       <>
         <HomeChrome />
-        <Outlet />
+        <Outlet context={outletContext} />
         {askBar}
         {searchModal}
       </>
@@ -156,7 +188,7 @@ export function AppShell() {
       <div className="app-layout is-reading">
         <MobileBar reading browseHref={browseHref} />
         <main className="app-main app-main-reading">
-          <Outlet />
+          <Outlet context={outletContext} />
         </main>
         {askBar}
         {searchModal}
@@ -186,7 +218,7 @@ export function AppShell() {
         sidebarRef={sidebarRef}
       />
       <main className="app-main app-main-browse" inert={menuOpen}>
-        <Outlet />
+        <Outlet context={outletContext} />
       </main>
       {askBar}
       {searchModal}

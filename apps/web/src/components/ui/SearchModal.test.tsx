@@ -11,6 +11,10 @@ vi.mock('../../api/public-api', () => ({
   },
 }));
 
+vi.mock('../xiaoying/scene', () => ({
+  mountPet: () => ({ play: vi.fn(), pause: vi.fn(), dispose: vi.fn() }),
+}));
+
 const mockedStream = vi.mocked(publicApi.assistantStream);
 
 function renderModal(props: Partial<SearchModalProps> = {}) {
@@ -123,5 +127,53 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
   it('query 过短不出现问小影入口', () => {
     renderModal({ query: ' d ' });
     expect(screen.queryByRole('button', { name: /问问小影/ })).not.toBeInTheDocument();
+  });
+
+  it('关闭面板会 abort 进行中的请求，不 reset 会话', async () => {
+    let signal: AbortSignal | undefined;
+    mockedStream.mockImplementationOnce((_q, _sid, onText, s) => {
+      signal = s;
+      onText('{"answer":"半句');
+      return new Promise(() => {});
+    });
+    function Harness({ open }: { open: boolean }) {
+      return (
+        <MemoryRouter>
+          <SearchModal
+            open={open}
+            query="Dora 是谁"
+            hits={[]}
+            note=""
+            onClose={() => {}}
+            onQueryChange={() => {}}
+          />
+        </MemoryRouter>
+      );
+    }
+    const user = userEvent.setup();
+    const { rerender } = render(<Harness open />);
+    await user.click(screen.getByRole('button', { name: /问问小影/ }));
+    expect(mockedStream).toHaveBeenCalledOnce();
+    expect(signal?.aborted).toBe(false);
+    rerender(<Harness open={false} />);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('seedAsk 打开后直接问小影', async () => {
+    mockedStream.mockResolvedValueOnce({
+      sessionId: 's-3',
+      answer: '从宠物来的问题',
+      citations: [],
+      aiUsedFlag: true,
+      elapsedMs: 4,
+    });
+    renderModal({ query: 'Dora 是谁', seedAsk: 'Dora 是谁' });
+    expect(mockedStream).toHaveBeenCalledWith(
+      'Dora 是谁',
+      null,
+      expect.any(Function),
+      expect.any(AbortSignal),
+    );
+    expect(await screen.findByText('从宠物来的问题')).toBeInTheDocument();
   });
 });

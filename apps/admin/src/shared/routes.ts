@@ -11,8 +11,10 @@ export const ADMIN_ROUTES = {
   insights: '/insights',
   executions: '/executions',
   metrics: '/metrics',
+  /** 观测数据页：使用排行 / AI 观测 / 旅程回放 */
+  data: '/data',
   content: '/content',
   contentEdit: '/content/:slug',
-  credentials: '/credentials',
   aiGateway: '/ai-gateway',
+  agents: '/agents',
 } as const;

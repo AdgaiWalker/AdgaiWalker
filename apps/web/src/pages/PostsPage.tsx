@@ -87,6 +87,18 @@ export function PostsPage() {
         <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
       </Link>
 
+      <Link
+        to={WEB_ROUTES.graph}
+        className="browse-lab-entry surface-l2"
+        aria-label="打开知识图谱，查看文章之间的互相引用"
+      >
+        <span className="browse-lab-copy">
+          <strong className="browse-lab-title">结构</strong>
+          <span className="browse-lab-blurb">看文章之间谁引用了谁</span>
+        </span>
+        <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
+      </Link>
+
       {/* 唯一辅助查找：标签默认折叠 */}
       {tags.length > 0 ? (
         <div className="browse-refine">

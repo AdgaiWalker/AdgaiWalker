@@ -8,6 +8,37 @@ export interface AssistantCitation {
   slug: string;
 }
 
+/** 观测 P1：token 用量（多 step 求和；缺失记 0，不记 null） */
+export interface AssistantTokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens?: number;
+}
+
+/**
+ * 观测 P1：降级原因词表（kebab，与 FeatureEvent failCode 同风格）。
+ * 正常 AI 回答为 null；每个词与一处兜底路径一一对应。
+ */
+export const DEGRADE_REASONS = [
+  'ai-disabled',
+  'budget-exceeded',
+  'timeout',
+  'client-abort',
+  'queue-full',
+  'queue-deadline',
+  'bad-output',
+  'runtime-error',
+] as const;
+
+export type DegradeReason = (typeof DEGRADE_REASONS)[number];
+
+export function isDegradeReason(value: unknown): value is DegradeReason {
+  return (
+    typeof value === 'string' &&
+    (DEGRADE_REASONS as readonly string[]).includes(value)
+  );
+}
+
 export interface AssistantRunResult {
   answer: string;
   citations: AssistantCitation[];
@@ -15,6 +46,14 @@ export interface AssistantRunResult {
   turnId?: string | null;
   aiUsedFlag: boolean;
   elapsedMs: number;
+  /** 观测 P1：token 用量（规则兜底不带） */
+  usage?: AssistantTokenUsage;
+  /** 观测 P1：拿锁 → 首个回答增量的耗时 */
+  firstChunkMs?: number;
+  /** 观测 P1：排队等待耗时 */
+  queueWaitMs?: number;
+  /** 观测 P1：降级原因（正常 AI 回答为 null） */
+  degradeReason?: DegradeReason | null;
 }
 
 export interface AiAssistantOutput {

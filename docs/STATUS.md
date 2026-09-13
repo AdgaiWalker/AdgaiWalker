@@ -112,7 +112,8 @@
 主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。  
 公开面：分型/卡牌/时间线+标签、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。  
 Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。  
-AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（/ask 整页 + 右下 AskBar 合并搜索面板 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md`；执行实录 `docs/archive/TODO-SITE-ASSISTANT.md`）。
+AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（/ask 整页 + 右下 AskBar 合并搜索面板 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md`；执行实录 `docs/archive/TODO-SITE-ASSISTANT.md`）。  
+智能体工坊与文件直调：已上线（2026-09-09）。实体智能体角色管理、小影 403 硬核防线、1:1 DSH 供应商模型池配置与 Ping 连通性探测、单次短命直调 `content/log/*.md` 跑完即焚、时序三色甘特图 100% 数据驱动、4 格硬核遥测账单、逐轮审计卡片与独立 `trace.jsonl` 管道（AES-256-GCM 强加密保护，全仓测试全绿；详见 `docs/PRD-AGENT-WORKBENCH.md`）。  
 **不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar 中台做进本站、canvas、MDX 块组件全量。  
 **远景保留、不进近端验收：** 知识→工作站→具身回灌；点子社区与智能微体站；内容分发参照 NorthStar 能力（见 VISION）。
 
@@ -137,3 +138,9 @@ AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关�
 1. **工作站真实初稿全链跑通**（创建→加工→刷新→审阅→批准→构建→发布验证）→ 见 [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) M3  
 2. **内容增长**：按需求信号中心的内容缺口持续产出  
 3. **要推 VISION 中层** → 知识可引用进 nextStep 的最小切片  
+# 2026-09-11 本地增量：小影网页桌宠
+
+- 用户授权将现有影鳐接到首页，并要求做成有生命感的网页桌宠：闲置/工作两态，搜索框即宠物本身。
+- 已接：小影是卡片上方的可拖拽图层；对它说话即检索，对话泡进出；它用对话泡回答站内结果。加载失败时静态形象，说话仍可用。
+- 未接：音效、承接与表达道具；未发布生产。原始 Blender 文件未改写。
+- 细节见 `public/xiaoying/README.md`。旧生产快照继续保留于下文，不以本地试装覆盖生产状态。

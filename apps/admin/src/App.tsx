@@ -1,14 +1,15 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminShell } from './AdminShell';
+import { AgentWorkbenchPage } from './pages/AgentWorkbenchPage';
 import { AiGatewayPage } from './pages/AiGatewayPage';
 import { ContentEditPage } from './pages/ContentEditPage';
 import { ContentListPage } from './pages/ContentListPage';
 import { CluesPage } from './pages/CluesPage';
 import { AssistantQuestionsPage } from './pages/AssistantQuestionsPage';
 import { InsightsPage } from './pages/InsightsPage';
-import { CredentialsPage } from './pages/CredentialsPage';
 import { ExecutionsPage } from './pages/ExecutionsPage';
 import { MetricsPage } from './pages/MetricsPage';
+import { DataPage } from './pages/DataPage';
 import { PipelinePage } from './pages/PipelinePage';
 import { SeedsPage } from './pages/SeedsPage';
 import { TodayPage } from './pages/TodayPage';
@@ -34,13 +35,11 @@ export function App() {
         <Route path={ADMIN_ROUTES.insights} element={<InsightsPage />} />
         <Route path={ADMIN_ROUTES.executions} element={<ExecutionsPage />} />
         <Route path={ADMIN_ROUTES.metrics} element={<MetricsPage />} />
+        <Route path={ADMIN_ROUTES.data} element={<DataPage />} />
         <Route path={ADMIN_ROUTES.content} element={<ContentListPage />} />
         <Route path="/content/:slug" element={<ContentEditPage />} />
-        <Route
-          path={ADMIN_ROUTES.credentials}
-          element={<CredentialsPage />}
-        />
         <Route path={ADMIN_ROUTES.aiGateway} element={<AiGatewayPage />} />
+        <Route path={ADMIN_ROUTES.agents} element={<AgentWorkbenchPage />} />
         <Route
           path="*"
           element={<Navigate to={ADMIN_ROUTES.pipeline} replace />}

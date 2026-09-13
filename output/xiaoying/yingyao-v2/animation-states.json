@@ -1,0 +1,58 @@
+[
+  {
+    "state": "待机",
+    "action": "YY_01_Idle",
+    "start": 1,
+    "end": 96,
+    "loopable": true,
+    "behavior": "轻微呼吸、翼缘慢摆、自然眨眼。"
+  },
+  {
+    "state": "好奇",
+    "action": "YY_02_Curious",
+    "start": 97,
+    "end": 192,
+    "loopable": true,
+    "behavior": "一侧翼缘翘起，身体小幅侧倾和探看。"
+  },
+  {
+    "state": "倾听",
+    "action": "YY_03_Listening",
+    "start": 193,
+    "end": 288,
+    "loopable": true,
+    "behavior": "身体轻轻前倾，慢点头，动作收敛。"
+  },
+  {
+    "state": "展开选项",
+    "action": "YY_04_Offering",
+    "start": 289,
+    "end": 408,
+    "loopable": false,
+    "behavior": "翼缘平稳展开，保持开放姿态，等待人作决定。"
+  },
+  {
+    "state": "执行",
+    "action": "YY_05_Working",
+    "start": 409,
+    "end": 504,
+    "loopable": true,
+    "behavior": "两翼卷成浅托盘，翼缘交替做小幅整理动作。"
+  },
+  {
+    "state": "转译",
+    "action": "YY_06_Translating",
+    "start": 505,
+    "end": 624,
+    "loopable": false,
+    "behavior": "身体舒展，波动从一侧传向另一侧，表现连接两种表达。"
+  },
+  {
+    "state": "完成反馈",
+    "action": "YY_07_Complete",
+    "start": 625,
+    "end": 696,
+    "loopable": false,
+    "behavior": "一次轻弹和舒展，随后恢复安静姿态。"
+  }
+]

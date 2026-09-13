@@ -1,3 +1,5 @@
+import { XiaoyingPet } from '../xiaoying/XiaoyingPet';
+import { getPetActivity } from '../xiaoying/activity';
 /**
  * 小影对话页壳 — 状态窄栏 + AssistantThread（消息流与输入由公共组件承担）。
  */
@@ -58,6 +60,12 @@ export function AssistantPanel({
         )}
       </header>
 
+      <div className="xiaoying-dialog-companion">
+        <XiaoyingPet
+          variant="companion"
+          activity={getPetActivity(loading, error, messages, Boolean(draft.trim()))}
+        />
+      </div>
       <AssistantThread
         draft={draft}
         draftOk={draftOk}

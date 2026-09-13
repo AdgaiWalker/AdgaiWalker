@@ -1,5 +1,5 @@
 /**
- * 哆啦与硬件（页）
+ * Dora 与硬件（页）
  * 职责：方法论 + 按场景展示装备；教程深链挂 guide。
  * 数据：apps/web/src/data/gear.json
  * 触发：/gear · 侧栏「拿」
@@ -79,7 +79,7 @@ export function GearPage() {
         <div>
           <h1 className="page-title" style={{ marginBottom: 8 }}>
             <Cpu size={26} aria-hidden className="page-title-icon" />
-            哆啦与硬件
+            Dora 与硬件
           </h1>
           <p className="page-lead" style={{ margin: 0 }}>
             装备清单与选型逻辑。长文教程见「深究」；更多 how-to 在教程。

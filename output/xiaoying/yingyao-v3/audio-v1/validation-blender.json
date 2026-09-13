@@ -1,0 +1,35 @@
+{
+  "scene": "XY3 • 小影 / 影鳐工作室",
+  "fps": 30,
+  "object_count": 33,
+  "actions": 8,
+  "strips": [
+    {
+      "name": "XY_AUDIO / 招呼 · 轻声上扬",
+      "frame_start": 136,
+      "frame_end_exclusive": 226,
+      "volume": 0.6499999761581421,
+      "packed": true,
+      "channels": "STEREO",
+      "samplerate": 48000
+    },
+    {
+      "name": "XY_AUDIO / 承接 · 柔软确认",
+      "frame_start": 376,
+      "frame_end_exclusive": 526,
+      "volume": 0.6499999761581421,
+      "packed": true,
+      "channels": "STEREO",
+      "samplerate": 48000
+    },
+    {
+      "name": "XY_AUDIO / 开心 · 轻弹回应",
+      "frame_start": 811,
+      "frame_end_exclusive": 901,
+      "volume": 0.6499999761581421,
+      "packed": true,
+      "channels": "STEREO",
+      "samplerate": 48000
+    }
+  ]
+}

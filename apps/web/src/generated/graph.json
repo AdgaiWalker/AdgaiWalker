@@ -1,0 +1,1946 @@
+{
+  "generatedAt": "2026-09-13T17:38:13.406Z",
+  "seed": 20260914,
+  "nodes": [
+    {
+      "id": "note:dorazoom",
+      "kind": "note",
+      "slug": "dorazoom",
+      "title": "DoraZoom — macOS 屏幕讲解与标注工具",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "project",
+      "form": "project",
+      "domain": "product",
+      "series": "桌面项目",
+      "seriesOrder": 5,
+      "tags": [
+        "macOS",
+        "屏幕缩放",
+        "标注",
+        "录屏"
+      ],
+      "summary": "哆啦个人版 macOS 屏幕讲解工具：快速缩放、圈画、白板/黑板、截图、OCR、录屏、摄像头画中画和滚动长截图。当前已完成并进入本地日常使用。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:goout",
+      "kind": "note",
+      "slug": "goout",
+      "title": "GoOut — 多场景个人统筹 Agent",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "series": "桌面点子",
+      "seriesOrder": 2,
+      "tags": [
+        "AI Agent",
+        "统筹规划",
+        "iOS",
+        "确定性"
+      ],
+      "summary": "把同一天的创作、外出和生活需求编译成可验证、可执行、可恢复的行动计划。LLM 负责理解和解释，确定性代码负责约束、求解与复核。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:itab-agent-spaces",
+      "kind": "note",
+      "slug": "itab-agent-spaces",
+      "title": "iTab Agent Spaces — 把新标签页变成 Agent 任务空间",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "series": "桌面点子",
+      "seriesOrder": 3,
+      "tags": [
+        "Agent",
+        "工作台",
+        "浏览器",
+        "DeepSeek Harness"
+      ],
+      "summary": "由 iTab 持有桌面、Space、Page 和 Card 的产品外壳，由 DeepSeek Harness 负责模型、会话与执行，让任务、文件和运行结果留在同一个空间里。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:molan-ai-file-assistant",
+      "kind": "note",
+      "slug": "molan-ai-file-assistant",
+      "title": "墨览 — 跨手机与电脑的 AI 文件助手",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "series": "桌面点子",
+      "seriesOrder": 4,
+      "tags": [
+        "文件阅读",
+        "AI",
+        "跨端",
+        "Office 转换"
+      ],
+      "summary": "手机先把收到的文件读起来，再把主动收集的文件同步到电脑，转换成 AI 可读内容，并让处理结果回到手机。覆盖原生移动端、桌面端、CLI 与共享合同。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:vibe0s",
+      "kind": "note",
+      "slug": "vibe0s",
+      "title": "vibe0s — 让 AI 帮你选 Skill、排流程、留方法",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "project",
+      "form": "project",
+      "domain": "ai",
+      "series": "桌面项目",
+      "seriesOrder": 1,
+      "tags": [
+        "AI",
+        "Skill",
+        "人机协作",
+        "工作流"
+      ],
+      "summary": "面向不会挑 Skill、不会组织 AI 工作流的人：先把目标说清，再选择最少够用的能力推进，最后把做成的方法沉淀下来。当前仍在真实任务中验证。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:lobster-core-value",
+      "kind": "note",
+      "slug": "lobster-core-value",
+      "title": "龙虾的核心价值",
+      "date": "2026-08-11T00:00:00.000Z",
+      "updated": "2026-08-11T00:00:00.000Z",
+      "created": "2026-08-13T09:31:30+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "essay",
+      "domain": "ai",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "OpenClaw",
+        "AGI",
+        "Gateway",
+        "Skill",
+        "架构"
+      ],
+      "summary": "OpenClaw（龙虾架构）的真正价值不在外壳，而在网关：上连模型与 Agent，下连软件与硬件， 横向承接人类意图。刚性环节用代码保确定性，柔性环节用 Skill 保弹性—— 刚柔一体，Agent 才能从软件聊天走向物理世界生产力。",
+      "totalDegree": 5,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "id": "note:codex-5a70cd",
+      "kind": "note",
+      "slug": "codex-5a70cd",
+      "title": "Codex 入门与第一次成功",
+      "date": "2026-08-04T15:00:15.719Z",
+      "updated": "2026-08-04T00:00:00.000Z",
+      "created": "2026-08-04T23:24:43+08:00",
+      "hall": "condition",
+      "type": "knowledge",
+      "form": "tutorial",
+      "domain": "coding",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "AI",
+        "Codex",
+        "Claude Code",
+        "入门"
+      ],
+      "summary": "从装环境、配 token 到第一次用 Codex / Claude Code 跑通一个真实点子：新手把 agent 用起来的最短路径。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:ai-20dc86",
+      "kind": "note",
+      "slug": "ai-20dc86",
+      "title": "低成本 AI 社群的真实问题",
+      "date": "2026-08-04T15:00:15.457Z",
+      "updated": "2026-08-04T00:00:00.000Z",
+      "created": "2026-08-04T23:24:43+08:00",
+      "hall": "kit",
+      "type": "knowledge",
+      "form": "resource",
+      "domain": "community",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "AI",
+        "社群",
+        "低成本"
+      ],
+      "summary": "duola 实际在用的低成本 AI 群与渠道：每个群解决什么、自己怎么用，以及为什么不公开全部链接。",
+      "totalDegree": 3,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "id": "note:419a2f",
+      "kind": "note",
+      "slug": "419a2f",
+      "title": "把害怕开始变成可执行动作",
+      "date": "2026-08-04T15:00:14.264Z",
+      "updated": "2026-08-04T00:00:00.000Z",
+      "created": "2026-08-04T23:24:43+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "life",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "生活",
+        "AI",
+        "个人系统"
+      ],
+      "summary": "生活费两千、专业走不通时，不甘心长成一套工具库、点子库和复盘系统，再交给 AI 当第二大脑。",
+      "totalDegree": 6,
+      "linkDegree": 3,
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
+      "id": "note:used-macbook-guide",
+      "kind": "note",
+      "slug": "used-macbook-guide",
+      "title": "我的 MacBook M1 Pro 是花 2800 块在闲鱼上买的",
+      "date": "2026-07-25T00:00:00.000Z",
+      "updated": "2026-07-25T00:00:00.000Z",
+      "created": "2026-08-13T09:31:30+08:00",
+      "hall": "condition",
+      "type": "knowledge",
+      "form": "tutorial",
+      "domain": "life",
+      "series": "哆啦和他的硬件",
+      "seriesOrder": 1,
+      "tags": [
+        "硬件",
+        "省钱",
+        "学生",
+        "Mac"
+      ],
+      "summary": "21 年特制版 M1 Pro，核心数不输 M2。2800 块购入，没后悔。选二手 MacBook 的关键：不看代际标签，看核心数。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:ai-low-cost-access",
+      "kind": "note",
+      "slug": "ai-low-cost-access",
+      "title": "我每个月在 AI 模型上的花销，不到正常价格的三分之一",
+      "date": "2026-07-25T00:00:00.000Z",
+      "updated": "2026-07-25T00:00:00.000Z",
+      "created": "2026-08-13T09:31:30+08:00",
+      "hall": "condition",
+      "type": "knowledge",
+      "form": "tutorial",
+      "domain": "ai",
+      "series": "软件与渠道",
+      "seriesOrder": 1,
+      "tags": [
+        "AI",
+        "省钱",
+        "学生",
+        "方法论"
+      ],
+      "summary": "闲鱼成品号、跨区兑换、合约窗口——三个渠道让我用很低的价格用到 GPT、Grok、Gemini。价格随时变，渠道逻辑不变。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:apple-pay-cross-region",
+      "kind": "note",
+      "slug": "apple-pay-cross-region",
+      "title": "我用 Apple Pay 跨区买海外 AI 会员，比国内便宜一半",
+      "date": "2026-07-25T00:00:00.000Z",
+      "updated": "2026-07-25T00:00:00.000Z",
+      "created": "2026-08-13T09:31:30+08:00",
+      "hall": "condition",
+      "type": "knowledge",
+      "form": "tutorial",
+      "domain": "ai",
+      "series": "软件与渠道",
+      "seriesOrder": 2,
+      "tags": [
+        "AI",
+        "省钱",
+        "学生",
+        "教程"
+      ],
+      "summary": "苹果各国区账号注册方便，Apple Pay 直接付。GPT、Grok、Gemini、Claude——海外 AI 会员比国内便宜很多。方法：注册外区 Apple ID → 充值 → 在 App 里付。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:hp-aftersales-tutor",
+      "kind": "note",
+      "slug": "hp-aftersales-tutor",
+      "title": "艺术生把惠普售后当私教，不花钱修电脑",
+      "date": "2026-07-25T00:00:00.000Z",
+      "updated": "2026-07-25T00:00:00.000Z",
+      "created": "2026-08-13T09:31:30+08:00",
+      "hall": "condition",
+      "type": "knowledge",
+      "form": "tutorial",
+      "domain": "life",
+      "series": "哆啦和他的硬件",
+      "seriesOrder": 1,
+      "tags": [
+        "硬件",
+        "省钱",
+        "学生",
+        "教程"
+      ],
+      "summary": "外面修电脑一次一两百。我靠惠普两年售后，学会了装系统、清灰、排查硬件——不用欠人情，问到就是赚到。代价：一次翻车，花了 200 块教训。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:cc-intro",
+      "kind": "note",
+      "slug": "cc-intro",
+      "title": "CC入门",
+      "date": "2026-06-17T00:00:00.000Z",
+      "updated": "2026-06-17T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "kit",
+      "type": "learn",
+      "form": "lesson",
+      "domain": "ai",
+      "series": "跟学",
+      "seriesOrder": 1,
+      "tags": [
+        "AI",
+        "Claude Code",
+        "入门",
+        "agent"
+      ],
+      "summary": "做一件以前做不到的事——从零驾驭 Claude Code 命令行 agent，自动化装好全栈开发环境。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:codex-intro",
+      "kind": "note",
+      "slug": "codex-intro",
+      "title": "Codex入门",
+      "date": "2026-06-17T00:00:00.000Z",
+      "updated": "2026-06-17T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "kit",
+      "type": "learn",
+      "form": "lesson",
+      "domain": "ai",
+      "series": "跟学",
+      "seriesOrder": 2,
+      "tags": [
+        "AI",
+        "Codex",
+        "入门",
+        "agent"
+      ],
+      "summary": "专业级 AI 编程——用 Codex 接入最强模型与大厂插件生态。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:side-hustle-blueprint",
+      "kind": "note",
+      "slug": "side-hustle-blueprint",
+      "title": "副业蓝图 — 从零到一的服务型副业规划技能",
+      "date": "2026-06-07T00:00:00.000Z",
+      "updated": "2026-06-07T00:00:00.000Z",
+      "created": "2026-07-21T12:32:27+08:00",
+      "hall": "exchange",
+      "type": "project",
+      "form": "project",
+      "domain": "product",
+      "series": "Ferry",
+      "seriesOrder": 4,
+      "tags": [
+        "AI",
+        "副业",
+        "商业规划",
+        "Claude-Code-Skill",
+        "产品"
+      ],
+      "summary": "帮用户从零到一规划并上线服务型副业的 AI 技能。8 阶段流程，双入口设计，历经 8 次迭代。核心创新：止痛药/维生素判断、学习曲线定价（新手不降价）、信任四层体系。",
+      "totalDegree": 7,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 6
+    },
+    {
+      "id": "note:design-for-people",
+      "kind": "note",
+      "slug": "design-for-people",
+      "title": "设计为人与内容搭桥",
+      "date": "2026-05-31T16:00:00.000Z",
+      "updated": "2026-05-31T16:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "product",
+      "series": "设计思考",
+      "seriesOrder": 2,
+      "tags": [
+        "设计",
+        "产品",
+        "UX",
+        "AI"
+      ],
+      "summary": "好的设计，让用户与内容双向奔赴。把自己当成最懒最挑剔的用户，用减法哲学求解人与内容的最小路径，降低认知负担。",
+      "totalDegree": 6,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
+      "id": "note:card-table",
+      "kind": "note",
+      "slug": "card-table",
+      "title": "卡牌桌点子页面 — 页面本身就是一个点子",
+      "date": "2026-05-31T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "showcase",
+      "type": "idea",
+      "form": "idea",
+      "domain": "coding",
+      "series": "交互点子",
+      "seriesOrder": 1,
+      "tags": [
+        "设计",
+        "前端",
+        "交互",
+        "卡牌隐喻"
+      ],
+      "summary": "/ideas 页面不是列表，是一张卡牌桌。每个点子是一张牌，状态决定牌的翻开程度。构思中是牌背，验证中是翻开了但有雾，实现中在发光，已完成完全展示。页面本身就在演示\"卡牌式交互\"这个点子。",
+      "totalDegree": 6,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 5
+    },
+    {
+      "id": "note:cli-command-palette",
+      "kind": "note",
+      "slug": "cli-command-palette",
+      "title": "CLI 命令面板 — 卡牌式技能加载器",
+      "date": "2026-05-31T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "showcase",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "series": "交互点子",
+      "seriesOrder": 2,
+      "tags": [
+        "AI",
+        "产品",
+        "企业场景",
+        "交互设计"
+      ],
+      "summary": "面向企业用户的 CLI 命令面板，用卡牌隐喻将技能/MCP/工具装载到槽位，点击即出。像小时候打牌一样——装一张卡，打一张卡，产出一份内容。",
+      "totalDegree": 6,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 5
+    },
+    {
+      "id": "note:fear-as-fuel",
+      "kind": "note",
+      "slug": "fear-as-fuel",
+      "title": "我的畏惧，也是动力",
+      "date": "2026-05-27T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "life",
+      "series": "前进三部曲",
+      "seriesOrder": 1,
+      "tags": [
+        "AI",
+        "个人系统",
+        "思考"
+      ],
+      "summary": "不甘心困在小小的时空里，用有限的资源争取更大的自由空间。在这个过程中，知识库、思考和点子库自然积累，拼成了一个个人前进系统。加上 AI，它变成了第二大脑。",
+      "totalDegree": 8,
+      "linkDegree": 5,
+      "inDegree": 3,
+      "outDegree": 5
+    },
+    {
+      "id": "note:ideas-beyond-time",
+      "kind": "note",
+      "slug": "ideas-beyond-time",
+      "title": "点子是不分时空的资产",
+      "date": "2026-05-27T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "ai",
+      "series": "前进三部曲",
+      "seriesOrder": 2,
+      "tags": [
+        "AI",
+        "点子",
+        "思考"
+      ],
+      "summary": "老师说过，文字是可以穿越时空的共鸣。点子也是。存的时候不知道何时取出，但 AI 让取出的成本越来越低。",
+      "totalDegree": 7,
+      "linkDegree": 4,
+      "inDegree": 4,
+      "outDegree": 3
+    },
+    {
+      "id": "note:future-already-here",
+      "kind": "note",
+      "slug": "future-already-here",
+      "title": "未来在来了",
+      "date": "2026-05-26T16:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "ai",
+      "series": "前进三部曲",
+      "seriesOrder": 3,
+      "tags": [
+        "AI",
+        "未来",
+        "思考"
+      ],
+      "summary": "2027 年，你家狗汪两声，AI 就能翻译出它在说什么。从现在到 2050，AI 会把想象变成现实。问题是，你的想象力准备好了吗？",
+      "totalDegree": 5,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "id": "note:ferry-theory",
+      "kind": "note",
+      "slug": "ferry-theory",
+      "title": "Ferry 理论建构：从差距到行动的映射",
+      "date": "2026-05-23T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "philosophy",
+      "series": "Ferry",
+      "seriesOrder": 1,
+      "tags": [
+        "哲学",
+        "AI",
+        "Ferry"
+      ],
+      "summary": "世界是一个巨大的 f(x) = y。差距驱动行动，行动逼近目标——Ferry 协议的数学表达与认知框架。",
+      "totalDegree": 8,
+      "linkDegree": 5,
+      "inDegree": 3,
+      "outDegree": 5
+    },
+    {
+      "id": "note:ferry-spec",
+      "kind": "note",
+      "slug": "ferry-spec",
+      "title": "Ferry 渡轮 — 人机协作世界协议",
+      "date": "2026-05-23T00:00:00.000Z",
+      "updated": "2026-06-07T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "showcase",
+      "type": "project",
+      "form": "project",
+      "domain": "philosophy",
+      "series": "Ferry",
+      "seriesOrder": 2,
+      "tags": [
+        "AI",
+        "哲学",
+        "协议",
+        "人机协作"
+      ],
+      "summary": "面向人机协作的世界协议。f(x)=y · 做减法 · 螺旋进化 · 熵减命令。Ferry 计划的根——理论指导实践，实践反哺理论。",
+      "totalDegree": 6,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
+      "id": "note:walkcraft-skill-craft",
+      "kind": "note",
+      "slug": "walkcraft-skill-craft",
+      "title": "Walkcraft-Skill-Craft — 健壮技能制作方法论",
+      "date": "2026-05-18T00:00:00.000Z",
+      "updated": "2026-06-07T00:00:00.000Z",
+      "created": "2026-07-21T12:32:27+08:00",
+      "hall": "showcase",
+      "type": "project",
+      "form": "project",
+      "domain": "ai",
+      "series": "Ferry",
+      "seriesOrder": 3,
+      "tags": [
+        "AI",
+        "方法论",
+        "技能工程",
+        "迭代",
+        "Claude-Code"
+      ],
+      "summary": "从真实测试中迭代出健壮技能的方法论。6 阶段流程：问题建模 → 草稿 → 真实测试 → 审计分级 → 做减法 → 通用化。核心观点：第一版必然基于错误假设，只有真实测试才能暴露问题。",
+      "totalDegree": 7,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 5
+    },
+    {
+      "id": "note:idea-cocreate",
+      "kind": "note",
+      "slug": "idea-cocreate",
+      "title": "点子共促",
+      "date": "2026-05-01T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "kit",
+      "type": "tool",
+      "form": "resource",
+      "domain": "community",
+      "series": "场",
+      "seriesOrder": 1,
+      "tags": [
+        "AI",
+        "落地",
+        "微信",
+        "社群",
+        "学习"
+      ],
+      "summary": "和朋友们的学习氛围群。有一个点子想把它做出来的人，欢迎加入。免费，只为更好的未来。",
+      "totalDegree": 6,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
+      "id": "note:walker-launch",
+      "kind": "note",
+      "slug": "walker-launch",
+      "title": "Walker 启航",
+      "date": "2026-04-29T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "philosophy",
+      "series": "站志",
+      "seriesOrder": 1,
+      "tags": [
+        "随想",
+        "哲学"
+      ],
+      "summary": "行过万里水路，记录每一次停靠。这是 Walker 的第一篇日志。",
+      "totalDegree": 4,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:subtraction-dialogue",
+      "kind": "note",
+      "slug": "subtraction-dialogue",
+      "title": "与 AI 谈「做减法」",
+      "date": "2026-04-25T00:00:00.000Z",
+      "updated": "2026-05-31T00:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "article",
+      "domain": "philosophy",
+      "series": "设计思考",
+      "seriesOrder": 1,
+      "tags": [
+        "哲学",
+        "AI",
+        "随想"
+      ],
+      "summary": "做减法不是少做，是想清楚再做。一次关于极简与架构设计的对话，从中提炼出「减少概念数量」的原则。",
+      "totalDegree": 5,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 3
+    },
+    {
+      "id": "ghost:affordable-ai-community",
+      "kind": "ghost",
+      "slug": "affordable-ai-community",
+      "totalDegree": 1,
+      "linkDegree": 1,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "ghost:nl-programming",
+      "kind": "ghost",
+      "slug": "nl-programming",
+      "totalDegree": 1,
+      "linkDegree": 1,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:AGI",
+      "kind": "tag",
+      "tag": "AGI",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:AI",
+      "kind": "tag",
+      "tag": "AI",
+      "totalDegree": 20,
+      "linkDegree": 0,
+      "inDegree": 20,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:AI Agent",
+      "kind": "tag",
+      "tag": "AI Agent",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Agent",
+      "kind": "tag",
+      "tag": "Agent",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Claude Code",
+      "kind": "tag",
+      "tag": "Claude Code",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Claude-Code",
+      "kind": "tag",
+      "tag": "Claude-Code",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Claude-Code-Skill",
+      "kind": "tag",
+      "tag": "Claude-Code-Skill",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Codex",
+      "kind": "tag",
+      "tag": "Codex",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:DeepSeek Harness",
+      "kind": "tag",
+      "tag": "DeepSeek Harness",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Ferry",
+      "kind": "tag",
+      "tag": "Ferry",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Gateway",
+      "kind": "tag",
+      "tag": "Gateway",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Mac",
+      "kind": "tag",
+      "tag": "Mac",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Office 转换",
+      "kind": "tag",
+      "tag": "Office 转换",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:OpenClaw",
+      "kind": "tag",
+      "tag": "OpenClaw",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:Skill",
+      "kind": "tag",
+      "tag": "Skill",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:UX",
+      "kind": "tag",
+      "tag": "UX",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:agent",
+      "kind": "tag",
+      "tag": "agent",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:iOS",
+      "kind": "tag",
+      "tag": "iOS",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:macOS",
+      "kind": "tag",
+      "tag": "macOS",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:个人系统",
+      "kind": "tag",
+      "tag": "个人系统",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:交互",
+      "kind": "tag",
+      "tag": "交互",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:交互设计",
+      "kind": "tag",
+      "tag": "交互设计",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:产品",
+      "kind": "tag",
+      "tag": "产品",
+      "totalDegree": 3,
+      "linkDegree": 0,
+      "inDegree": 3,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:人机协作",
+      "kind": "tag",
+      "tag": "人机协作",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:企业场景",
+      "kind": "tag",
+      "tag": "企业场景",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:低成本",
+      "kind": "tag",
+      "tag": "低成本",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:入门",
+      "kind": "tag",
+      "tag": "入门",
+      "totalDegree": 3,
+      "linkDegree": 0,
+      "inDegree": 3,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:前端",
+      "kind": "tag",
+      "tag": "前端",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:副业",
+      "kind": "tag",
+      "tag": "副业",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:协议",
+      "kind": "tag",
+      "tag": "协议",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:卡牌隐喻",
+      "kind": "tag",
+      "tag": "卡牌隐喻",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:哲学",
+      "kind": "tag",
+      "tag": "哲学",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:商业规划",
+      "kind": "tag",
+      "tag": "商业规划",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:学习",
+      "kind": "tag",
+      "tag": "学习",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:学生",
+      "kind": "tag",
+      "tag": "学生",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:屏幕缩放",
+      "kind": "tag",
+      "tag": "屏幕缩放",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:工作台",
+      "kind": "tag",
+      "tag": "工作台",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:工作流",
+      "kind": "tag",
+      "tag": "工作流",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:录屏",
+      "kind": "tag",
+      "tag": "录屏",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:微信",
+      "kind": "tag",
+      "tag": "微信",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:思考",
+      "kind": "tag",
+      "tag": "思考",
+      "totalDegree": 3,
+      "linkDegree": 0,
+      "inDegree": 3,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:技能工程",
+      "kind": "tag",
+      "tag": "技能工程",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:教程",
+      "kind": "tag",
+      "tag": "教程",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:文件阅读",
+      "kind": "tag",
+      "tag": "文件阅读",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:方法论",
+      "kind": "tag",
+      "tag": "方法论",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:未来",
+      "kind": "tag",
+      "tag": "未来",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:架构",
+      "kind": "tag",
+      "tag": "架构",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:标注",
+      "kind": "tag",
+      "tag": "标注",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:浏览器",
+      "kind": "tag",
+      "tag": "浏览器",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:点子",
+      "kind": "tag",
+      "tag": "点子",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:生活",
+      "kind": "tag",
+      "tag": "生活",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:省钱",
+      "kind": "tag",
+      "tag": "省钱",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:硬件",
+      "kind": "tag",
+      "tag": "硬件",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:确定性",
+      "kind": "tag",
+      "tag": "确定性",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:社群",
+      "kind": "tag",
+      "tag": "社群",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:统筹规划",
+      "kind": "tag",
+      "tag": "统筹规划",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:落地",
+      "kind": "tag",
+      "tag": "落地",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:设计",
+      "kind": "tag",
+      "tag": "设计",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:跨端",
+      "kind": "tag",
+      "tag": "跨端",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:迭代",
+      "kind": "tag",
+      "tag": "迭代",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:随想",
+      "kind": "tag",
+      "tag": "随想",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "attachment:content/log/skill结构图.png",
+      "kind": "attachment",
+      "path": "content/log/skill结构图.png",
+      "totalDegree": 0,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "attachment:content/log/微信支付码.jpg",
+      "kind": "attachment",
+      "path": "content/log/微信支付码.jpg",
+      "totalDegree": 0,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 0
+    }
+  ],
+  "edges": [
+    {
+      "source": "note:419a2f",
+      "target": "note:ferry-theory",
+      "kind": "link"
+    },
+    {
+      "source": "note:419a2f",
+      "target": "ghost:affordable-ai-community",
+      "kind": "link"
+    },
+    {
+      "source": "note:419a2f",
+      "target": "note:ideas-beyond-time",
+      "kind": "link"
+    },
+    {
+      "source": "note:side-hustle-blueprint",
+      "target": "note:walkcraft-skill-craft",
+      "kind": "link"
+    },
+    {
+      "source": "note:design-for-people",
+      "target": "ghost:nl-programming",
+      "kind": "link"
+    },
+    {
+      "source": "note:design-for-people",
+      "target": "note:subtraction-dialogue",
+      "kind": "link"
+    },
+    {
+      "source": "note:card-table",
+      "target": "note:cli-command-palette",
+      "kind": "link"
+    },
+    {
+      "source": "note:cli-command-palette",
+      "target": "note:card-table",
+      "kind": "link"
+    },
+    {
+      "source": "note:fear-as-fuel",
+      "target": "note:ferry-theory",
+      "kind": "link"
+    },
+    {
+      "source": "note:fear-as-fuel",
+      "target": "note:ideas-beyond-time",
+      "kind": "link"
+    },
+    {
+      "source": "note:future-already-here",
+      "target": "note:fear-as-fuel",
+      "kind": "link"
+    },
+    {
+      "source": "note:future-already-here",
+      "target": "note:ideas-beyond-time",
+      "kind": "link"
+    },
+    {
+      "source": "note:ferry-theory",
+      "target": "note:subtraction-dialogue",
+      "kind": "link"
+    },
+    {
+      "source": "note:ferry-theory",
+      "target": "note:fear-as-fuel",
+      "kind": "link"
+    },
+    {
+      "source": "note:ferry-spec",
+      "target": "note:walkcraft-skill-craft",
+      "kind": "link"
+    },
+    {
+      "source": "note:ferry-spec",
+      "target": "note:side-hustle-blueprint",
+      "kind": "link"
+    },
+    {
+      "source": "note:idea-cocreate",
+      "target": "note:ideas-beyond-time",
+      "kind": "link"
+    },
+    {
+      "source": "note:walker-launch",
+      "target": "note:ferry-theory",
+      "kind": "link"
+    },
+    {
+      "source": "note:walker-launch",
+      "target": "note:fear-as-fuel",
+      "kind": "link"
+    },
+    {
+      "source": "note:dorazoom",
+      "target": "tag:macOS",
+      "kind": "tag"
+    },
+    {
+      "source": "note:dorazoom",
+      "target": "tag:屏幕缩放",
+      "kind": "tag"
+    },
+    {
+      "source": "note:dorazoom",
+      "target": "tag:标注",
+      "kind": "tag"
+    },
+    {
+      "source": "note:dorazoom",
+      "target": "tag:录屏",
+      "kind": "tag"
+    },
+    {
+      "source": "note:goout",
+      "target": "tag:AI Agent",
+      "kind": "tag"
+    },
+    {
+      "source": "note:goout",
+      "target": "tag:统筹规划",
+      "kind": "tag"
+    },
+    {
+      "source": "note:goout",
+      "target": "tag:iOS",
+      "kind": "tag"
+    },
+    {
+      "source": "note:goout",
+      "target": "tag:确定性",
+      "kind": "tag"
+    },
+    {
+      "source": "note:itab-agent-spaces",
+      "target": "tag:Agent",
+      "kind": "tag"
+    },
+    {
+      "source": "note:itab-agent-spaces",
+      "target": "tag:工作台",
+      "kind": "tag"
+    },
+    {
+      "source": "note:itab-agent-spaces",
+      "target": "tag:浏览器",
+      "kind": "tag"
+    },
+    {
+      "source": "note:itab-agent-spaces",
+      "target": "tag:DeepSeek Harness",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:文件阅读",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:跨端",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:Office 转换",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:Skill",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:人机协作",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:工作流",
+      "kind": "tag"
+    },
+    {
+      "source": "note:lobster-core-value",
+      "target": "tag:OpenClaw",
+      "kind": "tag"
+    },
+    {
+      "source": "note:lobster-core-value",
+      "target": "tag:AGI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:lobster-core-value",
+      "target": "tag:Gateway",
+      "kind": "tag"
+    },
+    {
+      "source": "note:lobster-core-value",
+      "target": "tag:Skill",
+      "kind": "tag"
+    },
+    {
+      "source": "note:lobster-core-value",
+      "target": "tag:架构",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-5a70cd",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-5a70cd",
+      "target": "tag:Codex",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-5a70cd",
+      "target": "tag:Claude Code",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-5a70cd",
+      "target": "tag:入门",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-20dc86",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-20dc86",
+      "target": "tag:社群",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-20dc86",
+      "target": "tag:低成本",
+      "kind": "tag"
+    },
+    {
+      "source": "note:419a2f",
+      "target": "tag:生活",
+      "kind": "tag"
+    },
+    {
+      "source": "note:419a2f",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:419a2f",
+      "target": "tag:个人系统",
+      "kind": "tag"
+    },
+    {
+      "source": "note:used-macbook-guide",
+      "target": "tag:硬件",
+      "kind": "tag"
+    },
+    {
+      "source": "note:used-macbook-guide",
+      "target": "tag:省钱",
+      "kind": "tag"
+    },
+    {
+      "source": "note:used-macbook-guide",
+      "target": "tag:学生",
+      "kind": "tag"
+    },
+    {
+      "source": "note:used-macbook-guide",
+      "target": "tag:Mac",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-low-cost-access",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-low-cost-access",
+      "target": "tag:省钱",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-low-cost-access",
+      "target": "tag:学生",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ai-low-cost-access",
+      "target": "tag:方法论",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apple-pay-cross-region",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apple-pay-cross-region",
+      "target": "tag:省钱",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apple-pay-cross-region",
+      "target": "tag:学生",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apple-pay-cross-region",
+      "target": "tag:教程",
+      "kind": "tag"
+    },
+    {
+      "source": "note:hp-aftersales-tutor",
+      "target": "tag:硬件",
+      "kind": "tag"
+    },
+    {
+      "source": "note:hp-aftersales-tutor",
+      "target": "tag:省钱",
+      "kind": "tag"
+    },
+    {
+      "source": "note:hp-aftersales-tutor",
+      "target": "tag:学生",
+      "kind": "tag"
+    },
+    {
+      "source": "note:hp-aftersales-tutor",
+      "target": "tag:教程",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cc-intro",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cc-intro",
+      "target": "tag:Claude Code",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cc-intro",
+      "target": "tag:入门",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cc-intro",
+      "target": "tag:agent",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-intro",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-intro",
+      "target": "tag:Codex",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-intro",
+      "target": "tag:入门",
+      "kind": "tag"
+    },
+    {
+      "source": "note:codex-intro",
+      "target": "tag:agent",
+      "kind": "tag"
+    },
+    {
+      "source": "note:side-hustle-blueprint",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:side-hustle-blueprint",
+      "target": "tag:副业",
+      "kind": "tag"
+    },
+    {
+      "source": "note:side-hustle-blueprint",
+      "target": "tag:商业规划",
+      "kind": "tag"
+    },
+    {
+      "source": "note:side-hustle-blueprint",
+      "target": "tag:Claude-Code-Skill",
+      "kind": "tag"
+    },
+    {
+      "source": "note:side-hustle-blueprint",
+      "target": "tag:产品",
+      "kind": "tag"
+    },
+    {
+      "source": "note:design-for-people",
+      "target": "tag:设计",
+      "kind": "tag"
+    },
+    {
+      "source": "note:design-for-people",
+      "target": "tag:产品",
+      "kind": "tag"
+    },
+    {
+      "source": "note:design-for-people",
+      "target": "tag:UX",
+      "kind": "tag"
+    },
+    {
+      "source": "note:design-for-people",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:card-table",
+      "target": "tag:设计",
+      "kind": "tag"
+    },
+    {
+      "source": "note:card-table",
+      "target": "tag:前端",
+      "kind": "tag"
+    },
+    {
+      "source": "note:card-table",
+      "target": "tag:交互",
+      "kind": "tag"
+    },
+    {
+      "source": "note:card-table",
+      "target": "tag:卡牌隐喻",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cli-command-palette",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cli-command-palette",
+      "target": "tag:产品",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cli-command-palette",
+      "target": "tag:企业场景",
+      "kind": "tag"
+    },
+    {
+      "source": "note:cli-command-palette",
+      "target": "tag:交互设计",
+      "kind": "tag"
+    },
+    {
+      "source": "note:fear-as-fuel",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:fear-as-fuel",
+      "target": "tag:个人系统",
+      "kind": "tag"
+    },
+    {
+      "source": "note:fear-as-fuel",
+      "target": "tag:思考",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ideas-beyond-time",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ideas-beyond-time",
+      "target": "tag:点子",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ideas-beyond-time",
+      "target": "tag:思考",
+      "kind": "tag"
+    },
+    {
+      "source": "note:future-already-here",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:future-already-here",
+      "target": "tag:未来",
+      "kind": "tag"
+    },
+    {
+      "source": "note:future-already-here",
+      "target": "tag:思考",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-theory",
+      "target": "tag:哲学",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-theory",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-theory",
+      "target": "tag:Ferry",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-spec",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-spec",
+      "target": "tag:哲学",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-spec",
+      "target": "tag:协议",
+      "kind": "tag"
+    },
+    {
+      "source": "note:ferry-spec",
+      "target": "tag:人机协作",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walkcraft-skill-craft",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walkcraft-skill-craft",
+      "target": "tag:方法论",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walkcraft-skill-craft",
+      "target": "tag:技能工程",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walkcraft-skill-craft",
+      "target": "tag:迭代",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walkcraft-skill-craft",
+      "target": "tag:Claude-Code",
+      "kind": "tag"
+    },
+    {
+      "source": "note:idea-cocreate",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:idea-cocreate",
+      "target": "tag:落地",
+      "kind": "tag"
+    },
+    {
+      "source": "note:idea-cocreate",
+      "target": "tag:微信",
+      "kind": "tag"
+    },
+    {
+      "source": "note:idea-cocreate",
+      "target": "tag:社群",
+      "kind": "tag"
+    },
+    {
+      "source": "note:idea-cocreate",
+      "target": "tag:学习",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walker-launch",
+      "target": "tag:随想",
+      "kind": "tag"
+    },
+    {
+      "source": "note:walker-launch",
+      "target": "tag:哲学",
+      "kind": "tag"
+    },
+    {
+      "source": "note:subtraction-dialogue",
+      "target": "tag:哲学",
+      "kind": "tag"
+    },
+    {
+      "source": "note:subtraction-dialogue",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:subtraction-dialogue",
+      "target": "tag:随想",
+      "kind": "tag"
+    }
+  ]
+}

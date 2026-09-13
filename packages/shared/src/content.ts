@@ -117,13 +117,25 @@ export function isPostType(type: string): boolean {
 /** Resolve a wiki slug to a public href; return undefined to keep plain text. */
 export type WikiLinkResolver = (slug: string) => string | undefined;
 
+/**
+ * 内部链接（wiki 链接）语法的唯一来源：`[[slug]]` / `[[slug|label]]`。
+ * 正文渲染（expandWikiLinks）与知识图谱抽边（graph.ts）共用同一份 pattern——
+ * 两处各写一个正则就会出现「渲染得出来但图谱看不见」的静默漂移。
+ * 每次返回新实例：带 /g 的正则对象有 lastIndex 状态，不可跨调用共享。
+ */
+export const WIKI_LINK_SOURCE = '\\[\\[([^\\]|\\n]+)(?:\\|([^\\]\\n]+))?\\]\\]';
+
+export function wikiLinkPattern(): RegExp {
+  return new RegExp(WIKI_LINK_SOURCE, 'g');
+}
+
 /** Turn `[[slug]]` / `[[slug|label]]` into markdown links when the slug is public. */
 export function expandWikiLinks(
   markdown: string,
   resolveHref: WikiLinkResolver,
 ): string {
   return markdown.replace(
-    /\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]/g,
+    wikiLinkPattern(),
     (full, rawSlug: string, rawLabel?: string) => {
       const slug = rawSlug.trim();
       const label = (rawLabel ?? slug).trim();

@@ -11,9 +11,11 @@ import { WEB_ROUTES } from '../shared/routes';
 
 const SITE_ORIGIN = 'https://www.iwalk.pro';
 const SITE_NAME = 'Walker';
-const SITE_TITLE = 'Walker · 用 AI 走自己的路';
+const PERSON_NAME = 'Dora';
+const PERSON_IMAGE = `${SITE_ORIGIN}/images/dora.jpg`;
+const SITE_TITLE = 'Walker · 用好 AI 做好事';
 const SITE_DESCRIPTION =
-  'duola 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
+  'Dora 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
 const DEFAULT_IMAGE = `${SITE_ORIGIN}/images/hero-bg.png`;
 const PERSON_ID = `${SITE_ORIGIN}/me#person`;
 
@@ -34,7 +36,7 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
   [WEB_ROUTES.browse]: {
     title: '证据 · Walker',
     description:
-      'duola 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。',
+      'Dora 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。',
     canonicalPath: WEB_ROUTES.browse,
   },
   [WEB_ROUTES.tutorials]: {
@@ -56,19 +58,25 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
   [WEB_ROUTES.toolsResources]: {
     title: '资源 · Walker',
     description:
-      'duola 实际在用或了解的群、工具与引路人；外部服务与本站无利益关系，使用前请自行核验。',
+      'Dora 实际在用或了解的群、工具与引路人；外部服务与本站无利益关系，使用前请自行核验。',
     canonicalPath: WEB_ROUTES.toolsResources,
+  },
+  [WEB_ROUTES.graph]: {
+    title: '结构 · Walker',
+    description:
+      'Walker 公开内容的互引结构：谁引用了谁、哪些文章还没有互相引用。只由正文内链构成，不含模型推断。',
+    canonicalPath: WEB_ROUTES.graph,
   },
   [WEB_ROUTES.about]: {
     title: '关于本站 · Walker',
     description:
-      'Walker 是 duola 的个人知识与行动样板站：人的认识沉淀为知识库，服务判断与行动，再由实践回灌知识。',
+      'Walker 是 Dora 的个人知识与行动样板站：人的认识沉淀为知识库，服务判断与行动，再由实践回灌知识。',
     canonicalPath: WEB_ROUTES.about,
   },
   [WEB_ROUTES.me]: {
-    title: 'duola · 关于我',
+    title: `${PERSON_NAME} · 关于我`,
     description:
-      'duola，艺术生，在用 AI 解决真实问题：把真实卡点变成可检验的下一步，把走过的路收成公开证据。',
+      'Dora，艺术生，在用 AI 解决真实问题：把真实卡点变成可检验的下一步，把走过的路收成公开证据。',
     canonicalPath: WEB_ROUTES.me,
     type: 'profile',
   },
@@ -76,6 +84,12 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
     title: '卡 · Walker',
     description: '说清一个真实卡点，拿到可以立即开始的下一步。',
     canonicalPath: WEB_ROUTES.ask,
+    indexable: false,
+  },
+  [WEB_ROUTES.toolsResult]: {
+    title: '下一步 · Walker',
+    description: '这次卡点拿到的下一步与依据；结果只在生成它的浏览器里可还原。',
+    canonicalPath: WEB_ROUTES.toolsResult,
     indexable: false,
   },
   [WEB_ROUTES.assistant]: {
@@ -125,7 +139,7 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
   },
   [WEB_ROUTES.gear]: {
     title: '装备 · Walker',
-    description: 'duola 当前使用的设备与工作组合。',
+    description: 'Dora 当前使用的设备与工作组合。',
     canonicalPath: WEB_ROUTES.gear,
   },
   [WEB_ROUTES.support]: {
@@ -244,7 +258,7 @@ function schemaFor(metadata: RouteMetadataValue, item?: ContentItem): unknown {
         description: item.summary,
         datePublished: item.date,
         dateModified: item.updated || item.date,
-        author: { '@id': PERSON_ID, name: item.author || 'duola' },
+        author: { '@id': PERSON_ID, name: item.author || PERSON_NAME },
         publisher: { '@id': PERSON_ID },
         inLanguage: 'zh-CN',
         articleSection: item.series || item.domain || item.type,
@@ -255,9 +269,9 @@ function schemaFor(metadata: RouteMetadataValue, item?: ContentItem): unknown {
       {
         '@type': 'Person',
         '@id': PERSON_ID,
-        name: item.author || 'duola',
+        name: item.author || PERSON_NAME,
         url: `${SITE_ORIGIN}/me`,
-        image: `${SITE_ORIGIN}/images/duola.jpg`,
+        image: PERSON_IMAGE,
       },
       {
         '@type': 'BreadcrumbList',
@@ -315,9 +329,9 @@ function schemaFor(metadata: RouteMetadataValue, item?: ContentItem): unknown {
       {
         '@type': 'Person',
         '@id': PERSON_ID,
-        name: 'duola',
+        name: PERSON_NAME,
         url: canonical,
-        image: `${SITE_ORIGIN}/images/duola.jpg`,
+        image: PERSON_IMAGE,
       },
     );
   } else if (metadata.canonicalPath === WEB_ROUTES.about) {
@@ -357,13 +371,13 @@ function syncMetadata(metadata: RouteMetadataValue, item?: ContentItem): void {
       ? item.image
       : absoluteUrl(item.image)
     : metadata.type === 'profile'
-      ? `${SITE_ORIGIN}/images/duola.jpg`
+      ? PERSON_IMAGE
       : DEFAULT_IMAGE;
 
   document.title = metadata.title;
   upsertCanonical(canonical);
   upsertMeta('name', 'description', metadata.description);
-  upsertMeta('name', 'author', 'duola');
+  upsertMeta('name', 'author', PERSON_NAME);
   upsertMeta(
     'name',
     'robots',

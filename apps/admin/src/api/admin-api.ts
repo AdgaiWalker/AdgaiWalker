@@ -37,15 +37,6 @@ export interface Execution {
   outcome: string | null;
 }
 
-export interface CredentialRecord {
-  id: string;
-  name: string;
-  provider: string;
-  last4: string;
-  note: string | null;
-  updatedAt: string;
-}
-
 export interface Action {
   id: string;
   title: string;
@@ -97,6 +88,44 @@ export interface Metrics {
     byBucket14d: { visitor: number; self: number; external: number };
     windowDays: number;
   };
+}
+
+/** 观测数据页契约（与 apps/api observability.service 对齐） */
+export type UsageRowCounts = { attempt: number; success: number; fail: number };
+
+export interface UsageStats {
+  days: number;
+  weeks: string[];
+  byFeature: Record<
+    string,
+    { guest: UsageRowCounts; user: UsageRowCounts; owner: UsageRowCounts }
+  >;
+}
+
+export interface AiStats {
+  days: number;
+  totalRuns: number;
+  aiRuns: number;
+  aiRatio: number;
+  degradeReasons: Array<{ reason: string; count: number }>;
+  tokensIn: number;
+  tokensOut: number;
+  cacheReadTokens: number;
+  elapsedMs: { p50: number; p90: number };
+  firstChunkMs: { p50: number; p90: number };
+  dailyBudget: Array<{
+    date: string;
+    requests: number;
+    tokensIn: number;
+    tokensOut: number;
+  }>;
+}
+
+export interface JourneyEvent {
+  at: string;
+  source: 'clue' | 'assistant' | 'search-miss' | 'content-feedback';
+  actor: 'guest' | 'owner' | 'anonymous';
+  text: string;
 }
 
 export const adminApi = {
@@ -156,6 +185,13 @@ export const adminApi = {
       },
     ),
   metrics: () => adminRequest<Metrics>('/metrics'),
+  usageStats: (days = 30) =>
+    adminRequest<UsageStats>(`/admin/usage/stats?days=${days}`),
+  aiStats: (days = 30) => adminRequest<AiStats>(`/admin/ai/stats?days=${days}`),
+  journey: (days = 7, anonId?: string) =>
+    adminRequest<JourneyEvent[]>(
+      `/admin/journey?days=${days}${anonId ? `&anonId=${encodeURIComponent(anonId)}` : ''}`,
+    ),
 
   workbench: () => adminRequest<WorkbenchSnapshot>('/workbench'),
   actions: (query?: { status?: string; kind?: string }) => {
@@ -229,19 +265,26 @@ export const adminApi = {
       { method: 'PUT', body: JSON.stringify({ raw }) },
     ),
 
-  credentials: {
-    list: () => adminRequest<CredentialRecord[]>('/credentials'),
-    upsert: (input: { name: string; provider: string; secret: string; note?: string }) =>
-      adminRequest<CredentialRecord>('/credentials', {
-        method: 'PUT',
-        body: JSON.stringify(input),
-      }),
-    reveal: (id: string) =>
-      adminRequest<{ name: string; provider: string; secret: string }>(
-        `/credentials/${id}/reveal`,
-      ),
-    remove: (id: string) =>
-      adminRequest<{ ok: true }>(`/credentials/${id}`, { method: 'DELETE' }),
+  modelProviders: {
+    list: () => adminRequest<ModelProviderRecord[]>('/model-providers'),
+    create: (input: { id: string; name: string; baseUrl: string; apiFormat?: string; apiKey?: string; modelsJson?: string }) =>
+      adminRequest<ModelProviderRecord>('/model-providers', { method: 'POST', body: JSON.stringify(input) }),
+    update: (id: string, input: { name: string; baseUrl: string; apiFormat?: string; apiKey?: string; modelsJson?: string; enabled?: boolean }) =>
+      adminRequest<ModelProviderRecord>(`/model-providers/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
+    remove: (id: string) => adminRequest<{ ok: true }>(`/model-providers/${id}`, { method: 'DELETE' }),
+    ping: (id: string) => adminRequest<{ ok: boolean; latencyMs: number; statusText: string }>(`/model-providers/${id}/ping`, { method: 'POST' }),
+  },
+
+  agents: {
+    list: () => adminRequest<AgentUnitRecord[]>('/agents'),
+    save: (input: { id: string; name: string; icon?: string; providerId?: string | null; modelId?: string; prompt: string }) =>
+      adminRequest<AgentUnitRecord>('/agents', { method: 'POST', body: JSON.stringify(input) }),
+    remove: (id: string) => adminRequest<{ ok: true }>(`/agents/${id}`, { method: 'DELETE' }),
+    logFiles: () => adminRequest<string[]>('/agents/log-files'),
+    runFile: (id: string, input: { targetFile: string; instruction: string }) =>
+      adminRequest<AgentRunResult>(`/agents/${id}/run-file`, { method: 'POST', body: JSON.stringify(input) }),
+    runs: (id: string) => adminRequest<AgentRunRecord[]>(`/agents/${id}/runs`),
+    trace: (runId: string) => adminRequest<Record<string, unknown>[]>(`/runs/${runId}/trace`),
   },
 
   health: () => adminRequest<{ ok: boolean; db: boolean; aiEnabled: boolean }>('/health'),
@@ -258,3 +301,75 @@ export type ContentDetail = ContentMeta & {
   raw: string;
   ext: '.md' | '.mdx';
 };
+
+export type ModelItem = {
+  id: string;
+  tags?: string[];
+};
+
+export interface ModelProviderRecord {
+  id: string;
+  name: string;
+  category: string;
+  enabled: boolean;
+  baseUrl: string;
+  apiFormat: string;
+  last4: string;
+  models: ModelItem[];
+  updatedAt: string;
+}
+
+export interface AgentUnitRecord {
+  id: string;
+  name: string;
+  icon: string;
+  isSystem: boolean;
+  providerId: string | null;
+  modelId: string;
+  prompt: string;
+  updatedAt: string;
+}
+
+export interface AgentRunRecord {
+  id: string;
+  agentId: string;
+  targetFile: string | null;
+  instruction: string;
+  output: string;
+  model: string;
+  tokensPrompt: number;
+  tokensCompletion: number;
+  tokensCacheHit: number;
+  cacheHitPercent: number;
+  elapsedMs: number;
+  traceLogPath: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface AgentRunResult {
+  runId: string;
+  agentId: string;
+  targetFile: string;
+  status: 'SUCCESS' | 'FAILED';
+  output: string;
+  elapsedMs: number;
+  metrics: {
+    turns: number;
+    steps: number;
+    tokensPrompt: number;
+    tokensCompletion: number;
+    tokensCacheHit: number;
+    cacheHitPercent: number;
+    tokPerSec: number;
+    elapsedMs: number;
+  };
+  timeline: Array<{
+    key: string;
+    label: string;
+    percent: number;
+    color: string;
+    elapsedMs: number;
+  }>;
+  traceLogPath: string;
+}

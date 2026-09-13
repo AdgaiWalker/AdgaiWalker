@@ -3,8 +3,9 @@
  */
 import { useEffect } from 'react';
 
-export function useSearchHotkey(onOpen: () => void): void {
+export function useSearchHotkey(onOpen: () => void, enabled = true): void {
   useEffect(() => {
+    if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -13,5 +14,5 @@ export function useSearchHotkey(onOpen: () => void): void {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onOpen]);
+  }, [onOpen, enabled]);
 }
