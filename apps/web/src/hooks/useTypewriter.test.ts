@@ -84,9 +84,14 @@ describe('useTypewriter', () => {
     const text = '先写五条大纲';
     const { result } = renderHook(() => useTypewriter(text));
 
-    await waitFor(() => {
-      expect(result.current.done).toBe(true);
-    });
+    // 真实 rAF 依赖宿主帧调度，并发跑测试时会被拖慢：这条只验「会不会走完」，
+    // 因此给足余量（动画本身约 150ms）；逐字推进的确定性断言在上一用例。
+    await waitFor(
+      () => {
+        expect(result.current.done).toBe(true);
+      },
+      { timeout: 5_000 },
+    );
     expect(result.current.visible).toBe(text);
   });
 });
