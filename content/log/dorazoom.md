@@ -1,7 +1,7 @@
 ---
 title: "DoraZoom — macOS 屏幕讲解与标注工具"
 date: 2026-08-20
-updated: 2026-08-20
+updated: 2026-09-14
 tags: [macOS, 屏幕缩放, 标注, 录屏]
 type: project
 hall: showcase
@@ -15,7 +15,7 @@ status: verified
 series: 桌面项目
 seriesOrder: 5
 related: [molan-ai-file-assistant, itab-agent-spaces]
-url: https://github.com/AdgaiWalker/zoomit
+url: https://dorazoom.iwalk.pro/
 aiUsePolicy:
   level: AI-4
   readable: true
@@ -23,7 +23,11 @@ aiUsePolicy:
   actionable: true
   reason: 项目已有可运行 macOS App、交付脚本和自动化证据；公开下载仍需使用最新源码重新打包。
 resources:
-  - name: DoraZoom GitHub
+  - name: 体验 DoraZoom 官网
+    url: https://dorazoom.iwalk.pro/
+    type: website
+    description: 浏览器圈画体验、标注截图生成与产品演示；正式下载入口尚未开放
+  - name: 查看 GitHub 源码
     url: https://github.com/AdgaiWalker/zoomit
     type: github
     description: macOS 源码、产品文档、测试与交付脚本
@@ -33,9 +37,15 @@ resources:
 
 DoraZoom 是哆啦个人版的 macOS 屏幕讲解工具，基于 Microsoft Sysinternals ZoomIt for Mac 官方源码改造。它把 Windows ZoomIt 的高频讲解体验带到 Mac，并针对输入法、权限、剪贴板、录屏和多显示器做原生适配。
 
+**[去官网圈一下 ↗](https://dorazoom.iwalk.pro/)**
+
+无需安装，在线体验圈画和截图，也可以观看产品演示。
+
 ## 当前状态
 
 **已完成，可投入本地使用。** 当前有日常版 `DoraZoom.app` 和隔离权限的开发版 `DoraZoom Dev.app`；功能实现与本地自动化验收已经收口。
+
+官网已开放在线体验，正式 Mac 应用下载入口尚未开放。
 
 ## 现在能做什么
 
@@ -48,6 +58,8 @@ DoraZoom 是哆啦个人版的 macOS 屏幕讲解工具，基于 Microsoft Sysin
 - 通过权限中心、状态菜单和可配置快捷键管理日常使用。
 
 ## 怎么使用
+
+网页提供圈画和截图体验；完整的屏幕缩放、录屏等功能需要在 Mac 应用中使用。
 
 日常版使用 `Control+1` 到 `Control+8` 进入缩放、绘画、计时、录屏、截图、DemoType 和长截图等功能。白板、黑板和文字标注是在画布内使用的工具，不是新的全局快捷键。
 
