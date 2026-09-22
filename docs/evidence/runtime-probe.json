@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-09-22T08:39:18.458Z",
+  "session": "walker-runtime-probe-Fy3HhE",
+  "versions": {
+    "sdk": "0.1.5-rc.2",
+    "packageRuntime": "0.1.5-rc.2",
+    "pathBin": "0.1.0-rc.6"
+  },
+  "request": {
+    "prompt": "[redacted-test-prompt]",
+    "materials": "isolated-temp"
+  },
+  "local": {
+    "status": "fail",
+    "reason": "本地没有 DEEPSEEK_API_KEY，不能用直连模型代替探针",
+    "elapsedMs": 255,
+    "rssBytes": 87785472,
+    "rssDeltaBytes": 802816,
+    "processExited": true
+  },
+  "windows": {
+    "status": "not-run",
+    "reason": "本机没有目标 Windows 的进程退出证据"
+  }
+}

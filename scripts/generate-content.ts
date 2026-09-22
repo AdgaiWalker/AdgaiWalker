@@ -8,7 +8,9 @@ import path from 'node:path';
 import matter from 'gray-matter';
 import { inferContentHall } from '../apps/web/src/shared/content-halls';
 import { dualEntry } from '../apps/web/src/shared/dual-entry';
+import { createHash } from 'node:crypto';
 import { buildKnowledgeGraph } from '../packages/shared/src/graph';
+import { publicManifest } from '../packages/shared/src/public-snapshot';
 import { loadContentCreatedDates } from './lib/git-created';
 import type {
   AiUsePolicy,
@@ -243,6 +245,9 @@ if (unchanged) {
   fs.writeFileSync(contentJsonPath, nextPayload);
   console.log(`wrote ${docs.length} items → ${contentJsonPath}`);
 }
+const manifest = publicManifest(docs, (text) => createHash('sha256').update(text).digest('hex'));
+fs.writeFileSync(path.join(webGeneratedDir, 'public-manifest.json'), JSON.stringify(manifest));
+console.log(`wrote public manifest ${manifest.items.length} items`);
 
 // ---- 知识图谱产物（PRD-KNOWLEDGE-GRAPH §5）----
 // 只由公开条目构建；created 取 Git 首次出现时间（Animate 依据）；附件为 content/log 下的非 md 文件。

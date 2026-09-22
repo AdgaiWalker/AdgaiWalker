@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {
+      "id": "identity",
+      "input": "你是谁？",
+      "expect": {
+        "contains": ["小影"],
+        "notContains": ["规则模式"],
+        "minChars": 10
+      }
+    },
+    {
+      "id": "cites-source",
+      "input": "站里有没有讲屏幕讲解工具的文章？",
+      "expect": {
+        "contains": ["dorazoom"],
+        "minChars": 20
+      }
+    },
+    {
+      "id": "admits-unknown",
+      "input": "帮我查一下明天上海的天气",
+      "expect": {
+        "notContains": ["25 度", "晴转多云"],
+        "minChars": 5
+      }
+    }
+  ]
+}

@@ -16,10 +16,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { AgentRunInput, AgentRunResult, AgentRunnerPort } from '../ports/agent-runner.port';
 import { APP_CONFIG, type AppConfigPort } from '../config/config.port';
 import {
-  buildDefaultRuntimeFactory,
   type HarnessRuntimeFactory,
   type HarnessRuntimeLike,
 } from './harness-assistant.adapter';
+import { buildHarnessRuntimeFactory } from '../runtime/harness-launch';
+import { credentialPool } from '../runtime/credential-pool';
+
 
 /** 工作站阶段默认预算：配方单阶段最长 10 分钟（与原实现一致） */
 export const DSH_STAGE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -46,6 +48,7 @@ type RunOutcome = { sessionId: string; finalResponse: unknown };
 @Injectable()
 export class DshAgentRunner implements AgentRunnerPort {
   private resident: HarnessRuntimeLike | null = null;
+  private residentGeneration = 0;
   private shortLock: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -56,11 +59,12 @@ export class DshAgentRunner implements AgentRunnerPort {
 
   async run(input: AgentRunInput): Promise<AgentRunResult> {
     if (!this.config.isAiEnabled()) throw new Error('ai-disabled');
-    const factory = this.runtimeFactory ?? buildDefaultRuntimeFactory();
-    if (!factory) throw new Error('dsh-runtime-unavailable');
-
     const isShortCall =
       input.timeoutMs !== undefined && input.timeoutMs <= DSH_SHORT_CALL_MS;
+    // 短调用是访客卡口，长调用是后台工作站；会话目录按这个分界分开。
+    const factory = this.runtimeFactory ?? buildHarnessRuntimeFactory({
+      audience: isShortCall ? 'public' : 'admin',
+    });
     return isShortCall ? this.runResident(factory, input) : this.runIsolated(factory, input);
   }
 
@@ -76,18 +80,21 @@ export class DshAgentRunner implements AgentRunnerPort {
     });
     await prev.catch(() => {});
     try {
-      if (!this.resident) this.resident = factory();
+      if (this.resident && this.residentGeneration !== credentialPool.generation) {
+        const stale = this.resident;
+        this.resident = null;
+        await stale.close().catch(() => {});
+      }
+      if (!this.resident) {
+        this.resident = factory();
+        this.residentGeneration = credentialPool.generation;
+      }
       return await this.execute(this.resident, input, false);
     } catch (error) {
-      // 超时/取消不丢常驻实例：单次会话超时（模型方差，实测 5–15s 波动）不污染
-      // runtime——丢实例会让每次短调用都付冷启动税，在 15s 预算边缘反复翻车。
-      // 仅传输/协议类故障才重建实例。
-      const msg = error instanceof Error ? error.message : String(error);
-      if (!/runner-timeout|runner-aborted/.test(msg)) {
-        const dead = this.resident;
-        this.resident = null;
-        void dead?.close().catch(() => {});
-      }
+      // 超时和取消也不能复用仍在活动的 SDK 调用。先摘下常驻实例，确认关闭后再允许下一次。
+      const dead = this.resident;
+      this.resident = null;
+      await dead?.close().catch(() => {});
       throw error;
     } finally {
       release();
@@ -103,7 +110,7 @@ export class DshAgentRunner implements AgentRunnerPort {
     try {
       return await this.execute(runtime, input, true);
     } finally {
-      void runtime.close().catch(() => {});
+      await runtime.close().catch(() => {});
     }
   }
 

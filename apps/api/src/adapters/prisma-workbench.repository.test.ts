@@ -44,6 +44,7 @@ describe('Prisma ModelProvider & AgentUnit Repositories', () => {
       iv: encrypted.iv,
       authTag: encrypted.authTag,
       last4: plainKey.slice(-4),
+      credentialRevision: 0,
       modelsJson: JSON.stringify([
         { id: 'deepseek-chat', tags: ['通用', '128K'] },
         { id: 'deepseek-reasoner', tags: ['思考', 'R1'] },

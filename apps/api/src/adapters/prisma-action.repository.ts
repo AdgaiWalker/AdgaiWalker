@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ActionKind, ActionSource, ActionStatus } from '@walker/shared';
+import type { ActionEntityType, ActionKind, ActionSource, ActionStatus } from '@walker/shared';
 import type { ActionRecord, ActionRepositoryPort, NewActionRecord } from '../ports/action.repository';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { storageUnavailable } from '../common/http-error';
@@ -51,7 +51,7 @@ export class PrismaActionRepository implements ActionRepositoryPort {
     return rows.map((row) => this.map(row));
   }
 
-  async update(id: string, input: { title?: string; note?: string | null; plannedDate?: string | null }): Promise<ActionRecord> {
+  async update(id: string, input: { title?: string; note?: string | null; plannedDate?: string | null; entityType?: ActionEntityType | null; entityId?: string | null }): Promise<ActionRecord> {
     const row = await this.db().action.update({ where: { id }, data: input });
     return this.map(row);
   }
@@ -59,5 +59,9 @@ export class PrismaActionRepository implements ActionRepositoryPort {
   async setCompletion(id: string, input: { status: ActionStatus; completedAt: Date | null }): Promise<ActionRecord> {
     const row = await this.db().action.update({ where: { id }, data: input });
     return this.map(row);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db().action.delete({ where: { id } });
   }
 }

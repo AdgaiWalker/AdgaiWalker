@@ -1,5 +1,8 @@
 # 状态（权威）
 
+> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](ADMIN-REBUILD-INVENTORY.md)。
+
+
 > 生产与验收时钟。部署事实细节见 [`ENGINEERING.md`](./ENGINEERING.md) §5。  
 > 近端产品见 [`PRODUCT.md`](./PRODUCT.md)；远景见 [`VISION.md`](./VISION.md)（不抢验收）。
 
@@ -7,6 +10,10 @@
 
 **生产双入口已通（2026-09-03 切流）：能逛、能真卡真写、站内助手真答。**  
 近端重心 = 工作站交付链跑通真实初稿、内容持续增长（执行清单见 [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) M3）。
+
+### 2026-09-15 内容运营后台（一人驾驶舱）
+
+本地已按根 `PRD.md` 落地内容分栏、今日并进计划、信号并进复盘，并按 **PRD-D** 拆掉系统抽屉。API 契约见 `docs/api/README.md`。`GET /admin/plan/next` 与 signals.intake `poolStatus` 已落地。Prisma schema 零变更。待盒子部署后才算生产可用。
 
 | 项 | 值 |
 |----|-----|

@@ -1,3 +1,34 @@
+import { AgentExecutionService } from './execution/agent-execution.service';
+import { EXECUTION_QUOTA } from './ports/execution-quota.port';
+import { PrismaExecutionQuota } from './adapters/prisma-execution-quota';
+import { RUNTIME_PORT } from './ports/runtime.port';
+import { harnessRuntimeAdapter } from './adapters/harness-runtime.adapter';
+import { PROCESS_REGISTRY } from './ports/process-registry.port';
+import { NodeProcessRegistry } from './adapters/node-process-registry';
+import { EXECUTION_OBJECT_POLICY } from './ports/execution-object-policy.port';
+import { ExecutionObjectPolicy } from './adapters/execution-object-policy';
+import { AuthorizationController } from './authorization/authorization.controller';
+import { AuthorizationService } from './authorization/authorization.service';
+import { AUTHORIZATION_REPOSITORY } from './ports/authorization.repository';
+import { PrismaAuthorizationRepository } from './adapters/prisma-authorization.repository';
+import { OperationsController } from './operations/operations.controller';
+import { ExecutionRunsController } from './execution/execution-runs.controller';
+import { ReleaseTestController } from './execution/release-test.controller';
+import { ReleaseTestService } from './execution/release-test.service';
+import { RunRetentionController } from './execution/run-retention.controller';
+import { RunRetentionService } from './execution/run-retention.service';
+import { OperationsService } from './operations/operations.service';
+import { OPERATIONS_READ } from './ports/operations-read.repository';
+import { PrismaOperationsReadRepository } from './adapters/prisma-operations-read.repository';
+import { AGENT_EXECUTION_REPOSITORY } from './ports/agent-execution.repository';
+import { PrismaAgentExecutionRepository } from './adapters/prisma-agent-execution.repository';
+import { OPERATIONS_JOURNAL, OUTBOX_HANDLERS } from './ports/operations-journal.port';
+import { PrismaOperationsJournal } from './adapters/prisma-operations-journal';
+import { OutboxDispatcher } from './operations/outbox-dispatcher';
+import { AGENT_REVISION_REPOSITORY } from './ports/agent-revision.repository';
+import { PrismaAgentRevisionRepository } from './adapters/prisma-agent-revision.repository';
+import { AgentCatalogService } from './agents/agent-catalog.service';
+import { AgentCatalogController } from './agents/agent-catalog.controller';
 import { Module } from '@nestjs/common';
 import { PrismaAdapter } from './adapters/prisma.adapter';
 import { PrismaClueRepository } from './adapters/prisma-clue.repository';
@@ -82,6 +113,8 @@ import { PUBLICATION_PACKAGE_REPOSITORY } from './ports/publication-package.repo
 import { FsPublicationPackageRepository } from './adapters/fs-publication-package.repository';
 import { ActionService } from './action/action.service';
 import { ActionController } from './action/action.controller';
+import { PlanService } from './plan/plan.service';
+import { PlanController } from './plan/plan.controller';
 import { WORK_EXPORT_SERVICE, WorkExportService } from './workflow/export.service';
 import { ExportController } from './workflow/export.controller';
 import { WEBSITE_DEPLOYMENT_VERIFIER } from './ports/website-deployment-verifier.port';
@@ -90,6 +123,19 @@ import { WECHAT_DRAFT_SESSION } from './ports/wechat-draft-session.port';
 import { UnavailableWechatDraftSession } from './adapters/unavailable-wechat-draft-session';
 import { MODEL_PROVIDER_REPOSITORY } from './ports/model-provider.repository';
 import { PrismaModelProviderRepository } from './adapters/prisma-model-provider.repository';
+import { LLM_CLIENT } from './ports/llm.port';
+import { OpenAiCompatibleLlm } from './adapters/openai-compatible-llm.adapter';
+import path from 'node:path';
+import { SKILL_CATALOG } from './ports/skill.port';
+import { FsSkillCatalog } from './adapters/fs-skill.catalog';
+
+/** 技能包根目录：仓库根 `skills/`，可用 WALKER_SKILLS_DIR 覆盖 */
+function resolveSkillsRoot(): string {
+  const fromEnv = process.env.WALKER_SKILLS_DIR?.trim();
+  return fromEnv ? path.resolve(fromEnv) : path.resolve(process.cwd(), '../..', 'skills');
+}
+import { SkillService } from './skills/skill.service';
+import { SkillController } from './skills/skill.controller';
 import { AGENT_UNIT_REPOSITORY } from './ports/agent-unit.repository';
 import { PrismaAgentUnitRepository } from './adapters/prisma-agent-unit.repository';
 import { ModelProviderService } from './model-providers/model-provider.service';
@@ -103,10 +149,35 @@ import { KNOWLEDGE_GRAPH } from './ports/knowledge-graph.port';
 import { FsKnowledgeGraph } from './adapters/fs-knowledge-graph';
 import { GraphService } from './graph/graph.service';
 import { GraphController } from './graph/graph.controller';
+import { CODE_HEALTH } from './ports/code-health.port';
+import { FsCodeHealth } from './adapters/fs-code-health';
+import { ArchitectureService } from './architecture/architecture.service';
+import { ArchitectureController } from './architecture/architecture.controller';
+import { TRACE_REPOSITORY, TRACE_WRITER } from './ports/trace.repository';
+import { FsTraceRepository } from './adapters/fs-trace.repository';
+import { TraceService } from './traces/trace.service';
+import { TraceController } from './traces/trace.controller';
+import { CONTENT_LEDGER_REPOSITORY } from './ports/content-ledger.repository';
+import { GIT_STATUS } from './ports/git-status.repository';
+import { FsContentLedgerRepository } from './adapters/fs-content-ledger.repository';
+import { NodeGitStatusRepository } from './adapters/node-git-status.repository';
+import { ContentLedgerService } from './content-ledger/content-ledger.service';
+import { ContentLedgerController } from './content-ledger/content-ledger.controller';
+import { CONTENT_RELEASE_RUNNER } from './ports/content-release-runner.port';
+import { PnpmContentReleaseRunner } from './adapters/pnpm-content-release.runner';
+import { ContentReleaseService } from './content-release/content-release.service';
+import { ContentReleaseController } from './content-release/content-release.controller';
 
 /** Prisma 同时实现 DatabasePort.ping 与 PrismaPort */
 @Module({
   controllers: [
+    AuthorizationController,
+    AgentCatalogController,
+    OperationsController,
+    ExecutionRunsController,
+    ReleaseTestController,
+    RunRetentionController,
+    SkillController,
     IntakeController,
     AssistantController,
     InsightsController,
@@ -118,9 +189,15 @@ import { GraphController } from './graph/graph.controller';
     LikeController,
     ContentFeedbackController,
     SearchEventsController,
+    // 路由顺序约束：ledger 必须在 ContentAdminController 之前注册 ——
+    // 后者已有 @Get(':slug')（content-admin.controller.ts:27-30），注册在前会把 'ledger' 当 slug 吃掉
+    ContentLedgerController,
     ContentAdminController,
+    ContentReleaseController,
+    TraceController,
     SupportController,
     ActionController,
+    PlanController,
     WorkController,
     WorkbenchController,
     ProductionController,
@@ -130,8 +207,26 @@ import { GraphController } from './graph/graph.controller';
     ModelProviderController,
     AgentUnitController,
     GraphController,
+    ArchitectureController,
   ],
   providers: [
+    AgentExecutionService,
+    ReleaseTestService,
+    RunRetentionService,
+    { provide: EXECUTION_QUOTA, useClass: PrismaExecutionQuota },
+    { provide: RUNTIME_PORT, useFactory: () => harnessRuntimeAdapter({ audience: 'admin' }) },
+    { provide: PROCESS_REGISTRY, useClass: NodeProcessRegistry },
+    { provide: EXECUTION_OBJECT_POLICY, useClass: ExecutionObjectPolicy },
+    AuthorizationService,
+    { provide: AUTHORIZATION_REPOSITORY, useClass: PrismaAuthorizationRepository },
+    OperationsService,
+    { provide: OPERATIONS_READ, useClass: PrismaOperationsReadRepository },
+    { provide: AGENT_EXECUTION_REPOSITORY, useClass: PrismaAgentExecutionRepository },
+    { provide: OPERATIONS_JOURNAL, useClass: PrismaOperationsJournal },
+    { provide: OUTBOX_HANDLERS, useValue: {} },
+    OutboxDispatcher,
+    { provide: AGENT_REVISION_REPOSITORY, useClass: PrismaAgentRevisionRepository },
+    AgentCatalogService,
     { provide: PRISMA, useClass: PrismaAdapter },
     {
       provide: DATABASE,
@@ -143,6 +238,15 @@ import { GraphController } from './graph/graph.controller';
     { provide: ACTION_REPOSITORY, useClass: PrismaActionRepository },
     { provide: LIKE_REPOSITORY, useClass: PrismaLikeRepository },
     { provide: CONTENT_FILE_REPOSITORY, useClass: FsContentFileRepository },
+    { provide: CONTENT_LEDGER_REPOSITORY, useClass: FsContentLedgerRepository },
+    { provide: GIT_STATUS, useClass: NodeGitStatusRepository },
+    TraceService,
+    // 读与写必须是同一个实例：seq 续号状态在实例内，两个实例会各发一套 seq
+    { provide: TRACE_REPOSITORY, useClass: FsTraceRepository },
+    { provide: TRACE_WRITER, useExisting: TRACE_REPOSITORY },
+    ContentLedgerService,
+    ContentReleaseService,
+    { provide: CONTENT_RELEASE_RUNNER, useClass: PnpmContentReleaseRunner },
     {
       provide: SUPPORT_CONFIG_REPOSITORY,
       useClass: FsSupportConfigRepository,
@@ -151,9 +255,11 @@ import { GraphController } from './graph/graph.controller';
     { provide: GUEST_QUOTA, useClass: PrismaGuestQuotaAdapter },
     { provide: SITE_CONTENT_INDEX, useClass: FsSiteContentIndex },
     { provide: KNOWLEDGE_GRAPH, useClass: FsKnowledgeGraph },
+    { provide: CODE_HEALTH, useClass: FsCodeHealth },
     { provide: ASSISTANT_REPOSITORY, useClass: PrismaAssistantRepository },
     ObservabilityService,
     GraphService,
+    ArchitectureService,
     { provide: RuleAssistantAdapter, useClass: RuleAssistantAdapter },
     {
       // 助手双实现：harness AI 内嵌规则兜底（AI 可关/超时/坏输出全降级）；
@@ -188,6 +294,7 @@ import { GraphController } from './graph/graph.controller';
     ContentAdminService,
     SupportService,
     ActionService,
+    PlanService,
     WorkService,
     WorkbenchService,
     ProductionService,
@@ -228,6 +335,19 @@ import { GraphController } from './graph/graph.controller';
     { provide: MODEL_PROVIDER_REPOSITORY, useClass: PrismaModelProviderRepository },
     { provide: AGENT_UNIT_REPOSITORY, useClass: PrismaAgentUnitRepository },
     ModelProviderService,
+    {
+      // 技能执行的唯一模型出口：OpenAI 兼容直连。
+      // 换引擎（harness / 其他 SDK）只需换这个 provide，上层（runner）不动。
+      provide: LLM_CLIENT,
+      useClass: OpenAiCompatibleLlm,
+    },
+    {
+      // 技能真身在文件系统：`skills/<id>/`（仓库根），可用 WALKER_SKILLS_DIR 覆盖。
+      // 不注入 DB：技能是资产，DB 只是索引与运行数据。
+      provide: SKILL_CATALOG,
+      useFactory: () => new FsSkillCatalog(resolveSkillsRoot()),
+    },
+    SkillService,
     AgentUnitService,
     AgentRunnerService,
   ],
@@ -242,5 +362,3 @@ import { GraphController } from './graph/graph.controller';
   ],
 })
 export class KernelModule {}
-
-

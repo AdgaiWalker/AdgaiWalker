@@ -53,7 +53,7 @@
 | 公开入口 | Nest `/api/assistant` 是唯一公开面 | 限流 / 配额 / citation 校验 / 落库全在网关 |
 | 隔振层 | Run 合同 v1 先行：`{ question, answer, citations, sessionId, turnId, aiUsedFlag, elapsedMs }` | harness rc 阶段破坏性变更频发，合同保证实现可换 |
 | 模型 | 现成 DeepSeek key（`DEEPSEEK_API_KEY`；`DEEPSEEK_BASE_URL` 可换 OpenAI 兼容端点） | 架构不锁模型；凭据不进仓库 |
-| 只读边界 | `DSH_PERMISSION_MODE=read-only`；V1 不给助手挂任何工具（整库已在 prompt 中，无需 bash/fs） | 沙箱只读 + ask 审批；进一步收敛攻击面 |
+| 只读边界 | 子进程环境白名单只带启动变量和 `DEEPSEEK_API_KEY`；sdk profile patch 关闭文件、shell、网络工具，不挂 MCP。资料在 prompt 中，工作区是会话目录下的 materials | 沙箱模式写在 patch 里。`DSH_PERMISSION_MODE` 不是隔离证明 |
 | 超时策略 | 单问 15s，超时弃结果走规则兜底 | TS SDK 无 mid-turn cancel；需要 cancel/close 时升级 ACP profile（`--profile acp` 已确认支持） |
 | 兜底 | RuleAssistantAdapter：静态回答（热门文章 + 卡口引导 + 联系入口），`aiUsedFlag=false` 如实标注 | AI 关 / 超时 / 异常 / 输出不合合同，全部走兜底 |
 | 部署纪律 | 开发锁本地 clone 版本；生产锁同一 tag 不可变部署；key 只经 env / `$DSH_HOME/.credentials.yaml` | 盒子 2C2G，runtime 常驻内存在阶段 0 实测后再确认 |

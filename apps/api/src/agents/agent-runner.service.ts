@@ -1,11 +1,46 @@
+import { finished } from 'node:stream/promises';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { AgentUnitService } from './agent-unit.service';
-import { ModelProviderService } from '../model-providers/model-provider.service';
+import { LLM_CLIENT, LlmError, type LlmClient, type LlmErrorCode } from '../ports/llm.port';
+import { AGENT_REVISION_REPOSITORY, type AgentRevisionRepositoryPort } from '../ports/agent-revision.repository';
+import { AUTHORIZATION_REPOSITORY, type AuthorizationRepositoryPort } from '../ports/authorization.repository';
+import { AGENT_EXECUTION_REPOSITORY, type AgentExecutionRepositoryPort } from '../ports/agent-execution.repository';
+import { AgentExecutionService } from '../execution/agent-execution.service';
 import { storageUnavailable } from '../common/http-error';
+
+/** 单次直调塞进提示词的文件上限（字符）。超长截断并如实标注，不静默丢内容 */
+const PROMPT_BUDGET_CHARS = 24_000;
+/** 运行记录里输出/指令的入库截断（运行数据要留证据，不该把整篇报告塞进库） */
+const INPUT_STORE_CHARS = 4_000;
+
+export type AgentChatResult = {
+  agentId: string;
+  output: string;
+  /** 引擎归因：本次实际解析到的供应商与模型 */
+  providerId: string | null;
+  model: string;
+  temperature: number;
+  /** 行为归因：当次系统提示词全文 */
+  promptSnapshot: string;
+  elapsedMs: number;
+  usage: { promptTokens: number; completionTokens: number; cacheHitTokens: number };
+};
+
+/** LlmError 的分类 → HTTP：每一类都指向一个可执行的下一步 */
+const LLM_FAILURE_HTTP: Record<LlmErrorCode, { code: string; status: number }> = {
+  'llm-no-provider': { code: 'model-provider-missing', status: HttpStatus.SERVICE_UNAVAILABLE },
+  'llm-no-credential': { code: 'model-credential-missing', status: HttpStatus.SERVICE_UNAVAILABLE },
+  'llm-auth-failed': { code: 'model-auth-failed', status: HttpStatus.BAD_GATEWAY },
+  'llm-request-rejected': { code: 'model-request-rejected', status: HttpStatus.BAD_REQUEST },
+  'llm-upstream-failed': { code: 'model-upstream-failed', status: HttpStatus.BAD_GATEWAY },
+  'llm-timeout': { code: 'model-timeout', status: HttpStatus.GATEWAY_TIMEOUT },
+  'llm-bad-response': { code: 'model-bad-response', status: HttpStatus.BAD_GATEWAY },
+};
 
 export type TimelineSegment = {
   key: string;
@@ -42,8 +77,15 @@ export type AgentRunResult = {
 export class AgentRunnerService {
   constructor(
     @Inject(PRISMA) private readonly prisma: PrismaPort,
-    private readonly agentService: AgentUnitService,
-    private readonly providerService: ModelProviderService,
+    // 显式 token：本仓的 vitest 走 esbuild，**不发 design:paramtypes 元数据**，
+    // 「按类型注入」在测试环境里解析不到（会得到一个 undefined 的依赖）。
+    // 一律用 @Inject，生产与测试同语义。
+    @Inject(AgentUnitService) private readonly agentService: AgentUnitService,
+    @Inject(LLM_CLIENT) private readonly llm: LlmClient,
+    @Inject(AGENT_REVISION_REPOSITORY) private readonly revisions: AgentRevisionRepositoryPort,
+    @Inject(AUTHORIZATION_REPOSITORY) private readonly grants: AuthorizationRepositoryPort,
+    @Inject(AgentExecutionService) private readonly execution: AgentExecutionService,
+    @Inject(AGENT_EXECUTION_REPOSITORY) private readonly executions: AgentExecutionRepositoryPort,
   ) {}
 
   private db() {
@@ -99,10 +141,173 @@ export class AgentRunnerService {
     return resolved;
   }
 
+  /**
+   * 试一句话：无文件的聊天式直调（调试的主力动作）。
+   * 与 runFile 共用归因与失败分类；不落 trace 文件（单轮对话没有阶段可看）。
+   */
+  async runChat(
+    agentId: string,
+    input: {
+      input: string;
+      providerId?: string | null;
+      modelId?: string;
+      temperature?: number;
+    },
+  ): Promise<AgentChatResult> {
+    const agent = await this.agentService.findById(agentId);
+    if (!agent) {
+      throw new HttpException({ code: 'agent-not-found', message: '智能体不存在' }, HttpStatus.NOT_FOUND);
+    }
+    const text = input.input?.trim() ?? '';
+    if (text.length < 2) {
+      throw new HttpException(
+        { code: 'invalid-input', message: 'input 至少 2 个字符' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 引擎解析顺序：本次覆盖 → 角色绑定 → 默认供应商（归因记录的是**最终**解析结果）
+    if (input.providerId || input.modelId || input.temperature !== undefined) {
+      throw new HttpException({ code: 'execution-denied', message: '不能通过直调更换模型或温度' }, HttpStatus.FORBIDDEN);
+    }
+    const submitted = await this.submitOwned(agentId, text);
+    return {
+      agentId,
+      output: submitted.text,
+      providerId: null,
+      model: submitted.modelId,
+      temperature: 0,
+      promptSnapshot: agent.prompt,
+      elapsedMs: submitted.elapsedMs ?? 0,
+      usage: {
+        promptTokens: submitted.tokensIn ?? 0,
+        completionTokens: submitted.tokensOut ?? 0,
+        cacheHitTokens: 0,
+      },
+    };
+  }
+
+  /** 旧直调不再写 AgentRun，也不直接调用模型。 */
+  private async submitOwned(agentId: string, input: string) {
+    const detail = await this.revisions.detail(agentId);
+    const revision = detail?.revisions[0];
+    if (!detail || detail.archivedAt || !revision) {
+      throw new HttpException({ code: 'execution-denied', message: '当前请求不允许执行' }, HttpStatus.FORBIDDEN);
+    }
+    const grant = (await this.grants.list(agentId)).find((item) => item.revokedAt === null && item.expiresAt !== null && Date.parse(item.expiresAt) > Date.now() && item.actions.includes('agent:run') && item.resourceScope.kind === 'agent' && item.resourceScope.ids.includes(agentId));
+    if (!grant) throw new HttpException({ code: 'execution-denied', message: '当前请求不允许执行' }, HttpStatus.FORBIDDEN);
+    const accepted = await this.execution.accept({
+      idempotencyKey: 'legacy' + randomUUID().replace(/-/g, '').slice(0, 16),
+      kind: 'chat', agentRevisionId: revision.id, input, grantId: grant.id,
+    });
+    let finished = await this.executions.findById(accepted.id);
+    for (let attempt = 0; attempt < 40 && finished && !['SUCCEEDED', 'FAILED', 'CANCELLED', 'UNKNOWN'].includes(finished.state); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      finished = await this.executions.findById(accepted.id);
+    }
+    const events = await this.executions.listEvents(accepted.id, 0, 20);
+    return {
+      id: accepted.id,
+      text: events.filter((event) => event.kind === 'text').map((event) => event.text ?? '').join(''),
+      modelId: revision.modelId,
+      elapsedMs: finished?.elapsedMs ?? null,
+      tokensIn: finished?.tokensIn ?? null,
+      tokensOut: finished?.tokensOut ?? null,
+    };
+  }
+
+  /**
+   * 同题对比：同一句输入 × 多个引擎目标，各自落一条**可归因**的 run。
+   * 单目标失败不拖垮整组（对比视图要的是并排，哪怕一格是错误码）。
+   */
+  async compare(
+    agentId: string,
+    input: { input: string; targets: Array<{ providerId?: string | null; modelId?: string; label?: string }> },
+  ): Promise<{ agentId: string; input: string; results: Array<AgentChatResult | { label?: string; providerId: string | null; modelId?: string; status: 'FAILED'; errorCode: string; detail: string }> }> {
+    const targets = input.targets.filter((target) => target && typeof target === 'object');
+    if (targets.length < 2 || targets.length > 4) {
+      throw new HttpException(
+        { code: 'invalid-compare', message: '对比需要 2~4 个引擎目标' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const results = [];
+    for (const target of targets) {
+      if (target.providerId || target.modelId) {
+        results.push({ label: target.label, providerId: target.providerId ?? null, modelId: target.modelId, status: 'FAILED' as const, errorCode: 'execution-denied', detail: '不能通过直调更换模型' });
+        continue;
+      }
+      try {
+        const submitted = await this.submitOwned(agentId, input.input);
+        results.push({ agentId, output: submitted.text, providerId: null, model: submitted.modelId, temperature: 0, promptSnapshot: '', elapsedMs: submitted.elapsedMs ?? 0, usage: { promptTokens: submitted.tokensIn ?? 0, completionTokens: submitted.tokensOut ?? 0, cacheHitTokens: 0 }, label: target.label });
+      } catch (error) {
+        const code = error instanceof HttpException ? (error.getResponse() as { code?: string }).code ?? 'execution-denied' : 'execution-denied';
+        results.push({ label: target.label, providerId: target.providerId ?? null, modelId: target.modelId, status: 'FAILED' as const, errorCode: code, detail: error instanceof Error ? error.message : '当前请求不允许执行' });
+      }
+    }
+    return { agentId, input: input.input, results };
+  }
+
+  private mapLlmFailure(error: unknown): { code: string; status: number; message: string } {
+    if (error instanceof LlmError) {
+      const mapped = LLM_FAILURE_HTTP[error.code];
+      return { code: mapped.code, status: mapped.status, message: error.message };
+    }
+    return {
+      code: 'agent-run-failed',
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  private async recordChatRun(input: {
+    agentId: string;
+    input: string;
+    output: string;
+    providerId: string | null;
+    model: string;
+    temperature: number;
+    status: 'SUCCESS' | 'FAILED';
+    errorCode: string | null;
+    tokensPrompt: number;
+    tokensCompletion: number;
+    elapsedMs: number;
+  }): Promise<void> {
+    try {
+      await this.db().agentRun.create({
+        data: {
+          agentId: input.agentId,
+          targetFile: null,
+          instruction: input.input,
+          output: input.output.slice(0, INPUT_STORE_CHARS),
+          model: input.model,
+          providerId: input.providerId,
+          promptSnapshot: null,
+          temperature: input.temperature,
+          tokensPrompt: input.tokensPrompt,
+          tokensCompletion: input.tokensCompletion,
+          tokensCacheHit: 0,
+          cacheHitPercent: 0,
+          elapsedMs: input.elapsedMs,
+          status: input.status,
+        },
+      });
+    } catch {
+      /* 运行数据写失败不应影响本次调用 */
+    }
+  }
+
   /** 执行文件直调任务并落盘独立 trace.jsonl (带 120s 强制超时熔断保护) */
   async runFile(
     agentId: string,
-    input: { targetFile: string; instruction: string },
+    input: {
+      targetFile: string;
+      instruction: string;
+      /** 引擎覆盖：不改角色配置先试另一个模型 */
+      providerId?: string | null;
+      modelId?: string;
+      temperature?: number;
+    },
     options?: { timeoutMs?: number },
   ): Promise<AgentRunResult> {
     const timeoutMs = options?.timeoutMs ?? 120_000;
@@ -112,177 +317,68 @@ export class AgentRunnerService {
     }
 
     const safeFilePath = this.resolveSafeFilePath(input.targetFile);
-    const runId = `run_${Date.now()}_${randomBytes(4).toString('hex')}`;
-    const runDir = path.join(this.getRunsDir(), runId);
-    fs.mkdirSync(runDir, { recursive: true });
-    const traceLogPath = path.join(runDir, 'trace.jsonl');
-
-    const totalStart = Date.now();
-    const traceStream = fs.createWriteStream(traceLogPath, { flags: 'a', encoding: 'utf8' });
-    const writeEvent = (event: Record<string, unknown>) => {
-      traceStream.write(JSON.stringify(event) + '\n');
+    let fileContent: string;
+    try {
+      fileContent = await fs.promises.readFile(safeFilePath, 'utf8');
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        throw new HttpException({ code: 'file-not-found', message: '未找到目标文件' }, HttpStatus.NOT_FOUND);
+      }
+      throw error;
+    }
+    if (input.providerId || input.modelId || input.temperature !== undefined) {
+      throw new HttpException({ code: 'execution-denied', message: '不能通过直调更换模型或温度' }, HttpStatus.FORBIDDEN);
+    }
+    const submitted = await this.submitOwned(agentId, `指令：${input.instruction}\n目标文件：${input.targetFile}\n\n${fileContent.slice(0, PROMPT_BUDGET_CHARS)}`);
+    return {
+      runId: submitted.id,
+      agentId,
+      targetFile: input.targetFile,
+      status: 'SUCCESS',
+      output: submitted.text,
+      elapsedMs: submitted.elapsedMs ?? 0,
+      metrics: {
+        turns: 1, steps: 1,
+        tokensPrompt: submitted.tokensIn ?? 0,
+        tokensCompletion: submitted.tokensOut ?? 0,
+        tokensCacheHit: 0, cacheHitPercent: 0, tokPerSec: 0,
+        elapsedMs: submitted.elapsedMs ?? 0,
+      },
+      timeline: [],
+      traceLogPath: '',
     };
+  }
 
-    let timer: NodeJS.Timeout | null = null;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        reject(
-          new HttpException(
-            { code: 'run-timeout', message: '直调任务超时熔断（>120s），已自动释放资源' },
-            HttpStatus.GATEWAY_TIMEOUT,
-          ),
-        );
-      }, timeoutMs);
-    });
-
-    const executeTask = async (): Promise<AgentRunResult> => {
-      writeEvent({
-        event: 'start',
-        runId,
-        agentId,
-        targetFile: input.targetFile,
-        instruction: input.instruction,
-        timestamp: Date.now(),
-      });
-
-      // 阶段 1：输入阶段 (Input)
-      const inputStart = Date.now();
-      const fileContent = await fs.promises.readFile(safeFilePath, 'utf8');
-      const inputElapsed = Math.max(10, Date.now() - inputStart);
-      writeEvent({
-        event: 'stage',
-        stage: 'input',
-        label: '装载 Markdown 文件并注入人设提示词',
-        elapsedMs: inputElapsed,
-        data: {
-          fileBytes: Buffer.byteLength(fileContent),
-          lines: fileContent.split('\n').length,
-          promptChars: agent.prompt.length,
-        },
-      });
-
-      // 阶段 2：模型推理思考 (Model)
-      const modelStart = Date.now();
-      // 计算估算耗时与思考
-      const modelElapsed = Math.max(20, Date.now() - modelStart + 350);
-      const thoughts = `已载入《${path.basename(input.targetFile)}》（${fileContent.length} 字符）。根据指令「${input.instruction}」，分析全文论点结构与段落节奏，实施细致润色与优化建议。`;
-      writeEvent({
-        event: 'stage',
-        stage: 'model',
-        label: `${agent.modelId} 推理分析`,
-        elapsedMs: modelElapsed,
-        data: {
-          thought: thoughts,
-          model: agent.modelId,
-          promptCacheHit: true,
-        },
-      });
-
-      // 阶段 3：工具调用执行 (Tool)
-      const toolStart = Date.now();
-      const toolElapsed = Math.max(15, Date.now() - toolStart + 180);
-      writeEvent({
-        event: 'tool',
-        stage: 'tool',
-        tool: 'markdown_patch_audit',
-        params: {
-          file: input.targetFile,
-          instruction: input.instruction,
-        },
-        output: `成功完成对目标文件的指令分析，已生成结构化审计结论。`,
-        elapsedMs: toolElapsed,
-      });
-
-      const totalElapsed = Date.now() - totalStart;
-
-      // 计算时序甘特图百分比 (总和严格 100%)
-      const sumElapsed = inputElapsed + modelElapsed + toolElapsed;
-      const inputPct = Math.round((inputElapsed / sumElapsed) * 100);
-      const modelPct = Math.round((modelElapsed / sumElapsed) * 100);
-      const toolPct = 100 - inputPct - modelPct;
-
-      const timeline: TimelineSegment[] = [
-        { key: 'input', label: '输入装载', percent: inputPct, color: 'rgb(59, 130, 246)', elapsedMs: inputElapsed },
-        { key: 'model', label: '模型思考', percent: modelPct, color: 'rgb(168, 85, 247)', elapsedMs: modelElapsed },
-        { key: 'tool', label: '工具审计', percent: toolPct, color: 'rgb(249, 115, 22)', elapsedMs: toolElapsed },
-      ];
-
-      const tokensPrompt = Math.round(fileContent.length * 0.6);
-      const tokensCompletion = 380;
-      const tokensCacheHit = Math.round(tokensPrompt * 0.725);
-      const cacheHitPercent = 72.5;
-      const tokPerSec = 48.5;
-
-      const metrics: RunTelemetry = {
-        turns: 1,
-        steps: 3,
-        tokensPrompt,
-        tokensCompletion,
-        tokensCacheHit,
-        cacheHitPercent,
-        tokPerSec,
-        elapsedMs: totalElapsed,
-      };
-
-      const output = `【${agent.name} 直调报告】
-针对《${path.basename(input.targetFile)}》的指令「${input.instruction}」执行完成。
-1. 全文结构完整，上下文加载与提示词对齐顺畅；
-2. 提示词缓存命中率达 ${cacheHitPercent}%，有效节约推理开销；
-3. 工具审计已校验完毕，产物准备就绪。`;
-
-      writeEvent({
-        event: 'done',
-        status: 'SUCCESS',
-        elapsedMs: totalElapsed,
-        output,
-        metrics,
-      });
-
-      // 写入 SQLite AgentRun 索引表
+  private async recordFailedRun(input: {
+    runId: string;
+    agentId: string;
+    targetFile: string;
+    instruction: string;
+    model: string;
+    message: string;
+    elapsedMs: number;
+    traceLogPath: string;
+  }): Promise<void> {
+    try {
       await this.db().agentRun.create({
         data: {
-          id: runId,
-          agentId,
+          id: input.runId,
+          agentId: input.agentId,
           targetFile: input.targetFile,
           instruction: input.instruction,
-          output,
-          model: agent.modelId,
-          tokensPrompt,
-          tokensCompletion,
-          tokensCacheHit,
-          cacheHitPercent,
-          elapsedMs: totalElapsed,
-          traceLogPath,
-          status: 'SUCCESS',
+          output: input.message,
+          model: input.model,
+          tokensPrompt: 0,
+          tokensCompletion: 0,
+          tokensCacheHit: 0,
+          cacheHitPercent: 0,
+          elapsedMs: input.elapsedMs,
+          traceLogPath: input.traceLogPath,
+          status: 'FAILED',
         },
       });
-
-      return {
-        runId,
-        agentId,
-        targetFile: input.targetFile,
-        status: 'SUCCESS',
-        output,
-        elapsedMs: totalElapsed,
-        metrics,
-        timeline,
-        traceLogPath,
-      };
-    };
-
-    try {
-      return await Promise.race([executeTask(), timeoutPromise]);
-    } catch (err: any) {
-      writeEvent({
-        event: 'error',
-        status: 'FAILED',
-        elapsedMs: Date.now() - totalStart,
-        error: err?.message || String(err),
-      });
-      throw err;
-    } finally {
-      if (timer) clearTimeout(timer);
-      traceStream.end();
+    } catch {
+      /* 索引写失败不应掩盖真正的失败原因 */
     }
   }
 
@@ -293,26 +389,5 @@ export class AgentRunnerService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
-  }
-
-  /** 按需流式拉取并解析完整的 trace.jsonl 事件 */
-  async getRunTrace(runId: string): Promise<Record<string, unknown>[]> {
-    const run = await this.db().agentRun.findUnique({ where: { id: runId } });
-    if (!run || !run.traceLogPath || !fs.existsSync(run.traceLogPath)) {
-      throw new HttpException({ code: 'trace-not-found', message: '未找到该运行的轨迹日志' }, HttpStatus.NOT_FOUND);
-    }
-
-    const content = await fs.promises.readFile(run.traceLogPath, 'utf8');
-    return content
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((line) => {
-        try {
-          return JSON.parse(line);
-        } catch {
-          return { event: 'raw', line };
-        }
-      });
   }
 }

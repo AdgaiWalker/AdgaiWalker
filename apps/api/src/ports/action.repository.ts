@@ -30,8 +30,10 @@ export interface ActionRepositoryPort {
   ensureOpenForEntity(input: NewActionRecord): Promise<ActionRecord>;
   findById(id: string): Promise<ActionRecord | null>;
   list(input: { status?: ActionStatus; kind?: ActionKind; limit: number }): Promise<ActionRecord[]>;
-  update(id: string, input: { title?: string; note?: string | null; plannedDate?: string | null }): Promise<ActionRecord>;
+  update(id: string, input: { title?: string; note?: string | null; plannedDate?: string | null; entityType?: ActionEntityType | null; entityId?: string | null }): Promise<ActionRecord>;
   setCompletion(id: string, input: { status: ActionStatus; completedAt: Date | null }): Promise<ActionRecord>;
+  /** 删除一条排期；只动 Action 行，与内容文件无关（PRD §4.4 末条） */
+  delete(id: string): Promise<void>;
 }
 
 export const ACTION_REPOSITORY = Symbol('ACTION_REPOSITORY');

@@ -23,6 +23,8 @@ export interface DemandSignal {
   text: string;
   /** feedback 专属：哪篇文章 */
   contentId?: string;
+  /** intake 专属：线索池状态，复盘入池不必再 GET /clues */
+  poolStatus?: string;
   createdAt: string;
 }
 

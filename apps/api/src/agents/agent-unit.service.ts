@@ -63,7 +63,7 @@ export class AgentUnitService {
     const existing = await this.repo.findById(input.id);
     const isSystem = input.id === 'xiaoying' ? true : existing?.isSystem ?? false;
 
-    return this.repo.save({
+    const saved = await this.repo.save({
       id: input.id,
       name,
       icon: input.icon || existing?.icon || 'bot',
@@ -72,6 +72,9 @@ export class AgentUnitService {
       modelId: input.modelId || existing?.modelId || 'deepseek-chat',
       prompt: input.prompt,
     });
+
+    // 此旧用例仅供保留的内部调用；管理端配置写入已迁入 AgentCatalogService。
+    return saved;
   }
 
   async remove(id: string): Promise<void> {

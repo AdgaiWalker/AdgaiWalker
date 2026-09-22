@@ -34,7 +34,13 @@ export type TelemetryTool =
   | 'read_article'
   | 'list_methodology'
   | 'list_citable'
-  | 'neighbors';
+  | 'neighbors'
+  // 代码结构（PRD-CODE-GRAPH）：方向语义严格区分 —— dependencies = 它依赖谁，
+  // dependents = 谁依赖它，二者是不同的问题
+  | 'dependencies'
+  | 'dependents'
+  | 'impact'
+  | 'architecture_health';
 
 export interface TelemetryEvent {
   tool: TelemetryTool;

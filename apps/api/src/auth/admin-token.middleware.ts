@@ -27,7 +27,11 @@ export class AdminTokenMiddleware {
       next();
       return;
     }
-    res.setHeader('WWW-Authenticate', 'Basic realm="walker-admin", charset="UTF-8"');
+    // JSON 请求由管理端显示鉴权提示，避免浏览器原生 Basic 弹窗悬住 fetch。
+    // 普通导航仍保留网关/浏览器的 Basic 认证挑战。
+    if (!req.header('accept')?.includes('application/json')) {
+      res.setHeader('WWW-Authenticate', 'Basic realm="walker-admin", charset="UTF-8"');
+    }
     res.status(401).json({
       code: 'admin-auth-required',
       message: '管理凭据缺失或不正确',

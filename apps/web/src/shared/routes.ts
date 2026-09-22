@@ -40,4 +40,6 @@ export const WEB_ROUTES = {
   browse: dualEntry.browse.path,
   /** 知识图谱：文章正文互引结构的可视化（Obsidian Graph View 对齐） */
   graph: '/graph',
+  /** 代码结构：把代码库当 vault 看（节点 = 源文件，边 = 真实 import） */
+  architecture: '/architecture',
 } as const;

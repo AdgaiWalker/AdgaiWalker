@@ -1,5 +1,65 @@
 # 架构（权威）：当前态 · 最终态 · 演进对照
 
+> **2026-09-22 本地现状更新**：F01–F18 已实现并验收，未部署。新后台 React/Refine 四面通过管理鉴权读取现有内容与 SQLite；R01–R12 新增版本迁移、不可变修订、事项授权、审计/Outbox、执行准入、Harness 环境白名单和只读工具 patch、SDK RuntimePort，以及单槽持久队列、额度预留、确认终止后才释放容量、重启核对、后台执行 API、试跑界面、发布前三类测试，以及旧直调改接统一执行、工作站超时后关闭 SDK 实例和凭据修订失效旧 runtime。公共部署和内容写入仍待后续批次。下文旧生产图面与新目标拓扑分别保留其历史/设计语义。
+
+### 新框架本地已接通链路
+
+```mermaid
+flowchart LR
+    ADMIN["admin · 概览/内容/Agent/运营记录/设置"] --> AUTH["内存凭据 + Refine authProvider"]
+    AUTH --> HTTP["统一 HTTP + dataProvider"]
+    HTTP --> GATE["Nest AdminTokenMiddleware"]
+    GATE --> LEDGER["既有内容台账/正文只读用例"]
+    GATE --> OPS["OperationsController / Service"]
+    LEDGER --> FILES["内容文件 / Git"]
+    OPS --> PORTS["AgentUnitRepository / OperationsReadPort"]
+    PORTS --> DB["SQLite · AgentUnit / AgentRun"]
+```
+
+`GET /ops/capabilities` 检查实际读用例；`GET /ops/agents` 不调用自动创建默认角色的旧列表用例；`GET /ops/runs` 和详情仅读同一历史表。新写能力均为未接入。进度只在根 `to-do.md` 维护，[验收证据](ADMIN-FRAMEWORK-ACCEPTANCE.md)。
+
+<a id="agent-operations-target"></a>
+
+## 新后台目标拓扑（2026-09-22，提案）
+
+来源：[PRD v0.2](PRD-AGENT-OPERATIONS.md)、[开源调研](RESEARCH-AGENT-OPS-OPEN-SOURCE.md)、[技术方案 v0.1](TECH-DESIGN-AGENT-OPERATIONS.md)。以下是目标设计，**部分本地实现，尚未部署**；下文历史图中后台页面与“唯一运行时已完成”标记不能用于判断此次重构状态。当前后台已接入框架、Agent 修订编辑与历史；现存后台部分调用仍走 LLM_CLIENT。
+
+```mermaid
+flowchart TB
+    WEB["现有访客 Web · assistant-ui 适配\n公开位置 / 显式选择 Agent / 只读问答"]
+    ADMIN["新 apps/admin · React/Vite + Refine\n概览 / 内容 / Agent / 运营记录"]
+    GATE["现有 Caddy + Nest\n公共白名单 / 管理鉴权 / 归属校验"]
+    CAT["Agent 修订与部署解析"]
+    EXEC["ExecutionService\n授权与配额 / 持久队列 / 生命周期"]
+    RUNTIME["RuntimePort → DeepSeek Harness SDK\n固定版本与工具面 / 有界进程 / 确认终止"]
+    MUT["ContentMutationService\n候选 / 审批 / CAS / 恢复"]
+    REL["ContentReleaseService\n实际发布清单 / Git / 线上版本核验"]
+    OPS["Conversation + Operations\n消息 / 交互 / 提醒 / 统计 / 删除"]
+    DB[("现有 SQLite 扩展\n修订 / 授权 / run / 会话 / Action / 审计")]
+    LOG[("content/log · 内容正本")]
+    SNAP[("已核验公开快照\n只读派生产物 + 生效指针")]
+    DEPLOY["既有构建发布 → Vercel\n网页内容 hash / 公开 manifest"]
+    TRACE[("受控数据目录\n候选 / trace / SDK 会话 / 删除资源登记")]
+    WEB & ADMIN --> GATE
+    GATE --> CAT & OPS
+    CAT --> EXEC --> RUNTIME
+    ADMIN -->|"经管理鉴权"| MUT
+    MUT --> REL
+    MUT --> LOG
+    REL --> DEPLOY
+    LOG -->|"构建投影"| DEPLOY
+    DEPLOY -->|"线上核验后切换"| SNAP
+    SNAP -->|"只读上下文"| EXEC
+    RUNTIME -->|"候选结果，不直接写正本"| MUT
+    EXEC & CAT & MUT & REL & OPS --> DB
+    EXEC & OPS --> TRACE
+```
+
+边界：所有业务请求经过网关；图中 admin→内容变更箭头表示鉴权后的应用调用。前台 origin 上限不可升级；模型不直接操作正本或 Git。DB 保存业务事实、trace 保存诊断，不互相冒充。公开问答只读取已核验快照，工作区生成物不能提前对外生效。保留单 Nest/SQLite，默认一个模型槽；双槽验证后才开，不部署 Paperclip 或 Langfuse 后端。详细状态机、数据增量、API 与迁移规则仅在配套技术方案维护。
+
+> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](ADMIN-REBUILD-INVENTORY.md)。
+
+
 > 本文件是全项目架构的唯一权威图面；边界规则原文在 [`PLAN.md`](../PLAN.md) §2（五条宪法同在彼处）。
 > 更新纪律：拓扑/组件/数据流变更须回写本文件；图中状态标注随部署实况更新。
 > 基准：2026-09-14 · 本地工作区 as-built（生产基线：2026-09-03 切流 + 2026-09-09 智能体工坊上线）。
@@ -15,18 +75,22 @@ flowchart TB
     end
 
     subgraph vercel["www.iwalk.pro · Vercel 静态（push main 自动发）"]
-        WEB["预渲染文章 + 独立 SPA 壳<br/>逛 /posts · 卡 /tools（对话式）+ /tools/result<br/>小影 /ask · 资源 /tools/resources<br/>pagefind / rss / llms.txt"]
+        WEB["预渲染文章 + 独立 SPA 壳<br/>逛 /posts · 卡 /tools（对话式）+ /tools/result<br/>小影 /ask · 资源 /tools/resources · 结构 /graph · 代码结构 /architecture<br/>pagefind / rss / llms.txt"]
     end
 
     subgraph box["盒子 · 腾讯云 Windows 2C2G（新加坡）"]
         CPUB["Caddy · api.iwalk.pro<br/>公网白名单 8 条<br/>（与 app.module.ts exclude 逐条对齐）"]
         CADM["Caddy · 127.0.0.1:8790<br/>basic_auth + handle_path /api/*（剥前缀）"]
         NEST["Nest :8788（仅绑 127.0.0.1）<br/>RequestId + AdminToken 中间件"]
-        subgraph usc["用例层（21 controller / 无 setGlobalPrefix）"]
+        subgraph usc["用例层（26 controller / 无 setGlobalPrefix）"]
             INTAKE["intake 卡口"]
             ASSIST["assistant 小影（含 SSE /stream）"]
             INSIGHT["insights 信号中心 + 周报转题苗"]
             PIPE["works 作品链 + 发布状态机"]
+            LEDGER["content-ledger 台账读模型"]
+            RELEASE["content-release 一键上线"]
+            PLAN["plan 日历聚合"]
+            TRACE["traces 增量读 jsonl"]
             WORKSHOP["agents · model-providers 智能体工坊"]
         end
         DSH["dsh · 唯一 AI 运行时 ✔<br/>助手常驻 · 卡口短调用 · 配方 per-run"]
@@ -36,7 +100,7 @@ flowchart TB
     end
 
     subgraph owner["站主"]
-        ADMIN["apps/admin（SSH 隧道 :8790）<br/>流水线默认首页 · 工坊 · 内容编辑"]
+        ADMIN["apps/admin（SSH 隧道 :8790）<br/>计划 · 内容 · 复盘 · 设置"]
     end
 
     subgraph gitc["内容真相源 · Git"]
@@ -46,8 +110,8 @@ flowchart TB
     end
 
     subgraph agentx["apps/agent · Cordis 组合 + MCP stdio ✔"]
-        K["knowledge（aiUsePolicy fail-closed）"]
-        M["mcp · stdio 四工具"]
+        K["knowledge（aiUsePolicy fail-closed<br/>含图谱 neighbors 导航）"]
+        M["mcp · stdio 五工具"]
     end
 
     EXT["外部 agent（MCP 客户端）"]
@@ -57,7 +121,7 @@ flowchart TB
     ADMIN --> CADM --> NEST
     NEST --> INTAKE & ASSIST & INSIGHT & PIPE & WORKSHOP
     INTAKE & ASSIST & INSIGHT & PIPE & WORKSHOP --> DSH
-    INTAKE & ASSIST & INSIGHT & PIPE & WORKSHOP --> DB
+    INTAKE & ASSIST & INSIGHT & PIPE & LEDGER & RELEASE & PLAN & TRACE & WORKSHOP --> DB
     NEST --> DSKDATA
     DSH --> GOV
     LOG --> GEN --> CJ --> WEB
@@ -82,6 +146,8 @@ flowchart LR
 - **Nest DI**：接口 token 必须显式 `@Inject(TOKEN)`（`tsx` 下无 `emitDecoratorMetadata`，裸类型参数会注入成 `undefined`）。
 - **AI 双实现**：AI 策略（`AiNextStepAdapter` / `HarnessAssistantAdapter`）与规则兜底（`RuleNextStepAdapter` / `RuleAssistantAdapter`）同在适配层；**站主面（`DshAgentRunner` 配方）无兜底，失败如实抛错**。
 - **内容真相源唯一**：`content/log` →（`scripts/generate-content.ts`）→ `apps/web/src/generated/content.json`，被 web 打包、api 内容索引、agent 知识库、预渲染与 feeds 共同消费。
+- **管理端（2026-09-17）**：工作面计划 / 内容 / 复盘；底部设置（Agent / 观测 / 结构）。系统折叠抽屉已废除。题苗、执行仅深链。流水线、工作台重定向到计划。
+- **轨迹层**：`data/runs/<runId>/trace.jsonl` 是运行事实唯一真相源；DB 的 AgentRun / SkillRun / AssistantRun 只做索引。读取走 `after=<seq>` 增量，禁止全量解析进前端。发布与 Agent 共用同一个时间线渲染器。
 
 ## 二、最终架构（定稿 · 2026-09-06 论文修订版）
 
@@ -176,8 +242,33 @@ flowchart LR
 | 智能体工坊（agents + model-providers + 文件直调） | ✔ 生产（2026-09-09 上线；2026-09-13 修正 controller 路由前缀与 Nest DI 显式注入） |
 | 卡口形态：向导 → 对话式 | ✔ 本地（`/tools` 一问一答 + `/tools/result` 深链，noindex） |
 | 判断代理 v1（Cordis+MCP stdio） | ✔ 脚手架（A0–A3；A4 stub；A5 dogfooding 待站主） |
+| **知识图谱**（访客 `/graph` + 文章页局部图 + 站主结构体检 + MCP `neighbors`） | ✔ 建成（2026-09-14；待盒子部署 + 线上验证） |
+| **代码架构图谱**（门禁 `verify:architecture` + 访客 `/architecture` + admin 体检 + MCP 四工具） | ✔ 建成（2026-09-15；同一引擎的第二个领域，见 §六） |
 | 观测 P1（token/延迟/降级原因落库） | 待初稿后 |
 | 数据页三标签（观测 P2） | 待数据攒够 |
 | 判断代理 v2（HTTP 公网/ask/反向挂载） | 按触发 |
 | ★ 站主初稿全链 | **唯一待办（人）** |
 | 具身 | 远期（同一 MCP 接口消费） |
+
+## 六、代码图（增补：结构事实，**不是**架构权威）
+
+> 本节是**增补**，不改本文件作为「唯一架构图面」的地位。
+> 上面的图与表说的仍是**意图与拓扑**（为什么这样分层）；本节说的是**结构事实**
+> （用编译器语法树抽出来的真实 import）。二者冲突时：**架构以本文件为准，事实以抽取结果为准**，
+> 冲突本身就是值得知道的信息（说明声明与代码已经漂移）。
+
+| 项 | 内容 |
+|---|---|
+| 抽取实现（唯一） | `scripts/lib/code-extract.ts`（解析规则在 `packages/shared/src/code-resolve.ts`，语法抽取在 `code-imports.ts`） |
+| 产物（公开面） | `apps/web/src/generated/codegraph.json` —— 只有节点与边，被 `/architecture` 动态引入 |
+| 产物（内部面） | `apps/web/src/generated/codegraph-health.json` —— 体检明细，只有门禁 / api / admin / agent 读 |
+| 门禁 | `pnpm verify:architecture`（`build:web` 链上，紧随 `code:gen`）；硬伤新增即失败，基线在 `scripts/architecture-baseline.json` |
+| 消费方 | 访客 `/architecture`（indexable）· admin `/architecture`（noindex）· MCP `dependencies`/`dependents`/`impact`/`architecture_health` |
+| 规格与偏离 | [`PRD-CODE-GRAPH.md`](./PRD-CODE-GRAPH.md) |
+
+**规模实测（2026-09-15）**：430 个源文件 / 1101 条内部依赖边 / 0 个环 / 1 个解析不到的引用 /
+2 个从入口不可达的文件 / 0 个反向依赖；风格项：6 个超大文件、10 个超级枢纽（最大是 `apps/api/src/kernel.module.ts`，107 度）。
+
+### Agent 基础本地接线（2026-09-22）
+
+Admin → `/ops/agents` → AgentCatalogService → AgentRevisionRepository → SQLite；修订与审计同事务。Admin → `/ops/grants` → AuthorizationService → OperationsJournal → grant + audit 同事务。AgentExecutionService.preflight → revision / grant / ExecutionObjectPolicy → shared 策略交集；当前没有接运行调度。ExecutionRun 持久保存资源范围，父子范围只收窄。OutboxDispatcher 仅处理注册的数据库事务消费者，未配置业务派发时钟。真实运行、部署与内容写入仍由后续批次接通，见 [验收边界](AGENT-CORE-ACCEPTANCE.md)。

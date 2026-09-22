@@ -13,7 +13,6 @@ import {
   ASSISTANT_MAX_QUEUE_WAITERS,
   HarnessAssistantAdapter,
   buildFirstTurnPrompt,
-  dshChildEnv,
   type HarnessRuntimeLike,
 } from './harness-assistant.adapter';
 
@@ -148,7 +147,9 @@ describe('HarnessAssistantAdapter', () => {
     expect(rt.calls[0]!.prompt).toBe('他用什么电脑');
   });
 
-  it('超时：弃结果走兜底，runtime 被关闭且下问重建', async () => {
+  it('超时：第一次保留实例供预热复用；连续第二次才判定僵死并关闭重建', async () => {
+    // 冷启动可能比同步预算还贵：一次超时就杀实例会让
+    // 「每次都冷启动 → 每次都超时」成死循环（线上小影正是这样坏的）。
     const rt1 = makeRuntime('slow');
     let closed = 0;
     rt1.close = async () => {
@@ -158,12 +159,20 @@ describe('HarnessAssistantAdapter', () => {
     const rt2 = makeRuntime('ok');
     const factory = () => (count++ === 0 ? rt1 : rt2);
     const a = new HarnessAssistantAdapter(config(true), index, fallback, factory, 30);
-    const r = await a.ask({ sessionId: null, text: '慢问题', visitorKey: 'v1' });
-    expect(r.aiUsedFlag).toBe(false);
+
+    // 第一问：慢回复超预算 → 降级，但实例**保留**（下一问复用已热的）
+    const r1 = await a.ask({ sessionId: null, text: '慢问题', visitorKey: 'v1' });
+    expect(r1.aiUsedFlag).toBe(false);
+    expect(closed).toBe(0);
+
+    // 第二问复用 rt1（已热）→ 仍超时 → 连续第二次，判定僵死：关闭
+    const r2 = await a.ask({ sessionId: null, text: '还是慢', visitorKey: 'v1' });
+    expect(r2.aiUsedFlag).toBe(false);
     expect(closed).toBe(1);
-    // 下一问用新 runtime 正常出 AI 结果
-    const r2 = await a.ask({ sessionId: null, text: '快问题', visitorKey: 'v1' });
-    expect(r2.aiUsedFlag).toBe(true);
+
+    // 第三问用新 runtime，正常出 AI 结果
+    const r3 = await a.ask({ sessionId: null, text: '快问题', visitorKey: 'v1' });
+    expect(r3.aiUsedFlag).toBe(true);
     expect(count).toBe(2);
   });
 
@@ -233,7 +242,7 @@ describe('HarnessAssistantAdapter', () => {
     expect(calls).toBe(1);
   });
 
-  it('端到端取消：abort 后不等 runtime，弃结果走兜底并关闭实例', async () => {
+  it('端到端取消：abort 后不等 runtime，弃结果走兜底；实例保留（迟到结果自生自灭）', async () => {
     let closed = 0;
     const rt: HarnessRuntimeLike = {
       async run() {
@@ -252,26 +261,8 @@ describe('HarnessAssistantAdapter', () => {
     setTimeout(() => ac.abort(), 10);
     const r = await pending;
     expect(r.aiUsedFlag).toBe(false);
-    expect(closed).toBe(1);
-  });
-});
-
-describe('dshChildEnv（P0-1 会话遥测默认关闭）', () => {
-  it('默认注入 DSH_TELEMETRY_DISABLED=1，且不含 undefined 值', () => {
-    const env = dshChildEnv('/neutral/home');
-    expect(env.DSH_TELEMETRY_DISABLED).toBe('1');
-    expect(env.DSH_HOME).toBe('/neutral/home');
-    expect(env.DSH_PERMISSION_MODE).toBe('read-only');
-    expect(Object.values(env).every((v) => v !== undefined)).toBe(true);
-  });
-
-  it('探针期显式设 DSH_TELEMETRY_ENABLED_OVERRIDE 时不注入关闭变量', () => {
-    process.env.DSH_TELEMETRY_ENABLED_OVERRIDE = '1';
-    try {
-      expect(dshChildEnv('/x').DSH_TELEMETRY_DISABLED).toBeUndefined();
-    } finally {
-      delete process.env.DSH_TELEMETRY_ENABLED_OVERRIDE;
-    }
+    // abort 是用户主动行为，不计入实例健康度；实例保留给下一次复用
+    expect(closed).toBe(0);
   });
 });
 
@@ -396,5 +387,30 @@ describe('观测 P1 采集（token / 首字 / 排队 / 降级原因）', () => {
         })
       ).degradeReason,
     ).toBe('client-abort');
+  });
+
+  it('超时后保留 runtime 实例：下一问复用已热实例，而不是每次都冷启动', async () => {
+    // 冷启动可能比同步预算还贵；超时就杀实例会形成
+    // 「每次都冷启动 → 每次都超时」的死循环（小影线上正是这样）。
+    const runtime = makeRuntime('slow');
+    let created = 0;
+    const adapter = new HarnessAssistantAdapter(
+      config(true),
+      index,
+      fallback,
+      () => {
+        created += 1;
+        return runtime;
+      },
+      80,
+    );
+
+    const first = await adapter.ask({ sessionId: null, text: '第一问', visitorKey: 'v1' });
+    expect(first.degradeReason).toBe('timeout');
+
+    const second = await adapter.ask({ sessionId: null, text: '第二问', visitorKey: 'v1' });
+    expect(second.degradeReason).toBe('timeout');
+    // 慢回复两次都超时是预期；关键是实例**没有**被重建
+    expect(created).toBe(1);
   });
 });

@@ -1,5 +1,25 @@
 # PLAN.md — 主执行计划
 
+> **2026-09-22 新后台方案入口**：[PRD v0.2](docs/PRD-AGENT-OPERATIONS.md) + [开源调研](docs/RESEARCH-AGENT-OPS-OPEN-SOURCE.md) + [技术方案](docs/TECH-DESIGN-AGENT-OPERATIONS.md) + [原子任务 to-do.md](to-do.md)。按站主最新指令：框架优先，数据库统一 SQLite。F01–F18 框架与 R01–R20、R22、R23 已完成本地验收；R21 真实探针未通过，其余任务待实施，生产未部署。旧页面、旧批次完成记录与过去的验证时钟不代表新方案完成。
+
+## 新后台重构实施顺序（2026-09-22，框架优先）
+
+| 优先级 / 批次 | 工作范围 | 进入下一阶段的证据 | 状态 |
+|---|---|---|---|
+| P0 / F | 可运行框架：React/路由/鉴权/Refine、真实内容/Agent/历史运行只读、真实空态 | F18：可启动、可构建、可浏览真实资产；[本地验收](docs/ADMIN-FRAMEWORK-ACCEPTANCE.md) | 本地已验收，未部署 |
+| P1 / R | Agent 基础：SQLite 迁移、不可变修订、事项授权、统一 Harness 执行、停止/恢复、后台试跑 | R24：创建→真实运行→记录→停止闭环；Windows 隔离探针；公共位置保持关闭 | R01–R20 本地已验收，下一项 R21 |
+| P2 / V | 访客服务：公开快照、位置绑定、显式切换、介绍、会话/交互/日志、保留与删除 | V24：只读前台与日志全链可验；真实生产启用留 G08 | 待实施 |
+| P2 / C | 内容闭环：人工编辑 CAS、独立候选、单次审批、发布清单、网页/索引核验 | C24：更新全链与故障恢复；人工编辑子集可按依赖提前 | 待实施 |
+| P2 / O | 运营闭环：单次提醒、问题转事项、关键数据、复盘→下一事项 | O10：完成一次可追溯运营回路；单次提醒可按依赖提前 | 待实施 |
+| P3 / G | 全链迁移、回归、资源验收、分步上线和生产核验 | G08：A01–A28 与实际部署结果；上线门槛不可跳过 | 待实施 |
+
+原 B0–B4 仅为上一版设计拆分，现由 F/R/V/C/O/G 替代。第一次交付限定 F01–F18；原子依赖、勾选与实录仅维护在 `to-do.md`，本表只维护优先级和里程碑。常规按 F→R→V→C→O→G 执行，允许按依赖提前交付人工编辑/提醒。
+
+本次重构的具体边界优先于下文旧设计中的冲突表述：本地开发/隔离测试/现有生产统一 SQLite 独立文件，不使用 PostgreSQL、不维护双库；新增 Prisma 数据允许。AI 部件内交互采集属于已确认范围，全站点击流仍不做；前台 AI 永久只读，后台按事项授权，首期内容写入/发布走单次批准，持续全权内容委托留待后续。先保持一个模型运行槽，双槽另行实测与排期，不新增服务器或外部队列。以上是设计与执行决策，不表示生产配置已经变更。
+
+> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](docs/ADMIN-REBUILD-INVENTORY.md)。
+
+
 > 本文件是全项目的**主计划**：定顺序、定规则、定边界、记录想法。原子任务细节在三个执行清单里（见 §9 索引），本文件只管「先做什么、不做什么、为什么」。
 > 建立于 2026-09-06（HEAD `1f80393` 部署验证后）。主线排期或宪法条款变更须回写本文件。
 
@@ -81,7 +101,8 @@ flowchart TB
 | 6 | 判断代理 v1（apps/agent · Cordis · MCP） | agent | 1–2d | TODO-AGENT A0–A6；dogfooding 实录 | **A0–A3 ✅ A4 stub**（2026-09-06 提前解冻）；余 A5 dogfooding / A6 文档收尾 |
 | 7 | 观测 P1（token/首字延迟/排队/降级原因落库） | agent | 1–2d | 线上真发一问，AssistantRun 新列有值 | 初稿后 |
 | 8 | 验证盒复盘 | 站主+agent | 0.5d | **9 月 17 日**，拿真数据说话 | 已定日程 |
-| 9 | **知识图谱**（Obsidian Graph View 逐条对齐 · 三面：访客 `/graph` + 站主体检 + MCP `neighbors`） | agent | ~5d（K1–K6） | `PRD-KNOWLEDGE-GRAPH.md` §9 全部验收 + `verify:geo` 过门禁 | **2026-09-14 立项**（K1 起） |
+| 9 | **知识图谱**（Obsidian Graph View 逐条对齐 · 三面：访客 `/graph` + 站主体检 + MCP `neighbors`） | agent | ~5d（K1–K6） | `PRD-KNOWLEDGE-GRAPH.md` §9 全部验收 + `verify:geo` 过门禁 | **✅ K1–K6 建成**（2026-09-14 本地全绿；待盒子部署 + 线上验证） |
+| 10 | **代码架构图谱**（同一个引擎、第二个领域 · 四面：门禁 `verify:architecture` + 访客 `/architecture` + admin 体检 + MCP 四工具） | agent | ~3d | `PRD-CODE-GRAPH.md` §9 全部验收（A1–A12）+ `verify:geo` / `verify:architecture` 双门禁 | **✅ 建成**（2026-09-15 本地全绿；admin 不做画布见 PRD D1） |
 
 > **2026-09-06 优先级变更（站主指令）**：主线于 M2 完成后暂停（生产已一致运行 `44d026e`：dsh runner + 遥测关闭生效），**判断代理脚手架提前解冻并完成**（A0–A3 + A4 stub，详见 `docs/TODO-AGENT.md` 实录）。冻结条款对 M4/M5 维持；主线恢复点 = M3（站主初稿）。
 
@@ -113,6 +134,7 @@ P2 数据页（等数据存在）、观测 P3 全部（按触发条件）、Cord
 ## 7. 想法记录（新想法先落这里，只记不排）
 
 - 2026-09-14（站主会话）：**Obsidian 知识图谱**——先记账，当日即按站主指令（「完整功能排期」）转为正式立项，见 §3 第 9 项与 `docs/PRD-KNOWLEDGE-GRAPH.md`。
+- 2026-09-15（站主会话）：**代码架构图谱**——「需要不同的知识图谱，有代码架构的知识图谱」。四问定调（第一用户 = agent 开发与监测 / 节点粒度与 Obsidian 一模一样 / 纯机器抽取 / 四形态全做），当日建成，见 §3 第 10 项与 `docs/PRD-CODE-GRAPH.md`。**未做**：admin 可拖拽画布（跨 app 无共享 UI 包，照搬即第二份引擎；正解是把引擎提成 `packages/graph-engine`，记账不排期）。
 
 ## 8. 状态快照（2026-09-06 · 主线 M1–M5 完成日）
 
@@ -122,12 +144,19 @@ P2 数据页（等数据存在）、观测 P3 全部（按触发条件）、Cord
 - **主线状态**：M1✅ M2✅ M3-1✅（M3-2~4 待站主初稿——唯一剩余主线项）M4✅ M5✅；M6 判断代理 A0–A3✅A4stub；M8 复盘 9/17。
 - **已备资产**：dsh 全历史 clone / pi clone / 参考仓库与 tarball（~/Desktop/agent-runtime-backup，含 MANIFEST）。
 - **2026-09-09 智能体工坊全线交付**：后台智能体工坊与文件直调全线交付（PRD-AGENT-WORKBENCH.md v2.0）。实体智能体角色管理、小影 403 绝对保护、1:1 DSH 供应商模型池配置与 Ping 连通性探测、单次短命直调 `content/log/*.md` 跑完即焚与 120s 超时熔断保护、时序三色甘特图 100% 数据驱动、4 格硬核遥测账单、逐轮审计卡片与独立 `trace.jsonl` 管道（AES-256-GCM 强加密保护，全仓 77 个测试套件 323 项测试 100% 全绿）。
+- **2026-09-14 知识图谱建成（K1–K6）**：Obsidian Graph View 逐条对齐版落地——访客 `/graph`（四组设置 + HTML 兜底过 GEO 门禁）、文章页局部图（Depth 1–5）、站主结构体检清单（admin `/graph` ← `GET /graph/health`）、机器面 MCP `neighbors`（aiUsePolicy fail-closed）。产物实测基线入档：**28 篇文章 / 19 条正文互引 / 14 篇孤岛（50%）/ 2 个坏链 / 61 个标签节点 / 2 个附件孤岛**；`PRD-KNOWLEDGE-GRAPH.md` §1.1 有全表。
+- **2026-09-14 图谱引擎按源码重写（站主指令：先去 GitHub 找源码）**：从 `sim-original.js`（Obsidian 首页图谱的**原始 worker**）核对出三处实质错误并更正——力参数默认值实为 `0.1/1000/1/250`（原按帮助文档二手描述写成 `0.5/10`）、节点大小依据是**无向度数**而非入链数、`velocityDecay` 是 `×0.6` 直接相乘。补齐四叉树 Barnes–Hut（theta 0.9、distanceMin 30）、link 的 `bias` 分摊与逐边就地更新、collide（r 60/str .5）、初始布点算法、视口缓动与全部逐帧渲染公式；物理移入独立 Worker（单独成块 8.4KB）。自创的 `packages/shared/src/graph-layout.ts` 已删除（避免两套矛盾实现）。本地全链绿（typecheck + shared 106 + api 152 + agent 15 + web 167 + `verify:geo`）；**待盒子部署与线上验证**。已知既有文档漂移（非本次引入）：`docs/api/README.md` 被三处文档引用但文件不存在。
+- **2026-09-14 图谱引擎逆向应用本体（站主指令：去找 Obsidian 的知识图谱长什么样、逆向）**：逐层剥离本机 `Obsidian.app/.../obsidian.asar`，定位应用图谱的设置面板、渲染器、节点、连线与配色（`app.js` / `app.css`），并确认**应用 worker 就是 `/sim.js`**（即此前提取的 `sim-original.js`，物理常数因此是应用级真值）。据此更正五处实质错误：`showTags` 默认**关**、Display 默认 `0/1/1`、斥力是「UI 10 立方 → 引擎 1000」、缩放夹取 `[1/128, 8]`、配色按类型语义化 11 键；补齐应用实测滑块区间、6 色槽分组与局部图方向开关。`PRD-KNOWLEDGE-GRAPH.md` v1.2（含 §0.1 真值层级、§2.3 配色表、偏离 D18–D22）。
+- **2026-09-15 代码架构图谱建成**：同一个 Obsidian 对齐引擎的**第二个领域**（节点 = 源文件，边 = 真实 import）——抽取出 `packages/shared/src/code-{graph,resolve,imports,query,debt}.ts` + `scripts/lib/code-extract.ts`（`code:gen` 与门禁共用一份实现）；产物拆两份以隔离公开面（`codegraph.json` 给 web，`codegraph-health.json` 只给门禁/api/admin/agent）；门禁 `verify:architecture` 走**基线棘轮**（四条机器自证硬伤新增即失败；**不写人工规则文件**，理由是那会重述 `ARCHITECTURE.md`）；访客 `/architecture`（indexable + HTML 兜底 + 图例 + 选中详情）、admin `/architecture`（体检卡片 + 基线对账 + 明细表）、MCP 四工具（`dependencies` / `dependents` / `impact` / `architecture_health`）。实测基线入档：**430 个源文件 / 1101 条内部依赖边 / 0 环 / 1 个解析不到的引用 / 2 个从入口不可达 / 0 反向依赖**；风格项 6 个超大文件、10 个超级枢纽。生长动画由 13s 重标定为 3.3s（总时长优先）。`PRD-CODE-GRAPH.md` v1.0/v1.1（含偏离 D1–D12，其中 D1 = admin 不做画布）。**门禁首日即还债**（站主指令「删除」）：据体检删掉 5 个真死代码（`HeroSearchBar.tsx` / `useHomeCanvas.ts` / `packages/shared/src/content-load.ts` / `scripts/lib/env.ts` / `apps/api/src/database/database.module.ts`）+ 146 行死 CSS（`.hero-search*`，删前用「代码零引用 + DOM 命中 0 元素」双重确证）——门禁把它们报为「已还清」而不是报错，基线由 8 条收敛到 3 条（1 坏引用 + 2 手动脚本 `accept-real-works.ts` / `probe-production.ts`，两者在文档里被当作手动探针，故保留）；同时清掉 `packages/shared/dist` 里 `content-load.*` 与更早那次删除留下的 `graph-layout.*` 陈旧产物（否则 `@walker/shared/content-load` 在本地仍能解析）。全链绿：typecheck + shared 183 + api 158 + agent 25 + web 212 + `verify:geo` + `verify:architecture`。
 - **循环计数**：完成并被检验的交付 = **0**（等站主初稿）；公开文章 28 篇；验证盒剩余 **8 天**。
 
 ## 9. 文档索引
 
 | 文件 | 职责 |
 |---|---|
+| 根 `PRD.md` | 内容运营后台产品行为与验收（PRD-A/B/C） |
+| 根 `TECH-DESIGN.md` | 内容运营后台契约 / 分层 / 落点 |
+| 根 `EXEC-PLAN.md` | 内容运营后台批次与任务顺序 |
 | `docs/TODO-MAINLINE.md` | 主线 M2/M3/M4/M5/M8 原子任务（M1→OBS·P0，M6→AGENT，M7→OBS·P1 交叉引用） |
 | `docs/TODO-OBSERVABILITY.md` | 观测与数据（P0–P3，原子任务） |
 | `docs/TODO-AGENT.md` | 判断代理 v1（A0–A7，四插件架构） |

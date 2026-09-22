@@ -1,12 +1,17 @@
 # CLAUDE.md
 
+> **2026-09-22 当前开发约定**：新后台执行根 [to-do.md](to-do.md)。F01–F18 与 R01–R20、R22、R23 已本地验收，R21 真实探针未通过，后续仍从 R21 接续；框架见 [验收报告](docs/ADMIN-FRAMEWORK-ACCEPTANCE.md)。本地开发、测试、现有生产统一 SQLite 独立文件，不接入 PostgreSQL、不维护双库。新空库使用 `db:migrate`，现有库备份后用 `db:baseline`；命令均要求绝对 `file:` 路径。未部署生产。
+
+> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](docs/ADMIN-REBUILD-INVENTORY.md)。
+
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 技术栈（唯一）
 
 - **pnpm monorepo**：`apps/web` · `apps/admin` · `apps/api` · `packages/shared`
 - **前端**：React + Vite + TypeScript（**无 Astro**）
-- **后端**：NestJS + Prisma（**本地默认 SQLite**；未来生产过程库 **PostgreSQL**）
+- **后端**：NestJS + Prisma + **SQLite**（本地开发、隔离测试和现有生产分别使用独立文件；不使用 PostgreSQL）
 - **内容真相源**：`content/log/**/*.{md,mdx}` → `pnpm content:gen` → `apps/web/src/generated/content.json`（**进 Git 才上 Vercel**；Admin 保存≠自动 push）
 
 ## 常用命令
@@ -19,8 +24,9 @@ pnpm content:gen
 
 # 库 + 三端（本地 SQLite 默认）
 cp apps/api/.env.example apps/api/.env   # 首次
-pnpm db:generate && pnpm db:push
-pnpm dev:api    # :8788
+export DATABASE_URL="file:$(pwd)/apps/api/data/walker.db"  # macOS/Linux；Windows 用绝对 file:C:/... 路径
+pnpm db:generate && pnpm db:migrate  # 已有库先备份，再改用 db:baseline
+pnpm dev:api    # :8788；不隐式更改 schema
 pnpm dev:web    # :5173（自动先 content:gen）
 pnpm dev:admin  # :5174
 
@@ -36,9 +42,10 @@ pnpm test:shared && pnpm test:api && pnpm test:web
 # 验收（需三端已起）
 pnpm accept
 
-# 数据库（需要 Docker 或本地 PG）
+# 数据库（当前 SQLite；只对明确指定的独立库操作）
 pnpm db:generate
-pnpm db:migrate
+pnpm db:baseline  # 已有库：先备份，校验 schema 后仅标记基线
+pnpm db:migrate   # 新空库或已建立迁移历史的库
 
 # 维护
 pnpm check:content-fields   # 校验所有 MD frontmatter
@@ -106,6 +113,8 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 
 ## Admin 鉴权
 
+**2026-09-22 本地约定**：站主要求本地工作台暂不设置密码。隔离联调显式使用空 `WALKER_ADMIN_TOKEN`，API仅监听 `127.0.0.1`，页面打开/刷新直接进入；需要验证鉴权时由测试设置临时凭据。生产凭据要求仍按下文执行。
+
 **生产已启用双层管理凭据**（2026-09-03 切流后）：Nest `AdminTokenMiddleware` 校验 Basic 密码 = `WALKER_ADMIN_TOKEN`（生产缺该 env 直接拒启）；公网另有 Caddy basic auth 双防线。公开白名单见 `apps/api/src/app.module.ts`（与 `ops/windows/Caddyfile` 双侧同步，漏一侧即 401/404）。脚本调管理接口带 `x-admin-token` 头。凭据体系与改密流程见 `AGENTS.md`「生产拓扑」。
 
 ## 功能开发清单
@@ -147,7 +156,7 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 改代码 → commit → push main → Vercel 构建 web → 发布 www.iwalk.pro
 ```
 
-**当前生产诚实状态（勿假称双入口已切流）：**
+**旧切流前生产快照（历史；当前部署事实见 docs/STATUS.md）：**
 
 - **有**：web 静态 SPA、深链 rewrite（`/tools` 等 200 壳）、文章预渲染、rss/llms/pagefind  
 - **无**：公网 Nest、生产 PG、同源 `/api/*` 反代 destination  
@@ -164,6 +173,6 @@ content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/g
 - 上 Nest 后须在 rewrites **最前**加：`/api/:path*` → `https://<真实-API-主机>/:path*`（Nest 无全局 `/api` 前缀）  
 - 旧中文 slug → 英文 slug 的 301 在 `redirects`  
 
-**本地默认（勿把密码写进 git）：** 本机 PG 常见 `postgresql://postgres:…@127.0.0.1:5432/walker`。
+**本地默认：** SQLite 的 `file:` 数据源；开发库、测试库和框架联调库使用不同文件，不将数据库文件提交 Git。新开发不配置 PostgreSQL。
 
 **探针：** `pnpm exec tsx scripts/probe-production.ts`

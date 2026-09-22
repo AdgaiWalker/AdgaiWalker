@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePlannedDate, transitionAction } from './action.js';
+import { ACTION_ENTITY_TYPES, normalizePlannedDate, transitionAction } from './action.js';
 
 describe('action contracts', () => {
+  it('实体类型词表包含 CONTENT（内容待上线排期落 Action）', () => {
+    expect(ACTION_ENTITY_TYPES).toContain('CONTENT');
+  });
+
   it('accepts an empty date and a calendar date', () => {
     expect(normalizePlannedDate(null)).toBeNull();
     expect(normalizePlannedDate('2026-08-04')).toBe('2026-08-04');

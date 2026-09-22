@@ -1,214 +1,183 @@
 /**
- * 图谱画布 —— Obsidian 交互的忠实实现（PRD §3.3 / §3.5）。
+ * 图谱画布 —— Obsidian 图谱引擎的 React 宿主。
  *
- * 职责：把「可见节点 + 可见边 + 显示设置」画出来，并处理指针/键盘交互。
- * 不持有业务状态：可见性、配色、分组都由 graph-view-model 推导后传入。
+ * 物理与渲染全部交给 `obsidian/engine.ts`（按 Obsidian 原始 worker 与
+ * graph-reconstructed.js 的规格重写）；本组件只负责：把视图模型推导出的节点/边
+ * 交给引擎、把设置变化同步给引擎、把引擎回调翻译成路由动作与右键菜单。
+ *
+ * 权威：docs/PRD-KNOWLEDGE-GRAPH.md
  */
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { GraphEngine, type EngineForces } from './obsidian/engine';
 import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import {
-  fitToViewport,
-  graphBounds,
-  layoutGraph,
-  type GraphEdge,
-  type GraphLayoutParams,
-  type GraphNode,
-} from '@walker/shared';
-import {
-  edgeStroke,
-  GRAPH_DEFAULT_NODE_COLOR,
-  hoverHighlight,
-  nodeLabel,
-  nodeRadius,
-  type GraphDisplay,
+  DEFAULT_RENDER_PALETTE,
+  type RenderPalette,
+} from './obsidian/renderer';
+import type { GraphColorKey } from './obsidian/constants';
+import type {
+  GraphDisplay,
+  GraphNodeView,
+  GraphSettings,
+  GraphViewEdge,
+  GraphViewNode,
 } from './graph-view-model';
 
-export type GraphCanvasHandle = {
-  resetView: () => void;
-};
-
-/**
- * 画布配色一律从 CSS 变量读取（单一来源在样式表里，深浅主题各自覆盖），
- * 不在 JS 里写死颜色——否则浅色主题下深色标签会直接看不见。
- */
-type GraphPalette = {
-  label: string;
-  labelDim: string;
-  edge: string;
-  node: string;
-  nodeRing: string;
-  ghost: string;
-  ghostRing: string;
-};
-
-const DEFAULT_PALETTE: GraphPalette = {
-  label: '#111111',
-  labelDim: '#5b6b7c',
-  edge: 'rgba(40, 80, 140, 0.35)',
-  node: GRAPH_DEFAULT_NODE_COLOR,
-  nodeRing: 'rgba(255, 255, 255, 0.9)',
-  ghost: 'rgba(91, 107, 124, 0.18)',
-  ghostRing: 'rgba(91, 107, 124, 0.8)',
-};
-
-function readPalette(element: HTMLElement): GraphPalette {
-  const styles = getComputedStyle(element);
-  const read = (name: string, fallback: string) =>
-    styles.getPropertyValue(name).trim() || fallback;
-  return {
-    label: read('--graph-label', DEFAULT_PALETTE.label),
-    labelDim: read('--graph-label-dim', DEFAULT_PALETTE.labelDim),
-    edge: read('--graph-edge', DEFAULT_PALETTE.edge),
-    node: read('--graph-node', DEFAULT_PALETTE.node),
-    nodeRing: read('--graph-node-ring', DEFAULT_PALETTE.nodeRing),
-    ghost: read('--graph-ghost', DEFAULT_PALETTE.ghost),
-    ghostRing: read('--graph-ghost-ring', DEFAULT_PALETTE.ghostRing),
-  };
-}
-
-type Props = {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
+type Props<Node extends GraphViewNode> = {
+  nodes: readonly Node[];
+  edges: readonly GraphViewEdge[];
+  /** 命中颜色组的节点 → 颜色；未命中的用该节点的类型语义色 */
   colors: Map<string, string>;
+  /** 节点怎么称呼、点了去哪、复制什么（领域差异，见 domains.ts） */
+  nodeView: GraphNodeView<Node>;
   display: GraphDisplay;
-  forces: GraphLayoutParams;
+  forces: GraphSettings['forces'];
   seed: number;
   height?: number;
-  /** Animate：本帧允许显示的节点 id 集合；null / 缺省表示全部显示 */
-  revealIds?: ReadonlySet<string> | null;
-  onActivate: (node: GraphNode) => void;
-  /** 右键菜单「只看它的局部图」——照抄 Obsidian 从节点打开局部图 */
-  onIsolate?: (node: GraphNode) => void;
-  /** 右键菜单「以它为起点筛选」——把该节点写进 Filters 的搜索框 */
-  onFilterFrom?: (node: GraphNode) => void;
+  /**
+   * Animate：要依次淡入的节点 id 顺序；null 表示不播放。
+   * 时钟由引擎持有，这里只把顺序交出去一次，**不逐帧驱动**。
+   */
+  revealOrder?: readonly string[] | null;
+  /** 生长动画走完时通知宿主还原按钮 */
+  onRevealDone?: () => void;
+  onActivate: (node: Node) => void;
+  /** 右键菜单「只看它的局部图」 */
+  onIsolate?: (node: Node) => void;
+  /** 右键菜单「以它为起点筛选」 */
+  onFilterFrom?: (node: Node) => void;
 };
 
-type Viewport = { scale: number; offsetX: number; offsetY: number };
-
-const MIN_SCALE = 0.12;
-const MAX_SCALE = 6;
-const HIT_PADDING = 6;
-
-function screenToWorld(
-  sx: number,
-  sy: number,
-  viewport: Viewport,
-): { x: number; y: number } {
+/** 设置面板的力参数 → 引擎参数（字段一一对应，PRD §3.4） */
+function toEngineForces(forces: GraphSettings['forces']): EngineForces {
   return {
-    x: (sx - viewport.offsetX) / viewport.scale,
-    y: (sy - viewport.offsetY) / viewport.scale,
+    centerStrength: forces.centerStrength,
+    linkStrength: forces.linkStrength,
+    linkDistance: forces.linkDistance,
+    repelStrength: forces.repelStrength,
   };
 }
 
-export function GraphCanvas({
+/**
+ * 配色从 CSS 变量读（单一来源在样式表，深浅主题各自覆盖）。
+ * 不这么做的话，Obsidian 首页的深色配色（白节点/浅字）在浅色主题下会看不见。
+ */
+/** CSS 变量名 ↔ 应用语义配色键（与 app.css 的 `--graph-*` 一一对应） */
+const PALETTE_VARS: Record<GraphColorKey, string> = {
+  fill: '--graph-node',
+  fillFocused: '--graph-node-focused',
+  fillTag: '--graph-node-tag',
+  fillAttachment: '--graph-node-attachment',
+  fillUnresolved: '--graph-node-unresolved',
+  line: '--graph-line',
+  lineHighlight: '--graph-line-highlight',
+  fillHighlight: '--graph-fill-highlight',
+  arrow: '--graph-arrow',
+  text: '--graph-text',
+  circle: '--graph-circle',
+};
+
+function readPalette(element: HTMLElement): RenderPalette {
+  const styles = getComputedStyle(element);
+  const palette = {} as RenderPalette;
+  for (const [key, cssVar] of Object.entries(PALETTE_VARS) as Array<
+    [GraphColorKey, string]
+  >) {
+    palette[key] =
+      styles.getPropertyValue(cssVar).trim() || DEFAULT_RENDER_PALETTE[key];
+  }
+  return palette;
+}
+
+export function GraphCanvas<Node extends GraphViewNode>({
   nodes,
   edges,
   colors,
+  nodeView,
   display,
   forces,
   seed,
   height = 560,
-  revealIds,
+  revealOrder = null,
+  onRevealDone,
   onActivate,
   onIsolate,
   onFilterFrom,
-}: Props) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+}: Props<Node>) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState({ width: 800, height });
-  const [viewport, setViewport] = useState<Viewport>({
-    scale: 1,
-    offsetX: 0,
-    offsetY: 0,
-  });
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [menu, setMenu] = useState<{ x: number; y: number; node: GraphNode } | null>(
-    null,
-  );
-  const [palette, setPalette] = useState<GraphPalette>(DEFAULT_PALETTE);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const engineRef = useRef<GraphEngine | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; node: Node } | null>(null);
+  const latestNodes = useRef(nodes);
+  latestNodes.current = nodes;
+  const latestRevealDone = useRef(onRevealDone);
+  latestRevealDone.current = onRevealDone;
+  const latestNodeView = useRef(nodeView);
+  latestNodeView.current = nodeView;
 
-  const dragRef = useRef<
-    | { mode: 'pan'; lastX: number; lastY: number }
-    | { mode: 'node'; nodeId: string }
-    | null
-  >(null);
-  const [dragged, setDragged] = useState<{
-    nodeId: string;
-    position: { x: number; y: number };
-  } | null>(null);
-
-  const visibleNodes = useMemo(
-    () => (revealIds ? nodes.filter((node) => revealIds.has(node.id)) : nodes),
-    [nodes, revealIds],
-  );
-
-  const visibleIds = useMemo(
-    () => new Set(visibleNodes.map((node) => node.id)),
-    [visibleNodes],
-  );
-  const visibleEdges = useMemo(
-    () => edges.filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target)),
-    [edges, visibleIds],
-  );
-
-  const positions = useMemo(() => {
-    const initial: Record<string, { x: number; y: number }> = {};
-    if (dragged) initial[dragged.nodeId] = dragged.position;
-    return layoutGraph(
-      {
-        nodes: visibleNodes.map((node) => ({ id: node.id })),
-        edges: visibleEdges.map((edge) => ({ source: edge.source, target: edge.target })),
+  // 引擎生命周期（容器/画布就绪后创建一次）
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+    const engine = new GraphEngine(container, canvas, {
+      seed,
+      // 配色在这里就给到引擎：本 effect 是被动副作用，而下面读配色的 effect 是布局副作用，
+      // 布局副作用**先于**被动副作用执行——若把首次配色放在那里，engineRef 还是 null，
+      // setPalette 会空转，画布只能退回引擎默认的深色板（浅色主题下标签等于隐形）。
+      palette: readPalette(container),
+      onActivate: (id) => {
+        const node = latestNodes.current.find((entry) => entry.id === id);
+        if (node) onActivate(node);
       },
-      {
-        params: forces,
-        seed,
-        initial: dragged ? initial : undefined,
-        pinned: dragged ? initial : undefined,
+      onContext: (id, cssX, cssY) => {
+        const node = latestNodes.current.find((entry) => entry.id === id);
+        if (node) setMenu({ x: cssX, y: cssY, node });
       },
-    );
-  }, [visibleNodes, visibleEdges, forces, seed, dragged]);
-
-  const nodeById = useMemo(
-    () => new Map(nodes.map((node) => [node.id, node])),
-    [nodes],
-  );
-
-  const highlight = useMemo(() => {
-    const active = hoveredId ?? selectedId;
-    if (!active) return null;
-    const base = hoverHighlight(visibleEdges, active);
-    return base;
-  }, [hoveredId, selectedId, visibleEdges]);
-
-  // 尺寸自适应
-  useLayoutEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
-    const update = () => {
-      const rect = element.getBoundingClientRect();
-      setSize({ width: Math.max(320, rect.width), height });
+      onRevealDone: () => latestRevealDone.current?.(),
+    });
+    engineRef.current = engine;
+    return () => {
+      engine.destroy();
+      engineRef.current = null;
     };
-    update();
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(update);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [height]);
+    // onActivate 通过 ref 取最新值，不参与依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
 
-  // 主题配色（含深色模式切换）
+  useEffect(() => {
+    engineRef.current?.setData({
+      nodes: nodes.map((node) => ({
+        id: node.id,
+        label: latestNodeView.current.label(node),
+        kind: node.kind,
+        // 空字符串表示「用该类型的语义色」（引擎按 kind 取 fill/fillTag/…）；
+        // 颜色组命中时才给组色（应用优先级：分组色 > 类型色）
+        color: colors.get(node.id) ?? '',
+      })),
+      links: edges.map((edge) => [edge.source, edge.target] as [string, string]),
+    });
+    // nodeView 按 ref 取最新值（它每次渲染都是新对象，入依赖会每帧重建数据）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges, colors]);
+
+  // Animate：只把顺序交出一次，时间轴留在引擎里 —— 不逐帧 setState
+  useEffect(() => {
+    engineRef.current?.setReveal(revealOrder);
+  }, [revealOrder]);
+
+  useEffect(() => {
+    engineRef.current?.setForces(toEngineForces(forces));
+  }, [forces]);
+
+  // 主题切换时重新读配色（首次配色由上面的构造参数负责，这里只管变化）
   useLayoutEffect(() => {
-    const element = containerRef.current;
-    if (!element) return;
-    setPalette(readPalette(element));
+    const container = containerRef.current;
+    if (!container) return;
+    engineRef.current?.setPalette(readPalette(container));
     if (typeof MutationObserver === 'undefined') return;
-    const observer = new MutationObserver(() => setPalette(readPalette(element)));
+    const observer = new MutationObserver(() =>
+      engineRef.current?.setPalette(readPalette(container)),
+    );
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme', 'class'],
@@ -216,336 +185,40 @@ export function GraphCanvas({
     return () => observer.disconnect();
   }, []);
 
-  // 图变化时重新适配视口
-  const fitKey = `${visibleNodes.length}:${visibleEdges.length}:${size.width}:${size.height}`;
-  const lastFitKey = useRef('');
   useEffect(() => {
-    if (lastFitKey.current === fitKey) return;
-    lastFitKey.current = fitKey;
-    const bounds = graphBounds(positions.values());
-    setViewport(fitToViewport(bounds, size.width, size.height, 40));
-  }, [fitKey, positions, size.width, size.height]);
-
-  const screenOf = useCallback(
-    (id: string) => {
-      const point = positions.get(id);
-      if (!point) return null;
-      return {
-        x: point.x * viewport.scale + viewport.offsetX,
-        y: point.y * viewport.scale + viewport.offsetY,
-      };
-    },
-    [positions, viewport],
-  );
-
-  const pickNode = useCallback(
-    (sx: number, sy: number): GraphNode | null => {
-      let best: GraphNode | null = null;
-      let bestDistance = Infinity;
-      for (const node of visibleNodes) {
-        const screen = screenOf(node.id);
-        if (!screen) continue;
-        const radius = Math.max(
-          nodeRadius(node, display) * viewport.scale,
-          HIT_PADDING,
-        );
-        const distance = Math.hypot(screen.x - sx, screen.y - sy);
-        if (distance <= radius + HIT_PADDING && distance < bestDistance) {
-          bestDistance = distance;
-          best = node;
-        }
-      }
-      return best;
-    },
-    [visibleNodes, screenOf, display, viewport.scale],
-  );
-
-  const normalizeZoom = useMemo(() => {
-    const bounds = graphBounds(positions.values());
-    const fitted = fitToViewport(bounds, size.width, size.height, 40);
-    return fitted.scale > 0 ? viewport.scale / fitted.scale : 1;
-  }, [positions, size.width, size.height, viewport.scale]);
-
-  // ------------------------------------------------------------- 绘制
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
-    canvas.width = Math.floor(size.width * dpr);
-    canvas.height = Math.floor(size.height * dpr);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, size.width, size.height);
-
-    const dim = (id: string) => (highlight ? !highlight.neighbors.has(id) : false);
-
-    // 边
-    visibleEdges.forEach((edge, index) => {
-      const from = screenOf(edge.source);
-      const to = screenOf(edge.target);
-      if (!from || !to) return;
-      const stroke = edgeStroke(edge.kind);
-      const isHighlighted = highlight?.edges.has(index) ?? false;
-      const faded = highlight && !isHighlighted;
-      ctx.save();
-      ctx.globalAlpha = faded ? 0.12 : isHighlighted ? 1 : stroke.alpha;
-      ctx.strokeStyle = isHighlighted
-        ? colors.get(edge.source) ?? palette.label
-        : palette.edge;
-      ctx.lineWidth = Math.max(0.5, display.linkThickness * stroke.widthRatio);
-      ctx.setLineDash(stroke.dash.map((value) => value * display.linkThickness));
-      ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      if (display.arrows) {
-        const angle = Math.atan2(to.y - from.y, to.x - from.x);
-        const tip = 9 + display.linkThickness * 2;
-        const targetRadius = 4;
-        const ax = to.x - Math.cos(angle) * (targetRadius + tip);
-        const ay = to.y - Math.sin(angle) * (targetRadius + tip);
-        ctx.beginPath();
-        ctx.moveTo(ax + Math.cos(angle) * tip, ay + Math.sin(angle) * tip);
-        ctx.lineTo(
-          ax + Math.cos(angle + 2.5) * tip * 0.7,
-          ay + Math.sin(angle + 2.5) * tip * 0.7,
-        );
-        ctx.lineTo(
-          ax + Math.cos(angle - 2.5) * tip * 0.7,
-          ay + Math.sin(angle - 2.5) * tip * 0.7,
-        );
-        ctx.closePath();
-        ctx.fillStyle = ctx.strokeStyle as string;
-        ctx.fill();
-      }
-      ctx.restore();
+    engineRef.current?.setRenderOptions({
+      textFadeMultiplier: display.textFadeMultiplier,
+      nodeSizeMultiplier: display.nodeSizeMultiplier,
+      lineSizeMultiplier: display.lineSizeMultiplier,
+      showArrow: display.showArrow,
     });
-
-    // 节点
-    const fade = Math.min(1, Math.max(0, display.textFadeThreshold));
-    const labelAlpha =
-      fade >= 1 ? 0 : Math.min(1, Math.max(0, (normalizeZoom - fade) / Math.max(0.05, 1 - fade)));
-
-    for (const node of visibleNodes) {
-      const screen = screenOf(node.id);
-      if (!screen) continue;
-      const radius = Math.max(2.5, nodeRadius(node, display) * viewport.scale);
-      const isHovered = hoveredId === node.id || selectedId === node.id;
-      ctx.save();
-      ctx.globalAlpha = dim(node.id) ? 0.15 : 1;
-      ctx.beginPath();
-      ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle =
-        node.kind === 'ghost' ? palette.ghost : colors.get(node.id) ?? palette.node;
-      ctx.fill();
-      ctx.lineWidth = node.kind === 'ghost' ? 1.5 : 1;
-      ctx.strokeStyle =
-        node.kind === 'ghost'
-          ? palette.ghostRing
-          : isHovered
-            ? palette.label
-            : palette.nodeRing;
-      if (node.kind === 'ghost') ctx.setLineDash([3, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      if (labelAlpha > 0.02 || isHovered) {
-        ctx.globalAlpha = Math.max(dim(node.id) ? 0.1 : 0, isHovered ? 1 : labelAlpha);
-        ctx.fillStyle = isHovered ? palette.label : palette.labelDim;
-        ctx.font = `${Math.max(10, 11 * Math.min(1.4, viewport.scale))}px system-ui, -apple-system, sans-serif`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(nodeLabel(node), screen.x + radius + 4, screen.y);
-      }
-      ctx.restore();
-    }
   }, [
-    visibleNodes,
-    visibleEdges,
-    positions,
-    viewport,
-    size,
-    display,
-    colors,
-    highlight,
-    hoveredId,
-    selectedId,
-    normalizeZoom,
-    screenOf,
-    palette,
+    display.textFadeMultiplier,
+    display.nodeSizeMultiplier,
+    display.lineSizeMultiplier,
+    display.showArrow,
   ]);
 
-  // ------------------------------------------------------------- 交互
-  const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
-    setViewport((current) => {
-      const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current.scale * factor));
-      const ratio = scale / current.scale;
-      return {
-        scale,
-        offsetX: cx - (cx - current.offsetX) * ratio,
-        offsetY: cy - (cy - current.offsetY) * ratio,
-      };
-    });
-  }, []);
-
-  const localPoint = (event: React.PointerEvent | React.MouseEvent | React.WheelEvent) => {
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  };
-
-  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    setMenu(null);
-    const point = localPoint(event);
-    const node = pickNode(point.x, point.y);
-    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
-    if (node) {
-      dragRef.current = { mode: 'node', nodeId: node.id };
-      setDragged({ nodeId: node.id, position: positions.get(node.id) ?? { x: 0, y: 0 } });
-      setSelectedId(node.id);
-    } else {
-      dragRef.current = { mode: 'pan', lastX: event.clientX, lastY: event.clientY };
-      setSelectedId(null);
-    }
-  };
-
-  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const point = localPoint(event);
-    const drag = dragRef.current;
-    if (drag?.mode === 'pan') {
-      const dx = event.clientX - drag.lastX;
-      const dy = event.clientY - drag.lastY;
-      drag.lastX = event.clientX;
-      drag.lastY = event.clientY;
-      setViewport((current) => ({
-        ...current,
-        offsetX: current.offsetX + dx,
-        offsetY: current.offsetY + dy,
-      }));
-      return;
-    }
-    if (drag?.mode === 'node') {
-      const world = screenToWorld(point.x, point.y, viewport);
-      setDragged({ nodeId: drag.nodeId, position: world });
-      return;
-    }
-    const node = pickNode(point.x, point.y);
-    setHoveredId(node?.id ?? null);
-  };
-
-  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    dragRef.current = null;
-    (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
-    if (drag?.mode === 'node') {
-      // 松开后按当前 Forces 重新收敛（把被拖节点钉在新位置）
-      setDragged((current) => current);
-      return;
-    }
-  };
-
-  const onClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (dragRef.current) return;
-    const point = localPoint(event);
-    const node = pickNode(point.x, point.y);
-    if (!node) return;
-    onActivate(node);
-  };
-
-  const onContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
-    const point = localPoint(event);
-    const node = pickNode(point.x, point.y);
-    if (!node) return;
-    event.preventDefault();
-    setMenu({ x: point.x, y: point.y, node });
-  };
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey ? 90 : 28;
-    const pan = (dx: number, dy: number) => {
-      event.preventDefault();
-      setViewport((current) => ({
-        ...current,
-        offsetX: current.offsetX + dx,
-        offsetY: current.offsetY + dy,
-      }));
-    };
-    switch (event.key) {
-      case 'ArrowLeft':
-        return pan(step, 0);
-      case 'ArrowRight':
-        return pan(-step, 0);
-      case 'ArrowUp':
-        return pan(0, step);
-      case 'ArrowDown':
-        return pan(0, -step);
-      case '+':
-      case '=':
-        event.preventDefault();
-        return zoomAt(1.2, size.width / 2, size.height / 2);
-      case '-':
-        event.preventDefault();
-        return zoomAt(1 / 1.2, size.width / 2, size.height / 2);
-      case 'Escape':
-        return setMenu(null);
-      default:
-        return;
-    }
-  };
-
-  const menuNode = menu?.node;
-  const menuHref =
-    menuNode && (menuNode.kind === 'note' || menuNode.kind === 'ghost')
-      ? `${'/posts'}/${encodeURIComponent(menuNode.slug)}`
-      : null;
+  const menuHref = menu ? nodeView.href(menu.node) : null;
+  /** 复制链接：优先领域给的文本（代码图谱复制仓库路径），否则按地址，再否则按标签 */
+  const copyText = menu
+    ? (nodeView.copyText?.(menu.node) ?? nodeView.href(menu.node) ?? nodeView.label(menu.node))
+    : '';
 
   return (
     <div className="graph-canvas-wrap surface-l2">
-      <div
-        ref={containerRef}
-        className="graph-canvas"
-        style={{ height }}
-        role="application"
-        aria-label="知识图谱画布：可缩放、平移、拖拽节点"
-        tabIndex={0}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={() => setHoveredId(null)}
-        onClick={onClick}
-        onContextMenu={onContextMenu}
-        onKeyDown={onKeyDown}
-        onWheel={(event) => {
-          event.preventDefault();
-          const rect = event.currentTarget.getBoundingClientRect();
-          zoomAt(
-            event.deltaY > 0 ? 1 / 1.12 : 1.12,
-            event.clientX - rect.left,
-            event.clientY - rect.top,
-          );
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{ width: size.width, height: size.height }}
-          aria-hidden
-        />
+      <div ref={containerRef} className="graph-canvas" style={{ height }}>
+        <canvas ref={canvasRef} aria-hidden />
       </div>
 
-      {menu && menuNode ? (
-        <div
-          className="graph-menu"
-          style={{ left: menu.x, top: menu.y }}
-          role="menu"
-        >
+      {menu ? (
+        <div className="graph-menu" style={{ left: menu.x, top: menu.y }} role="menu">
           <button
             type="button"
             role="menuitem"
             onClick={() => {
               setMenu(null);
-              onActivate(menuNode);
+              onActivate(menu.node);
             }}
           >
             打开
@@ -560,9 +233,8 @@ export function GraphCanvas({
             role="menuitem"
             onClick={() => {
               setMenu(null);
-              const target = menuHref
-                ? `${window.location.origin}${menuHref}`
-                : nodeLabel(menuNode);
+              // 站内页面复制绝对地址（方便分享）；没有站内页面的则复制领域给的文本
+              const target = menuHref ? `${window.location.origin}${menuHref}` : copyText;
               void navigator.clipboard?.writeText(target);
             }}
           >
@@ -573,8 +245,7 @@ export function GraphCanvas({
             role="menuitem"
             onClick={() => {
               setMenu(null);
-              setSelectedId(menuNode.id);
-              onIsolate?.(menuNode);
+              onIsolate?.(menu.node);
             }}
           >
             只看它的局部图
@@ -584,10 +255,13 @@ export function GraphCanvas({
             role="menuitem"
             onClick={() => {
               setMenu(null);
-              onFilterFrom?.(menuNode);
+              onFilterFrom?.(menu.node);
             }}
           >
             以它为起点筛选
+          </button>
+          <button type="button" role="menuitem" onClick={() => setMenu(null)}>
+            关闭
           </button>
         </div>
       ) : null}

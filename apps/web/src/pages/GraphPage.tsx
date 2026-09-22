@@ -5,18 +5,25 @@
  * 触发：WEB_ROUTES.graph
  */
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { getGraphBodies, getKnowledgeGraph } from '../graph';
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
+import { createContentGraphDomain } from '../components/graph/domains';
 import { buildGraphOutline } from '../shared/graph-outline';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
 
 export function GraphPage() {
+  const navigate = useNavigate();
   const graph = useMemo(() => getKnowledgeGraph(), []);
   const bodies = useMemo(() => getGraphBodies(), []);
   const outline = useMemo(() => buildGraphOutline(graph), [graph]);
+  // 领域接缝：本页给「内容」这一侧的标签、检索文档与点击行为
+  const domain = useMemo(
+    () => createContentGraphDomain({ browsePath: dualEntry.browse.path, bodies, navigate }),
+    [bodies, navigate],
+  );
 
   return (
     <div className="graph-page">
@@ -37,12 +44,7 @@ export function GraphPage() {
         </Link>
       </header>
 
-      <KnowledgeGraph
-        graph={graph}
-        bodies={bodies}
-        browsePath={dualEntry.browse.path}
-        height={620}
-      />
+      <KnowledgeGraph graph={graph} domain={domain} height={620} />
 
       {/*
         文字版结构：既是无 JS / 爬虫的兜底正文，也是真实可用的降级视图。

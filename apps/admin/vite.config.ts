@@ -1,17 +1,11 @@
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const root = path.dirname(fileURLToPath(import.meta.url));
-
+// 新后台仅通过同源 API 代理读取本站数据。
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      '@walker/shared': path.resolve(root, '../../packages/shared/src/index.ts'),
-    },
-  },
+  resolve: { alias: { '@walker/shared': fileURLToPath(new URL('../../packages/shared/src/index.ts', import.meta.url)) } },
   server: {
     host: '127.0.0.1',
     port: 5174,

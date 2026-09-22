@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "xiaoying",
+  "name": "小影",
+  "icon": "bot",
+  "version": "1.0.0",
+  "description": "站内助手：依据站内文章回答访客问题，给出出处，不编造",
+  "model": {
+    "requirement": {
+      "kind": "chat",
+      "contextTokens": 128000,
+      "streaming": true
+    },
+    "params": {
+      "temperature": 0.3,
+      "maxTokens": 1024
+    }
+  },
+  "io": {
+    "input": {
+      "kind": "text",
+      "description": "访客问题或站主的直调指令（可与目标文件正文拼接）"
+    },
+    "output": {
+      "kind": "text",
+      "description": "纯文本回答；不给 markdown 表格与代码块围栏"
+    }
+  },
+  "prompt": {
+    "file": "SKILL.md"
+  },
+  "cases": {
+    "file": "cases.json"
+  },
+  "bindingExample": {
+    "providerId": "deepseek",
+    "modelId": "step-3.7-flash"
+  }
+}
