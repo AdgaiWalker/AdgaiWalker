@@ -1,20 +1,454 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-21T11:45:49.057Z",
+  "generatedAt": "2026-09-22T09:17:12.230Z",
   "seed": 20260914,
   "nodes": [
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 3,
+      "outDegree": 3,
+      "path": "apps/admin/src/api/auth-provider.ts",
+      "label": "auth-provider",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 42,
+      "id": "note:apps/admin/src/api/auth-provider.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/admin/src/api/data-provider.test.ts",
+      "label": "data-provider.test",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 62,
+      "id": "note:apps/admin/src/api/data-provider.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 2,
+      "outDegree": 3,
+      "path": "apps/admin/src/api/data-provider.ts",
+      "label": "data-provider",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 83,
+      "id": "note:apps/admin/src/api/data-provider.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/admin/src/api/execution-stream.test.ts",
+      "label": "execution-stream.test",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 19,
+      "id": "note:apps/admin/src/api/execution-stream.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "apps/admin/src/api/execution-stream.ts",
+      "label": "execution-stream",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 36,
+      "id": "note:apps/admin/src/api/execution-stream.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 3,
+      "path": "apps/admin/src/api/http.test.ts",
+      "label": "http.test",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 150,
+      "id": "note:apps/admin/src/api/http.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 13,
+      "linkDegree": 12,
+      "inDegree": 12,
+      "outDegree": 1,
+      "path": "apps/admin/src/api/http.ts",
+      "label": "apps/admin/src/api/http",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-07-21T11:47:00+08:00",
+      "lines": 129,
+      "id": "note:apps/admin/src/api/http.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 6,
+      "outDegree": 3,
+      "path": "apps/admin/src/api/queries.ts",
+      "label": "queries",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 51,
+      "id": "note:apps/admin/src/api/queries.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 3,
+      "outDegree": 4,
+      "path": "apps/admin/src/app/AdminShell.tsx",
+      "label": "AdminShell",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 92,
+      "id": "note:apps/admin/src/app/AdminShell.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 1,
+      "outDegree": 4,
+      "path": "apps/admin/src/app/SessionGate.tsx",
+      "label": "SessionGate",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 84,
+      "id": "note:apps/admin/src/app/SessionGate.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 1,
+      "outDegree": 10,
+      "path": "apps/admin/src/app/router.tsx",
+      "label": "router",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 48,
+      "id": "note:apps/admin/src/app/router.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 2,
+      "outDegree": 4,
+      "path": "apps/admin/src/components/ContentTable.tsx",
+      "label": "ContentTable",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 63,
+      "id": "note:apps/admin/src/components/ContentTable.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/admin/src/components/MarkdownPreview.test.tsx",
+      "label": "MarkdownPreview.test",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 18,
+      "id": "note:apps/admin/src/components/MarkdownPreview.test.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "apps/admin/src/components/MarkdownPreview.tsx",
+      "label": "MarkdownPreview",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 27,
+      "id": "note:apps/admin/src/components/MarkdownPreview.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 2,
+      "outDegree": 4,
+      "path": "apps/admin/src/components/RunTable.tsx",
+      "label": "RunTable",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 41,
+      "id": "note:apps/admin/src/components/RunTable.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 10,
+      "linkDegree": 9,
+      "inDegree": 8,
+      "outDegree": 2,
+      "path": "apps/admin/src/components/States.tsx",
+      "label": "States",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 89,
+      "id": "note:apps/admin/src/components/States.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 0,
+      "outDegree": 6,
+      "path": "apps/admin/src/main.tsx",
+      "label": "apps/admin/src/main",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-07-21T05:05:30+08:00",
+      "lines": 28,
+      "id": "note:apps/admin/src/main.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 1,
+      "outDegree": 10,
+      "path": "apps/admin/src/pages/agents/AgentListPage.tsx",
+      "label": "AgentListPage",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 97,
+      "id": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/admin/src/pages/agents/GrantPanel.test.ts",
+      "label": "GrantPanel.test",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 12,
+      "id": "note:apps/admin/src/pages/agents/GrantPanel.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 2,
+      "outDegree": 3,
+      "path": "apps/admin/src/pages/agents/GrantPanel.tsx",
+      "label": "GrantPanel",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 64,
+      "id": "note:apps/admin/src/pages/agents/GrantPanel.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/admin/src/pages/agents/ReleaseTests.tsx",
+      "label": "ReleaseTests",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 58,
+      "id": "note:apps/admin/src/pages/agents/ReleaseTests.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 1,
+      "outDegree": 6,
+      "path": "apps/admin/src/pages/agents/TrialPanel.tsx",
+      "label": "TrialPanel",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 111,
+      "id": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 1,
+      "outDegree": 6,
+      "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "label": "ContentDetailPage",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 52,
+      "id": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 1,
+      "outDegree": 5,
+      "path": "apps/admin/src/pages/content/ContentListPage.tsx",
+      "label": "ContentListPage",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 87,
+      "id": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 1,
+      "outDegree": 8,
+      "path": "apps/admin/src/pages/overview/OverviewPage.tsx",
+      "label": "OverviewPage",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 134,
+      "id": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 1,
+      "outDegree": 8,
+      "path": "apps/admin/src/pages/records/RunListPage.tsx",
+      "label": "RunListPage",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 107,
+      "id": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 1,
+      "outDegree": 4,
+      "path": "apps/admin/src/pages/settings/SettingsPage.tsx",
+      "label": "SettingsPage",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 70,
+      "id": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 9,
+      "outDegree": 2,
+      "path": "apps/admin/src/shared/labels.ts",
+      "label": "apps/admin/src/shared/labels",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-07-21T11:47:00+08:00",
+      "lines": 40,
+      "id": "note:apps/admin/src/shared/labels.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 8,
+      "outDegree": 1,
+      "path": "apps/admin/src/shared/routes.ts",
+      "label": "apps/admin/src/shared/routes",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-07-22T00:37:00+08:00",
+      "lines": 13,
+      "id": "note:apps/admin/src/shared/routes.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/admin/src/test/assistant-runtime-probe.test.tsx",
+      "label": "assistant-runtime-probe.test",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 91,
+      "id": "note:apps/admin/src/test/assistant-runtime-probe.test.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 1,
+      "outDegree": 1,
+      "path": "apps/admin/src/test/assistant-runtime-probe.ts",
+      "label": "assistant-runtime-probe",
+      "app": "apps/admin",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 69,
+      "id": "note:apps/admin/src/test/assistant-runtime-probe.ts",
+      "kind": "note"
+    },
     {
       "totalDegree": 1,
       "linkDegree": 0,
       "inDegree": 0,
       "outDegree": 1,
-      "path": "apps/admin/src/main.ts",
-      "label": "apps/admin/src/main",
+      "path": "apps/admin/src/test/setup.ts",
+      "label": "apps/admin/src/test/setup",
       "app": "apps/admin",
       "extension": ".ts",
-      "created": "",
-      "lines": 2,
-      "id": "note:apps/admin/src/main.ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 3,
+      "id": "note:apps/admin/src/test/setup.ts",
       "kind": "note"
     },
     {
@@ -68,7 +502,7 @@
       "label": "apps/agent/src/plugins/code-graph.test",
       "app": "apps/agent",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 226,
       "id": "note:apps/agent/src/plugins/code-graph.test.ts",
       "kind": "note"
@@ -82,7 +516,7 @@
       "label": "apps/agent/src/plugins/code-graph",
       "app": "apps/agent",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 267,
       "id": "note:apps/agent/src/plugins/code-graph.ts",
       "kind": "note"
@@ -250,7 +684,7 @@
       "label": "content-log-dir",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 30,
       "id": "note:apps/api/src/adapters/content-log-dir.ts",
       "kind": "note"
@@ -265,22 +699,36 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-06T22:46:58+08:00",
-      "lines": 184,
+      "lines": 187,
       "id": "note:apps/api/src/adapters/dsh-agent.runner.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 6,
-      "linkDegree": 5,
+      "totalDegree": 8,
+      "linkDegree": 7,
       "inDegree": 2,
-      "outDegree": 4,
+      "outDegree": 6,
       "path": "apps/api/src/adapters/dsh-agent.runner.ts",
       "label": "dsh-agent.runner",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-06T22:46:58+08:00",
-      "lines": 138,
+      "lines": 145,
       "id": "note:apps/api/src/adapters/dsh-agent.runner.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 1,
+      "outDegree": 4,
+      "path": "apps/api/src/adapters/execution-object-policy.ts",
+      "label": "execution-object-policy",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 13,
+      "id": "note:apps/api/src/adapters/execution-object-policy.ts",
       "kind": "note"
     },
     {
@@ -320,7 +768,7 @@
       "label": "fs-code-health.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 175,
       "id": "note:apps/api/src/adapters/fs-code-health.test.ts",
       "kind": "note"
@@ -334,7 +782,7 @@
       "label": "fs-code-health",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 132,
       "id": "note:apps/api/src/adapters/fs-code-health.ts",
       "kind": "note"
@@ -376,7 +824,7 @@
       "label": "fs-content-ledger.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 68,
       "id": "note:apps/api/src/adapters/fs-content-ledger.repository.ts",
       "kind": "note"
@@ -396,6 +844,34 @@
       "kind": "note"
     },
     {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 3,
+      "path": "apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
+      "label": "fs-public-snapshot.repository.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 28,
+      "id": "note:apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 2,
+      "outDegree": 3,
+      "path": "apps/api/src/adapters/fs-public-snapshot.repository.ts",
+      "label": "fs-public-snapshot.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 64,
+      "id": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 4,
       "linkDegree": 3,
       "inDegree": 2,
@@ -410,29 +886,29 @@
       "kind": "note"
     },
     {
-      "totalDegree": 3,
-      "linkDegree": 2,
+      "totalDegree": 4,
+      "linkDegree": 3,
       "inDegree": 1,
-      "outDegree": 2,
+      "outDegree": 3,
       "path": "apps/api/src/adapters/fs-site-content-index.ts",
       "label": "fs-site-content-index",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:09:15+08:00",
-      "lines": 118,
+      "lines": 56,
       "id": "note:apps/api/src/adapters/fs-site-content-index.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 5,
-      "linkDegree": 4,
-      "inDegree": 1,
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 0,
       "outDegree": 4,
       "path": "apps/api/src/adapters/fs-skill-file.store.ts",
       "label": "fs-skill-file.store",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 102,
       "id": "note:apps/api/src/adapters/fs-skill-file.store.ts",
       "kind": "note"
@@ -446,7 +922,7 @@
       "label": "fs-skill.catalog.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 108,
       "id": "note:apps/api/src/adapters/fs-skill.catalog.test.ts",
       "kind": "note"
@@ -460,7 +936,7 @@
       "label": "fs-skill.catalog",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 125,
       "id": "note:apps/api/src/adapters/fs-skill.catalog.ts",
       "kind": "note"
@@ -516,7 +992,7 @@
       "label": "fs-trace.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 193,
       "id": "note:apps/api/src/adapters/fs-trace.repository.ts",
       "kind": "note"
@@ -531,22 +1007,50 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:09:15+08:00",
-      "lines": 436,
+      "lines": 416,
       "id": "note:apps/api/src/adapters/harness-assistant.adapter.test.ts",
       "kind": "note"
     },
     {
       "totalDegree": 9,
       "linkDegree": 8,
-      "inDegree": 4,
-      "outDegree": 5,
+      "inDegree": 3,
+      "outDegree": 6,
       "path": "apps/api/src/adapters/harness-assistant.adapter.ts",
       "label": "harness-assistant.adapter",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:09:15+08:00",
-      "lines": 353,
+      "lines": 303,
       "id": "note:apps/api/src/adapters/harness-assistant.adapter.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/adapters/harness-runtime.adapter.test.ts",
+      "label": "harness-runtime.adapter.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 158,
+      "id": "note:apps/api/src/adapters/harness-runtime.adapter.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 2,
+      "outDegree": 3,
+      "path": "apps/api/src/adapters/harness-runtime.adapter.ts",
+      "label": "harness-runtime.adapter",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 279,
+      "id": "note:apps/api/src/adapters/harness-runtime.adapter.ts",
       "kind": "note"
     },
     {
@@ -586,9 +1090,37 @@
       "label": "node-git-status.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 80,
       "id": "note:apps/api/src/adapters/node-git-status.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/adapters/node-process-registry.test.ts",
+      "label": "node-process-registry.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 15,
+      "id": "note:apps/api/src/adapters/node-process-registry.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 2,
+      "outDegree": 2,
+      "path": "apps/api/src/adapters/node-process-registry.ts",
+      "label": "node-process-registry",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 63,
+      "id": "note:apps/api/src/adapters/node-process-registry.ts",
       "kind": "note"
     },
     {
@@ -600,7 +1132,7 @@
       "label": "openai-compatible-llm.adapter.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 189,
       "id": "note:apps/api/src/adapters/openai-compatible-llm.adapter.test.ts",
       "kind": "note"
@@ -614,7 +1146,7 @@
       "label": "openai-compatible-llm.adapter",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 147,
       "id": "note:apps/api/src/adapters/openai-compatible-llm.adapter.ts",
       "kind": "note"
@@ -628,7 +1160,7 @@
       "label": "pnpm-content-release.runner.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 91,
       "id": "note:apps/api/src/adapters/pnpm-content-release.runner.test.ts",
       "kind": "note"
@@ -642,7 +1174,7 @@
       "label": "pnpm-content-release.runner",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 89,
       "id": "note:apps/api/src/adapters/pnpm-content-release.runner.ts",
       "kind": "note"
@@ -659,6 +1191,48 @@
       "created": "2026-08-04T21:43:02+08:00",
       "lines": 67,
       "id": "note:apps/api/src/adapters/prisma-action.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 0,
+      "outDegree": 6,
+      "path": "apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "label": "prisma-agent-execution.repository.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 62,
+      "id": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 4,
+      "outDegree": 5,
+      "path": "apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "label": "prisma-agent-execution.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 313,
+      "id": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 1,
+      "outDegree": 6,
+      "path": "apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "label": "prisma-agent-revision.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 85,
+      "id": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
       "kind": "note"
     },
     {
@@ -694,6 +1268,20 @@
       "linkDegree": 6,
       "inDegree": 2,
       "outDegree": 5,
+      "path": "apps/api/src/adapters/prisma-authorization.repository.ts",
+      "label": "prisma-authorization.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 26,
+      "id": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 2,
+      "outDegree": 5,
       "path": "apps/api/src/adapters/prisma-clue.repository.ts",
       "label": "prisma-clue.repository",
       "app": "apps/api",
@@ -701,6 +1289,20 @@
       "created": "2026-07-21T05:05:30+08:00",
       "lines": 69,
       "id": "note:apps/api/src/adapters/prisma-clue.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 1,
+      "outDegree": 4,
+      "path": "apps/api/src/adapters/prisma-execution-quota.ts",
+      "label": "prisma-execution-quota",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 88,
+      "id": "note:apps/api/src/adapters/prisma-execution-quota.ts",
       "kind": "note"
     },
     {
@@ -769,8 +1371,36 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 72,
+      "lines": 74,
       "id": "note:apps/api/src/adapters/prisma-model-provider.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 1,
+      "outDegree": 6,
+      "path": "apps/api/src/adapters/prisma-operations-journal.ts",
+      "label": "prisma-operations-journal",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 74,
+      "id": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 1,
+      "outDegree": 5,
+      "path": "apps/api/src/adapters/prisma-operations-read.repository.ts",
+      "label": "prisma-operations-read.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 59,
+      "id": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
       "kind": "note"
     },
     {
@@ -825,7 +1455,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 118,
+      "lines": 119,
       "id": "note:apps/api/src/adapters/prisma-workbench.repository.test.ts",
       "kind": "note"
     },
@@ -886,6 +1516,62 @@
       "kind": "note"
     },
     {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/api/src/agents/agent-catalog.controller.ts",
+      "label": "agent-catalog.controller",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 20,
+      "id": "note:apps/api/src/agents/agent-catalog.controller.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 0,
+      "outDegree": 7,
+      "path": "apps/api/src/agents/agent-catalog.integration.test.ts",
+      "label": "agent-catalog.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 117,
+      "id": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 2,
+      "outDegree": 7,
+      "path": "apps/api/src/agents/agent-catalog.service.ts",
+      "label": "agent-catalog.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 58,
+      "id": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 2,
+      "outDegree": 2,
+      "path": "apps/api/src/agents/agent-config.ts",
+      "label": "agent-config",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 9,
+      "id": "note:apps/api/src/agents/agent-config.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 8,
       "linkDegree": 7,
       "inDegree": 0,
@@ -895,21 +1581,21 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 193,
+      "lines": 119,
       "id": "note:apps/api/src/agents/agent-runner.service.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 8,
-      "linkDegree": 7,
+      "totalDegree": 12,
+      "linkDegree": 11,
       "inDegree": 3,
-      "outDegree": 5,
+      "outDegree": 9,
       "path": "apps/api/src/agents/agent-runner.service.ts",
       "label": "agent-runner.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 580,
+      "lines": 393,
       "id": "note:apps/api/src/agents/agent-runner.service.ts",
       "kind": "note"
     },
@@ -923,7 +1609,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 91,
+      "lines": 70,
       "id": "note:apps/api/src/agents/agent-unit.controller.ts",
       "kind": "note"
     },
@@ -942,23 +1628,37 @@
       "kind": "note"
     },
     {
-      "totalDegree": 8,
-      "linkDegree": 7,
+      "totalDegree": 7,
+      "linkDegree": 6,
       "inDegree": 5,
-      "outDegree": 3,
+      "outDegree": 2,
       "path": "apps/api/src/agents/agent-unit.service.ts",
       "label": "agent-unit.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 108,
+      "lines": 91,
       "id": "note:apps/api/src/agents/agent-unit.service.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 7,
-      "linkDegree": 6,
-      "inDegree": 1,
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 0,
+      "outDegree": 5,
+      "path": "apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
+      "label": "legacy-execution.kernel.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 76,
+      "id": "note:apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 12,
+      "linkDegree": 11,
+      "inDegree": 6,
       "outDegree": 6,
       "path": "apps/api/src/app.module.ts",
       "label": "app.module",
@@ -978,7 +1678,7 @@
       "label": "architecture.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 20,
       "id": "note:apps/api/src/architecture/architecture.controller.ts",
       "kind": "note"
@@ -992,7 +1692,7 @@
       "label": "architecture.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 180,
       "id": "note:apps/api/src/architecture/architecture.service.test.ts",
       "kind": "note"
@@ -1006,7 +1706,7 @@
       "label": "architecture.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 100,
       "id": "note:apps/api/src/architecture/architecture.service.ts",
       "kind": "note"
@@ -1063,7 +1763,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:57:08+08:00",
-      "lines": 96,
+      "lines": 104,
       "id": "note:apps/api/src/auth/admin-token.middleware.test.ts",
       "kind": "note"
     },
@@ -1077,7 +1777,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:57:08+08:00",
-      "lines": 70,
+      "lines": 74,
       "id": "note:apps/api/src/auth/admin-token.middleware.ts",
       "kind": "note"
     },
@@ -1110,9 +1810,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 4,
-      "linkDegree": 3,
-      "inDegree": 3,
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 4,
       "outDegree": 1,
       "path": "apps/api/src/auth/credential-cipher.ts",
       "label": "credential-cipher",
@@ -1121,6 +1821,34 @@
       "created": "2026-09-03T18:57:23+08:00",
       "lines": 50,
       "id": "note:apps/api/src/auth/credential-cipher.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/api/src/authorization/authorization.controller.ts",
+      "label": "authorization.controller",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 10,
+      "id": "note:apps/api/src/authorization/authorization.controller.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 5,
+      "outDegree": 6,
+      "path": "apps/api/src/authorization/authorization.service.ts",
+      "label": "authorization.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 54,
+      "id": "note:apps/api/src/authorization/authorization.service.ts",
       "kind": "note"
     },
     {
@@ -1152,9 +1880,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 39,
-      "linkDegree": 38,
-      "inDegree": 37,
+      "totalDegree": 52,
+      "linkDegree": 51,
+      "inDegree": 50,
       "outDegree": 2,
       "path": "apps/api/src/common/http-error.ts",
       "label": "http-error",
@@ -1180,9 +1908,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 9,
-      "linkDegree": 8,
-      "inDegree": 6,
+      "totalDegree": 12,
+      "linkDegree": 11,
+      "inDegree": 9,
       "outDegree": 3,
       "path": "apps/api/src/config/config.module.ts",
       "label": "config.module",
@@ -1286,7 +2014,7 @@
       "label": "content-ledger.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 23,
       "id": "note:apps/api/src/content-ledger/content-ledger.controller.ts",
       "kind": "note"
@@ -1300,7 +2028,7 @@
       "label": "content-ledger.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 169,
       "id": "note:apps/api/src/content-ledger/content-ledger.integration.test.ts",
       "kind": "note"
@@ -1314,7 +2042,7 @@
       "label": "content-ledger.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 72,
       "id": "note:apps/api/src/content-ledger/content-ledger.service.ts",
       "kind": "note"
@@ -1328,7 +2056,7 @@
       "label": "content-release.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 33,
       "id": "note:apps/api/src/content-release/content-release.controller.ts",
       "kind": "note"
@@ -1342,7 +2070,7 @@
       "label": "content-release.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 320,
       "id": "note:apps/api/src/content-release/content-release.integration.test.ts",
       "kind": "note"
@@ -1356,7 +2084,7 @@
       "label": "content-release.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 230,
       "id": "note:apps/api/src/content-release/content-release.service.ts",
       "kind": "note"
@@ -1488,6 +2216,62 @@
       "kind": "note"
     },
     {
+      "totalDegree": 17,
+      "linkDegree": 16,
+      "inDegree": 6,
+      "outDegree": 11,
+      "path": "apps/api/src/execution/agent-execution.service.ts",
+      "label": "agent-execution.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 552,
+      "id": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/api/src/execution/execution-runs.controller.ts",
+      "label": "execution-runs.controller",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 52,
+      "id": "note:apps/api/src/execution/execution-runs.controller.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 0,
+      "outDegree": 5,
+      "path": "apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "label": "execution-runs.kernel.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 160,
+      "id": "note:apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 0,
+      "outDegree": 11,
+      "path": "apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "label": "execution-scheduler.kernel.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 466,
+      "id": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 4,
       "linkDegree": 3,
       "inDegree": 1,
@@ -1513,6 +2297,90 @@
       "created": "2026-07-21T05:05:30+08:00",
       "lines": 109,
       "id": "note:apps/api/src/execution/execution.service.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/api/src/execution/release-test.controller.ts",
+      "label": "release-test.controller",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 23,
+      "id": "note:apps/api/src/execution/release-test.controller.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 0,
+      "outDegree": 5,
+      "path": "apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "label": "release-test.kernel.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 83,
+      "id": "note:apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 2,
+      "outDegree": 7,
+      "path": "apps/api/src/execution/release-test.service.ts",
+      "label": "release-test.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 82,
+      "id": "note:apps/api/src/execution/release-test.service.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/api/src/execution/run-retention.controller.ts",
+      "label": "run-retention.controller",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 14,
+      "id": "note:apps/api/src/execution/run-retention.controller.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 3,
+      "path": "apps/api/src/execution/run-retention.service.test.ts",
+      "label": "run-retention.service.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 47,
+      "id": "note:apps/api/src/execution/run-retention.service.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 3,
+      "outDegree": 2,
+      "path": "apps/api/src/execution/run-retention.service.ts",
+      "label": "run-retention.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 38,
+      "id": "note:apps/api/src/execution/run-retention.service.ts",
       "kind": "note"
     },
     {
@@ -1651,7 +2519,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-05T19:39:37+08:00",
-      "lines": 230,
+      "lines": 229,
       "id": "note:apps/api/src/insights/insights.service.ts",
       "kind": "note"
     },
@@ -1698,16 +2566,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 139,
-      "linkDegree": 138,
-      "inDegree": 7,
-      "outDegree": 132,
+      "totalDegree": 171,
+      "linkDegree": 170,
+      "inDegree": 10,
+      "outDegree": 161,
       "path": "apps/api/src/kernel.module.ts",
       "label": "kernel.module",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 319,
+      "lines": 364,
       "id": "note:apps/api/src/kernel.module.ts",
       "kind": "note"
     },
@@ -1717,7 +2585,7 @@
       "inDegree": 0,
       "outDegree": 4,
       "path": "apps/api/src/main.ts",
-      "label": "apps/api/src/main",
+      "label": "main",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
@@ -1768,30 +2636,30 @@
       "kind": "note"
     },
     {
-      "totalDegree": 3,
-      "linkDegree": 2,
+      "totalDegree": 4,
+      "linkDegree": 3,
       "inDegree": 0,
-      "outDegree": 3,
+      "outDegree": 4,
       "path": "apps/api/src/model-providers/model-provider.service.test.ts",
       "label": "model-provider.service.test",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 106,
+      "lines": 125,
       "id": "note:apps/api/src/model-providers/model-provider.service.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 9,
-      "linkDegree": 8,
+      "totalDegree": 10,
+      "linkDegree": 9,
       "inDegree": 6,
-      "outDegree": 3,
+      "outDegree": 4,
       "path": "apps/api/src/model-providers/model-provider.service.ts",
       "label": "model-provider.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 306,
+      "lines": 338,
       "id": "note:apps/api/src/model-providers/model-provider.service.ts",
       "kind": "note"
     },
@@ -1866,6 +2734,76 @@
       "kind": "note"
     },
     {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 0,
+      "outDegree": 6,
+      "path": "apps/api/src/operations/operations-journal.integration.test.ts",
+      "label": "operations-journal.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 77,
+      "id": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 1,
+      "outDegree": 4,
+      "path": "apps/api/src/operations/operations.controller.ts",
+      "label": "operations.controller",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 35,
+      "id": "note:apps/api/src/operations/operations.controller.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 0,
+      "outDegree": 4,
+      "path": "apps/api/src/operations/operations.kernel.integration.test.ts",
+      "label": "operations.kernel.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 192,
+      "id": "note:apps/api/src/operations/operations.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 10,
+      "linkDegree": 9,
+      "inDegree": 3,
+      "outDegree": 7,
+      "path": "apps/api/src/operations/operations.service.ts",
+      "label": "operations.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 96,
+      "id": "note:apps/api/src/operations/operations.service.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 2,
+      "outDegree": 2,
+      "path": "apps/api/src/operations/outbox-dispatcher.ts",
+      "label": "outbox-dispatcher",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 38,
+      "id": "note:apps/api/src/operations/outbox-dispatcher.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 3,
       "linkDegree": 2,
       "inDegree": 1,
@@ -1874,7 +2812,7 @@
       "label": "plan.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 26,
       "id": "note:apps/api/src/plan/plan.controller.ts",
       "kind": "note"
@@ -1888,7 +2826,7 @@
       "label": "plan.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 285,
       "id": "note:apps/api/src/plan/plan.service.test.ts",
       "kind": "note"
@@ -1902,7 +2840,7 @@
       "label": "plan.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 188,
       "id": "note:apps/api/src/plan/plan.service.ts",
       "kind": "note"
@@ -1919,6 +2857,34 @@
       "created": "2026-08-04T21:43:02+08:00",
       "lines": 39,
       "id": "note:apps/api/src/ports/action.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 9,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/agent-execution.repository.ts",
+      "label": "agent-execution.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 81,
+      "id": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 10,
+      "linkDegree": 9,
+      "inDegree": 8,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/agent-revision.repository.ts",
+      "label": "agent-revision.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 13,
+      "id": "note:apps/api/src/ports/agent-revision.repository.ts",
       "kind": "note"
     },
     {
@@ -1992,6 +2958,20 @@
       "kind": "note"
     },
     {
+      "totalDegree": 8,
+      "linkDegree": 7,
+      "inDegree": 6,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/authorization.repository.ts",
+      "label": "authorization.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 8,
+      "id": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 11,
       "linkDegree": 10,
       "inDegree": 9,
@@ -2014,15 +2994,15 @@
       "label": "code-health.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 58,
       "id": "note:apps/api/src/ports/code-health.port.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 8,
-      "linkDegree": 7,
-      "inDegree": 7,
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 8,
       "outDegree": 1,
       "path": "apps/api/src/ports/content-file.repository.ts",
       "label": "content-file.repository",
@@ -2042,7 +3022,7 @@
       "label": "content-ledger.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 23,
       "id": "note:apps/api/src/ports/content-ledger.repository.ts",
       "kind": "note"
@@ -2056,9 +3036,37 @@
       "label": "content-release-runner.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 18,
       "id": "note:apps/api/src/ports/content-release-runner.port.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 3,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/execution-object-policy.port.ts",
+      "label": "execution-object-policy.port",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 5,
+      "id": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 4,
+      "outDegree": 1,
+      "path": "apps/api/src/ports/execution-quota.port.ts",
+      "label": "execution-quota.port",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 10,
+      "id": "note:apps/api/src/ports/execution-quota.port.ts",
       "kind": "note"
     },
     {
@@ -2098,7 +3106,7 @@
       "label": "git-status.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 19,
       "id": "note:apps/api/src/ports/git-status.repository.ts",
       "kind": "note"
@@ -2154,22 +3162,22 @@
       "label": "llm.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 77,
       "id": "note:apps/api/src/ports/llm.port.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 5,
-      "linkDegree": 4,
-      "inDegree": 4,
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 5,
       "outDegree": 1,
       "path": "apps/api/src/ports/model-provider.repository.ts",
       "label": "model-provider.repository",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 45,
+      "lines": 47,
       "id": "note:apps/api/src/ports/model-provider.repository.ts",
       "kind": "note"
     },
@@ -2188,9 +3196,37 @@
       "kind": "note"
     },
     {
-      "totalDegree": 51,
-      "linkDegree": 50,
-      "inDegree": 50,
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 6,
+      "outDegree": 3,
+      "path": "apps/api/src/ports/operations-journal.port.ts",
+      "label": "operations-journal.port",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 49,
+      "id": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 3,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/operations-read.repository.ts",
+      "label": "operations-read.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 10,
+      "id": "note:apps/api/src/ports/operations-read.repository.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 65,
+      "linkDegree": 64,
+      "inDegree": 64,
       "outDegree": 1,
       "path": "apps/api/src/ports/prisma.port.ts",
       "label": "prisma.port",
@@ -2199,6 +3235,34 @@
       "created": "2026-07-21T05:05:30+08:00",
       "lines": 10,
       "id": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 4,
+      "outDegree": 1,
+      "path": "apps/api/src/ports/process-registry.port.ts",
+      "label": "process-registry.port",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 17,
+      "id": "note:apps/api/src/ports/process-registry.port.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/public-snapshot.repository.ts",
+      "label": "public-snapshot.repository",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 14,
+      "id": "note:apps/api/src/ports/public-snapshot.repository.ts",
       "kind": "note"
     },
     {
@@ -2244,6 +3308,20 @@
       "kind": "note"
     },
     {
+      "totalDegree": 8,
+      "linkDegree": 7,
+      "inDegree": 7,
+      "outDegree": 1,
+      "path": "apps/api/src/ports/runtime.port.ts",
+      "label": "runtime.port",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 70,
+      "id": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 14,
       "linkDegree": 13,
       "inDegree": 12,
@@ -2258,9 +3336,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 10,
-      "linkDegree": 9,
-      "inDegree": 9,
+      "totalDegree": 12,
+      "linkDegree": 11,
+      "inDegree": 11,
       "outDegree": 1,
       "path": "apps/api/src/ports/site-content-index.port.ts",
       "label": "site-content-index.port",
@@ -2272,29 +3350,29 @@
       "kind": "note"
     },
     {
-      "totalDegree": 5,
-      "linkDegree": 4,
-      "inDegree": 3,
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
       "outDegree": 2,
       "path": "apps/api/src/ports/skill-file.port.ts",
       "label": "skill-file.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 21,
       "id": "note:apps/api/src/ports/skill-file.port.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 5,
-      "linkDegree": 4,
-      "inDegree": 3,
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 4,
       "outDegree": 2,
       "path": "apps/api/src/ports/skill.port.ts",
       "label": "skill.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 36,
       "id": "note:apps/api/src/ports/skill.port.ts",
       "kind": "note"
@@ -2336,7 +3414,7 @@
       "label": "trace.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 53,
       "id": "note:apps/api/src/ports/trace.repository.ts",
       "kind": "note"
@@ -2384,6 +3462,20 @@
       "kind": "note"
     },
     {
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 1,
+      "path": "apps/api/src/prisma-migration.integration.test.ts",
+      "label": "prisma-migration.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 89,
+      "id": "note:apps/api/src/prisma-migration.integration.test.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 9,
       "linkDegree": 8,
       "inDegree": 0,
@@ -2395,6 +3487,90 @@
       "created": "2026-09-06T10:42:51+08:00",
       "lines": 89,
       "id": "note:apps/api/src/promote.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/runtime/credential-pool.test.ts",
+      "label": "credential-pool.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 17,
+      "id": "note:apps/api/src/runtime/credential-pool.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 3,
+      "outDegree": 1,
+      "path": "apps/api/src/runtime/credential-pool.ts",
+      "label": "credential-pool",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 46,
+      "id": "note:apps/api/src/runtime/credential-pool.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 3,
+      "path": "apps/api/src/runtime/harness-launch.test.ts",
+      "label": "harness-launch.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 169,
+      "id": "note:apps/api/src/runtime/harness-launch.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 7,
+      "outDegree": 2,
+      "path": "apps/api/src/runtime/harness-launch.ts",
+      "label": "harness-launch",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 225,
+      "id": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/runtime/probe-gate.test.ts",
+      "label": "probe-gate.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 9,
+      "id": "note:apps/api/src/runtime/probe-gate.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 1,
+      "outDegree": 1,
+      "path": "apps/api/src/runtime/probe-gate.ts",
+      "label": "probe-gate",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 23,
+      "id": "note:apps/api/src/runtime/probe-gate.ts",
       "kind": "note"
     },
     {
@@ -2448,7 +3624,7 @@
       "label": "skill.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 77,
       "id": "note:apps/api/src/skills/skill.controller.ts",
       "kind": "note"
@@ -2462,7 +3638,7 @@
       "label": "skill.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 485,
       "id": "note:apps/api/src/skills/skill.service.ts",
       "kind": "note"
@@ -2504,7 +3680,7 @@
       "label": "trace.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 43,
       "id": "note:apps/api/src/traces/trace.controller.ts",
       "kind": "note"
@@ -2518,7 +3694,7 @@
       "label": "trace.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 201,
       "id": "note:apps/api/src/traces/trace.integration.test.ts",
       "kind": "note"
@@ -2532,7 +3708,7 @@
       "label": "trace.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 35,
       "id": "note:apps/api/src/traces/trace.service.ts",
       "kind": "note"
@@ -2827,7 +4003,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-08-04T21:43:02+08:00",
-      "lines": 20,
+      "lines": 17,
       "id": "note:apps/api/src/workstation-schema.test.ts",
       "kind": "note"
     },
@@ -2935,7 +4111,7 @@
       "inDegree": 6,
       "outDegree": 2,
       "path": "apps/web/src/api/http.ts",
-      "label": "http",
+      "label": "apps/web/src/api/http",
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-07-21T11:47:00+08:00",
@@ -2966,7 +4142,7 @@
       "label": "apps/web/src/code-graph",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 22,
       "id": "note:apps/web/src/code-graph.ts",
       "kind": "note"
@@ -3190,7 +4366,7 @@
       "label": "code-domain.test",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 230,
       "id": "note:apps/web/src/components/graph/code-domain.test.ts",
       "kind": "note"
@@ -3204,7 +4380,7 @@
       "label": "domains",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 202,
       "id": "note:apps/web/src/components/graph/domains.ts",
       "kind": "note"
@@ -3246,7 +4422,7 @@
       "label": "apps/web/src/components/graph/obsidian/constants",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 192,
       "id": "note:apps/web/src/components/graph/obsidian/constants.ts",
       "kind": "note"
@@ -3260,7 +4436,7 @@
       "label": "engine",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 759,
       "id": "note:apps/web/src/components/graph/obsidian/engine.ts",
       "kind": "note"
@@ -3274,7 +4450,7 @@
       "label": "forces",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 699,
       "id": "note:apps/web/src/components/graph/obsidian/forces.ts",
       "kind": "note"
@@ -3288,7 +4464,7 @@
       "label": "graph.worker",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 194,
       "id": "note:apps/web/src/components/graph/obsidian/graph.worker.ts",
       "kind": "note"
@@ -3299,10 +4475,10 @@
       "inDegree": 1,
       "outDegree": 1,
       "path": "apps/web/src/components/graph/obsidian/labels.ts",
-      "label": "labels",
+      "label": "apps/web/src/components/graph/obsidian/labels",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 122,
       "id": "note:apps/web/src/components/graph/obsidian/labels.ts",
       "kind": "note"
@@ -3316,7 +4492,7 @@
       "label": "obsidian-engine.test",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 247,
       "id": "note:apps/web/src/components/graph/obsidian/obsidian-engine.test.ts",
       "kind": "note"
@@ -3330,7 +4506,7 @@
       "label": "protocol",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 43,
       "id": "note:apps/web/src/components/graph/obsidian/protocol.ts",
       "kind": "note"
@@ -3344,7 +4520,7 @@
       "label": "renderer",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 393,
       "id": "note:apps/web/src/components/graph/obsidian/renderer.ts",
       "kind": "note"
@@ -3358,7 +4534,7 @@
       "label": "reveal.test",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 96,
       "id": "note:apps/web/src/components/graph/obsidian/reveal.test.ts",
       "kind": "note"
@@ -4083,7 +5259,7 @@
       "inDegree": 0,
       "outDegree": 4,
       "path": "apps/web/src/main.tsx",
-      "label": "main",
+      "label": "apps/web/src/main",
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-07-21T05:05:30+08:00",
@@ -4156,7 +5332,7 @@
       "label": "ArchitecturePage",
       "app": "apps/web",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 262,
       "id": "note:apps/web/src/pages/ArchitecturePage.tsx",
       "kind": "note"
@@ -4604,7 +5780,7 @@
       "label": "code-graph-outline.test",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 120,
       "id": "note:apps/web/src/shared/code-graph-outline.test.ts",
       "kind": "note"
@@ -4618,7 +5794,7 @@
       "label": "code-graph-outline",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 139,
       "id": "note:apps/web/src/shared/code-graph-outline.ts",
       "kind": "note"
@@ -4895,7 +6071,7 @@
       "inDegree": 38,
       "outDegree": 2,
       "path": "apps/web/src/shared/routes.ts",
-      "label": "routes",
+      "label": "apps/web/src/shared/routes",
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-07-22T00:37:00+08:00",
@@ -5007,7 +6183,7 @@
       "inDegree": 0,
       "outDegree": 1,
       "path": "apps/web/src/test/setup.ts",
-      "label": "setup",
+      "label": "apps/web/src/test/setup",
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-07-21T21:49:33+08:00",
@@ -5048,6 +6224,76 @@
       "linkDegree": 1,
       "inDegree": 0,
       "outDegree": 2,
+      "path": "packages/shared/src/agent-execution.test.ts",
+      "label": "agent-execution.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 51,
+      "id": "note:packages/shared/src/agent-execution.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 8,
+      "linkDegree": 7,
+      "inDegree": 6,
+      "outDegree": 2,
+      "path": "packages/shared/src/agent-execution.ts",
+      "label": "agent-execution",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 97,
+      "id": "note:packages/shared/src/agent-execution.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/agent-ops.test.ts",
+      "label": "agent-ops.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 9,
+      "id": "note:packages/shared/src/agent-ops.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "packages/shared/src/agent-ops.ts",
+      "label": "agent-ops",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 79,
+      "id": "note:packages/shared/src/agent-ops.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
+      "path": "packages/shared/src/agent-revision.ts",
+      "label": "agent-revision",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 49,
+      "id": "note:packages/shared/src/agent-revision.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
       "path": "packages/shared/src/assistant.test.ts",
       "label": "assistant.test",
       "app": "packages/shared",
@@ -5069,6 +6315,34 @@
       "created": "2026-09-03T01:09:15+08:00",
       "lines": 243,
       "id": "note:packages/shared/src/assistant.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/authorization.test.ts",
+      "label": "authorization.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 18,
+      "id": "note:packages/shared/src/authorization.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 3,
+      "outDegree": 3,
+      "path": "packages/shared/src/authorization.ts",
+      "label": "authorization",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 49,
+      "id": "note:packages/shared/src/authorization.ts",
       "kind": "note"
     },
     {
@@ -5094,7 +6368,7 @@
       "label": "code-artifact.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 193,
       "id": "note:packages/shared/src/code-artifact.test.ts",
       "kind": "note"
@@ -5108,7 +6382,7 @@
       "label": "code-artifact",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 215,
       "id": "note:packages/shared/src/code-artifact.ts",
       "kind": "note"
@@ -5122,7 +6396,7 @@
       "label": "code-debt.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 137,
       "id": "note:packages/shared/src/code-debt.test.ts",
       "kind": "note"
@@ -5136,7 +6410,7 @@
       "label": "code-debt",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 164,
       "id": "note:packages/shared/src/code-debt.ts",
       "kind": "note"
@@ -5150,7 +6424,7 @@
       "label": "code-graph-query.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 199,
       "id": "note:packages/shared/src/code-graph-query.test.ts",
       "kind": "note"
@@ -5164,7 +6438,7 @@
       "label": "code-graph-query",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 240,
       "id": "note:packages/shared/src/code-graph-query.ts",
       "kind": "note"
@@ -5178,8 +6452,8 @@
       "label": "packages/shared/src/code-graph.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 267,
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 268,
       "id": "note:packages/shared/src/code-graph.test.ts",
       "kind": "note"
     },
@@ -5192,7 +6466,7 @@
       "label": "packages/shared/src/code-graph",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 528,
       "id": "note:packages/shared/src/code-graph.ts",
       "kind": "note"
@@ -5206,7 +6480,7 @@
       "label": "code-health.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 190,
       "id": "note:packages/shared/src/code-health.test.ts",
       "kind": "note"
@@ -5220,7 +6494,7 @@
       "label": "code-imports.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 165,
       "id": "note:packages/shared/src/code-imports.test.ts",
       "kind": "note"
@@ -5234,7 +6508,7 @@
       "label": "code-imports",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 156,
       "id": "note:packages/shared/src/code-imports.ts",
       "kind": "note"
@@ -5248,7 +6522,7 @@
       "label": "code-resolve.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 170,
       "id": "note:packages/shared/src/code-resolve.test.ts",
       "kind": "note"
@@ -5262,7 +6536,7 @@
       "label": "code-resolve",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 161,
       "id": "note:packages/shared/src/code-resolve.ts",
       "kind": "note"
@@ -5290,7 +6564,7 @@
       "label": "content-ledger.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 134,
       "id": "note:packages/shared/src/content-ledger.test.ts",
       "kind": "note"
@@ -5304,7 +6578,7 @@
       "label": "content-ledger",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 117,
       "id": "note:packages/shared/src/content-ledger.ts",
       "kind": "note"
@@ -5335,6 +6609,90 @@
       "created": "2026-07-21T05:05:30+08:00",
       "lines": 17,
       "id": "note:packages/shared/src/errors.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/execution-admission.test.ts",
+      "label": "execution-admission.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 67,
+      "id": "note:packages/shared/src/execution-admission.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 2,
+      "outDegree": 2,
+      "path": "packages/shared/src/execution-admission.ts",
+      "label": "execution-admission",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 104,
+      "id": "note:packages/shared/src/execution-admission.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/execution-policy.test.ts",
+      "label": "execution-policy.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 12,
+      "id": "note:packages/shared/src/execution-policy.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 2,
+      "outDegree": 3,
+      "path": "packages/shared/src/execution-policy.ts",
+      "label": "execution-policy",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 24,
+      "id": "note:packages/shared/src/execution-policy.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/execution-run-api.test.ts",
+      "label": "execution-run-api.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 27,
+      "id": "note:packages/shared/src/execution-run-api.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 2,
+      "outDegree": 3,
+      "path": "packages/shared/src/execution-run-api.ts",
+      "label": "execution-run-api",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 67,
+      "id": "note:packages/shared/src/execution-run-api.ts",
       "kind": "note"
     },
     {
@@ -5436,30 +6794,30 @@
       "kind": "note"
     },
     {
-      "totalDegree": 3,
-      "linkDegree": 2,
-      "inDegree": 2,
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 6,
       "outDegree": 1,
       "path": "packages/shared/src/guards.ts",
       "label": "guards",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 41,
       "id": "note:packages/shared/src/guards.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 130,
-      "linkDegree": 129,
-      "inDegree": 96,
-      "outDegree": 34,
+      "totalDegree": 178,
+      "linkDegree": 177,
+      "inDegree": 134,
+      "outDegree": 44,
       "path": "packages/shared/src/index.ts",
       "label": "packages/shared/src/index",
       "app": "packages/shared",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 34,
+      "lines": 44,
       "id": "note:packages/shared/src/index.ts",
       "kind": "note"
     },
@@ -5556,7 +6914,7 @@
       "label": "model-catalog",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 102,
       "id": "note:packages/shared/src/model-catalog.ts",
       "kind": "note"
@@ -5654,9 +7012,37 @@
       "label": "parse-result",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 8,
       "id": "note:packages/shared/src/parse-result.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/process-recovery.test.ts",
+      "label": "process-recovery.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 18,
+      "id": "note:packages/shared/src/process-recovery.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "packages/shared/src/process-recovery.ts",
+      "label": "process-recovery",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 17,
+      "id": "note:packages/shared/src/process-recovery.ts",
       "kind": "note"
     },
     {
@@ -5688,6 +7074,34 @@
       "kind": "note"
     },
     {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/public-snapshot.test.ts",
+      "label": "public-snapshot.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 28,
+      "id": "note:packages/shared/src/public-snapshot.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 3,
+      "outDegree": 1,
+      "path": "packages/shared/src/public-snapshot.ts",
+      "label": "public-snapshot",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 56,
+      "id": "note:packages/shared/src/public-snapshot.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 3,
       "linkDegree": 2,
       "inDegree": 2,
@@ -5699,6 +7113,34 @@
       "created": "2026-07-21T21:05:43+08:00",
       "lines": 17,
       "id": "note:packages/shared/src/rate-limits.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/release-test.test.ts",
+      "label": "release-test.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 16,
+      "id": "note:packages/shared/src/release-test.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "packages/shared/src/release-test.ts",
+      "label": "release-test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 59,
+      "id": "note:packages/shared/src/release-test.ts",
       "kind": "note"
     },
     {
@@ -5738,7 +7180,7 @@
       "label": "skill-export.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 109,
       "id": "note:packages/shared/src/skill-export.test.ts",
       "kind": "note"
@@ -5752,7 +7194,7 @@
       "label": "skill-export",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 255,
       "id": "note:packages/shared/src/skill-export.ts",
       "kind": "note"
@@ -5766,7 +7208,7 @@
       "label": "skill.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 139,
       "id": "note:packages/shared/src/skill.test.ts",
       "kind": "note"
@@ -5780,7 +7222,7 @@
       "label": "skill",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 218,
       "id": "note:packages/shared/src/skill.ts",
       "kind": "note"
@@ -5822,7 +7264,7 @@
       "label": "trace.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 212,
       "id": "note:packages/shared/src/trace.test.ts",
       "kind": "note"
@@ -5836,7 +7278,7 @@
       "label": "trace",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 359,
       "id": "note:packages/shared/src/trace.ts",
       "kind": "note"
@@ -5990,22 +7432,22 @@
       "label": "generate-code-graph",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 120,
       "id": "note:scripts/generate-code-graph.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 7,
-      "linkDegree": 6,
+      "totalDegree": 8,
+      "linkDegree": 7,
       "inDegree": 0,
-      "outDegree": 7,
+      "outDegree": 8,
       "path": "scripts/generate-content.ts",
       "label": "generate-content",
       "app": "scripts",
       "extension": ".ts",
       "created": "2026-07-21T19:49:05+08:00",
-      "lines": 295,
+      "lines": 300,
       "id": "note:scripts/generate-content.ts",
       "kind": "note"
     },
@@ -6032,7 +7474,7 @@
       "label": "code-extract",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 462,
       "id": "note:scripts/lib/code-extract.ts",
       "kind": "note"
@@ -6173,7 +7615,7 @@
       "app": "scripts",
       "extension": ".ts",
       "created": "2026-07-23T02:30:21+08:00",
-      "lines": 115,
+      "lines": 205,
       "id": "note:scripts/prisma-env.ts",
       "kind": "note"
     },
@@ -6192,6 +7634,20 @@
       "kind": "note"
     },
     {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 0,
+      "outDegree": 3,
+      "path": "scripts/probe-runtime.ts",
+      "label": "probe-runtime",
+      "app": "scripts",
+      "extension": ".ts",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 134,
+      "id": "note:scripts/probe-runtime.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 1,
       "linkDegree": 0,
       "inDegree": 0,
@@ -6200,7 +7656,7 @@
       "label": "update-harness",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 126,
       "id": "note:scripts/update-harness.ts",
       "kind": "note"
@@ -6214,7 +7670,7 @@
       "label": "verify-architecture",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 176,
       "id": "note:scripts/verify-architecture.ts",
       "kind": "note"
@@ -6246,6 +7702,20 @@
       "lines": 85,
       "id": "note:scripts/verify-stage1.ts",
       "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 1,
+      "outDegree": 1,
+      "path": "apps/admin/src/styles/tokens.css",
+      "label": "tokens.css",
+      "app": "apps/admin",
+      "extension": ".css",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 800,
+      "id": "attachment:apps/admin/src/styles/tokens.css",
+      "kind": "attachment"
     },
     {
       "totalDegree": 3,
@@ -6332,6 +7802,20 @@
       "kind": "attachment"
     },
     {
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 1,
+      "path": "apps/web/src/generated/public-manifest.json",
+      "label": "public-manifest.json",
+      "app": "apps/web",
+      "extension": ".json",
+      "created": "2026-09-22T17:12:25+08:00",
+      "lines": 1,
+      "id": "attachment:apps/web/src/generated/public-manifest.json",
+      "kind": "attachment"
+    },
+    {
       "totalDegree": 2,
       "linkDegree": 1,
       "inDegree": 1,
@@ -6368,7 +7852,7 @@
       "label": "architecture-baseline.json",
       "app": "scripts",
       "extension": ".json",
-      "created": "",
+      "created": "2026-09-22T17:12:25+08:00",
       "lines": 22,
       "id": "attachment:scripts/architecture-baseline.json",
       "kind": "attachment"
@@ -6402,9 +7886,9 @@
       "kind": "tag",
       "label": ".css",
       "tag": ".css",
-      "totalDegree": 2,
+      "totalDegree": 3,
       "linkDegree": 0,
-      "inDegree": 2,
+      "inDegree": 3,
       "outDegree": 0
     },
     {
@@ -6412,9 +7896,9 @@
       "kind": "tag",
       "label": ".json",
       "tag": ".json",
-      "totalDegree": 6,
+      "totalDegree": 7,
       "linkDegree": 0,
-      "inDegree": 6,
+      "inDegree": 7,
       "outDegree": 0
     },
     {
@@ -6422,9 +7906,9 @@
       "kind": "tag",
       "label": ".ts",
       "tag": ".ts",
-      "totalDegree": 369,
+      "totalDegree": 454,
       "linkDegree": 0,
-      "inDegree": 369,
+      "inDegree": 454,
       "outDegree": 0
     },
     {
@@ -6432,13 +7916,433 @@
       "kind": "tag",
       "label": ".tsx",
       "tag": ".tsx",
-      "totalDegree": 77,
+      "totalDegree": 96,
       "linkDegree": 0,
-      "inDegree": 77,
+      "inDegree": 96,
       "outDegree": 0
     }
   ],
   "edges": [
+    {
+      "source": "note:apps/admin/src/api/auth-provider.ts",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/auth-provider.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/data-provider.test.ts",
+      "target": "note:apps/admin/src/api/data-provider.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/data-provider.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/data-provider.ts",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/execution-stream.test.ts",
+      "target": "note:apps/admin/src/api/execution-stream.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/http.test.ts",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/http.test.ts",
+      "target": "note:apps/admin/src/api/auth-provider.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/queries.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/api/queries.ts",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/AdminShell.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/AdminShell.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/AdminShell.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/SessionGate.tsx",
+      "target": "note:apps/admin/src/api/auth-provider.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/SessionGate.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/SessionGate.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/app/AdminShell.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "kind": "embed"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/ContentTable.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/ContentTable.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/ContentTable.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/MarkdownPreview.test.tsx",
+      "target": "note:apps/admin/src/components/MarkdownPreview.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/RunTable.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/RunTable.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/RunTable.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/components/States.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/main.tsx",
+      "target": "note:apps/admin/src/api/data-provider.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/main.tsx",
+      "target": "note:apps/admin/src/api/auth-provider.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/main.tsx",
+      "target": "note:apps/admin/src/app/SessionGate.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/main.tsx",
+      "target": "note:apps/admin/src/app/router.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/main.tsx",
+      "target": "attachment:apps/admin/src/styles/tokens.css",
+      "kind": "attachment"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/pages/agents/ReleaseTests.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/pages/agents/GrantPanel.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/GrantPanel.test.ts",
+      "target": "note:apps/admin/src/pages/agents/GrantPanel.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/GrantPanel.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/GrantPanel.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/ReleaseTests.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "target": "note:apps/admin/src/api/execution-stream.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/components/MarkdownPreview.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "target": "note:apps/admin/src/components/ContentTable.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/app/AdminShell.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/components/ContentTable.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/components/RunTable.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:apps/admin/src/components/RunTable.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "target": "note:apps/admin/src/app/AdminShell.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/shared/labels.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/test/assistant-runtime-probe.test.tsx",
+      "target": "note:apps/admin/src/test/assistant-runtime-probe.ts",
+      "kind": "link"
+    },
     {
       "source": "note:apps/agent/src/graph-neighbors.test.ts",
       "target": "note:apps/agent/src/plugins/knowledge.ts",
@@ -6650,6 +8554,31 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/adapters/dsh-agent.runner.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/dsh-agent.runner.ts",
+      "target": "note:apps/api/src/runtime/credential-pool.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "target": "note:apps/api/src/ports/site-content-index.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "target": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/adapters/fs-artifact.repository.test.ts",
       "target": "note:apps/api/src/adapters/fs-artifact.repository.ts",
       "kind": "link"
@@ -6720,6 +8649,26 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
+      "target": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
+      "target": "note:apps/api/src/ports/public-snapshot.repository.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/adapters/fs-publication-package.repository.ts",
       "target": "note:apps/api/src/ports/publication-package.repository.ts",
       "kind": "link"
@@ -6727,6 +8676,11 @@
     {
       "source": "note:apps/api/src/adapters/fs-site-content-index.ts",
       "target": "note:apps/api/src/ports/site-content-index.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-site-content-index.ts",
+      "target": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
       "kind": "link"
     },
     {
@@ -6835,6 +8789,26 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/adapters/harness-assistant.adapter.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/harness-runtime.adapter.test.ts",
+      "target": "note:apps/api/src/adapters/harness-runtime.adapter.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/harness-runtime.adapter.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/harness-runtime.adapter.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/adapters/http-website-deployment-verifier.ts",
       "target": "note:apps/api/src/ports/website-deployment-verifier.port.ts",
       "kind": "link"
@@ -6847,6 +8821,16 @@
     {
       "source": "note:apps/api/src/adapters/node-git-status.repository.ts",
       "target": "note:apps/api/src/ports/git-status.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/node-process-registry.test.ts",
+      "target": "note:apps/api/src/adapters/node-process-registry.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/node-process-registry.ts",
+      "target": "note:apps/api/src/ports/process-registry.port.ts",
       "kind": "link"
     },
     {
@@ -6905,6 +8889,76 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "target": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "target": "note:apps/api/src/config/config.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "target": "note:apps/api/src/kernel.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "target": "note:apps/api/src/agents/agent-config.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/adapters/prisma-agent-unit.repository.ts",
       "target": "note:apps/api/src/ports/agent-unit.repository.ts",
       "kind": "link"
@@ -6930,6 +8984,26 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "target": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/adapters/prisma-clue.repository.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
@@ -6947,6 +9021,21 @@
     {
       "source": "note:apps/api/src/adapters/prisma-clue.repository.ts",
       "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-execution-quota.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-execution-quota.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-execution-quota.ts",
+      "target": "note:apps/api/src/ports/execution-quota.port.ts",
       "kind": "link"
     },
     {
@@ -7026,6 +9115,51 @@
     },
     {
       "source": "note:apps/api/src/adapters/prisma-model-provider.repository.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "target": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "target": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "target": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
+      "target": "note:apps/api/src/ports/operations-read.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
       "target": "note:apps/api/src/common/http-error.ts",
       "kind": "link"
     },
@@ -7145,6 +9279,76 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/agents/agent-catalog.controller.ts",
+      "target": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "note:apps/api/src/ports/site-content-index.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "note:apps/api/src/app.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "note:apps/api/src/authorization/authorization.service.ts",
+      "kind": "embed"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "embed"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "note:apps/api/src/ports/model-provider.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "note:apps/api/src/ports/skill.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "note:apps/api/src/agents/agent-config.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-config.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/agents/agent-runner.service.test.ts",
       "target": "note:apps/api/src/agents/agent-runner.service.ts",
       "kind": "link"
@@ -7196,6 +9400,26 @@
     },
     {
       "source": "note:apps/api/src/agents/agent-runner.service.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-runner.service.ts",
+      "target": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-runner.service.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-runner.service.ts",
+      "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-runner.service.ts",
       "target": "note:apps/api/src/common/http-error.ts",
       "kind": "link"
     },
@@ -7225,8 +9449,23 @@
       "kind": "link"
     },
     {
-      "source": "note:apps/api/src/agents/agent-unit.service.ts",
-      "target": "note:apps/api/src/ports/skill-file.port.ts",
+      "source": "note:apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
+      "target": "note:apps/api/src/app.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
       "kind": "link"
     },
     {
@@ -7382,6 +9621,36 @@
     {
       "source": "note:apps/api/src/auth/credential-cipher.test.ts",
       "target": "note:apps/api/src/auth/credential-cipher.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.controller.ts",
+      "target": "note:apps/api/src/authorization/authorization.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.service.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.service.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.service.ts",
+      "target": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.service.ts",
+      "target": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.service.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
       "kind": "link"
     },
     {
@@ -7735,6 +10004,131 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/execution-quota.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/process-registry.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.controller.ts",
+      "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "target": "note:apps/api/src/app.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/config/config.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/kernel.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/execution-quota.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/process-registry.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/authorization/authorization.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/execution/execution.controller.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
@@ -7777,6 +10171,81 @@
     {
       "source": "note:apps/api/src/execution/execution.service.ts",
       "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.controller.ts",
+      "target": "note:apps/api/src/execution/release-test.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "target": "note:apps/api/src/app.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "note:apps/api/src/authorization/authorization.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.controller.ts",
+      "target": "note:apps/api/src/execution/run-retention.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.service.test.ts",
+      "target": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.service.test.ts",
+      "target": "note:apps/api/src/execution/run-retention.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.service.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
       "kind": "link"
     },
     {
@@ -7901,7 +10370,7 @@
     },
     {
       "source": "note:apps/api/src/insights/insights.service.ts",
-      "target": "note:apps/api/src/adapters/harness-assistant.adapter.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
       "kind": "link"
     },
     {
@@ -8032,6 +10501,161 @@
     {
       "source": "note:apps/api/src/kernel.integration.test.ts",
       "target": "note:apps/api/src/common/ids.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/execution-quota.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/prisma-execution-quota.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/runtime.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/harness-runtime.adapter.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/process-registry.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/node-process-registry.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/authorization/authorization.controller.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/authorization/authorization.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/operations/operations.controller.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/execution/execution-runs.controller.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/execution/release-test.controller.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/execution/release-test.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/execution/run-retention.controller.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/execution/run-retention.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/operations/operations.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/operations-read.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/operations/outbox-dispatcher.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/agents/agent-catalog.controller.ts",
       "kind": "link"
     },
     {
@@ -8516,16 +11140,6 @@
     },
     {
       "source": "note:apps/api/src/kernel.module.ts",
-      "target": "note:apps/api/src/ports/skill-file.port.ts",
-      "kind": "link"
-    },
-    {
-      "source": "note:apps/api/src/kernel.module.ts",
-      "target": "note:apps/api/src/adapters/fs-skill-file.store.ts",
-      "kind": "link"
-    },
-    {
-      "source": "note:apps/api/src/kernel.module.ts",
       "target": "note:apps/api/src/skills/skill.service.ts",
       "kind": "link"
     },
@@ -8756,6 +11370,11 @@
     },
     {
       "source": "note:apps/api/src/model-providers/model-provider.service.test.ts",
+      "target": "note:apps/api/src/auth/credential-cipher.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/model-providers/model-provider.service.test.ts",
       "target": "note:apps/api/src/model-providers/model-provider.service.ts",
       "kind": "link"
     },
@@ -8767,6 +11386,11 @@
     {
       "source": "note:apps/api/src/model-providers/model-provider.service.ts",
       "target": "note:apps/api/src/auth/credential-cipher.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/model-providers/model-provider.service.ts",
+      "target": "note:apps/api/src/runtime/credential-pool.ts",
       "kind": "link"
     },
     {
@@ -8832,6 +11456,96 @@
     {
       "source": "note:apps/api/src/observability/observability.service.ts",
       "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "target": "note:apps/api/src/config/config.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "target": "note:apps/api/src/kernel.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "target": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "target": "note:apps/api/src/operations/outbox-dispatcher.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "note:apps/api/src/operations/operations.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.kernel.integration.test.ts",
+      "target": "note:apps/api/src/app.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.kernel.integration.test.ts",
+      "target": "note:apps/api/src/operations/operations.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "note:apps/api/src/ports/content-file.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "note:apps/api/src/ports/operations-read.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/outbox-dispatcher.ts",
+      "target": "note:apps/api/src/ports/operations-journal.port.ts",
       "kind": "link"
     },
     {
@@ -8915,7 +11629,22 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/ports/assistant-runner.port.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/authorization.repository.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
     },
@@ -8930,12 +11659,37 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/ports/execution.repository.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
     },
     {
       "source": "note:apps/api/src/ports/knowledge-graph.port.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/operations-journal.port.ts",
+      "target": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/operations-journal.port.ts",
+      "target": "note:apps/api/src/ports/authorization.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/operations-read.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/public-snapshot.repository.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
     },
@@ -9012,6 +11766,31 @@
     {
       "source": "note:apps/api/src/promote.kernel.integration.test.ts",
       "target": "note:apps/api/src/common/ids.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/runtime/credential-pool.test.ts",
+      "target": "note:apps/api/src/runtime/credential-pool.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/runtime/harness-launch.test.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/runtime/harness-launch.test.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/runtime/harness-launch.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/runtime/probe-gate.test.ts",
+      "target": "note:apps/api/src/runtime/probe-gate.ts",
       "kind": "link"
     },
     {
@@ -11585,8 +14364,43 @@
       "kind": "link"
     },
     {
+      "source": "note:packages/shared/src/agent-execution.test.ts",
+      "target": "note:packages/shared/src/agent-execution.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/agent-execution.ts",
+      "target": "note:packages/shared/src/guards.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/agent-ops.test.ts",
+      "target": "note:packages/shared/src/agent-ops.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/agent-revision.ts",
+      "target": "note:packages/shared/src/guards.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:packages/shared/src/assistant.test.ts",
       "target": "note:packages/shared/src/assistant.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/authorization.test.ts",
+      "target": "note:packages/shared/src/authorization.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/authorization.ts",
+      "target": "note:packages/shared/src/guards.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/authorization.ts",
+      "target": "note:packages/shared/src/agent-execution.ts",
       "kind": "link"
     },
     {
@@ -11697,6 +14511,46 @@
     {
       "source": "note:packages/shared/src/content-ledger.ts",
       "target": "note:packages/shared/src/content.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-admission.test.ts",
+      "target": "note:packages/shared/src/execution-admission.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-admission.ts",
+      "target": "note:packages/shared/src/agent-execution.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-policy.test.ts",
+      "target": "note:packages/shared/src/execution-policy.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-policy.ts",
+      "target": "note:packages/shared/src/agent-execution.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-policy.ts",
+      "target": "note:packages/shared/src/authorization.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-run-api.test.ts",
+      "target": "note:packages/shared/src/execution-run-api.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-run-api.ts",
+      "target": "note:packages/shared/src/agent-execution.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/execution-run-api.ts",
+      "target": "note:packages/shared/src/guards.ts",
       "kind": "link"
     },
     {
@@ -11890,6 +14744,56 @@
       "kind": "link"
     },
     {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/agent-ops.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/agent-execution.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/agent-revision.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/authorization.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/execution-policy.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/execution-admission.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/process-recovery.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/execution-run-api.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/release-test.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/public-snapshot.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:packages/shared/src/insights.test.ts",
       "target": "note:packages/shared/src/insights.ts",
       "kind": "link"
@@ -11930,8 +14834,23 @@
       "kind": "link"
     },
     {
+      "source": "note:packages/shared/src/process-recovery.test.ts",
+      "target": "note:packages/shared/src/process-recovery.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:packages/shared/src/production.test.ts",
       "target": "note:packages/shared/src/production.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/public-snapshot.test.ts",
+      "target": "note:packages/shared/src/public-snapshot.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/release-test.test.ts",
+      "target": "note:packages/shared/src/release-test.ts",
       "kind": "link"
     },
     {
@@ -12131,6 +15050,11 @@
     },
     {
       "source": "note:scripts/generate-content.ts",
+      "target": "note:packages/shared/src/public-snapshot.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/generate-content.ts",
       "target": "note:scripts/lib/git-created.ts",
       "kind": "link"
     },
@@ -12240,6 +15164,16 @@
       "kind": "link"
     },
     {
+      "source": "note:scripts/probe-runtime.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/probe-runtime.ts",
+      "target": "note:apps/api/src/runtime/harness-launch.ts",
+      "kind": "embed"
+    },
+    {
       "source": "note:scripts/verify-architecture.ts",
       "target": "note:packages/shared/src/code-artifact.ts",
       "kind": "link"
@@ -12290,7 +15224,167 @@
       "kind": "link"
     },
     {
-      "source": "note:apps/admin/src/main.ts",
+      "source": "note:apps/admin/src/api/auth-provider.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/data-provider.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/data-provider.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/execution-stream.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/execution-stream.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/http.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/http.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/api/queries.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/app/AdminShell.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/app/SessionGate.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/components/ContentTable.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/components/MarkdownPreview.test.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/components/MarkdownPreview.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/components/RunTable.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/components/States.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/main.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/GrantPanel.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/GrantPanel.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/ReleaseTests.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/agents/TrialPanel.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/overview/OverviewPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/records/RunListPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/shared/labels.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/shared/routes.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "attachment:apps/admin/src/styles/tokens.css",
+      "target": "tag:.css",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/test/assistant-runtime-probe.test.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/test/assistant-runtime-probe.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/admin/src/test/setup.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12390,6 +15484,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/adapters/fs-artifact.repository.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -12426,6 +15525,16 @@
     },
     {
       "source": "note:apps/api/src/adapters/fs-knowledge-graph.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12485,6 +15594,16 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/adapters/harness-runtime.adapter.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/harness-runtime.adapter.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/adapters/http-website-deployment-verifier.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -12496,6 +15615,16 @@
     },
     {
       "source": "note:apps/api/src/adapters/node-git-status.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/node-process-registry.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/node-process-registry.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12525,6 +15654,21 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-agent-revision.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/adapters/prisma-agent-unit.repository.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -12535,7 +15679,17 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/adapters/prisma-authorization.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/adapters/prisma-clue.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-execution-quota.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12561,6 +15715,16 @@
     },
     {
       "source": "note:apps/api/src/adapters/prisma-model-provider.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-journal.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-operations-read.repository.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12605,6 +15769,26 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/agents/agent-catalog.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-catalog.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/agents/agent-config.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/agents/agent-runner.service.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -12626,6 +15810,11 @@
     },
     {
       "source": "note:apps/api/src/agents/agent-unit.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12686,6 +15875,16 @@
     },
     {
       "source": "note:apps/api/src/auth/credential-cipher.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/authorization/authorization.service.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12820,12 +16019,62 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/execution/agent-execution.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/execution/execution.controller.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
     {
       "source": "note:apps/api/src/execution/execution.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.kernel.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/release-test.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.service.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/execution/run-retention.service.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -12955,6 +16204,31 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/operations/operations-journal.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.kernel.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/operations/outbox-dispatcher.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/plan/plan.controller.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -12971,6 +16245,16 @@
     },
     {
       "source": "note:apps/api/src/ports/action.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/agent-execution.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/agent-revision.repository.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -13000,6 +16284,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/ports/authorization.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/ports/clue.repository.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -13021,6 +16310,16 @@
     },
     {
       "source": "note:apps/api/src/ports/content-release-runner.port.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/execution-quota.port.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -13070,7 +16369,27 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/ports/operations-journal.port.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/operations-read.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/ports/prisma.port.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/process-registry.port.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/public-snapshot.repository.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -13086,6 +16405,11 @@
     },
     {
       "source": "note:apps/api/src/ports/rate-limit.port.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/runtime.port.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -13140,7 +16464,42 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/prisma-migration.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/promote.kernel.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/runtime/credential-pool.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/runtime/credential-pool.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/runtime/harness-launch.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/runtime/harness-launch.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/runtime/probe-gate.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/runtime/probe-gate.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -13665,6 +17024,11 @@
       "kind": "tag"
     },
     {
+      "source": "attachment:apps/web/src/generated/public-manifest.json",
+      "target": "tag:.json",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/web/src/graph.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -14120,12 +17484,47 @@
       "kind": "tag"
     },
     {
+      "source": "note:packages/shared/src/agent-execution.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/agent-execution.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/agent-ops.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/agent-ops.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/agent-revision.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:packages/shared/src/assistant.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
     {
       "source": "note:packages/shared/src/assistant.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/authorization.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/authorization.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -14221,6 +17620,36 @@
     },
     {
       "source": "note:packages/shared/src/errors.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/execution-admission.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/execution-admission.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/execution-policy.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/execution-policy.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/execution-run-api.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/execution-run-api.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -14340,6 +17769,16 @@
       "kind": "tag"
     },
     {
+      "source": "note:packages/shared/src/process-recovery.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/process-recovery.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:packages/shared/src/production.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -14350,7 +17789,27 @@
       "kind": "tag"
     },
     {
+      "source": "note:packages/shared/src/public-snapshot.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/public-snapshot.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:packages/shared/src/rate-limits.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/release-test.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/release-test.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -14531,6 +17990,11 @@
     },
     {
       "source": "note:scripts/probe-production.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:scripts/probe-runtime.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },

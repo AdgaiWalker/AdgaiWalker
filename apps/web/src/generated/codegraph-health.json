@@ -1,6 +1,13 @@
 {
   "entries": [
-    "apps/admin/src/main.ts",
+    "apps/admin/src/api/data-provider.test.ts",
+    "apps/admin/src/api/execution-stream.test.ts",
+    "apps/admin/src/api/http.test.ts",
+    "apps/admin/src/components/MarkdownPreview.test.tsx",
+    "apps/admin/src/main.tsx",
+    "apps/admin/src/pages/agents/GrantPanel.test.ts",
+    "apps/admin/src/test/assistant-runtime-probe.test.tsx",
+    "apps/admin/src/test/setup.ts",
     "apps/agent/src/graph-neighbors.test.ts",
     "apps/agent/src/index.ts",
     "apps/agent/src/knowledge.test.ts",
@@ -12,14 +19,20 @@
     "apps/api/src/adapters/fs-artifact.repository.test.ts",
     "apps/api/src/adapters/fs-code-health.test.ts",
     "apps/api/src/adapters/fs-content-file.repository.test.ts",
+    "apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
     "apps/api/src/adapters/fs-skill.catalog.test.ts",
     "apps/api/src/adapters/fs-stage-artifact.repository.test.ts",
     "apps/api/src/adapters/harness-assistant.adapter.test.ts",
+    "apps/api/src/adapters/harness-runtime.adapter.test.ts",
+    "apps/api/src/adapters/node-process-registry.test.ts",
     "apps/api/src/adapters/openai-compatible-llm.adapter.test.ts",
     "apps/api/src/adapters/pnpm-content-release.runner.test.ts",
+    "apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
     "apps/api/src/adapters/prisma-workbench.repository.test.ts",
+    "apps/api/src/agents/agent-catalog.integration.test.ts",
     "apps/api/src/agents/agent-runner.service.test.ts",
     "apps/api/src/agents/agent-unit.service.test.ts",
+    "apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
     "apps/api/src/architecture/architecture.service.test.ts",
     "apps/api/src/assistant/assistant.service.test.ts",
     "apps/api/src/auth/admin-token.middleware.test.ts",
@@ -30,6 +43,10 @@
     "apps/api/src/content-release/content-release.integration.test.ts",
     "apps/api/src/engagement/content-feedback.service.test.ts",
     "apps/api/src/engagement/like.service.test.ts",
+    "apps/api/src/execution/execution-runs.kernel.integration.test.ts",
+    "apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+    "apps/api/src/execution/release-test.kernel.integration.test.ts",
+    "apps/api/src/execution/run-retention.service.test.ts",
     "apps/api/src/graph/graph.service.test.ts",
     "apps/api/src/health/health.service.test.ts",
     "apps/api/src/insights/insights.service.test.ts",
@@ -38,8 +55,14 @@
     "apps/api/src/model-providers/model-provider.service.test.ts",
     "apps/api/src/observability/observability.controller.test.ts",
     "apps/api/src/observability/observability.service.test.ts",
+    "apps/api/src/operations/operations-journal.integration.test.ts",
+    "apps/api/src/operations/operations.kernel.integration.test.ts",
     "apps/api/src/plan/plan.service.test.ts",
+    "apps/api/src/prisma-migration.integration.test.ts",
     "apps/api/src/promote.kernel.integration.test.ts",
+    "apps/api/src/runtime/credential-pool.test.ts",
+    "apps/api/src/runtime/harness-launch.test.ts",
+    "apps/api/src/runtime/probe-gate.test.ts",
     "apps/api/src/seed/seed.service.test.ts",
     "apps/api/src/traces/trace.integration.test.ts",
     "apps/api/src/work/work.service.test.ts",
@@ -92,7 +115,10 @@
     "apps/web/src/shared/search-content.test.ts",
     "apps/web/src/test/setup.ts",
     "packages/shared/src/action.test.ts",
+    "packages/shared/src/agent-execution.test.ts",
+    "packages/shared/src/agent-ops.test.ts",
     "packages/shared/src/assistant.test.ts",
+    "packages/shared/src/authorization.test.ts",
     "packages/shared/src/code-artifact.test.ts",
     "packages/shared/src/code-debt.test.ts",
     "packages/shared/src/code-graph-query.test.ts",
@@ -102,6 +128,9 @@
     "packages/shared/src/code-resolve.test.ts",
     "packages/shared/src/content-contract.test.ts",
     "packages/shared/src/content-ledger.test.ts",
+    "packages/shared/src/execution-admission.test.ts",
+    "packages/shared/src/execution-policy.test.ts",
+    "packages/shared/src/execution-run-api.test.ts",
     "packages/shared/src/graph-query.test.ts",
     "packages/shared/src/graph.test.ts",
     "packages/shared/src/index.ts",
@@ -110,7 +139,10 @@
     "packages/shared/src/mvp-acceptance.test.ts",
     "packages/shared/src/next-actions.test.ts",
     "packages/shared/src/nextstep.test.ts",
+    "packages/shared/src/process-recovery.test.ts",
     "packages/shared/src/production.test.ts",
+    "packages/shared/src/public-snapshot.test.ts",
+    "packages/shared/src/release-test.test.ts",
     "packages/shared/src/rules.test.ts",
     "packages/shared/src/skill-export.test.ts",
     "packages/shared/src/skill.test.ts",
@@ -150,30 +182,33 @@
     }
   ],
   "unreachable": [
+    "apps/api/src/adapters/fs-skill-file.store.ts",
+    "apps/api/src/ports/skill-file.port.ts",
     "scripts/accept-real-works.ts",
-    "scripts/probe-production.ts"
+    "scripts/probe-production.ts",
+    "scripts/probe-runtime.ts"
   ],
   "reverseDependencies": [],
   "hubs": [
     {
-      "path": "apps/api/src/kernel.module.ts",
-      "linkDegree": 138
+      "path": "packages/shared/src/index.ts",
+      "linkDegree": 177
     },
     {
-      "path": "packages/shared/src/index.ts",
-      "linkDegree": 129
+      "path": "apps/api/src/kernel.module.ts",
+      "linkDegree": 170
     },
     {
       "path": "apps/api/src/ports/prisma.port.ts",
-      "linkDegree": 50
+      "linkDegree": 64
+    },
+    {
+      "path": "apps/api/src/common/http-error.ts",
+      "linkDegree": 51
     },
     {
       "path": "apps/web/src/shared/routes.ts",
       "linkDegree": 39
-    },
-    {
-      "path": "apps/api/src/common/http-error.ts",
-      "linkDegree": 38
     },
     {
       "path": "apps/web/src/shared/dual-entry.ts",
@@ -214,12 +249,12 @@
       "lines": 597
     },
     {
-      "path": "apps/api/src/agents/agent-runner.service.ts",
-      "lines": 580
-    },
-    {
       "path": "packages/shared/src/graph-query.ts",
       "lines": 556
+    },
+    {
+      "path": "apps/api/src/execution/agent-execution.service.ts",
+      "lines": 552
     },
     {
       "path": "packages/shared/src/code-graph.ts",
@@ -228,16 +263,16 @@
   ],
   "nominated": [],
   "schemaVersion": 1,
-  "sourceCommit": "9e738b19daf0f706c999451f2461dcfd8346daf7",
-  "generatedAt": "2026-09-21T11:46:03.895Z",
+  "sourceCommit": "c84a6cfbe8fe7efb0a157e49bb5429757861cf62",
+  "generatedAt": "2026-09-22T09:17:12.254Z",
   "counts": {
-    "files": 446,
-    "attachments": 10,
+    "files": 550,
+    "attachments": 12,
     "tags": 4,
     "ghosts": 1,
     "edges": {
-      "total": 1624,
-      "dependency": 1159
+      "total": 2020,
+      "dependency": 1448
     }
   }
 }
