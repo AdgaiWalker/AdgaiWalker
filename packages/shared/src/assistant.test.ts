@@ -3,6 +3,7 @@ import {
   ASSISTANT_ANSWER_MAX_LENGTH,
   ASSISTANT_MAX_CITATIONS,
   DEGRADE_REASONS,
+  diagnoseAssistantOutput,
   extractStreamedAnswer,
   isDegradeReason,
   isValidAssistantBody,
@@ -12,6 +13,42 @@ import {
 } from './assistant.js';
 
 const CITABLE = new Set(['used-macbook-guide', 'ai-low-cost-access', 'cc-intro']);
+
+describe('失败原因可诊断（降级时说清为什么，而不是「没过合同」）', () => {
+  it('不是 JSON → 指出「无法提取 JSON」，并给出原始片段', () => {
+    const result = diagnoseAssistantOutput('今天天气不错，我们聊聊别的。', CITABLE);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain('JSON');
+      expect(result.preview).toContain('今天天气不错');
+    }
+  });
+
+  it('缺 answer → 指出缺 answer', () => {
+    const result = diagnoseAssistantOutput('{"citations":[]}', CITABLE);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain('answer');
+  });
+
+  it('answer 过短 / 过长 → 指出长度越界与实测长度', () => {
+    const short = diagnoseAssistantOutput('{"answer":"hi"}', CITABLE);
+    if (!short.ok) expect(short.reason).toContain('过短');
+
+    const long = diagnoseAssistantOutput(
+      JSON.stringify({ answer: 'x'.repeat(ASSISTANT_ANSWER_MAX_LENGTH + 1) }),
+      CITABLE,
+    );
+    expect(long.ok).toBe(false);
+    if (!long.ok) expect(long.reason).toContain('过长');
+  });
+
+  it('合法输出 → ok，且与 parseAssistantOutput 判定一致（同一条规则）', () => {
+    const raw = '```json\n{"answer":"先读入门教程。","citations":["cc-intro"]}\n```';
+    const diagnosis = diagnoseAssistantOutput(raw, CITABLE);
+    expect(diagnosis.ok).toBe(true);
+    expect(parseAssistantOutput(raw, CITABLE)?.answer).toBe('先读入门教程。');
+  });
+});
 
 describe('助手提问校验', () => {
   it('2 字中文成句即可；1 字与纯空白不行', () => {
@@ -69,6 +106,27 @@ describe('助手 Run 合同', () => {
       CITABLE,
     );
     expect(out?.citations).toHaveLength(ASSISTANT_MAX_CITATIONS);
+  });
+
+  it('answer 用 markdown 围栏包住 JSON 时仍能解析（模型最常见的输出形态）', () => {
+    const fenced = parseAssistantOutput(
+      '```json\n{"answer":"推荐先读入门教程。","citations":["cc-intro"]}\n```',
+      CITABLE,
+    );
+    expect(fenced?.answer).toBe('推荐先读入门教程。');
+    expect(fenced?.citations).toEqual([{ slug: 'cc-intro' }]);
+  });
+
+  it('JSON 前后夹带解释文字时仍能解析（只取其中的对象）', () => {
+    const chatty = parseAssistantOutput(
+      '好的，我来回答：\n{"answer":"先读入门教程，再动手实践。","citations":[]}\n希望有帮助。',
+      CITABLE,
+    );
+    expect(chatty?.answer).toBe('先读入门教程，再动手实践。');
+  });
+
+  it('无 JSON 可提取时拒收（不把散文当合同）', () => {
+    expect(parseAssistantOutput('这是一段没有 JSON 的散文回答。', CITABLE)).toBeNull();
   });
 
   it('answer 缺失 / 过短 / 过长 / 非对象 → 整体拒收', () => {

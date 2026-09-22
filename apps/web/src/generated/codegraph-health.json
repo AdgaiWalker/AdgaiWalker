@@ -1,0 +1,243 @@
+{
+  "entries": [
+    "apps/admin/src/main.ts",
+    "apps/agent/src/graph-neighbors.test.ts",
+    "apps/agent/src/index.ts",
+    "apps/agent/src/knowledge.test.ts",
+    "apps/agent/src/plugins/code-graph.test.ts",
+    "apps/agent/src/telemetry.test.ts",
+    "apps/api/src/action/action.service.test.ts",
+    "apps/api/src/adapters/ai-nextstep.adapter.test.ts",
+    "apps/api/src/adapters/dsh-agent.runner.test.ts",
+    "apps/api/src/adapters/fs-artifact.repository.test.ts",
+    "apps/api/src/adapters/fs-code-health.test.ts",
+    "apps/api/src/adapters/fs-content-file.repository.test.ts",
+    "apps/api/src/adapters/fs-skill.catalog.test.ts",
+    "apps/api/src/adapters/fs-stage-artifact.repository.test.ts",
+    "apps/api/src/adapters/harness-assistant.adapter.test.ts",
+    "apps/api/src/adapters/openai-compatible-llm.adapter.test.ts",
+    "apps/api/src/adapters/pnpm-content-release.runner.test.ts",
+    "apps/api/src/adapters/prisma-workbench.repository.test.ts",
+    "apps/api/src/agents/agent-runner.service.test.ts",
+    "apps/api/src/agents/agent-unit.service.test.ts",
+    "apps/api/src/architecture/architecture.service.test.ts",
+    "apps/api/src/assistant/assistant.service.test.ts",
+    "apps/api/src/auth/admin-token.middleware.test.ts",
+    "apps/api/src/auth/credential-cipher.test.ts",
+    "apps/api/src/config/env-config.adapter.test.ts",
+    "apps/api/src/content-admin/content-admin.controller.test.ts",
+    "apps/api/src/content-ledger/content-ledger.integration.test.ts",
+    "apps/api/src/content-release/content-release.integration.test.ts",
+    "apps/api/src/engagement/content-feedback.service.test.ts",
+    "apps/api/src/engagement/like.service.test.ts",
+    "apps/api/src/graph/graph.service.test.ts",
+    "apps/api/src/health/health.service.test.ts",
+    "apps/api/src/insights/insights.service.test.ts",
+    "apps/api/src/kernel.integration.test.ts",
+    "apps/api/src/main.ts",
+    "apps/api/src/model-providers/model-provider.service.test.ts",
+    "apps/api/src/observability/observability.controller.test.ts",
+    "apps/api/src/observability/observability.service.test.ts",
+    "apps/api/src/plan/plan.service.test.ts",
+    "apps/api/src/promote.kernel.integration.test.ts",
+    "apps/api/src/seed/seed.service.test.ts",
+    "apps/api/src/traces/trace.integration.test.ts",
+    "apps/api/src/work/work.service.test.ts",
+    "apps/api/src/workbench/workbench.service.test.ts",
+    "apps/api/src/workflow/export.service.test.ts",
+    "apps/api/src/workflow/production.service.test.ts",
+    "apps/api/src/workflow/publication.service.test.ts",
+    "apps/api/src/workflow/review.service.test.ts",
+    "apps/api/src/workflow/three-work.acceptance.test.ts",
+    "apps/api/src/workstation-schema.test.ts",
+    "apps/api/src/workstation.chain.integration.test.ts",
+    "apps/api/src/workstation/workstation.controller.test.ts",
+    "apps/web/src/api/format-api-error.test.ts",
+    "apps/web/src/components/AppShell.test.tsx",
+    "apps/web/src/components/GreetingCard.test.tsx",
+    "apps/web/src/components/ItemList.test.tsx",
+    "apps/web/src/components/RouteMetadata.test.tsx",
+    "apps/web/src/components/graph/code-domain.test.ts",
+    "apps/web/src/components/graph/graph-view-model.test.ts",
+    "apps/web/src/components/graph/obsidian/obsidian-engine.test.ts",
+    "apps/web/src/components/graph/obsidian/reveal.test.ts",
+    "apps/web/src/components/shell/MobileBar.test.tsx",
+    "apps/web/src/components/ui/AssistantThread.test.tsx",
+    "apps/web/src/components/ui/ContentFeedback.test.tsx",
+    "apps/web/src/components/ui/GiscusComments.test.tsx",
+    "apps/web/src/components/ui/LikeButton.test.tsx",
+    "apps/web/src/components/ui/SearchModal.test.tsx",
+    "apps/web/src/components/xiaoying/XiaoyingHome.test.tsx",
+    "apps/web/src/components/xiaoying/activity.test.ts",
+    "apps/web/src/hooks/useAssistant.test.ts",
+    "apps/web/src/hooks/useIntakeSubmit.test.ts",
+    "apps/web/src/hooks/useLike.test.ts",
+    "apps/web/src/hooks/useTypewriter.test.ts",
+    "apps/web/src/lib/next-step-outline.test.ts",
+    "apps/web/src/lib/sanitize-html.test.ts",
+    "apps/web/src/main.tsx",
+    "apps/web/src/pages/AboutPage.test.tsx",
+    "apps/web/src/pages/ExplorePage.test.tsx",
+    "apps/web/src/pages/MePage.test.tsx",
+    "apps/web/src/pages/PostsPage.test.tsx",
+    "apps/web/src/pages/ToolsPage.test.tsx",
+    "apps/web/src/pages/ToolsResultPage.test.tsx",
+    "apps/web/src/shared/article-outline.test.ts",
+    "apps/web/src/shared/code-graph-outline.test.ts",
+    "apps/web/src/shared/content-halls.test.ts",
+    "apps/web/src/shared/content-series.test.ts",
+    "apps/web/src/shared/exploration.test.ts",
+    "apps/web/src/shared/graph-outline.test.ts",
+    "apps/web/src/shared/posts-timeline.test.ts",
+    "apps/web/src/shared/search-content.test.ts",
+    "apps/web/src/test/setup.ts",
+    "packages/shared/src/action.test.ts",
+    "packages/shared/src/assistant.test.ts",
+    "packages/shared/src/code-artifact.test.ts",
+    "packages/shared/src/code-debt.test.ts",
+    "packages/shared/src/code-graph-query.test.ts",
+    "packages/shared/src/code-graph.test.ts",
+    "packages/shared/src/code-health.test.ts",
+    "packages/shared/src/code-imports.test.ts",
+    "packages/shared/src/code-resolve.test.ts",
+    "packages/shared/src/content-contract.test.ts",
+    "packages/shared/src/content-ledger.test.ts",
+    "packages/shared/src/graph-query.test.ts",
+    "packages/shared/src/graph.test.ts",
+    "packages/shared/src/index.ts",
+    "packages/shared/src/insights.test.ts",
+    "packages/shared/src/json-request.test.ts",
+    "packages/shared/src/mvp-acceptance.test.ts",
+    "packages/shared/src/next-actions.test.ts",
+    "packages/shared/src/nextstep.test.ts",
+    "packages/shared/src/production.test.ts",
+    "packages/shared/src/rules.test.ts",
+    "packages/shared/src/skill-export.test.ts",
+    "packages/shared/src/skill.test.ts",
+    "packages/shared/src/topic.test.ts",
+    "packages/shared/src/trace.test.ts",
+    "packages/shared/src/work.test.ts",
+    "scripts/accept-deep.ts",
+    "scripts/accept-dual-entry.ts",
+    "scripts/build-web.ts",
+    "scripts/check-content-fields.ts",
+    "scripts/check-uncommitted-content.ts",
+    "scripts/content-publish.ts",
+    "scripts/emit-static-feeds.ts",
+    "scripts/generate-code-graph.ts",
+    "scripts/generate-content.ts",
+    "scripts/mvp-acceptance.ts",
+    "scripts/prerender-web.ts",
+    "scripts/prisma-env.ts",
+    "scripts/update-harness.ts",
+    "scripts/verify-architecture.ts",
+    "scripts/verify-geo.ts",
+    "scripts/verify-stage1.ts"
+  ],
+  "cycles": [
+    [
+      "packages/shared/src/code-artifact.ts",
+      "packages/shared/src/code-debt.ts",
+      "packages/shared/src/code-graph.ts"
+    ]
+  ],
+  "unresolved": [
+    {
+      "specifier": "../packages/shared/dist/mvp-acceptance.js",
+      "importers": [
+        "scripts/mvp-acceptance.ts"
+      ]
+    }
+  ],
+  "unreachable": [
+    "scripts/accept-real-works.ts",
+    "scripts/probe-production.ts"
+  ],
+  "reverseDependencies": [],
+  "hubs": [
+    {
+      "path": "apps/api/src/kernel.module.ts",
+      "linkDegree": 138
+    },
+    {
+      "path": "packages/shared/src/index.ts",
+      "linkDegree": 129
+    },
+    {
+      "path": "apps/api/src/ports/prisma.port.ts",
+      "linkDegree": 50
+    },
+    {
+      "path": "apps/web/src/shared/routes.ts",
+      "linkDegree": 39
+    },
+    {
+      "path": "apps/api/src/common/http-error.ts",
+      "linkDegree": 38
+    },
+    {
+      "path": "apps/web/src/shared/dual-entry.ts",
+      "linkDegree": 35
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "linkDegree": 33
+    },
+    {
+      "path": "apps/web/src/pages/PostDetailPage.tsx",
+      "linkDegree": 23
+    },
+    {
+      "path": "apps/web/src/content.ts",
+      "linkDegree": 22
+    },
+    {
+      "path": "apps/api/src/common/ids.ts",
+      "linkDegree": 16
+    }
+  ],
+  "largeFiles": [
+    {
+      "path": "scripts/prerender-web.ts",
+      "lines": 963
+    },
+    {
+      "path": "apps/web/src/components/graph/obsidian/engine.ts",
+      "lines": 759
+    },
+    {
+      "path": "apps/web/src/components/graph/obsidian/forces.ts",
+      "lines": 699
+    },
+    {
+      "path": "packages/shared/src/graph.ts",
+      "lines": 597
+    },
+    {
+      "path": "apps/api/src/agents/agent-runner.service.ts",
+      "lines": 580
+    },
+    {
+      "path": "packages/shared/src/graph-query.ts",
+      "lines": 556
+    },
+    {
+      "path": "packages/shared/src/code-graph.ts",
+      "lines": 528
+    }
+  ],
+  "nominated": [],
+  "schemaVersion": 1,
+  "sourceCommit": "9e738b19daf0f706c999451f2461dcfd8346daf7",
+  "generatedAt": "2026-09-21T11:46:03.895Z",
+  "counts": {
+    "files": 446,
+    "attachments": 10,
+    "tags": 4,
+    "ghosts": 1,
+    "edges": {
+      "total": 1624,
+      "dependency": 1159
+    }
+  }
+}

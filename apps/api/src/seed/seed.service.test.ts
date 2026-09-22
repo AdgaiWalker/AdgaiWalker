@@ -112,6 +112,7 @@ function createSeedHarness(options: { inPoolClue?: boolean } = {}) {
     async list() { return actions; },
     async update() { throw new Error('unused'); },
     async setCompletion() { throw new Error('unused'); },
+    async delete() { throw new Error('unused'); },
   };
   const events: FeatureEventPort = {
     async record() {},

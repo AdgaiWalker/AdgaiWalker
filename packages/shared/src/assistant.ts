@@ -133,31 +133,92 @@ function extractCitationSlugs(value: unknown): string[] {
 }
 
 /**
- * 校验模型输出。answer 不合法返回 null（调用方走规则兜底）；
- * citation 不在 citable 集合内的直接丢弃，不拒收整体。
+ * 从模型输出里**尽力**取出一个 JSON 对象。
+ *
+ * 为什么必须容错：提示词已经要求「只输出一个 JSON 对象」，但模型经常
+ * 加 markdown 围栏（```json … ```）或前后夹一句「好的，我来回答：」。
+ * 严格 `JSON.parse` 会把这类**内容完全正确**的输出判成 bad-output 而整轮降级 ——
+ * 实测小影就长期因此走规则兜底。这里按「围栏 → 首尾大括号」的次序退让，
+ * 但仍然**只接受能解析出的对象**，不把散文当合同。
  */
-export function parseAssistantOutput(
-  raw: unknown,
-  citableSlugs: ReadonlySet<string>,
-): AiAssistantOutput | null {
-  let candidate = raw;
-  if (typeof candidate === 'string') {
+function extractJsonObject(text: string): unknown | null {
+  const tryParse = (candidate: string): unknown | null => {
     try {
-      candidate = JSON.parse(candidate);
+      return JSON.parse(candidate);
     } catch {
       return null;
     }
+  };
+
+  const trimmed = text.trim();
+  const direct = tryParse(trimmed);
+  if (direct !== null) return direct;
+
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(trimmed);
+  if (fenced?.[1]) {
+    const inner = tryParse(fenced[1].trim());
+    if (inner !== null) return inner;
   }
-  if (!candidate || typeof candidate !== 'object') return null;
+
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  if (start !== -1 && end > start) {
+    const sliced = tryParse(trimmed.slice(start, end + 1));
+    if (sliced !== null) return sliced;
+  }
+  return null;
+}
+
+export type AssistantOutputDiagnosis =
+  | { ok: true; value: AiAssistantOutput }
+  | { ok: false; reason: string; preview: string };
+
+/**
+ * 校验模型输出，并**说清失败原因**（同一条规则的唯一实现，`parseAssistantOutput` 委托它）。
+ *
+ * 只回 null 的旧形态让线上只剩一句「没过合同校验」，无法判断是模型没给 JSON、
+ * 还是 answer 超长 —— 排查只能靠猜。原因里带上实测长度，降级日志才有信息量。
+ */
+export function diagnoseAssistantOutput(
+  raw: unknown,
+  citableSlugs: ReadonlySet<string>,
+): AssistantOutputDiagnosis {
+  const preview = (
+    typeof raw === 'string' ? raw : (JSON.stringify(raw) ?? String(raw ?? ''))
+  ).slice(0, 200);
+
+  let candidate = raw;
+  if (typeof candidate === 'string') {
+    const extracted = extractJsonObject(candidate);
+    if (extracted === null) {
+      return { ok: false, reason: '无法从输出中提取 JSON 对象', preview };
+    }
+    candidate = extracted;
+  }
+  if (!candidate || typeof candidate !== 'object') {
+    return { ok: false, reason: '输出不是对象（既不是 JSON，也不是 JSON 字符串）', preview };
+  }
+
   const obj = candidate as Record<string, unknown>;
-  if (typeof obj.answer !== 'string') return null;
-  const answer = sanitizeAnswerText(obj.answer);
-  if (
-    answer.length < ASSISTANT_ANSWER_MIN_LENGTH ||
-    answer.length > ASSISTANT_ANSWER_MAX_LENGTH
-  ) {
-    return null;
+  if (typeof obj.answer !== 'string') {
+    return { ok: false, reason: '缺 answer 字段（或不是字符串）', preview };
   }
+  const answer = sanitizeAnswerText(obj.answer);
+  if (answer.length < ASSISTANT_ANSWER_MIN_LENGTH) {
+    return {
+      ok: false,
+      reason: `answer 过短（${answer.length} < ${ASSISTANT_ANSWER_MIN_LENGTH}）`,
+      preview,
+    };
+  }
+  if (answer.length > ASSISTANT_ANSWER_MAX_LENGTH) {
+    return {
+      ok: false,
+      reason: `answer 过长（${answer.length} > ${ASSISTANT_ANSWER_MAX_LENGTH}）`,
+      preview,
+    };
+  }
+
   const seen = new Set<string>();
   const citations: AssistantCitation[] = [];
   for (const slug of extractCitationSlugs(obj.citations)) {
@@ -166,5 +227,17 @@ export function parseAssistantOutput(
     citations.push({ slug });
     if (citations.length >= ASSISTANT_MAX_CITATIONS) break;
   }
-  return { answer, citations };
+  return { ok: true, value: { answer, citations } };
+}
+
+/**
+ * 校验模型输出。answer 不合法返回 null（调用方走规则兜底）；
+ * citation 不在 citable 集合内的直接丢弃，不拒收整体。
+ */
+export function parseAssistantOutput(
+  raw: unknown,
+  citableSlugs: ReadonlySet<string>,
+): AiAssistantOutput | null {
+  const diagnosis = diagnoseAssistantOutput(raw, citableSlugs);
+  return diagnosis.ok ? diagnosis.value : null;
 }

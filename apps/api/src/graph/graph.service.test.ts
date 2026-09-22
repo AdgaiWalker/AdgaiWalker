@@ -27,18 +27,19 @@ describe('图谱结构体检', () => {
 
     expect(view.nodeCounts.note).toBe(4);
     expect(view.nodeCounts.ghost).toBe(1);
-    expect(view.edgeCounts.link).toBe(1);
-    expect(view.totals).toEqual({ notes: 4, linkEdges: 1, isolatedNotes: 3 });
+    // hub 同时引用 leaf 与 missing → 2 条正文内链
+    expect(view.edgeCounts.link).toBe(2);
+    expect(view.totals).toEqual({ notes: 4, linkEdges: 2, isolatedNotes: 2 });
     expect(view.generatedAt).toBe('2026-09-14T00:00:00.000Z');
   });
 
-  it('孤岛 = 正文内链度为 0（只被引用、自己不引用的不算）', async () => {
+  it('孤岛 = 正文内链度为 0（被引用的 leaf 不算孤岛）', async () => {
     const view = await new GraphService(port(fixture())).health();
     const orphans = view.issues
       .filter((issue) => issue.kind === 'orphan')
       .map((issue) => issue.slug);
-    expect(orphans).toContain('lonely');
-    expect(orphans).toContain('leaf');
+    expect(orphans.sort()).toEqual(['lonely', 'peer']);
+    expect(orphans).not.toContain('leaf');
     expect(orphans).not.toContain('hub');
   });
 

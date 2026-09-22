@@ -64,6 +64,8 @@ html.theme-dianzi,
 
   --press-scale: 0.97;
   --press-ms: 100ms;
+  /* 强 ease-out（源自 .app-sidebar，提到 :root 供全站复用；只此一处定义） */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --hit-min: 44px;
 
   --material-l0: var(--color-bg);
@@ -285,152 +287,6 @@ body::before {
       "quick"
       "recent";
     max-width: 400px;
-  }
-}
-
-/* 首页专属探索中枢（门面） */
-.hero-search-wrapper {
-  grid-area: search;
-  border-radius: var(--radius-xl);
-  padding: 1.15rem 1.25rem 1rem;
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-card) 75%, transparent);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-2);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.hero-search-wrapper:hover {
-  border-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
-  box-shadow: 0 8px 32px -8px var(--color-brand-glow), var(--shadow-2);
-}
-
-.hero-search-input-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-inner-border);
-  background: var(--color-inner-bg);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-sizing: border-box;
-}
-.hero-search-input-btn:hover {
-  background: var(--color-card);
-  border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px -2px var(--color-brand-glow);
-}
-.hero-search-icon {
-  color: var(--color-brand);
-  flex-shrink: 0;
-}
-.hero-search-placeholder {
-  flex: 1;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--color-parchment);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.85;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.hero-search-placeholder.is-fading {
-  opacity: 0;
-  transform: translateY(-3px);
-}
-.hero-search-kbd {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-card) 90%, transparent);
-  color: var(--color-parchment-dim);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-/* 灵感探索火花标签 */
-.hero-search-sparks {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 0 4px;
-}
-.hero-search-sparks-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-brand);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.hero-search-sparks-list {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.hero-search-tag {
-  font-size: 0.78rem;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-card) 60%, transparent);
-  color: var(--color-parchment);
-  cursor: pointer;
-  transition: all 0.18s ease;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.hero-search-tag:hover {
-  background: var(--color-card);
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px var(--color-brand-glow);
-}
-
-@media (max-width: 640px) {
-  .hero-search-wrapper {
-    padding: 0.9rem 1rem 0.85rem;
-    border-radius: var(--radius-lg);
-  }
-  .hero-search-input-btn {
-    padding: 10px 14px;
-    min-height: 48px;
-  }
-  .hero-search-placeholder {
-    font-size: 0.88rem;
-  }
-  .hero-search-kbd {
-    display: none;
-  }
-  .hero-search-sparks {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .hero-search-sparks-list {
-    overflow-x: auto;
-    width: 100%;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-  .hero-search-sparks-list::-webkit-scrollbar {
-    display: none;
   }
 }
 
@@ -1375,7 +1231,6 @@ body::before {
 }
 .app-sidebar {
   --sidebar-pad-x: 0.75rem;
-  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   position: fixed;
   top: 0;
   left: 0;
@@ -2545,7 +2400,10 @@ body::before {
   .browse-tag:active,
   .browse-refine-toggle:active,
   .article-neighbor:active,
-  .reading-chrome-back:active {
+  .reading-chrome-back:active,
+  .graph-animate:active,
+  .graph-exit-isolate:active,
+  .code-detail button:active {
     transform: none;
   }
   .browse-lab-entry:hover .browse-lab-arrow {
@@ -4275,17 +4133,76 @@ textarea {
    画布配色走 CSS 变量，主题切换自动跟随，不在 JS 里写死颜色。
    ============================================================ */
 
+/*
+  图谱配色：变量名与 **Obsidian 应用**的 .graph-view.color-* 一一对应
+  （app.css 把每个语义色映射到主题变量，本站同样映射到站点主题变量）。
+
+  应用侧映射（app.css）：
+    .color-fill            → --graph-node            (= --text-muted)
+    .color-fill-focused    → --graph-node-focused    (= --text-accent)
+    .color-fill-tag        → --graph-node-tag        (= --color-green)
+    .color-fill-attachment → --graph-node-attachment (= --color-yellow)
+    .color-fill-unresolved → --graph-node-unresolved (= --text-faint)
+    .color-line            → --graph-line            (= --color-base-35)
+    .color-arrow / .color-text → --text-normal
+    .color-circle          → --graph-node-focused
+    .color-fill-highlight / .color-line-highlight → --interactive-accent
+    .color-fill-1..6       → 固定 6 个分组色槽
+
+  定义在 :root 而不是画布容器上：画布由 JS 从计算样式读取这些值，
+  而 /architecture 的图例也要用**同一份**颜色 —— 复制一份到别处就是第二套配色。
+*/
+:root {
+  --graph-node: var(--color-parchment-dim);
+  --graph-node-focused: var(--color-brand);
+  --graph-node-tag: #15803d;
+  --graph-node-attachment: #b45309;
+  --graph-node-unresolved: #94a3b8;
+  --graph-line: color-mix(in srgb, var(--color-parchment) 22%, transparent);
+  --graph-line-highlight: var(--color-brand);
+  --graph-fill-highlight: var(--color-brand);
+  --graph-arrow: var(--color-parchment);
+  --graph-text: var(--color-parchment);
+  --graph-circle: var(--color-brand);
+  /* 分组色槽：应用默认主题里 1..6 同为 --text-muted（需主题覆盖才分色），此处给出可用调色板 */
+  --graph-group-1: #f97316;
+  --graph-group-2: #a855f7;
+  --graph-group-3: #16a34a;
+  --graph-group-4: #dc2626;
+  --graph-group-5: #ca8a04;
+  --graph-group-6: #0891b2;
+}
+
 .graph-canvas-wrap {
-  --graph-label: var(--color-parchment);
-  --graph-label-dim: var(--color-parchment-dim);
-  --graph-edge: color-mix(in srgb, var(--color-parchment) 30%, transparent);
-  --graph-node: var(--color-brand);
-  --graph-node-ring: color-mix(in srgb, var(--color-card) 85%, transparent);
-  --graph-ghost: color-mix(in srgb, var(--color-parchment-dim) 16%, transparent);
-  --graph-ghost-ring: color-mix(in srgb, var(--color-parchment-dim) 70%, transparent);
   position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
+}
+
+/* 颜色组：取色器可点击（官方：点击可更改颜色），行可拖动排序 */
+.graph-groups li {
+  cursor: grab;
+}
+
+.graph-groups li:active {
+  cursor: grabbing;
+}
+
+.graph-canvas canvas {
+  touch-action: none;
+  cursor: grab;
+}
+
+.graph-canvas canvas.is-grabbing {
+  cursor: grabbing;
+}
+
+/*
+ * 图谱页脱离内页 40rem 阅读列：画布宽度就是这一页的全部意义，
+ * 挤在 640px 里只剩 ~330px 可画。正文段落各自保留可读宽度（.graph-page-note 已限 62ch）。
+ */
+.app-main-browse:has(.graph-page) > * {
+  max-width: none;
 }
 
 .graph-page {
@@ -4336,13 +4253,8 @@ textarea {
 }
 
 .graph-canvas {
-  cursor: grab;
   touch-action: none;
   outline: none;
-}
-
-.graph-canvas:focus-visible {
-  box-shadow: 0 0 0 2px var(--color-brand);
 }
 
 .graph-canvas canvas {
@@ -4372,12 +4284,28 @@ textarea {
   backdrop-filter: blur(8px);
 }
 
+/* 沿用站点既有按压反馈（同 .post-list-hit 一族）：复用 token，不另造一套 */
+.graph-animate,
+.graph-exit-isolate {
+  transition: transform var(--press-ms) ease-out;
+}
+
 .graph-animate:active,
 .graph-exit-isolate:active {
   transform: scale(var(--press-scale));
 }
 
+/* 右键菜单入场：菜单左上角即光标位，故原点就在触发处；只用 transform/opacity */
+@keyframes graph-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 .graph-menu {
+  animation: graph-menu-in 140ms var(--ease-out-strong) both;
+  transform-origin: top left;
   position: absolute;
   z-index: 20;
   display: flex;
@@ -4447,30 +4375,64 @@ textarea {
   cursor: pointer;
 }
 
+/* 小节 = <details>，照应用面板的可折叠分组 */
 .graph-settings-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  border-top: 1px solid var(--color-inner-border);
+  padding-top: var(--space-2);
 }
 
-.graph-settings-group h3 {
-  margin: 0;
+.graph-settings-group > summary {
   font-size: var(--type-meta);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--color-parchment);
+  cursor: pointer;
+  list-style: none;
+}
+
+.graph-settings-group > summary::marker,
+.graph-settings-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.graph-settings-group > summary::after {
+  content: '⌄';
+  float: right;
   color: var(--color-parchment-dim);
 }
 
+.graph-settings-group[open] > summary::after {
+  content: '⌃';
+}
+
+.graph-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+/* 应用面板里开关在右侧 */
 .graph-toggle {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
   font-size: var(--type-meta);
 }
 
-.graph-toggle em {
-  margin-left: auto;
-  font-style: normal;
+.graph-toggle input[type='checkbox'] {
+  flex: none;
+  margin: 0;
+}
+
+.graph-animate {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+
+.graph-animate:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .graph-slider {
@@ -4631,6 +4593,118 @@ textarea {
 .graph-outline-ghost {
   color: var(--color-parchment-dim);
   font-style: italic;
+}
+
+/* ============================================================
+   代码结构页（PRD-CODE-GRAPH）
+   只加版式与图例；配色一律复用上面的 --graph-* 语义色，不另造一套。
+   ============================================================ */
+
+.code-legend,
+.code-detail {
+  border: 1px solid var(--color-inner-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-inner-bg);
+  padding: var(--space-4);
+}
+
+.code-legend h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--type-title);
+}
+
+.code-legend ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-2);
+  font-size: var(--type-meta);
+}
+
+.code-legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 节点与线型的画法与 renderer.ts 一一对应：实心圆=文件/附件/标签，虚线空心=解析不到 */
+.code-dot {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: var(--radius-pill);
+}
+
+.code-dot-note {
+  background: var(--graph-node);
+}
+
+.code-dot-attachment {
+  background: var(--graph-node-attachment);
+}
+
+.code-dot-tag {
+  background: var(--graph-node-tag);
+}
+
+.code-dot-ghost {
+  background: transparent;
+  border: 1.5px dashed var(--graph-node-unresolved);
+}
+
+.code-line {
+  width: 24px;
+  flex: none;
+  border-top: 1.5px solid var(--graph-line);
+}
+
+.code-line-embed {
+  border-top-style: dashed;
+}
+
+.code-line-attachment {
+  border-top-style: dotted;
+  border-top-color: var(--graph-node-attachment);
+}
+
+.code-detail header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.code-detail h2 {
+  margin: 0;
+  font-size: var(--type-body);
+  word-break: break-all;
+}
+
+.code-detail p {
+  margin: var(--space-2) 0 0;
+  font-size: var(--type-meta);
+  line-height: 1.7;
+  word-break: break-all;
+}
+
+.code-detail button {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--color-inner-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-parchment);
+  font: inherit;
+  font-size: var(--type-meta);
+  cursor: pointer;
+  /* 沿用站点既有按压反馈 token */
+  transition: transform var(--press-ms) ease-out;
+}
+
+.code-detail button:active {
+  transform: scale(var(--press-scale));
 }
 
 @media (max-width: 900px) {

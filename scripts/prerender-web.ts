@@ -11,10 +11,18 @@ import type {
   GeneratedContentItem,
 } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
-import { contentJsonPath, fromRoot, graphJsonPath, webDistDir } from './lib/paths';
+import {
+  codeGraphJsonPath,
+  contentJsonPath,
+  fromRoot,
+  graphJsonPath,
+  webDistDir,
+} from './lib/paths';
 import { WEB_ROUTES } from '../apps/web/src/shared/routes';
 import { buildGraphOutline } from '../apps/web/src/shared/graph-outline';
+import { buildCodeGraphOutline } from '../apps/web/src/shared/code-graph-outline';
 import type { KnowledgeGraph } from '../packages/shared/src/graph';
+import type { CodeGraph } from '../packages/shared/src/code-graph';
 import {
   absoluteUrl,
   AUTHOR,
@@ -629,6 +637,114 @@ const graphDescription =
                 position: index + 1,
                 url: absoluteUrl(postHref(entry.slug)),
                 name: entry.title,
+              })),
+            },
+          },
+        ],
+      },
+    }),
+  );
+}
+
+const architectureTitle = '代码结构 · Walker';
+const architectureDescription =
+  '这个站自己的代码结构：文件之间的真实 import 关系、被依赖最多的模块，以及指向不存在文件的引用。由编译器语法树在构建期抽出，不含人工推断。';
+{
+  // 与 /graph 同一处理：canvas 对爬虫不可见，静态正文必须是同源的语义化清单。
+  // 公开边界：只出相对路径与依赖计数，不出文件内容，也不出体检违规明细。
+  const codeGraph = JSON.parse(
+    fs.readFileSync(codeGraphJsonPath, 'utf8'),
+  ) as CodeGraph;
+  const outline = buildCodeGraphOutline(codeGraph);
+  const byPath = new Map(outline.entries.map((entry) => [entry.path, entry]));
+
+  const groupSections = outline.groups
+    .map(
+      (group) => `<h3>${escapeHtml(group.app)}（${group.paths.length} 个文件）</h3>
+    <ul>${group.paths
+      .map((path) => {
+        const entry = byPath.get(path);
+        return `<li><code>${escapeHtml(path)}</code> ${entry?.lines ?? 0} 行 · 依赖 ${entry?.imports.length ?? 0} 个 · 被 ${entry?.importedBy.length ?? 0} 个依赖</li>`;
+      })
+      .join('')}</ul>`,
+    )
+    .join('\n    ');
+
+  const hubItems = outline.hubs
+    .map(
+      (hub) =>
+        `<li><code>${escapeHtml(hub.path)}</code> 被 ${hub.inDegree} 个文件引用：${escapeHtml(
+          (byPath.get(hub.path)?.importedBy ?? []).join('、'),
+        )}</li>`,
+    )
+    .join('');
+
+  const unresolvedSection = outline.unresolved.length
+    ? `<section>
+    <h2>解析不到的引用</h2>
+    <p>这些 import 指向的文件在仓库里不存在，多半是路径写错或文件被删。</p>
+    <ul>${outline.unresolved
+      .map(
+        (item) =>
+          `<li><code>${escapeHtml(item.specifier)}</code> ← ${escapeHtml(item.importers.join('、'))}</li>`,
+      )
+      .join('')}</ul>
+  </section>`
+    : '';
+
+  const architectureBody = `<main data-pagefind-body>
+  <header>
+    <h1>代码结构</h1>
+    <p>${escapeHtml(architectureDescription)}</p>
+    <p>${outline.counts.files} 个文件 · ${outline.linkCount} 条内部引用 · ${outline.counts.attachments} 个附件 · ${outline.extensions.length} 种文件类型 · ${outline.unresolved.length} 个解析不到的引用</p>
+  </header>
+  <section>
+    <h2>按工作区单元</h2>
+    ${groupSections}
+  </section>
+  <section>
+    <h2>被依赖最多</h2>
+    <ul>${hubItems}</ul>
+  </section>
+  ${unresolvedSection}
+  <section>
+    <h2>文件类型</h2>
+    <ul>${outline.extensions
+      .map((item) => `<li><code>${escapeHtml(item.extension)}</code> ${item.count} 个</li>`)
+      .join('')}</ul>
+  </section>
+  <p><a href="/graph">看内容结构（文章互引）</a> · <a href="/posts">阅读证据</a></p>
+</main>`;
+
+  writeRoute(
+    WEB_ROUTES.architecture,
+    renderPage({
+      head: metaTags({
+        title: architectureTitle,
+        description: architectureDescription,
+        pathname: WEB_ROUTES.architecture,
+      }),
+      body: architectureBody,
+      schema: {
+        '@context': 'https://schema.org',
+        '@graph': [
+          ...commonGraph(
+            WEB_ROUTES.architecture,
+            architectureTitle,
+            architectureDescription,
+          ),
+          {
+            '@type': 'CollectionPage',
+            '@id': `${absoluteUrl(WEB_ROUTES.architecture)}#collection`,
+            url: absoluteUrl(WEB_ROUTES.architecture),
+            name: architectureTitle,
+            description: architectureDescription,
+            mainEntity: {
+              '@type': 'ItemList',
+              itemListElement: outline.entries.slice(0, 100).map((entry, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                name: entry.path,
               })),
             },
           },

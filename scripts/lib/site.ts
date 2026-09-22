@@ -14,6 +14,7 @@ export const INDEXABLE_STATIC_ROUTES = [
   '/',
   '/posts',
   '/graph',
+  '/architecture',
   '/tutorials',
   '/learn',
   '/explore',

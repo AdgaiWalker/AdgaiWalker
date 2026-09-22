@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { PostsPage } from './pages/PostsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { GraphPage } from './pages/GraphPage';
+import { ArchitecturePage } from './pages/ArchitecturePage';
 import { ToolsPage } from './pages/ToolsPage';
 import { ToolsResultPage } from './pages/ToolsResultPage';
 import { ToolsResourcesPage } from './pages/ToolsResourcesPage';
@@ -53,6 +54,10 @@ export function App() {
           <Route path={browseBase} element={<PostsPage />} />
           <Route path={`${browseBase}/:slug`} element={<PostDetailPage />} />
           <Route path={strip(WEB_ROUTES.graph)} element={<GraphPage />} />
+          <Route
+            path={strip(WEB_ROUTES.architecture)}
+            element={<ArchitecturePage />}
+          />
           <Route path={strip(WEB_ROUTES.explore)} element={<ExplorePage />} />
           <Route
             path={ideasBase}

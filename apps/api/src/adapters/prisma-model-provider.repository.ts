@@ -37,6 +37,7 @@ export class PrismaModelProviderRepository implements ModelProviderRepositoryPor
         baseUrl: r.baseUrl,
         apiFormat: r.apiFormat,
         last4: r.last4,
+        credentialRevision: r.credentialRevision,
         models,
         updatedAt: r.updatedAt,
       };
@@ -61,6 +62,7 @@ export class PrismaModelProviderRepository implements ModelProviderRepositoryPor
         iv: row.iv,
         authTag: row.authTag,
         last4: row.last4,
+        credentialRevision: row.credentialRevision,
         modelsJson: row.modelsJson,
       },
     });

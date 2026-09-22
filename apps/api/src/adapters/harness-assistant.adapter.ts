@@ -6,18 +6,12 @@
  * - 15s 超时：弃结果走兜底，并关闭僵死 runtime，下一问自动重拉
  * - 输出必须过 parseAssistantOutput（citations ⊆ citable，fail-closed）
  *
- * 启动配方（2026-08-30 实测通过，见 docs/archive/TODO-SITE-ASSISTANT.md 决策日志）：
- * clone 的 bin.ts 经 tsx 启动，cwd 必须指 clone 目录（避免宿主仓库的
- * 依赖解析污染）；DSH_HOME 独立于开发者 ~/.dsh；DSH_PERMISSION_MODE=read-only。
+ * 启动配方在 runtime/harness-launch.ts：访客会话目录、显式环境白名单、只读工具 patch。
  */
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { Injectable, type OnModuleDestroy } from '@nestjs/common';
-import { DeepSeekHarness } from '@deepseek-ai/dsh-sdk-client';
 import {
   extractStreamedAnswer,
-  parseAssistantOutput,
+  diagnoseAssistantOutput,
   type AssistantRunResult,
   type DegradeReason,
 } from '@walker/shared';
@@ -30,9 +24,18 @@ import type {
   SiteContentFullEntry,
   SiteContentIndexPort,
 } from '../ports/site-content-index.port';
+import { buildHarnessRuntimeFactory } from '../runtime/harness-launch';
 
 /** 访客同步等待预算；超时降级规则兜底（从入队起算，排队时间也计入） */
-export const ASSISTANT_ASK_TIMEOUT_MS = 15_000;
+/**
+ * 访客同步等待预算（默认 15s，保访客体验）。
+ * harness 冷启动（spawn + 初始化 + 首 token）可能超此值 —— 站主自用场景
+ * 可用 `WALKER_ASSISTANT_ASK_TIMEOUT_MS` 调大；低于 1s 的配置视为笔误，仍用默认。
+ */
+export const ASSISTANT_ASK_TIMEOUT_MS = (() => {
+  const parsed = Number(process.env.WALKER_ASSISTANT_ASK_TIMEOUT_MS?.trim());
+  return Number.isFinite(parsed) && parsed >= 1_000 ? parsed : 15_000;
+})();
 
 /** 排队容量：单飞锁下等待的后来者超过此数直接规则兜底，不让访客无限排队 */
 export const ASSISTANT_MAX_QUEUE_WAITERS = 3;
@@ -50,77 +53,6 @@ export interface HarnessRuntimeLike {
 }
 
 export type HarnessRuntimeFactory = () => HarnessRuntimeLike;
-
-/**
- * dsh 子进程环境（所有 dsh 消费方共用：助手 / 工作站 runner / 洞察周报）。
- * 会话遥测默认显式关闭（P0-1）：访客问答绝不经 OTLP 出网；探针期显式设
- * DSH_TELEMETRY_ENABLED_OVERRIDE 才重开。cwd 中立目录要求见 factory 注释。
- */
-export function dshChildEnv(dshHome: string): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined) env[key] = value;
-  }
-  env.DSH_HOME = dshHome;
-  env.DSH_PERMISSION_MODE = 'read-only';
-  if (!process.env.DSH_TELEMETRY_ENABLED_OVERRIDE) {
-    env.DSH_TELEMETRY_DISABLED = '1';
-  }
-  return env;
-}
-
-export function resolveRuntimePaths(): { bin: string; cwd: string } | null {
-  const fromEnv = process.env.DSH_RUNTIME_DIR?.trim();
-  const dir = fromEnv || path.join(os.homedir(), 'Desktop/deepseek-harness');
-  const bin = path.join(dir, 'apps/cli/src/bin.ts');
-  if (!fs.existsSync(bin)) return null;
-  return { bin, cwd: dir };
-}
-
-export function buildDefaultRuntimeFactory(
-  provider = 'deepseek-official',
-  model = 'deepseek-v4-flash',
-): HarnessRuntimeFactory | null {
-  // 助手专用环境：DSH_HOME 独立目录；子进程 cwd 必须是中立目录（dsh 启动时
-  // 会扫描 cwd 的 .env 并拒绝其中出现的 DSH_* 启动变量，见探针 2026-09-03）
-  const dshHome =
-    process.env.ASSISTANT_DSH_HOME?.trim() ||
-    path.join(os.homedir(), '.dsh-assistant');
-  const childEnv = dshChildEnv(dshHome);
-  // 优先：WALKER_DSH_RUNTIME_BIN 指向已构建的 dsh bin（生产/盒子 npm 安装形态）
-  const binOverride = process.env.WALKER_DSH_RUNTIME_BIN?.trim();
-  if (binOverride) {
-    return () =>
-      new DeepSeekHarness({
-        cwd: dshHome,
-        provider,
-        model,
-        launch: {
-          command: process.execPath,
-          args: [binOverride, '--profile', 'sdk'],
-          cwd: dshHome,
-          env: childEnv,
-          requestTimeoutMs: 60_000,
-        },
-      }) as unknown as HarnessRuntimeLike;
-  }
-  // 默认（本地开发）：clone 源码经 tsx 启动，cwd 必须指 clone 目录
-  const paths = resolveRuntimePaths();
-  if (!paths) return null;
-  return () =>
-    new DeepSeekHarness({
-      cwd: paths.cwd,
-      provider,
-      model,
-      launch: {
-        command: process.execPath,
-        args: ['--import', 'tsx/esm', paths.bin, '--profile', 'sdk'],
-        cwd: paths.cwd,
-        env: childEnv,
-        requestTimeoutMs: 60_000,
-      },
-    }) as unknown as HarnessRuntimeLike;
-}
 
 /** 会话首条消息：人设 + 整库资料 + 输出契约 */
 export function buildFirstTurnPrompt(
@@ -153,6 +85,8 @@ export class HarnessAssistantAdapter
 {
   private runtime: HarnessRuntimeLike | null = null;
   private factory: HarnessRuntimeFactory | null;
+  /** 连续 timeout 次数：≥2 才认定实例僵死并重建（第一次可能是冷启动慢） */
+  private timeoutStreak = 0;
   private lock: Promise<unknown> = Promise.resolve();
   /** 单飞锁下正在排队等待的请求数（队列容量熔断用） */
   private waiters = 0;
@@ -187,7 +121,9 @@ export class HarnessAssistantAdapter
     onText?: (delta: string) => void,
   ): Promise<AssistantRunResult> {
     if (!this.config.isAiEnabled()) return this.fallbackWith(input, 'ai-disabled');
-    if (!this.factory) this.factory = buildDefaultRuntimeFactory();
+    if (!this.factory) {
+      this.factory = buildHarnessRuntimeFactory({ audience: 'public' }) as HarnessRuntimeFactory;
+    }
     if (!this.factory) return this.fallbackWith(input, 'runtime-error');
 
     // 队列容量：单飞锁下等待者过多时不再排队，直接规则兜底
@@ -298,22 +234,33 @@ export class HarnessAssistantAdapter
         ...(abortPromise ? [abortPromise] : []),
       ]);
       if (!timed) {
-        // 超时/取消：吞掉迟到结果的拒绝，弃结果；关掉可能僵死的 runtime，下一问重拉新实例
-        const reason: DegradeReason = input.signal?.aborted
-          ? 'client-abort'
-          : 'timeout';
+        // 超时/取消：弃结果但**保留** runtime —— 冷启动可能比同步预算还贵，
+        // 一次超时就杀实例会让「每次都冷启动 → 每次都超时」成死循环（线上实测如此）。
+        // 连续两次超时才判定僵死并重建；成功即清零。abort 是用户主动行为，不计入。
+        const reason: DegradeReason = input.signal?.aborted ? 'client-abort' : 'timeout';
+        if (reason === 'timeout') this.timeoutStreak += 1;
+        const dropping = reason === 'timeout' && this.timeoutStreak >= 2;
         console.error(
-          `[assistant] 降级(${reason})：queued=${Date.now() - enqueuedAt}ms budget=${remainingMs}ms`,
+          `[assistant] 降级(${reason})：queued=${Date.now() - enqueuedAt}ms budget=${remainingMs}ms` +
+            (dropping ? '（连续超时，丢弃实例）' : '（runtime 保留供复用）'),
         );
         runPromise.catch(() => {});
-        this.dropRuntime();
+        if (dropping) {
+          this.timeoutStreak = 0;
+          this.dropRuntime();
+        }
         return this.fallbackWith(input, reason);
       }
-      const parsed = parseAssistantOutput(timed.finalResponse, citableSlugs);
-      if (!parsed) {
-        console.error('[assistant] 降级(bad-output)：终值未过 parseAssistantOutput 合同校验');
+      // 用带诊断的校验：降级时必须说清「为什么没过」，否则线上只剩一句无法行动的话
+      const diagnosis = diagnoseAssistantOutput(timed.finalResponse, citableSlugs);
+      if (diagnosis.ok) this.timeoutStreak = 0;
+      if (!diagnosis.ok) {
+        console.error(
+          `[assistant] 降级(bad-output)：${diagnosis.reason} · 原始输出前 200 字：${diagnosis.preview}`,
+        );
         return this.fallbackWith(input, 'bad-output');
       }
+      const parsed = diagnosis.value;
       return {
         answer: parsed.answer,
         citations: parsed.citations,

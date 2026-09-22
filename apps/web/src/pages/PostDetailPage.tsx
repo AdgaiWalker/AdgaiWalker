@@ -6,7 +6,7 @@
  * 触发：路由 /posts/:slug
  */
 import { useMemo } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -25,6 +25,7 @@ import {
 } from '../content';
 import { getGraphBodies, getKnowledgeGraph } from '../graph';
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
+import { createContentGraphDomain } from '../components/graph/domains';
 import { WEB_ROUTES } from '../shared/routes';
 import type { BrowseReturnState } from '../components/ItemList';
 import { ArticleToc } from '../components/ui/ArticleToc';
@@ -100,6 +101,12 @@ function PostDetailBody({
   const graphBodies = getGraphBodies();
   const graphNode = findGraphNode(graph, noteNodeId(post.slug));
   const hasBodyLinks = (graphNode?.linkDegree ?? 0) > 0;
+  // 领域接缝：与全局图共用同一个内容领域（标签、检索文档、点击跳转全一致）
+  const navigate = useNavigate();
+  const graphDomain = useMemo(
+    () => createContentGraphDomain({ browsePath: dualEntry.browse.path, bodies: graphBodies, navigate }),
+    [graphBodies, navigate],
+  );
 
   const { html, toc } = useMemo(() => {
     const markdown = expandWikiLinks(post.body, (slug) => {
@@ -283,8 +290,7 @@ function PostDetailBody({
               </p>
               <KnowledgeGraph
                 graph={graph}
-                bodies={graphBodies}
-                browsePath={dualEntry.browse.path}
+                domain={graphDomain}
                 local={{ centerId: noteNodeId(post.slug) }}
                 height={380}
                 compact

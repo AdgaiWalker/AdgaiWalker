@@ -105,3 +105,6 @@ tmp/
 var/
 var/works/
 var/uploads/
+
+# 本机 AI 助手本地记忆（每台机器各异，不进仓库）
+.workbuddy/

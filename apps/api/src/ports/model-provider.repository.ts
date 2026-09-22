@@ -18,6 +18,7 @@ export type ModelProviderRow = {
   iv: string;
   authTag: string;
   last4: string;
+  credentialRevision: number;
   modelsJson: string;
   createdAt: Date;
   updatedAt: Date;
@@ -31,6 +32,7 @@ export type ModelProviderPublicRow = {
   baseUrl: string;
   apiFormat: string;
   last4: string;
+  credentialRevision: number;
   models: ModelItem[];
   updatedAt: Date;
 };

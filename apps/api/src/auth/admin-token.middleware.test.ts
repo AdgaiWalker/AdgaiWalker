@@ -57,6 +57,14 @@ describe('AdminTokenMiddleware', () => {
     expect(state.headers['WWW-Authenticate']).toContain('Basic');
   });
 
+  it('JSON 请求保持401但不唤起浏览器 Basic 弹窗', () => {
+    process.env.WALKER_ADMIN_TOKEN = TOKEN;
+    const { res, state } = mockRes();
+    expect(run(mockReq({ accept: 'application/json' }), res)).toBe(false);
+    expect(state.status).toBe(401);
+    expect(state.headers['WWW-Authenticate']).toBeUndefined();
+  });
+
   it('正确的 x-admin-token 放行', () => {
     process.env.WALKER_ADMIN_TOKEN = TOKEN;
     const { res } = mockRes();

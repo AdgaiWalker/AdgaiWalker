@@ -9,6 +9,7 @@ import type {
   ContentFileMeta,
   ContentFileRepositoryPort,
 } from '../ports/content-file.repository';
+import { resolveContentLogDir } from './content-log-dir';
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -19,32 +20,9 @@ function fmField(raw: string, key: string): string | undefined {
   return m[1]!.trim().replace(/^["']|["']$/g, '');
 }
 
-async function pickExistingDir(): Promise<string> {
-  const fromEnv = process.env.CONTENT_LOG_DIR?.trim();
-  if (fromEnv) {
-    const p = path.resolve(fromEnv);
-    await fs.access(p);
-    return p;
-  }
-  const candidates = [
-    path.resolve(process.cwd(), 'content/log'),
-    path.resolve(process.cwd(), '../../content/log'),
-    path.resolve(process.cwd(), '../content/log'),
-  ];
-  for (const c of candidates) {
-    try {
-      await fs.access(c);
-      return c;
-    } catch {
-      /* next */
-    }
-  }
-  throw new Error('content-log-unavailable');
-}
-
 export class FsContentFileRepository implements ContentFileRepositoryPort {
   async list(): Promise<ContentFileMeta[]> {
-    const dir = await pickExistingDir();
+    const dir = await resolveContentLogDir();
     const names = await fs.readdir(dir);
     const out: ContentFileMeta[] = [];
     for (const name of names) {
@@ -66,7 +44,7 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
 
   async get(slug: string): Promise<ContentFileDetail | null> {
     if (!SLUG_RE.test(slug)) return null;
-    const dir = await pickExistingDir();
+    const dir = await resolveContentLogDir();
     for (const ext of ['.md', '.mdx'] as const) {
       const full = path.join(dir, `${slug}${ext}`);
       try {
@@ -90,7 +68,7 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
   async save(slug: string, raw: string): Promise<ContentFileDetail> {
     if (!SLUG_RE.test(slug)) throw new Error('invalid-slug');
     if (!raw.trimStart().startsWith('---')) throw new Error('invalid-frontmatter');
-    const dir = await pickExistingDir();
+    const dir = await resolveContentLogDir();
     let ext: '.md' | '.mdx' = '.md';
     let full = path.join(dir, `${slug}.md`);
     try {

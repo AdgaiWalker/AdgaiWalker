@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickNextActions } from './next-actions.js';
+import { decorateNextActionSummaries, pickNextActions } from './next-actions.js';
 
 describe('下一动作 pickNextActions', () => {
   it('有候选线索时优先给出入池动作', () => {
@@ -171,3 +171,20 @@ describe('下一动作 pickNextActions', () => {
     ]);
   });
 });
+
+describe('decorateNextActionSummaries', () => {
+  it('主选摘要用关联线索正文，不用记录 id', () => {
+    const actions = pickNextActions({
+      clues: [{ id: 'c-in', body: '想学 AI 入门从哪开始比较好', poolStatus: 'in-pool' }],
+      seeds: [{ id: 's1', title: 't-mtob3n', primaryClueId: null }],
+      executions: [],
+    });
+    const decorated = decorateNextActionSummaries(actions, {
+      clues: [{ id: 'c-in', body: '想学 AI 入门从哪开始比较好' }],
+      seeds: [{ id: 's1', title: 't-mtob3n', links: [{ clueId: 'c-in' }] }],
+      executions: [],
+    });
+    expect(decorated[0]?.summary).toBe('想学 AI 入门从哪开始比较好');
+  });
+});
+

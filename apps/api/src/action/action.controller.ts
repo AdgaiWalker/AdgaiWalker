@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
 import { ActionService } from './action.service';
 
 @Controller('actions')
@@ -11,12 +11,25 @@ export class ActionController {
   }
 
   @Post()
-  create(@Body() body: { title?: string; note?: string; kind?: string; plannedDate?: string | null }) {
+  create(@Body() body: {
+    title?: string;
+    note?: string;
+    kind?: string;
+    plannedDate?: string | null;
+    entityType?: string;
+    entityId?: string;
+  }) {
     return this.actions.create(body);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: { title?: string; note?: string | null; plannedDate?: string | null }) {
+  update(@Param('id') id: string, @Body() body: {
+    title?: string;
+    note?: string | null;
+    plannedDate?: string | null;
+    entityType?: string;
+    entityId?: string;
+  }) {
     return this.actions.update(id, body);
   }
 
@@ -25,4 +38,7 @@ export class ActionController {
 
   @Post(':id/reopen')
   reopen(@Param('id') id: string) { return this.actions.reopen(id); }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) { return this.actions.remove(id); }
 }

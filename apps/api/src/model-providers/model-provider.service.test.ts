@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CredentialCipher } from '../auth/credential-cipher';
 import { ModelProviderService } from './model-provider.service';
 import type {
   ModelProviderPublicRow,
@@ -27,6 +28,7 @@ class FakeModelRepo implements ModelProviderRepositoryPort {
         baseUrl: r.baseUrl,
         apiFormat: r.apiFormat,
         last4: r.last4,
+        credentialRevision: r.credentialRevision,
         models,
         updatedAt: r.updatedAt,
       };
@@ -86,6 +88,23 @@ describe('ModelProviderService', () => {
 
     const decrypted = await service.getDecryptedApiKey('custom-stepfun');
     expect(decrypted).toBe('sk-stepfun-secret-1234');
+    expect(JSON.stringify(custom)).not.toContain('sk-stepfun-secret-1234');
+  });
+
+  it('轮换成功后旧修订不能取凭据，加密失败不改已保存凭据', async () => {
+    await service.upsert({ id: 'rotate-me', name: '轮换', baseUrl: 'https://api.example.com/v1', apiKey: 'sk-first-key-1111' });
+    const first = await service.credentialForRevision('rotate-me', 1);
+    expect(first).toBe('sk-first-key-1111');
+    const rotated = await service.upsert({ id: 'rotate-me', name: '轮换', baseUrl: 'https://api.example.com/v1', apiKey: 'sk-second-key-2222' });
+    expect(rotated.credentialRevision).toBe(2);
+    expect(JSON.stringify(rotated)).not.toContain('sk-second-key-2222');
+    await expect(service.credentialForRevision('rotate-me', 1)).rejects.toThrow('凭据已轮换');
+    expect(await service.credentialForRevision('rotate-me', 2)).toBe('sk-second-key-2222');
+    const original = CredentialCipher.fromEnv()!;
+    vi.spyOn(CredentialCipher, 'fromEnv').mockReturnValue({ encrypt: () => { throw new Error('加密失败'); }, decrypt: (box: { ciphertext: string; iv: string; authTag: string }) => original.decrypt(box) } as never);
+    await expect(service.upsert({ id: 'rotate-me', name: '轮换', baseUrl: 'https://api.example.com/v1', apiKey: 'sk-bad-key-3333' })).rejects.toThrow('加密失败');
+    expect(await service.getDecryptedApiKey('rotate-me')).toBe('sk-second-key-2222');
+    vi.restoreAllMocks();
   });
 
   it('禁止删除官方预置供应商', async () => {

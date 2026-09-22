@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-14T20:20:59.420Z",
+  "sourceCommit": "6bd9ef2e181e868741be3f67883007d99f0cadbb",
+  "accepted": {
+    "cycles": [
+      [
+        "packages/shared/src/code-artifact.ts",
+        "packages/shared/src/code-debt.ts",
+        "packages/shared/src/code-graph.ts"
+      ]
+    ],
+    "unresolved": [
+      "../packages/shared/dist/mvp-acceptance.js"
+    ],
+    "unreachable": [
+      "scripts/accept-real-works.ts",
+      "scripts/probe-production.ts"
+    ],
+    "reverseDependencies": []
+  }
+}

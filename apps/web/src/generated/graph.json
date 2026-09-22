@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T17:38:13.406Z",
+  "generatedAt": "2026-09-14T13:41:14.631Z",
   "seed": 20260914,
   "nodes": [
     {
@@ -8,7 +8,7 @@
       "slug": "dorazoom",
       "title": "DoraZoom — macOS 屏幕讲解与标注工具",
       "date": "2026-08-20T00:00:00.000Z",
-      "updated": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-09-14T00:00:00.000Z",
       "created": "2026-09-03T01:09:15+08:00",
       "hall": "showcase",
       "type": "project",

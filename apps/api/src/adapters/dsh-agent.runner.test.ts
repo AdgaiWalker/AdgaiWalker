@@ -68,21 +68,24 @@ describe('DshAgentRunner', () => {
     await expect(boom.run({ prompt: 'p', cwd: '/tmp' })).rejects.toThrow('TransportClosedError');
   });
 
-  it('短调用超时：弃结果抛 runner-timeout，但常驻实例保留（不付冷启动税）', async () => {
+  it('短调用超时：关闭当前实例，下一次不能复用这次调用', async () => {
     const rt = runtime({ finalResponse: '{}', delayMs: 80 });
-    const r = new DshAgentRunner(config(true), rt.factory);
+    let calls = 0;
+    const r = new DshAgentRunner(config(true), () => { calls += 1; return rt.factory(); });
     await expect(r.run({ prompt: 'p', cwd: '/tmp', timeoutMs: 20 })).rejects.toThrow('runner-timeout');
-    expect(rt.closed).not.toHaveBeenCalled();
+    expect(rt.closed).toHaveBeenCalledTimes(1);
+    await r.run({ prompt: 'p', cwd: '/tmp', timeoutMs: 15_000 });
+    expect(calls).toBe(2);
   });
 
-  it('取消：abort 抛 runner-aborted，短调用常驻实例保留', async () => {
+  it('取消：abort 抛 runner-aborted，并关闭当前实例', async () => {
     const rt = runtime({ finalResponse: '{}', delayMs: 5000 });
     const r = new DshAgentRunner(config(true), rt.factory);
     const ac = new AbortController();
     const pending = r.run({ prompt: 'p', cwd: '/tmp', timeoutMs: 10_000, signal: ac.signal });
     setTimeout(() => ac.abort(), 10);
     await expect(pending).rejects.toThrow('runner-aborted');
-    expect(rt.closed).not.toHaveBeenCalled();
+    expect(rt.closed).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -147,8 +150,8 @@ describe('输出合同按调用形态区分（双合同超时修复）', () => {
   });
 });
 
-describe('超时不丢常驻实例（15s 预算贴边修复）', () => {
-  it('首次超时后实例保留：第二次调用复用同一 runtime，工厂只建一次', async () => {
+describe('超时后不能复用仍在活动的 SDK 调用', () => {
+  it('首次超时后关闭实例，下一次重新建立', async () => {
     let factoryCalls = 0;
     let runCalls = 0;
     const mk = () => ({
@@ -166,7 +169,7 @@ describe('超时不丢常驻实例（15s 预算贴边修复）', () => {
     await expect(r.run({ prompt: 'p', cwd: '/t', timeoutMs: 30 })).rejects.toThrow('runner-timeout');
     const ok = await r.run({ prompt: 'p', cwd: '/t', timeoutMs: 2_000 });
     expect(ok.output).toEqual({ ok: 1 });
-    expect(factoryCalls).toBe(1); // 超时未重建
+    expect(factoryCalls).toBe(2);
   });
 
   it('传输类故障仍重建实例', async () => {

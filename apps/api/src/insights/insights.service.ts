@@ -17,7 +17,7 @@ import { newId } from '../common/ids';
 import { validationError } from '../common/http-error';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { SITE_CONTENT_INDEX, type SiteContentIndexPort } from '../ports/site-content-index.port';
-import { buildDefaultRuntimeFactory } from '../adapters/harness-assistant.adapter';
+import { buildHarnessRuntimeFactory } from '../runtime/harness-launch';
 
 const MAX_SIGNALS = 500;
 
@@ -53,7 +53,7 @@ export class InsightsService {
         where: { createdAt: { gte: since } },
         orderBy: { createdAt: 'desc' },
         take: MAX_SIGNALS,
-        select: { id: true, body: true, createdAt: true },
+        select: { id: true, body: true, poolStatus: true, createdAt: true },
       }),
       client.searchMiss.findMany({
         where: { createdAt: { gte: since } },
@@ -80,6 +80,7 @@ export class InsightsService {
         id: c.id,
         source: 'intake' as const,
         text: c.body,
+        poolStatus: c.poolStatus,
         createdAt: c.createdAt.toISOString(),
       })),
       ...misses.map((m) => ({
@@ -129,10 +130,9 @@ export class InsightsService {
     report: InsightReportData;
   }> {
     const view = await this.signalsView(7);
-    const factory = buildDefaultRuntimeFactory();
+    const factory = buildHarnessRuntimeFactory({ audience: 'admin' });
     const client = this.prisma.getClient();
     if (!client) throw new Error('storage-unavailable');
-    if (!factory) throw new Error('insight-runtime-unavailable');
 
     const uncovered = view.gaps.filter((g) => !g.covered).map((g) => g.query);
     const prompt = [

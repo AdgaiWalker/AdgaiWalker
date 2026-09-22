@@ -8,7 +8,7 @@
 ```text
 apps/web      # 公开站 React+Vite
 apps/admin    # 管理端 React+Vite
-apps/api      # Nest + Prisma（本地默认 SQLite；未来生产 PG）
+apps/api      # Nest + Prisma（各环境独立 SQLite 文件）
 packages/shared
 content/log   # Markdown 真相源（进 Git → Vercel）
 ```
@@ -19,7 +19,7 @@ content/log   # Markdown 真相源（进 Git → Vercel）
 | 管线 | 真相源 | 上线 |
 |------|--------|------|
 | 文章/配置 | `content/log`、`support-config.json` | `pnpm content:publish --push` 或 git push |
-| 过程（线索等） | 本地 SQLite / 未来 PG | **不进** Vercel；需公网 Nest |
+| 过程（线索等） | SQLite 独立文件 | **不进** Vercel；需公网 Nest |
 
 内容：`content/log` → `pnpm content:gen` → `apps/web/src/generated/content.json`。
 
@@ -27,8 +27,8 @@ content/log   # Markdown 真相源（进 Git → Vercel）
 
 ```bash
 pnpm install
-cp apps/api/.env.example apps/api/.env   # 默认 file:./data/walker.db
-pnpm db:generate && pnpm db:push         # 本地 SQLite
+cp apps/api/.env.example apps/api/.env   # 将 DATABASE_URL 改为绝对 file: 路径
+pnpm db:generate && pnpm db:migrate      # 已有库先备份，再用 db:baseline
 pnpm content:gen
 pnpm dev:api    # :8788
 pnpm dev:web    # :5173
@@ -44,14 +44,9 @@ pnpm accept
 pnpm exec tsx scripts/probe-production.ts
 ```
 
-### 数据库切换
+### 数据库迁移
 
-| 环境 | 配置 |
-|------|------|
-| 本地 / 2GB 单机首期 | `WALKER_DB_PROVIDER=sqlite` · `DATABASE_URL=file:…` · `schema.prisma` · `db:push` |
-| 多进程或高可用阶段 | `WALKER_DB_PROVIDER=postgresql` · 托管 PG URL · `schema.postgresql.prisma` · `db:migrate` |
-
-选择逻辑：`scripts/prisma-env.ts`（依赖 URL / WALKER_DB_PROVIDER）。
+`scripts/prisma-env.ts` 只接受绝对 SQLite `file:` 路径。新空库用 `pnpm db:migrate`；已有库先备份，再用 `pnpm db:baseline` 校验并标记；后续升级用 `pnpm db:migrate`。`dev:api` 不执行隐式 schema 更新。旧 PostgreSQL 物料位于 `apps/api/prisma/legacy-postgresql/`，仅作历史查阅。
 
 ## 3. 前端分层
 

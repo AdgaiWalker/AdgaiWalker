@@ -1,5 +1,4 @@
-// 默认：本地开发 SQLite（file: URL）
-// 未来生产 PG：用 schema.postgresql.prisma + WALKER_DB_PROVIDER=postgresql
+// 唯一现行 schema：SQLite。既有 PostgreSQL 文件仅存于 legacy-postgresql 供历史查阅。
 generator client {
   provider = "prisma-client-js"
 }
@@ -268,6 +267,7 @@ model ModelProvider {
   iv          String      // AES-256-GCM IV
   authTag     String      // AES-256-GCM AuthTag
   last4       String      // API Key 脱敏后4位 (显示 sk-****abcd)
+  credentialRevision Int    @default(0) // 不含密钥的凭据修订。轮换成功才加一
   modelsJson  String      @default("[]") // 4. 模型池列表与标签 (JSON 数组)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -284,14 +284,212 @@ model AgentUnit {
   providerId  String?        // 挂载的供应商 ID
   modelId     String         @default("deepseek-chat") // 挂载的具体模型标识
   prompt      String         // 系统提示词定义 (System Prompt)
+  archivedAt  DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   provider    ModelProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
   runs        AgentRun[]
+  revisions   AgentRevision[]
+}
+
+/// 配置快照不可变；具体修订行为由 R06 接入。
+model AgentRevision {
+  id            String   @id
+  agentId       String
+  version       Int
+  prompt        String
+  providerId    String?
+  modelId       String
+  toolProfile   Json
+  schemaVersion Int
+  configHash    String
+  createdAt     DateTime @default(now())
+
+  agent AgentUnit @relation(fields: [agentId], references: [id], onDelete: Restrict)
+  runs  ExecutionRun[]
+
+  @@unique([agentId, version])
+  @@index([createdAt])
+}
+
+/// 新执行生命周期权威；历史 AgentRun/SkillRun 仍单独保留。
+model ExecutionRun {
+  id                   String    @id
+  kind                 String
+  origin               String
+  actor                String
+  actorScope           String
+  agentRevisionId      String?
+  deploymentGeneration Int?
+  contentSnapshotId    String?
+  grantId              String?
+  requestKey           String
+  inputHash            String
+  input                String?
+  resourceScope        Json?
+  parentRunId          String?
+  state                String    @default("QUEUED")
+  attempt              Int       @default(0)
+  leaseOwner           String?
+  leaseEpoch           Int       @default(0)
+  leaseUntil           DateTime?
+  deadline             DateTime?
+  stopReason           String?
+  tokensIn             Int?
+  tokensOut            Int?
+  elapsedMs            Int?
+  testCaseId           String?
+  suiteVersion         Int?
+  configHash           String?
+  assertion            Json?
+  retainUntil          DateTime?
+  diagnosticName       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  process ProcessRecord?
+  events  ExecutionEvent[]
+
+  agentRevision AgentRevision? @relation(fields: [agentRevisionId], references: [id], onDelete: Restrict)
+  parent        ExecutionRun?  @relation("RunChildren", fields: [parentRunId], references: [id], onDelete: Restrict)
+  children      ExecutionRun[] @relation("RunChildren")
+
+  @@unique([actorScope, requestKey])
+  @@index([state, createdAt])
+  @@index([agentRevisionId])
+  @@index([parentRunId])
+}
+
+/// runner 私有进程记录。PID 可被系统复用，必须连同启动时间核对。
+model ProcessRecord {
+  runId     String   @id
+  bootId    String
+  pid       Int?
+  startedAt String?
+  createdAt DateTime @default(now())
+
+  run ExecutionRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  @@index([bootId])
+}
+
+/// 一次运行的实际观察。只记录 runtime 发出的文本和用量。
+model ExecutionEvent {
+  id        String   @id
+  runId     String
+  seq       Int
+  kind      String
+  text      String?
+  tokensIn  Int?
+  tokensOut Int?
+  createdAt DateTime @default(now())
+
+  run ExecutionRun @relation(fields: [runId], references: [id], onDelete: Restrict)
+
+  @@unique([runId, seq])
+  @@index([runId, seq])
+}
+
+/// 事项授权按动作、对象和期限收窄；R08 再开放创建/撤销入口。
+model AuthorizationGrant {
+  id            String    @id
+  principalType String
+  principalId   String
+  agentId       String?
+  origin        String
+  actions       Json
+  resourceScope Json
+  expiresAt     DateTime?
+  runLimit      Int?
+  usageLimit    Int?
+  runsReserved  Int       @default(0)
+  runsCharged   Int       @default(0)
+  usageReserved Int       @default(0)
+  usageCharged  Int       @default(0)
+  revision      Int       @default(1)
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([principalType, principalId])
+  @@index([agentId])
+  @@index([expiresAt])
+}
+
+/// 一次运行最多一条额度占用。reserved 还没扣费，charged 才是已结算。
+model ExecutionQuotaHold {
+  runId     String   @id
+  grantId   String
+  state     String
+  usage     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([grantId])
+}
+
+/// 全局单槽的公平计数。只有这一行。
+model ExecutionSchedule {
+  id                      String @id
+  consecutivePublicClaims Int    @default(0)
+}
+
+model AuditRecord {
+  id         String   @id
+  actor      String
+  action     String
+  targetType String
+  targetId   String
+  beforeHash String?
+  afterHash  String?
+  outcome    String
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([createdAt])
+}
+
+model Outbox {
+  id            String    @id
+  eventKey      String    @unique
+  topic         String
+  aggregateId   String
+  payloadRef    String?
+  attempt       Int       @default(0)
+  nextAt        DateTime  @default(now())
+  deliveredAt   DateTime?
+  deadAt        DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([deliveredAt, deadAt, nextAt])
+  @@index([aggregateId])
 }
 
 /// 智能体运行履历索引 (B-trace 轨迹轻量索引)
+/// 技能运行记录 —— 「堆起来的数据」。
+/// skillId 不设外键：技能真身在 `skills/<id>/`（文件），删了文件历史数据仍应保留。
+model SkillRun {
+  id               String   @id @default(cuid())
+  skillId          String
+  skillVersion     String   @default("")
+  providerId       String?  // 归因：本次实际使用的供应商
+  temperature      Float?
+  input            String   @default("") // 输入（过长时截断，避免把整篇文件塞进库）
+  output           String   @default("") // 成功即输出；失败为错误信息
+  model            String   @default("")
+  status           String   @default("SUCCESS") // SUCCESS | FAILED
+  errorCode        String? // 失败分类码（model-credential-missing 等），便于按原因统计
+  tokensPrompt     Int      @default(0)
+  tokensCompletion Int      @default(0)
+  elapsedMs        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@index([skillId])
+  @@index([createdAt])
+}
+
 model AgentRun {
   id               String      @id @default(cuid())
   agentId          String
@@ -299,6 +497,9 @@ model AgentRun {
   instruction      String      // 站主指令
   output           String      // 最终产物文本
   model            String      // 调用时的模型标识
+  providerId       String?     // 归因：本次实际使用的供应商（解析后的）
+  promptSnapshot   String?     // 归因：当次系统提示词全文（调试的锚点）
+  temperature      Float?      // 归因：当次采样参数
   tokensPrompt     Int         @default(0)
   tokensCompletion Int         @default(0)
   tokensCacheHit   Int         @default(0) // 缓存命中 tokens
@@ -308,7 +509,7 @@ model AgentRun {
   status           String      @default("SUCCESS") // 'SUCCESS' | 'FAILED'
   createdAt        DateTime    @default(now())
 
-  agent            AgentUnit   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent            AgentUnit   @relation(fields: [agentId], references: [id], onDelete: Restrict)
   @@index([agentId])
   @@index([createdAt])
 }

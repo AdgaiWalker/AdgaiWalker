@@ -67,6 +67,12 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
       'Walker 公开内容的互引结构：谁引用了谁、哪些文章还没有互相引用。只由正文内链构成，不含模型推断。',
     canonicalPath: WEB_ROUTES.graph,
   },
+  [WEB_ROUTES.architecture]: {
+    title: '代码结构 · Walker',
+    description:
+      '这个站自己的代码结构：文件之间的真实 import 关系、被依赖最多的模块，以及指向不存在文件的引用。由编译器语法树在构建期抽出，不含人工推断。',
+    canonicalPath: WEB_ROUTES.architecture,
+  },
   [WEB_ROUTES.about]: {
     title: '关于本站 · Walker',
     description:

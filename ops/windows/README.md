@@ -61,7 +61,8 @@ Set-Location C:\Walker\app
 pnpm install --frozen-lockfile
 pnpm build:shared
 pnpm db:generate
-pnpm db:push
+# 已有库先备份 C:\Walker\data\walker.db，再执行一次 pnpm db:baseline；后续升级用 db:migrate
+pnpm db:migrate
 pnpm build:api
 pnpm build:admin
 ```

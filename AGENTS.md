@@ -1,6 +1,15 @@
 # AGENTS.md
 
+> **2026-09-22 框架优先与数据库决定**：新后台先执行根 `to-do.md` 的 F01–F18，再按依赖细化能力；该文件是此次重构唯一原子进度源，旧 EXEC-PLAN/TODO 不继承完成状态。本地开发、测试与现有生产统一 SQLite 独立文件，不使用 PostgreSQL、不维护双库；下文旧 PG 测试选项不适用于新开发。F01–F18 与 R01–R20、R22、R23 已本地验收，下一项仍是 R21；详见 `docs/ADMIN-FRAMEWORK-ACCEPTANCE.md` 与 `to-do.md`，未部署。
+
+> **2026-09-22 新后台设计入口**：此次重构以 `docs/PRD-AGENT-OPERATIONS.md`、`docs/RESEARCH-AGENT-OPS-OPEN-SOURCE.md`、`docs/TECH-DESIGN-AGENT-OPERATIONS.md` 为配套设计，顺序见根 PLAN 新后台章节，拓扑见 ARCHITECTURE 新目标图。其中 F 框架已落地，其余业务设计仍待实施；下文旧后台路径和旧技术方案不得当作新重构需求。新增 Agent 写能力开放前必须封闭既有写入旁路。
+
+> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](docs/ADMIN-REBUILD-INVENTORY.md)。
+
+
 本文件是本仓库内 Agent 的项目级常驻指令。开始工作前，先阅读本文件，并同时遵守根目录 `CLAUDE.md` 中的工程约定。
+
+> **2026-09-22 框架实现状态**：新 admin 默认 `/overview`，四面 `/overview`、`/content`、`/agents`、`/records`，低频 `/settings`；路径唯一来源 `apps/admin/src/shared/routes.ts`。下文旧 `/plan` 页面图仅为历史。框架仅读取内容、角色和历史 AgentRun；新执行/部署/编辑/发布均未接入。测试库仅接受绝对 SQLite `.test.db` 文件并重建，不再支持下文旧 PG 选项。
 
 ## 文档阅读顺序
 
@@ -9,13 +18,17 @@
 
 ## 仓库结构与验证门禁
 
-- monorepo：`apps/web`（访客静态站）/ `apps/admin`（站主工作台，默认首页=流水线）/ `apps/api`（Nest）/ `apps/agent`（判断代理 · Cordis 组合 + MCP stdio，读 content.json，aiUsePolicy fail-closed）/ `packages/shared`（纯函数与契约，多端共用）/ `scripts/`（构建与预渲染）/ `content/log`（内容唯一真相源）/ `ops/windows`（盒子部署物料）。
+- monorepo：`apps/web`（访客静态站）/ `apps/admin`（站主工作台，**默认首页=计划 `/plan`**；工作面：计划 / 内容 / 复盘；底部设置：Agent / 观测 / 结构）/ `apps/api`（Nest）/ `apps/agent`（判断代理 · Cordis 组合 + MCP stdio，读 content.json，aiUsePolicy fail-closed）/ `packages/shared`（纯函数与契约，多端共用）/ `scripts/`（构建与预渲染）/ `content/log`（内容唯一真相源）/ `ops/windows`（盒子部署物料）。
+- **管理端页面地图**：计划 `/plan`（含下一动作）；内容面分栏 `/content/ledger` 与 `/content/detail/:slug`；复盘 `/review`；底部设置 `/settings`（三组：Agent / 观测 / 结构）。题苗 `/seeds`、执行 `/executions` 仅深链，不进侧栏。旧 `/` `/today` `/pipeline` `/workstation`→计划；`/content`→台账；`/insights` `/clues` `/assistant` `/metrics`→复盘；`/agents` `/data` `/ai-gateway` `/graph` `/architecture`→设置对应项。走 `LEGACY_REDIRECTS`（`apps/admin/src/shared/routes.ts`）。跳转禁止硬编码路径。
+- 改内容运营后台先读根 `PRD.md` / `TECH-DESIGN.md` / `EXEC-PLAN.md`。
+- **构建产物双份**：`apps/web/src/generated/` 下有 `content.json`（内容投影）与 `graph.json`（知识图谱：节点 + 边 + 度数）。图谱由 `content:gen` 与 content.json 一并产出，web 打包它、API 用同一个 shared 纯函数从 content.json 现算、agent 复用同一函数——**建图规则只有一份**（`packages/shared/src/graph.ts`），禁止各处自己写抽边逻辑。
 - 主计划与图面：`PLAN.md`（排期/冻结条款/宪法）与 `docs/ARCHITECTURE.md`（当前态/最终架构/飞轮）是拓扑与排期权威，改动须回写。
 - `apps/api` 是六边形分层：`ports/`（Symbol 接口）→ `adapters/`（实现）→ 用例 service → `kernel.module.ts` 统一接线。新增能力先定 port 再写 adapter。
 - `apps/web` 运行时只读 `apps/web/src/generated/content.json`，禁止在 web 里做 fs / 直连内容目录。
 - 改动后验证链：`pnpm typecheck` → `pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent` → 改了 web 再 `pnpm build:web && pnpm verify:geo`（GEO 是构建门禁）→ 改了内容先 `pnpm check:content-fields`。
 - 测试库隔离：`apps/api` 的 vitest 把 `DATABASE_URL` 强制改写到独立 `walker.test.db`（globalSetup 每次删库重建 schema；显式设 `API_TEST_DB_URL` 可指定 PG），测试绝不写开发库。真实 kernel 接线的集成测用 `Test.createTestingModule` + `KernelModule`（假 runner/临时目录用 `overrideProvider`/env 覆盖，见 `promote.kernel.integration.test.ts`、`workstation.chain.integration.test.ts`）。
 - 改生产拓扑 / 部署流程 / 产品行为后，**必须回写文档**（AGENTS.md / PRD / TODO / STATUS / api/README 对应处），保持文档与生产一致。
+- SQLite 迁移只走绝对 `file:` 路径。新库 `pnpm db:migrate`，已有库先备份、再 `pnpm db:baseline`；`dev:api` 不再隐式改 schema。旧 PG schema/迁移仅在 `apps/api/prisma/legacy-postgresql/` 供历史查阅。
 
 ## 生产拓扑（2026-09-03 切流后）
 
@@ -51,6 +64,10 @@
 - **公开输入永不进命令行**：子进程一律经 node + args 直启（无 shell），调用方数据（访客 prompt、配方 prompt）只走数据通道（dsh 为 JSON-RPC stdin），永不成为命令行参数（见 `ops/windows/README.md`）。
 - **流式只出裁剪文本**：text-delta 经 shared `extractStreamedAnswer` 裁剪后才出网关，原始模型 JSON（含 citations）不外发；终值校验后由 `done` 事件整体覆盖；助手会话归属 fail-closed（未知/他人/规则会话一律开新会话）。
 - **工作站诚实语义**：网站发布保存 = `PREPARED` ≠ 已发布（上线走 `pnpm content:publish --push`，`verifyWebsite` 过线上校验才 `PUBLISHED`）；取消 CANCELLED 是稳定终态，迟到结果不得覆盖（`setStatusUnless`）；同 work 运行互斥；审批绑定服务端审阅包 candidate.hash；发布 frontmatter 与构建门禁共用 shared `PUBLISHED_POST_REQUIRED_FIELDS`，缺字段写盘前即拒，不放宽门禁迁就生成物。
+- **图谱只画正文内链**：知识图谱的边 = 正文 `[[wikilink]]` / 库内 markdown 链接，零模型推断（`related` / `series` 刻意不画——那是策展层，不是链接结构）。
+- **图谱引擎按 Obsidian 应用源码重写，禁止凭手感改**：规格与证据链在 `apps/web/src/components/graph/obsidian/constants.ts` 顶部（含已核出的二手资料错误），面板文案的唯一来源是 `obsidian/labels.ts`（逐字取自应用 `i18n/zh.txt`，带行号，**不自译**）。真值层级：**应用 `obsidian.asar` > 原始 worker `sim-original.js` > 帮助文档**。已核对的事项：力参数引擎值 `0.1/1000/1/250`（面板斥力是 UI 10，写入时**立方**）、节点半径 `clamp(3√(无向度数+1), 8, 30)`、`vx *= 0.6`、`textAlpha = clamp(log2(scale)+1-阈值,0,1)`、缩放夹取 `[1/128, 8]`、`showTags` 默认**关**、配色是**按类型语义化**（11 个 CSS 变量，不是单一色）、小节名是**筛选/颜色组/外观/力度**。**帮助文档与实现冲突时以实现为准；CSS 只能证明「有这些类」，不能证明「UI 长这样」——别据样式表推断交互（v1.2 就这么错过一次）**。
+- **代码结构图谱（PRD-CODE-GRAPH）的四条硬约束**：① 抽取实现只有一份 `scripts/lib/code-extract.ts`（`code:gen` 与 `verify:architecture` 共用），**不要在别处另写一遍解析**；② 产物分两份 —— `codegraph.json` 是公开面（只有节点与边），`codegraph-health.json` 是内部面（体检明细），**任何体检字段都不许写进公开产物**（那份会被 web 静态引入）；③ 门禁**只报机器自证的四条硬伤**（环 / 坏引用 / 从入口不可达 / packages 反向依赖 apps），**禁止新增人工规则文件**（那会重述 `docs/ARCHITECTURE.md`，成为第二个真相源）；④ 生长动画**总时长优先**（427 节点曾按 30ms 错峰拖到 13 秒，现按总预算反推，见 `obsidian/renderer.ts` 的 `revealStaggerFor`）。新增 MCP 工具须同时登记 `TelemetryTool` 联合类型，否则 typecheck 不过。
+- **图谱 fail-closed**：MCP `neighbors` 对 `citable=false` 的邻居只回「存在性与位置」，**不回摘要**；`readable=false` 的文章连索引都不进，其被链接目标表现为幽灵节点。访客面图只含公开条目。
 - **禁止 AI 自动主选**：问题池转题苗、线索 promote 永远人工点击；主选必带完整 brief（选题五问）。
 - Nest DI：接口 token 注入必须显式 `@Inject(TOKEN)`，构造函数裸接口参数在 provider 化后会炸（已踩过）。
 - 诚实原则：失败如实报错，不假装成功（全站产品气质，见 `docs/PRODUCT.md`）。
