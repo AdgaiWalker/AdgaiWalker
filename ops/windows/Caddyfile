@@ -20,9 +20,33 @@
       reverse_proxy 127.0.0.1:8788
     }
 
+    @assistantPlacement {
+      method GET
+      path /assistant/placements/*/*
+    }
+    handle @assistantPlacement {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @assistantHistory {
+      method GET
+      path /assistant/conversations/*/*
+    }
+    handle @assistantHistory {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    @assistantStop {
+      method POST
+      path /assistant/conversations/*/*/stop
+    }
+    handle @assistantStop {
+      reverse_proxy 127.0.0.1:8788
+    }
+
     @assistant {
       method POST
-      path /assistant /assistant/stream
+      path /assistant /assistant/stream /assistant/events /assistant/messages/*/ack
     }
     handle @assistant {
       reverse_proxy 127.0.0.1:8788
@@ -52,18 +76,47 @@
       reverse_proxy 127.0.0.1:8788
     }
 
-    @support {
-      method GET
-      path /support
+    respond "Not Found" 404
+  }
+}
+
+
+# Token surface: the wb2api gateway that mints/uses the tokens this site calls.
+# Two prefixes leave the box, nothing else:
+#   /v1/*     OpenAI-compatible API (Bearer api_key)
+#   /connect* the self-service page that hands a token to an invited user
+# The panel, /status and /healthz stay 404 here — they must never reach the
+# Internet, and the laptop keeps listening on loopback only.
+#
+# Upstream is the laptop over Tailscale (it runs `tailscale serve`), so the
+# gateway keeps working while the laptop moves between networks, and the box
+# never needs the laptop's LAN address.
+#
+# NOTE: this host is intentionally OUTSIDE the Nest public-route parity contract
+# (compareCaddyPublicRoutes — its upstream is not Nest), which is why it uses
+# inline matchers instead of @named blocks. Keep it that way, or extend the
+# contract before adding named matchers.
+{$WALKER_TOKEN_HOST} {
+  encode zstd gzip
+
+  route {
+    handle /v1/* {
+      reverse_proxy {$WALKER_TOKEN_UPSTREAM} {
+        # tailscale serve matches on Host: rewrite it to the upstream's own name,
+        # otherwise serve answers 404 (it only knows its own ts.net hostname).
+        header_up Host {upstream_hostport}
+      }
     }
-    handle @support {
-      reverse_proxy 127.0.0.1:8788
+
+    handle /connect* {
+      reverse_proxy {$WALKER_TOKEN_UPSTREAM} {
+        header_up Host {upstream_hostport}
+      }
     }
 
     respond "Not Found" 404
   }
 }
-
 # Private owner surface: reachable only through an SSH tunnel.
 # Second defense layer: basic auth. WALKER_ADMIN_USER / WALKER_ADMIN_HASH (bcrypt)
 # are derived from C:\Walker\data\admin-basic-auth.txt by run-caddy.ps1.
