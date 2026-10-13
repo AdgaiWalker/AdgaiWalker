@@ -108,8 +108,11 @@ describe('Agent 执行仓储 CAS', () => {
     };
     await repository.submitIfAbsent(draft);
     try {
-      // 并发写 6 条（模拟实时写 + 批量补写竞争同一 seq 窗口）
-      const writes = await Promise.all([
+      // 并发写 6 条（模拟实时写 + 批量补写竞争同一 seq 窗口）。
+      // 用 allSettled 而非 all：CI 首跑实测——写入抛错时 all 提前 reject，
+      // finally 会与仍在途的兄弟事务抢跑（事件在清理之后才提交 → 删 run 撞外键），
+      // 把真正的失败原因盖掉。先全部落地，再断言、再清理。
+      const writes = await Promise.allSettled([
         repository.appendEvent({ runId, kind: 'text', text: 'a' }),
         repository.appendEvent({ runId, kind: 'text', text: 'b' }),
         repository.appendEvent({ runId, kind: 'usage', tokensIn: 1, tokensOut: 1 }),
@@ -117,8 +120,9 @@ describe('Agent 执行仓储 CAS', () => {
         repository.appendEvent({ runId, kind: 'text', text: 'd' }),
         repository.appendEvent({ runId, kind: 'usage', tokensIn: 2, tokensOut: 2 }),
       ]);
-      // 全部成功返回 seq（无抛错）
-      expect(writes.every((n) => typeof n === 'number')).toBe(true);
+      // 全部成功返回 seq（无抛错）；失败时直接打印真实原因，不被清理错误掩盖
+      expect(writes.filter((w) => w.status === 'rejected').map((w) => (w as PromiseRejectedResult).reason)).toEqual([]);
+      expect(writes.every((w) => w.status === 'fulfilled' && typeof w.value === 'number')).toBe(true);
       // 6 条全部落库、seq 唯一
       const events = await repository.listEvents(runId, 0, 20);
       expect(events).toHaveLength(6);
@@ -126,6 +130,7 @@ describe('Agent 执行仓储 CAS', () => {
       expect(new Set(seqs).size).toBe(6);
     } finally {
       await db.executionEvent.deleteMany({ where: { runId } });
+      await db.processRecord.deleteMany({ where: { runId } });
       await db.executionRun.deleteMany({ where: { id: runId } });
     }
   });

@@ -76,11 +76,36 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
     return db;
   }
 
+  /** 进程内按 runId 串行化事件写入的链尾（见 appendEvent 的并发说明）。 */
+  private readonly eventChains = new Map<string, Promise<unknown>>();
+
+  /**
+   * 把 work 排到 key 的队尾：同 key 的调用严格串行，不同 key 互不阻塞。
+   * 队列空闲即从 Map 删除，长生命周期进程不会累积。
+   */
+  private serializeByKey<T>(key: string, work: () => Promise<T>): Promise<T> {
+    const previous = this.eventChains.get(key) ?? Promise.resolve();
+    const run = previous.then(work, work);
+    const tail = run.then(() => undefined, () => undefined);
+    this.eventChains.set(key, tail);
+    void tail.then(() => {
+      if (this.eventChains.get(key) === tail) this.eventChains.delete(key);
+    });
+    return run;
+  }
+
   private transaction<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     const client = this.db() as ExecutionDb & {
-      $transaction?: <Result>(callback: (tx: Prisma.TransactionClient) => Promise<Result>) => Promise<Result>;
+      $transaction?: <Result>(
+        callback: (tx: Prisma.TransactionClient) => Promise<Result>,
+        options?: { maxWait?: number; timeout?: number },
+      ) => Promise<Result>;
     };
-    return client.$transaction ? client.$transaction(work) : work(client as unknown as Prisma.TransactionClient);
+    // Prisma 交互式事务默认 5s 超时（P2028）。CI 慢 I/O 首跑实测：6 路并发事件写
+    // 会顶到该上限，事务在持锁等待中过期——放宽到 15s；重试仍是兜底。
+    return client.$transaction
+      ? client.$transaction(work, { maxWait: 10_000, timeout: 15_000 })
+      : work(client as unknown as Prisma.TransactionClient);
   }
 
   async submitIfAbsent(draft: AgentExecutionDraft) {
@@ -317,10 +342,22 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
    * 批量补写。并发时两边会读到同一个最大 seq 并撞 `@@unique([runId, seq])`。
    * 原实现直接抛 Prisma 错误，把一次**成功的运行**标成 FAILED。
    * 现在：撞键时**用下一个 seq 重试**，保证事件不丢；重试有上限防死循环。
+   * CI 首跑实证补充：慢 I/O 下并发写还会撞 SQLite 瞬态错误（P2024 锁 / P2028 事务过期 /
+   * P1008 应答超时），与唯一键冲突同属本契约下的可重试项；重试间加小退避，避免忙等。
+   *
+   * 进一步根治（CI 二跑实证 P1008）：同进程内的两个写入方按 runId **串行排队**——
+   * 生产是单 Nest 进程（实时写 + 批量补写同进程），串行后既不撞 seq 也不互等写锁；
+   * 下面的重试循环因此降级为跨进程/异常场景的兜底。
    */
   async appendEvent(input: { runId: string; kind: 'text' | 'usage'; text?: string | null; tokensIn?: number | null; tokensOut?: number | null }) {
-    const maxAttempts = 6;
+    return this.serializeByKey(input.runId, () => this.appendEventOnce(input));
+  }
+
+  private async appendEventOnce(input: { runId: string; kind: 'text' | 'usage'; text?: string | null; tokensIn?: number | null; tokensOut?: number | null }) {
+    const maxAttempts = 12;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      // 小退避 + 抖动：让并发的另一个写入者先落地，降低再次相撞的概率。
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 5 * attempt + Math.floor(Math.random() * 15)));
       const last = await this.db().executionEvent.findFirst({ where: { runId: input.runId }, orderBy: { seq: 'desc' } });
       const seq = (last?.seq ?? 0) + 1;
       try {
@@ -347,9 +384,13 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
         });
         return seq;
       } catch (error) {
-        // 只在唯一键冲突时重试（另一路写入推进了 seq）；其余错误照常抛出。
+        // 可重试的三类瞬态错误：①唯一键冲突（另一路写入推进了 seq）；
+        // ②SQLite 锁/连接池瞬态；③交互式事务过期/超时（P2028）。其余错误照常抛出。
         const message = error instanceof Error ? error.message : String(error);
-        if (!/unique|Unique|P2002/.test(message) || attempt === maxAttempts - 1) throw error;
+        const retryable = /unique|Unique|P2002/.test(message)
+          || /locked|busy|P2024|P2034|P1008|Socket timeout/i.test(message)
+          || /P2028|Transaction already closed|Transaction API error|expired transaction/i.test(message);
+        if (!retryable || attempt === maxAttempts - 1) throw error;
       }
     }
     throw new Error(`appendEvent: seq 冲突重试耗尽（runId=${input.runId}）`);
