@@ -26,6 +26,7 @@
     "test:web": "pnpm --filter @walker/web test",
     "test:agent": "pnpm build:shared && pnpm --filter @walker/agent test",
     "test:admin": "pnpm build:shared && pnpm --filter @walker/admin test",
+    "ci": "pnpm db:generate && pnpm typecheck && pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent && pnpm test:admin && pnpm check:content-fields && pnpm verify:docs && pnpm verify:architecture && pnpm build:web && pnpm verify:geo",
     "typecheck": "pnpm build:shared && pnpm -r run typecheck && tsc -p scripts/tsconfig.json",
     "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "db:generate": "tsx scripts/prisma-env.ts generate",

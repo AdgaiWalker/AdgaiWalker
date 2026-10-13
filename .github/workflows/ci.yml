@@ -1,0 +1,90 @@
+# CI/CD：AdgaiWalker monorepo 验证流水线
+#
+# 范围纪律（与本仓库验证链一致，单一真相源在 package.json scripts）：
+#   typecheck → db:generate → 五端测试 → 内容/文档/架构门禁 → build:web → verify:geo
+# CD 不在本流水线自动化：web 走 Vercel（push main 自动 Production 部署，见 vercel.json），
+# 盒子 API 部署为人工流程（ops/windows/README.md，需停服窗口与站主授权，G07/G08）。
+#
+# 已知边界（诚实声明）：
+# - pnpm-workspace.yaml 含 packages/* 通配，本地 packages/dsh-open-design 是未跟踪包；
+#   CI checkout 不含它，lockfile 多余 importer 不阻断 install（本地实测口径）。
+# - output/ 下二进制资产不走 CI；PR diff 不做产物哈希比对。
+# - 测试库与开发库隔离：DATABASE_URL 指向 runner 临时绝对路径 .test.db，
+#   vitest.global-setup 每次删库重建，绝不触碰真实数据。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL || 'file:/tmp/walker/walker-ci.db' }}
+  WALKER_DB_PROVIDER: sqlite
+
+jobs:
+  verify:
+    name: 验证链（typecheck → 测试 → 门禁 → 构建）
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        # 版本唯一来源：根 package.json packageManager 字段，不在此重复钉死
+
+      - name: 配置 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 安装依赖（与 lockfile 严格一致）
+        run: pnpm install --frozen-lockfile
+
+      - name: 生成 Prisma Client（必须先于 typecheck：apps/api 直接引用生成后的模型类型）
+        run: pnpm db:generate
+        env:
+          DATABASE_URL: file:/tmp/walker/walker-ci.db
+
+      - name: 类型检查（含 build:shared 前置）
+        run: pnpm typecheck
+
+      - name: 单测五端（shared → api → web → agent → admin）
+        run: |
+          pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent && pnpm test:admin
+
+      - name: 内容字段门禁
+        run: pnpm check:content-fields
+
+      - name: 文档链接与待办单一真相源门禁
+        run: pnpm verify:docs
+
+      - name: 架构边界门禁
+        run: pnpm verify:architecture
+
+      - name: 构建 web（含 content:gen / 预渲染 / pagefind）
+        run: pnpm build:web
+
+      - name: GEO 门禁
+        run: pnpm verify:geo
+
+      - name: 上传构建产物（调试用，7 天过期）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist-${{ github.run_id }}
+          path: apps/web/dist/
+          retention-days: 7
+          if-no-files-found: ignore
