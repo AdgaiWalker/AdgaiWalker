@@ -30,12 +30,18 @@ if (!testDbUrl.startsWith('file:') || !path.isAbsolute(testDbUrl.slice(5)) || !t
 }
 process.env.DATABASE_URL = testDbUrl;
 process.env.WALKER_DB_PROVIDER = 'sqlite';
+// G03 资源门禁：测试机（CI/开发 Mac）余量不代表 2C2G 目标盒子，显式解除该门；
+// 生产默认仍为 512MB（resolveMinFreeMemoryMb 无覆盖时取默认）。这是运维配置路径，不是兼容代码。
+if (!process.env.WALKER_MEMORY_HEADROOM_MB) {
+  process.env.WALKER_MEMORY_HEADROOM_MB = '0';
+}
 
 export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
     testTimeout: 30000,
+    fileParallelism: false,
     globalSetup: ['./vitest.global-setup.ts'],
   },
 });

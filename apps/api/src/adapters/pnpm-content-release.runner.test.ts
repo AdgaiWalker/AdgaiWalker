@@ -47,6 +47,21 @@ describe('发布进程适配器（唯一出口，参数全常量）', () => {
     expect(options.shell).toBe(process.platform === 'win32');
   });
 
+  it('API 持锁发布把锁路径和标识交给脚本环境，不放入命令参数', async () => {
+    const child = stubSpawn();
+    const runner = new PnpmContentReleaseRunner();
+    const pending = runner.runRelease({
+      lock: { lockFile: '/tmp/walker-lock', lockId: 'test-lock-id' },
+    } as Parameters<typeof runner.runRelease>[0]);
+    child.emit('close', 0);
+    await pending;
+
+    const [, args, options] = spawnMock.mock.calls[0] as [string, string[], { env: NodeJS.ProcessEnv }];
+    expect(args).toEqual(['content:publish', '--push', '--json']);
+    expect(options.env.WALKER_CONTENT_LOCK_PATH).toBe('/tmp/walker-lock');
+    expect(options.env.WALKER_CONTENT_LOCK_ID).toBe('test-lock-id');
+  });
+
   it('如实回报退出码与输出（含 stderr）', async () => {
     const child = stubSpawn();
     const runner = new PnpmContentReleaseRunner();
@@ -76,6 +91,7 @@ describe('发布进程适配器（唯一出口，参数全常量）', () => {
     expect(child.killed).toBe(1);
     expect(result.timedOut).toBe(true);
     expect(result.exitCode).toBeNull();
+    expect(result.exitProof).toBe('exited');
   });
 
   it('spawn 失败（如 pnpm 不存在）：报为失败而非异常抛出', async () => {
@@ -87,5 +103,26 @@ describe('发布进程适配器（唯一出口，参数全常量）', () => {
     const result = await pending;
     expect(result.exitCode).toBeNull();
     expect(result.stderr).toContain('spawn pnpm ENOENT');
+  });
+
+  it('支持外部 AbortSignal 与 onSpawn 回调登记子进程归属', async () => {
+    const child = stubSpawn();
+    (child as unknown as { pid: number }).pid = 4321;
+    const runner = new PnpmContentReleaseRunner();
+    const controller = new AbortController();
+    let observedPid = 0;
+
+    const pending = runner.runRelease({
+      signal: controller.signal,
+      onSpawn: (pid) => { observedPid = pid; },
+    });
+
+    expect(observedPid).toBe(4321);
+
+    controller.abort();
+    child.emit('close', null);
+
+    const result = await pending;
+    expect(result.exitCode).toBeNull();
   });
 });

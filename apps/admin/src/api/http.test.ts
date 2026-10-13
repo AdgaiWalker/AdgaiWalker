@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { requestJson, setAdminToken, onUnauthorized } from "./http";
+import { REQUEST_TIMEOUTS, requestBlob, requestJson, setAdminToken, onUnauthorized } from "./http";
 import {
   authProvider,
   queryClient,
@@ -19,6 +19,21 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe("单一 HTTP 客户端", () => {
+  it("下载受鉴权的二进制文件并保留同源代理凭据", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(new Blob(["file-data"]), {
+      status: 200, headers: { "content-type": "text/csv; charset=utf-8" },
+    }));
+    vi.stubGlobal("fetch", fetcher);
+    setAdminToken("temporary-test");
+
+    const file = await requestBlob("/ops/exports/job-id/download");
+
+    expect(file.size).toBeGreaterThan(0);
+    expect(file.type).toContain("text/csv");
+    expect(fetcher).toHaveBeenCalledWith("/api/ops/exports/job-id/download", expect.objectContaining({
+      headers: expect.objectContaining({ "x-admin-token": "temporary-test" }),
+    }));
+  });
   it("通过代理读取 JSON，凭据只在内存", async () => {
     const fetcher = vi.fn().mockResolvedValue(json({ items: [] }));
     vi.stubGlobal("fetch", fetcher);
@@ -115,6 +130,43 @@ describe("单一 HTTP 客户端", () => {
     await expect(
       requestJson("/ops/agents", { timeoutMs: 5 }),
     ).rejects.toMatchObject({ code: "request-timeout" });
+  });
+
+  /**
+   * 回归（2026-09-24 站主实测）：点「运行三类测试」总是显示「连接超时」，
+   * 但服务端其实已经跑完（结果 3 条全 pass）。
+   *
+   * 根因：前端只有 10s 默认超时，而后端后台任务预算是 120s、三类测试实测 44.6s
+   * ——**服务端老老实实做完，前端在 10s 就放弃并向用户谎报失败**。
+   * 契约：长任务预算必须 ≥ 后端承诺的预算。
+   */
+  it("长任务预算必须覆盖后端 deadline（否则前端永远假失败）", async () => {
+    // 后端 BACKGROUND_DEADLINE_MS；前端长任务预算必须不小于它
+    const BACKEND_BACKGROUND_DEADLINE_MS = 120_000;
+    expect(REQUEST_TIMEOUTS.longTask).toBeGreaterThanOrEqual(BACKEND_BACKGROUND_DEADLINE_MS);
+    // 读/写预算保持短，避免掩盖真正的卡死
+    expect(REQUEST_TIMEOUTS.read).toBeLessThan(REQUEST_TIMEOUTS.longTask);
+    expect(REQUEST_TIMEOUTS.write).toBeLessThan(REQUEST_TIMEOUTS.longTask);
+  });
+
+  it("超时提示必须说明服务可能仍在跑，不能诱导重复提交", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init: { signal: AbortSignal }) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
+          }),
+      ),
+    );
+    await expect(
+      requestJson("/ops/agents/x/release-tests", { method: "POST", body: {}, timeoutMs: 5 }),
+    ).rejects.toMatchObject({
+      code: "request-timeout",
+      message: expect.stringContaining("仍在后台执行"),
+    });
   });
   it("切换凭据后丢弃旧响应，迟到401不能锁住新会话", async () => {
     let resolve!: (response: Response) => void;

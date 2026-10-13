@@ -13,6 +13,10 @@ export const ACTION_ENTITY_TYPES = [
   // 'CONTENT'：内容发布日历把「待上线」内容落为一条排期 Action（TECH-DESIGN §9 B 行）。
   // Action.entityType 在 Prisma 是 String?，加词表值不触发任何 schema 变更。
   'CONTENT',
+  // 'CONVERSATION'：访客问题转更新事项（O05），entityId 是会话 id——只存引用，不复制会话正文。
+  'CONVERSATION',
+  // 'REVIEW'：复盘建议转下一事项（O09），entityId 是 review.id——显式转化并可双向回溯。
+  'REVIEW',
 ] as const;
 export type ActionEntityType = (typeof ACTION_ENTITY_TYPES)[number];
 

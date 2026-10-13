@@ -14,7 +14,7 @@ function harness() {
   const stages: StageArtifactRepositoryPort = { async write() { throw new Error('unused'); }, async latest() { return { workId: work.id, stage: 'REVIEW_READY', hash: 'approved-hash', path: 'review', artifact: { recipeVersion: 1, stage: 'REVIEW_READY', output: { title: 'AI draft', markdown: '# AI draft', html: '<h1>AI draft</h1>', summary: 'summary' } }, createdAt: now.toISOString() }; }, async list() { return []; } };
   const publications: PublicationRepositoryPort = { async find() { return null; }, async upsert(input) { return { ...input, url: input.url ?? null, lastError: input.lastError ?? null, publishedAt: input.publishedAt ?? null, createdAt: now, updatedAt: now, channel: input.channel, status: input.status }; }, async list() { return []; } };
   let savedRaw = '';
-  const files: ContentFileRepositoryPort = { async list() { return []; }, async get() { return null; }, async save(_slug, raw) { savedRaw = raw; return { slug: 'ai-draft', title: 'AI draft', type: 'knowledge', updatedAt: now.toISOString(), raw, ext: '.md' }; } };
+  const files: ContentFileRepositoryPort = { async list() { return []; }, async get() { return null; }, async save(_slug, raw) { savedRaw = raw; return { slug: 'ai-draft', title: 'AI draft', type: 'knowledge', updatedAt: now.toISOString(), raw, hash: 'a'.repeat(64), ext: '.md' }; } };
   const prisma: PrismaPort = { getClient: () => null, isWritable: () => true, async ping() { return true; } };
   return { service: new PublicationService(prisma, works, stages, publications, files), prisma, works, stages, publications, files, work, get savedRaw() { return savedRaw; } };
 }

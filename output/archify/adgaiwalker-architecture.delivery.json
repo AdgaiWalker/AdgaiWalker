@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "83834df5-c420-43c7-8e48-c935efd38460",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.json",
+  "output": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.html",
+  "specification": {
+    "sha256": "cd8e23cf79ded030485f0191728edf8229df4e4542897cb976e5f37b89576fd3",
+    "bytes": 11147
+  },
+  "artifact": {
+    "sha256": "1212efd0a7ddde5090bd73a84113a22be0550aa36925305aa2dea89842a8146f",
+    "bytes": 781209
+  }
+}

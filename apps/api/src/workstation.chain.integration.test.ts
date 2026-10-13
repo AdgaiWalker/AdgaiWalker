@@ -8,6 +8,8 @@ import { ConfigModule } from './config/config.module';
 import { KernelModule } from './kernel.module';
 import { AGENT_RUNNER, type AgentRunnerPort } from './ports/agent-runner.port';
 import { WEBSITE_DEPLOYMENT_VERIFIER } from './ports/website-deployment-verifier.port';
+import { GIT_STATUS } from './ports/git-status.repository';
+import { CONTENT_RELEASE_RUNNER } from './ports/content-release-runner.port';
 import { WorkService } from './work/work.service';
 import { ProductionService } from './workflow/production.service';
 import { ReviewService } from './workflow/review.service';
@@ -54,8 +56,20 @@ describe('工作站交付链（真实 kernel 接线）', () => {
     moduleRef = await Test.createTestingModule({ imports: [ConfigModule, KernelModule] })
       .overrideProvider(AGENT_RUNNER)
       .useValue(fakeAgentRunner())
+      .overrideProvider(GIT_STATUS)
+      .useValue({
+        async snapshot() { return { available: true, dirtyFiles: [], headCommit: 'head' }; },
+        async workspaceSnapshot() { return { available: true, headCommit: 'head', files: [], dirtyFiles: [] }; },
+        async hasCommit() { return true; },
+      })
+      .overrideProvider(CONTENT_RELEASE_RUNNER)
+      .useValue({
+        async runRelease() { return { exitCode: 0, timedOut: false, exitProof: 'exited', stdout: 'SUCCESS', stderr: '' }; },
+      })
       .overrideProvider(WEBSITE_DEPLOYMENT_VERIFIER)
-      .useValue({ verify: async () => ({ ok: true }) })
+      .useValue({
+        verify: async (_url: string, exp: { expectedHash?: string }) => ({ ok: true, verifiedHash: exp?.expectedHash ?? null }),
+      })
       .compile();
     await moduleRef.init();
     works = moduleRef.get(WorkService);

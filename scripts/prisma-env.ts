@@ -96,6 +96,24 @@ async function databaseObjects(): Promise<{ names: string[]; rows: MigrationRow[
       throw new Error('数据库包含未纳入 Prisma schema 的视图或触发器，拒绝自动迁移');
     }
     const names = objects.filter((object) => object.type === 'table').map((object) => object.name);
+    if (names.includes('AuditRecord')) {
+      const duplicates = await client.$queryRawUnsafe(`
+        SELECT action, targetType, COUNT(*) AS count
+        FROM (
+          SELECT action, targetType, requestId, COUNT(*) AS n
+          FROM AuditRecord
+          WHERE requestId IS NOT NULL
+          GROUP BY action, targetType, requestId
+          HAVING n > 1
+        )
+        GROUP BY action, targetType
+        LIMIT 5
+      `) as Array<{ action: string; targetType: string; count: bigint }>;
+      if (duplicates.length > 0) {
+        const groups = duplicates.map((row) => `${row.action}/${row.targetType}: ${row.count}`).join('；');
+        throw new Error(`AuditRecord 存在重复的非空请求键，拒绝迁移；请人工核对重复组：${groups}`);
+      }
+    }
     const rows = names.includes('_prisma_migrations')
       ? await client.$queryRawUnsafe(
           'SELECT migration_name, checksum, finished_at, rolled_back_at FROM _prisma_migrations ORDER BY started_at',

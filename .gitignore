@@ -13,6 +13,7 @@ apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
 apps/api/prisma/data/
 apps/api/data/
+apps/api/control/
 *.db
 *.db-journal
 
@@ -48,7 +49,7 @@ pnpm-debug.log*
 .playwright-cli/
 output/playwright/
 
-# dev server 日志（output/ 下仅 design-qa.md 等文档需要跟踪）
+# dev server 日志（output/ 下仅 archify 交付产物等文档需要跟踪）
 output/*.log
 
 # 3D 角色资产中间产物（二进制，单目录即数百 MB；源脚本 / 设计文档 / 渲染图仍跟踪）
@@ -82,6 +83,8 @@ wiki-auth-qr.png
 # Skills lock file (managed by superpowers)
 skills-lock.json
 public/pagefind/
+public/public-manifest.json
+apps/web/src/generated/public-manifest.json
 
 .vercel
 .idea/
@@ -108,3 +111,9 @@ var/uploads/
 
 # 本机 AI 助手本地记忆（每台机器各异，不进仓库）
 .workbuddy/
+
+# 本地独立目录与一次性产物（G07 盘点 docs/evidence/G07-CANDIDATE-FILES-2026-09-28.md 明确不入库，防 git add -A 误收）
+/mario/
+/packages/dsh-open-design/
+output/ui-review/
+output/archify/adgaiwalker-architecture-local.*

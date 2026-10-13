@@ -1,25 +1,36 @@
 {
-  "generatedAt": "2026-09-22T09:16:11.059Z",
-  "session": "walker-runtime-probe-SjYsNz",
+  "generatedAt": "2026-09-28T13:39:43.279Z",
+  "session": "walker-runtime-probe-afd5vt",
   "platform": "darwin",
   "versions": {
-    "sdk": "0.1.5-rc.2",
-    "packageRuntime": "0.1.5-rc.2"
+    "sdk": "0.1.5-rc.3",
+    "packageRuntime": "0.1.5-rc.3"
   },
   "request": {
     "prompt": "[redacted-test-prompt]",
     "promptChars": 25,
     "materials": "isolated-temp",
-    "credentialForwarded": null
+    "credentialSource": "dsh-credentials-refs",
+    "channel": {
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
+      "interface": "llm-deepseek",
+      "baseURL": "https://api.deepseek.com",
+      "credentialRef": "DEEPSEEK_API_KEY",
+      "selection": "dsh agent-default-model"
+    }
   },
   "local": {
-    "status": "fail",
-    "reason": "本地没有 DEEPSEEK_API_KEY，不能用直连模型代替探针",
-    "elapsedMs": 0,
-    "answer": null,
-    "rssBytes": 93159424,
-    "rssDeltaBytes": 458752,
-    "processExited": false,
+    "status": "pass",
+    "reason": "已取得真实回答并完成关闭",
+    "elapsedMs": 2234,
+    "answer": {
+      "chars": 1,
+      "sha256": "f867f34178594f891eb70a4260f62b1d9289cfa60394f9fee1cbbe4a8b4bf436"
+    },
+    "rssBytes": 100990976,
+    "rssDeltaBytes": -17350656,
+    "processExited": true,
     "closeError": null
   }
 }

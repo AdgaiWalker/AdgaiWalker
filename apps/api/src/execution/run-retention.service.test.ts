@@ -14,6 +14,8 @@ const contentDir = fs.mkdtempSync(path.join(os.tmpdir(), 'walker-content-'));
 const secret = 'sk-retention-secret';
 
 afterAll(async () => {
+  await db.conversationLogResource.deleteMany({ where: { resourceKey: { in: ['expired-test', 'keep-chat'] } } });
+  await db.conversationLogResource.deleteMany({ where: { parentKey: { in: ['expired-test', 'keep-chat'] } } });
   await db.executionRun.deleteMany({ where: { id: { in: ['keep-chat', 'expired-test'] } } });
   await db.$disconnect();
   fs.rmSync(runsDir, { recursive: true, force: true });
@@ -30,6 +32,14 @@ it('只清理到期的后台试跑诊断，不删其他运行和站主内容', a
       retainUntil: new Date('2000-01-01T00:00:00.000Z'), diagnosticName: 'probe.log',
     },
   });
+  await db.conversationLogResource.create({ data: {
+    conversationId: null, resourceType: 'execution-run', resourceKey: 'expired-test',
+    resourceCreatedAt: new Date('2000-01-01T00:00:00.000Z'),
+  } });
+  await db.conversationLogResource.create({ data: {
+    conversationId: null, resourceType: 'execution-event', resourceKey: 'expired-test:1', parentKey: 'expired-test',
+    resourceCreatedAt: new Date('2000-01-01T00:00:00.000Z'),
+  } });
   await db.executionRun.create({
     data: {
       id: 'keep-chat', kind: 'chat', origin: 'admin', actor: 'owner', actorScope: 'admin:owner',
@@ -42,6 +52,8 @@ it('只清理到期的后台试跑诊断，不删其他运行和站主内容', a
   expect(JSON.stringify(report)).not.toContain(runsDir);
   expect(await db.executionRun.findUnique({ where: { id: 'expired-test' } })).toBeNull();
   expect(await db.executionRun.findUnique({ where: { id: 'keep-chat' } })).not.toBeNull();
+  expect(await db.conversationLogResource.findMany({ where: { resourceKey: 'expired-test' } })).toEqual([]);
+  expect(await db.conversationLogResource.findMany({ where: { parentKey: 'expired-test' } })).toEqual([]);
   expect(fs.existsSync(path.join(runsDir, 'probe.log'))).toBe(false);
   expect(fs.readFileSync(path.join(contentDir, 'post.md'), 'utf8')).toBe('站主正文');
 });

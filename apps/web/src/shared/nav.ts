@@ -1,19 +1,6 @@
-/**
- * nav — 侧栏
- * 读 · 拿 · 实验 · 关于（站 / 我→硬件 / 支持）
- */
+/** 访客站主导航：提问按钮独立于四个内容入口。 */
 import type { LucideIcon } from 'lucide-react';
-import {
-  Bookmark,
-  BookOpen,
-  Compass,
-  Cpu,
-  FlaskConical,
-  Globe,
-  Heart,
-  PenLine,
-  User,
-} from 'lucide-react';
+import { Bookmark, Compass, PenLine, User } from 'lucide-react';
 import { dualEntry } from './dual-entry';
 import { WEB_ROUTES } from './routes';
 
@@ -22,7 +9,6 @@ export type NavItem = {
   href: string;
   icon: LucideIcon;
   primary?: boolean;
-  /** 二级项（挂在「我」下等） */
   children?: readonly NavItem[];
 };
 
@@ -31,85 +17,14 @@ export type NavGroup = {
   items: NavItem[];
 };
 
-export const readNavGroup: NavGroup = {
+export const sidebarNavGroups: NavGroup[] = [{
   title: '',
   items: [
-    {
-      label: dualEntry.browse.label,
-      href: dualEntry.browse.path,
-      icon: PenLine,
-      primary: true,
-    },
+    { label: '探索', href: WEB_ROUTES.explore, icon: Compass, primary: true },
+    { label: dualEntry.browse.label, href: dualEntry.browse.path, icon: PenLine },
+    { label: '资源', href: WEB_ROUTES.toolsResources, icon: Bookmark },
+    { label: '关于', href: WEB_ROUTES.me, icon: User },
   ],
-};
+}];
 
-export const useNavGroup: NavGroup = {
-  title: '拿',
-  items: [
-    {
-      label: '资源',
-      href: WEB_ROUTES.toolsResources,
-      icon: Bookmark,
-    },
-    {
-      label: '教程',
-      href: WEB_ROUTES.tutorials,
-      icon: BookOpen,
-    },
-  ],
-};
-
-export const experimentNavGroup: NavGroup = {
-  title: '实验',
-  items: [
-    {
-      label: '探索',
-      href: WEB_ROUTES.explore,
-      icon: Compass,
-    },
-    {
-      label: '札记',
-      href: WEB_ROUTES.lab,
-      icon: FlaskConical,
-    },
-  ],
-};
-
-/** 关于：站 · 我（下挂硬件）· 支持 */
-export const aboutNavGroup: NavGroup = {
-  title: '关于',
-  items: [
-    {
-      label: '站',
-      href: WEB_ROUTES.about,
-      icon: Globe,
-    },
-    {
-      label: '我',
-      href: WEB_ROUTES.me,
-      icon: User,
-      children: [
-        {
-          label: '硬件',
-          href: WEB_ROUTES.gear,
-          icon: Cpu,
-        },
-      ],
-    },
-    {
-      label: '支持',
-      href: WEB_ROUTES.support,
-      icon: Heart,
-    },
-  ],
-};
-
-export const sidebarNavGroups: NavGroup[] = [
-  readNavGroup,
-  useNavGroup,
-  experimentNavGroup,
-  aboutNavGroup,
-];
-
-export const sidebarFooterLinks: readonly { label: string; href: string }[] =
-  [];
+export const sidebarFooterLinks: readonly { label: string; href: string }[] = [];

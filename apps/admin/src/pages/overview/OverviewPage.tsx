@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Bot, FileText, Clock, ArrowRight, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, RefreshCw } from "lucide-react";
 import { useAgents, useContent, useExecutionRuns } from "../../api/queries";
 import { useCapabilities } from "../../app/AdminShell";
 import {
@@ -10,19 +11,18 @@ import {
   Panel,
 } from "../../components/States";
 import { ContentTable } from "../../components/ContentTable";
+import { ReminderInboxPanel } from "../../components/ReminderInboxPanel";
+import { OpsStatsPanel } from "./OpsStatsPanel";
+import { RuntimeMonitorPanel } from "../records/RuntimeMonitorPanel";
 import { RunTable } from "../../components/RunTable";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 import { timeLabel } from "../../shared/labels";
 export function OverviewPage() {
+  const queryClient = useQueryClient();
   const content = useContent(),
     agents = useAgents(),
     runs = useExecutionRuns("", "", 5),
     capabilities = useCapabilities();
-  const metrics = [
-    { label: "已有内容", query: content, icon: FileText, path: R.content },
-    { label: "已有 Agent", query: agents, icon: Bot, path: R.agents },
-    { label: "历史运行", query: runs, icon: Clock, path: R.records },
-  ];
   return (
     <>
       <PageHeading
@@ -36,6 +36,8 @@ export function OverviewPage() {
                 agents.refetch(),
                 runs.refetch(),
                 capabilities.refetch(),
+                queryClient.invalidateQueries({ queryKey: ["ops-overview"] }),
+                queryClient.invalidateQueries({ queryKey: ["reminder-inbox"] }),
               ])
             }
           >
@@ -44,21 +46,20 @@ export function OverviewPage() {
           </button>
         }
       />
-      <section className="metrics" aria-label="当前资产">
-        {metrics.map(({ label, query, icon: Icon, path }) => (
-          <Link to={path} key={label} className="metric">
-            <Icon size={32} />
-            <span>
-              {label}
-              <strong>
-                {query.isError ? "不可用" : "total" in (query.data ?? {}) ? (query.data as { total: number }).total : "—"}
-              </strong>
-            </span>
-          </Link>
-        ))}
-      </section>
-      <div className="overview-grid">
-        <Panel
+      {/* O07：关键数据取代框架阶段的基础汇总；每个数字都可下钻到同筛选明细 */}
+      <OpsStatsPanel />
+      {/*
+        运行监控（2026-10-12 从「运营记录」搬来）：本地开发用的进程内诊断，
+        与"业务发生过什么"的运营时间线不是一类，所以放概览底部、默认收起。
+        <details> 展开才挂载面板 —— 不展开就不发那三个轮询请求。
+      */}
+      <details style={{ padding: "0 22px 10px" }}>
+        <summary className="muted">运行监控（进程内 · 重启清零 · 开发诊断用）</summary>
+        <div style={{ marginTop: 12 }}>
+          <RuntimeMonitorPanel />
+        </div>
+      </details>
+      <Panel
           title="内容一览"
           action={
             <Link to={R.content}>
@@ -77,23 +78,8 @@ export function OverviewPage() {
               准备内容后，在这里查看。
             </EmptyState>
           )}
-        </Panel>
-        <Panel title="接下来" className="next-panel">
-          <p>先整理内容，再逐步接通 Agent。</p>
-          <div className="quick-links">
-            <Link to={R.content}>
-              <FileText size={20} />
-              浏览内容
-              <ArrowRight size={18} />
-            </Link>
-            <Link to={R.agents}>
-              <Bot size={20} />
-              查看 Agent
-              <ArrowRight size={18} />
-            </Link>
-          </div>
-        </Panel>
-      </div>
+      </Panel>
+      <ReminderInboxPanel />
       <Panel
         title="最近运行"
         action={

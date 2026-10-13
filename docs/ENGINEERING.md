@@ -1,7 +1,16 @@
+---
+status: active
+type: specification
+title: 工程栈与分层权威
+last_verified: 2026-09-23
+ssot: true
+applies_to: [web, admin, api, shared]
+---
+
 # 工程（权威）
 
-> 栈、分层、内容命名、部署、切流就绪。细节契约见 [`api/README.md`](./api/README.md)。  
-> 对话默认上下文：根目录 `Claude.md`。
+> 栈、分层、内容命名、部署、切流就绪。细节契约见 [`api/README.md`](./api/README.md)。
+> 对话默认上下文：根目录 `CLAUDE.md`。
 
 ## 1. 栈与目录
 
@@ -9,11 +18,12 @@
 apps/web      # 公开站 React+Vite
 apps/admin    # 管理端 React+Vite
 apps/api      # Nest + Prisma（各环境独立 SQLite 文件）
+apps/agent    # 判断代理 Cordis + MCP
 packages/shared
 content/log   # Markdown 真相源（进 Git → Vercel）
 ```
 
-**无 Astro。**  
+**无 Astro。**
 **两条数据管线（勿混）：**
 
 | 管线 | 真相源 | 上线 |
@@ -28,7 +38,7 @@ content/log   # Markdown 真相源（进 Git → Vercel）
 ```bash
 pnpm install
 cp apps/api/.env.example apps/api/.env   # 将 DATABASE_URL 改为绝对 file: 路径
-pnpm db:generate && pnpm db:migrate      # 已有库先备份，再用 db:baseline
+pnpm db:generate && pnpm db:migrate      # 仅新空库；旧库先备份并核对 schema
 pnpm content:gen
 pnpm dev:api    # :8788
 pnpm dev:web    # :5173
@@ -39,14 +49,14 @@ pnpm content:publish           # gen + 看状态
 pnpm content:publish --push    # commit 内容路径并 push → Vercel
 
 pnpm typecheck
-pnpm test:shared && pnpm test:api && pnpm test:web
+pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent
 pnpm accept
 pnpm exec tsx scripts/probe-production.ts
 ```
 
 ### 数据库迁移
 
-`scripts/prisma-env.ts` 只接受绝对 SQLite `file:` 路径。新空库用 `pnpm db:migrate`；已有库先备份，再用 `pnpm db:baseline` 校验并标记；后续升级用 `pnpm db:migrate`。`dev:api` 不执行隐式 schema 更新。旧 PostgreSQL 物料位于 `apps/api/prisma/legacy-postgresql/`，仅作历史查阅。
+`scripts/prisma-env.ts` 只接受绝对 SQLite `file:` 路径。新空库用 `pnpm db:migrate`；旧库先备份，只有 schema 与基线完全一致时才用 `pnpm db:baseline` 标记，后续升级再用 `pnpm db:migrate`。当前生产旧库与基线不一致，应按 [G07 生产库迁移路径](../ops/windows/README.md)重建搬迁。`dev:api` 不执行隐式 schema 更新。旧 PostgreSQL 物料位于 `apps/api/prisma/legacy-postgresql/`，仅作历史查阅。
 
 ## 3. 前端分层
 
@@ -58,15 +68,15 @@ pnpm exec tsx scripts/probe-production.ts
 | 页 | 路由编排，调门面 |
 | 块/壳 | UI；块仅 props + onXxx |
 
-加功能四问：配置？规则？门面？页+块？  
+加功能四问：配置？规则？门面？页+块？
 禁止：块里 fetch 领域规则；页复制第二套校验。
 
 ## 4. 内容命名
 
-1. 文件名 = URL slug：`[a-z0-9]+(-[a-z0-9]+)*`  
-2. `title` 中文  
-3. 主题线用 frontmatter `series` / `seriesOrder` / `related`（无硬编码线名单）  
-4. 改已发布 slug 须改 `vercel.json` redirects  
+1. 文件名 = URL slug：`[a-z0-9]+(-[a-z0-9]+)*`
+2. `title` 中文
+3. 主题线用 frontmatter `series` / `seriesOrder` / `related`（无硬编码线名单）
+4. 改已发布 slug 须改 `vercel.json` redirects
 
 ## 5. 部署（GitHub → Vercel）
 
@@ -77,7 +87,7 @@ pnpm exec tsx scripts/probe-production.ts
 | 触发 | **`git push origin main` 自动 Production** |
 | 构建 | `vercel.json`：`pnpm build:web` → `apps/web/dist` |
 
-**现状（2026-09-03 切流后）：** Vercel 托管 **web 静态**，并把 `/api/*` rewrites → `https://api.iwalk.pro`（盒子 Caddy + Nest）。同源 `/api/health` 200。  
+**现状（2026-09-03 切流后）：** Vercel 托管 **web 静态**，并把 `/api/*` rewrites → `https://api.iwalk.pro`（盒子 Caddy + Nest）。同源 `/api/health` 200。
 **禁止**在探针未绿时声称「新版已上线」——web 与 API 是两条独立发布链，须分别核验。
 
 **最近一次发布（2026-09-14，构建 `e7493f1`）：** 两条链各自核验通过——Vercel 侧 `/tools` 200、新增 `/tools/result` 壳 200 + `noindex`；盒子侧 `api.iwalk.pro/health` 回出 `version=e7493f1`、8788 单实例归属、443 网关在、管理面公网 404。盒子部署顺序与坑见 `AGENTS.md`「盒子部署与运维坑」。
@@ -94,12 +104,12 @@ pnpm exec tsx scripts/probe-production.ts
 
 ### SPA 与 `/api`
 
-- 构建期为首页、内容枢纽、文章和已知客户端壳输出独立静态 HTML  
+- 构建期为首页、内容枢纽、文章和已知客户端壳输出独立静态 HTML
 - 旧兼容路径（`/condition` `/kit` `/showcase` `/ideas` `/projects` `/content` `/ideas/new`）走 **301**；点子 / 项目进 `/explore` 对应视图，禁止先吐首页再靠客户端跳
-- 仅无静态文件的客户端子路径（目前 `/learn/:path*`）rewrite 到对应壳 HTML，禁止 rewrite 到首页  
-- 未知路径与 `/api/*` 不进 SPA fallback，返回真实 404，避免 soft-404 / API HTML 伪响应  
-- Nest 上线后 rewrites **最前**加：`/api/:path*` → `https://<API主机>/:path*`（Nest 无全局 `/api` 前缀）  
-- 本地 Vite：`/api` proxy → `8788` 并 strip  
+- 仅无静态文件的客户端子路径（目前 `/learn/:path*`）rewrite 到对应壳 HTML，禁止 rewrite 到首页
+- 未知路径与 `/api/*` 不进 SPA fallback，返回真实 404，避免 soft-404 / API HTML 伪响应
+- Nest 上线后 rewrites **最前**加：`/api/:path*` → `https://<API主机>/:path*`（Nest 无全局 `/api` 前缀）
+- 本地 Vite：`/api` proxy → `8788` 并 strip
 
 ### 静态索引与 GEO
 
@@ -115,19 +125,19 @@ pnpm exec tsx scripts/probe-production.ts
 
 ### 生产环境变量（名，不含值）
 
-`DATABASE_URL` · `AI_ENABLED` · `PORT` · `CONTENT_LOG_DIR` · 可选 `VITE_GISCUS_*`  
+`DATABASE_URL` · `AI_ENABLED` · `PORT` · `CONTENT_LOG_DIR` · `WALKER_DELETION_MANIFEST_PATH` · 可选 `WALKER_DELETION_MANIFEST_REPLICA_PATH` / `WALKER_RESTORE_GATE_FILE` · `VITE_GISCUS_*`
 （管理面**无** `ADMIN_API_TOKEN`；公网须靠网络隔离。）
 
-生产改文默认：**改 `content/log` → `pnpm content:publish --push`（或手动 push）→ Vercel 重建 web**。  
+生产改文默认：**改 `content/log` → `pnpm content:publish --push`（或手动 push）→ Vercel 重建 web**。
 Admin 写盘仅本机；**不会**自动同步 GitHub。
 
 ### 切流最短步骤
 
-1. 腾讯云 SQLite 初始化 + 备份恢复演练  
-2. 部署 Nest/Caddy，回环 `/health` 且 `db:true`，公网只开放白名单路由  
-3. API 域名与 HTTPS 就绪后，Vercel 配 `/api` rewrite  
-4. 生产 `POST /api/intake` 冒烟，并确认管理端点公网 404  
-5. 更新 `docs/STATUS.md`  
+1. 按 [`ops/windows/README.md`](../ops/windows/README.md) 生成 30 天 SQLite 快照和清单副本，先完成目标服务器恢复演练，再进入 G07/G08 生产验收
+2. 部署 Nest/Caddy，回环 `/health` 且 `db:true`，公网只开放白名单路由
+3. API 域名与 HTTPS 就绪后，Vercel 配 `/api` rewrite
+4. 生产 `POST /api/intake` 冒烟，并确认管理端点公网 404
+5. 更新 `docs/STATUS.md`
 
 ## 6. 运行时模块（依赖 / 调用 / 触发 / 实现）
 
@@ -185,6 +195,6 @@ Admin 写盘仅本机；**不会**自动同步 GitHub。
 
 ## 7. 禁止
 
-- 恢复 Astro / Match 双轨 / WorkItem 巨石默认路径  
-- 多主题切换  
-- 密钥与本地 DB 密码进 git  
+- 恢复 Astro / Match 双轨 / WorkItem 巨石默认路径
+- 多主题切换
+- 密钥与本地 DB 密码进 git

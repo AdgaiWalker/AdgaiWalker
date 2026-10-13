@@ -20,12 +20,12 @@ export const ERROR_CODE_LABELS: Record<string, string> = {
   'validation-error': '输入不合法，请检查后重试。',
   'clue-body-too-short': `描述至少 ${CLUE_BODY_MIN_LENGTH} 个字（去掉首尾空格）。`,
   'missing-clue': '主选必须挂入池线索。',
-  /** 本地未起 API / 公网未部署 Nest */
+  /** 服务不可达时如实提示，不预设部署环境。 */
   'network-error':
-    '连不上处理服务。本地请先启动 API（pnpm dev:api）；公网「卡」写入尚未上线，可先去逛证据。',
+    '连不上提问服务，请稍后再试。本地开发时可确认 API 已启动；文章仍可阅读。',
   'api-not-found':
-    '没有可用的处理接口（常见于公网仅部署了网站）。逛与读仍可用；真·卡需 API 主机。',
-  'api-unavailable': '处理服务暂时不可用，请稍后再试，或先去逛证据。',
+    '提问接口暂不可用；你仍可以阅读文章。',
+  'api-unavailable': '提问服务暂时不可用，请稍后再试，或先读读文章。',
   'request-failed': '请求失败，请稍后再试。',
 };
 

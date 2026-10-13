@@ -5,6 +5,8 @@ export interface AssistantSessionInput {
   anonId: string;
   sessionId: string;
   runner: string;
+  agentRevisionId?: string | null;
+  conversationId?: string | null;
 }
 
 export interface AssistantRunInput {
@@ -26,6 +28,11 @@ export interface AssistantRunInput {
   queueWaitMs?: number | null;
   /** 观测 P1：降级原因（kebab 词表；正常 AI 回答为 null） */
   degradeReason?: string | null;
+  /** V08：匿名身份服务端 hash 与持久 requestKey（重复发送幂等） */
+  anonIdHash?: string | null;
+  requestKey?: string | null;
+  /** 新公开问答的逻辑资源归属；不进入 AssistantRun 正文表。 */
+  conversationId?: string | null;
 }
 
 export interface AssistantRunRecord {
@@ -43,10 +50,12 @@ export interface AssistantRunRecord {
 export interface AssistantRepositoryPort {
   upsertSession(input: AssistantSessionInput): Promise<void>;
   /** 会话归属查询：网关续轮前校验 sessionId 属于当前访客（隐私边界） */
-  findSession(sessionId: string): Promise<{ anonId: string; runner: string } | null>;
+  findSession(sessionId: string): Promise<{ anonId: string; runner: string; agentRevisionId?: string | null } | null>;
   saveRun(input: AssistantRunInput): Promise<void>;
   /** 问题池：倒序最近记录（管理侧筛选用，AI 不参与） */
   listRuns(limit: number): Promise<AssistantRunRecord[]>;
+  /** 按匿名 hash + requestKey 查已回答的运行（重复发送幂等返回原 run） */
+  findRunByRequest(anonIdHash: string, requestKey: string): Promise<AssistantRunRecord | null>;
   /**
    * 当日 AI 请求数 +1（可同时累加 token）并返回累计请求数。
    * 预算熔断用；存储失败由调用方处理。

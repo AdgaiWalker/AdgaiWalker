@@ -33,7 +33,10 @@ function makeAction(overrides: Partial<ActionRecord>): ActionRecord {
     entityId: null,
     status: 'OPEN',
     plannedDate: null,
+    dueAt: null,
+    timezone: null,
     completedAt: null,
+    evidenceRef: null,
     source: 'HUMAN',
     createdAt: NOW,
     updatedAt: NOW,
@@ -59,6 +62,7 @@ function makeHarness(
     async create() { unusedPort(); },
     async ensureOpenForEntity() { unusedPort(); },
     async findById() { return null; },
+    async listDue() { return []; },
     async list(input) {
       return actions
         .filter((record) => !input.status || record.status === input.status)
@@ -74,6 +78,7 @@ function makeHarness(
         items: ledgerItems,
         generatedAt: NOW.toISOString(),
         gitAvailable: process?.gitAvailable ?? true,
+        publicationAvailable: true,
       };
     },
   } as unknown as ContentLedgerService;
@@ -113,6 +118,7 @@ function ledgerItem(overrides: Partial<ContentLedger['items'][number]>): Content
     visibility: 'public',
     missing: [],
     dirty: true,
+    publication: { currentPublicHash: null, publishedHash: null, verifiedAt: null, indexedHash: null, latestAttemptStage: null },
     updatedAt: '2026-09-15T00:00:00.000Z',
     ...overrides,
   };

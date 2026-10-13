@@ -3,6 +3,7 @@
  * 依赖：gray-matter、paths
  * 触发：pnpm content:gen / build-web / dev:web
  */
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
@@ -10,7 +11,7 @@ import { inferContentHall } from '../apps/web/src/shared/content-halls';
 import { dualEntry } from '../apps/web/src/shared/dual-entry';
 import { createHash } from 'node:crypto';
 import { buildKnowledgeGraph } from '../packages/shared/src/graph';
-import { publicManifest } from '../packages/shared/src/public-snapshot';
+import { normalizeLegacyBody, publicManifest } from '../packages/shared/src/public-snapshot';
 import { loadContentCreatedDates } from './lib/git-created';
 import type {
   AiUsePolicy,
@@ -97,60 +98,7 @@ function resolveVisibility(data: Record<string, unknown>): Visibility {
   return 'public';
 }
 
-function tagAttribute(tag: string, name: string): string {
-  const match = tag.match(new RegExp(`\\b${name}=(['"])(.*?)\\1`));
-  return match?.[2]?.trim() ?? '';
-}
-
-/** 把旧 Astro/MDX 展示组件降级成标准 Markdown，保证 Web 与 AI 都能读。 */
-function normalizeLegacyMdx(body: string): string {
-  return body
-    .split('\n')
-    .flatMap((line) => {
-      const t = line.trim();
-      if (
-        t.startsWith('import ') &&
-        (/\.astro['"]\s*;?\s*$/.test(t) ||
-          (/from\s+['"]@\/components\//.test(t) && t.includes('astro')))
-      ) {
-        return [];
-      }
-      if (t.startsWith('<BlockCallout ')) {
-        return [`> **${tagAttribute(t, 'title') || '提示'}**`];
-      }
-      if (t === '</BlockCallout>') return [];
-      if (t.startsWith('<BlockVideo ')) {
-        const bvid = tagAttribute(t, 'bvid');
-        return bvid
-          ? [`[哔哩哔哩视频：${bvid}](https://www.bilibili.com/video/${bvid})`]
-          : [];
-      }
-      if (t.startsWith('<BlockResource ')) {
-        const href = tagAttribute(t, 'href');
-        const title = tagAttribute(t, 'title') || '延伸资源';
-        const description = tagAttribute(t, 'description');
-        return href
-          ? [`[${title}](${href})${description ? ` — ${description}` : ''}`]
-          : [];
-      }
-      if (t.startsWith('<BlockStep ')) {
-        const n = tagAttribute(t, 'n');
-        const title = tagAttribute(t, 'title') || '步骤';
-        return [`### ${n ? `${n}. ` : ''}${title}`];
-      }
-      if (t === '</BlockStep>') return [];
-      if (t.startsWith('<BlockPrompt ')) {
-        const title = tagAttribute(t, 'title') || '提示词';
-        return [`### ${title}`, '', '```text'];
-      }
-      if (t === '</BlockPrompt>') return ['```'];
-      return [line];
-    })
-    .join('\n')
-    .replace(/^\s*\n+/, '')
-    .trim();
-}
-
+/** 旧 Astro/MDX 展示组件降级：实现只有一份，在 packages/shared（构建与 API 版本证明共用）。 */
 function firstMarkdownImage(body: string): string {
   const match = body.match(/!\[[^\]]*\]\(([^\s)]+)(?:\s+['"][^)]*['"])?\)/);
   return match?.[1]?.trim() ?? '';
@@ -165,7 +113,7 @@ if (fs.existsSync(contentLogDir)) {
     const slug = file.replace(/\.(md|mdx)$/i, '');
     const visibility = resolveVisibility(data as Record<string, unknown>);
     if (visibility !== 'public') continue;
-    const body = normalizeLegacyMdx(content);
+    const body = normalizeLegacyBody(content);
     docs.push({
       slug,
       title: typeof data.title === 'string' ? data.title : slug,
@@ -245,9 +193,29 @@ if (unchanged) {
   fs.writeFileSync(contentJsonPath, nextPayload);
   console.log(`wrote ${docs.length} items → ${contentJsonPath}`);
 }
-const manifest = publicManifest(docs, (text) => createHash('sha256').update(text).digest('hex'));
+function getGitCommit(): string | null {
+  try {
+    const r = spawnSync('git', ['log', '-1', '--format=%H'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+    return r.stdout?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+const gitCommit = getGitCommit();
+const rawManifest = publicManifest(docs, (text) => createHash('sha256').update(text).digest('hex'));
+const manifest = {
+  ...rawManifest,
+  gitCommit,
+};
 fs.writeFileSync(path.join(webGeneratedDir, 'public-manifest.json'), JSON.stringify(manifest));
-console.log(`wrote public manifest ${manifest.items.length} items`);
+// Serve the exact manifest from the deployed web build so snapshot import can verify provenance.
+fs.writeFileSync(path.join(repoRoot, 'public/public-manifest.json'), JSON.stringify(manifest));
+console.log(`wrote public manifest ${manifest.items.length} items (commit: ${gitCommit ?? 'unknown'})`);
 
 // ---- 知识图谱产物（PRD-KNOWLEDGE-GRAPH §5）----
 // 只由公开条目构建；created 取 Git 首次出现时间（Animate 依据）；附件为 content/log 下的非 md 文件。

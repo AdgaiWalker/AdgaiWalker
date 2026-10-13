@@ -16,6 +16,7 @@ export class ActionController {
     note?: string;
     kind?: string;
     plannedDate?: string | null;
+    repeat?: string | null;
     entityType?: string;
     entityId?: string;
   }) {
@@ -27,6 +28,7 @@ export class ActionController {
     title?: string;
     note?: string | null;
     plannedDate?: string | null;
+    repeat?: string | null;
     entityType?: string;
     entityId?: string;
   }) {

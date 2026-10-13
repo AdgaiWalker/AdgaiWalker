@@ -1,8 +1,10 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import { missingPublishedPostFields } from '@walker/shared';
 import { newId } from '../common/ids';
-import { storageUnavailable, validationError } from '../common/http-error';
+import { ApiError, storageUnavailable, validationError } from '../common/http-error';
+import { ContentReleaseService } from '../content-release/content-release.service';
 import { CONTENT_FILE_REPOSITORY, type ContentFileRepositoryPort } from '../ports/content-file.repository';
+import { CONTENT_MUTATION_SERVICE, type ContentMutationPort } from '../ports/content-mutation.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { PUBLICATION_REPOSITORY, type PublicationRepositoryPort } from '../ports/publication.repository';
 import { STAGE_ARTIFACT_REPOSITORY, type StageArtifactRepositoryPort } from '../ports/stage-artifact.repository';
@@ -22,6 +24,8 @@ export class PublicationService {
     @Optional() @Inject(PUBLICATION_PACKAGE_REPOSITORY) private readonly packages?: PublicationPackageRepositoryPort,
     @Optional() @Inject(WEBSITE_DEPLOYMENT_VERIFIER) private readonly websiteVerifier?: WebsiteDeploymentVerifierPort,
     @Optional() @Inject(WECHAT_DRAFT_SESSION) private readonly wechatSession?: WechatDraftSessionPort,
+    @Optional() @Inject(CONTENT_MUTATION_SERVICE) private readonly mutations?: ContentMutationPort,
+    @Optional() @Inject(ContentReleaseService) private readonly contentRelease?: ContentReleaseService,
   ) {}
 
   async list(workId: string) {
@@ -48,11 +52,51 @@ export class PublicationService {
     const missing = missingPublishedPostFields(frontmatter);
     if (missing.length > 0) throw validationError(`website-frontmatter-incomplete:${missing.join(',')}`);
     const raw = `${renderFrontmatterYaml(frontmatter)}\n\n${markdown}\n`;
-    const saved = await this.files.save(slug, raw);
+    const existing = await this.files.get(slug);
+    const expectedHash = existing?.hash ?? null;
+
+    // 若接入统一发布服务且文章已存在，写盘前进行范围预检（拒绝范围外内容提交）
+    if (this.contentRelease && existing) {
+      const preflight = await this.contentRelease.preflight(slug);
+      if (!preflight.ok) {
+        if (preflight.scopeConflict) {
+          throw new ApiError('scope-conflict', HttpStatus.CONFLICT, `发布范围冲突：${preflight.scopeConflict.message}`);
+        }
+        throw validationError(`website-frontmatter-incomplete:${preflight.missing.join(',')}`);
+      }
+    }
+
+    const saved = this.mutations
+      ? await this.mutations.saveManual({
+          slug,
+          raw,
+          expectedHash,
+          actor: 'owner',
+          requestId: newId(),
+        })
+      : await this.files.save(slug, raw, expectedHash);
+
+    // 保存后，若接入统一发布出口，运行 preflight 并准备 ContentRelease 引用（C21: 发布动作引用 ContentRelease）
+    if (this.contentRelease) {
+      const preflight = await this.contentRelease.preflight(saved.slug);
+      if (!preflight.ok) {
+        if (preflight.scopeConflict) {
+          throw new ApiError('scope-conflict', HttpStatus.CONFLICT, `发布范围冲突：${preflight.scopeConflict.message}`);
+        }
+        throw validationError(`website-frontmatter-incomplete:${preflight.missing.join(',')}`);
+      }
+
+      await this.contentRelease.prepareRelease({
+        slug: saved.slug,
+        actor: 'workstation',
+        requestKey: `work_rel_${workId}_${saved.hash.slice(0, 16)}`,
+      });
+    }
+
     const base = (process.env.PUBLIC_SITE_URL?.trim() || 'https://iwalk.pro').replace(/\/$/, '');
     const url = `${base}/posts/${encodeURIComponent(saved.slug)}`;
-    // 保存 ≠ 发布：文件只落盘到 content/log，上线走 pnpm content:publish（commit+push+Vercel），
-    // 之后由 verifyWebsite 校验线上 URL 才翻 PUBLISHED。这里如实记录 PREPARED。
+    // 保存 ≠ 发布：文件只落盘到 content/log，上线走统一 ContentRelease 阶段推进（commit+push+Vercel），
+    // 之后由 verifyWebsite 校验线上才翻 PUBLISHED。这里如实记录 PREPARED。
     const publication = await this.publications.upsert({
       id: newId(),
       submissionId: workId,
@@ -67,16 +111,55 @@ export class PublicationService {
   }
 
   async verifyWebsite(workId: string) {
-    if (!this.websiteVerifier) throw validationError('website-verifier-unavailable');
     const work = await this.works.findById(workId);
     if (!work || !work.approvedArtifactHash) throw validationError('work-not-approved');
     const publication = await this.publications.find(workId, 'WEBSITE');
     if (!publication?.url) throw validationError('website-publication-not-found');
     const artifact = await this.stages.latest(workId, 'REVIEW_READY');
     const title = typeof artifact?.artifact.output.title === 'string' ? artifact.artifact.output.title : work.title;
-    const verification = await this.websiteVerifier.verify(publication.url, { title });
-    const updated = await this.publications.upsert({ id: publication.id, submissionId: workId, channel: 'WEBSITE', artifactHash: work.approvedArtifactHash, status: verification.ok ? 'PUBLISHED' : 'FAILED', url: publication.url, lastError: verification.ok ? null : verification.reason ?? 'remote-verification-failed', publishedAt: verification.ok ? new Date() : null });
-    if (this.works.setStatus) await this.works.setStatus(workId, verification.ok ? 'PARTIALLY_PUBLISHED' : 'APPROVED', work.approvedArtifactHash);
+
+    let verified = false;
+    let failureReason: string | null = null;
+
+    // 优先复用统一 ContentRelease 线上核验出口（TECH-DESIGN §6.2 / C21），不另起核验链
+    if (this.contentRelease) {
+      const slugMatch = publication.url.match(/\/posts\/([^/?#]+)/);
+      const slug = slugMatch ? decodeURIComponent(slugMatch[1]!) : slugify(`${title}-${work.id.slice(-6)}`);
+      const latestRelease = await this.contentRelease.getLatestRelease(slug);
+      if (latestRelease && latestRelease.stage === 'PUBLISHED') {
+        verified = true;
+      } else if (latestRelease && latestRelease.stage === 'VERIFYING') {
+        const result = await this.contentRelease.verify(latestRelease.id);
+        verified = result.verified;
+        failureReason = result.reason;
+      } else if (this.websiteVerifier) {
+        const result = await this.websiteVerifier.verify(publication.url, { title });
+        verified = result.ok;
+        failureReason = result.reason ?? 'remote-verification-failed';
+      } else {
+        throw validationError('website-verifier-unavailable');
+      }
+    } else if (this.websiteVerifier) {
+      const result = await this.websiteVerifier.verify(publication.url, { title });
+      verified = result.ok;
+      failureReason = result.reason ?? 'remote-verification-failed';
+    } else {
+      throw validationError('website-verifier-unavailable');
+    }
+
+    const updated = await this.publications.upsert({
+      id: publication.id,
+      submissionId: workId,
+      channel: 'WEBSITE',
+      artifactHash: work.approvedArtifactHash,
+      status: verified ? 'PUBLISHED' : 'FAILED',
+      url: publication.url,
+      lastError: verified ? null : failureReason ?? 'remote-verification-failed',
+      publishedAt: verified ? new Date() : null,
+    });
+    if (this.works.setStatus) {
+      await this.works.setStatus(workId, verified ? 'PARTIALLY_PUBLISHED' : 'APPROVED', work.approvedArtifactHash);
+    }
     return updated;
   }
 

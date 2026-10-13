@@ -35,7 +35,7 @@ export function buildAiNextStepPrompt(
       `- ${e.slug}｜${e.title}${e.actionable ? '｜可整理为行动步骤' : ''}${e.summary ? `｜${e.summary}` : ''}${e.tags.length ? `｜#${e.tags.join(' #')}` : ''}`,
   );
   return [
-    '你是个人站 Walker 的卡口助手。访客描述了自己的卡点，你要给出一个最小、可执行的下一步。',
+    '你是个人站 Walker 的提问助手。访客描述了自己的卡点，你要给出一个最小、可执行的下一步。',
     '规则：',
     '1. nextStep 是一句口语化的具体行动指令，不超过 120 字，不空泛、不列清单。',
     '2. 只有当某篇「可引用内容」确实对准卡点时，才把它的 slug 填进 suggestedSlug；至多一篇；没有就填 null，不要硬推。',

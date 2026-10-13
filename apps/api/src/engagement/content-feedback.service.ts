@@ -1,3 +1,4 @@
+import { resolveActionDue } from '@walker/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import { newId } from '../common/ids';
 import {
@@ -70,9 +71,15 @@ export class ContentFeedbackService {
     }
     if (!this.actions) throw storageUnavailable();
     if (feedback.convertedActionId) return { target: 'ACTION', id, actionId: feedback.convertedActionId };
+    // 反馈转事项：若带排期日期，沿用共享时区规则推导到期瞬时（不另写一套偏移算法）
+    const plannedDate = input.plannedDate ?? null;
+    const due = resolveActionDue({ plannedDate });
     const action = await this.actions.create({
       id: newId(), title, note: feedback.note ?? null, kind: 'TASK', entityType: 'FEEDBACK', entityId: id,
-      plannedDate: input.plannedDate ?? null, source: 'SYSTEM',
+      plannedDate,
+      dueAt: due.dueAt ? new Date(due.dueAt) : null,
+      timezone: due.timezone,
+      source: 'SYSTEM',
     });
     await client.contentFeedback.update({ where: { id }, data: { convertedActionId: action.id } });
     return { target: 'ACTION', id, actionId: action.id };

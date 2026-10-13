@@ -8,13 +8,15 @@ export type ContentFileMeta = {
 
 export type ContentFileDetail = ContentFileMeta & {
   raw: string;
+  hash: string;
   ext: '.md' | '.mdx';
 };
 
 export interface ContentFileRepositoryPort {
   list(): Promise<ContentFileMeta[]>;
   get(slug: string): Promise<ContentFileDetail | null>;
-  save(slug: string, raw: string): Promise<ContentFileDetail>;
+  /** expectedHash is null only for create-if-absent; otherwise it must match current UTF-8 bytes. */
+  save(slug: string, raw: string, expectedHash: string | null): Promise<ContentFileDetail>;
 }
 
 export const CONTENT_FILE_REPOSITORY = Symbol('CONTENT_FILE_REPOSITORY');

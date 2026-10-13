@@ -33,6 +33,7 @@ describe('getPetActivity', () => {
     expect(getPetActivity(false, '超时', [])).toBe('error');
     expect(getPetActivity(false, null, [assistant('好了')])).toBe('complete');
     expect(getPetActivity(false, null, [assistant('固定', { aiUsedFlag: false })])).toBe('fallback');
+    expect(getPetActivity(false, null, [assistant('', { hidden: true, aiUsedFlag: false })])).toBe('idle');
     expect(getPetActivity(false, null, [assistant('停', { stopped: true })])).toBe('stopped');
   });
 });

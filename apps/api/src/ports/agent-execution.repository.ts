@@ -9,13 +9,22 @@ export interface AgentExecutionDraft {
   actor: string;
   actorScope: string;
   agentRevisionId: string | null;
+  deploymentId?: string | null;
+  placementKey?: string | null;
+  deploymentGeneration?: number | null;
+  contentSnapshotId?: string | null;
   requestKey: string;
   inputHash: string;
   resourceScope?: import('@walker/shared').ResourceScope | null;
+  /** Internal-only owner used to register public execution input; never written onto ExecutionRun. */
+  conversationId?: string | null;
   input?: string | null;
   deadline: Date | null;
   parentRunId?: string | null;
   grantId?: string | null;
+  /** G01: 旧数据溯源 */
+  legacySource?: string | null;
+  legacyId?: string | null;
 }
 
 export interface AgentExecutionRecord extends AgentExecutionDraft {
@@ -65,6 +74,10 @@ export interface AgentExecutionRepositoryPort {
     agentId: string;
     archivedAt: Date | null;
     toolProfile: { id?: string; version?: number } | null;
+    /** 该修订的系统提示词（R32）：运行时据此注入 Agent 人格。 */
+    prompt: string;
+    providerId: string | null;
+    modelId: string;
   } | null>;
   recordProcess(input: { runId: string; bootId: string; pid: number | null; startedAt: string | null }): Promise<void>;
   readProcess(runId: string): Promise<{ runId: string; bootId: string; pid: number | null; startedAt: string | null } | null>;

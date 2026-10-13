@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { NormalizedTraceEvent } from '@walker/shared';
 import { ConfigModule } from '../config/config.module';
@@ -12,6 +13,7 @@ import {
   type ContentReleaseRunnerPort,
   type ReleaseProcessResult,
 } from '../ports/content-release-runner.port';
+import { GIT_STATUS, type GitStatusPort } from '../ports/git-status.repository';
 import { TraceService } from '../traces/trace.service';
 
 /** 可手动完成的假发布进程：用来精确控制「在途」与「终态」两个时刻 */
@@ -132,11 +134,26 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
     fs.writeFileSync(path.join(contentDir, 'demo-missing.md'), MISSING_POST, 'utf8');
 
     runner = new FakeReleaseRunner();
+    const cleanGit: GitStatusPort = {
+      async snapshot() {
+        return { available: true, dirtyFiles: ['demo-ready.md'], headCommit: 'head-test' };
+      },
+      async workspaceSnapshot() {
+        return {
+          available: true,
+          headCommit: 'head-test',
+          files: [{ path: 'content/log/demo-ready.md', staged: false, dirty: true, statusCode: ' M' }],
+          dirtyFiles: ['content/log/demo-ready.md'],
+        };
+      },
+    };
     moduleRef = await Test.createTestingModule({
       imports: [ConfigModule, KernelModule],
     })
       .overrideProvider(CONTENT_RELEASE_RUNNER)
       .useValue(runner)
+      .overrideProvider(GIT_STATUS)
+      .useValue(cleanGit)
       .compile();
     await moduleRef.init();
     service = moduleRef.get(ContentReleaseService);
@@ -151,8 +168,13 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
     fs.rmSync(runsDir, { recursive: true, force: true });
   });
 
+  async function prepared(slug: string) {
+    const release = await service.prepareRelease({ slug, requestKey: `test-release-${randomUUID()}` });
+    return { slug, releaseId: release.id };
+  }
+
   it('预检：字段齐全 → ok；缺字段 → 恰好列出缺失项；不存在 → 404', async () => {
-    await expect(service.preflight('demo-ready')).resolves.toEqual({ ok: true, missing: [] });
+    await expect(service.preflight('demo-ready')).resolves.toMatchObject({ ok: true, missing: [] });
     const missing = await service.preflight('demo-missing');
     expect(missing.ok).toBe(false);
     expect(missing.missing).toEqual([
@@ -179,7 +201,7 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
 
   it('缺字段内容上线被拒，且不启动进程（零写动作）', async () => {
     const before = snapshotDir(contentDir);
-    await expect(service.release('demo-missing')).rejects.toMatchObject({
+    await expect(service.release({ slug: 'demo-missing', releaseId: 'unused' })).rejects.toMatchObject({
       response: { code: 'validation-error' },
     });
     expect(runner.calls).toBe(0);
@@ -188,21 +210,22 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
   });
 
   it('并发两次触发：第二次如实返回「进行中」，且只创建一个进程（PRD A9）', async () => {
-    const first = await service.release('demo-ready');
+    const input = await prepared('demo-ready');
+    const first = await service.release(input);
     expect(first.status).toBe('RUNNING');
-    const second = await service.release('demo-ready');
+    const second = await service.release(input);
     expect(second.status).toBe('RUNNING');
     expect(second.runId).toBe(first.runId);
 
     await waitFor(() => runner.calls === 1, '发布进程被派发');
     // 再触发一次仍然只有一个进程
-    const third = await service.release('demo-ready');
+    const third = await service.release(input);
     expect(third.runId).toBe(first.runId);
     expect(runner.calls).toBe(1);
 
     runner.complete({
       exitCode: 0,
-      timedOut: false,
+      timedOut: false, exitProof: 'exited',
       stdout: '{"exitCode":0,"elapsedMs":1,"tail":["已 push。"]}\n',
       stderr: '',
     });
@@ -213,11 +236,11 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
   });
 
   it('成功上线：轨迹含 kind:publish 的 run.start 与 run.end（D2 / PRD A11）', async () => {
-    const { runId } = await service.release('demo-ready');
+    const { runId } = await service.release(await prepared('demo-ready'));
     await waitFor(() => runner.calls === 2, '发布进程被派发');
     runner.complete({
       exitCode: 0,
-      timedOut: false,
+      timedOut: false, exitProof: 'exited',
       stdout: '{"exitCode":0,"elapsedMs":5,"tail":["已 push。Vercel 将自动部署 web。"]}\n',
       stderr: '',
     });
@@ -237,7 +260,7 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
   });
 
   it('非零退出：如实回显退出码与输出尾部，绝不包装成成功（PRD A10）', async () => {
-    const { runId } = await service.release('demo-ready');
+    const { runId } = await service.release(await prepared('demo-ready'));
     await waitFor(() => runner.calls === 3, '发布进程被派发');
     const tail = [
       '== 3/3 commit ==',
@@ -246,7 +269,7 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
     ];
     runner.complete({
       exitCode: 1,
-      timedOut: false,
+      timedOut: false, exitProof: 'exited',
       stdout: `${JSON.stringify({ exitCode: 1, elapsedMs: 42, tail })}\n`,
       stderr: '',
     });
@@ -254,7 +277,7 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
 
     const error = events.find((e) => e.type === 'run.error');
     expect(error).toMatchObject({
-      payload: { status: 'FAILED', code: 'release-failed', exitCode: 1 },
+      payload: { status: 'UNKNOWN', code: 'release-outcome-unknown', exitCode: 1 },
     });
     const message = (error!.payload as { message: string }).message;
     expect(message).toContain('暂存区存在 1 个非内容文件');
@@ -267,34 +290,34 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
   });
 
   it('超时强杀：标注 release-timeout，不谎报成功', async () => {
-    const { runId } = await service.release('demo-ready');
+    const { runId } = await service.release(await prepared('demo-ready'));
     await waitFor(() => runner.calls === 4, '发布进程被派发');
-    runner.complete({ exitCode: null, timedOut: true, stdout: '', stderr: '构建耗时过长' });
+    runner.complete({ exitCode: null, timedOut: true, exitProof: 'exited', stdout: '', stderr: '构建耗时过长' });
     const events = await waitForTerminal(traces, runId);
     expect(events.find((e) => e.type === 'run.error')).toMatchObject({
-      payload: { status: 'FAILED', code: 'release-timeout' },
+      payload: { status: 'UNKNOWN', code: 'release-outcome-unknown' },
     });
     expect(events.some((e) => e.type === 'run.end')).toBe(false);
   });
 
   it('运行结束后锁释放：可以再次触发（不是一次性锁死）', async () => {
-    const { runId } = await service.release('demo-ready');
+    const { runId } = await service.release(await prepared('demo-ready'));
     await waitFor(() => runner.calls === 5, '发布进程被派发');
     runner.complete({
       exitCode: 0,
-      timedOut: false,
+      timedOut: false, exitProof: 'exited',
       stdout: '{"exitCode":0,"elapsedMs":1,"tail":[]}\n',
       stderr: '',
     });
     await waitForTerminal(traces, runId);
 
-    const next = await service.release('demo-ready');
+    const next = await service.release(await prepared('demo-ready'));
     expect(next.status).toBe('RUNNING');
     expect(next.runId).not.toBe(runId);
     await waitFor(() => runner.calls === 6, '第二次派发');
     runner.complete({
       exitCode: 0,
-      timedOut: false,
+      timedOut: false, exitProof: 'exited',
       stdout: '{"exitCode":0,"elapsedMs":1,"tail":[]}\n',
       stderr: '',
     });
@@ -302,11 +325,11 @@ describe('内容上线（真实 kernel 接线 + 假发布进程）', () => {
   });
 
   it('超长且含引号的输出尾部仍能落痕，且 payload 不破 2000B 契约', async () => {
-    const { runId } = await service.release('demo-ready');
+    const { runId } = await service.release(await prepared('demo-ready'));
     await waitFor(() => runner.calls === 7, '发布进程被派发');
     runner.complete({
       exitCode: 1,
-      timedOut: false,
+      timedOut: false, exitProof: 'exited',
       stdout: `${JSON.stringify({ exitCode: 1, elapsedMs: 9, tail: ['"'.repeat(2_000)] })}\n`,
       stderr: '"'.repeat(3_000),
     });

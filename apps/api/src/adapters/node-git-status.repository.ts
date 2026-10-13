@@ -13,7 +13,9 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import type {
   ContentLogGitStatus,
+  GitFileStatus,
   GitStatusPort,
+  WorkspaceGitStatus,
 } from '../ports/git-status.repository';
 
 const execFileAsync = promisify(execFile);
@@ -75,6 +77,63 @@ export class NodeGitStatusRepository implements GitStatusPort {
     } catch {
       // git 不可用不是错误状态而是事实缺失：如实上报，由展示层显示「未知」
       return { available: false, dirtyFiles: [], headCommit: null };
+    }
+  }
+
+  async workspaceSnapshot(): Promise<WorkspaceGitStatus> {
+    const cwd = resolveRepoRoot();
+    if (!cwd) return { available: false, headCommit: null, files: [], dirtyFiles: [] };
+    try {
+      const [status, head] = await Promise.all([
+        execFileAsync('git', ['status', '--porcelain', '-z'], {
+          cwd,
+          maxBuffer: MAX_BUFFER_BYTES,
+          windowsHide: true,
+        }),
+        execFileAsync('git', ['log', '-1', '--format=%H'], {
+          cwd,
+          maxBuffer: MAX_BUFFER_BYTES,
+          windowsHide: true,
+        }),
+      ]);
+      const records = status.stdout.split('\0').filter(Boolean);
+      const files: GitFileStatus[] = [];
+      const dirtyFiles: string[] = [];
+      for (let i = 0; i < records.length; i++) {
+        const record = records[i]!;
+        const statusCode = record.slice(0, 2);
+        const filePath = record.slice(3);
+        if (statusCode.startsWith('R') || statusCode.startsWith('C')) i += 1;
+        if (!filePath) continue;
+        const x = statusCode[0] ?? ' ';
+        const y = statusCode[1] ?? ' ';
+        const staged = x !== ' ' && x !== '?';
+        const dirty = y !== ' ' || x === '?';
+        files.push({ path: filePath, staged, dirty, statusCode });
+        dirtyFiles.push(filePath);
+      }
+      return {
+        available: true,
+        headCommit: head.stdout.trim() || null,
+        files,
+        dirtyFiles,
+      };
+    } catch {
+      return { available: false, headCommit: null, files: [], dirtyFiles: [] };
+    }
+  }
+
+  async hasCommit(commit: string): Promise<boolean> {
+    const cwd = resolveRepoRoot();
+    if (!cwd || !commit || !/^[0-9a-fA-F]{7,40}$/.test(commit.trim())) return false;
+    try {
+      await execFileAsync('git', ['cat-file', '-e', `${commit.trim()}^{commit}`], {
+        cwd,
+        windowsHide: true,
+      });
+      return true;
+    } catch {
+      return false;
     }
   }
 }

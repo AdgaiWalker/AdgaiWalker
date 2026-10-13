@@ -1,119 +1,126 @@
 /**
- * AgentRunnerService & B-Trace Pipeline
+ * AgentRunnerService：管理侧直调的**语义**测试。
  *
- * 这里钉住的核心行为：**直调是真调模型**，不是模板回放。
- * 因此 runner 依赖 `LlmClient` 端口而不是具体的供应商服务 —— 测试注入假实现即可，
- * 断言的是「输出来自模型、token 来自 usage、耗时是真实测量、失败可分类」。
+ * 这里钉住本轮修掉的根因，不是实现细节：
+ * - 没有可用授权时如实 409，**不**拿一条用满的授权去空跑（原来是挑第一条没过期的就上）
+ * - 运行没成功时如实报错，**不**返回 output:"" 当 201 成功（原来固定等 2 秒就交卷）
+ * - 成功但零文本同样是失败，不许假装有产出
+ * - 等待与取文本走 AgentExecutionService 的唯一实现，runner 不自己拍窗口
  */
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import fs from 'node:fs';
+import type { AgentRevisionDetail, AuthorizationGrantState } from '@walker/shared';
 import { AgentRunnerService } from './agent-runner.service';
 import { AgentUnitService } from './agent-unit.service';
-import { ModelProviderService } from '../model-providers/model-provider.service';
 import { PrismaAgentUnitRepository } from '../adapters/prisma-agent-unit.repository';
-import { PrismaModelProviderRepository } from '../adapters/prisma-model-provider.repository';
 import type { PrismaPort } from '../ports/prisma.port';
-import { LlmError, type LlmChatRequest, type LlmClient } from '../ports/llm.port';
+import type { ExecutionRunOutcome } from '../execution/agent-execution.service';
 
-const TEST_KEY = 'e'.repeat(64);
-const MODEL_TEXT = '润色建议：把结论提到段首，删去第二段的重复论据。';
+const agentId = 'xiaoying';
 
-type StubLlm = LlmClient & { calls: LlmChatRequest[] };
+const revision: AgentRevisionDetail['revisions'][number] = {
+  id: 'rev-1', agentId, version: 1, prompt: '你是小影，只读站内助手。',
+  providerId: 'deepseek-official', modelId: 'deepseek-flash',
+  toolProfile: { id: 'read-only', version: 1 }, schemaVersion: 1,
+  configHash: 'c'.repeat(64), createdAt: '2026-10-01T00:00:00.000Z',
+};
 
-/** 可控的假模型：记录收到的请求，可指定返回文本、延迟、或抛出分类错误 */
-function stubLlm(options: { text?: string; delayMs?: number; error?: LlmError } = {}): StubLlm {
-  const calls: LlmChatRequest[] = [];
-  return {
-    calls,
-    async chat(request) {
-      calls.push(request);
-      if (options.delayMs) await new Promise((resolve) => setTimeout(resolve, options.delayMs));
-      if (options.error) throw options.error;
-      return {
-        text: options.text ?? MODEL_TEXT,
-        model: request.modelId,
-        usage: { promptTokens: 1200, completionTokens: 40, cacheHitTokens: 900 },
-        elapsedMs: options.delayMs ?? 5,
-      };
-    },
-  };
+const detail: AgentRevisionDetail = { id: agentId, name: '小影', archivedAt: null, revisions: [revision] };
+
+const usableGrant = { id: 'grant-usable' } as unknown as AuthorizationGrantState;
+
+function outcome(state: ExecutionRunOutcome['state'], stopReason: string | null = null): ExecutionRunOutcome {
+  return { runId: 'run-1', state, stopReason, success: state === 'SUCCEEDED', elapsedMs: 4_399, tokensIn: 325, tokensOut: 273 };
 }
 
-describe('AgentRunnerService & B-Trace Pipeline', () => {
+async function failureOf(promise: Promise<unknown>) {
+  const error = await promise.catch((caught) => caught);
+  return (error as { getResponse?: () => { code?: string; state?: string; stopReason?: string; runId?: string } }).getResponse?.() ?? {};
+}
+
+describe('AgentRunnerService（直调语义）', () => {
   let prisma: PrismaClient;
-  let prismaPort: PrismaPort;
   let agentService: AgentUnitService;
 
-  const runnerWith = (llm: LlmClient): AgentRunnerService =>
-    new AgentRunnerService(prismaPort, agentService, llm, { async detail() { return null; } } as never, { async list() { return []; } } as never, { async accept() { throw new Error('不应直接调用模型'); } } as never, { async findById() { return null; }, async listEvents() { return []; } } as never);
+  const build = (options: {
+    grant?: AuthorizationGrantState | null;
+    detail?: AgentRevisionDetail | null;
+    run?: ExecutionRunOutcome | null;
+    text?: string;
+  } = {}) => {
+    const execution = {
+      accept: vi.fn(async () => ({ id: 'run-1' })),
+      awaitTerminal: vi.fn(async () => (options.run === undefined ? outcome('SUCCEEDED') : options.run)),
+      savedText: vi.fn(async () => options.text ?? '你好！我是小影。'),
+    };
+    const authorization = {
+      selectUsable: vi.fn(async () => (options.grant === undefined ? usableGrant : options.grant)),
+    };
+    const revisions = {
+      detail: vi.fn(async () => (options.detail === undefined ? detail : options.detail)),
+    };
+    const runner = new AgentRunnerService(
+      agentService,
+      revisions as never,
+      authorization as never,
+      execution as never,
+    );
+    return { runner, execution, authorization, revisions };
+  };
 
   beforeAll(async () => {
-    process.env.WALKER_CREDENTIAL_MASTER_KEY = TEST_KEY;
     prisma = new PrismaClient();
     await prisma.$connect();
-    prismaPort = {
-      getClient: () => prisma,
-      isWritable: () => true,
-      ping: async () => true,
-    };
-
+    const prismaPort: PrismaPort = { getClient: () => prisma, isWritable: () => true, ping: async () => true };
     agentService = new AgentUnitService(new PrismaAgentUnitRepository(prismaPort));
-    const providerService = new ModelProviderService(new PrismaModelProviderRepository(prismaPort));
-
     await agentService.ensureDefaultAgent();
-    await providerService.ensureDefaultProvider();
   });
 
-  it('listLogFiles: 能列出 content/log/*.md 下的真实文件列表', async () => {
-    const files = await runnerWith(stubLlm()).listLogFiles();
-    expect(files.length).toBeGreaterThan(0);
-    expect(files.some((f) => f.includes('ai-low-cost-access.md'))).toBe(true);
-    expect(files.every((f) => f.startsWith('content/log/'))).toBe(true);
+  it('没有可用授权 → 409 grant-required，且绝不入队空跑', async () => {
+    const h = build({ grant: null });
+    expect(await failureOf(h.runner.runChat(agentId, { input: '你好，介绍一下你自己' }))).toMatchObject({ code: 'grant-required' });
+    expect(h.execution.accept).not.toHaveBeenCalled();
   });
 
-  it('runFile: 路径穿越严格防御（越权目录返回 403）', async () => {
-    await expect(
-      runnerWith(stubLlm()).runFile('xiaoying', {
-        targetFile: 'content/log/../../package.json',
-        instruction: '分析文件',
-      }),
-    ).rejects.toThrow('目标文件必须位于 content/log/ 目录内');
+  it('额度用完的运行 → 明确失败（不再返回空串当成功）', async () => {
+    const h = build({ run: outcome('FAILED', 'quota') });
+    const failure = await failureOf(h.runner.runChat(agentId, { input: '你好' }));
+    expect(failure).toMatchObject({ code: 'agent-run-quota', state: 'FAILED', stopReason: 'quota' });
+    expect(h.execution.savedText).not.toHaveBeenCalled();
   });
 
-  it('runFile: 文件不存在时返回 404', async () => {
-    await expect(
-      runnerWith(stubLlm()).runFile('xiaoying', {
-        targetFile: 'content/log/non-existent-file.md',
-        instruction: '分析文件',
-      }),
-    ).rejects.toThrow('未找到目标文件');
+  it('超时是 504 且带 stopReason，不再是「成功但没内容」', async () => {
+    const h = build({ run: outcome('FAILED', 'deadline') });
+    const failure = await failureOf(h.runner.runChat(agentId, { input: '你好' }));
+    expect(failure).toMatchObject({ code: 'agent-run-timeout', stopReason: 'deadline' });
   });
 
-  it('runFile: 智能体不存在时返回 404', async () => {
-    await expect(
-      runnerWith(stubLlm()).runFile('non-existent-agent', {
-        targetFile: 'content/log/ai-low-cost-access.md',
-        instruction: '分析文件',
-      }),
-    ).rejects.toThrow('智能体不存在');
+  it('报告成功却零文本 → 502 agent-run-empty（同一类诚实约束）', async () => {
+    const h = build({ text: '   ' });
+    expect(await failureOf(h.runner.runChat(agentId, { input: '你好' }))).toMatchObject({ code: 'agent-run-empty' });
   });
 
-  it('runFile: 没有修订和授权时不直接调用模型', async () => {
-    const llm = stubLlm({ delayMs: 40 });
-    const failure = await runnerWith(llm).runFile('xiaoying', {
-      targetFile: 'content/log/ai-low-cost-access.md',
-      instruction: '检查全文逻辑连贯性并润色结论',
-    }).catch((caught) => caught);
-    expect((failure as { response?: { code?: string } }).response?.code).toBe('execution-denied');
-    expect(llm.calls).toHaveLength(0);
+  it('成功 → 输出与归因来自真实运行与修订', async () => {
+    const h = build({ text: '你好！我是小影，Walker 站主 Dora 的只读助手。' });
+    const result = await h.runner.runChat(agentId, { input: '你好，介绍一下你自己' });
+    expect(result.output).toContain('我是小影');
+    expect(result.providerId).toBe('deepseek-official');
+    expect(result.model).toBe('deepseek-flash');
+    expect(result.temperature).toBeNull();
+    expect(result.usage).toEqual({ promptTokens: 325, completionTokens: 273, cacheHitTokens: 0 });
+    expect(h.execution.awaitTerminal).toHaveBeenCalledWith('run-1');
   });
 
-  it('缺凭据、鉴权失败和超时不再绕过统一执行', async () => {
-    for (const llm of [stubLlm({ error: new LlmError('llm-no-credential', '缺少凭据') }), stubLlm({ error: new LlmError('llm-auth-failed', '401') }), stubLlm({ delayMs: 200 })]) {
-      const failure = await runnerWith(llm).runFile('xiaoying', { targetFile: 'content/log/ai-low-cost-access.md', instruction: '分析文件' }).catch((caught) => caught);
-      expect((failure as { response?: { code?: string } }).response?.code).toBe('execution-denied');
-      expect(llm.calls).toHaveLength(0);
-    }
+  it('输入与引擎覆盖仍按老规矩拒绝，且不触碰执行栈', async () => {
+    const h = build();
+    expect(await failureOf(h.runner.runChat(agentId, { input: 'x' }))).toMatchObject({ code: 'invalid-input' });
+    expect(await failureOf(h.runner.runChat(agentId, { input: '你好', modelId: 'gpt' }))).toMatchObject({ code: 'execution-denied' });
+    expect(h.execution.accept).not.toHaveBeenCalled();
+  });
+
+  it('没有修订 → 403，且不去选授权', async () => {
+    const h = build({ detail: null });
+    expect(await failureOf(h.runner.runChat(agentId, { input: '你好' }))).toMatchObject({ code: 'execution-denied' });
+    expect(h.authorization.selectUsable).not.toHaveBeenCalled();
   });
 });

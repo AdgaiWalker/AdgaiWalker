@@ -9,10 +9,19 @@ export interface ReleaseProcessResult {
   timedOut: boolean;
   stdout: string;
   stderr: string;
+  /** Whether the full process tree was proven to have exited. */
+  exitProof: 'exited' | 'unproven';
+}
+
+export interface RunReleaseOptions {
+  signal?: AbortSignal;
+  onSpawn?: (pid: number) => void;
+  lock?: { lockFile: string; lockId: string };
 }
 
 export interface ContentReleaseRunnerPort {
-  runRelease(): Promise<ReleaseProcessResult>;
+  runRelease(options?: RunReleaseOptions): Promise<ReleaseProcessResult>;
+  terminateProcessTree?(pid: number): Promise<'exited' | 'unproven'>;
 }
 
 export const CONTENT_RELEASE_RUNNER = Symbol('CONTENT_RELEASE_RUNNER');

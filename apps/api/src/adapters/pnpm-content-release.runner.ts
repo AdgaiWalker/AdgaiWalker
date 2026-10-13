@@ -14,7 +14,9 @@ import path from 'node:path';
 import type {
   ContentReleaseRunnerPort,
   ReleaseProcessResult,
+  RunReleaseOptions,
 } from '../ports/content-release-runner.port';
+import { terminateAndVerifyProcessTree } from '../common/process-tree';
 
 /** 固定参数：发布脚本 + 推送到生产（push 隐含 commit） + 结构化输出供 API 解析 */
 const RELEASE_ARGS = ['content:publish', '--push', '--json'] as const;
@@ -41,14 +43,27 @@ function resolveTimeoutMs(): number {
 }
 
 export class PnpmContentReleaseRunner implements ContentReleaseRunnerPort {
-  async runRelease(): Promise<ReleaseProcessResult> {
+  async runRelease(...args: [RunReleaseOptions?]): Promise<ReleaseProcessResult> {
+    const options = args[0];
     const cwd = resolveRepoRoot();
+    const env = { ...process.env };
+    delete env.WALKER_CONTENT_LOCK_ID;
+    if (options?.lock) {
+      env.WALKER_CONTENT_LOCK_PATH = options.lock.lockFile;
+      env.WALKER_CONTENT_LOCK_ID = options.lock.lockId;
+    }
     const child = spawn('pnpm', [...RELEASE_ARGS], {
       cwd,
+      env,
       shell: process.platform === 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
       windowsHide: true,
     });
+
+    if (child.pid) {
+      options?.onSpawn?.(child.pid);
+    }
 
     let stdout = '';
     let stderr = '';
@@ -65,25 +80,66 @@ export class PnpmContentReleaseRunner implements ContentReleaseRunnerPort {
     child.stderr?.on('data', (chunk: Buffer) => append('stderr', chunk));
 
     return await new Promise<ReleaseProcessResult>((resolve) => {
+      let settled = false;
+      let termination: Promise<'exited' | 'unproven'> | null = null;
+      const cleanupListeners = () => {
+        clearTimeout(timer);
+        if (options?.signal && abortHandler) {
+          options.signal.removeEventListener('abort', abortHandler);
+        }
+      };
+
+      const finish = async (code: number | null, error?: Error, knownProof?: 'exited' | 'unproven') => {
+        if (settled) return;
+        settled = true;
+        const exitProof = knownProof ?? (termination ? await termination : 'exited');
+        cleanupListeners();
+        resolve({
+          exitCode: code,
+          timedOut,
+          stdout,
+          stderr: error ? `${stderr}\n${error.message}`.trim() : stderr,
+          exitProof,
+        });
+      };
+
+      const terminate = () => {
+        if (!child.pid) {
+          child.kill();
+          return;
+        }
+        termination ??= terminateAndVerifyProcessTree(child.pid).catch(() => 'unproven' as const);
+        void termination.then((proof) => finish(child.exitCode, undefined, proof));
+      };
+
+      const abortHandler = () => {
+        terminate();
+      };
+
+      if (options?.signal) {
+        if (options.signal.aborted) {
+          abortHandler();
+        } else {
+          options.signal.addEventListener('abort', abortHandler, { once: true });
+        }
+      }
+
       const timer = setTimeout(() => {
         timedOut = true;
-        child.kill();
+        terminate();
       }, resolveTimeoutMs());
 
       child.on('error', (error: Error) => {
-        clearTimeout(timer);
-        resolve({
-          exitCode: null,
-          timedOut,
-          stdout,
-          stderr: `${stderr}\n${error.message}`.trim(),
-        });
+        void finish(null, error);
       });
 
       child.on('close', (code: number | null) => {
-        clearTimeout(timer);
-        resolve({ exitCode: code, timedOut, stdout, stderr });
+        void finish(code);
       });
     });
+  }
+
+  async terminateProcessTree(pid: number): Promise<'exited' | 'unproven'> {
+    return terminateAndVerifyProcessTree(pid);
   }
 }

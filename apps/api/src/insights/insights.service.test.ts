@@ -28,6 +28,9 @@ function harness(existing: { id: string; title: string } | null = null) {
     async loadCitableFull() {
       return [];
     },
+    async loadCitableSnapshot() {
+      return { buildId: 'test-build', collectionHash: 'c'.repeat(64), entries: [] };
+    },
   };
   return { service: new InsightsService(prisma, index), created, client: client as never };
 }

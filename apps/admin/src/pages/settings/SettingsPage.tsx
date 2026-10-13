@@ -1,16 +1,20 @@
 import { useCapabilities } from "../../app/AdminShell";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  PageHeading,
-} from "../../components/States";
+import { ErrorState, LoadingState, PageHeading } from "../../components/States";
 import { capabilityLabels, timeLabel } from "../../shared/labels";
+import { ModelConfigPanel } from "./ModelConfigPanel";
 export function SettingsPage() {
   const query = useCapabilities();
   return (
     <>
-      <PageHeading title="设置" description="查看当前可用能力与连接状态。" />
+      <PageHeading title="设置" description="配置模型连接，查看当前可用能力。" />
+      <section className="panel">
+        <h2>模型连接</h2>
+        <p className="muted">
+          提供方、API 网址、API Key 与模型都在这里配置；这是「配好供应商 → 建 Agent → 试跑 →
+          看记录 → 部署」闭环的第一环。配置写入本系统自己的 Harness 目录，与站主个人环境无关。
+        </p>
+        <ModelConfigPanel />
+      </section>
       <section className="panel">
         <h2>授权</h2>
         <p>授权在 Agent 详情里管理。新授权默认一次，修改和发布分开。持续内容全权入口已禁用。前台没有临时提权入口。</p>
@@ -62,9 +66,6 @@ export function SettingsPage() {
           )
         )}
       </section>
-      <EmptyState title="配置编辑尚未接入">
-        模型连接、权限上限与日志保留将在对应阶段开放。当前没有可修改的开关。
-      </EmptyState>
     </>
   );
 }

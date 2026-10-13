@@ -1,46 +1,61 @@
+---
+status: active
+type: map
+title: 文档全局索引
+last_verified: 2026-09-25
+ssot: false
+applies_to: [web, admin, api, agent, shared]
+---
+
 # 文档
 
-> **2026-09-22 本地进度**：新后台 F01–F18 框架及 R01–R20、R22、R23 已通过本地验收。R21 真实探针未通过。详见 [框架验收与隔离启动](ADMIN-FRAMEWORK-ACCEPTANCE.md) 和根 [to-do.md](../to-do.md)。业务写入和部署尚未接通，生产状态不变；下文9月21日空白入口说明为此前状态。
+> **2026-09-25 本地进度**：F01–F18、R01–R33、V01–V24 与 C01–C05 已通过本地验收，下一项 C06 为文章编辑、差异与预览；C02 已迁移候选/发布表，C03 完成文件 CAS，C04 完成候选写入意图/审计和 apply/reconcile 恢复，C05 让人工保存经过鉴权、CAS、审计且不再自动重建公共投影。候选原文仓储和新发布链仍未接通。V23 readiness 要求真实 SDK 运行隔离证据，目前未配置报告而保持 blocked。详见根 [to-do.md](../to-do.md) 与 [V15–V24/C01–C05 验收记录](../to-do.md#10-执行实录与接续规则)。
 
-> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](ADMIN-REBUILD-INVENTORY.md)。
+> **2026-09-21 管理界面清空是重构过渡态**：下一日已恢复新 Admin 框架；现行页面、能力和验收状态以根 `to-do.md` 与 [架构图面](ARCHITECTURE.md) 为准。旧后台资产仍仅作历史参考，清单见 [后台重构前资产清单](evidence/ADMIN-REBUILD-INVENTORY.md)。
 
 
-**现行只读这些：**
-
-新后台访谈草稿：[站主内容与 Agent 运营后台 PRD](PRD-AGENT-OPERATIONS.md)（v0.2，2026-09-22，含访客 AI 交互数据与日志；待审阅，不表示已实现或已部署）。
-
-配套调研：[新后台开源项目选型](RESEARCH-AGENT-OPS-OPEN-SOURCE.md)（2026-09-22，候选、许可证、维护快照与复用建议；已记录Refine/assistant-ui本地探针，未部署）。
-
-配套技术方案：[站主内容与 Agent 运营系统](TECH-DESIGN-AGENT-OPERATIONS.md)（v0.2，2026-09-22；F框架与Refine/assistant-ui探针已验收，其余授权、执行、发布一致性、访客日志与迁移待实施）。实施顺序见根 PLAN 的新后台章节。
-
-执行入口：[原子任务 to-do.md](../to-do.md)（2026-09-22；F/R/V/C/O/G 六批，框架优先，SQLite 单库；任务前置、文件落点、验收与勾选实录的唯一入口）。第一次交付为 F01–F18，不以完整 Agent 系统阻塞框架。
+**现行核心文档（只读这些）：**
 
 | 文件 | 用途 |
 |------|------|
 | 根 [`PLAN.md`](../PLAN.md) | **主执行计划**（北极星 · 宪法 · 主线排期 · 冻结条款 · 想法记录） |
-| 根 [`to-do.md`](../to-do.md) | **新后台原子执行清单**（框架优先 · 依赖 · 验收 · 任务进度） |
-| 根 [`PRD.md`](../PRD.md) | 旧后台 PRD 与保留资产背景；新重构以 PRD-AGENT-OPERATIONS 为准 |
-| 根 [`TECH-DESIGN.md`](../TECH-DESIGN.md) | 旧后台技术方案；新重构以 TECH-DESIGN-AGENT-OPERATIONS 为准 |
-| 根 [`EXEC-PLAN.md`](../EXEC-PLAN.md) | 旧后台 Batch 1–3 历史方案；新实施顺序见根 PLAN、原子任务见 to-do.md |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **架构权威图面**（当前态 · 最终架构 · 循环飞轮 · 演进对照） |
+| 根 [`to-do.md`](../to-do.md) | **新后台原子执行清单**（框架优先 · 依赖 · 验收 · 任务进度唯一真相源） |
 | 根 [`README.md`](../README.md) | 安装与三端启动 |
-| 根 [`Claude.md`](../Claude.md) | **对话默认上下文**（栈 / 命令 / 部署须知） |
-| [`PRODUCT.md`](./PRODUCT.md) | **产品**（近端验收） |
-| [`VISION.md`](./VISION.md) | **远景**（方向与边界，不抢验收） |
-| [`ENGINEERING.md`](./ENGINEERING.md) | **工程**（分层、命名、部署、切流就绪） |
-| [`STATUS.md`](./STATUS.md) | **状态**（生产探针与时钟） |
-| [`api/README.md`](./api/README.md) | **Nest API 契约**（信封 · 鉴权 · 按产品面列出；已落地/待落地） |
-| [`api/ANALYSIS.md`](./api/ANALYSIS.md) | **API 面项目分析**（四条环 · 痛点 · 设计原则） |
-| [`api/INTEGRATION.md`](./api/INTEGRATION.md) | **联调手册**（起服务 · 顺序 · 门面） |
-| [`PRD-SITE-ASSISTANT.md`](./PRD-SITE-ASSISTANT.md) | **站内助手规划**（活跃 PRD；冲突时低于上行四文档） |
-| [`PRD-AGENT-WORKBENCH.md`](./PRD-AGENT-WORKBENCH.md) | **后台智能体工坊与文件直调规划**（活跃 PRD；以 Agent 为单位 + 文件直通） |
-| [`PRD-KNOWLEDGE-GRAPH.md`](./PRD-KNOWLEDGE-GRAPH.md) | **知识图谱规划**（活跃 PRD；Obsidian Graph View 逐条对齐 · 访客 `/graph` + 站主体检 + MCP 导航） |
-| [`PRD-CODE-GRAPH.md`](./PRD-CODE-GRAPH.md) | **代码架构图谱规划**（活跃 PRD；把代码库当 vault 看 · 访客 `/architecture` + 门禁 `verify:architecture` + admin 体检 + MCP 四工具） |
-| [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) | **主线执行清单**（M2 换 runner · M3 初稿全链 · M4 共创/转题苗 · M5 流水线 · M8 复盘，原子任务） |
-| [`TODO-OBSERVABILITY.md`](./TODO-OBSERVABILITY.md) | **观测与数据执行清单**（AI 使用数据 + 交互记录，复用 dsh 会话数据平面） |
-| [`TODO-AGENT.md`](./TODO-AGENT.md) | **判断代理 v1 执行清单**（apps/agent · Cordis 组合 · MCP 暴露站主判断；排在初稿全链之后） |
+| 根 [`CLAUDE.md`](../CLAUDE.md) | **对话默认上下文**（栈 / 命令 / 部署须知） |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **系统架构权威图面**（当前态 · 最终架构 · 循环飞轮 · 演进对照） |
+| [`PRODUCT.md`](./PRODUCT.md) | **产品权威与红线**（近端卡/逛验收 · 远景意图与 NorthStar 边界） |
+| [`ENGINEERING.md`](./ENGINEERING.md) | **工程规范**（分层、命名、部署、切流就绪） |
+| [`STATUS.md`](./STATUS.md) | **生产状态**（生产探针与时钟） |
 
-冲突时：**代码 + `api/README` + PRODUCT/ENGINEERING/STATUS + `Claude.md` > VISION 与 `archive/`**。近端行为以 PRODUCT 为准。
+**专项规格与分类目录：**
 
-历史 PRD / Goal / 切流长文 / 旧分层全文 / Astro 契约 / AI 工作站 MVP 三件套（`archive/ai-workstation/`，2026-08 验证期）/ 已完成执行清单（`archive/TODO-OPTIMIZATION.md` · `archive/TODO-SITE-ASSISTANT.md`）→ [`archive/`](./archive/)。  
+- **接口契约 `api/`**：[`api/README.md`](./api/README.md)（Nest API 契约）、[`api/INTEGRATION.md`](./api/INTEGRATION.md)（联调手册）
+- **业务需求与技术方案 `specs/`**：
+  - [`specs/PRD-AGENT-OPERATIONS.md`](./specs/PRD-AGENT-OPERATIONS.md)（新后台 PRD v0.2）
+  - [`specs/TECH-DESIGN-AGENT-OPERATIONS.md`](./specs/TECH-DESIGN-AGENT-OPERATIONS.md)（新后台技术方案 v0.5）
+  - [`specs/RESEARCH-AGENT-OPS-OPEN-SOURCE.md`](./specs/RESEARCH-AGENT-OPS-OPEN-SOURCE.md)（开源选型调研）
+  - [`specs/ARCHITECTURE-AGENT-RUNTIME.md`](./specs/ARCHITECTURE-AGENT-RUNTIME.md)（Agent 运行时拓扑实况）
+  - [`specs/PRD-SITE-ASSISTANT.md`](./specs/PRD-SITE-ASSISTANT.md)（站内助手 PRD）
+  - [`specs/PRD-KNOWLEDGE-GRAPH.md`](./specs/PRD-KNOWLEDGE-GRAPH.md)（知识图谱 PRD）
+  - [`specs/PRD-CODE-GRAPH.md`](./specs/PRD-CODE-GRAPH.md)（代码架构图谱 PRD）
+- **验收与测试证据 `evidence/`**：
+  - [`evidence/ADMIN-FRAMEWORK-ACCEPTANCE.md`](./evidence/ADMIN-FRAMEWORK-ACCEPTANCE.md)（F 框架验收报告）
+  - [`evidence/AGENT-CORE-ACCEPTANCE.md`](./evidence/AGENT-CORE-ACCEPTANCE.md)（R 核心验收报告）
+  - [`evidence/GOAL-2026-09-24-V10.md`](./evidence/GOAL-2026-09-24-V10.md)（公开问答 V10 目标与边界）
+  - [`evidence/GOAL-2026-09-24-V13.md`](./evidence/GOAL-2026-09-24-V13.md)（公开成员切换与访客历史恢复验收）
+  - [`evidence/GOAL-2026-09-25-V14.md`](./evidence/GOAL-2026-09-25-V14.md)（访客真实停止和断流语义验收）
+  - [`evidence/GOAL-2026-09-25-V15.md`](./evidence/GOAL-2026-09-25-V15.md)（助手部件交互事件验收）
+  - [`evidence/GOAL-2026-09-25-V16.md`](./evidence/GOAL-2026-09-25-V16.md)（事件故障补写与健康缺口验收）
+  - [`evidence/GOAL-2026-09-25-V17.md`](./evidence/GOAL-2026-09-25-V17.md)（日志资源登记、到期策略与实体模型审计）
+  - [`evidence/GOAL-2026-09-25-V18.md`](./evidence/GOAL-2026-09-25-V18.md)（可重试会话删除与防复活）
+  - [`evidence/GOAL-2026-09-25-V19.md`](./evidence/GOAL-2026-09-25-V19.md)（删除清单与备份恢复防复活）
+  - [`evidence/GOAL-2026-09-25-V20.md`](./evidence/GOAL-2026-09-25-V20.md)（会话日志查询与后台回看）
+  - [`evidence/GOAL-2026-09-25-V21.md`](./evidence/GOAL-2026-09-25-V21.md)（受控导出、下载与数据模型审计）
+  - [`evidence/GOAL-2026-09-25-V22.md`](./evidence/GOAL-2026-09-25-V22.md)（公共路由白名单与 Origin/CSRF 边界）
+  - [`evidence/ADMIN-REBUILD-INVENTORY.md`](./evidence/ADMIN-REBUILD-INVENTORY.md)（重构前资产清单）
+- **历史归档 `archive/`**：[`archive/README.md`](./archive/README.md)（所有已退役方案、历史待办与旧版 PRD）
+
+冲突时：**代码 + `api/README` + PRODUCT/ENGINEERING/STATUS + `CLAUDE.md` > `archive/`**。近端行为以 PRODUCT 为准。
+
+历史 PRD / 退役 Goal / 切流长文 / 旧分层全文 / Astro 契约 / AI 工作站 MVP 三件套（`archive/ai-workstation/`，2026-08 验证期）/ 已完成执行清单（`archive/TODO-OPTIMIZATION.md` · `archive/TODO-SITE-ASSISTANT.md`）→ [`archive/`](./archive/)。
 **禁止**把 `archive/api-astro-era` 或已归档 TODO 当现行待办。

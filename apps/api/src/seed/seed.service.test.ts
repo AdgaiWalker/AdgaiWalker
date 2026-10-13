@@ -100,10 +100,11 @@ function createSeedHarness(options: { inPoolClue?: boolean } = {}) {
   };
   const actionRepo: ActionRepositoryPort = {
     async create(input: NewActionRecord) {
-      const action: ActionRecord = { ...input, status: 'OPEN', completedAt: null, createdAt: now, updatedAt: now };
+      const action: ActionRecord = { ...input, status: 'OPEN', dueAt: input.dueAt ?? null, timezone: input.timezone ?? null, completedAt: null, evidenceRef: input.evidenceRef ?? null, createdAt: now, updatedAt: now };
       actions.push(action);
       return action;
     },
+    async listDue() { return []; },
     async ensureOpenForEntity(input) {
       const existing = actions.find((item) => item.entityType === input.entityType && item.entityId === input.entityId && item.status === 'OPEN');
       return existing ?? this.create(input);

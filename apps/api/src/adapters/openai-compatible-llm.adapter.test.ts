@@ -8,34 +8,39 @@
 import { describe, expect, it } from 'vitest';
 import { OpenAiCompatibleLlm, type LlmFetch } from './openai-compatible-llm.adapter';
 import { LlmError } from '../ports/llm.port';
-import type { ModelProviderService } from '../model-providers/model-provider.service';
+import type { ModelDirectoryPort } from '../ports/model-directory.port';
 
-const providerRow = {
-  id: 'deepseek',
-  name: 'DeepSeek 官方',
-  category: 'official',
-  enabled: true,
-  baseUrl: 'https://api.deepseek.com/v1',
-  apiFormat: 'openai-compatible',
-  ciphertext: 'cipher',
-  iv: 'iv',
-  authTag: 'tag',
-  last4: 'abcd',
-  modelsJson: '[]',
-  updatedAt: new Date(),
+/** 提供方事实来自 dsh 目录；测试用假端口，不碰真实设置文件。 */
+const baseProvider = {
+  id: 'deepseek-official',
+  interfaceName: 'llm-deepseek',
+  baseURL: 'https://api.deepseek.com/v1',
+  apiKeyRef: 'DEEPSEEK_API_KEY',
+  hasCredential: true,
+  models: [],
 };
 
 function adapterWith(options: {
-  provider?: Partial<typeof providerRow> | null;
-  apiKey?: string;
+  provider?: Partial<typeof baseProvider> | null;
+  apiKey?: string | null;
+  defaultProvider?: string | null;
   fetchImpl?: LlmFetch;
 }) {
-  const provider = options.provider === null ? null : { ...providerRow, ...options.provider };
-  const providers = {
-    findById: async () => provider,
-    getDecryptedApiKey: async () => options.apiKey ?? 'sk-test',
-  } as unknown as ModelProviderService;
-  const adapter = new OpenAiCompatibleLlm(providers);
+  const provider = options.provider === null ? null : { ...baseProvider, ...options.provider };
+  const credential = options.apiKey === null ? null : (options.apiKey ?? 'sk-test');
+  const directory = {
+    snapshot: () => ({
+      generatedAt: '2026-09-23T00:00:00.000Z',
+      home: '/tmp/dsh-test',
+      defaultProvider: options.defaultProvider ?? 'deepseek-official',
+      defaultModel: 'deepseek-flash',
+      providers: provider ? [provider] : [],
+    }),
+    credentialValue: () => credential,
+    credentialRevision: () => (credential ? 'rev' : null),
+    homeDir: () => '/tmp/dsh-test',
+  } as unknown as ModelDirectoryPort;
+  const adapter = new OpenAiCompatibleLlm(directory);
   if (options.fetchImpl) adapter.fetchImpl = options.fetchImpl;
   return adapter;
 }
@@ -59,7 +64,7 @@ const okFetch = (body: unknown, status = 200): LlmFetch =>
     })) as unknown as LlmFetch;
 
 describe('请求形状', () => {
-  it('POST {baseUrl}/chat/completions，带上 Bearer Key 与技能指定的模型', async () => {
+  it('POST {baseURL}/chat/completions，带上 Bearer Key 与技能指定的模型', async () => {
     let seenUrl = '';
     let seenInit: RequestInit | undefined;
     const adapter = adapterWith({
@@ -105,30 +110,49 @@ describe('请求形状', () => {
 });
 
 describe('失败分类（每类都指向一个可执行的下一步）', () => {
-  it('供应商不存在 → llm-no-provider', async () => {
+  it('提供方不在 dsh 目录 → llm-no-provider', async () => {
     const adapter = adapterWith({ provider: null });
-    await expect(adapter.chat({ modelId: 'm', messages: [] })).rejects.toMatchObject({
-      code: 'llm-no-provider',
-    });
+    const error = await llmErrorOf(adapter.chat({ modelId: 'm', messages: [] }));
+    expect(error.code).toBe('llm-no-provider');
+    expect(error.message).toContain('dsh 目录');
   });
 
-  it('供应商被停用 → llm-no-provider', async () => {
-    const adapter = adapterWith({ provider: { enabled: false } });
-    await expect(adapter.chat({ modelId: 'm', messages: [] })).rejects.toMatchObject({
-      code: 'llm-no-provider',
-    });
+  it('显式指定的提供方不在目录 → llm-no-provider（不静默回落默认）', async () => {
+    const adapter = adapterWith({ provider: { id: 'deepseek-official' } });
+    const error = await llmErrorOf(
+      adapter.chat({ modelId: 'm', messages: [], providerId: 'not-in-directory' }),
+    );
+    expect(error.code).toBe('llm-no-provider');
   });
 
-  it('没配 Key → llm-no-credential（提示去后台填）', async () => {
+  it('未指定提供方且 dsh 默认装不上时，回落到目录里可用的提供方', async () => {
+    let seenUrl = '';
+    // 默认指向桌面版专有的 workbuddy（我们的运行时装不上），目录里只有 deepseek-official
     const adapter = adapterWith({
-      provider: { ciphertext: '' },
+      defaultProvider: 'workbuddy',
+      fetchImpl: (async (url: string) => {
+        seenUrl = String(url);
+        return new Response(JSON.stringify({ choices: [{ message: { content: '好' } }] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }) as unknown as LlmFetch,
+    });
+    const result = await adapter.chat({ modelId: 'm', messages: [] });
+    expect(result.text).toBe('好');
+    expect(seenUrl).toContain('api.deepseek.com');
+  });
+
+  it('凭据引用没有值 → llm-no-credential（提示去 dsh 设置）', async () => {
+    const adapter = adapterWith({
+      apiKey: null,
       fetchImpl: async () => {
         throw new Error('不应该发起请求');
       },
     });
     const error = await llmErrorOf(adapter.chat({ modelId: 'm', messages: [] }));
     expect(error.code).toBe('llm-no-credential');
-    expect(error.message).toContain('API Key');
+    expect(error.message).toContain('DEEPSEEK_API_KEY');
   });
 
   it('401 → llm-auth-failed，并带上上游片段', async () => {

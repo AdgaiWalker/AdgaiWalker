@@ -167,6 +167,12 @@ export class FsTraceRepository implements TraceRepositoryPort, TraceWriterPort {
     return seq;
   }
 
+  async deleteTraceFile(runId: string): Promise<void> {
+    if (!RUN_ID_RE.test(runId)) throw new Error('invalid-run-id');
+    await fs.rm(this.traceFilePath(runId), { force: true });
+    this.seqByRun.delete(runId);
+  }
+
   /** 续号：只读尾部窗口取最大 seq（不做全量解析） */
   private async readMaxSeq(file: string): Promise<number> {
     let handle: fs.FileHandle;

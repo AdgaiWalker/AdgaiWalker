@@ -10,13 +10,14 @@ function createActionHarness() {
   const records: ActionRecord[] = [];
   const repository: ActionRepositoryPort = {
     async create(input: NewActionRecord) {
-      const record: ActionRecord = { ...input, status: 'OPEN', completedAt: null, createdAt: now, updatedAt: now };
+      const record: ActionRecord = { ...input, status: 'OPEN', dueAt: input.dueAt ?? null, timezone: input.timezone ?? null, completedAt: null, evidenceRef: input.evidenceRef ?? null, createdAt: now, updatedAt: now };
       records.push(record);
       return record;
     },
     async ensureOpenForEntity(input) { return this.create(input); },
     async findById(id) { return records.find((record) => record.id === id) ?? null; },
     async list(input) { return records.filter((record) => (!input.status || record.status === input.status) && (!input.kind || record.kind === input.kind)).slice(0, input.limit); },
+    async listDue(before, limit) { return records.filter((record) => record.status === 'OPEN' && record.dueAt !== null && record.dueAt <= before).slice(0, limit); },
     async update(id, input) { const record = records.find((item) => item.id === id)!; Object.assign(record, input); return record; },
     async setCompletion(id, input) { const record = records.find((item) => item.id === id)!; Object.assign(record, input); return record; },
     async delete(id) { const index = records.findIndex((item) => item.id === id); if (index >= 0) records.splice(index, 1); },

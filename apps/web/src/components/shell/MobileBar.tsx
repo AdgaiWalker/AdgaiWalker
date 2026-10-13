@@ -73,7 +73,7 @@ export function MobileBar({
         to={dualEntry.ask.path}
         className="btn-primary mobile-bar-cta"
       >
-        卡住了
+        {dualEntry.ask.label}
       </Link>
     </div>
   );

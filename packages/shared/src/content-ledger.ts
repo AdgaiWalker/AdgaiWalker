@@ -10,6 +10,7 @@
  */
 
 import type { ContentVisibility, PublishedPostRequiredField } from './content.js';
+import type { ContentReleaseStage } from './content-change.js';
 import { missingPublishedPostFields, resolveVisibility } from './content.js';
 
 /** 内容生命周期四阶段（PRD §3.4） */
@@ -63,14 +64,14 @@ export function deriveContentStageFromFrontmatter(
 
 /* ========== 展示层分组（PRD §3.4 末段：仅视图归类，不回写 frontmatter） ========== */
 
-/** 台账展示分组：产品 / 文章 / 想法 */
-export const CONTENT_GROUPS = ['product', 'article', 'idea'] as const;
+/** 台账展示分组：产品 / 文章 / 想法 / 小店（PRD §3.4 / C22） */
+export const CONTENT_GROUPS = ['product', 'article', 'idea', 'shop'] as const;
 export type ContentGroup = (typeof CONTENT_GROUPS)[number];
 
 /**
  * frontmatter.type → 展示分组的映射（纯展示层，不新增类型值、不回写）。
- * type 现值集合：knowledge / learn / idea / tool / project（PRD 附录 A 全库扫描）。
- * 归类口径：project / tool 是「产品」；knowledge / learn 是「文章」；idea 是「想法」；
+ * type 现值集合：knowledge / learn / idea / tool / project / shop。
+ * 归类口径：project / tool 是「产品」；knowledge / learn 是「文章」；idea 是「想法」；shop 是「小店」；
  * 未识别值归「文章」（内容主体），不另造分组。
  */
 const CONTENT_TYPE_TO_GROUP: Record<string, ContentGroup> = {
@@ -79,7 +80,51 @@ const CONTENT_TYPE_TO_GROUP: Record<string, ContentGroup> = {
   knowledge: 'article',
   learn: 'article',
   idea: 'idea',
+  shop: 'shop',
 };
+
+/** 项目状态（C22 对齐项目内容模型）：与站内既有 project frontmatter.status 映射 */
+export const PROJECT_STATUSES = [
+  'planning',
+  'validating',
+  'in-progress',
+  'verified',
+  'completed',
+  'archived',
+] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export interface ProjectMetadata {
+  status?: string;
+  url?: string;
+  series?: string;
+  seriesOrder?: number;
+  hall?: 'showcase' | 'exchange' | string;
+  resources?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+    description?: string;
+  }>;
+}
+
+export function validateProjectMetadata(data: Record<string, unknown>): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (data.status !== undefined && typeof data.status !== 'string') {
+    errors.push('项目 status 必须为有效字符串');
+  }
+  if (data.url !== undefined && typeof data.url !== 'string') {
+    errors.push('项目 url 必须为有效字符串');
+  }
+  if (data.resources !== undefined && !Array.isArray(data.resources)) {
+    errors.push('项目 resources 必须为资源数组');
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+/** 小店内容边界声明（PRD A20 / TECH-DESIGN §2.2）：不建立订单/库存模型 */
+export const SHOP_BOUNDARY_NOTICE =
+  '小店交易与订单履约系统尚未接入，当前仅作为商品与服务介绍内容展示入口。不建立订单或库存数据模型。';
 
 export function resolveContentGroup(type: string): ContentGroup {
   return CONTENT_TYPE_TO_GROUP[type] ?? 'article';
@@ -105,6 +150,14 @@ export interface ContentLedgerEntry {
   missing: PublishedPostRequiredField[];
   /** git 工作区该文件是否脏 */
   dirty: boolean;
+  publication: {
+    /** 公开投影 hash，与发布证明使用同一命名空间。 */
+    currentPublicHash: string | null;
+    publishedHash: string | null;
+    verifiedAt: string | null;
+    indexedHash: string | null;
+    latestAttemptStage: ContentReleaseStage | null;
+  };
   updatedAt: string;
 }
 
@@ -114,4 +167,6 @@ export interface ContentLedger {
   generatedAt: string;
   /** git 不可用时为 false：阶段相关的脏/干净事实缺失，前端显示「未知」 */
   gitAvailable: boolean;
+  /** 发布事实读取失败时为 false；不得把失败当成没有确证记录。 */
+  publicationAvailable: boolean;
 }

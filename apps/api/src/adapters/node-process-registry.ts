@@ -1,5 +1,5 @@
 /**
- * 受控进程记录。身份规则复用已安装 Harness 0.1.5-rc.2 的 ProcessIdentity：
+ * 受控进程记录。身份规则复用已安装 Harness 0.1.5-rc.3 的 ProcessIdentity：
  * 同时核对 PID 与启动时间，不能只凭 PID 判断或终止。
  */
 import { spawnSync } from 'node:child_process';
@@ -30,7 +30,9 @@ export class NodeProcessRegistry implements ProcessRegistryPort {
   }
 
   async inspect(record: ProcessRecord | null): Promise<ProcessObservation> {
-    if (!record || record.pid === null || record.startedAt === null) return 'unproven';
+    // 从没登记过 pid = 进程从未启动（run 在 claim 后被卡住的情形）。
+    // 没有东西可终止，必须与「启动过但无法证明」区分开，否则会永久占槽。
+    if (!record || record.pid === null || record.startedAt === null) return 'unstarted';
     const observed = readStart(record.pid);
     if (observed === 'unreadable') return 'unproven';
     if (observed === null) return 'exited';
@@ -38,7 +40,8 @@ export class NodeProcessRegistry implements ProcessRegistryPort {
   }
 
   async terminate(record: ProcessRecord | null): Promise<'exited' | 'unproven'> {
-    if (!record || record.pid === null || record.startedAt === null) return 'unproven';
+    // 同理：没启动过就当作已退出（无需 kill），让容量能被释放。
+    if (!record || record.pid === null || record.startedAt === null) return 'exited';
     const observed = readStart(record.pid);
     if (observed === 'unreadable' || observed !== record.startedAt) {
       return observed === null ? 'exited' : 'unproven';

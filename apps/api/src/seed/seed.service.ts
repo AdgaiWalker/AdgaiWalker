@@ -175,6 +175,9 @@ export class SeedService {
         entityType: 'EXECUTION',
         entityId: ensuredExecution.id,
         plannedDate: null,
+        // 系统提示事项默认不排期（不设日期即无到期瞬时），到期只由站主显式设期触发
+        dueAt: null,
+        timezone: null,
         source: 'SYSTEM',
       });
     }

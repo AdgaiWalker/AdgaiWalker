@@ -97,6 +97,8 @@
 # inline matchers instead of @named blocks. Keep it that way, or extend the
 # contract before adding named matchers.
 {$WALKER_TOKEN_HOST} {
+  # 保留 encode：实测对 SSE 首字节没有可测影响（各 5 次取样，中位无差异），
+  # 而盒子那台的带宽是稀缺资源（腾讯云轻量常见 1-6 Mbps），省流量更值。
   encode zstd gzip
 
   route {

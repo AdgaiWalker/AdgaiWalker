@@ -36,6 +36,7 @@ export const dataProvider: DataProvider = {
         total: response.items.length,
         generatedAt: response.generatedAt,
         gitAvailable: response.gitAvailable,
+        publicationAvailable: response.publicationAvailable,
       };
     }
     if (resource === "agents") {

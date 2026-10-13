@@ -11,6 +11,7 @@ import {
   ObservabilityService,
   type FeatureEventIngestInput,
 } from './observability.service';
+import { ASSISTANT_EVENT_RECORDER, type AssistantEventRecorderPort } from '../ports/assistant-event-recorder.port';
 
 const EVENT_KINDS = ['expose', 'attempt', 'success', 'fail'] as const;
 const ACTOR_TYPES = ['guest', 'user', 'owner'] as const;
@@ -61,7 +62,14 @@ export class ObservabilityController {
   constructor(
     @Inject(ObservabilityService)
     private readonly observability: ObservabilityService,
+    @Inject(ASSISTANT_EVENT_RECORDER)
+    private readonly assistantEvents: AssistantEventRecorderPort,
   ) {}
+
+  @Get('assistant-events/health')
+  assistantEventHealth() {
+    return this.assistantEvents.health();
+  }
 
   @Get('usage/stats')
   usageStats(@Query('days') days?: string) {

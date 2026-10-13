@@ -10,10 +10,9 @@ import { Link, useOutletContext } from 'react-router-dom';
 import {
   ArrowRight,
   Bookmark,
-  BookOpen,
   Compass,
-  FlaskConical,
   PenLine,
+  User,
 } from 'lucide-react';
 import type { AppShellOutletContext } from '../components/AppShell';
 import { XiaoyingHome } from '../components/xiaoying/XiaoyingHome';
@@ -71,8 +70,8 @@ export function HomePage() {
               </Link>
             ) : null}
             <div className="directory-ghost-nav" aria-label="快捷">
+              <Link to={dualEntry.ask.path}>{dualEntry.ask.label}</Link>
               <Link to={dualEntry.browse.path}>{dualEntry.browse.label}</Link>
-              <Link to={WEB_ROUTES.about}>关于</Link>
             </div>
           </div>
 
@@ -81,26 +80,26 @@ export function HomePage() {
             style={{ animationDelay: '0.12s' }}
           >
             <div className="mobile-section-head">
-              <span>去逛逛</span>
-              <small>四条支路，随便拐进一条</small>
+              <span>站内入口</span>
+              <small>从感兴趣的地方开始</small>
             </div>
             {/* 与侧栏一致：不重复类型总览，只放正交深页 */}
             <div className="quick-grid">
-              <Link to={WEB_ROUTES.toolsResources} className="quick-link">
-                <Bookmark size={15} aria-hidden />
-                <span>资源</span>
-              </Link>
-              <Link to={WEB_ROUTES.tutorials} className="quick-link">
-                <BookOpen size={15} aria-hidden />
-                <span>教程</span>
-              </Link>
               <Link to={WEB_ROUTES.explore} className="quick-link">
                 <Compass size={15} aria-hidden />
                 <span>探索</span>
               </Link>
-              <Link to={WEB_ROUTES.lab} className="quick-link">
-                <FlaskConical size={15} aria-hidden />
-                <span>札记</span>
+              <Link to={dualEntry.browse.path} className="quick-link">
+                <PenLine size={15} aria-hidden />
+                <span>文章</span>
+              </Link>
+              <Link to={WEB_ROUTES.toolsResources} className="quick-link">
+                <Bookmark size={15} aria-hidden />
+                <span>资源</span>
+              </Link>
+              <Link to={WEB_ROUTES.me} className="quick-link">
+                <User size={15} aria-hidden />
+                <span>关于</span>
               </Link>
             </div>
           </div>

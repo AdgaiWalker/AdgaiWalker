@@ -32,6 +32,8 @@ export interface TraceRepositoryPort {
     runId: string,
     options?: TraceReadOptions,
   ): Promise<TraceReadResult | null>;
+  /** 删除指定逻辑运行的文件轨迹；runId 由服务端来源校验。 */
+  deleteTraceFile(runId: string): Promise<void>;
 }
 
 export const TRACE_REPOSITORY = Symbol('TRACE_REPOSITORY');

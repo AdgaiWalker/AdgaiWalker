@@ -17,6 +17,7 @@ export const typeLabel = (value: string) =>
     project: "项目",
     tool: "工具",
     idea: "想法",
+    shop: "小店",
   })[value] ?? value;
 export const visibilityLabel = (value: string) =>
   ({ public: "公开", draft: "草稿", private: "私密" })[value] ?? "未知";

@@ -13,17 +13,19 @@ const respond = (body: unknown, status = 200) =>
       ),
   );
 afterEach(() => vi.unstubAllGlobals());
-it("内容列表保留真实条数与 Git 可用性", async () => {
+it("内容列表保留真实条数、Git 与发布事实可用性", async () => {
   respond({
     items: [{ slug: "a", title: "文章" }],
     generatedAt: "now",
     gitAvailable: false,
+    publicationAvailable: true,
   });
   expect(await dataProvider.getList({ resource: "content" })).toEqual({
     data: [{ id: "a", slug: "a", title: "文章" }],
     total: 1,
     generatedAt: "now",
     gitAvailable: false,
+    publicationAvailable: true,
   });
 });
 it("按 Agent 游标读取且不以当前页长度伪造总数", async () => {

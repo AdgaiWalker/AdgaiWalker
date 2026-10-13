@@ -15,7 +15,7 @@ export const useCapabilities = () =>
   useQuery({
     queryKey: ["ops-capabilities"],
     queryFn: ({ signal }) =>
-      requestJson<OpsCapabilities>("/ops/capabilities", { signal }),
+      requestJson<OpsCapabilities>("/ops/capabilities", { signal, backgroundPoll: true }),
     refetchInterval: 15_000,
   });
 const links = [

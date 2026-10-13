@@ -60,7 +60,7 @@ export function AboutPage() {
           <strong>{dualEntry.ask.label}</strong>
           （{dualEntry.ask.hint}）或
           <strong>{dualEntry.browse.label}</strong>
-          （{dualEntry.browse.hint}）。近端要把「卡真能用、逛有证据、过程可转」做实。
+          （{dualEntry.browse.hint}）。近端要把「提问有下一步、文章有依据、过程可转」做实。
         </p>
         <p style={{ marginTop: '1rem' }}>
           <Link
@@ -175,7 +175,7 @@ export function AboutPage() {
           </li>
           <li style={{ marginBottom: '0.4rem' }}>
             <strong style={{ color: 'var(--color-parchment)' }}>近</strong>
-            ——卡真可用 + 逛有证据；一人可养的小生产过程（线索 → 题苗 → 交付 →
+            ——提问有下一步 + 文章有依据；一人可养的小生产过程（线索 → 题苗 → 交付 →
             检验）。
           </li>
           <li>

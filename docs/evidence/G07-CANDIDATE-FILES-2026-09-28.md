@@ -1,0 +1,566 @@
+# G07 工作区改动候选清单（2026-09-28）
+
+此清单由 `git status --porcelain=v1 -uall -z` 生成，列出盘点时的已暂存、未暂存及未跟踪文件。**候选不等于批准提交**；未修改暂存区、未提交、未推送。
+
+总计 535 个路径；其中已跟踪改动 195，未跟踪 340。重命名显示目标路径和原路径。
+
+| 类别 | 文件数 | 处理 |
+|---|---:|---|
+| 代码与契约候选 | 499 | 拟纳入，但提交前仍须逐项复查 |
+| 文档证据候选 | 13 | 按文档引用纳入 |
+| 排除：G07 不需要 | 23 | 留在本地，不纳入 G07 |
+
+## 纳入与排除依据
+
+- 代码与契约候选覆盖本地已验收的新后台、API、Agent、Web、shared、迁移、脚本、部署配置与对应文档；全仓类型检查、五端测试、构建及部署演练本轮重跑通过。仍须在隔离提交候选中复查精确改动。
+- `packages/dsh-open-design/` 是独立未跟踪包；项目运行时代码未引用它。在**不包含该包**的临时六工作区中，`pnpm install --frozen-lockfile --ignore-scripts --offline` 实际通过（现有 lockfile 多余 importer 不阻断安装），故不纳入 G07。
+- `mario/` 是独立游戏目录，无 G07 运行时引用；旧设计 QA 文件与图片删除也不纳入本次交付。
+- `docs/evidence/runtime-probe.json` 现为 `local.status=fail`。`verify:deploy` 仅用其核对 SDK 版本；它不证明真实模型可用，新公共位置启用继续由 readiness 阻断。
+- `apps/web/src/generated/public-manifest.json` 已从 Git 索引删除，由构建生成；保留删除，不能重新暂存构建结果。
+- `apps/web/src/generated/codegraph*.json` 因全仓新增源文件而重新生成，构建前后变化有来源；`content.json`、`graph.json`、`public-manifest.json` 的字节哈希未变化。
+
+## 逐文件清单
+
+### 代码与契约候选
+
+- ` M` `.gitignore`
+- `??` `.nvmrc`
+- ` M` `AGENTS.md`
+- ` M` `CLAUDE.md`
+- ` M` `PLAN.md`
+- ` M` `README.md`
+- ` M` `apps/admin/src/api/http.test.ts`
+- ` M` `apps/admin/src/api/http.ts`
+- ` M` `apps/admin/src/api/queries.ts`
+- `??` `apps/admin/src/api/vite-proxy.test.ts`
+- ` M` `apps/admin/src/app/router.tsx`
+- `??` `apps/admin/src/components/ReminderInboxPanel.test.tsx`
+- `??` `apps/admin/src/components/ReminderInboxPanel.tsx`
+- ` M` `apps/admin/src/main.tsx`
+- ` M` `apps/admin/src/pages/agents/AgentListPage.tsx`
+- `??` `apps/admin/src/pages/agents/AgentModelConfigPanel.tsx`
+- ` M` `apps/admin/src/pages/agents/ReleaseTests.tsx`
+- ` M` `apps/admin/src/pages/agents/TrialPanel.tsx`
+- `??` `apps/admin/src/pages/content/ContentChangeReviewPanel.test.tsx`
+- `??` `apps/admin/src/pages/content/ContentChangeReviewPanel.tsx`
+- `??` `apps/admin/src/pages/content/ContentDetailPage.test.tsx`
+- ` M` `apps/admin/src/pages/content/ContentDetailPage.tsx`
+- `??` `apps/admin/src/pages/content/ContentListPage.test.tsx`
+- ` M` `apps/admin/src/pages/content/ContentListPage.tsx`
+- `??` `apps/admin/src/pages/content/ContentReleasePanel.test.tsx`
+- `??` `apps/admin/src/pages/content/ContentReleasePanel.tsx`
+- `??` `apps/admin/src/pages/content/ContentReminderPanel.tsx`
+- `??` `apps/admin/src/pages/deployments/DeploymentsPage.test.ts`
+- `??` `apps/admin/src/pages/deployments/DeploymentsPage.tsx`
+- `??` `apps/admin/src/pages/deployments/PublicReadinessPanel.test.tsx`
+- `??` `apps/admin/src/pages/deployments/PublicReadinessPanel.tsx`
+- `??` `apps/admin/src/pages/overview/OpsStatsPanel.test.tsx`
+- `??` `apps/admin/src/pages/overview/OpsStatsPanel.tsx`
+- ` M` `apps/admin/src/pages/overview/OverviewPage.tsx`
+- `??` `apps/admin/src/pages/records/ContentReviewPanel.test.tsx`
+- `??` `apps/admin/src/pages/records/ContentReviewPanel.tsx`
+- `??` `apps/admin/src/pages/records/ConversationActionPanel.tsx`
+- `??` `apps/admin/src/pages/records/ConversationLog.test.tsx`
+- `??` `apps/admin/src/pages/records/ConversationLogDetailPage.tsx`
+- `??` `apps/admin/src/pages/records/ConversationLogListPanel.tsx`
+- ` M` `apps/admin/src/pages/records/RunListPage.tsx`
+- `??` `apps/admin/src/pages/settings/ModelConfigPanel.tsx`
+- ` M` `apps/admin/src/pages/settings/SettingsPage.tsx`
+- ` M` `apps/admin/src/shared/labels.ts`
+- ` M` `apps/admin/src/shared/routes.ts`
+- ` M` `apps/admin/src/styles/tokens.css`
+- ` M` `apps/admin/vite.config.ts`
+- ` M` `apps/agent/README.md`
+- ` M` `apps/agent/src/index.ts`
+- `??` `apps/agent/src/knowledge-snapshot.test.ts`
+- ` M` `apps/agent/src/plugins/knowledge.ts`
+- ` M` `apps/api/.env.example`
+- ` M` `apps/api/package.json`
+- `??` `apps/api/prisma/migrations/20260922200000_agent_deployment/migration.sql`
+- `??` `apps/api/prisma/migrations/20260922210000_conversation_message/migration.sql`
+- `??` `apps/api/prisma/migrations/20260922220000_assistant_request_key/migration.sql`
+- `??` `apps/api/prisma/migrations/20260923100000_agent_unit_provider_dsh/migration.sql`
+- `??` `apps/api/prisma/migrations/20260923110000_drop_model_provider_credential/migration.sql`
+- `??` `apps/api/prisma/migrations/20260924100000_execution_public_context/migration.sql`
+- `??` `apps/api/prisma/migrations/20260924110000_assistant_session_revision/migration.sql`
+- `??` `apps/api/prisma/migrations/20260925120000_log_resource_registry/migration.sql`
+- `??` `apps/api/prisma/migrations/20260925130000_native_session_owner/migration.sql`
+- `??` `apps/api/prisma/migrations/20260925140000_conversation_query_index/migration.sql`
+- `??` `apps/api/prisma/migrations/20260925150000_conversation_exports/migration.sql`
+- `??` `apps/api/prisma/migrations/20260925160000_content_change_release/migration.sql`
+- `??` `apps/api/prisma/migrations/20260926100000_reminder_review/migration.sql`
+- `??` `apps/api/prisma/migrations/20260927100000_action_evidence_ref/migration.sql`
+- `??` `apps/api/prisma/migrations/20260927110000_execution_run_legacy_source/migration.sql`
+- ` M` `apps/api/prisma/schema.prisma`
+- ` M` `apps/api/src/action/action.controller.ts`
+- ` M` `apps/api/src/action/action.service.test.ts`
+- ` M` `apps/api/src/action/action.service.ts`
+- ` M` `apps/api/src/adapters/ai-nextstep.adapter.test.ts`
+- `??` `apps/api/src/adapters/content-approval.persistence.ts`
+- `??` `apps/api/src/adapters/content-publish-script-lock.test.ts`
+- ` M` `apps/api/src/adapters/execution-object-policy.ts`
+- `??` `apps/api/src/adapters/fs-assistant-event-spool.test.ts`
+- `??` `apps/api/src/adapters/fs-assistant-event-spool.ts`
+- `??` `apps/api/src/adapters/fs-candidate-file.repository.test.ts`
+- `??` `apps/api/src/adapters/fs-candidate-file.repository.ts`
+- ` M` `apps/api/src/adapters/fs-content-file.repository.test.ts`
+- ` M` `apps/api/src/adapters/fs-content-file.repository.ts`
+- `??` `apps/api/src/adapters/fs-content-lock.ts`
+- `??` `apps/api/src/adapters/fs-conversation-export-file-store.test.ts`
+- `??` `apps/api/src/adapters/fs-conversation-export-file-store.ts`
+- `??` `apps/api/src/adapters/fs-deletion-manifest.store.test.ts`
+- `??` `apps/api/src/adapters/fs-deletion-manifest.store.ts`
+- `??` `apps/api/src/adapters/fs-log-resource.cleaner.test.ts`
+- `??` `apps/api/src/adapters/fs-log-resource.cleaner.ts`
+- `??` `apps/api/src/adapters/fs-model-credential.test.ts`
+- `??` `apps/api/src/adapters/fs-model-credential.ts`
+- `??` `apps/api/src/adapters/fs-model-directory.test.ts`
+- `??` `apps/api/src/adapters/fs-model-directory.ts`
+- `??` `apps/api/src/adapters/fs-public-route-boundary.ts`
+- ` M` `apps/api/src/adapters/fs-public-snapshot.repository.ts`
+- `??` `apps/api/src/adapters/fs-site-content-index.test.ts`
+- ` M` `apps/api/src/adapters/fs-site-content-index.ts`
+- `??` `apps/api/src/adapters/fs-skill-file.store.test.ts`
+- ` M` `apps/api/src/adapters/fs-trace.repository.ts`
+- ` M` `apps/api/src/adapters/harness-assistant.adapter.test.ts`
+- ` M` `apps/api/src/adapters/harness-assistant.adapter.ts`
+- ` M` `apps/api/src/adapters/harness-runtime.adapter.test.ts`
+- ` M` `apps/api/src/adapters/harness-runtime.adapter.ts`
+- `??` `apps/api/src/adapters/http-website-deployment-verifier.test.ts`
+- ` M` `apps/api/src/adapters/http-website-deployment-verifier.ts`
+- `??` `apps/api/src/adapters/log-resource.writer.ts`
+- ` M` `apps/api/src/adapters/node-git-status.repository.ts`
+- ` M` `apps/api/src/adapters/node-process-registry.test.ts`
+- ` M` `apps/api/src/adapters/node-process-registry.ts`
+- ` M` `apps/api/src/adapters/openai-compatible-llm.adapter.test.ts`
+- ` M` `apps/api/src/adapters/openai-compatible-llm.adapter.ts`
+- ` M` `apps/api/src/adapters/pnpm-content-release.runner.test.ts`
+- ` M` `apps/api/src/adapters/pnpm-content-release.runner.ts`
+- ` M` `apps/api/src/adapters/prisma-action.repository.ts`
+- ` M` `apps/api/src/adapters/prisma-agent-execution.repository.test.ts`
+- ` M` `apps/api/src/adapters/prisma-agent-execution.repository.ts`
+- ` M` `apps/api/src/adapters/prisma-assistant.repository.ts`
+- `??` `apps/api/src/adapters/prisma-content-change.repository.ts`
+- `??` `apps/api/src/adapters/prisma-content-release.repository.ts`
+- `??` `apps/api/src/adapters/prisma-conversation-deletion.repository.ts`
+- `??` `apps/api/src/adapters/prisma-conversation-export.repository.integration.test.ts`
+- `??` `apps/api/src/adapters/prisma-conversation-export.repository.ts`
+- `??` `apps/api/src/adapters/prisma-conversation-query.repository.integration.test.ts`
+- `??` `apps/api/src/adapters/prisma-conversation-query.repository.ts`
+- `??` `apps/api/src/adapters/prisma-conversation.repository.test.ts`
+- `??` `apps/api/src/adapters/prisma-conversation.repository.ts`
+- `??` `apps/api/src/adapters/prisma-deployment.repository.test.ts`
+- `??` `apps/api/src/adapters/prisma-deployment.repository.ts`
+- ` M` `apps/api/src/adapters/prisma-feature-event.adapter.ts`
+- `??` `apps/api/src/adapters/prisma-log-resource.repository.ts`
+- ` D` `apps/api/src/adapters/prisma-model-provider.repository.ts`
+- ` M` `apps/api/src/adapters/prisma-operations-journal.ts`
+- `??` `apps/api/src/adapters/prisma-reminder-disposition.repository.ts`
+- `??` `apps/api/src/adapters/prisma-reminder.repository.ts`
+- `??` `apps/api/src/adapters/prisma-review-entry.repository.ts`
+- ` M` `apps/api/src/adapters/prisma-workbench.repository.test.ts`
+- ` M` `apps/api/src/agents/agent-catalog.controller.ts`
+- ` M` `apps/api/src/agents/agent-catalog.integration.test.ts`
+- ` M` `apps/api/src/agents/agent-catalog.service.ts`
+- `??` `apps/api/src/agents/agent-model-config.service.test.ts`
+- `??` `apps/api/src/agents/agent-model-config.service.ts`
+- ` M` `apps/api/src/agents/agent-runner.service.test.ts`
+- ` M` `apps/api/src/agents/agent-unit.service.ts`
+- ` M` `apps/api/src/app.module.ts`
+- `??` `apps/api/src/assistant/assistant-event-recorder.service.test.ts`
+- `??` `apps/api/src/assistant/assistant-event-recorder.service.ts`
+- `??` `apps/api/src/assistant/assistant-v08.service.test.ts`
+- `??` `apps/api/src/assistant/assistant-v09.service.test.ts`
+- `??` `apps/api/src/assistant/assistant.controller.test.ts`
+- ` M` `apps/api/src/assistant/assistant.controller.ts`
+- ` M` `apps/api/src/assistant/assistant.service.test.ts`
+- ` M` `apps/api/src/assistant/assistant.service.ts`
+- `??` `apps/api/src/assistant/public-assistant-prompt.ts`
+- `??` `apps/api/src/assistant/public-assistant.controller.integration.test.ts`
+- `??` `apps/api/src/assistant/public-assistant.service.test.ts`
+- `??` `apps/api/src/assistant/public-assistant.service.ts`
+- `??` `apps/api/src/assistant/public-journey.kernel.integration.test.ts`
+- `??` `apps/api/src/auth/anon-cookie.test.ts`
+- ` M` `apps/api/src/auth/anon-cookie.ts`
+- ` D` `apps/api/src/auth/credential-cipher.test.ts`
+- ` D` `apps/api/src/auth/credential-cipher.ts`
+- `??` `apps/api/src/auth/public-route-contract.ts`
+- `??` `apps/api/src/auth/same-origin.middleware.test.ts`
+- `??` `apps/api/src/auth/same-origin.middleware.ts`
+- `??` `apps/api/src/common/process-tree.test.ts`
+- `??` `apps/api/src/common/process-tree.ts`
+- `??` `apps/api/src/config/load-api-env.test.ts`
+- `??` `apps/api/src/config/load-api-env.ts`
+- ` M` `apps/api/src/content-admin/content-admin.controller.test.ts`
+- ` M` `apps/api/src/content-admin/content-admin.controller.ts`
+- `??` `apps/api/src/content-admin/content-admin.service.test.ts`
+- ` M` `apps/api/src/content-admin/content-admin.service.ts`
+- `??` `apps/api/src/content-admin/content-project-boundary.kernel.integration.test.ts`
+- `??` `apps/api/src/content-lifecycle.closed-loop.kernel.integration.test.ts`
+- `??` `apps/api/src/content-lifecycle.repository.kernel.integration.test.ts`
+- `??` `apps/api/src/content-mutation.kernel.integration.test.ts`
+- `??` `apps/api/src/content-mutation/content-approval.kernel.integration.test.ts`
+- `??` `apps/api/src/content-mutation/content-change.controller.ts`
+- `??` `apps/api/src/content-mutation/content-concurrency-fault.kernel.integration.test.ts`
+- `??` `apps/api/src/content-mutation/content-mutation-bypass-audit.kernel.integration.test.ts`
+- `??` `apps/api/src/content-mutation/content-mutation.service.ts`
+- `??` `apps/api/src/content-mutation/content-propose.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-cancel.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-lock.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-panel.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-preflight.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-reconcile.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-snapshot-sync.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-stages.kernel.integration.test.ts`
+- `??` `apps/api/src/content-release/content-release-verify.kernel.integration.test.ts`
+- ` M` `apps/api/src/content-release/content-release.controller.ts`
+- ` M` `apps/api/src/content-release/content-release.integration.test.ts`
+- ` M` `apps/api/src/content-release/content-release.service.ts`
+- `??` `apps/api/src/deployments/deployment.controller.ts`
+- `??` `apps/api/src/deployments/deployment.kernel.integration.test.ts`
+- `??` `apps/api/src/deployments/deployment.service.ts`
+- `??` `apps/api/src/deployments/public-readiness.service.test.ts`
+- `??` `apps/api/src/deployments/public-readiness.service.ts`
+- ` M` `apps/api/src/engagement/content-feedback.service.ts`
+- ` M` `apps/api/src/execution/agent-execution.service.ts`
+- ` M` `apps/api/src/execution/execution-scheduler.kernel.integration.test.ts`
+- ` M` `apps/api/src/execution/release-test.kernel.integration.test.ts`
+- ` M` `apps/api/src/execution/release-test.service.ts`
+- `??` `apps/api/src/execution/resource-concurrency.g03.kernel.integration.test.ts`
+- ` M` `apps/api/src/execution/run-retention.service.test.ts`
+- ` M` `apps/api/src/insights/insights.service.test.ts`
+- ` M` `apps/api/src/kernel.module.ts`
+- `??` `apps/api/src/log-resources/conversation-deletion.controller.test.ts`
+- `??` `apps/api/src/log-resources/conversation-deletion.controller.ts`
+- `??` `apps/api/src/log-resources/conversation-deletion.kernel.integration.test.ts`
+- `??` `apps/api/src/log-resources/conversation-deletion.restore.integration.test.ts`
+- `??` `apps/api/src/log-resources/conversation-deletion.service.test.ts`
+- `??` `apps/api/src/log-resources/conversation-deletion.service.ts`
+- `??` `apps/api/src/log-resources/conversation-export.controller.ts`
+- `??` `apps/api/src/log-resources/conversation-export.format.test.ts`
+- `??` `apps/api/src/log-resources/conversation-export.format.ts`
+- `??` `apps/api/src/log-resources/conversation-export.integration.test.ts`
+- `??` `apps/api/src/log-resources/conversation-export.policy.ts`
+- `??` `apps/api/src/log-resources/conversation-export.service.test.ts`
+- `??` `apps/api/src/log-resources/conversation-export.service.ts`
+- `??` `apps/api/src/log-resources/conversation-query.controller.ts`
+- `??` `apps/api/src/log-resources/conversation-query.kernel.integration.test.ts`
+- `??` `apps/api/src/log-resources/conversation-query.service.test.ts`
+- `??` `apps/api/src/log-resources/conversation-query.service.ts`
+- `??` `apps/api/src/log-resources/deletion-manifest-replay.service.test.ts`
+- `??` `apps/api/src/log-resources/deletion-manifest-replay.service.ts`
+- `??` `apps/api/src/log-resources/log-maintenance.cli.test.ts`
+- `??` `apps/api/src/log-resources/log-maintenance.cli.ts`
+- `??` `apps/api/src/log-resources/log-resource.controller.test.ts`
+- `??` `apps/api/src/log-resources/log-resource.controller.ts`
+- `??` `apps/api/src/log-resources/log-resource.kernel.integration.test.ts`
+- `??` `apps/api/src/log-resources/log-resource.service.test.ts`
+- `??` `apps/api/src/log-resources/log-resource.service.ts`
+- `??` `apps/api/src/log-resources/log-retention-cleanup.integration.test.ts`
+- `??` `apps/api/src/log-resources/log-retention-cleanup.service.test.ts`
+- `??` `apps/api/src/log-resources/log-retention-cleanup.service.ts`
+- ` M` `apps/api/src/main.ts`
+- `??` `apps/api/src/migration/legacy-data-migration.core.ts`
+- `??` `apps/api/src/migration/legacy-data-migration.kernel.integration.test.ts`
+- `??` `apps/api/src/migration/legacy-data-migration.service.ts`
+- `??` `apps/api/src/model-config/model-config.controller.test.ts`
+- `??` `apps/api/src/model-config/model-config.controller.ts`
+- `??` `apps/api/src/model-config/model-config.service.test.ts`
+- `??` `apps/api/src/model-config/model-config.service.ts`
+- ` D` `apps/api/src/model-providers/model-provider.controller.ts`
+- ` D` `apps/api/src/model-providers/model-provider.service.test.ts`
+- ` D` `apps/api/src/model-providers/model-provider.service.ts`
+- ` M` `apps/api/src/observability/observability.controller.test.ts`
+- ` M` `apps/api/src/observability/observability.controller.ts`
+- `??` `apps/api/src/operations-lifecycle.closed-loop.kernel.integration.test.ts`
+- `??` `apps/api/src/operations/operations-stats.kernel.integration.test.ts`
+- ` M` `apps/api/src/operations/operations.controller.ts`
+- ` M` `apps/api/src/operations/operations.kernel.integration.test.ts`
+- ` M` `apps/api/src/operations/operations.service.ts`
+- ` M` `apps/api/src/plan/plan.service.test.ts`
+- ` M` `apps/api/src/ports/action.repository.ts`
+- ` M` `apps/api/src/ports/agent-execution.repository.ts`
+- `??` `apps/api/src/ports/assistant-event-recorder.port.ts`
+- `??` `apps/api/src/ports/assistant-event-spool.port.ts`
+- ` M` `apps/api/src/ports/assistant-runner.port.ts`
+- ` M` `apps/api/src/ports/assistant.repository.ts`
+- `??` `apps/api/src/ports/candidate-file.repository.ts`
+- `??` `apps/api/src/ports/content-change.repository.ts`
+- ` M` `apps/api/src/ports/content-file.repository.ts`
+- `??` `apps/api/src/ports/content-lock.port.ts`
+- `??` `apps/api/src/ports/content-mutation.port.ts`
+- ` M` `apps/api/src/ports/content-release-runner.port.ts`
+- `??` `apps/api/src/ports/content-release.repository.ts`
+- `??` `apps/api/src/ports/conversation-deletion.repository.ts`
+- `??` `apps/api/src/ports/conversation-export-file-store.port.ts`
+- `??` `apps/api/src/ports/conversation-export-revoker.port.ts`
+- `??` `apps/api/src/ports/conversation-export.repository.ts`
+- `??` `apps/api/src/ports/conversation-query.repository.ts`
+- `??` `apps/api/src/ports/conversation.repository.ts`
+- `??` `apps/api/src/ports/deletion-manifest.port.ts`
+- `??` `apps/api/src/ports/deployment.repository.ts`
+- ` M` `apps/api/src/ports/git-status.repository.ts`
+- `??` `apps/api/src/ports/log-resource-cleaner.port.ts`
+- `??` `apps/api/src/ports/log-resource.repository.ts`
+- `??` `apps/api/src/ports/model-credential.port.ts`
+- `??` `apps/api/src/ports/model-directory.port.ts`
+- ` D` `apps/api/src/ports/model-provider.repository.ts`
+- ` M` `apps/api/src/ports/operations-journal.port.ts`
+- ` M` `apps/api/src/ports/process-registry.port.ts`
+- `??` `apps/api/src/ports/public-route-boundary.port.ts`
+- `??` `apps/api/src/ports/reminder-disposition.port.ts`
+- `??` `apps/api/src/ports/reminder.repository.ts`
+- `??` `apps/api/src/ports/review-entry.repository.ts`
+- ` M` `apps/api/src/ports/runtime.port.ts`
+- ` M` `apps/api/src/ports/site-content-index.port.ts`
+- ` M` `apps/api/src/ports/trace.repository.ts`
+- ` M` `apps/api/src/ports/website-deployment-verifier.port.ts`
+- ` M` `apps/api/src/prisma-migration.integration.test.ts`
+- `??` `apps/api/src/public-route-boundary.test.ts`
+- `??` `apps/api/src/recovery-order.g02.kernel.integration.test.ts`
+- `??` `apps/api/src/reminder/content-review.kernel.integration.test.ts`
+- `??` `apps/api/src/reminder/conversation-action.kernel.integration.test.ts`
+- `??` `apps/api/src/reminder/conversation-action.service.ts`
+- `??` `apps/api/src/reminder/reminder-disposition-http.integration.test.ts`
+- `??` `apps/api/src/reminder/reminder-disposition.kernel.integration.test.ts`
+- `??` `apps/api/src/reminder/reminder-http.integration.test.ts`
+- `??` `apps/api/src/reminder/reminder-scan.kernel.integration.test.ts`
+- `??` `apps/api/src/reminder/reminder-scan.service.ts`
+- `??` `apps/api/src/reminder/reminder.controller.ts`
+- `??` `apps/api/src/reminder/reminder.kernel.integration.test.ts`
+- `??` `apps/api/src/reminder/reminder.service.ts`
+- `??` `apps/api/src/reminder/review-to-action.kernel.integration.test.ts`
+- `??` `apps/api/src/runtime/dsh-credentials-file.ts`
+- `??` `apps/api/src/runtime/dsh-home-paths.ts`
+- `??` `apps/api/src/runtime/dsh-session-resource-path.test.ts`
+- `??` `apps/api/src/runtime/dsh-session-resource-path.ts`
+- `??` `apps/api/src/runtime/dsh-settings-file.ts`
+- ` M` `apps/api/src/runtime/harness-launch.test.ts`
+- ` M` `apps/api/src/runtime/harness-launch.ts`
+- ` M` `apps/api/src/runtime/probe-gate.test.ts`
+- ` M` `apps/api/src/runtime/probe-gate.ts`
+- `??` `apps/api/src/runtime/restore-gate.test.ts`
+- `??` `apps/api/src/runtime/restore-gate.ts`
+- ` M` `apps/api/src/seed/seed.service.test.ts`
+- ` M` `apps/api/src/seed/seed.service.ts`
+- `??` `apps/api/src/traces/registered-trace.writer.test.ts`
+- `??` `apps/api/src/traces/registered-trace.writer.ts`
+- `??` `apps/api/src/workflow/publication-content-release.kernel.integration.test.ts`
+- ` M` `apps/api/src/workflow/publication.service.test.ts`
+- ` M` `apps/api/src/workflow/publication.service.ts`
+- ` M` `apps/api/src/workflow/three-work.acceptance.test.ts`
+- ` M` `apps/api/src/workstation.chain.integration.test.ts`
+- ` M` `apps/api/vitest.config.ts`
+- `??` `apps/web/src/api/public-api.test.ts`
+- ` M` `apps/web/src/api/public-api.ts`
+- `??` `apps/web/src/api/vite-proxy.test.ts`
+- `??` `apps/web/src/components/ui/ArticleAssistantPanel.test.tsx`
+- `??` `apps/web/src/components/ui/ArticleAssistantPanel.tsx`
+- ` M` `apps/web/src/components/ui/AssistantThread.tsx`
+- ` M` `apps/web/src/components/ui/SearchModal.test.tsx`
+- ` M` `apps/web/src/generated/codegraph-health.json`
+- ` M` `apps/web/src/generated/codegraph.json`
+- `D ` `apps/web/src/generated/public-manifest.json`
+- ` M` `apps/web/src/hooks/useAssistant.test.ts`
+- ` M` `apps/web/src/hooks/useAssistant.ts`
+- ` M` `apps/web/src/pages/PostDetailPage.tsx`
+- ` M` `apps/web/src/styles/walker.css`
+- ` M` `apps/web/vite.config.ts`
+- `D ` `docker-compose.yml`
+- ` M` `docs/ARCHITECTURE.md`
+- ` M` `docs/ENGINEERING.md`
+- ` M` `docs/PRODUCT.md`
+- ` M` `docs/README.md`
+- ` M` `docs/STATUS.md`
+- ` M` `docs/api/INTEGRATION.md`
+- ` M` `docs/api/README.md`
+- `RM` `docs/archive/ANALYSIS.md` ← `docs/api/ANALYSIS.md`
+- `R ` `docs/archive/EXEC-PLAN.md` ← `EXEC-PLAN.md`
+- `RM` `docs/archive/PLAN-AGENT-MANAGEMENT.md` ← `docs/PLAN-AGENT-MANAGEMENT.md`
+- `R ` `docs/archive/PLAN-AGENTS.md` ← `docs/PLAN-AGENTS.md`
+- `R ` `docs/archive/PRD-AGENT-WORKBENCH.md` ← `docs/PRD-AGENT-WORKBENCH.md`
+- `R ` `docs/archive/PRD.md` ← `PRD.md`
+- ` M` `docs/archive/README.md`
+- `RM` `docs/archive/TECH-DESIGN.md` ← `TECH-DESIGN.md`
+- `RM` `docs/archive/TODO-AGENT-WORKBENCH.md` ← `docs/TODO-AGENT-WORKBENCH.md`
+- `R ` `docs/archive/TODO-AGENT.md` ← `docs/TODO-AGENT.md`
+- `RM` `docs/archive/TODO-MAINLINE.md` ← `docs/TODO-MAINLINE.md`
+- ` M` `docs/archive/TODO-OPTIMIZATION.md`
+- `RM` `docs/archive/VISION.md` ← `docs/VISION.md`
+- `R ` `docs/archive/ai-workstation/superpowers/plans/2026-08-04-ai-workstation-slice1-work-skeleton.md` ← `docs/superpowers/plans/2026-08-04-ai-workstation-slice1-work-skeleton.md`
+- `R ` `docs/archive/ai-workstation/superpowers/specs/2026-08-04-ai-content-workstation-design.md` ← `docs/superpowers/specs/2026-08-04-ai-content-workstation-design.md`
+- `R ` `docs/archive/design/2026-09-11-小影3D试装-design-qa.md` ← `design-qa.md`
+- `RM` `docs/evidence/ADMIN-FRAMEWORK-ACCEPTANCE.md` ← `docs/ADMIN-FRAMEWORK-ACCEPTANCE.md`
+- `R ` `docs/evidence/ADMIN-REBUILD-INVENTORY.md` ← `docs/ADMIN-REBUILD-INVENTORY.md`
+- `R ` `docs/evidence/AGENT-CORE-ACCEPTANCE.md` ← `docs/AGENT-CORE-ACCEPTANCE.md`
+- `??` `docs/evidence/G07-CANDIDATE-FILES-2026-09-28.md`
+- `??` `docs/evidence/GOAL-2026-09-24-V10.md`
+- `??` `docs/evidence/GOAL-2026-09-24-V13.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C01.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C02.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C03.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C04.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C05.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C06.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C07.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C08.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C09.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C10.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C11.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C12.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C13.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C14.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C15.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C16.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C17.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C18.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C19.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C20.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C21.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C22.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C23.md`
+- `??` `docs/evidence/GOAL-2026-09-25-C24.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V14.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V15.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V16.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V17.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V18.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V19.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V20.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V21.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V22.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V23.md`
+- `??` `docs/evidence/GOAL-2026-09-25-V24.md`
+- `??` `docs/evidence/GOAL-2026-09-26-O01.md`
+- `??` `docs/evidence/GOAL-2026-09-26-O02.md`
+- `??` `docs/evidence/GOAL-2026-09-26-O03.md`
+- `??` `docs/evidence/GOAL-2026-09-27-G01.md`
+- `??` `docs/evidence/GOAL-2026-09-27-G02.md`
+- `??` `docs/evidence/GOAL-2026-09-27-G03.md`
+- `??` `docs/evidence/GOAL-2026-09-27-G04.md`
+- `??` `docs/evidence/GOAL-2026-09-27-G05.md`
+- `??` `docs/evidence/GOAL-2026-09-27-G06.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O04.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O05.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O06.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O07.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O08.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O09.md`
+- `??` `docs/evidence/GOAL-2026-09-27-O10.md`
+- `??` `docs/evidence/GOAL-2026-09-27-REVIEW-FIX.md`
+- `??` `docs/evidence/GOAL-2026-09-28-G07-PREFLIGHT.md`
+- ` M` `docs/evidence/runtime-probe.json`
+- `A ` `docs/specs/ARCHITECTURE-AGENT-RUNTIME.md`
+- `RM` `docs/specs/PRD-AGENT-OPERATIONS.md` ← `docs/PRD-AGENT-OPERATIONS.md`
+- `RM` `docs/specs/PRD-CODE-GRAPH.md` ← `docs/PRD-CODE-GRAPH.md`
+- `RM` `docs/specs/PRD-KNOWLEDGE-GRAPH.md` ← `docs/PRD-KNOWLEDGE-GRAPH.md`
+- `RM` `docs/specs/PRD-SITE-ASSISTANT.md` ← `docs/PRD-SITE-ASSISTANT.md`
+- `RM` `docs/specs/RESEARCH-AGENT-OPS-OPEN-SOURCE.md` ← `docs/RESEARCH-AGENT-OPS-OPEN-SOURCE.md`
+- `RM` `docs/specs/TECH-DESIGN-AGENT-OPERATIONS.md` ← `docs/TECH-DESIGN-AGENT-OPERATIONS.md`
+- ` M` `ops/windows/Caddyfile`
+- ` M` `ops/windows/README.md`
+- `??` `ops/windows/backup-walker.ps1`
+- ` M` `ops/windows/install-dsh.ps1`
+- `??` `ops/windows/restore-walker.ps1`
+- ` M` `package.json`
+- ` M` `packages/shared/src/action.ts`
+- ` M` `packages/shared/src/agent-execution.ts`
+- `??` `packages/shared/src/agent-home.test.ts`
+- `??` `packages/shared/src/agent-home.ts`
+- ` M` `packages/shared/src/agent-ops.ts`
+- `??` `packages/shared/src/assistant-interaction.test.ts`
+- `??` `packages/shared/src/assistant-interaction.ts`
+- `??` `packages/shared/src/assistant-stream.test.ts`
+- `??` `packages/shared/src/assistant-stream.ts`
+- ` M` `packages/shared/src/assistant.test.ts`
+- ` M` `packages/shared/src/assistant.ts`
+- `??` `packages/shared/src/build-version-proof.test.ts`
+- `??` `packages/shared/src/content-change.test.ts`
+- `??` `packages/shared/src/content-change.ts`
+- ` M` `packages/shared/src/content-ledger.test.ts`
+- ` M` `packages/shared/src/content-ledger.ts`
+- `??` `packages/shared/src/content-lock.test.ts`
+- `??` `packages/shared/src/content-lock.ts`
+- `??` `packages/shared/src/conversation-ops.ts`
+- `??` `packages/shared/src/conversation.ts`
+- `??` `packages/shared/src/deployment.test.ts`
+- `??` `packages/shared/src/deployment.ts`
+- ` M` `packages/shared/src/feature-keys.ts`
+- ` M` `packages/shared/src/index.ts`
+- ` D` `packages/shared/src/model-catalog.ts`
+- `??` `packages/shared/src/model-directory.test.ts`
+- `??` `packages/shared/src/model-directory.ts`
+- `??` `packages/shared/src/ops-stats.test.ts`
+- `??` `packages/shared/src/ops-stats.ts`
+- ` M` `packages/shared/src/process-recovery.test.ts`
+- ` M` `packages/shared/src/process-recovery.ts`
+- `??` `packages/shared/src/public-deny.test.ts`
+- `??` `packages/shared/src/public-readiness.ts`
+- ` M` `packages/shared/src/public-snapshot.test.ts`
+- ` M` `packages/shared/src/public-snapshot.ts`
+- ` M` `packages/shared/src/rate-limits.ts`
+- `??` `packages/shared/src/redaction.test.ts`
+- `??` `packages/shared/src/redaction.ts`
+- `??` `packages/shared/src/reminder.test.ts`
+- `??` `packages/shared/src/reminder.ts`
+- `??` `packages/shared/src/resource-gate.test.ts`
+- `??` `packages/shared/src/resource-gate.ts`
+- `??` `packages/shared/src/text-diff.test.ts`
+- `??` `packages/shared/src/text-diff.ts`
+- ` M` `pnpm-lock.yaml`
+- ` M` `pnpm-workspace.yaml`
+- ` M` `scripts/content-publish.ts`
+- ` M` `scripts/generate-content.ts`
+- `??` `scripts/import-public-snapshot.ts`
+- `??` `scripts/migrate-legacy-data.ts`
+- ` M` `scripts/prerender-web.ts`
+- `RM` `scripts/probe-runtime.ts` ← `scripts/probe-runtime.mts`
+- `??` `scripts/rebuild-legacy-db.ts`
+- `??` `scripts/sdk-version.ts`
+- ` D` `scripts/update-harness.ts`
+- `??` `scripts/verify-deploy-readiness.test.ts`
+- `??` `scripts/verify-deploy-readiness.ts`
+- `??` `scripts/verify-doc-links.ts`
+- ` M` `to-do.md`
+
+### 文档证据候选
+
+- `??` `docs/assets/agent-config-structure.html`
+- `??` `docs/assets/agent-config-structure.png`
+- `??` `docs/assets/deploy-architecture.html`
+- `??` `docs/assets/deploy-architecture.png`
+- `??` `output/archify/adgaiwalker-architecture.html`
+- `??` `output/archify/adgaiwalker-architecture.json`
+- `??` `output/archify/adgaiwalker-architecture.local-check.png`
+- `??` `output/archify/adgaiwalker-architecture.visual-check.1440x900.dark.png`
+- `??` `output/archify/adgaiwalker-architecture.visual-check.1440x900.light.png`
+- `??` `output/archify/adgaiwalker-architecture.visual-check.2048x1320.dark.png`
+- `??` `output/archify/adgaiwalker-architecture.visual-check.2048x1320.light.png`
+- `??` `output/archify/adgaiwalker-architecture.visual-check.html`
+- `??` `output/archify/adgaiwalker-architecture.visual-check.json`
+
+### 排除：G07 不需要
+
+- `??` `mario/index.html`
+- `??` `mario/js/audio.js`
+- `??` `mario/js/game.js`
+- `??` `mario/js/level.js`
+- `??` `mario/js/sprites.js`
+- `D ` `output/design-qa.md`
+- `??` `packages/dsh-open-design/.gitignore`
+- `??` `packages/dsh-open-design/README.md`
+- `??` `packages/dsh-open-design/cordis.patch.yml`
+- `??` `packages/dsh-open-design/icon.svg`
+- `??` `packages/dsh-open-design/lib/client.js`
+- `??` `packages/dsh-open-design/lib/index.js`
+- `??` `packages/dsh-open-design/package.json`
+- `??` `packages/dsh-open-design/src/catalog.js`
+- `??` `packages/dsh-open-design/src/frontmatter.js`
+- `??` `packages/dsh-open-design/src/host.js`
+- `??` `packages/dsh-open-design/tools/activation-test.mjs`
+- `??` `packages/dsh-open-design/tools/integration-test.mjs`
+- `??` `packages/dsh-open-design/tools/runtime.js`
+- `??` `packages/dsh-open-design/tools/tool-call-test.mjs`
+- `??` `packages/dsh-open-design/tools/unit-test.mjs`
+- `??` `packages/dsh-open-design/tools/verify.mjs`
+- `D ` `已粘贴 2026-09-17 上午1.08.24.png`

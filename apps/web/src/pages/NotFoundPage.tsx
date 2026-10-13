@@ -15,7 +15,7 @@ export function NotFoundPage() {
         没有这页
       </h1>
       <p className="page-lead">
-        链接可能已改名，或来自旧站路径。主任务仍在「卡」与「逛」。
+        链接可能已改名，或来自旧站路径。你仍可以提问或阅读文章。
       </p>
       <div className="home-dual-cta" style={{ justifyContent: 'flex-start' }}>
         <Link to={WEB_ROUTES.home} className="btn-secondary">

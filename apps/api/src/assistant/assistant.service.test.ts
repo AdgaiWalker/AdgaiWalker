@@ -11,6 +11,7 @@ import type { AssistantRunnerPort } from '../ports/assistant-runner.port';
 import type { FeatureEventPort } from '../ports/feature-event.port';
 import type { RateLimitPort } from '../ports/rate-limit.port';
 import { AssistantService } from './assistant.service';
+import { hashAnonId } from '../auth/anon-cookie';
 
 const config = (aiEnabled: boolean): AppConfigPort => ({
   getDatabaseUrl: () => 'file:test.db',
@@ -56,6 +57,7 @@ function makeDeps(opts: { bumpReturns?: number; bumpThrows?: boolean; sessionOwn
     }),
     saveRun: vi.fn(async () => {}),
     listRuns: vi.fn(async () => []),
+    findRunByRequest: vi.fn(async () => null),
     bumpRequests: vi.fn(async () => {
       if (opts.bumpThrows) throw new Error('storage down');
       return opts.bumpReturns ?? 1;
@@ -164,7 +166,7 @@ describe('AssistantService 每日预算熔断', () => {
   });
 
   it('会话归属：自己的 harness 会话才续轮', async () => {
-    const d = makeDeps({ sessionOwner: { anonId: 'anon-1', runner: 'harness' } });
+    const d = makeDeps({ sessionOwner: { anonId: hashAnonId('anon-1'), runner: 'harness' } });
     await serviceFor(true, d).ask({ ...ask, sessionId: 'dsh-session-1' });
     expect((d.runner.ask as ReturnType<typeof vi.fn>).mock.calls[0][0].sessionId).toBe('dsh-session-1');
   });

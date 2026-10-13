@@ -13,6 +13,13 @@ export const XIAOYING_DEFAULT_PROMPT = `你是 Walker 个人站的站内专属 A
 3. 语调诚实、精炼、有见地，遇到不知道的问题如实承认；
 4. 绝不泄露站主未公开的私有凭据与服务器内部信息。`;
 
+/**
+ * 新角色的模型起点。**必须存在于 dsh 目录中**，否则服务端会在保存修订时拒绝
+ * （见 AgentCatalogService.save 的目录校验）。原先散落在本文件与前端两处的
+ * 'deepseek-chat' 是已不在目录里的旧 id，这里收敛成唯一常量。
+ */
+export const DEFAULT_AGENT_MODEL_ID = 'deepseek-flash';
+
 @Injectable()
 export class AgentUnitService {
   constructor(
@@ -29,7 +36,7 @@ export class AgentUnitService {
         icon: 'bot',
         isSystem: true,
         providerId: null,
-        modelId: 'deepseek-chat',
+        modelId: DEFAULT_AGENT_MODEL_ID,
         prompt: XIAOYING_DEFAULT_PROMPT,
       });
     }
@@ -69,7 +76,7 @@ export class AgentUnitService {
       icon: input.icon || existing?.icon || 'bot',
       isSystem,
       providerId: input.providerId ?? existing?.providerId ?? null,
-      modelId: input.modelId || existing?.modelId || 'deepseek-chat',
+      modelId: input.modelId || existing?.modelId || DEFAULT_AGENT_MODEL_ID,
       prompt: input.prompt,
     });
 

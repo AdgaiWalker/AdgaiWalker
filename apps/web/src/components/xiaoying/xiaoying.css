@@ -22,6 +22,42 @@
   user-select: none;
   will-change: transform;
 }
+
+/* 桌面端：桌宠与卡片组同节奏放大（卡片按视口高分档 zoom）。
+   宠物视觉体量小，系数取卡片 zoom 的约 1.5 倍，让它在放大的卡片旁读得出是个"活物"。 */
+@media (min-width: 1024px) and (min-height: 760px) {
+  .xiaoying-object { --pet-w: 13.2rem; --pet-touch-h: 170px; --panel-w: 22rem; }
+}
+@media (min-width: 1024px) and (min-height: 800px) {
+  .xiaoying-object { --pet-w: 14rem; --pet-touch-h: 180px; --panel-w: 23rem; }
+}
+@media (min-width: 1024px) and (min-height: 840px) {
+  .xiaoying-object { --pet-w: 14.8rem; --pet-touch-h: 190px; --panel-w: 24rem; }
+}
+@media (min-width: 1024px) and (min-height: 880px) {
+  .xiaoying-object { --pet-w: 15.6rem; --pet-touch-h: 201px; --panel-w: 25rem; }
+}
+@media (min-width: 1024px) and (min-height: 920px) {
+  .xiaoying-object { --pet-w: 16.5rem; --pet-touch-h: 212px; --panel-w: 26rem; }
+}
+@media (min-width: 1024px) and (min-height: 960px) {
+  .xiaoying-object { --pet-w: 17.3rem; --pet-touch-h: 222px; --panel-w: 27rem; }
+}
+@media (min-width: 1024px) and (min-height: 1000px) {
+  .xiaoying-object { --pet-w: 18.2rem; --pet-touch-h: 234px; --panel-w: 28rem; }
+}
+@media (min-width: 1024px) and (min-height: 1050px) {
+  .xiaoying-object { --pet-w: 19.2rem; --pet-touch-h: 247px; --panel-w: 29rem; }
+}
+@media (min-width: 1024px) and (min-height: 1100px) {
+  .xiaoying-object { --pet-w: 20.2rem; --pet-touch-h: 260px; --panel-w: 30rem; }
+}
+@media (min-width: 1024px) and (min-height: 1180px) {
+  .xiaoying-object { --pet-w: 21.9rem; --pet-touch-h: 282px; --panel-w: 31.5rem; }
+}
+@media (min-width: 1024px) and (min-height: 1280px) {
+  .xiaoying-object { --pet-w: 23.9rem; --pet-touch-h: 307px; --panel-w: 33rem; }
+}
 .xiaoying-object[data-dragging="true"] {
   cursor: grabbing;
 }
@@ -245,11 +281,12 @@
   position: absolute;
   z-index: 5;
   right: 0;
-  bottom: calc(var(--pet-touch-h) + 0.65rem);
+  /* 视觉主体位于触摸区域下半部；按可见的影鳐定位，避免气泡悬空。 */
+  bottom: calc(var(--pet-touch-h) - 3.6rem);
   display: flex;
   flex-direction: column;
   width: min(var(--panel-w), calc(100vw - 24px));
-  max-height: min(28rem, 52vh);
+  max-height: min(16rem, 38vh);
   overflow: hidden;
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--color-parchment) 10%, transparent);
@@ -274,12 +311,39 @@
   transform: scale(0.96);
   pointer-events: none;
 }
+.xiaoying-panel-current {
+  display: block;
+  flex: none;
+  padding: 0.55rem 0.8rem 0.35rem;
+  color: var(--color-brand);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+}
 .xiaoying-panel-log {
   flex: 1 1 auto;
   min-height: 4.5rem;
-  max-height: min(22rem, 46vh);
+  max-height: min(12rem, 30vh);
   overflow-y: auto;
   padding: 0.9rem 1rem 0.55rem;
+}
+.xiaoying-panel-source {
+  display: block;
+  flex-basis: 100%;
+  color: var(--color-parchment-dim);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+.xiaoying-panel-member {
+  margin: 0.65rem 0.75rem 0;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  background: var(--color-card);
+  color: var(--color-parchment);
+  font: inherit;
+  font-size: 0.75rem;
 }
 .xiaoying-panel-hint {
   margin: 0;

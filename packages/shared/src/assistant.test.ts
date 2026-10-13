@@ -156,6 +156,9 @@ describe('观测 P1 合同（token / 延迟 / 降级原因）', () => {
       'queue-full',
       'queue-deadline',
       'bad-output',
+      'deployment-disabled',
+      'snapshot-unavailable',
+      'content-not-citable',
       'runtime-error',
     ]);
     expect(isDegradeReason('timeout')).toBe(true);

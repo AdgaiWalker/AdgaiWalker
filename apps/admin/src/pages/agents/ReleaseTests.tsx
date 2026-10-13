@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { requestJson } from "../../api/http";
+import { REQUEST_TIMEOUTS, requestJson } from "../../api/http";
 
 type Report = {
   configHash: string;
@@ -29,7 +29,9 @@ export function ReleaseTests({ agentId, revisionId }: { agentId: string; revisio
     setPending(label);
     setMessage("");
     try {
-      await requestJson(path, { method: "POST", body: {} });
+      // 长任务：服务端要**同步跑完三个模型用例**（实测 45s，后端 deadline 120s）。
+      // 用默认 10s 会让它在服务端还在跑时就放弃，界面显示假失败。
+      await requestJson(path, { method: "POST", body: {}, timeoutMs: REQUEST_TIMEOUTS.longTask });
       setMessage("部署尚未接通");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "没有完成");
@@ -46,8 +48,13 @@ export function ReleaseTests({ agentId, revisionId }: { agentId: string; revisio
       <p className="muted">结果只对当前配置摘要有效。权限未通过、待核查或换了配置，都不能部署。</p>
       {query.isError ? <p role="alert">{query.error instanceof Error ? query.error.message : "测试结果读取失败"}</p> : null}
       <ul>
-        {report?.results.map((item) => <li key={item.testCaseId}>{labels[item.testCaseId] ?? item.testCaseId}：{labels[item.assertion.verdict]} · {item.assertion.reason}</li>)}
-        {!report?.results.length && <li>尚未运行</li>}
+        {report?.results.map((item) => (
+          <li key={item.testCaseId}>
+            {labels[item.testCaseId] ?? item.testCaseId}：{labels[item.assertion.verdict]} · {item.assertion.reason}
+          </li>
+        ))}
+        {/* 固定 key，避免与用例 id 撞车（曾因此报重复 key） */}
+        {!report?.results.length && <li key="__empty">尚未运行</li>}
       </ul>
       {report && <p>{report.gate.ok ? "三类测试已通过。部署本身尚未接通。" : report.gate.reason}</p>}
       {message && <p role="alert">{message}</p>}

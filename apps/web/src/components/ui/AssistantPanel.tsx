@@ -53,9 +53,9 @@ export function AssistantPanel({
           <Link
             to={dualEntry.ask.path}
             className="btn-ghost assistant-reset"
-            aria-label="去卡口拿行动建议"
+            aria-label="去提问页拿行动建议"
           >
-            去卡口
+            去提问
           </Link>
         )}
       </header>

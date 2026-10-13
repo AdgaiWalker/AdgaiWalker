@@ -117,7 +117,7 @@ export function LabPage() {
           探索 <ArrowRight size={12} aria-hidden />
         </Link>
         <Link to={dualEntry.browse.path} className="hall-chain-link">
-          逛 <ArrowRight size={12} aria-hidden />
+          {dualEntry.browse.label} <ArrowRight size={12} aria-hidden />
         </Link>
       </nav>
     </div>

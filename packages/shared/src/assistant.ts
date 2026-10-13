@@ -27,6 +27,9 @@ export const DEGRADE_REASONS = [
   'queue-full',
   'queue-deadline',
   'bad-output',
+  'deployment-disabled',
+  'snapshot-unavailable',
+  'content-not-citable',
   'runtime-error',
 ] as const;
 
@@ -54,6 +57,13 @@ export interface AssistantRunResult {
   queueWaitMs?: number;
   /** 观测 P1：降级原因（正常 AI 回答为 null） */
   degradeReason?: DegradeReason | null;
+  /**
+   * 这条回答没写完：模型还在生成时到了本次运行的时间预算。
+   *
+   * 已经生成的部分照常交付（流式期间访客已经看到了），**不换成规则兜底文案**——
+   * 「说到一半」是真实状态，「AI 未启用」是假话。只有一个字都没生成时才降级。
+   */
+  partial?: boolean;
 }
 
 export interface AiAssistantOutput {

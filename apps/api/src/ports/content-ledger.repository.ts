@@ -10,6 +10,8 @@ export interface ContentLedgerSourceEntry {
   type: string;
   /** 原始 frontmatter：门禁判空与可见性解析共用同一份数据 */
   frontmatter: Record<string, unknown>;
+  /** 现有文件读取已获得正文；供公开投影 hash 计算复用。 */
+  body?: string;
   updatedAt: string;
 }
 

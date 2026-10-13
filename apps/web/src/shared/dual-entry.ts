@@ -4,11 +4,11 @@
 export const dualEntry = {
   ask: {
     path: '/tools',
-    label: '卡',
-    cta: '我卡住了',
-    shortCta: '卡',
+    label: '提问',
+    cta: '提问',
+    shortCta: '提问',
     hint: '拿下一步',
-    title: '你卡在哪？',
+    title: '你想解决什么问题？',
     lead: '用场景描述困扰或目标。无需登录即可试一次；成功后重点看「下一步」。',
     /** 结果页（nextStep 独立呈现）文案，避免页面硬编码 */
     result: {
@@ -16,16 +16,16 @@ export const dualEntry = {
       lead: '这是本次卡点拿到的下一步与它的依据；结果只保存在生成它的这个浏览器里。',
       emptyTitle: '这一步在这里找不到了',
       emptyLead:
-        '结果只保存在生成它的浏览器会话里：换设备、换链接、清过缓存都打不开。这不是出错，是这里确实看不到——回卡口再问一次最快。',
+        '结果只保存在生成它的浏览器会话里：换设备、换链接、清过缓存都打不开。这不是出错，是这里确实看不到——回提问页再问一次最快。',
     },
   },
   browse: {
     path: '/posts',
-    label: '逛',
-    cta: '去逛证据',
-    shortCta: '逛',
-    hint: '读证据',
-    title: '证据',
+    label: '文章',
+    cta: '看文章',
+    shortCta: '文章',
+    hint: '读文章',
+    title: '文章',
   },
 } as const;
 

@@ -31,24 +31,15 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
   return (
     <div
       className="greeting-card panel-glass"
-      role="button"
-      tabIndex={0}
-      aria-label="点我抽个点子"
       onClick={draw}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          draw();
-        }
-      }}
     >
       <div className="avatar-ring">
         <img src="/images/dora.jpg" alt="Dora" />
       </div>
       <div className="greeting-time-tag">{tag}</div>
-      <h2 className="greeting-heading">
+      <h1 className="greeting-heading">
         I&apos;m <strong>Dora</strong>, Nice to meet you.
-      </h2>
+      </h1>
       <p className="greeting-sub">用好 AI 做好事</p>
 
       <div className="social-row">
@@ -98,9 +89,9 @@ export function GreetingCard({ sparks }: { sparks: Spark[] }) {
         </a>
       </div>
 
-      <div className="spark-hint">
+      <button type="button" className="spark-hint" onClick={(e) => { e.stopPropagation(); draw(); }} aria-label="抽个点子">
         <Sparkles size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> 点卡片抽个点子
-      </div>
+      </button>
 
       {spark ? (
         <div className="idea-popup" onClick={(e) => e.stopPropagation()}>

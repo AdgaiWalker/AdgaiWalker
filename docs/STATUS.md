@@ -1,23 +1,46 @@
+---
+status: active
+type: status
+title: 生产状态与验证时钟
+last_verified: 2026-09-28
+ssot: true
+applies_to: [web, api]
+---
+
 # 状态（权威）
 
-> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](ADMIN-REBUILD-INVENTORY.md)。
+> **2026-09-29 本地后台补项，未部署**：第 26 条 SQLite 迁移新增 `AdminRequestLog`；人工触发的后台管理请求记录开始/结果，自动轮询跳过，运营记录新增“后台日志”查询。Agent 未单独配置模型时使用系统当前默认，并在页面显示配置来源和共享 API 地址。本地开发库先备份后迁移；生产库与站点未更改。
+
+> **2026-09-29 本地修复，未部署**：`conversation.convert` 的事项与审计已合为 SQLite 原子写入，新增审计请求键唯一索引和迁移前重复检查；本地开发库经一致性备份后应用第 25 条迁移，隔离迁移/回退演练通过。后台转事项失败重试、详情状态和小影隐藏/焦点行为已修复。长会话只完成本机测量，不宣称生产性能通过。详见 [本地验收](evidence/LOCAL-CONVERSATION-XIAOYING-FIX-2026-09-29.md) 与 [性能测量](evidence/LOCAL-CONVERSATION-PERFORMANCE-2026-09-29.md)。
+
+> **2026-09-28 本地首页小影，未部署**：开发库新增并启用 `home-xiaoying/site-public` 小影 v1，后台配置模型连通测试、三类权限发布测试及本地真实运行探针通过；浏览器实测 AI 回答和公开文章引用。探针路径与内存门槛 0MB 覆盖只在本机忽略的 `.env` 中，生产默认门槛和 G07/G08 不变。修复 API 重启后旧 SDK 会话冲突、首页事件 404、ACK 409 竞态和失败轮展示旧答。详见 [本地验收](evidence/LOCAL-HOME-XIAOYING-2026-09-28.md)。
+
+> **2026-09-28 本地体验调整，未部署**：访客界面入口改称“提问／文章”并以原有 Dora 卡片为中心调整首页布局；后台内容台账、设置能力提示与发布预检展示修正。`/tools`、`/posts` 和业务接口不变。此为当前工作区变更，生产仍按下方已核验版本记载。
+
+> **2026-09-28 G07 部署前复验，生产仍未部署**：从运行中的生产 SQLite 取得一致快照，8 张非空表 218 行；本地新库应用 24 条迁移并逐行核对，共有列值、完整性、外键和 schema 检查均通过，旧库备份副本可恢复。修复 K6 隔离演练的建库前置后，部署门禁与全仓回归通过。当前线上 API health 仍回显旧版本 `e7493f1`；代码未推送，服务未停、生产库未切换，静态 manifest 与 G08 真实模型启用仍待后续。证据见 [G07 部署前复验](evidence/GOAL-2026-09-28-G07-PREFLIGHT.md)。
+
+> **2026-09-27 本地代码修复，未部署**：七项代码审查问题已纳入 G07 前的回归修正。发布执行改为必须引用批准单并复检版本/授权，API 与手工脚本共用锁；脚本派发后的结果不明保持 `UNKNOWN`，网页版本与问答索引分别显示。内容生成的公开 manifest 只作构建产物。此处仅说明本地代码状态，不代表目标服务器与线上验证通过；完整门禁结果见根 `to-do.md`。
+
+> **2026-09-25 本地更新，未部署**：V17–V19 完成资源登记、可重试删除与备份防复活。V20 新增仅管理员可访问的会话筛选/详情 API 和 Records 回看页；V21 新增受控 CSV/JSON 导出、快照范围、15分钟本机文件过期、鉴权下载及删除联动；V22 对齐 Nest/Caddy 公网白名单并让所有写方法校验 Origin；V23 增加公共位置启用前 readiness；V24 在隔离库完成问答/日志闭环；C01 定义候选/审批/发布合同；C02 已迁移候选/发布持久模型；C03 为文件保存加对象锁与 expectedHash CAS；C04 新增候选 apply/reconcile 与崩溃 hash 核对；C05 让现有人工保存经过管理鉴权、CAS、intent/result audit，保存后不再自动刷新公共索引。候选原文仓储、编辑 UI、新发布执行链仍未完成。当前未配置真实 runtime 探针报告，readiness 阻断启用。V10–V24 与 C01–C05 尚未部署，线上行为继续以实际已部署版本为准。部署/恢复脚本、盒外存储生命周期和生产 Caddy 运行态尚未在目标服务器验证。本地验收证据见根 [`to-do.md`](../to-do.md)。
+
+> **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](evidence/ADMIN-REBUILD-INVENTORY.md)。
 
 
-> 生产与验收时钟。部署事实细节见 [`ENGINEERING.md`](./ENGINEERING.md) §5。  
+> 生产与验收时钟。部署事实细节见 [`ENGINEERING.md`](./ENGINEERING.md) §5。
 > 近端产品见 [`PRODUCT.md`](./PRODUCT.md)；远景见 [`VISION.md`](./VISION.md)（不抢验收）。
 
 ## 总览（一句话）
 
-**生产双入口已通（2026-09-03 切流）：能逛、能真卡真写、站内助手真答。**  
-近端重心 = 工作站交付链跑通真实初稿、内容持续增长（执行清单见 [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) M3）。
+**生产双入口已通（2026-09-03 切流）：能逛、能真卡真写、站内助手真答。**
+近端重心 = 工作站交付链跑通真实初稿、内容持续增长（历史清单见 `docs/archive/TODO-MAINLINE.md` M3；当前重构唯一原子进度在根 `to-do.md`）。
 
-### 2026-09-15 内容运营后台（一人驾驶舱）
+### 2026-09-15 内容运营后台（一人驾驶舱 · 历史）
 
-本地已按根 `PRD.md` 落地内容分栏、今日并进计划、信号并进复盘，并按 **PRD-D** 拆掉系统抽屉。API 契约见 `docs/api/README.md`。`GET /admin/plan/next` 与 signals.intake `poolStatus` 已落地。Prisma schema 零变更。待盒子部署后才算生产可用。
+本地已按旧后台 PRD（已归档至 `docs/archive/PRD.md`）落地内容分栏、今日并进计划、信号并进复盘，并按 **PRD-D** 拆掉系统抽屉。API 契约见 `docs/api/README.md`。`GET /admin/plan/next` 与 signals.intake `poolStatus` 已落地。Prisma schema 零变更。待盒子部署后才算生产可用。
 
 | 项 | 值 |
 |----|-----|
-| 工程栈 | monorepo React + Nest + PG/SQLite · **无 Astro** |
+| 工程栈 | monorepo React + Nest + SQLite 单库 · **无 Astro / 无 PG** |
 | 分支 | **`main`**（push → Vercel 自动 Production web） |
 | 生产域名 | https://www.iwalk.pro |
 | Vercel | 项目 `adgai-walker`（静态 + `/api/*` rewrites → api.iwalk.pro） |
@@ -131,19 +154,19 @@
 
 ## 已交付（不再当待办）
 
-主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。  
-公开面：分型/卡牌/时间线+标签、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。  
-Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。  
-AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（/ask 整页 + 右下 AskBar 合并搜索面板 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md`；执行实录 `docs/archive/TODO-SITE-ASSISTANT.md`）。  
-卡口对话化与观测三标签：已上线（2026-09-14，`e7493f1`）。`/tools` 由单页表单改为对话式（首步选卡点类型只做前端引导，不污染线索正文；提交后逐字呈现 nextStep，折叠区只展示真实判定依据——规则桶语义 / AI 或规则来源 / 命中的站内证据，不编造思维链），配套 `/tools/result` 独立结果页（`noindex`，结果仅在本机会话可还原）。后台「观测」页三标签：使用排行（`/admin/usage/stats`）、AI 状态（`/admin/ai/stats`，含 token 用量与降级原因四分类）、旅程回放（`/admin/journey`）。判断代理经 `POST /admin/events` 回写 `agent.mcp` 事件（`FEATURE_KEYS` 字典门禁 + props 上限，失败不阻断工具调用）。  
-智能体工坊与文件直调：已上线（2026-09-09）。实体智能体角色管理、小影 403 硬核防线、1:1 DSH 供应商模型池配置与 Ping 连通性探测、单次短命直调 `content/log/*.md` 跑完即焚、时序三色甘特图 100% 数据驱动、4 格硬核遥测账单、逐轮审计卡片与独立 `trace.jsonl` 管道（AES-256-GCM 强加密保护，全仓测试全绿；详见 `docs/PRD-AGENT-WORKBENCH.md`）。  
-**不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar 中台做进本站、canvas、MDX 块组件全量。  
+主题线 series、英文 slug、TOC/进度、Ferry 页、去多主题、Admin 内容编辑（本地盘）、support API 骨架、构建 rss/llms/pagefind。
+公开面：分型/卡牌/时间线+标签、赞赏静态码、学习深链重定向、ideas/new→卡、404、登录壳诚实。
+Admin：今日下一动作（pickNextActions）、系统读 health；过程四面。
+AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关）；站内助手已上线（/ask 整页 + 右下 AskBar 合并搜索面板 + SSE 流式 + 多轮会话归属校验，DeepSeek Harness 只读沙箱，Run 合同 fail-closed，2026-09-03 公网真答通过；见 `docs/PRD-SITE-ASSISTANT.md`；执行实录 `docs/archive/TODO-SITE-ASSISTANT.md`）。
+卡口对话化与观测三标签：已上线（2026-09-14，`e7493f1`）。`/tools` 由单页表单改为对话式（首步选卡点类型只做前端引导，不污染线索正文；提交后逐字呈现 nextStep，折叠区只展示真实判定依据——规则桶语义 / AI 或规则来源 / 命中的站内证据，不编造思维链），配套 `/tools/result` 独立结果页（`noindex`，结果仅在本机会话可还原）。后台「观测」页三标签：使用排行（`/admin/usage/stats`）、AI 状态（`/admin/ai/stats`，含 token 用量与降级原因四分类）、旅程回放（`/admin/journey`）。判断代理经 `POST /admin/events` 回写 `agent.mcp` 事件（`FEATURE_KEYS` 字典门禁 + props 上限，失败不阻断工具调用）。
+智能体工坊与文件直调：已上线（2026-09-09）。实体智能体角色管理、小影 403 硬核防线、1:1 DSH 供应商模型池配置与 Ping 连通性探测、单次短命直调 `content/log/*.md` 跑完即焚、时序三色甘特图 100% 数据驱动、4 格硬核遥测账单、逐轮审计卡片与独立 `trace.jsonl` 管道（AES-256-GCM 强加密保护，全仓测试全绿；详见 `docs/archive/PRD-AGENT-WORKBENCH.md`；新后台重构见 `docs/PRD-AGENT-OPERATIONS.md`）。
+**不迁（产品否决/无真相源）：** Match、WorkItem 巨石、账号邀请 Grants、Skill 链、NorthStar 中台做进本站、canvas、MDX 块组件全量。
 **远景保留、不进近端验收：** 知识→工作站→具身回灌；点子社区与智能微体站；内容分发参照 NorthStar 能力（见 VISION）。
 
 ## 未交付（生产运行时）
 
-1. ~~公网 Nest + SQLite 首期~~ → **已完成（2026-09-03）**：腾讯云新加坡 Windows 盒子常驻 Nest :8788（SQLite，只绑 127.0.0.1），Caddy 公网白名单反代 `https://api.iwalk.pro`（Let's Encrypt 自动证书）；站内助手引擎（DeepSeek Harness 只读沙箱）同机部署并真答通过  
-2. ~~Vercel `/api` → API 主机~~ → **已完成（2026-09-03）**：vercel.json rewrites `/api/*` → `https://api.iwalk.pro`  
+1. ~~公网 Nest + SQLite 首期~~ → **已完成（2026-09-03）**：腾讯云新加坡 Windows 盒子常驻 Nest :8788（SQLite，只绑 127.0.0.1），Caddy 公网白名单反代 `https://api.iwalk.pro`（Let's Encrypt 自动证书）；站内助手引擎（DeepSeek Harness 只读沙箱）同机部署并真答通过
+2. ~~Vercel `/api` → API 主机~~ → **已完成（2026-09-03）**：vercel.json rewrites `/api/*` → `https://api.iwalk.pro`
 3. ~~生产 intake 探针绿后标切流~~ → 见下方「生产切流」
 
 ## 生产切流：已完成（2026-09-03）
@@ -158,9 +181,9 @@ AI：卡口 nextStep 双策略（规则五桶 + AI 接地可引用，AI 可关�
 
 ## 下一步（优先级）
 
-1. **工作站真实初稿全链跑通**（创建→加工→刷新→审阅→批准→构建→发布验证）→ 见 [`TODO-MAINLINE.md`](./TODO-MAINLINE.md) M3  
-2. **内容增长**：按需求信号中心的内容缺口持续产出  
-3. **要推 VISION 中层** → 知识可引用进 nextStep 的最小切片  
+1. **工作站真实初稿全链跑通**（创建→加工→刷新→审阅→批准→构建→发布验证）→ 见 `docs/archive/TODO-MAINLINE.md` M3（现行见根 `to-do.md`）
+2. **内容增长**：按需求信号中心的内容缺口持续产出
+3. **要推 VISION 中层** → 知识可引用进 nextStep 的最小切片
 # 2026-09-11 本地增量：小影网页桌宠
 
 - 用户授权将现有影鳐接到首页，并要求做成有生命感的网页桌宠：闲置/工作两态，搜索框即宠物本身。

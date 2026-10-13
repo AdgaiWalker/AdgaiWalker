@@ -12,7 +12,7 @@ export type DemandSignalSource =
 
 export const DEMAND_SIGNAL_LABELS: Record<DemandSignalSource, string> = {
   assistant: '问了小影',
-  intake: '卡口提问',
+  intake: '提问页问题',
   'search-miss': '搜索没找到',
   feedback: '文章反馈',
 } as const;

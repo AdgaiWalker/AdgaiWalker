@@ -51,7 +51,7 @@ export function ToolsResultPage() {
         <div className="surface-l2 instrument-panel">
           <div className="instrument-actions">
             <Link to={dualEntry.ask.path} className="btn-primary">
-              回卡口再问一次
+              回提问页再问一次
             </Link>
             <Link to={dualEntry.browse.path} className="btn-ghost">
               先去{dualEntry.browse.label}

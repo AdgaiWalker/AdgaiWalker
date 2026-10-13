@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { mergeFailCodeCounts, normalizeFeatureFailCode } from '@walker/shared';
 import type { FeatureEventPort } from '../ports/feature-event.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
+import { registerLogResource } from './log-resource.writer';
 
 /** 观测写入失败不抛 —— 不得拖垮主请求 */
 @Injectable()
@@ -19,17 +20,25 @@ export class PrismaFeatureEventAdapter implements FeatureEventPort {
     const c = this.prisma.getClient();
     if (!c) return;
     try {
-      await c.featureEvent.create({
-        data: {
-          id: input.id,
-          featureKey: input.featureKey,
-          event: input.event,
-          actorType: input.actorType,
-          failCode: input.failCode
-            ? normalizeFeatureFailCode(input.failCode)
-            : null,
-          props: (input.props ?? undefined) as object | undefined,
-        },
+      await c.$transaction(async (tx) => {
+        const event = await tx.featureEvent.create({
+          data: {
+            id: input.id,
+            featureKey: input.featureKey,
+            event: input.event,
+            actorType: input.actorType,
+            failCode: input.failCode
+              ? normalizeFeatureFailCode(input.failCode)
+              : null,
+            props: (input.props ?? undefined) as object | undefined,
+          },
+        });
+        await registerLogResource(tx, {
+          conversationId: null,
+          resourceType: 'event',
+          resourceKey: event.id,
+          resourceCreatedAt: event.receivedAt,
+        });
       });
     } catch (e) {
       // eslint-disable-next-line no-console

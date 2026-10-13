@@ -1,23 +1,22 @@
-/**
- * 管理端内容应用服务 — 编排 ContentFileRepositoryPort；保存后尝试 content:gen
- */
-import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
-import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
+/** 管理端内容应用服务 — 读取文件仓储，人工保存委托给受审计 mutation service。 */
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import matter from 'gray-matter';
+import { validateProjectMetadata } from '@walker/shared';
 import { ApiError } from '../common/http-error';
+import { newId } from '../common/ids';
 import {
   CONTENT_FILE_REPOSITORY,
   type ContentFileRepositoryPort,
 } from '../ports/content-file.repository';
+import { CONTENT_MUTATION_SERVICE, type ContentMutationPort } from '../ports/content-mutation.port';
 
 @Injectable()
 export class ContentAdminService {
-  private readonly log = new Logger(ContentAdminService.name);
-
   constructor(
     @Inject(CONTENT_FILE_REPOSITORY)
     private readonly files: ContentFileRepositoryPort,
+    @Inject(CONTENT_MUTATION_SERVICE)
+    private readonly mutations: ContentMutationPort,
   ) {}
 
   list() {
@@ -36,12 +35,37 @@ export class ContentAdminService {
     return doc;
   }
 
-  async save(slug: string, raw: string) {
+  async save(slug: string, raw: string, expectedHash: string | null) {
+    // C22 项目字段校验：项目使用现有类型和字段进入受控保存
+    let parsedData: Record<string, unknown> | null = null;
     try {
-      const saved = await this.files.save(slug, raw);
-      this.scheduleContentGen();
-      return saved;
+      const parsed = matter(raw);
+      parsedData = (parsed.data ?? {}) as Record<string, unknown>;
+    } catch {
+      // 语法异常由后续流程或门禁捕获
+    }
+
+    if (parsedData?.type === 'project') {
+      const validation = validateProjectMetadata(parsedData);
+      if (!validation.valid) {
+        throw new ApiError(
+          'invalid-project-fields',
+          HttpStatus.BAD_REQUEST,
+          `项目字段校验失败：${validation.errors.join('，')}`,
+        );
+      }
+    }
+
+    try {
+      return await this.mutations.saveManual({
+        slug,
+        raw,
+        expectedHash,
+        actor: 'owner',
+        requestId: newId(),
+      });
     } catch (e) {
+      if (e instanceof ApiError) throw e;
       const msg = e instanceof Error ? e.message : 'save-failed';
       if (msg === 'invalid-slug') {
         throw new ApiError(
@@ -72,39 +96,4 @@ export class ContentAdminService {
     }
   }
 
-  /**
-   * 异步触发 monorepo content:gen，失败只记日志不阻断保存。
-   * cwd 用 pnpm-workspace.yaml 定位 monorepo 根（「存在 package.json」会误中 app 目录，
-   * 那里没有 content:gen 脚本）；非零退出同样记录，不再静默吞掉。
-   */
-  private scheduleContentGen(): void {
-    if (process.env.CONTENT_GEN_ON_SAVE === 'false') return;
-    let dir: string | undefined = process.cwd();
-    while (dir && !fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
-      const parent = path.dirname(dir);
-      if (parent === dir) {
-        dir = undefined;
-        break;
-      }
-      dir = parent;
-    }
-    if (!dir) {
-      this.log.warn('content:gen skipped: monorepo 根未找到（无 pnpm-workspace.yaml）');
-      return;
-    }
-
-    const child = spawn('pnpm', ['content:gen'], {
-      cwd: dir,
-      stdio: 'ignore',
-      detached: true,
-      shell: process.platform === 'win32',
-    });
-    child.unref();
-    child.on('error', (err) => {
-      this.log.warn(`content:gen spawn failed: ${err.message}`);
-    });
-    child.on('close', (code) => {
-      if (code !== 0) this.log.warn(`content:gen exited with ${code ?? 'signal'}`);
-    });
-  }
 }

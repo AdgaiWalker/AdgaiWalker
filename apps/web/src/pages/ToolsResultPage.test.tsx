@@ -101,7 +101,7 @@ describe('卡结果页', () => {
       screen.getByRole('heading', { name: '这一步在这里找不到了' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: '回卡口再问一次' }),
+      screen.getByRole('link', { name: '回提问页再问一次' }),
     ).toHaveAttribute('href', WEB_ROUTES.ask);
   });
 
