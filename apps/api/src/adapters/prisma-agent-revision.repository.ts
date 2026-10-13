@@ -20,7 +20,7 @@ export class PrismaAgentRevisionRepository implements AgentRevisionRepositoryPor
   }
   async list() {
     const rows = await this.db().agentUnit.findMany({ where: { archivedAt: null }, orderBy: { updatedAt: 'desc' }, include: { revisions: { orderBy: { version: 'desc' }, take: 1 } } });
-    return rows.map((row) => ({ id: row.id, name: row.name, modelId: row.modelId, isSystem: row.isSystem, updatedAt: row.updatedAt.toISOString(), revision: row.revisions[0]?.version ?? null }));
+    return rows.map((row) => ({ id: row.id, name: row.name, providerId: row.revisions[0]?.providerId ?? row.providerId, modelId: row.modelId, isSystem: row.isSystem, updatedAt: row.updatedAt.toISOString(), revision: row.revisions[0]?.version ?? null }));
   }
   async save(input: Parameters<AgentRevisionRepositoryPort['save']>[0]) {
     return this.db().$transaction(async (tx) => {

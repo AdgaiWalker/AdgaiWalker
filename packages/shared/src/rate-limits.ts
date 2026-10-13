@@ -6,6 +6,10 @@ export const RATE_LIMITS = {
   guestPerWindow: 10,
   /** 已登录用户：窗口内次数上限 */
   userPerWindow: 30,
+  /** 公开问答：窗口内每匿名身份（cookie hash）次数上限 */
+  assistantAnonPerWindow: 20,
+  /** 助手部件交互日志：按 IP 与匿名身份分别限流 */
+  assistantInteractionPerWindow: 120,
   /** 滑动窗口长度（秒） */
   windowSeconds: 600,
 } as const;

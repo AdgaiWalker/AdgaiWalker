@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1240px; height: 1010px; background: #fff;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .canvas {
+    position: relative; width: 1180px; height: 950px;
+    border: 1px solid #e5e7eb; border-radius: 18px; background: #fff;
+    padding: 30px 40px 24px;
+  }
+  .title { font-size: 16px; font-weight: 600; color: #4b5563; letter-spacing: .03em; }
+  .subtitle { font-size: 12px; color: #9ca3af; margin-top: 5px; margin-bottom: 16px; }
+  .stack { position: relative; width: 1100px; height: 880px; }
+
+  .box {
+    position: absolute; border-radius: 10px; padding: 11px 16px;
+    border: 1.5px solid; display: flex; flex-direction: column;
+    justify-content: center; gap: 3px; text-align: center;
+  }
+  .box .t { font-size: 15.5px; font-weight: 600; line-height: 1.25; }
+  .box .s { font-size: 11.5px; opacity: .76; line-height: 1.42; }
+
+  .blue   { background: #eaf1fd; border-color: #a8c3f0; color: #1c4e9c; }
+  .green  { background: #e9f6ee; border-color: #a4d5b8; color: #1a6b3c; }
+  .violet { background: #f1ecfd; border-color: #c3b3ef; color: #4a2f9c; }
+  .grey   { background: #f4f5f7; border-color: #d6d9de; color: #6b7280; }
+
+  .v { position: absolute; width: 1.5px; background: #b8bec8; }
+  .h { position: absolute; height: 1.5px; background: #b8bec8; }
+  .dashv {
+    position: absolute; width: 1.5px;
+    background: repeating-linear-gradient(to bottom, #cbd0d8 0 5px, transparent 5px 10px);
+  }
+  .lbl {
+    position: absolute; font-size: 11.5px; color: #6b7280; background: #fff;
+    padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+  .zone {
+    position: absolute; border: 1.5px dashed #d8dce2; border-radius: 14px;
+    background: #fcfcfd;
+  }
+  .zone-cap {
+    position: absolute; font-size: 12px; font-weight: 600; color: #9aa1ab;
+    background: #fcfcfd; padding: 0 8px;
+  }
+  .xmark {
+    position: absolute; font-size: 15px; font-weight: 700; color: #dc6b6b;
+  }
+
+  /* 目录树 */
+  .tree-title { position: absolute; font-size: 12.5px; font-weight: 600; color: #6b7280; }
+  .tr { position: absolute; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; white-space: pre; }
+  .tr .path { color: #374151; font-weight: 600; }
+  .tr .cmt  { color: #9ca3af; }
+  .tr .key  { color: #1c4e9c; font-weight: 600; }
+  .badge { position: absolute; right: 40px; bottom: 14px; font-size: 11px; color: #c8cdd5; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="title">AdgaiWalker · Agent 独立配置结构</div>
+  <div class="subtitle">同一套上游代码 · 配置各自隔离 · 可承接外部插件 · 与站主个人环境零接触</div>
+
+  <div class="stack">
+    <!-- 站主个人环境（隔离在外） -->
+    <div class="box grey" style="left:390px; top:0; width:340px; height:60px;">
+      <span class="t">站主个人环境 ~/.dsh</span>
+      <span class="s">DSH Desktop · 与本系统不共用</span>
+    </div>
+    <div class="xmark" style="left:748px; top:20px;">✕</div>
+    <div class="dashv" style="left:560px; top:60px; height:44px;"></div>
+    <div class="lbl" style="left:560px; top:82px;">物理隔离：不读取、不回落</div>
+
+    <!-- AdgaiWalker DSH_HOME 容器 -->
+    <div class="zone" style="left:60px; top:104px; width:980px; height:372px;"></div>
+    <div class="zone-cap" style="left:82px; top:96px;">AdgaiWalker DSH_HOME · apps/api/data/dsh-home</div>
+
+    <!-- 共享层 -->
+    <div class="box blue" style="left:110px; top:144px; width:880px; height:78px;">
+      <span class="t">共享层（Agent 未覆盖时回落）</span>
+      <span class="s">settings.yaml — 提供方接口 · API 网址 · 凭据引用名　｜　.credentials.yaml — 共用凭据（站主手工填，不进 Git）</span>
+    </div>
+
+    <!-- 分叉 -->
+    <div class="v" style="left:550px; top:222px; height:26px;"></div>
+    <div class="h" style="left:300px; top:248px; width:500px;"></div>
+    <div class="v" style="left:300px; top:248px; height:22px;"></div>
+    <div class="v" style="left:800px; top:248px; height:22px;"></div>
+
+    <!-- 两个 Agent -->
+    <div class="box green" style="left:110px; top:270px; width:380px; height:86px;">
+      <span class="t">Agent A · 咨询顾问</span>
+      <span class="s">agents/consultant/settings.yaml<br>model: deepseek-v4.1-flash</span>
+    </div>
+    <div class="box green" style="left:610px; top:270px; width:380px; height:86px;">
+      <span class="t">Agent B · 工程师</span>
+      <span class="s">agents/engineer/settings.yaml<br>model: gpt-5.6</span>
+    </div>
+
+    <!-- 汇聚到上游 -->
+    <div class="v" style="left:300px; top:356px; height:34px;"></div>
+    <div class="v" style="left:800px; top:356px; height:34px;"></div>
+    <div class="box violet" style="left:220px; top:390px; width:660px; height:64px;">
+      <span class="t">上游同一套代码（node_modules 里一份，不复制）</span>
+      <span class="s">@deepseek-ai/dsh-base · dsh-sdk-app · Cordis 插件框架 · llm-deepseek</span>
+    </div>
+
+    <!-- 目录树 -->
+    <div class="tree-title" style="left:10px; top:510px;">单个 Agent 的独立环境（以 consultant 为例）</div>
+
+    <div class="tr" style="left:10px; top:542px;"><span class="path">apps/api/data/dsh-home/</span></div>
+    <div class="tr" style="left:10px; top:566px;">├── <span class="key">settings.yaml</span>          <span class="cmt">共享层默认：提供方接口 · API 网址 · 凭据引用</span></div>
+    <div class="tr" style="left:10px; top:590px;">├── <span class="key">.credentials.yaml</span>      <span class="cmt">共用凭据（站主手工填；.gitignore 已忽略）</span></div>
+    <div class="tr" style="left:10px; top:614px;">└── <span class="key">agents/</span></div>
+    <div class="tr" style="left:10px; top:638px;">    ├── <span class="path">consultant/</span>          <span class="cmt">← Agent A 的独立 home（与其他 Agent 彼此隔离）</span></div>
+    <div class="tr" style="left:10px; top:662px;">    │   ├── <span class="key">settings.yaml</span>          <span class="cmt">模型与提示词（覆盖共享层）</span></div>
+    <div class="tr" style="left:10px; top:686px;">    │   ├── <span class="key">.credentials.yaml</span>      <span class="cmt">（可选）单独凭据；不写就用共享层</span></div>
+    <div class="tr" style="left:10px; top:710px;">    │   ├── <span class="key">profiles/sdk/</span>          <span class="cmt">← 该 Agent 的 Cordis 组合（dsh 自动生成）</span></div>
+    <div class="tr" style="left:10px; top:734px;">    │   │   ├── <span class="key">package.json</span>         <span class="cmt">★ 外部插件依赖装这里（各自独立）</span></div>
+    <div class="tr" style="left:10px; top:758px;">    │   │   ├── <span class="key">cordis.patch.yml</span>     <span class="cmt">插件开关 · 工具配置 · 参数覆盖</span></div>
+    <div class="tr" style="left:10px; top:782px;">    │   │   └── <span class="key">node_modules/</span>        <span class="cmt">本 Agent 独有依赖（pnpm 硬链接共享 store）</span></div>
+    <div class="tr" style="left:10px; top:806px;">    │   └── <span class="key">sessions/</span>              <span class="cmt">会话与缓存（不跨 Agent）</span></div>
+    <div class="tr" style="left:10px; top:830px;">    └── <span class="path">engineer/</span>            <span class="cmt">← Agent B（同构目录，配置不同）</span></div>
+  </div>
+
+  <div class="badge">2026-09-23 · R26 已完成：每 Agent 独立 home（配置 / 插件 / 会话隔离）</div>
+</div>
+</body>
+</html>

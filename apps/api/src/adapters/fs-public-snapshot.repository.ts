@@ -1,27 +1,19 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { stableJson, type PublicSnapshotItem } from '@walker/shared';
+import { parsePublicDenyList, stableJson, verifyPublicSnapshot } from '@walker/shared';
 import type { PublicSnapshotRepositoryPort, VerifiedPublicSnapshot } from '../ports/public-snapshot.repository';
 
 function sha(text: string): string {
   return createHash('sha256').update(text).digest('hex');
 }
 
-function itemHash(item: PublicSnapshotItem): string {
-  return sha(stableJson(item));
-}
-
-function collectionHash(items: VerifiedPublicSnapshot['items']): string {
-  return sha(stableJson(items.map((item) => ({ hash: item.hash, slug: item.slug }))));
-}
-
 function verified(snapshot: VerifiedPublicSnapshot): boolean {
-  return snapshot.items.every((item) => item.hash === itemHash({
-    slug: item.slug, title: item.title, updated: item.updated, summary: item.summary, body: item.body,
-    tags: item.tags, type: item.type, readable: item.readable, citable: item.citable,
-  })) && snapshot.collectionHash === collectionHash(snapshot.items) && snapshot.buildId === snapshot.collectionHash;
+  return verifyPublicSnapshot(snapshot, sha);
 }
+
+/** 撤销集合状态：无文件=空集合；文件损坏/形状不符=全部撤销（fail-closed）。 */
+export type PublicDenyState = ReadonlySet<string> | 'deny-all';
 
 export class FsPublicSnapshotRepository implements PublicSnapshotRepositoryPort {
   constructor(private readonly root = process.env.WALKER_PUBLIC_SNAPSHOT_DIR || path.resolve(process.cwd(), 'data/public-snapshots')) {}
@@ -60,5 +52,20 @@ export class FsPublicSnapshotRepository implements PublicSnapshotRepositoryPort 
     }
     if (!verified(snapshot) || snapshot.collectionHash !== pointer.collectionHash) throw new Error('snapshot-unavailable');
     return snapshot;
+  }
+
+  /**
+   * 读取快照根目录的 deny.json（公开内容撤销集合）。每次调用重新读盘，
+   * 撤销下一问即生效；旧快照同样受收窄约束，不能绕过。
+   */
+  readDeniedSlugs(): PublicDenyState {
+    const file = path.join(this.root, 'deny.json');
+    if (!fs.existsSync(file)) return new Set();
+    try {
+      const parsed = parsePublicDenyList(JSON.parse(fs.readFileSync(file, 'utf8')));
+      return parsed ? new Set(parsed.slugs) : 'deny-all';
+    } catch {
+      return 'deny-all';
+    }
   }
 }

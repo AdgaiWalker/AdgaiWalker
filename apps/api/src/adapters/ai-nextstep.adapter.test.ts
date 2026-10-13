@@ -49,6 +49,10 @@ function makeIndex(entries: SiteContentIndexEntry[], fail = false): SiteContentI
       if (fail) throw new Error('site-content-index-unavailable');
       return entries.map((e) => ({ ...e, body: `《${e.title}》正文` }));
     },
+    async loadCitableSnapshot() {
+      if (fail) throw new Error('site-content-index-unavailable');
+      return { buildId: 'test-build', collectionHash: 'a'.repeat(64), entries: entries.map((e) => ({ ...e, body: `《${e.title}》正文` })) };
+    },
   };
 }
 

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import type { StageArtifact, WorkStatus } from '@walker/shared';
 import type { AgentRunnerPort } from '../ports/agent-runner.port';
@@ -70,11 +71,21 @@ describe('AI workstation three-work acceptance harness', () => {
     };
     const files: ContentFileRepositoryPort = {
       async list() { return []; },
-      async get() { return null; },
-      async save(slug, raw) {
+      async get(slug) {
+        try {
+          const raw = await fs.readFile(path.join(contentRoot, `${slug}.md`), 'utf8');
+          return { slug, title: slug, type: 'knowledge', updatedAt: new Date().toISOString(), raw, hash: createHash('sha256').update(raw).digest('hex'), ext: '.md' as const };
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+          throw error;
+        }
+      },
+      async save(slug, raw, expectedHash) {
         const full = path.join(contentRoot, `${slug}.md`);
+        const existing = await this.get(slug);
+        if ((existing?.hash ?? null) !== expectedHash) throw new Error('content-version-conflict');
         await fs.writeFile(full, raw);
-        return { slug, title: slug, type: 'knowledge', updatedAt: new Date().toISOString(), raw, ext: '.md' as const };
+        return { slug, title: slug, type: 'knowledge', updatedAt: new Date().toISOString(), raw, hash: createHash('sha256').update(raw).digest('hex'), ext: '.md' as const };
       },
     };
     const packageRepo: PublicationPackageRepositoryPort = {

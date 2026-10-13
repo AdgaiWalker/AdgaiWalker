@@ -11,6 +11,7 @@ import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { AppModule } from '../app.module';
 import { PRISMA } from '../ports/prisma.port';
 import { READ_ONLY_PROFILE } from '@walker/shared';
+import { DEFAULT_AGENT_MODEL_ID } from './agent-unit.service';
 
 let app: INestApplication, db: PrismaClient, dir: string, base: string;
 const headers = { 'x-admin-token': 'catalog-test', 'content-type': 'application/json' };
@@ -29,15 +30,60 @@ beforeAll(async () => {
   vi.stubEnv('WALKER_SKILLS_DIR', path.join(dir, 'skills'));
   const module = await Test.createTestingModule({ imports: [AppModule] }).overrideProvider(PRISMA)
     .useValue({ getClient: () => db, isWritable: () => true, ping: async () => true })
-    .overrideProvider(SITE_CONTENT_INDEX).useValue({ loadCitable: async () => [{ slug: 'post-a' }, { slug: 'post-b' }], loadCitableFull: async () => [] }).compile();
+    .overrideProvider(SITE_CONTENT_INDEX).useValue({
+      loadCitable: async () => [{ slug: 'post-a' }, { slug: 'post-b' }],
+      loadCitableFull: async () => [],
+      loadCitableSnapshot: async () => ({ buildId: 'test-build', collectionHash: 'd'.repeat(64), entries: [] }),
+    }).compile();
   app = module.createNestApplication({ logger: false });
   await app.listen(0, '127.0.0.1');
   base = await app.getUrl();
 }, 30_000);
 afterAll(async () => { await app?.close(); await db?.$disconnect(); if (dir) fs.rmSync(dir, { recursive: true, force: true }); vi.unstubAllEnvs(); });
 
+it('后台日志覆盖读取与失败操作，不保存查询参数或请求体', async () => {
+  expect((await fetch(`${base}/ops/capabilities?secret=never-log`, { headers })).status).toBe(200);
+  expect((await fetch(`${base}/ops/agents/secret-path-value?secret=never-log`, { headers })).status).toBe(404);
+  expect((await fetch(`${base}/ops/agents`, {
+    method: 'POST', headers, body: JSON.stringify({ secret: 'body-never-log' }),
+  })).status).toBe(400);
+  const response = await fetch(`${base}/ops/admin-log?limit=50`, { headers });
+  expect(response.status).toBe(200);
+  const data = await response.json() as { items: Array<{ method: string; path: string; statusCode: number }> };
+  expect(data.items).toEqual(expect.arrayContaining([
+    expect.objectContaining({ method: 'GET', path: '/ops/capabilities', statusCode: 200 }),
+    expect.objectContaining({ method: 'POST', path: '/ops/agents', statusCode: 400 }),
+  ]));
+  expect(JSON.stringify(data)).not.toMatch(/never-log|body-never-log|secret-path-value/);
+});
+
+it('后台日志无法写入时拒绝执行管理操作', async () => {
+  await db.$executeRawUnsafe(`CREATE TRIGGER "reject_admin_log" BEFORE INSERT ON "AdminRequestLog" BEGIN SELECT RAISE(ABORT, 'log-failed'); END`);
+  try {
+    const response = await fetch(`${base}/ops/agents`, { method: 'POST', headers, body: JSON.stringify({
+      requestKey: 'audit-failure-agent', baseVersion: 0, name: '不应创建', prompt: '测试',
+      providerId: null, modelId: DEFAULT_AGENT_MODEL_ID, toolProfile: READ_ONLY_PROFILE,
+    }) });
+    expect(response.status).toBe(503);
+    expect(await db.agentUnit.count({ where: { name: '不应创建' } })).toBe(0);
+  } finally {
+    await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS "reject_admin_log"`);
+  }
+});
+
+it('后台自动轮询不产生人工操作日志', async () => {
+  const before = await db.adminRequestLog.count();
+  expect((await fetch(`${base}/ops/capabilities`, { headers: { ...headers, 'x-admin-background-poll': '1' } })).status).toBe(200);
+  expect(await db.adminRequestLog.count()).toBe(before);
+  expect((await fetch(`${base}/ops/agents`, {
+    method: 'POST', headers: { ...headers, 'x-admin-background-poll': '1' }, body: '{}',
+  })).status).toBe(400);
+  expect(await db.adminRequestLog.count()).toBe(before + 1);
+});
+
 it('修订保存与审计原子提交，旧版本不变，重复请求不增版本，旧写路径退役', async () => {
-  const config = { requestKey: 'catalog-request-1', baseVersion: 0, name: '测试角色', prompt: '第一版', providerId: null, modelId: 'deepseek-chat', toolProfile: READ_ONLY_PROFILE };
+  // 未连接供应商的草稿只能保留系统默认模型（DEFAULT_AGENT_MODEL_ID）。
+  const config = { requestKey: 'catalog-request-1', baseVersion: 0, name: '测试角色', prompt: '第一版', providerId: null, modelId: DEFAULT_AGENT_MODEL_ID, toolProfile: READ_ONLY_PROFILE };
   expect((await fetch(`${base}/ops/agents`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(config) })).status).toBe(401);
   const create = () => fetch(`${base}/ops/agents`, { method: 'POST', headers, body: JSON.stringify(config) });
   const response = await create();

@@ -34,10 +34,15 @@ export interface OperationsTransaction {
   client: object;
   runs: AgentExecutionRepositoryPort;
   grants: import('./authorization.repository').AuthorizationRepositoryPort;
+  releases: import('./content-release.repository').ContentReleaseRepositoryPort;
   appendAudit(entry: AuditEntry): Promise<void>;
   enqueue(event: OutboxDraft): Promise<void>;
   claimOutbox(id: string, attempt: number, now: Date): Promise<OutboxEvent | null>;
   deliverOutbox(id: string, attempt: number, now: Date): Promise<void>;
+  ensureDeletionTombstone(id: string, conversationId: string): Promise<{
+    tombstone: import('./log-resource.repository').DeletionTombstoneRecord;
+    created: boolean;
+  }>;
 }
 export interface OperationsJournalPort {
   transaction<T>(work: (transaction: OperationsTransaction) => Promise<T>): Promise<T>;

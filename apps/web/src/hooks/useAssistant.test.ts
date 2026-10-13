@@ -2,7 +2,7 @@
  * useAssistant 单测 — 提交/错误/多轮 sessionId 透传（mock publicApi）
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { extractStreamedAnswer } from '@walker/shared';
 import { useAssistant } from './useAssistant';
 import { publicApi } from '../api/public-api';
@@ -10,14 +10,18 @@ import { publicApi } from '../api/public-api';
 vi.mock('../api/public-api', () => ({
   publicApi: {
     assistantStream: vi.fn(),
+    stopAssistant: vi.fn(),
+    assistantInteraction: vi.fn(async () => ({ recorded: true, duplicate: false })),
   },
 }));
 
 const mocked = vi.mocked(publicApi.assistantStream);
+const mockedStop = vi.mocked(publicApi.stopAssistant);
+const mockedInteraction = vi.mocked(publicApi.assistantInteraction);
 
 /** 模拟 SSE 流：两段增量 + done 终值 */
 function streamOnce(sessionId: string, answer: string, deltas: string[]) {
-  mocked.mockImplementationOnce(async (_q, _sid, onText) => {
+  mocked.mockImplementationOnce(async ({ onText }) => {
     for (const d of deltas) onText(d);
     return {
       sessionId,
@@ -25,6 +29,11 @@ function streamOnce(sessionId: string, answer: string, deltas: string[]) {
       citations: [{ slug: 'cc-intro' }],
       aiUsedFlag: true,
       elapsedMs: 100,
+      requestId: 'request-1',
+      messageId: 'message-1',
+      attemptId: 'attempt-1',
+      runId: null,
+      conversationId: null,
     };
   });
 }
@@ -32,6 +41,8 @@ function streamOnce(sessionId: string, answer: string, deltas: string[]) {
 describe('useAssistant', () => {
   beforeEach(() => {
     mocked.mockReset();
+    mockedStop.mockReset();
+    mockedInteraction.mockReset().mockResolvedValue({ recorded: true, duplicate: false });
   });
 
   it('流式提交：增量拼接出完整回答，透传 sessionId 并记住新会话', async () => {
@@ -40,7 +51,12 @@ describe('useAssistant', () => {
     await act(async () => {
       await result.current.send('duola 是谁');
     });
-    expect(mocked).toHaveBeenCalledWith('duola 是谁', null, expect.any(Function), expect.any(AbortSignal));
+    expect(mocked).toHaveBeenCalledWith(expect.objectContaining({
+      body: 'duola 是谁', sessionId: null, onText: expect.any(Function),
+      signal: expect.any(AbortSignal), source: 'assistant-stream',
+      context: expect.objectContaining({ conversationId: null, requestKey: expect.any(String) }),
+      onAccepted: expect.any(Function),
+    }));
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0]).toEqual({
       role: 'user',
@@ -58,12 +74,12 @@ describe('useAssistant', () => {
     await act(async () => {
       await result.current.send('追问一下细节');
     });
-    expect(mocked).toHaveBeenLastCalledWith(
-      '追问一下细节',
-      's-1',
-      expect.any(Function),
-      expect.any(AbortSignal),
-    );
+    expect(mocked).toHaveBeenLastCalledWith(expect.objectContaining({
+      body: '追问一下细节', sessionId: 's-1', onText: expect.any(Function),
+      signal: expect.any(AbortSignal), source: 'assistant-stream',
+      context: expect.objectContaining({ conversationId: null, requestKey: expect.any(String) }),
+      onAccepted: expect.any(Function),
+    }));
   });
 
   it('网关已裁剪的纯文本增量直接上屏，不等 JSON 外壳', async () => {
@@ -74,8 +90,13 @@ describe('useAssistant', () => {
       citations: { slug: string }[];
       aiUsedFlag: boolean;
       elapsedMs: number;
+      requestId: string;
+      messageId: string;
+      attemptId: string;
+      runId: string | null;
+      conversationId: string | null;
     }) => void) | undefined;
-    mocked.mockImplementationOnce((_q, _sid, cb) => {
+    mocked.mockImplementationOnce(({ onText: cb }) => {
       onText = cb;
       return new Promise((resolve) => {
         finish = resolve;
@@ -102,6 +123,11 @@ describe('useAssistant', () => {
         citations: [],
         aiUsedFlag: true,
         elapsedMs: 20,
+        requestId: 'request-dora',
+        messageId: 'message-dora',
+        attemptId: 'attempt-dora',
+        runId: 'run-dora',
+        conversationId: null,
       });
       await pending;
     });
@@ -116,6 +142,66 @@ describe('useAssistant', () => {
     });
     expect(result.current.messages).toHaveLength(1);
     expect(result.current.error).toBeTruthy();
+  });
+
+  it('只在停止接口确认后标记已停止，并在确认前轮询 pending 状态', async () => {
+    mockedStop
+      .mockResolvedValueOnce({ state: 'PENDING', confirmed: false })
+      .mockResolvedValueOnce({ state: 'CANCELLED', confirmed: true });
+    const messageId = 'message-v14-0000000000000000';
+    mocked.mockImplementationOnce(async ({ onText, signal, onAccepted }) => {
+      onAccepted?.({
+        version: 2, type: 'accepted', eventId: `${messageId}:0`, requestId: 'request-v14',
+        messageId, attemptId: 'attempt-v14', runId: null, sequence: 0,
+      });
+      onText('已生成一部分');
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => reject(new Error('stream-aborted')), { once: true });
+      });
+    });
+    const { result } = renderHook(() => useAssistant({ placementKey: 'post-detail', scopeSlug: 'post-a' }));
+    let sending!: Promise<void>;
+    act(() => { sending = result.current.send('请解释一下'); });
+    await waitFor(() => expect(result.current.activeMessageId).toBe(messageId));
+
+    await act(async () => { await result.current.stop(); });
+    await act(async () => { await sending; });
+
+    expect(mockedStop).toHaveBeenCalledTimes(2);
+    expect(mockedStop).toHaveBeenNthCalledWith(1, 'post-detail', 'post-a', messageId);
+    expect(result.current.messages[1]).toMatchObject({ text: '已生成一部分', stopped: true });
+    expect(result.current.error).toBeNull();
+  });
+
+  it('只在服务端接受消息后记录 send/follow-up 面板事件', async () => {
+    const makeAcceptedTurn = (messageId: string, answer: string) => {
+      mocked.mockImplementationOnce(async ({ onText, onAccepted }) => {
+        const requestId = `request-${messageId}`;
+        onAccepted?.({
+          version: 2, type: 'accepted', eventId: `${messageId}:0`, requestId,
+          messageId, attemptId: `attempt-${messageId}`, runId: 'run-public', sequence: 0,
+        });
+        onText(answer);
+        return {
+          sessionId: 'sdk-session', answer, citations: [], aiUsedFlag: true, elapsedMs: 10,
+          requestId, messageId, attemptId: `attempt-${messageId}`, runId: 'run-public', conversationId: 'conversation-public',
+        };
+      });
+    };
+    makeAcceptedTurn('message-555555555555555555555555', '第一答。');
+    makeAcceptedTurn('message-666666666666666666666666', '追问答。');
+    const { result } = renderHook(() => useAssistant({
+      placementKey: 'post-detail', scopeSlug: 'post-a', memberKey: 'public-member-a', deploymentGeneration: 4,
+    }));
+
+    await act(async () => { await result.current.send('第一个问题'); });
+    await act(async () => { await result.current.send('继续追问'); });
+
+    expect(mockedInteraction.mock.calls.map(([event]) => event.event)).toEqual(['send', 'follow-up']);
+    expect(mockedInteraction.mock.calls[0]?.[0]).toMatchObject({
+      schemaVersion: 1, placementKey: 'post-detail', scopeSlug: 'post-a', memberKey: 'public-member-a',
+      messageId: 'message-555555555555555555555555',
+    });
   });
 
   it('过短问题不发请求；reset 清空会话', async () => {

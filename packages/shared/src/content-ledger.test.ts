@@ -3,6 +3,7 @@ import {
   deriveContentStage,
   deriveContentStageFromFrontmatter,
   resolveContentGroup,
+  validateProjectMetadata,
 } from './content-ledger.js';
 import { missingPublishedPostFields, PUBLISHED_POST_REQUIRED_FIELDS } from './content.js';
 
@@ -130,5 +131,26 @@ describe('resolveContentGroup（展示层分组，不回写 frontmatter）', () 
   it('未识别 type 归「文章」，不另造分组', () => {
     expect(resolveContentGroup('something-new')).toBe('article');
     expect(resolveContentGroup('')).toBe('article');
+  });
+
+  it('小店 type 归「小店」展示分组', () => {
+    expect(resolveContentGroup('shop')).toBe('shop');
+  });
+
+  it('validateProjectMetadata 正确校验项目属性', () => {
+    const valid = validateProjectMetadata({
+      status: 'validating',
+      url: 'https://github.com/AdgaiWalker/test',
+      resources: [{ name: '源码', url: 'https://github.com/...' }],
+    });
+    expect(valid.valid).toBe(true);
+    expect(valid.errors).toHaveLength(0);
+
+    const invalid = validateProjectMetadata({
+      status: 123,
+      resources: 'not-an-array',
+    });
+    expect(invalid.valid).toBe(false);
+    expect(invalid.errors.length).toBeGreaterThan(0);
   });
 });

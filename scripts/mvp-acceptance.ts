@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { evaluateMvpEvidence, type MvpEvidence } from '../packages/shared/dist/mvp-acceptance.js';
+import { evaluateMvpEvidence, type MvpEvidence } from '../packages/shared/src/mvp-acceptance.js';
 
 const STAGES = ['NORMALIZE', 'EDIT', 'QUALITY_CHECK', 'FREEZE_BODY', 'COVER', 'WEB_FORMAT', 'WECHAT_FORMAT', 'REVIEW_READY'] as const;
 const WORK_ROOT = path.resolve(process.env.WORK_ROOT_DIR?.trim() || 'var/works');

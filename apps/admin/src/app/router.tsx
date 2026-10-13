@@ -1,18 +1,22 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, Link } from "react-router-dom";
 import { AdminShell } from "./AdminShell";
 import { ADMIN_ROUTES as R } from "../shared/routes";
 import { OverviewPage } from "../pages/overview/OverviewPage";
 import { ContentListPage } from "../pages/content/ContentListPage";
-import { lazy, Suspense } from "react";
+import { AgentListPage, AgentDetailPage } from "../pages/agents/AgentListPage";
+import { DeploymentsPage } from "../pages/deployments/DeploymentsPage";
+import { RunListPage } from "../pages/records/RunListPage";
+import { RunDetailPage } from "../pages/records/RunDetailPage";
+import { ConversationLogDetailPage } from "../pages/records/ConversationLogDetailPage";
+import { SettingsPage } from "../pages/settings/SettingsPage";
 import { LoadingState } from "../components/States";
+
 const ContentDetailPage = lazy(() =>
   import("../pages/content/ContentDetailPage").then((module) => ({
     default: module.ContentDetailPage,
   })),
 );
-import { AgentListPage, AgentDetailPage } from "../pages/agents/AgentListPage";
-import { RunListPage, RunDetailPage } from "../pages/records/RunListPage";
-import { SettingsPage } from "../pages/settings/SettingsPage";
 export function AppRoutes() {
   return (
     <Routes>
@@ -29,9 +33,11 @@ export function AppRoutes() {
           }
         />
         <Route path={R.agents} element={<AgentListPage />} />
+        <Route path={R.deployments} element={<DeploymentsPage />} />
         <Route path={R.agentPattern} element={<AgentDetailPage />} />
         <Route path={R.records} element={<RunListPage />} />
         <Route path={R.runPattern} element={<RunDetailPage />} />
+        <Route path={R.conversationPattern} element={<ConversationLogDetailPage />} />
         <Route path={R.settings} element={<SettingsPage />} />
         <Route
           path="*"

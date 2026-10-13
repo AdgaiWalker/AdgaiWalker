@@ -30,6 +30,7 @@ function toEntry(
     title,
     type,
     frontmatter: data,
+    body: parsed.content,
     updatedAt: mtime.toISOString(),
   };
 }

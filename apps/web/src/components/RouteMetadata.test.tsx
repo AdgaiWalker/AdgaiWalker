@@ -46,7 +46,7 @@ describe('RouteMetadata', () => {
     renderAt('/posts');
 
     await waitFor(() => {
-      expect(document.title).toBe('证据 · Walker');
+      expect(document.title).toBe('文章 · Walker');
     });
     expect(document.querySelector('meta[property^="article:"]')).toBeNull();
     expect(
@@ -64,7 +64,7 @@ describe('RouteMetadata', () => {
     renderAt('/tools');
 
     await waitFor(() => {
-      expect(document.title).toBe('卡 · Walker');
+      expect(document.title).toBe('提问 · Walker');
     });
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),

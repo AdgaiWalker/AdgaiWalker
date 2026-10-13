@@ -29,6 +29,7 @@ export interface OpsList<T> {
 export interface OpsAgent {
   id: string;
   name: string;
+  providerId: string | null;
   modelId: string;
   isSystem: boolean;
   updatedAt: string;
@@ -56,6 +57,7 @@ export interface OpsContentDetail {
   type: string;
   updatedAt: string;
   raw: string;
+  hash: string;
   ext: ".md" | ".mdx";
 }
 

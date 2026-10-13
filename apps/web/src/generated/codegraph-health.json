@@ -3,72 +3,174 @@
     "apps/admin/src/api/data-provider.test.ts",
     "apps/admin/src/api/execution-stream.test.ts",
     "apps/admin/src/api/http.test.ts",
+    "apps/admin/src/api/vite-proxy.test.ts",
     "apps/admin/src/components/MarkdownPreview.test.tsx",
+    "apps/admin/src/components/ReminderInboxPanel.test.tsx",
     "apps/admin/src/main.tsx",
     "apps/admin/src/pages/agents/GrantPanel.test.ts",
+    "apps/admin/src/pages/content/ContentChangeReviewPanel.test.tsx",
+    "apps/admin/src/pages/content/ContentDetailPage.test.tsx",
+    "apps/admin/src/pages/content/ContentListPage.test.tsx",
+    "apps/admin/src/pages/content/ContentReleasePanel.test.tsx",
+    "apps/admin/src/pages/deployments/DeploymentDraftId.test.tsx",
+    "apps/admin/src/pages/deployments/DeploymentsPage.test.ts",
+    "apps/admin/src/pages/deployments/PublicReadinessPanel.test.tsx",
+    "apps/admin/src/pages/overview/OpsStatsPanel.test.tsx",
+    "apps/admin/src/pages/records/ActivityStreamPanel.test.tsx",
+    "apps/admin/src/pages/records/ContentReviewPanel.test.tsx",
+    "apps/admin/src/pages/records/ConversationActionPanel.test.tsx",
+    "apps/admin/src/pages/records/ConversationLog.test.tsx",
+    "apps/admin/src/pages/records/RuntimeMonitorPanel.test.tsx",
     "apps/admin/src/test/assistant-runtime-probe.test.tsx",
     "apps/admin/src/test/setup.ts",
     "apps/agent/src/graph-neighbors.test.ts",
     "apps/agent/src/index.ts",
+    "apps/agent/src/knowledge-snapshot.test.ts",
     "apps/agent/src/knowledge.test.ts",
     "apps/agent/src/plugins/code-graph.test.ts",
     "apps/agent/src/telemetry.test.ts",
     "apps/api/src/action/action.service.test.ts",
     "apps/api/src/adapters/ai-nextstep.adapter.test.ts",
+    "apps/api/src/adapters/content-publish-script-lock.test.ts",
     "apps/api/src/adapters/dsh-agent.runner.test.ts",
+    "apps/api/src/adapters/execution-object-policy.test.ts",
     "apps/api/src/adapters/fs-artifact.repository.test.ts",
+    "apps/api/src/adapters/fs-assistant-event-spool.test.ts",
+    "apps/api/src/adapters/fs-candidate-file.repository.test.ts",
     "apps/api/src/adapters/fs-code-health.test.ts",
     "apps/api/src/adapters/fs-content-file.repository.test.ts",
+    "apps/api/src/adapters/fs-conversation-export-file-store.test.ts",
+    "apps/api/src/adapters/fs-deletion-manifest.store.test.ts",
+    "apps/api/src/adapters/fs-log-resource.cleaner.test.ts",
+    "apps/api/src/adapters/fs-model-credential.test.ts",
+    "apps/api/src/adapters/fs-model-directory.test.ts",
     "apps/api/src/adapters/fs-public-snapshot.repository.test.ts",
+    "apps/api/src/adapters/fs-site-content-index.test.ts",
+    "apps/api/src/adapters/fs-skill-file.store.test.ts",
     "apps/api/src/adapters/fs-skill.catalog.test.ts",
     "apps/api/src/adapters/fs-stage-artifact.repository.test.ts",
     "apps/api/src/adapters/harness-assistant.adapter.test.ts",
     "apps/api/src/adapters/harness-runtime.adapter.test.ts",
+    "apps/api/src/adapters/http-website-deployment-verifier.test.ts",
     "apps/api/src/adapters/node-process-registry.test.ts",
     "apps/api/src/adapters/openai-compatible-llm.adapter.test.ts",
     "apps/api/src/adapters/pnpm-content-release.runner.test.ts",
     "apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
+    "apps/api/src/adapters/prisma-conversation-export.repository.integration.test.ts",
+    "apps/api/src/adapters/prisma-conversation-query.repository.integration.test.ts",
+    "apps/api/src/adapters/prisma-conversation.repository.test.ts",
+    "apps/api/src/adapters/prisma-deployment.repository.test.ts",
     "apps/api/src/adapters/prisma-workbench.repository.test.ts",
     "apps/api/src/agents/agent-catalog.integration.test.ts",
+    "apps/api/src/agents/agent-model-config.service.test.ts",
     "apps/api/src/agents/agent-runner.service.test.ts",
     "apps/api/src/agents/agent-unit.service.test.ts",
     "apps/api/src/agents/legacy-execution.kernel.integration.test.ts",
     "apps/api/src/architecture/architecture.service.test.ts",
+    "apps/api/src/assistant/assistant-event-recorder.service.test.ts",
+    "apps/api/src/assistant/assistant-v08.service.test.ts",
+    "apps/api/src/assistant/assistant-v09.service.test.ts",
+    "apps/api/src/assistant/assistant.controller.test.ts",
     "apps/api/src/assistant/assistant.service.test.ts",
+    "apps/api/src/assistant/public-assistant.controller.integration.test.ts",
+    "apps/api/src/assistant/public-assistant.service.test.ts",
+    "apps/api/src/assistant/public-journey.kernel.integration.test.ts",
     "apps/api/src/auth/admin-token.middleware.test.ts",
-    "apps/api/src/auth/credential-cipher.test.ts",
+    "apps/api/src/auth/anon-cookie.test.ts",
+    "apps/api/src/auth/same-origin.middleware.test.ts",
+    "apps/api/src/common/process-tree.test.ts",
     "apps/api/src/config/env-config.adapter.test.ts",
+    "apps/api/src/config/load-api-env.test.ts",
     "apps/api/src/content-admin/content-admin.controller.test.ts",
+    "apps/api/src/content-admin/content-admin.service.test.ts",
+    "apps/api/src/content-admin/content-project-boundary.kernel.integration.test.ts",
     "apps/api/src/content-ledger/content-ledger.integration.test.ts",
+    "apps/api/src/content-lifecycle.closed-loop.kernel.integration.test.ts",
+    "apps/api/src/content-lifecycle.repository.kernel.integration.test.ts",
+    "apps/api/src/content-mutation.kernel.integration.test.ts",
+    "apps/api/src/content-mutation/content-approval.kernel.integration.test.ts",
+    "apps/api/src/content-mutation/content-concurrency-fault.kernel.integration.test.ts",
+    "apps/api/src/content-mutation/content-mutation-bypass-audit.kernel.integration.test.ts",
+    "apps/api/src/content-mutation/content-propose.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-cancel.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-lock.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-panel.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-preflight.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-reconcile.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-snapshot-sync.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-stages.kernel.integration.test.ts",
+    "apps/api/src/content-release/content-release-verify.kernel.integration.test.ts",
     "apps/api/src/content-release/content-release.integration.test.ts",
+    "apps/api/src/deployments/deployment.kernel.integration.test.ts",
+    "apps/api/src/deployments/public-readiness.service.test.ts",
     "apps/api/src/engagement/content-feedback.service.test.ts",
     "apps/api/src/engagement/like.service.test.ts",
+    "apps/api/src/execution/agent-execution.service.test.ts",
     "apps/api/src/execution/execution-runs.kernel.integration.test.ts",
     "apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
     "apps/api/src/execution/release-test.kernel.integration.test.ts",
+    "apps/api/src/execution/resource-concurrency.g03.kernel.integration.test.ts",
     "apps/api/src/execution/run-retention.service.test.ts",
     "apps/api/src/graph/graph.service.test.ts",
     "apps/api/src/health/health.service.test.ts",
     "apps/api/src/insights/insights.service.test.ts",
     "apps/api/src/kernel.integration.test.ts",
+    "apps/api/src/log-resources/conversation-deletion.controller.test.ts",
+    "apps/api/src/log-resources/conversation-deletion.kernel.integration.test.ts",
+    "apps/api/src/log-resources/conversation-deletion.restore.integration.test.ts",
+    "apps/api/src/log-resources/conversation-deletion.service.test.ts",
+    "apps/api/src/log-resources/conversation-export.format.test.ts",
+    "apps/api/src/log-resources/conversation-export.integration.test.ts",
+    "apps/api/src/log-resources/conversation-export.service.test.ts",
+    "apps/api/src/log-resources/conversation-query.kernel.integration.test.ts",
+    "apps/api/src/log-resources/conversation-query.service.test.ts",
+    "apps/api/src/log-resources/deletion-manifest-replay.service.test.ts",
+    "apps/api/src/log-resources/log-maintenance.cli.test.ts",
+    "apps/api/src/log-resources/log-maintenance.cli.ts",
+    "apps/api/src/log-resources/log-resource.controller.test.ts",
+    "apps/api/src/log-resources/log-resource.kernel.integration.test.ts",
+    "apps/api/src/log-resources/log-resource.service.test.ts",
+    "apps/api/src/log-resources/log-retention-cleanup.integration.test.ts",
+    "apps/api/src/log-resources/log-retention-cleanup.service.test.ts",
     "apps/api/src/main.ts",
-    "apps/api/src/model-providers/model-provider.service.test.ts",
+    "apps/api/src/migration/legacy-data-migration.kernel.integration.test.ts",
+    "apps/api/src/model-config/model-config.controller.test.ts",
+    "apps/api/src/model-config/model-config.service.test.ts",
     "apps/api/src/observability/observability.controller.test.ts",
     "apps/api/src/observability/observability.service.test.ts",
+    "apps/api/src/observability/runtime-monitor.integration.test.ts",
+    "apps/api/src/observability/runtime-monitor.test.ts",
+    "apps/api/src/operations-lifecycle.closed-loop.kernel.integration.test.ts",
+    "apps/api/src/operations/activity.integration.test.ts",
     "apps/api/src/operations/operations-journal.integration.test.ts",
+    "apps/api/src/operations/operations-stats.kernel.integration.test.ts",
     "apps/api/src/operations/operations.kernel.integration.test.ts",
     "apps/api/src/plan/plan.service.test.ts",
     "apps/api/src/prisma-migration.integration.test.ts",
     "apps/api/src/promote.kernel.integration.test.ts",
+    "apps/api/src/public-route-boundary.test.ts",
+    "apps/api/src/recovery-order.g02.kernel.integration.test.ts",
+    "apps/api/src/reminder/content-review.kernel.integration.test.ts",
+    "apps/api/src/reminder/conversation-action.kernel.integration.test.ts",
+    "apps/api/src/reminder/reminder-disposition-http.integration.test.ts",
+    "apps/api/src/reminder/reminder-disposition.kernel.integration.test.ts",
+    "apps/api/src/reminder/reminder-http.integration.test.ts",
+    "apps/api/src/reminder/reminder-scan.kernel.integration.test.ts",
+    "apps/api/src/reminder/reminder.kernel.integration.test.ts",
+    "apps/api/src/reminder/review-to-action.kernel.integration.test.ts",
     "apps/api/src/runtime/credential-pool.test.ts",
+    "apps/api/src/runtime/dsh-session-resource-path.test.ts",
     "apps/api/src/runtime/harness-launch.test.ts",
     "apps/api/src/runtime/probe-gate.test.ts",
+    "apps/api/src/runtime/restore-gate.test.ts",
     "apps/api/src/seed/seed.service.test.ts",
+    "apps/api/src/traces/registered-trace.writer.test.ts",
     "apps/api/src/traces/trace.integration.test.ts",
     "apps/api/src/work/work.service.test.ts",
     "apps/api/src/workbench/workbench.service.test.ts",
     "apps/api/src/workflow/export.service.test.ts",
     "apps/api/src/workflow/production.service.test.ts",
+    "apps/api/src/workflow/publication-content-release.kernel.integration.test.ts",
     "apps/api/src/workflow/publication.service.test.ts",
     "apps/api/src/workflow/review.service.test.ts",
     "apps/api/src/workflow/three-work.acceptance.test.ts",
@@ -76,6 +178,8 @@
     "apps/api/src/workstation.chain.integration.test.ts",
     "apps/api/src/workstation/workstation.controller.test.ts",
     "apps/web/src/api/format-api-error.test.ts",
+    "apps/web/src/api/public-api.test.ts",
+    "apps/web/src/api/vite-proxy.test.ts",
     "apps/web/src/components/AppShell.test.tsx",
     "apps/web/src/components/GreetingCard.test.tsx",
     "apps/web/src/components/ItemList.test.tsx",
@@ -85,6 +189,7 @@
     "apps/web/src/components/graph/obsidian/obsidian-engine.test.ts",
     "apps/web/src/components/graph/obsidian/reveal.test.ts",
     "apps/web/src/components/shell/MobileBar.test.tsx",
+    "apps/web/src/components/ui/ArticleAssistantPanel.test.tsx",
     "apps/web/src/components/ui/AssistantThread.test.tsx",
     "apps/web/src/components/ui/ContentFeedback.test.tsx",
     "apps/web/src/components/ui/GiscusComments.test.tsx",
@@ -116,9 +221,14 @@
     "apps/web/src/test/setup.ts",
     "packages/shared/src/action.test.ts",
     "packages/shared/src/agent-execution.test.ts",
+    "packages/shared/src/agent-home.test.ts",
     "packages/shared/src/agent-ops.test.ts",
+    "packages/shared/src/assistant-context.test.ts",
+    "packages/shared/src/assistant-interaction.test.ts",
+    "packages/shared/src/assistant-stream.test.ts",
     "packages/shared/src/assistant.test.ts",
     "packages/shared/src/authorization.test.ts",
+    "packages/shared/src/build-version-proof.test.ts",
     "packages/shared/src/code-artifact.test.ts",
     "packages/shared/src/code-debt.test.ts",
     "packages/shared/src/code-graph-query.test.ts",
@@ -126,8 +236,11 @@
     "packages/shared/src/code-health.test.ts",
     "packages/shared/src/code-imports.test.ts",
     "packages/shared/src/code-resolve.test.ts",
+    "packages/shared/src/content-change.test.ts",
     "packages/shared/src/content-contract.test.ts",
     "packages/shared/src/content-ledger.test.ts",
+    "packages/shared/src/content-lock.test.ts",
+    "packages/shared/src/deployment.test.ts",
     "packages/shared/src/execution-admission.test.ts",
     "packages/shared/src/execution-policy.test.ts",
     "packages/shared/src/execution-run-api.test.ts",
@@ -136,16 +249,24 @@
     "packages/shared/src/index.ts",
     "packages/shared/src/insights.test.ts",
     "packages/shared/src/json-request.test.ts",
+    "packages/shared/src/model-directory.test.ts",
     "packages/shared/src/mvp-acceptance.test.ts",
     "packages/shared/src/next-actions.test.ts",
     "packages/shared/src/nextstep.test.ts",
+    "packages/shared/src/ops-stats.test.ts",
     "packages/shared/src/process-recovery.test.ts",
     "packages/shared/src/production.test.ts",
+    "packages/shared/src/public-deny.test.ts",
     "packages/shared/src/public-snapshot.test.ts",
+    "packages/shared/src/redaction.test.ts",
     "packages/shared/src/release-test.test.ts",
+    "packages/shared/src/reminder.test.ts",
+    "packages/shared/src/resource-gate.test.ts",
     "packages/shared/src/rules.test.ts",
+    "packages/shared/src/runtime-monitor.test.ts",
     "packages/shared/src/skill-export.test.ts",
     "packages/shared/src/skill.test.ts",
+    "packages/shared/src/text-diff.test.ts",
     "packages/shared/src/topic.test.ts",
     "packages/shared/src/trace.test.ts",
     "packages/shared/src/work.test.ts",
@@ -158,53 +279,44 @@
     "scripts/emit-static-feeds.ts",
     "scripts/generate-code-graph.ts",
     "scripts/generate-content.ts",
+    "scripts/import-public-snapshot.ts",
+    "scripts/migrate-legacy-data.ts",
     "scripts/mvp-acceptance.ts",
     "scripts/prerender-web.ts",
     "scripts/prisma-env.ts",
-    "scripts/update-harness.ts",
+    "scripts/probe-runtime.ts",
+    "scripts/rebuild-legacy-db.ts",
+    "scripts/sdk-version.ts",
     "scripts/verify-architecture.ts",
+    "scripts/verify-deploy-readiness.test.ts",
+    "scripts/verify-deploy-readiness.ts",
+    "scripts/verify-doc-links.ts",
     "scripts/verify-geo.ts",
     "scripts/verify-stage1.ts"
   ],
-  "cycles": [
-    [
-      "packages/shared/src/code-artifact.ts",
-      "packages/shared/src/code-debt.ts",
-      "packages/shared/src/code-graph.ts"
-    ]
-  ],
-  "unresolved": [
-    {
-      "specifier": "../packages/shared/dist/mvp-acceptance.js",
-      "importers": [
-        "scripts/mvp-acceptance.ts"
-      ]
-    }
-  ],
+  "cycles": [],
+  "unresolved": [],
   "unreachable": [
-    "apps/api/src/adapters/fs-skill-file.store.ts",
-    "apps/api/src/ports/skill-file.port.ts",
     "scripts/accept-real-works.ts",
-    "scripts/probe-production.ts",
-    "scripts/probe-runtime.ts"
+    "scripts/probe-production.ts"
   ],
   "reverseDependencies": [],
   "hubs": [
     {
       "path": "packages/shared/src/index.ts",
-      "linkDegree": 177
+      "linkDegree": 307
     },
     {
       "path": "apps/api/src/kernel.module.ts",
-      "linkDegree": 170
+      "linkDegree": 269
     },
     {
       "path": "apps/api/src/ports/prisma.port.ts",
-      "linkDegree": 64
+      "linkDegree": 127
     },
     {
       "path": "apps/api/src/common/http-error.ts",
-      "linkDegree": 51
+      "linkDegree": 91
     },
     {
       "path": "apps/web/src/shared/routes.ts",
@@ -212,33 +324,53 @@
     },
     {
       "path": "apps/web/src/shared/dual-entry.ts",
-      "linkDegree": 35
+      "linkDegree": 36
+    },
+    {
+      "path": "apps/api/src/config/config.module.ts",
+      "linkDegree": 33
     },
     {
       "path": "apps/web/src/App.tsx",
       "linkDegree": 33
     },
     {
-      "path": "apps/web/src/pages/PostDetailPage.tsx",
-      "linkDegree": 23
-    },
-    {
-      "path": "apps/web/src/content.ts",
-      "linkDegree": 22
+      "path": "apps/api/src/app.module.ts",
+      "linkDegree": 32
     },
     {
       "path": "apps/api/src/common/ids.ts",
-      "linkDegree": 16
+      "linkDegree": 32
     }
   ],
   "largeFiles": [
     {
+      "path": "apps/api/src/content-release/content-release.service.ts",
+      "lines": 1168
+    },
+    {
+      "path": "apps/api/src/assistant/public-assistant.service.ts",
+      "lines": 1042
+    },
+    {
       "path": "scripts/prerender-web.ts",
-      "lines": 963
+      "lines": 1004
+    },
+    {
+      "path": "apps/api/src/execution/agent-execution.service.ts",
+      "lines": 994
+    },
+    {
+      "path": "apps/admin/src/pages/content/ContentReleasePanel.tsx",
+      "lines": 785
     },
     {
       "path": "apps/web/src/components/graph/obsidian/engine.ts",
       "lines": 759
+    },
+    {
+      "path": "apps/api/src/execution/execution-scheduler.kernel.integration.test.ts",
+      "lines": 706
     },
     {
       "path": "apps/web/src/components/graph/obsidian/forces.ts",
@@ -249,30 +381,38 @@
       "lines": 597
     },
     {
+      "path": "apps/admin/src/api/queries.ts",
+      "lines": 557
+    },
+    {
       "path": "packages/shared/src/graph-query.ts",
       "lines": 556
     },
     {
-      "path": "apps/api/src/execution/agent-execution.service.ts",
-      "lines": 552
+      "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "lines": 547
     },
     {
       "path": "packages/shared/src/code-graph.ts",
-      "lines": 528
+      "lines": 527
+    },
+    {
+      "path": "apps/api/src/kernel.module.ts",
+      "lines": 512
     }
   ],
   "nominated": [],
   "schemaVersion": 1,
-  "sourceCommit": "c84a6cfbe8fe7efb0a157e49bb5429757861cf62",
-  "generatedAt": "2026-09-22T09:17:12.254Z",
+  "sourceCommit": "85b597b4d2f38045265e0c7d8e6915e2bb28ddb0",
+  "generatedAt": "2026-10-12T12:49:29.146Z",
   "counts": {
-    "files": 550,
-    "attachments": 12,
-    "tags": 4,
-    "ghosts": 1,
+    "files": 809,
+    "attachments": 15,
+    "tags": 5,
+    "ghosts": 0,
     "edges": {
-      "total": 2020,
-      "dependency": 1448
+      "total": 3367,
+      "dependency": 2536
     }
   }
 }

@@ -55,22 +55,23 @@ async function post(path: string, body: unknown) {
   return fetch(base + path, { method: 'POST', headers, body: JSON.stringify(body) });
 }
 
-it('旧 try 和 compare 走统一执行，不能绕过授权，也不写第二份运行', async () => {
+it('直调走统一执行：等运行真的结束才回答，且不写第二份运行', async () => {
   const beforeRuns = await db.agentRun.count({ where: { agentId } });
-  expect((await post(`/agents/${agentId}/try`, { input: '只读检查' })).status).toBe(403);
+  // 没有可用授权 → 明确 409（不是笼统 403），且不产生任何运行
+  const denied = await post(`/agents/${agentId}/try`, { input: '只读检查' });
+  expect(denied.status).toBe(409);
+  expect(((await denied.json()) as { code: string }).code).toBe('grant-required');
   expect(await db.executionRun.count({ where: { agentRevisionId: revisionId } })).toBe(0);
+
   const grant = await (await post('/ops/grants', {
     requestKey: 'r18-grant-0001', level: 'L0', agentId, actions: ['agent:run'],
     resourceScope: { kind: 'agent', ids: [agentId] }, expiresAt: '2099-01-01T00:00:00.000Z', runLimit: 4, usageLimit: 100,
   })).json() as { id: string };
   const tried = await (await post(`/agents/${agentId}/try`, { input: '只读检查' })).json() as { output: string };
+  // 关键：答案是运行结束后的**落库文本**，不是「等 2 秒没等到就返回空」
   expect(tried.output).toBe('统一回答');
   expect(await db.executionRun.count({ where: { agentRevisionId: revisionId } })).toBe(1);
   expect(await db.agentRun.count({ where: { agentId } })).toBe(beforeRuns);
   expect((await post(`/agents/${agentId}/try`, { input: '换模型', modelId: 'other-model' })).status).toBe(403);
-  const compared = await (await post(`/agents/${agentId}/compare`, { input: '对比问题', targets: [{ label: '甲' }, { label: '乙' }] })).json() as { results: Array<{ output?: string }> };
-  expect(compared.results).toHaveLength(2);
-  expect(compared.results.every((item) => item.output === '统一回答')).toBe(true);
-  expect(await db.executionRun.count({ where: { agentRevisionId: revisionId } })).toBe(3);
   expect(grant.id).toHaveLength(64);
 });

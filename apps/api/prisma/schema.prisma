@@ -110,14 +110,80 @@ model Action {
   entityId    String?
   status      String   @default("OPEN")
   plannedDate String?
+  /// 到期 UTC 瞬时；由 plannedDate + timezone 推导，未排期为 null（旧行不反推）
+  dueAt       DateTime?
+  /// 生成 dueAt 时使用的 IANA 时区，保证 "日期 → UTC → 日期" 可还原
+  timezone    String?
   completedAt DateTime?
   source      String   @default("HUMAN")
+  /// O05：访客问题转事项时保存的**证据软引用** { conversationId, messageIds, capturedAt }。
+  /// 刻意不加外键：会话删除后事项必须保留并如实显示「证据已不可用」。
+  evidenceRef Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  occurrences ReminderOccurrence[]
+  reviews     ReviewEntry[]
+
   @@index([status])
   @@index([plannedDate])
+  @@index([dueAt, status])
   @@index([entityType, entityId])
+}
+
+/// 提醒发生记录：同一事项、同一到期瞬时只允许一条（唯一键去重，重复扫描不重复产生）。
+model ReminderOccurrence {
+  id         String   @id
+  actionId   String
+  /// 去重键 = actionId@dueAt@timezone，唯一约束即幂等保证
+  dedupeKey  String   @unique
+  dueAt      DateTime
+  timezone   String
+  /// 站主如何处置这次到期：PENDING 待处理 / DONE 完成 / SNOOZED 延后 / IGNORED 忽略
+  outcome    String   @default("PENDING")
+  /// 忽略或延后的原因（自由文本，可空）
+  reason     String?
+  notifiedAt DateTime @default(now())
+  resolvedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  action Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@index([actionId, createdAt])
+  @@index([outcome, createdAt])
+}
+
+/// 一次内容更新复盘：关联 Action 与已核验发布版本，记录行为、观察窗口与下一次尝试。
+model ReviewEntry {
+  id              String   @id
+  /// 关联的事项；复盘必须挂在一次具体动作上
+  actionId        String
+  /// 关联的已核验发布版本（可空：人工编辑类复盘未必有发布）
+  releaseId       String?
+  /// 本次做了什么（自由文本，不强制固定方法论）
+  didWhat         String
+  /// 观察到的结果（自由文本，可空）
+  observed        String?
+  /// 观察窗口（站点本地日期，含首尾）
+  windowStart     String?
+  windowEnd       String?
+  /// 下一次尝试（自由文本；必须显式转为 Action，不在此自动执行）
+  nextAttempt     String?
+  /// 证据充分度：SUFFICIENT 足够 / INSUFFICIENT 不足 / UNKNOWN 未知（样本不足时如实写未知）
+  evidenceState   String   @default("UNKNOWN")
+  /// 采集缺口的说明（哪个指标没有分母/覆盖不全）
+  evidenceNote    String?
+  /// 由谁创建：站主或明确授权的后台操作
+  createdBy       String   @default("owner")
+  /// 幂等键：同一次复盘重复提交返回同一记录
+  requestKey      String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  action Action @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@index([actionId, createdAt])
+  @@index([createdAt])
 }
 
 model Publication {
@@ -138,6 +204,67 @@ model Publication {
   @@index([status])
 }
 
+/// 新内容候选：保存审批绑定与文件版本事实，不表示网页或问答索引已发布。
+model ContentChange {
+  id                 String   @id
+  action             String   @default("apply-candidate")
+  targetSlug         String
+  baseHash           String
+  candidateHash      String
+  candidateRef       String
+  sourceRunId        String?
+  state              String   @default("PROPOSED")
+  applyApprovalId    String?
+  applyApprovalHash  String?
+  applyGrantId       String?
+  applyGrantRevision Int?
+  applyApprovedBy    String?
+  applyApprovedAt    DateTime?
+  appliedHash        String?
+  requestKey         String   @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  releases ContentRelease[]
+
+  @@index([targetSlug, state, createdAt])
+  @@index([sourceRunId])
+}
+
+/// 网页发布事务：远端核验阶段与助手索引同步状态分别保存。
+model ContentRelease {
+  id                    String   @id
+  changeId              String
+  action                String   @default("publish-website")
+  targetSlug            String
+  baseHash              String
+  sourceHash            String
+  publishApprovalId     String
+  publishApprovalHash   String
+  publishGrantId        String
+  publishGrantRevision  Int
+  publishApprovedBy     String
+  publishApprovedAt     DateTime
+  stage                 String   @default("PREPARED")
+  assistantIndexState   String   @default("PENDING")
+  manifestHash          String?
+  manifestRef           String?
+  gitCommit             String?
+  publishedSnapshotId   String?
+  verifiedHash          String?
+  verifiedAt            DateTime?
+  errorCode             String?
+  requestKey            String   @unique
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  change ContentChange @relation(fields: [changeId], references: [id], onDelete: Restrict)
+
+  @@index([changeId, createdAt])
+  @@index([targetSlug, stage, createdAt])
+  @@index([stage, updatedAt])
+}
+
 model GuestQuota {
   anonId    String   @id
   usedCount Int      @default(0)
@@ -146,15 +273,154 @@ model GuestQuota {
 }
 
 model FeatureEvent {
-  id         String   @id
-  at         DateTime @default(now())
-  featureKey String
-  event      String
-  actorType  String
-  failCode   String?
-  props      Json?
+  id             String   @id
+  at             DateTime @default(now())
+  featureKey     String
+  event          String
+  actorType      String
+  failCode       String?
+  props          Json?
+  /// V07：客户端稳定事件 ID（去重键）；receivedAt 是服务端接收时间，客户端时间不充当事实
+  eventId        String?  @unique
+  conversationId String?
+  receivedAt     DateTime @default(now())
   @@index([featureKey, event])
   @@index([at])
+  @@index([conversationId])
+}
+
+/// 业务会话：访客在某位置的连续问答。SDK session 只是关联资源，不是主键。
+model Conversation {
+  id           String   @id
+  anonId       String
+  placementKey String
+  scopeSlug    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  turns       ConversationTurn[]
+  sdkSessions ConversationSdkSession[]
+
+  @@index([anonId, updatedAt])
+  @@index([updatedAt, id])
+  @@index([placementKey, scopeSlug])
+}
+
+/// 正文、副本和文件的逻辑登记。conversationId 不设外键，以便清理 Conversation 后保留登记到删除完成。
+/// resourceKey 是服务端来源 ID，不是文件路径；实际位置由 resourceType 对应的 adapter 推导。
+model ConversationLogResource {
+  id                String   @id @default(cuid())
+  conversationId    String?
+  resourceType      String
+  resourceKey       String
+  agentRevisionId   String?
+  parentKey         String?
+  resourceCreatedAt DateTime @default(now())
+  registeredAt      DateTime @default(now())
+
+  @@unique([resourceType, resourceKey])
+  @@index([conversationId, resourceCreatedAt])
+  @@index([resourceType, resourceCreatedAt])
+  @@index([agentRevisionId])
+  @@index([parentKey])
+}
+
+/// 删除状态用于跨进程恢复；不保存正文，且不依赖 Conversation 外键级联。
+model DeletionTombstone {
+  id             String    @id @default(cuid())
+  conversationId String    @unique
+  state          String    @default("pending")
+  attempts       Int       @default(0)
+  lastErrorCode  String?
+  requestedAt    DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  completedAt    DateTime?
+
+  @@index([state, requestedAt])
+}
+
+/// 站点唯一日志保留设置；明细与不可回连聚合单独控制，接口只能缩短默认期限。
+model LogRetentionPolicy {
+  id                    String   @id @default("site")
+  detailRetentionDays   Int      @default(90)
+  aggregateRetentionDays Int     @default(365)
+  updatedAt             DateTime @updatedAt
+}
+
+/// 访客对话导出任务。筛选与截止时间在创建时冻结；实际文件由本机受控目录存放。
+model ConversationExportJob {
+  id              String   @id
+  format          String
+  status          String   @default("QUEUED")
+  filters         Json
+  snapshotAt      DateTime
+  retentionCutoff DateTime
+  rowCount        Int      @default(0)
+  errorCode       String?
+
+  @@index([status, snapshotAt])
+}
+
+/// 业务会话 ↔ 模型 session 关联：切换 Agent 成员时同一会话建另一行，模型上下文独立。
+model ConversationSdkSession {
+  id              String   @id
+  conversationId  String
+  agentRevisionId String
+  sdkSessionId    String
+  createdAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, agentRevisionId])
+}
+
+/// 一轮问答 = 一条访客消息。requestKey 是访客消息幂等键。
+model ConversationTurn {
+  id             String   @id
+  conversationId String
+  seq            Int
+  requestKey     String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messages     ConversationMessage[]
+  attempts     ConversationAttempt[]
+
+  @@unique([conversationId, requestKey])
+  @@unique([conversationId, seq])
+}
+
+/// 一次生成尝试。重新生成单列一行，互不覆盖；runId 关联统一执行（可空：规则降级没有运行）。
+model ConversationAttempt {
+  id              String   @id
+  turnId          String
+  agentRevisionId String
+  runId           String?
+  state           String   @default("pending")
+  createdAt       DateTime @default(now())
+
+  turn     ConversationTurn      @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  messages ConversationMessage[]
+
+  @@index([turnId])
+  @@index([runId])
+}
+
+/// 会话消息。delivery：pending/sent/ack/unknown，生成成功不等于交付成功。
+model ConversationMessage {
+  id         String   @id
+  turnId     String
+  attemptId  String?
+  role       String
+  body       String
+  delivery   String   @default("pending")
+  createdAt  DateTime @default(now())
+
+  turn    ConversationTurn     @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  attempt ConversationAttempt? @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+
+  @@index([turnId, createdAt])
+  @@index([attemptId])
 }
 
 model LikeCounter {
@@ -190,6 +456,7 @@ model AssistantSession {
   anonId      String
   sessionId   String
   runner      String   @default("harness")
+  agentRevisionId String?
   lastActiveAt DateTime @updatedAt
   createdAt   DateTime @default(now())
 
@@ -216,8 +483,12 @@ model AssistantRun {
   queueWaitMs  Int?
   /// 观测 P1：降级原因（kebab 词表；正常 AI 回答为 null）
   degradeReason String?
+  /// V08：匿名身份的服务端 hash 与持久 requestKey（重复发送返回原 run）
+  anonIdHash  String?
+  requestKey  String?
   createdAt  DateTime @default(now())
 
+  @@unique([anonIdHash, requestKey])
   @@index([sessionId])
   @@index([createdAt])
 }
@@ -228,20 +499,6 @@ model AssistantBudget {
   tokensIn  Int      @default(0)
   tokensOut Int      @default(0)
   updatedAt DateTime @updatedAt
-}
-
-/// 管理凭据库：密文存储（AES-256-GCM），明文绝不入库、绝不进 Git。
-model Credential {
-  id         String   @id
-  name       String   @unique
-  provider   String
-  ciphertext String
-  iv         String
-  authTag    String
-  last4      String
-  note       String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 }
 
 model InsightReport {
@@ -255,25 +512,8 @@ model InsightReport {
   @@index([createdAt])
 }
 
-/// 模型供应商配置 (1:1 DSH API 配置规范)
-model ModelProvider {
-  id          String      @id // 'deepseek', 'stepfun' 或 c_xxxx (自定义)
-  name        String      // 供应商显示名，如 DeepSeek 官方
-  category    String      @default("custom") // 'official' | 'custom'
-  enabled     Boolean     @default(true)
-  baseUrl     String      // 1. Base URL
-  apiFormat   String      @default("openai-compatible") // 2. API 格式
-  ciphertext  String      // 3. API Key AES-256-GCM 密文
-  iv          String      // AES-256-GCM IV
-  authTag     String      // AES-256-GCM AuthTag
-  last4       String      // API Key 脱敏后4位 (显示 sk-****abcd)
-  credentialRevision Int    @default(0) // 不含密钥的凭据修订。轮换成功才加一
-  modelsJson  String      @default("[]") // 4. 模型池列表与标签 (JSON 数组)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  agents      AgentUnit[]
-}
+/// 提供方与凭据以 dsh 原生管理为唯一真相源（R25c，2026-09-23）：
+/// 旧的 ModelProvider / Credential 表已删除，不再有本地提供方注册表。
 
 /// 智能体单位 (以 Agent 为核心的人设与模型挂载)
 model AgentUnit {
@@ -281,14 +521,15 @@ model AgentUnit {
   name        String         // 智能体名称
   icon        String         @default("bot") // 'bot' | 'pen-tool' | 'sparkles'
   isSystem    Boolean        @default(false) // 小影为 true，后端 403 绝不可删
-  providerId  String?        // 挂载的供应商 ID
+  /// 提供方接口 id（dsh 原生目录里的路由名，如 deepseek-official）。
+  /// 2026-09-23 起不再有本地外键：提供方以 dsh 设置为唯一真相源（R25）。
+  providerId  String?
   modelId     String         @default("deepseek-chat") // 挂载的具体模型标识
   prompt      String         // 系统提示词定义 (System Prompt)
   archivedAt  DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  provider    ModelProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
   runs        AgentRun[]
   revisions   AgentRevision[]
 }
@@ -308,9 +549,43 @@ model AgentRevision {
 
   agent AgentUnit @relation(fields: [agentId], references: [id], onDelete: Restrict)
   runs  ExecutionRun[]
+  deploymentMembers DeploymentMember[]
 
   @@unique([agentId, version])
   @@index([createdAt])
+}
+
+/// 位置绑定：公开位置的 Agent 部署。成员钉住不可变修订，草稿变化不覆盖已部署版本。
+model AgentDeployment {
+  id           String   @id
+  placementKey String
+  scopeKind    String
+  scopeSlug    String
+  generation   Int      @default(1)
+  enabled      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members DeploymentMember[]
+
+  @@unique([placementKey, scopeKind, scopeSlug])
+  @@index([enabled])
+}
+
+/// 部署成员：引用不可变 AgentRevision；每个部署恰有一个默认成员（应用层事务保证）。
+model DeploymentMember {
+  id              String   @id
+  deploymentId    String
+  agentRevisionId String
+  isDefault       Boolean  @default(false)
+  generation      Int
+  createdAt       DateTime @default(now())
+
+  deployment    AgentDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  agentRevision AgentRevision   @relation(fields: [agentRevisionId], references: [id], onDelete: Restrict)
+
+  @@unique([deploymentId, agentRevisionId])
+  @@index([agentRevisionId])
 }
 
 /// 新执行生命周期权威；历史 AgentRun/SkillRun 仍单独保留。
@@ -321,6 +596,8 @@ model ExecutionRun {
   actor                String
   actorScope           String
   agentRevisionId      String?
+  deploymentId         String?
+  placementKey          String?
   deploymentGeneration Int?
   contentSnapshotId    String?
   grantId              String?
@@ -345,6 +622,9 @@ model ExecutionRun {
   assertion            Json?
   retainUntil          DateTime?
   diagnosticName       String?
+  /// G01：旧数据导入溯源与幂等去重；无法恢复的修订/用量保持未知
+  legacySource         String?
+  legacyId             String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -356,6 +636,7 @@ model ExecutionRun {
   children      ExecutionRun[] @relation("RunChildren")
 
   @@unique([actorScope, requestKey])
+  @@unique([legacySource, legacyId])
   @@index([state, createdAt])
   @@index([agentRevisionId])
   @@index([parentRunId])
@@ -448,6 +729,21 @@ model AuditRecord {
 
   @@index([targetType, targetId, createdAt])
   @@index([createdAt])
+  @@unique([action, targetType, requestId])
+}
+
+/// 管理 HTTP 请求时间线。只记录路由元数据；业务事实继续由 AuditRecord 持有。
+model AdminRequestLog {
+  id         String    @id
+  actor      String
+  method     String
+  path       String
+  statusCode Int?
+  durationMs Int?
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt, id])
+  @@index([method, createdAt])
 }
 
 model Outbox {

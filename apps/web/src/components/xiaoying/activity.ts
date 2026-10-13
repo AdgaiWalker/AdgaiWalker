@@ -31,6 +31,7 @@ export function getPetActivity(
   if (editing) return 'listening';
   if (last?.role === 'assistant') {
     if (last.stopped) return 'stopped';
+    if (last.hidden) return 'idle';
     return last.aiUsedFlag ? 'complete' : 'fallback';
   }
   return 'idle';

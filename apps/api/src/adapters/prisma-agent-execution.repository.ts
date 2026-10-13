@@ -8,6 +8,13 @@ import type {
   AgentExecutionRecord,
   AgentExecutionRepositoryPort,
 } from '../ports/agent-execution.repository';
+import { registerLogResource } from './log-resource.writer';
+
+type ExecutionDb = Pick<Prisma.TransactionClient,
+  'executionRun' | 'executionSchedule' | 'agentRevision' | 'processRecord' | 'executionEvent' | 'executionQuotaHold' | 'conversationAttempt' | 'conversationLogResource' | 'deletionTombstone'> & {
+  $executeRaw: Prisma.TransactionClient['$executeRaw'];
+  $queryRawUnsafe: Prisma.TransactionClient['$queryRawUnsafe'];
+};
 
 export class IdempotencyConflictError extends Error {
   constructor() { super('同一请求键对应不同执行内容'); }
@@ -28,6 +35,10 @@ function record(row: ExecutionRun): AgentExecutionRecord {
     actor: row.actor,
     actorScope: row.actorScope,
     agentRevisionId: row.agentRevisionId,
+    deploymentId: row.deploymentId,
+    placementKey: row.placementKey,
+    deploymentGeneration: row.deploymentGeneration,
+    contentSnapshotId: row.contentSnapshotId,
     requestKey: row.requestKey,
     inputHash: row.inputHash,
     resourceScope: row.resourceScope as AgentExecutionRecord['resourceScope'],
@@ -48,21 +59,16 @@ function record(row: ExecutionRun): AgentExecutionRecord {
     suiteVersion: row.suiteVersion,
     configHash: row.configHash,
     assertion: assertionOf(row.assertion),
+    legacySource: row.legacySource,
+    legacyId: row.legacyId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
 
-type ExecutionDb = Pick<Prisma.TransactionClient, 'executionRun' | 'executionSchedule' | 'agentRevision' | 'processRecord' | 'executionEvent' | 'executionQuotaHold'> & {
-  $executeRaw: Prisma.TransactionClient['$executeRaw'];
-  $queryRawUnsafe: Prisma.TransactionClient['$queryRawUnsafe'];
-};
-
 @Injectable()
 export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryPort {
-  constructor(@Inject(PRISMA) private readonly prisma: {
-    getClient(): ExecutionDb | null;
-  }) {}
+  constructor(@Inject(PRISMA) private readonly prisma: { getClient(): ExecutionDb | null }) {}
 
   private db() {
     const db = this.prisma.getClient();
@@ -70,20 +76,42 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
     return db;
   }
 
+  private transaction<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    const client = this.db() as ExecutionDb & {
+      $transaction?: <Result>(callback: (tx: Prisma.TransactionClient) => Promise<Result>) => Promise<Result>;
+    };
+    return client.$transaction ? client.$transaction(work) : work(client as unknown as Prisma.TransactionClient);
+  }
+
   async submitIfAbsent(draft: AgentExecutionDraft) {
+    const { conversationId, ...runDraft } = draft;
     try {
-      const row = await this.db().executionRun.create({ data: { ...draft, resourceScope: draft.resourceScope ?? Prisma.DbNull } });
+      const row = await this.transaction(async (tx) => {
+        const created = await tx.executionRun.create({ data: { ...runDraft, resourceScope: runDraft.resourceScope ?? Prisma.DbNull } });
+        await registerLogResource(tx, {
+          conversationId: conversationId ?? null,
+          resourceType: 'execution-run',
+          resourceKey: created.id,
+          resourceCreatedAt: created.createdAt,
+        });
+        return created;
+      });
       return { run: record(row), created: true };
     } catch (error) {
       if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
+      const { conversationId: _conversationId, ...expectedDraft } = draft;
       const row = await this.db().executionRun.findUnique({
-        where: { actorScope_requestKey: { actorScope: draft.actorScope, requestKey: draft.requestKey } },
+        where: { actorScope_requestKey: { actorScope: expectedDraft.actorScope, requestKey: expectedDraft.requestKey } },
       });
-      if (!row || row.inputHash !== draft.inputHash || row.kind !== draft.kind ||
-          row.origin !== draft.origin || row.actor !== draft.actor ||
-          row.agentRevisionId !== draft.agentRevisionId ||
-          row.parentRunId !== (draft.parentRunId ?? null) ||
-          row.grantId !== (draft.grantId ?? null) || JSON.stringify(row.resourceScope) !== JSON.stringify(draft.resourceScope ?? null)) {
+      if (!row || row.inputHash !== expectedDraft.inputHash || row.kind !== expectedDraft.kind ||
+          row.origin !== expectedDraft.origin || row.actor !== expectedDraft.actor ||
+          row.agentRevisionId !== expectedDraft.agentRevisionId ||
+          row.deploymentId !== (expectedDraft.deploymentId ?? null) ||
+          row.placementKey !== (expectedDraft.placementKey ?? null) ||
+          row.deploymentGeneration !== (expectedDraft.deploymentGeneration ?? null) ||
+          row.contentSnapshotId !== (expectedDraft.contentSnapshotId ?? null) ||
+          row.parentRunId !== (expectedDraft.parentRunId ?? null) ||
+          row.grantId !== (expectedDraft.grantId ?? null) || JSON.stringify(row.resourceScope) !== JSON.stringify(expectedDraft.resourceScope ?? null)) {
         throw new IdempotencyConflictError();
       }
       return { run: record(row), created: false };
@@ -181,7 +209,7 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
     const toolProfile = profile && typeof profile === 'object' && !Array.isArray(profile)
       ? { id: typeof profile.id === 'string' ? profile.id : undefined, version: typeof profile.version === 'number' ? profile.version : undefined }
       : null;
-    return { agentId: row.agentId, archivedAt: row.agent.archivedAt, toolProfile };
+    return { agentId: row.agentId, archivedAt: row.agent.archivedAt, toolProfile, prompt: row.prompt, providerId: row.providerId, modelId: row.modelId };
   }
 
   async list(states: RunState[], limit: number) {
@@ -247,13 +275,21 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
   }
 
   async deleteExpiredAdmin(id: string, now: Date) {
-    const row = await this.db().executionRun.findUnique({ where: { id } });
-    if (!row || row.origin !== 'admin' || !row.retainUntil || row.retainUntil >= now) return false;
-    await this.db().executionEvent.deleteMany({ where: { runId: id } });
-    await this.db().processRecord.deleteMany({ where: { runId: id } });
-    await this.db().executionQuotaHold.deleteMany({ where: { runId: id } });
-    await this.db().executionRun.delete({ where: { id } });
-    return true;
+    return this.transaction(async (tx) => {
+      const row = await tx.executionRun.findUnique({ where: { id } });
+      if (!row || row.origin !== 'admin' || !row.retainUntil || row.retainUntil >= now) return false;
+      await tx.executionEvent.deleteMany({ where: { runId: id } });
+      await tx.processRecord.deleteMany({ where: { runId: id } });
+      await tx.executionQuotaHold.deleteMany({ where: { runId: id } });
+      await tx.conversationLogResource.deleteMany({
+        where: { OR: [
+          { resourceType: 'execution-run', resourceKey: id },
+          { resourceType: 'execution-event', parentKey: id },
+        ] },
+      });
+      await tx.executionRun.delete({ where: { id } });
+      return true;
+    });
   }
 
   countOwned(agentId?: string) {
@@ -274,16 +310,49 @@ export class PrismaAgentExecutionRepository implements AgentExecutionRepositoryP
     };
   }
 
+  /**
+   * 追加一条事件（seq 自增）。
+   *
+   * 并发安全（R33）：事件有两个写入方——运行中观察回调实时写、结束时 follow 按 seen
+   * 批量补写。并发时两边会读到同一个最大 seq 并撞 `@@unique([runId, seq])`。
+   * 原实现直接抛 Prisma 错误，把一次**成功的运行**标成 FAILED。
+   * 现在：撞键时**用下一个 seq 重试**，保证事件不丢；重试有上限防死循环。
+   */
   async appendEvent(input: { runId: string; kind: 'text' | 'usage'; text?: string | null; tokensIn?: number | null; tokensOut?: number | null }) {
-    const last = await this.db().executionEvent.findFirst({ where: { runId: input.runId }, orderBy: { seq: 'desc' } });
-    const seq = (last?.seq ?? 0) + 1;
-    await this.db().executionEvent.create({
-      data: {
-        id: `${input.runId}:${seq}`, runId: input.runId, seq, kind: input.kind,
-        text: input.text ?? null, tokensIn: input.tokensIn ?? null, tokensOut: input.tokensOut ?? null,
-      },
-    });
-    return seq;
+    const maxAttempts = 6;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const last = await this.db().executionEvent.findFirst({ where: { runId: input.runId }, orderBy: { seq: 'desc' } });
+      const seq = (last?.seq ?? 0) + 1;
+      try {
+        await this.transaction(async (tx) => {
+          const event = await tx.executionEvent.create({
+            data: {
+              id: `${input.runId}:${seq}`, runId: input.runId, seq, kind: input.kind,
+              text: input.text ?? null, tokensIn: input.tokensIn ?? null, tokensOut: input.tokensOut ?? null,
+            },
+          });
+          const owner = await tx.conversationLogResource.findUnique({
+            where: { resourceType_resourceKey: { resourceType: 'execution-run', resourceKey: input.runId } },
+            select: { conversationId: true },
+          });
+          if (owner) {
+            await registerLogResource(tx, {
+              conversationId: owner.conversationId,
+              resourceType: 'execution-event',
+              resourceKey: event.id,
+              parentKey: input.runId,
+              resourceCreatedAt: event.createdAt,
+            }, { allowActiveRunDrain: true });
+          }
+        });
+        return seq;
+      } catch (error) {
+        // 只在唯一键冲突时重试（另一路写入推进了 seq）；其余错误照常抛出。
+        const message = error instanceof Error ? error.message : String(error);
+        if (!/unique|Unique|P2002/.test(message) || attempt === maxAttempts - 1) throw error;
+      }
+    }
+    throw new Error(`appendEvent: seq 冲突重试耗尽（runId=${input.runId}）`);
   }
 
   async listEvents(runId: string, after: number, limit: number) {

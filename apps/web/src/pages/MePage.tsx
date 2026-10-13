@@ -49,6 +49,9 @@ export function MePage() {
             <Link to={WEB_ROUTES.about} className="btn-secondary">
               关于本站
             </Link>
+            <Link to={WEB_ROUTES.support} className="btn-secondary">
+              支持创作
+            </Link>
           </div>
         </div>
       </section>

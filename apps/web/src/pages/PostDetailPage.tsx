@@ -29,6 +29,7 @@ import { createContentGraphDomain } from '../components/graph/domains';
 import { WEB_ROUTES } from '../shared/routes';
 import type { BrowseReturnState } from '../components/ItemList';
 import { ArticleToc } from '../components/ui/ArticleToc';
+import { ArticleAssistantPanel } from '../components/ui/ArticleAssistantPanel';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
 import { GiscusComments } from '../components/ui/GiscusComments';
 import { LikeButton } from '../components/ui/LikeButton';
@@ -327,6 +328,8 @@ function PostDetailBody({
             onSubmitPending={feedback.onSubmitPending}
           />
         </div>
+
+        <ArticleAssistantPanel key={post.slug} slug={post.slug} title={post.title} />
 
         <GiscusComments term={post.slug} />
       </article>

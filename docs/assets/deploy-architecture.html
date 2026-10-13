@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1240px; height: 760px; background: #fff;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .canvas {
+    position: relative; width: 1180px; height: 700px;
+    border: 1px solid #e5e7eb; border-radius: 18px; background: #fff;
+    padding: 30px 40px 24px;
+  }
+  .title { font-size: 16px; font-weight: 600; color: #4b5563; letter-spacing: .03em; }
+  .subtitle { font-size: 12px; color: #9ca3af; margin-top: 5px; margin-bottom: 18px; }
+  .stack { position: relative; width: 1100px; height: 600px; }
+
+  .box {
+    position: absolute; border-radius: 10px; padding: 12px 16px;
+    border: 1.5px solid; display: flex; flex-direction: column;
+    justify-content: center; gap: 3px; text-align: center;
+  }
+  .box .t { font-size: 16px; font-weight: 600; line-height: 1.25; }
+  .box .s { font-size: 12px; opacity: .74; line-height: 1.4; }
+
+  .blue   { background: #eaf1fd; border-color: #a8c3f0; color: #1c4e9c; }
+  .green  { background: #e9f6ee; border-color: #a4d5b8; color: #1a6b3c; }
+  .sand   { background: #fdf6e4; border-color: #f0dda2; color: #8a6113; }
+  .violet { background: #f1ecfd; border-color: #c3b3ef; color: #4a2f9c; }
+
+  .v { position: absolute; width: 1.5px; background: #b8bec8; }
+  .h { position: absolute; height: 1.5px; background: #b8bec8; }
+  .dash { position: absolute; background: repeating-linear-gradient(to right, #b8bec8 0 5px, transparent 5px 10px); }
+  .dashv {
+    position: absolute; width: 1.5px;
+    background: repeating-linear-gradient(to bottom, #b8bec8 0 5px, transparent 5px 10px);
+  }
+  .lbl {
+    position: absolute; font-size: 11.5px; color: #6b7280; background: #fff;
+    padding: 1px 7px; border-radius: 4px; white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+  .lbl.dashed { color: #9ca3af; }
+  .note { position: absolute; font-size: 11.5px; color: #b0b6c0; line-height: 1.5; }
+  .badge { position: absolute; right: 40px; bottom: 16px; font-size: 11px; color: #c8cdd5; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="title">AdgaiWalker · 生产部署架构</div>
+  <div class="subtitle">切流后（2026-09-03 起）：静态站走 Vercel，API 走腾讯云盒子；内容以 Git 为唯一真相源</div>
+
+  <div class="stack">
+    <!-- 主链（居中 x=540） -->
+    <div class="box blue" style="left:390px; top:0; width:300px; height:70px;">
+      <span class="t">访客浏览器</span>
+      <span class="s">阅读文章 · 提问 · 点赞</span>
+    </div>
+    <div class="v" style="left:540px; top:70px; height:54px;"></div>
+    <div class="lbl" style="left:540px; top:97px;">HTTPS</div>
+
+    <div class="box blue" style="left:290px; top:124px; width:500px; height:76px;">
+      <span class="t">Vercel CDN · www.iwalk.pro</span>
+      <span class="s">静态站与文章预渲染 · 全球 CDN 加速 · push main 自动发布</span>
+    </div>
+    <div class="v" style="left:540px; top:200px; height:52px;"></div>
+    <div class="lbl" style="left:540px; top:226px;">/api/* 反代</div>
+
+    <div class="box violet" style="left:350px; top:252px; width:380px; height:76px;">
+      <span class="t">盒子网关 Caddy</span>
+      <span class="s">api.iwalk.pro + Let's Encrypt · 公开双白名单 · 管理双层鉴权</span>
+    </div>
+    <div class="v" style="left:540px; top:328px; height:52px;"></div>
+    <div class="lbl" style="left:540px; top:354px;">回环 127.0.0.1</div>
+
+    <div class="box green" style="left:350px; top:380px; width:380px; height:76px;">
+      <span class="t">Nest API · :8788</span>
+      <span class="s">用例服务 · 权限 · 执行调度 · SQLite 同机</span>
+    </div>
+    <div class="v" style="left:540px; top:456px; height:52px;"></div>
+    <div class="lbl" style="left:540px; top:482px;">起进程 · JSON-RPC</div>
+
+    <div class="box sand" style="left:350px; top:508px; width:380px; height:78px;">
+      <span class="t">DeepSeek Harness</span>
+      <span class="s">模型执行 · 每 Agent 独立 home · 只读工具 · 单槽串行</span>
+    </div>
+
+    <!-- 内容发布链（右侧 x=960，方向一致向上） -->
+    <div class="box blue" style="left:820px; top:252px; width:280px; height:76px;">
+      <span class="t">GitHub · main</span>
+      <span class="s">content/log 内容真相源</span>
+    </div>
+    <div class="v" style="left:960px; top:328px; height:52px;"></div>
+    <div class="lbl" style="left:960px; top:354px;">content:publish --push</div>
+
+    <div class="box sand" style="left:820px; top:380px; width:280px; height:76px;">
+      <span class="t">站主本地编辑</span>
+      <span class="s">markdown 正文 · frontmatter</span>
+    </div>
+
+    <!-- GitHub → Vercel 虚线（触发构建） -->
+    <div class="h dash" style="left:750px; top:290px; width:70px;"></div>
+    <div class="dashv" style="left:750px; top:162px; height:128px;"></div>
+    <div class="h dash" style="left:730px; top:162px; width:20px;"></div>
+    <div class="lbl dashed" style="left:750px; top:212px;">push 触发构建</div>
+
+    <!-- 左下角说明 -->
+    <div class="note" style="left:20px; top:520px; width:280px;">
+      · 访客站只读构建产物，不走数据库<br>
+      · 内容与代码同一 Git 真相源，可追溯<br>
+      · 本地开发：SQLite 独立文件，与生产隔离
+    </div>
+  </div>
+
+  <div class="badge">2026-09-23 · 本图为生产拓扑；当前新后台尚未部署</div>
+</div>
+</body>
+</html>

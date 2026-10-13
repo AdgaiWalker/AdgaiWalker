@@ -25,6 +25,13 @@ import type {
   SiteContentIndexPort,
 } from '../ports/site-content-index.port';
 import { buildHarnessRuntimeFactory } from '../runtime/harness-launch';
+import { readRuntimeUsage, textDelta } from './harness-runtime.adapter';
+import { FsModelDirectory } from './fs-model-directory';
+import { buildFirstTurnPrompt } from '../assistant/public-assistant-prompt';
+export { buildFirstTurnPrompt } from '../assistant/public-assistant-prompt';
+
+/** 站内助手对应的系统 Agent id（与 AgentUnit 的内置小影一致）。 */
+const ASSISTANT_SYSTEM_AGENT_ID = 'xiaoying';
 
 /** 访客同步等待预算；超时降级规则兜底（从入队起算，排队时间也计入） */
 /**
@@ -53,31 +60,6 @@ export interface HarnessRuntimeLike {
 }
 
 export type HarnessRuntimeFactory = () => HarnessRuntimeLike;
-
-/** 会话首条消息：人设 + 整库资料 + 输出契约 */
-export function buildFirstTurnPrompt(
-  entries: readonly SiteContentFullEntry[],
-  question: string,
-): string {
-  const pack = entries.map(
-    (e) =>
-      `- slug: ${e.slug}｜标题: ${e.title}${e.tags.length ? `｜标签: ${e.tags.join(' ')}` : ''}\n${e.body}`,
-  );
-  return [
-    '你是小影，个人站 Walker（iwalk.pro）站主 Dora 的管家，替她接待访客。',
-    '表达规则：',
-    '1. 以第三人称介绍 Dora 与这个站（「Dora 她…」「这个站…」）；仅当引用她文章原话时，才用引号加第一人称引述。',
-    '2. 只依据下方「站点资料」回答；资料里没有的就直接承认不知道，不要编造。',
-    '3. 回答口语化、具体，控制在 300 字以内。',
-    '4. 如果访客的问题是「想做成某事但卡住了」这类行动问题，简短回应后引导去 /tools 用卡口拿下一步。',
-    '5. 每次只输出一个 JSON 对象，不要输出任何其他内容：{"answer":"...","citations":["slug",...]}',
-    '6. citations 只能从资料列出的 slug 中选，最多 3 个，没有相关就给空数组。',
-    '7. answer 里只用中文或文章标题称呼内容，禁止出现 slug、路径或内部代号（例如 cc-intro、codex-intro）；slug 只允许出现在 citations 数组。',
-    '站点资料（只有这些可引用）：',
-    ...pack,
-    `访客问题：${question}`,
-  ].join('\n');
-}
 
 @Injectable()
 export class HarnessAssistantAdapter
@@ -122,7 +104,15 @@ export class HarnessAssistantAdapter
   ): Promise<AssistantRunResult> {
     if (!this.config.isAiEnabled()) return this.fallbackWith(input, 'ai-disabled');
     if (!this.factory) {
-      this.factory = buildHarnessRuntimeFactory({ audience: 'public' }) as HarnessRuntimeFactory;
+      // R26：站内助手也是「一个 Agent」，用它的独立 home（agents/xiaoying/），
+      // 与用户创建的其他 Agent 同一套隔离规则——不留第二套目录约定。
+      // 注意：该 home 首次启动时 dsh 会初始化它的 profile（含依赖安装），耗时较长，
+      // 之后常驻复用（this.runtime 不随超时销毁）。
+      this.factory = buildHarnessRuntimeFactory({
+        audience: 'public',
+        agentId: ASSISTANT_SYSTEM_AGENT_ID,
+        modelDirectory: new FsModelDirectory(),
+      }) as HarnessRuntimeFactory;
     }
     if (!this.factory) return this.fallbackWith(input, 'runtime-error');
 
@@ -174,48 +164,26 @@ export class HarnessAssistantAdapter
 
       // 流式展示合同：text-delta 只在裁剪出「answer 字段已闭合文本」的新增部分时外发，
       // 原始模型 JSON（含 citations、语法噪声）绝不直接出网关；终值仍走完整校验。
-      // 观测 P1：无论是否流式都订阅通知——step/end 的 usage 是 token 的唯一来源。
+      // rc.3 在 assistant/message 的 stream 和 usage 字段发增量与用量。
       let streamedBuffer = '';
       let visibleLength = 0;
       const onNotification = (raw: unknown) => {
-        const n = raw as {
-          method?: string;
-          params?: {
-            event?: {
-              type?: string;
-              data?: {
-                chunk?: { type?: string; text?: string };
-                usage?: {
-                  inputTokens?: number;
-                  outputTokens?: number;
-                  cacheReadTokens?: number;
-                };
-              };
-            };
-          };
-        };
-        if (n.method !== 'session.event') return;
-        const event = n.params?.event;
-
-        if (event?.type === 'assistant/chunk') {
-          const chunk = event.data?.chunk;
-          if (chunk?.type !== 'text-delta' || !chunk.text) return;
+        const delta = textDelta(raw);
+        if (delta) {
           if (firstChunkMs === undefined) firstChunkMs = Date.now() - lockedAt;
-          if (!onText) return;
-          streamedBuffer += chunk.text;
-          const visible = extractStreamedAnswer(streamedBuffer);
-          if (visible.length > visibleLength) {
-            onText(visible.slice(visibleLength));
-            visibleLength = visible.length;
+          if (onText) {
+            streamedBuffer += delta;
+            const visible = extractStreamedAnswer(streamedBuffer);
+            if (visible.length > visibleLength) {
+              onText(visible.slice(visibleLength));
+              visibleLength = visible.length;
+            }
           }
-          return;
         }
-
-        if (event?.type === 'step/end') {
-          const usage = event.data?.usage;
-          if (!usage) return;
-          tokensIn += usage.inputTokens ?? 0;
-          tokensOut += usage.outputTokens ?? 0;
+        const usage = readRuntimeUsage([raw]);
+        if (usage) {
+          tokensIn += usage.inputTokens;
+          tokensOut += usage.outputTokens;
           cacheReadTokens += usage.cacheReadTokens ?? 0;
         }
       };

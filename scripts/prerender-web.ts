@@ -17,6 +17,7 @@ import {
   fromRoot,
   graphJsonPath,
   webDistDir,
+  webGeneratedDir,
 } from './lib/paths';
 import { WEB_ROUTES } from '../apps/web/src/shared/routes';
 import { buildGraphOutline } from '../apps/web/src/shared/graph-outline';
@@ -116,6 +117,9 @@ function metaTags({
   tags = [],
   markdownPath = '',
   indexable = true,
+  contentHash = '',
+  buildId = '',
+  gitCommit = '',
 }: {
   title: string;
   description: string;
@@ -127,6 +131,9 @@ function metaTags({
   tags?: string[];
   markdownPath?: string;
   indexable?: boolean;
+  contentHash?: string;
+  buildId?: string;
+  gitCommit?: string | null;
 }): string {
   const canonical = absoluteUrl(pathname);
   const socialImage = image || defaultImageUrl();
@@ -154,6 +161,7 @@ function metaTags({
 
   return `<title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}" />
+  ${contentHash ? `<meta name="content-hash" content="${escapeHtml(contentHash)}" />\n  ` : ''}${buildId ? `<meta name="build-id" content="${escapeHtml(buildId)}" />\n  ` : ''}${gitCommit ? `<meta name="git-commit" content="${escapeHtml(gitCommit)}" />\n  ` : ''}
   <meta name="author" content="${escapeHtml(AUTHOR.name)}" />
   <meta name="robots" content="${indexable ? 'index, follow' : 'noindex, follow'}" />
   <link rel="canonical" href="${escapeHtml(canonical)}" />
@@ -813,8 +821,29 @@ writeRoute(
   }),
 );
 
+let publicManifestData: { buildId?: string; gitCommit?: string | null; items?: Array<{ slug: string; hash: string }> } = {};
+try {
+  const p = path.join(webGeneratedDir, 'public-manifest.json');
+  if (fs.existsSync(p)) {
+    publicManifestData = JSON.parse(fs.readFileSync(p, 'utf8'));
+  }
+} catch {
+  /* ignore */
+}
+const contentHashesBySlug = new Map<string, string>();
+if (Array.isArray(publicManifestData.items)) {
+  for (const item of publicManifestData.items) {
+    if (item.slug && item.hash) {
+      contentHashesBySlug.set(item.slug, item.hash);
+    }
+  }
+}
+
 for (const doc of docs) {
   const pathname = `/posts/${encodeURIComponent(doc.slug)}`;
+  const contentHash = contentHashesBySlug.get(doc.slug) || '';
+  const buildId = publicManifestData.buildId || '';
+  const gitCommit = publicManifestData.gitCommit || '';
   const canonical = absoluteUrl(pathname);
   const published = safeDate(doc.date);
   const modified = safeDate(doc.updated || doc.date) || published;
@@ -831,7 +860,7 @@ for (const doc of docs) {
   const articleBody = `<main data-pagefind-body>
     <nav aria-label="面包屑"><a href="/">Walker</a> / <a href="/posts">证据</a></nav>
     <article>
-      <header>
+      <header data-content-hash="${escapeHtml(contentHash)}">
         <h1>${escapeHtml(doc.title)}</h1>
         <p>作者：<a href="/me">${escapeHtml(authorName)}</a> · <time datetime="${escapeHtml(published)}">发布 ${escapeHtml(displayDate(doc.date))}</time>${modified && modified !== published ? ` · <time datetime="${escapeHtml(modified)}">更新 ${escapeHtml(displayDate(doc.updated))}</time>` : ''}</p>
         <p>${escapeHtml(doc.summary)}</p>
@@ -874,6 +903,9 @@ for (const doc of docs) {
         modified,
         tags: doc.tags,
         markdownPath: doc.aiUsePolicy.readable ? `${pathname}/index.md` : '',
+        contentHash,
+        buildId,
+        gitCommit,
       }),
       body: articleBody,
       schema: {
@@ -956,6 +988,15 @@ for (const route of SPA_SHELL_ROUTES) {
       },
     }),
   );
+}
+
+try {
+  const manifestSrc = path.join(webGeneratedDir, 'public-manifest.json');
+  if (fs.existsSync(manifestSrc)) {
+    fs.copyFileSync(manifestSrc, path.join(webDistDir, 'public-manifest.json'));
+  }
+} catch {
+  /* ignore */
 }
 
 console.log(

@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -52,6 +52,15 @@ function renderShell(path: string) {
 }
 
 describe('AppShell 搜索入口', () => {
+  it('主导航只展示探索、文章、资源、关于，关于进入 Dora 页面', () => {
+    renderShell(dualEntry.browse.path);
+    const nav = within(screen.getByRole('navigation', { name: '站内' }));
+    expect(nav.getAllByRole('link').map((link) => link.textContent?.trim())).toEqual([
+      '探索', '文章', '资源', '关于',
+    ]);
+    expect(nav.getByRole('link', { name: '关于' })).toHaveAttribute('href', WEB_ROUTES.me);
+  });
+
   it('首页挂载「搜索或问小影」入口', () => {
     renderShell('/');
     expect(

@@ -153,7 +153,10 @@ export function mountPet(host: HTMLElement, onReady: () => void, onError: () => 
       // and sleeping shapes, which otherwise shrink and float the character.
       const box = new THREE.Box3().setFromObject(model, true);
       const size = box.getSize(new THREE.Vector3()); const center = box.getCenter(new THREE.Vector3());
-      const scale = 4.8 / size.x;
+      // 4.8 是按 184px（11.5rem）基准容器宽标定的正交适配系数；
+      // 桌面端容器随视口分档加宽时，模型按容器宽/184 同步放大，保持与卡片组同一视觉比例。
+      const containerScale = host.getBoundingClientRect().width / 184;
+      const scale = (4.8 / size.x) * (Number.isFinite(containerScale) && containerScale > 0 ? containerScale : 1);
       model.scale.multiplyScalar(scale);
       model.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
       model.traverse(node => { if (node instanceof THREE.Mesh) { node.castShadow = true; node.receiveShadow = true; } });

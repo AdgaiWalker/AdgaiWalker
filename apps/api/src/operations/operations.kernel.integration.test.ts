@@ -20,7 +20,6 @@ beforeAll(async () => {
   vi.stubEnv("CONTENT_LOG_DIR", dir);
   vi.stubEnv("WALKER_ADMIN_TOKEN", token);
   vi.stubEnv("AI_ENABLED", "false");
-  vi.stubEnv("CONTENT_GEN_ON_SAVE", "false");
   const module = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
@@ -103,10 +102,10 @@ it("真实 Kernel 接线拒绝匿名管理读取，Basic 凭据可复用", async
     body.items
       .filter((x: { state: string }) => x.state === "available")
       .map((x: { key: string }) => x.key),
-  ).toEqual(["contentRead", "agentsRead", "runsRead", "agentExecute"]);
+  ).toEqual(["contentRead", "agentsRead", "runsRead", "agentExecute", "agentDeploy", "conversations", "contentWrite", "contentPublish", "reminders"]);
   expect(
     body.items.find((x: { key: string }) => x.key === "contentWrite").state,
-  ).toBe("not-connected");
+  ).toBe("available");
 });
 it("只读角色映射不创建默认角色、不返回提示词或供应商秘密", async () => {
   const count = await db.agentUnit.count();
@@ -181,6 +180,7 @@ it("存储故障与空数据分开，能力不谎报可用", async () => {
   expect(capabilities.items.find((x) => x.key === "agentsRead")?.state).toBe(
     "unavailable",
   );
+  expect(capabilities.items.find((x) => x.key === "conversations")?.state).toBe("unavailable");
   spy.mockRestore();
   vi.stubEnv("CONTENT_LOG_DIR", path.join(dir, "missing-directory"));
   expect(

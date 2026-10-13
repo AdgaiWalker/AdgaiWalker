@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { PetMotion, PetRenderer } from './scene';
 import { isPetWorking, type PetActivity } from './activity';
 import './xiaoying.css';
@@ -30,6 +30,9 @@ export type XiaoyingPetProps = {
   activity?: PetActivity;
   variant?: 'stage' | 'companion';
   onPetActivate?: () => void;
+  expanded?: boolean;
+  panelId?: string;
+  touchRef?: Ref<HTMLButtonElement>;
   children?: ReactNode;
 };
 
@@ -37,6 +40,9 @@ export const XiaoyingPet = memo(function XiaoyingPet({
   activity = 'idle',
   variant = 'stage',
   onPetActivate,
+  expanded,
+  panelId,
+  touchRef,
   children,
 }: XiaoyingPetProps) {
   const working = isPetWorking(activity);
@@ -130,7 +136,7 @@ export const XiaoyingPet = memo(function XiaoyingPet({
           <span ref={host} className="xiaoying-canvas" />
         </div>
       ) : (
-        <button type="button" className="xiaoying-touch" aria-label="摸摸小影" onClick={activate}>
+        <button ref={touchRef} type="button" className="xiaoying-touch" aria-label="摸摸小影" aria-expanded={expanded} aria-controls={panelId} onClick={activate}>
           {status === 'fallback' ? (
             <img className="xiaoying-poster" src="/xiaoying/poster.jpg" alt="毛茸茸的影鳐小影" />
           ) : null}

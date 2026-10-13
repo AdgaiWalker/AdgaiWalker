@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.json",
+    "sha256": "cd8e23cf79ded030485f0191728edf8229df4e4542897cb976e5f37b89576fd3",
+    "bytes": 11147
+  },
+  "artifact": {
+    "path": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.html",
+    "sha256": "1212efd0a7ddde5090bd73a84113a22be0550aa36925305aa2dea89842a8146f",
+    "bytes": 781209
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.finalize.json",
+    "summaryReceipt": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.finalize-summary.json",
+    "browserCheckReceipt": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "cache-valid"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2669
+}

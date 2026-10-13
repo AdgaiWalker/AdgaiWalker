@@ -1,0 +1,479 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AdgaiWalker 架构图 · 当前拓扑（85b597b + 2026-10-12 工作树）",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/AdgaiWalker/AdgaiWalker",
+      "revision": "85b597b4d2f38045265e0c7d8e6915e2bb28ddb0"
+    },
+    "views": [
+      {
+        "id": "visitor-path",
+        "label": "访客请求路径",
+        "focus": [
+          "visitor",
+          "web",
+          "caddy",
+          "nest",
+          "dsh"
+        ],
+        "note": "静态站从 Vercel 出发，/api/* 反代回盒子的 Caddy，再由 Nest 调度唯一的 AI 运行时。"
+      },
+      {
+        "id": "state-and-runtime",
+        "label": "状态与运行时",
+        "focus": [
+          "nest",
+          "dsh",
+          "sqlite",
+          "data"
+        ],
+        "note": "业务事实落 SQLite，运行诊断落 data 目录，两者互不冒充。"
+      },
+      {
+        "id": "content-truth",
+        "label": "内容真相源与 MCP 面",
+        "focus": [
+          "contentlog",
+          "contentjson",
+          "agent",
+          "mcpext"
+        ],
+        "note": "content/log 是唯一正本，content.json 是投影，外部 AI 经 MCP 带出处取用。"
+      }
+    ],
+    "output": "output/archify/adgaiwalker-architecture.html"
+  },
+  "components": [
+    {
+      "id": "contentlog",
+      "type": "database",
+      "label": "content/log",
+      "sublabel": "Git 唯一正本",
+      "tag": "真相源",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        160,
+        62
+      ]
+    },
+    {
+      "id": "contentjson",
+      "type": "database",
+      "label": "content.json",
+      "sublabel": "内容 + 图谱投影",
+      "tag": "构建产物",
+      "pos": [
+        300,
+        80
+      ],
+      "size": [
+        190,
+        62
+      ],
+      "sources": [
+        {
+          "path": "apps/web/src/generated/content.json",
+          "label": "投影产物"
+        },
+        {
+          "path": "packages/shared/src/graph.ts",
+          "label": "建图规则唯一份"
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "apps/agent",
+      "sublabel": "Cordis + MCP 九工具",
+      "tag": "本地建成 · 待部署",
+      "pos": [
+        580,
+        80
+      ],
+      "size": [
+        180,
+        62
+      ],
+      "sources": [
+        {
+          "path": "apps/agent/src/index.ts",
+          "label": "MCP 入口"
+        }
+      ]
+    },
+    {
+      "id": "mcpext",
+      "type": "external",
+      "label": "外部 AI",
+      "sublabel": "带 slug 出处返回",
+      "tag": "站外",
+      "pos": [
+        850,
+        80
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "访客 · 浏览器",
+      "sublabel": "逛 /posts · 卡 /tools",
+      "tag": "公开面",
+      "pos": [
+        40,
+        320
+      ],
+      "size": [
+        160,
+        62
+      ]
+    },
+    {
+      "id": "web",
+      "type": "cloud",
+      "label": "www.iwalk.pro",
+      "sublabel": "Vercel 静态 · 预渲染",
+      "tag": "生产",
+      "pos": [
+        300,
+        320
+      ],
+      "size": [
+        190,
+        62
+      ],
+      "sources": [
+        {
+          "path": "vercel.json",
+          "label": "构建与路由"
+        }
+      ]
+    },
+    {
+      "id": "caddy",
+      "type": "security",
+      "label": "Caddy 网关",
+      "sublabel": "白名单 · 管理双防线",
+      "tag": "盒子",
+      "pos": [
+        580,
+        320
+      ],
+      "size": [
+        180,
+        62
+      ],
+      "sources": [
+        {
+          "path": "ops/windows/Caddyfile",
+          "label": "公网 Matcher"
+        }
+      ]
+    },
+    {
+      "id": "nest",
+      "type": "backend",
+      "label": "Nest API :8788",
+      "sublabel": "六边形分层 · 单实例 · 进程内运行监控",
+      "tag": "仅回环",
+      "pos": [
+        850,
+        320
+      ],
+      "size": [
+        190,
+        62
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/app.module.ts",
+          "label": "公网 exclude 表"
+        },
+        {
+          "path": "apps/api/src/kernel.module.ts",
+          "label": "唯一接线处（含监控端口）"
+        },
+        {
+          "path": "apps/api/src/observability/request-id.middleware.ts",
+          "label": "结构化请求行"
+        }
+      ]
+    },
+    {
+      "id": "dsh",
+      "type": "backend",
+      "label": "dsh · AI 运行时",
+      "sublabel": "助手 · 卡口 · 配方",
+      "tag": "唯一运行时",
+      "pos": [
+        1170,
+        320
+      ],
+      "size": [
+        180,
+        62
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/adapters/dsh-agent.runner.ts",
+          "label": "配方运行器"
+        }
+      ]
+    },
+    {
+      "id": "admin",
+      "type": "frontend",
+      "label": "站主 · apps/admin",
+      "sublabel": "概览 / 内容 / Agent / 记录",
+      "tag": "本地验收 · 未部署",
+      "pos": [
+        300,
+        560
+      ],
+      "size": [
+        190,
+        62
+      ],
+      "sources": [
+        {
+          "path": "apps/admin/src/shared/routes.ts",
+          "label": "路由唯一来源"
+        }
+      ]
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "线索 · 执行 · Agent 台账",
+      "tag": "单文件独立库",
+      "pos": [
+        850,
+        560
+      ],
+      "size": [
+        190,
+        62
+      ]
+    },
+    {
+      "id": "data",
+      "type": "database",
+      "label": "data 目录",
+      "sublabel": "runs · trace · logs",
+      "tag": "不得覆盖",
+      "pos": [
+        1170,
+        560
+      ],
+      "size": [
+        180,
+        62
+      ]
+    },
+    {
+      "id": "wb2api",
+      "type": "external",
+      "label": "token.iwalk.pro → wb2api",
+      "sublabel": "Tailscale 回源 · /v1 与 /connect",
+      "tag": "85b597b 新增",
+      "pos": [
+        580,
+        700
+      ],
+      "size": [
+        200,
+        62
+      ],
+      "sources": [
+        {
+          "path": "ops/windows/Caddyfile",
+          "label": "token 面 inline matcher"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "内容真相源 · Git 仓库",
+      "wraps": [
+        "contentlog",
+        "contentjson"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Vercel 静态面",
+      "wraps": [
+        "web"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "盒子 · 腾讯云 Windows 2C2G（新加坡）",
+      "wraps": [
+        "caddy",
+        "nest",
+        "dsh",
+        "sqlite",
+        "data"
+      ],
+      "pad": 40
+    },
+    {
+      "kind": "security-group",
+      "label": "公网白名单 · 管理鉴权",
+      "wraps": [
+        "caddy"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "visitor",
+      "to": "web",
+      "label": "HTTPS"
+    },
+    {
+      "from": "web",
+      "to": "caddy",
+      "label": "/api/* 反代",
+      "variant": "emphasis"
+    },
+    {
+      "from": "caddy",
+      "to": "nest",
+      "label": "回环 :8788",
+      "variant": "security"
+    },
+    {
+      "from": "nest",
+      "to": "dsh",
+      "label": "JSON-RPC · stdin",
+      "variant": "emphasis"
+    },
+    {
+      "from": "nest",
+      "to": "sqlite",
+      "label": "Prisma",
+      "labelAt": [
+        945,
+        396
+      ]
+    },
+    {
+      "from": "dsh",
+      "to": "data",
+      "label": "会话 home",
+      "labelAt": [
+        1260,
+        396
+      ]
+    },
+    {
+      "from": "nest",
+      "to": "data",
+      "label": "runs / trace / logs",
+      "variant": "dashed"
+    },
+    {
+      "from": "admin",
+      "to": "caddy",
+      "label": "SSH 隧道 :8790",
+      "variant": "security"
+    },
+    {
+      "from": "contentlog",
+      "to": "contentjson",
+      "label": "content:gen"
+    },
+    {
+      "from": "contentjson",
+      "to": "web",
+      "label": "打包投影",
+      "variant": "dashed",
+      "labelAt": [
+        395,
+        156
+      ]
+    },
+    {
+      "from": "contentjson",
+      "to": "agent",
+      "label": "citable 知识",
+      "variant": "dashed"
+    },
+    {
+      "from": "agent",
+      "to": "mcpext",
+      "label": "MCP stdio",
+      "variant": "emphasis"
+    },
+    {
+      "from": "caddy",
+      "to": "wb2api",
+      "label": "只放 /v1/* 与 /connect*",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三面与唯一运行时",
+      "items": [
+        "访客面：静态站 + 预渲染文章，运行时只读 content.json",
+        "站主面：apps/admin 经 SSH 隧道与双防线，AI 只起草不主选",
+        "AI 面：dsh 是唯一运行时，助手 / 卡口 / 配方共用一个引擎"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "边界与红线",
+      "items": [
+        "公网白名单双侧同步：Nest exclude 表 + Caddyfile，漏一侧即 401/404",
+        "变更方法统一校验 Origin/Referer；凭据只存服务器 data 目录",
+        "访客输入永不进命令行，只走 JSON-RPC stdin 数据通道"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "真相源与实施状态",
+      "items": [
+        "内容正本只有 content/log；content.json 与图谱都是可重算投影",
+        "盒子坚持单 Nest + SQLite，26 条迁移；不引入 Docker / Redis / PostgreSQL / 外部监控栈",
+        "C01–C24 与 O01–O10 已验收，G01–G06 完成、下一项 G07；2026-10-12 的监控台与 Agent 直调修复仍是本地未提交，生产未部署，readiness 仍阻断公共位置启用"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Token 面（85b597b）",
+      "items": [
+        "token.iwalk.pro 公网只放 /v1/*（Bearer）与 /connect* 自助页，面板与 healthz 永不出口",
+        "上游是笔记本经 Tailscale serve，透传 upstream Host，不参与 Nest 公网路由对等契约",
+        "盒子只反代两条前缀，凭据与面板留在回环"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "运行监控（2026-10-12 本地）",
+      "items": [
+        "fail 语义相反且刻意如此：监控采集 fail-open（坏了业务照跑），后台日志 fail-closed（写不进去 503 拒绝执行）",
+        "频道与报错判定、比率显示只有一份 shared 实现；筛选一律在服务端，分母为 0 显示「—」",
+        "只读、进程内、不落库、不新增主工作面；后台「运行监控」tab 经管理鉴权读 /ops/runtime/*，不进公网白名单",
+        "所以图上属于 Nest 进程内部（端口→适配器在 kernel 接线），不是独立组件，也不单列节点；已知盲区是 API 崩溃时缓冲同归于尽，终端仍是唯一现场",
+        "能力自身的文件（采集接线 / 端口 / 控制器与 shared 契约）尚未提交，图面证据钉在它依赖的既有采集面与接线处"
+      ]
+    }
+  ]
+}

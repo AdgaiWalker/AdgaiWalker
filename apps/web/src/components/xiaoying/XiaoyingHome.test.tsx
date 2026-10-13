@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { XiaoyingHome } from './XiaoyingHome';
 import type { AssistantMessage } from '../../hooks/useAssistant';
+import { HOME_XIAOYING_PLACEMENT, PUBLIC_SITE_SCOPE } from '@walker/shared';
 
 const mock = vi.hoisted(() => ({ play: vi.fn(), pause: vi.fn(), dispose: vi.fn(), mount: vi.fn() }));
 const assistant = vi.hoisted(() => ({
@@ -13,10 +14,21 @@ const assistant = vi.hoisted(() => ({
   loading: false,
   streaming: false,
   error: null as string | null,
+  context: null as unknown,
+  restoreHistory: vi.fn(),
+  generationConflict: false,
+}));
+const api = vi.hoisted(() => ({
+  placement: vi.fn(), history: vi.fn(), interaction: vi.fn(async () => ({})),
+}));
+vi.mock('../../api/public-api', () => ({
+  publicApi: { assistantPlacement: api.placement, assistantHistory: api.history, assistantInteraction: api.interaction },
 }));
 vi.mock('./scene', () => ({ mountPet: mock.mount }));
 vi.mock('../../hooks/useAssistant', () => ({
-  useAssistant: () => ({
+  useAssistant: (context: unknown) => {
+    assistant.context = context;
+    return ({
     send: assistant.send,
     stop: assistant.stop,
     reset: assistant.reset,
@@ -24,7 +36,10 @@ vi.mock('../../hooks/useAssistant', () => ({
     loading: assistant.loading,
     streaming: assistant.streaming,
     error: assistant.error,
-  }),
+    restoreHistory: assistant.restoreHistory,
+    generationConflict: assistant.generationConflict,
+  });
+  },
 }));
 
 function renderHome() {
@@ -42,6 +57,10 @@ describe('小影首页桌宠', () => {
     assistant.loading = false;
     assistant.streaming = false;
     assistant.error = null;
+    assistant.context = null;
+    assistant.generationConflict = false;
+    api.placement.mockResolvedValue({ placementKey: HOME_XIAOYING_PLACEMENT, scopeSlug: PUBLIC_SITE_SCOPE, available: false, aiEnabled: true, generation: null, defaultMemberKey: null, members: [] });
+    api.history.mockResolvedValue({ conversationId: null, placementKey: HOME_XIAOYING_PLACEMENT, scopeSlug: PUBLIC_SITE_SCOPE, deploymentGeneration: null, messages: [] });
     sessionStorage.removeItem('walker:xiaoying-met');
     vi.stubGlobal('IntersectionObserver', class {
       constructor(private callback: IntersectionObserverCallback) {}
@@ -66,6 +85,7 @@ describe('小影首页桌宠', () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -102,6 +122,85 @@ describe('小影首页桌宠', () => {
     await waitFor(() => expect(screen.getByRole('textbox', { name: '问小影' })).toHaveFocus());
   });
 
+  it('收起气泡不让隐藏链接进入键盘焦点，关闭后焦点回到小影', async () => {
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    assistant.messages = [
+      { role: 'user', text: '上一问' },
+      { role: 'assistant', text: '上一答', citations: ['cc-intro'], aiUsedFlag: true },
+    ];
+    renderHome();
+    const panel = document.querySelector('.xiaoying-panel') as HTMLElement;
+    const petButton = screen.getByRole('button', { name: '摸摸小影' });
+    expect(panel.hasAttribute('inert')).toBe(true);
+    expect(petButton.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(petButton);
+    expect(panel.hasAttribute('inert')).toBe(false);
+    expect(petButton.getAttribute('aria-expanded')).toBe('true');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '问小影' })).toHaveFocus());
+    clock.mockReturnValue(2000);
+    fireEvent.pointerDown(document.body);
+    expect(panel.hasAttribute('inert')).toBe(true);
+    document.body.tabIndex = -1;
+    document.body.focus();
+    await waitFor(() => expect(petButton).toHaveFocus());
+    document.body.removeAttribute('tabindex');
+    clock.mockRestore();
+  });
+
+  it('旧成员回答隐藏时显示安全占位，不显示原文或引用', () => {
+    assistant.messages = [
+      { role: 'user', text: '旧问题' },
+      { role: 'assistant', text: '', citations: ['cc-intro'], aiUsedFlag: false, hidden: true, restored: true },
+    ];
+    renderHome();
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    expect(screen.getByText('这条历史回答对应的成员已不在当前公开位置，内容已隐藏。')).toBeInTheDocument();
+    expect(screen.queryByText('cc-intro')).toBeNull();
+  });
+
+  it('首页小影使用后台当前部署的默认成员和版本发问', async () => {
+    api.placement.mockResolvedValue({
+      placementKey: HOME_XIAOYING_PLACEMENT, scopeSlug: PUBLIC_SITE_SCOPE,
+      available: true, aiEnabled: true, generation: 4, defaultMemberKey: 'member-1',
+      members: [{ key: 'member-1', name: '小影', revision: 2, isDefault: true }],
+    });
+    renderHome();
+    await waitFor(() => expect(assistant.context).toMatchObject({
+      placementKey: HOME_XIAOYING_PLACEMENT, scopeSlug: PUBLIC_SITE_SCOPE,
+      memberKey: 'member-1', deploymentGeneration: 4,
+    }));
+    expect(api.placement).toHaveBeenCalledWith(HOME_XIAOYING_PLACEMENT, PUBLIC_SITE_SCOPE);
+  });
+
+  it('初次加载同时恢复该公开位置的业务消息', async () => {
+    const history = {
+      conversationId: 'conversation-home', placementKey: HOME_XIAOYING_PLACEMENT,
+      scopeSlug: PUBLIC_SITE_SCOPE, deploymentGeneration: null, messages: [],
+    };
+    api.history.mockResolvedValue(history);
+    renderHome();
+    await waitFor(() => expect(assistant.restoreHistory).toHaveBeenCalledWith(history));
+  });
+
+  it('部署代次冲突后重新获取当前公开成员', async () => {
+    const initial = {
+      placementKey: HOME_XIAOYING_PLACEMENT, scopeSlug: PUBLIC_SITE_SCOPE,
+      available: true, aiEnabled: true, generation: 1, defaultMemberKey: 'old-member',
+      members: [{ key: 'old-member', name: '小影', revision: 1, isDefault: true }],
+    };
+    const updated = {
+      ...initial, generation: 2, defaultMemberKey: 'new-member',
+      members: [{ key: 'new-member', name: '小影', revision: 2, isDefault: true }],
+    };
+    api.placement.mockResolvedValue(initial);
+    const view = renderHome();
+    await waitFor(() => expect(assistant.context).toMatchObject({ memberKey: 'old-member', deploymentGeneration: 1 }));
+    api.placement.mockResolvedValue(updated);
+    assistant.generationConflict = true;
+    view.rerender(<MemoryRouter><XiaoyingHome /></MemoryRouter>);
+    await waitFor(() => expect(assistant.context).toMatchObject({ memberKey: 'new-member', deploymentGeneration: 2 }));
+  });
+
   it('第一次用身体招呼，不另占芯片', () => {
     renderHome();
     expect(document.querySelector('.xiaoying-wave')).toBeNull();
@@ -136,9 +235,10 @@ describe('小影首页桌宠', () => {
     vi.useRealTimers();
   });
 
-  it('空态提示词一点就问', () => {
+  it('位置状态读取完成后空态提示词一点就问', async () => {
     renderHome();
     fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Dora 是谁？' })).not.toBeDisabled());
     fireEvent.click(screen.getByRole('button', { name: 'Dora 是谁？' }));
     expect(assistant.send).toHaveBeenCalledWith('Dora 是谁？');
   });
@@ -146,6 +246,7 @@ describe('小影首页桌宠', () => {
   it('回车把问题交给流式问答', async () => {
     renderHome();
     fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Dora 是谁？' })).not.toBeDisabled());
     const input = screen.getByRole('textbox', { name: '问小影' });
     fireEvent.change(input, { target: { value: 'Dora 是谁' } });
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -182,6 +283,36 @@ describe('小影首页桌宠', () => {
     expect(screen.getByText('Dora 是谁')).toBeInTheDocument();
     expect(screen.queryByText('上一问')).toBeNull();
     expect(screen.queryByText('上一答。')).toBeNull();
+  });
+
+  it('新问题失败时不把上一轮回答当作当前回答', () => {
+    assistant.messages = [
+      { role: 'user', text: '上一问' },
+      { role: 'assistant', text: '上一答。', citations: [], aiUsedFlag: false },
+      { role: 'user', text: '这次的问题' },
+    ];
+    assistant.error = '服务暂时不可用';
+    renderHome();
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    expect(screen.getByText('这次的问题')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('服务暂时不可用');
+    expect(screen.queryByText('上一答。')).toBeNull();
+  });
+
+  it('接入模型后将旧固定回答标成历史消息', async () => {
+    api.placement.mockResolvedValue({
+      placementKey: HOME_XIAOYING_PLACEMENT, scopeSlug: PUBLIC_SITE_SCOPE,
+      available: true, aiEnabled: true, generation: 2, defaultMemberKey: 'member-1',
+      members: [{ key: 'member-1', name: '小影', revision: 1, isDefault: true }],
+    });
+    assistant.messages = [
+      { role: 'user', text: '旧问题' },
+      { role: 'assistant', text: '旧固定回答', citations: [], aiUsedFlag: false, restored: true },
+    ];
+    renderHome();
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    await waitFor(() => expect(screen.getByText('当前由 小影 · v1 回答')).toBeInTheDocument());
+    expect(screen.getByText('历史固定回答')).toBeInTheDocument();
   });
 
   it('开口前是在想，不是空光标', () => {

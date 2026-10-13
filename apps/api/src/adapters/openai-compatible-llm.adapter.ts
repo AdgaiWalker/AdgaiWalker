@@ -5,17 +5,22 @@
  * 于是「换供应商」只是改一行配置，技能本体零改动（这是技能可迁移的前提）。
  * harness / 其他 SDK 属于可选引擎，走同一个 `LlmClient` 端口即可替换。
  *
+ * 配置来源（R25c，2026-09-23）：**以 dsh 原生目录为唯一真相源**，不再读本地
+ * ModelProvider 表。网址取自提供方条目的 baseURL，密钥按条目声明的 apiKeyRef
+ * 从 dsh 凭据来源解析（只读引用名与值，不落库、不打印）。
+ *
  * 三条纪律（对应一次评审修复的同类问题）：
  * 1. **不编造**：token 与耗时取自供应商回执，缓存命中不支持时就是 0；
  * 2. **失败分类**：没配 key / 鉴权失败 / 上游 5xx / 超时 / 格式不对，各有各的码；
  * 3. **不掩盖**：HTTP 非 2xx 时把上游响应片段带进错误信息，便于定位。
  */
 import { Inject, Injectable } from '@nestjs/common';
-import { ModelProviderService } from '../model-providers/model-provider.service';
+import { findProvider, pickUsableProvider } from '@walker/shared';
+import { MODEL_DIRECTORY, type ModelDirectoryPort } from '../ports/model-directory.port';
 import { LlmError, type LlmChatRequest, type LlmChatResult, type LlmClient } from '../ports/llm.port';
 
-/** 未指定供应商时落到它（与 `ModelProviderService.ensureDefaultProvider` 同一 id） */
-const DEFAULT_PROVIDER_ID = 'deepseek';
+/** 未指定提供方时，用 dsh 的默认提供方；取不到再落到已支持接口本身。 */
+const FALLBACK_PROVIDER_ID = 'deepseek-official';
 /** 默认超时：与助手的 60s 预算同一量级 */
 const DEFAULT_TIMEOUT_MS = 60_000;
 
@@ -42,28 +47,30 @@ export class OpenAiCompatibleLlm implements LlmClient {
 
   // 显式 token：本仓 dev 走 tsx、测试走 vitest，**都不发 design:paramtypes 元数据**，
   // 按类型注入会拿到 undefined（生产 tsc 编译才有元数据）。一律 @Inject，三处同语义。
-  constructor(@Inject(ModelProviderService) private readonly providers: ModelProviderService) {}
+  constructor(@Inject(MODEL_DIRECTORY) private readonly directory: ModelDirectoryPort) {}
 
   async chat(request: LlmChatRequest): Promise<LlmChatResult> {
-    const providerId = request.providerId?.trim() || DEFAULT_PROVIDER_ID;
-    const provider = await this.providers.findById(providerId);
+    const snapshot = this.directory.snapshot();
+    const requested = request.providerId?.trim();
+    // 显式指定时严格按它查（找不到就报错，不静默换）。
+    // 未指定时用「目录里确实可用的」提供方：dsh 的 agent-default-model 可能指向
+    // 本运行时装不上的插件（如桌面版专有的 workbuddy），盲信它会让可用通道也一起失败。
+    const provider = requested
+      ? findProvider(snapshot, requested)
+      : (pickUsableProvider(snapshot)?.provider ?? findProvider(snapshot, FALLBACK_PROVIDER_ID));
     if (!provider) {
       throw new LlmError(
         'llm-no-provider',
-        `供应商「${providerId}」不存在；请在后台配置模型供应商`,
+        `提供方「${requested ?? snapshot.defaultProvider ?? FALLBACK_PROVIDER_ID}」不在 dsh 目录中；请在 dsh 设置里声明该接口`,
       );
     }
-    if (!provider.enabled) {
-      throw new LlmError('llm-no-provider', `供应商「${providerId}」已被停用`);
-    }
 
-    const apiKey = provider.ciphertext
-      ? await this.providers.getDecryptedApiKey(providerId)
-      : '';
+    // 凭据值只从 dsh 凭据来源解析，不落库、不进日志。
+    const apiKey = this.directory.credentialValue(provider.apiKeyRef) ?? '';
     if (!apiKey) {
       throw new LlmError(
         'llm-no-credential',
-        `供应商「${providerId}」未配置 API Key；请在后台「模型供应商」里填入`,
+        `提供方「${provider.id}」的凭据引用 ${provider.apiKeyRef} 没有值；请在 dsh 设置里配置`,
       );
     }
 
@@ -75,7 +82,7 @@ export class OpenAiCompatibleLlm implements LlmClient {
     let response: Response;
     try {
       response = await this.fetchImpl(
-        `${provider.baseUrl.replace(/\/+$/, '')}/chat/completions`,
+        `${provider.baseURL.replace(/\/+$/, '')}/chat/completions`,
         {
           method: 'POST',
           headers: {
@@ -98,7 +105,7 @@ export class OpenAiCompatibleLlm implements LlmClient {
         aborted ? 'llm-timeout' : 'llm-upstream-failed',
         aborted
           ? `模型调用超过 ${timeoutMs}ms 未返回`
-          : `无法连接供应商（${provider.baseUrl}）：${error instanceof Error ? error.message : String(error)}`,
+          : `无法连接提供方（${provider.baseURL}）：${error instanceof Error ? error.message : String(error)}`,
       );
     } finally {
       clearTimeout(timer);

@@ -25,7 +25,7 @@ export function LearnPage() {
     <div className="learn-page">
       <header className="learn-pane-header">
         <h1 className="page-title">以用促学，学有止，碰到在学。</h1>
-        <p className="page-lead">指南 {guides.length} 篇 · 按阶段浏览，详情进逛阅读</p>
+        <p className="page-lead">指南 {guides.length} 篇 · 按阶段浏览，详情到文章页阅读</p>
       </header>
 
       <div className="learn-quote panel-glass">

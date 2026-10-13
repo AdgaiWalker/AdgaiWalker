@@ -34,7 +34,7 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
     canonicalPath: '/',
   },
   [WEB_ROUTES.browse]: {
-    title: '证据 · Walker',
+    title: '文章 · Walker',
     description:
       'Dora 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。',
     canonicalPath: WEB_ROUTES.browse,
@@ -87,7 +87,7 @@ const STATIC_METADATA: Record<string, RouteMetadataValue> = {
     type: 'profile',
   },
   [WEB_ROUTES.ask]: {
-    title: '卡 · Walker',
+    title: '提问 · Walker',
     description: '说清一个真实卡点，拿到可以立即开始的下一步。',
     canonicalPath: WEB_ROUTES.ask,
     indexable: false,

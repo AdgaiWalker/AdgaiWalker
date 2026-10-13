@@ -1,18 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-14T20:20:59.420Z",
-  "sourceCommit": "6bd9ef2e181e868741be3f67883007d99f0cadbb",
+  "generatedAt": "2026-10-12T12:49:21.826Z",
+  "sourceCommit": "85b597b4d2f38045265e0c7d8e6915e2bb28ddb0",
   "accepted": {
-    "cycles": [
-      [
-        "packages/shared/src/code-artifact.ts",
-        "packages/shared/src/code-debt.ts",
-        "packages/shared/src/code-graph.ts"
-      ]
-    ],
-    "unresolved": [
-      "../packages/shared/dist/mvp-acceptance.js"
-    ],
+    "cycles": [],
+    "unresolved": [],
     "unreachable": [
       "scripts/accept-real-works.ts",
       "scripts/probe-production.ts"

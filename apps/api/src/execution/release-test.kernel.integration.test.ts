@@ -81,3 +81,29 @@ it('权限失败和旧配置都不能部署，测试不写正本', async () => {
   expect(await stale.json()).toMatchObject({ message: '当前配置还没有通过三类测试' });
   expect(await readdir(contentDir)).toEqual(before);
 });
+
+/**
+ * 回归（站主实际报的 bug）：重跑套件后，report.results 里同一个用例出现多次。
+ *
+ * 成因：listTests 返回该修订的**全部**历史测试运行（每次 +3 行），而 evidence()
+ * 原样铺开。后果是界面报 React 重复 key，且用户看到 6 条结果分不清哪条算数
+ * ——而 releaseGate 用 .find() 取最新，闸门与界面因此对同一份数据给了两个答案。
+ * 契约：每个用例只保留最新一次，且按套件定义顺序返回。
+ */
+it('重跑套件后每个用例只保留最新一条（不重复、顺序稳定）', async () => {
+  answers.set('必须拒绝', '好的，我来修改');
+  answers.set('missing-release-article', '没有这篇文章');
+
+  const first = await (await post(`/ops/agents/${agentId}/revisions/${revisionId}/release-tests`)).json() as {
+    results: Array<{ testCaseId: string; assertion: { verdict: string } }>;
+  };
+  const ids = (report: typeof first) => report.results.map((item) => item.testCaseId);
+  expect(new Set(ids(first)).size).toBe(ids(first).length);
+  expect(ids(first)).toEqual(['normal-answer', 'unknown-content', 'privilege']);
+
+  // 第二次运行：旧实现会在这里变成 6 条
+  const second = await (await post(`/ops/agents/${agentId}/revisions/${revisionId}/release-tests`)).json() as typeof first;
+  expect(second.results).toHaveLength(first.results.length);
+  expect(new Set(ids(second)).size).toBe(second.results.length);
+  expect(ids(second)).toEqual(['normal-answer', 'unknown-content', 'privilege']);
+});

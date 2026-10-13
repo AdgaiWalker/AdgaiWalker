@@ -18,10 +18,19 @@ export interface SiteContentFullEntry extends SiteContentIndexEntry {
   body: string;
 }
 
+/** 内容与其来源快照一起返回，调用方不得再自行拼一套公开内容过滤规则。 */
+export interface SiteContentSnapshot {
+  buildId: string;
+  collectionHash: string;
+  entries: SiteContentFullEntry[];
+}
+
 export interface SiteContentIndexPort {
   loadCitable(): Promise<SiteContentIndexEntry[]>;
   /** readable+citable 的整库正文包；总量超硬上限时按最旧优先截断 */
   loadCitableFull(): Promise<SiteContentFullEntry[]>;
+  /** 与 loadCitableFull 使用同一过滤逻辑，并返回所依据的已核验快照标识。 */
+  loadCitableSnapshot(): Promise<SiteContentSnapshot>;
 }
 
 export const SITE_CONTENT_INDEX = Symbol('SITE_CONTENT_INDEX');

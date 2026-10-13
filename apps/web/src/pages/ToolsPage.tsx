@@ -62,7 +62,7 @@ export function ToolsPage() {
                   type="button"
                   className="assistant-example-chip"
                   disabled={loading}
-                  onClick={() => void chat.send(example)}
+                  onClick={() => chat.onDraftChange(example)}
                 >
                   {example}
                 </button>

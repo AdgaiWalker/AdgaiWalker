@@ -13,7 +13,6 @@
  * 权威：docs/PRD-CODE-GRAPH.md
  */
 import type { ResolutionOutcome } from './code-resolve.js';
-import type { CodeGraphCounts } from './code-artifact.js';
 import {
   GRAPH_DEFAULT_SEED,
   attachmentNodeId,

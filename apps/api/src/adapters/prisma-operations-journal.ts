@@ -5,12 +5,14 @@ import { storageUnavailable } from '../common/http-error';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import type { OperationsJournalPort, OperationsTransaction, OutboxEvent } from '../ports/operations-journal.port';
 import { PrismaAgentExecutionRepository } from './prisma-agent-execution.repository';
+import { PrismaContentReleaseRepository } from './prisma-content-release.repository';
 
 function transactionView(db: Prisma.TransactionClient): OperationsTransaction {
   return {
     client: db,
     runs: new PrismaAgentExecutionRepository({ getClient: () => db }),
     grants: new PrismaAuthorizationRepository({ getClient: () => db }),
+    releases: new PrismaContentReleaseRepository({ getClient: () => db }),
     async appendAudit(entry) { await db.auditRecord.create({ data: entry }); },
     async enqueue(event) { await db.outbox.create({ data: event }); },
     async claimOutbox(id, attempt, now) {
@@ -26,6 +28,12 @@ function transactionView(db: Prisma.TransactionClient): OperationsTransaction {
         data: { deliveredAt: now, lastError: null },
       });
       if (changed.count !== 1) throw new Error('Outbox 投递状态发生冲突');
+    },
+    async ensureDeletionTombstone(id, conversationId) {
+      const existing = await db.deletionTombstone.findUnique({ where: { conversationId } });
+      if (existing) return { tombstone: existing, created: false };
+      const tombstone = await db.deletionTombstone.create({ data: { id, conversationId } });
+      return { tombstone, created: true };
     },
   };
 }

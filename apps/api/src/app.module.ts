@@ -1,9 +1,12 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AdminTokenMiddleware } from './auth/admin-token.middleware';
+import { AdminRequestLogMiddleware } from './auth/admin-request-log.middleware';
+import { SameOriginMiddleware } from './auth/same-origin.middleware';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { KernelModule } from './kernel.module';
 import { WorkstationModule } from './workstation/workstation.module';
+import { PUBLIC_ROUTE_EXCLUSIONS } from './auth/public-route-contract';
 
 /**
  * 公共白名单：与 ops/windows/Caddyfile 公网站点逐条对齐（路径+方法）。
@@ -15,19 +18,15 @@ import { WorkstationModule } from './workstation/workstation.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // 全部变更方法先过 CSRF Origin 校验；非浏览器服务器调用无 Origin 时可继续。
+    consumer.apply(SameOriginMiddleware).forRoutes('*');
     consumer
       .apply(AdminTokenMiddleware)
-      .exclude(
-        { path: 'health', method: RequestMethod.GET },
-        { path: 'intake', method: RequestMethod.POST },
-        { path: 'assistant', method: RequestMethod.POST },
-        { path: 'assistant/stream', method: RequestMethod.POST },
-        { path: 'likes', method: RequestMethod.GET },
-        { path: 'likes', method: RequestMethod.POST },
-        { path: 'content-feedback', method: RequestMethod.POST },
-        { path: 'search-events', method: RequestMethod.POST },
-        { path: 'support', method: RequestMethod.GET },
-      )
+      .exclude(...PUBLIC_ROUTE_EXCLUSIONS)
+      .forRoutes('*');
+    consumer
+      .apply(AdminRequestLogMiddleware)
+      .exclude(...PUBLIC_ROUTE_EXCLUSIONS)
       .forRoutes('*');
   }
 }

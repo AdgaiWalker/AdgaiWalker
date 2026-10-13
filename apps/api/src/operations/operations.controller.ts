@@ -9,6 +9,11 @@ export class OperationsController {
   constructor(
     @Inject(OperationsService) private readonly operations: OperationsService,
   ) {}
+  /** 可追溯的运营统计（O06）：窗口 + 口径来源 + 缺失覆盖一并返回 */
+  @Get("overview")
+  overview(@Query("window") window?: string) {
+    return this.operations.overview({ window });
+  }
   @Get("capabilities") capabilities() {
     return this.operations.capabilities();
   }

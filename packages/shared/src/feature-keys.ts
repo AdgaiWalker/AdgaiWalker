@@ -1,4 +1,6 @@
 /** 功能单元字典（先登记再埋点） */
+export const ASSISTANT_INTERACTION_FEATURE_KEY = 'assistant.interaction';
+
 export const FEATURE_KEYS = {
   'nav.home': '首页主壳渲染',
   'post.list': '文章列表',
@@ -13,6 +15,7 @@ export const FEATURE_KEYS = {
   'execution.review': '检验写入成功',
   'content.feedback': '内容反馈提交成功',
   'assistant.ask': '站内助手问答',
+  [ASSISTANT_INTERACTION_FEATURE_KEY]: '站内助手部件交互',
   'agent.mcp': '判断代理工具调用（外部 agent 经 MCP）',
 } as const;
 

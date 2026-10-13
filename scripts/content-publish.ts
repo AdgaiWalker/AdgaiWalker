@@ -17,15 +17,24 @@
  * 说明：Admin 保存只写本机 content/log；要上 www 必须走本脚本或手动 git push。
  */
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  CONTENT_LOCK_DEFAULT_TTL_MS,
+  isContentLockExpired,
+  parseContentLockPayload,
+  type ContentLockPayload,
+} from '@walker/shared';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const CONTENT_PATHS = [
+export const CONTENT_PATHS = [
   'content/log',
   'content/support-config.json',
   'apps/web/src/generated/content.json',
+  'apps/web/src/generated/graph.json',
 ] as const;
 
 /** --json 模式下回报的输出尾部行数（够定位失败原因，不塞整段构建日志） */
@@ -82,6 +91,116 @@ function run(
   };
 }
 
+export function resolveContentLockPath(repoRoot = root): string {
+  const fromEnv = process.env.WALKER_CONTENT_LOCK_PATH?.trim();
+  if (fromEnv) return path.resolve(fromEnv);
+  // A manual CLI invocation does not inherit apps/api/.env, while WalkerApi does.
+  // Read only this one non-secret path so both entrypoints use the same production lock.
+  try {
+    const lines = fs.readFileSync(path.join(repoRoot, 'apps/api/.env'), 'utf8').split(/\r?\n/);
+    const configured = lines.find((line) => /^\s*WALKER_CONTENT_LOCK_PATH\s*=/.test(line));
+    const value = configured?.slice(configured.indexOf('=') + 1).trim().replace(/^(["'])(.*)\1$/, '$2');
+    if (value) return path.resolve(value);
+  } catch {
+    // No API env file in a fresh local checkout; both sides use the same local default.
+  }
+  return path.join(repoRoot, 'apps/api/data/content-publish.lock');
+}
+
+function processAlive(pid: number): boolean {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err: unknown) {
+    return (err as NodeJS.ErrnoException).code !== 'ESRCH';
+  }
+}
+
+export function tryAcquireScriptLock(lockPath: string): { lockId: string; delegated: boolean } | null {
+  const now = Date.now();
+  const delegatedId = process.env.WALKER_CONTENT_LOCK_ID?.trim();
+  if (delegatedId) {
+    try {
+      const existing = parseContentLockPayload(JSON.parse(fs.readFileSync(lockPath, 'utf8')));
+      if (!existing || existing.lockId !== delegatedId || !existing.owner.startsWith('api:') || !processAlive(existing.pid)) return null;
+      const temp = `${lockPath}.${randomUUID()}.tmp`;
+      fs.writeFileSync(temp, JSON.stringify({
+        ...existing,
+        owner: `script:delegated:${process.pid}`,
+        pid: process.pid,
+        expiresAt: new Date(now + CONTENT_LOCK_DEFAULT_TTL_MS).toISOString(),
+      }, null, 2));
+      fs.renameSync(temp, lockPath);
+      return { lockId: delegatedId, delegated: true };
+    } catch {
+      return null;
+    }
+  }
+  const lockId = randomUUID();
+  const payload: ContentLockPayload = {
+    lockId,
+    owner: `script:content-publish:${process.pid}`,
+    pid: process.pid,
+    acquiredAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + CONTENT_LOCK_DEFAULT_TTL_MS).toISOString(),
+    targetSlug: null,
+    manifestHash: null,
+  };
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  if (fs.existsSync(`${lockPath}.recovery`)) return null;
+  try {
+    fs.writeFileSync(lockPath, JSON.stringify(payload, null, 2), { flag: 'wx' });
+    return { lockId, delegated: false };
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+  }
+
+  let existingPayload: ContentLockPayload | null = null;
+  try {
+    const raw = fs.readFileSync(lockPath, 'utf8');
+    existingPayload = parseContentLockPayload(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+
+  if (!existingPayload || !isContentLockExpired(existingPayload, now) || processAlive(existingPayload.pid)) return null;
+  const recoveryFile = `${lockPath}.recovery`;
+  try {
+    fs.writeFileSync(recoveryFile, JSON.stringify({ pid: process.pid, at: now }), { flag: 'wx' });
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') return null;
+    throw err;
+  }
+  try {
+    const current = parseContentLockPayload(JSON.parse(fs.readFileSync(lockPath, 'utf8')));
+    if (!current || current.lockId !== existingPayload.lockId ||
+        !isContentLockExpired(current, Date.now()) || processAlive(current.pid)) return null;
+    const temp = `${lockPath}.${randomUUID()}.tmp`;
+    try {
+      fs.writeFileSync(temp, JSON.stringify(payload, null, 2));
+      fs.renameSync(temp, lockPath);
+    } finally {
+      fs.rmSync(temp, { force: true });
+    }
+    return { lockId, delegated: false };
+  } finally {
+    fs.rmSync(recoveryFile, { force: true });
+  }
+}
+
+export function releaseScriptLock(lockPath: string, lockId: string): void {
+  try {
+    const raw = fs.readFileSync(lockPath, 'utf8');
+    const existing = parseContentLockPayload(JSON.parse(raw));
+    if (existing?.lockId === lockId) {
+      fs.rmSync(lockPath, { force: true });
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function parseArgs(argv: string[]) {
   let commit = false;
   let push = false;
@@ -109,6 +228,27 @@ function parseArgs(argv: string[]) {
 
 /** 返回退出码（原实现直接 process.exit，改为返回码以便 --json 模式下先输出结构化结果） */
 function main(
+  reporter: Reporter,
+  options: { commit: boolean; push: boolean; json: boolean; message: string },
+): number {
+  const { commit, push, json, message } = options;
+  const lockPath = resolveContentLockPath();
+  let lock: { lockId: string; delegated: boolean } | null = null;
+  if (commit) {
+    lock = tryAcquireScriptLock(lockPath);
+    if (!lock) {
+      reporter.error('工作区正在发布中（锁已被占用），终止操作以防止混入。');
+      return 1;
+    }
+  }
+  try {
+    return runPipeline(reporter, options);
+  } finally {
+    if (lock && !lock.delegated) releaseScriptLock(lockPath, lock.lockId);
+  }
+}
+
+function runPipeline(
   reporter: Reporter,
   options: { commit: boolean; push: boolean; json: boolean; message: string },
 ): number {
@@ -227,4 +367,4 @@ function cli(): void {
   process.exitCode = exitCode;
 }
 
-cli();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) cli();

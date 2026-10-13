@@ -81,7 +81,7 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
   });
 
   it('回车即问小影：切到面板内对话并发送', async () => {
-    mockedStream.mockImplementationOnce(async (_q, _sid, onText) => {
+    mockedStream.mockImplementationOnce(async ({ onText }) => {
       onText('{"answer":"duola 是站主的分身');
       return {
         sessionId: 's-1',
@@ -89,18 +89,23 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
         citations: [{ slug: 'cc-intro' }],
         aiUsedFlag: true,
         elapsedMs: 10,
+        requestId: 'request-1',
+        messageId: 'message-1',
+        attemptId: 'attempt-1',
+        runId: null,
+        conversationId: null,
       };
     });
     renderModal({ query: 'duola 是谁' });
     const user = userEvent.setup();
     const input = screen.getByPlaceholderText(/搜索或问小影/);
     await user.type(input, '{Enter}');
-    expect(mockedStream).toHaveBeenCalledWith(
-      'duola 是谁',
-      null,
-      expect.any(Function),
-      expect.any(AbortSignal),
-    );
+    expect(mockedStream).toHaveBeenCalledWith(expect.objectContaining({
+      body: 'duola 是谁', sessionId: null, onText: expect.any(Function),
+      signal: expect.any(AbortSignal), source: 'assistant-stream',
+      context: expect.objectContaining({ conversationId: null, requestKey: expect.any(String) }),
+      onAccepted: expect.any(Function),
+    }));
     expect(await screen.findByText('duola 是站主的分身')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /返回搜索/ })).toBeInTheDocument();
   });
@@ -112,6 +117,11 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
       citations: [],
       aiUsedFlag: false,
       elapsedMs: 5,
+      requestId: 'request-2',
+      messageId: 'message-2',
+      attemptId: 'attempt-2',
+      runId: null,
+      conversationId: null,
     });
     renderModal({ query: '低成本 AI 社群', note: '无结果' });
     const user = userEvent.setup();
@@ -131,7 +141,7 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
 
   it('关闭面板会 abort 进行中的请求，不 reset 会话', async () => {
     let signal: AbortSignal | undefined;
-    mockedStream.mockImplementationOnce((_q, _sid, onText, s) => {
+    mockedStream.mockImplementationOnce(({ onText, signal: s }) => {
       signal = s;
       onText('{"answer":"半句');
       return new Promise(() => {});
@@ -166,14 +176,19 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
       citations: [],
       aiUsedFlag: true,
       elapsedMs: 4,
+      requestId: 'request-3',
+      messageId: 'message-3',
+      attemptId: 'attempt-3',
+      runId: null,
+      conversationId: null,
     });
     renderModal({ query: 'Dora 是谁', seedAsk: 'Dora 是谁' });
-    expect(mockedStream).toHaveBeenCalledWith(
-      'Dora 是谁',
-      null,
-      expect.any(Function),
-      expect.any(AbortSignal),
-    );
+    expect(mockedStream).toHaveBeenCalledWith(expect.objectContaining({
+      body: 'Dora 是谁', sessionId: null, onText: expect.any(Function),
+      signal: expect.any(AbortSignal), source: 'assistant-stream',
+      context: expect.objectContaining({ conversationId: null, requestKey: expect.any(String) }),
+      onAccepted: expect.any(Function),
+    }));
     expect(await screen.findByText('从宠物来的问题')).toBeInTheDocument();
   });
 });

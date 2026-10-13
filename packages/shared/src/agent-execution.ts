@@ -31,8 +31,11 @@ export function isAgentConfigHash(value: unknown): value is AgentConfigHash {
   return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 }
 
-export function isRunTerminal(state: RunState): boolean {
-  return state === 'SUCCEEDED' || state === 'FAILED' || state === 'CANCELLED';
+export const TERMINAL_RUN_STATES = ['SUCCEEDED', 'FAILED', 'CANCELLED'] as const;
+export type TerminalRunState = (typeof TERMINAL_RUN_STATES)[number];
+
+export function isRunTerminal(state: RunState): state is TerminalRunState {
+  return (TERMINAL_RUN_STATES as readonly string[]).includes(state);
 }
 
 const TRANSITIONS: Record<RunState, readonly RunState[]> = {
@@ -65,7 +68,11 @@ export function originAllowsAction(origin: RunOrigin, action: AgentAction): bool
   return origin === 'admin';
 }
 
-export const RUN_KINDS = ['chat', 'test', 'compare', 'file', 'workstation'] as const;
+/**
+ * 运行种类。`compare` 已随旧直调对比面一起删除——直调禁止换引擎，那个能力
+ * 从设计上就不存在（实现只返回 execution-denied 占位），留着是假承诺。
+ */
+export const RUN_KINDS = ['chat', 'test', 'file', 'workstation'] as const;
 export type RunKind = typeof RUN_KINDS[number];
 
 /** 请求体只表达任务意图；幂等域、origin、actor、授权由控制器/用例确定。 */
@@ -77,7 +84,7 @@ export type ExecutionSubmit = {
   targetId?: string;
 };
 
-export function parseExecutionSubmit(value: unknown): ExecutionSubmit | null {
+export function parseExecutionSubmit(value: unknown, maxInputLength = 20_000): ExecutionSubmit | null {
   if (!isRecord(value)) return null;
   const body = value;
   const keys = Object.keys(body);
@@ -85,7 +92,7 @@ export function parseExecutionSubmit(value: unknown): ExecutionSubmit | null {
   if (typeof body.requestKey !== 'string' || !/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestKey)) return null;
   if (typeof body.kind !== 'string' || !RUN_KINDS.includes(body.kind as RunKind)) return null;
   if (typeof body.agentRevisionId !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(body.agentRevisionId)) return null;
-  if (typeof body.input !== 'string' || !body.input.trim() || body.input.length > 20_000) return null;
+  if (typeof body.input !== 'string' || !body.input.trim() || body.input.length > maxInputLength) return null;
   if (body.targetId !== undefined && (typeof body.targetId !== 'string' || !/^[a-zA-Z0-9_/-]{1,200}$/.test(body.targetId))) return null;
   return {
     requestKey: body.requestKey,

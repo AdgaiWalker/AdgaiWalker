@@ -47,6 +47,30 @@ function serviceWith(
 }
 
 describe('内容台账读模型（阶段口径 = shared 唯一实现）', () => {
+  it('最新发布尝试 UNKNOWN 时仍保留最近一次已确证网页版本', async () => {
+    const slug = 'live-one';
+    const service = new ContentLedgerService(
+      { list: async () => [entry(slug, FULL_PUBLIC)], get: async () => null },
+      { snapshot: async () => ({ available: true, dirtyFiles: [], headCommit: 'deadbeef' }) },
+      {
+        listLatestPerTarget: async () => [{ target: { slug }, stage: 'UNKNOWN' }],
+        listLatestPublishedPerTarget: async () => [{
+          target: { slug }, stage: 'PUBLISHED', verifiedHash: 'verified-hash',
+          verifiedAt: '2026-09-15T00:00:00.000Z',
+        }],
+      } as never,
+      { readActive: async () => ({ items: [{ slug, hash: 'verified-hash' }] }) } as never,
+    );
+
+    const { items } = await service.ledger();
+    expect(items[0]?.publication).toMatchObject({
+      publishedHash: 'verified-hash',
+      verifiedAt: '2026-09-15T00:00:00.000Z',
+      indexedHash: 'verified-hash',
+      latestAttemptStage: 'UNKNOWN',
+    });
+  });
+
   it('四阶段边界：draft / review / ready / live', async () => {
     const service = serviceWith(
       [
@@ -153,6 +177,8 @@ describe('内容台账（真实 kernel 接线）', () => {
     for (const item of items) {
       expect(['draft', 'review', 'ready', 'live']).toContain(item.stage);
     }
+    const publicItem = items.find((item) => item.visibility === 'public');
+    expect(publicItem?.publication.currentPublicHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it('路由注册顺序：ContentLedgerController 必须排在 ContentAdminController 之前', () => {

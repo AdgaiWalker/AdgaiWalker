@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/http';
 import { WEB_ROUTES } from '../shared/routes';
+import { dualEntry } from '../shared/dual-entry';
 import { ToolsPage } from './ToolsPage';
 
 vi.mock('../api/public-api', async () => {
@@ -62,14 +63,16 @@ describe('卡口对话页', () => {
     vi.unstubAllGlobals();
   });
 
-  it('空态给出引导与示例，示例点击即发送', async () => {
+  it('示例只填入草稿，明确发送后才提交', async () => {
     intake.mockResolvedValue(OK_RESULT);
     const user = userEvent.setup();
     renderChat();
 
-    expect(screen.getByRole('heading', { name: '你卡在哪？' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: dualEntry.ask.title })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: EXAMPLE }));
-
+    expect(screen.getByLabelText('描述你的卡点')).toHaveValue(EXAMPLE);
+    expect(intake).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '发送' }));
     await waitFor(() => {
       expect(intake).toHaveBeenCalledWith(EXAMPLE);
     });

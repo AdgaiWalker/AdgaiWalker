@@ -1,3 +1,14 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# dsh 生态统一锁在 0.1.5-rc.3 主线（2026-09-23 升级）。
+#
+# 【实测事实，勿凭文档推断】pnpm 9.15.0 对配置位置的读取与文档不符：
+#   - pnpm-workspace.yaml 的 overrides / patchedDependencies  → 静默忽略
+#   - package.json 的 pnpm.overrides / pnpm.patchedDependencies → 警告后忽略
+# 验证方法：写入荒谬版本号（如 99.99.99-probe），看 pnpm install 是否报错。
+# 因此本仓库不使用 overrides/patchedDependencies；版本一致性靠：
+#   1) apps/api/package.json 直接钉死 dsh 包版本
+#   2) rc.3 上游已自带 assertNever / requestImageDimensions，无需补丁
+#   3) pnpm probe:runtime 做真实启动验证（改版本号必须重跑）

@@ -73,6 +73,18 @@ export function PostsPage() {
       </header>
 
       <Link
+        to={WEB_ROUTES.tutorials}
+        className="browse-lab-entry surface-l2"
+        aria-label="进入教程"
+      >
+        <span className="browse-lab-copy">
+          <strong className="browse-lab-title">教程</strong>
+          <span className="browse-lab-blurb">照着能做的步骤与跟学内容</span>
+        </span>
+        <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
+      </Link>
+
+      <Link
         to={WEB_ROUTES.lab}
         className="browse-lab-entry surface-l2"
         aria-label={`进入札记，共 ${labCount} 篇`}

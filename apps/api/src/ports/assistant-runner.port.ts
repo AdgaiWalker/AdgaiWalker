@@ -25,3 +25,4 @@ export interface AssistantRunnerPort {
 }
 
 export const ASSISTANT_RUNNER = Symbol('ASSISTANT_RUNNER');
+export const RULE_ASSISTANT = Symbol('RULE_ASSISTANT');

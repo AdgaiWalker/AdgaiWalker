@@ -8,11 +8,13 @@ import {
   FEATURE_FAIL_CODES,
   RATE_LIMITS,
   isValidAssistantBody,
+  redactSensitiveText,
   type AssistantRunResult,
   type DegradeReason,
 } from '@walker/shared';
 import { newId } from '../common/ids';
 import { rateLimited, validationError } from '../common/http-error';
+import { hashAnonId } from '../auth/anon-cookie';
 import { APP_CONFIG, type AppConfigPort } from '../config/config.port';
 import {
   ASSISTANT_REPOSITORY,
@@ -41,6 +43,8 @@ export interface AssistantAskServiceInput {
   ipKey: string;
   sessionId?: string | null;
   isAuthenticated?: boolean;
+  /** 持久 requestKey：重复发送返回原 run，不重新调用模型 */
+  requestKey?: string | null;
   /** 端到端取消（流式）：浏览器断流时由控制器置 abort */
   signal?: AbortSignal;
 }
@@ -56,6 +60,7 @@ export interface AssistantAskServiceResult {
 @Injectable()
 export class AssistantService {
   private readonly dailyLimit: number;
+  private readonly inFlightRequests = new Map<string, Promise<AssistantAskServiceResult>>();
   /**
    * 预算存储失效时的进程内兜底计数（fail-open 是既定决策，但兜底保证
    * 故障期间仍有软性成本上限；进程重启即重置，如实记录失效事件）
@@ -80,9 +85,22 @@ export class AssistantService {
   async ask(
     input: AssistantAskServiceInput,
   ): Promise<AssistantAskServiceResult> {
+    return this.oncePerRequest(input, () => this.runAsk(input));
+  }
+
+  private async runAsk(input: AssistantAskServiceInput): Promise<AssistantAskServiceResult> {
     const gate = await this.preflight(input);
-    const result = await this.dispatch(gate.askInput, gate.degradeReason);
-    await this.settle(input, gate.actorType, result);
+    if (gate.duplicate) {
+      return {
+        sessionId: gate.duplicate.sessionId,
+        answer: gate.duplicate.answer,
+        citations: gate.duplicate.citations.map((slug) => ({ slug })),
+        aiUsedFlag: gate.duplicate.aiUsedFlag,
+        elapsedMs: 0,
+      };
+    }
+    const result = await this.dispatch(gate.askInput!, gate.degradeReason);
+    await this.settle(input, gate.actorType, result, gate.redactedText!);
     return this.toResult(result);
   }
 
@@ -94,30 +112,65 @@ export class AssistantService {
     input: AssistantAskServiceInput,
     onText: (delta: string) => void,
   ): Promise<AssistantAskServiceResult> {
+    return this.oncePerRequest(input, () => this.runAskStream(input, onText), onText);
+  }
+
+  private oncePerRequest(
+    input: AssistantAskServiceInput,
+    run: () => Promise<AssistantAskServiceResult>,
+    replayText?: (answer: string) => void,
+  ): Promise<AssistantAskServiceResult> {
+    if (!input.requestKey) return run();
+    const key = `${hashAnonId(input.anonId)}\n${input.requestKey}`;
+    const existing = this.inFlightRequests.get(key);
+    if (existing) return existing.then((result) => {
+      replayText?.(result.answer);
+      return result;
+    });
+    const pending = Promise.resolve().then(run).finally(() => { this.inFlightRequests.delete(key); });
+    this.inFlightRequests.set(key, pending);
+    return pending;
+  }
+
+  private async runAskStream(
+    input: AssistantAskServiceInput,
+    onText: (delta: string) => void,
+  ): Promise<AssistantAskServiceResult> {
     const gate = await this.preflight(input);
+    if (gate.duplicate) {
+      onText(gate.duplicate.answer);
+      return {
+        sessionId: gate.duplicate.sessionId,
+        answer: gate.duplicate.answer,
+        citations: gate.duplicate.citations.map((slug) => ({ slug })),
+        aiUsedFlag: gate.duplicate.aiUsedFlag,
+        elapsedMs: 0,
+      };
+    }
     let result: AssistantRunResult;
     if (!gate.degradeReason && this.runner.askStream) {
       try {
-        result = await this.runner.askStream(gate.askInput, onText);
+        result = await this.runner.askStream(gate.askInput!, onText);
       } catch {
         // 流式路径异常：与适配器内部同口径标注，不掩盖原因
         result = {
-          ...(await this.fallback.ask(gate.askInput)),
+          ...(await this.fallback.ask(gate.askInput!)),
           degradeReason: 'runtime-error',
         };
         onText(result.answer);
       }
     } else {
-      result = await this.dispatch(gate.askInput, gate.degradeReason);
+      result = await this.dispatch(gate.askInput!, gate.degradeReason);
       onText(result.answer);
     }
-    await this.settle(input, gate.actorType, result);
+    await this.settle(input, gate.actorType, result, gate.redactedText!);
     return this.toResult(result);
   }
 
-  /** 网关前置：事件、限流、校验、预算判定（ask/askStream 共用） */
+  /** 网关前置：事件、限流、校验、幂等、预算判定（ask/askStream 共用） */
   private async preflight(input: AssistantAskServiceInput) {
     const actorType: 'guest' | 'user' = input.isAuthenticated ? 'user' : 'guest';
+    const anonHash = hashAnonId(input.anonId);
     void this.safeEvent({
       featureKey: 'assistant.ask',
       event: 'attempt',
@@ -142,19 +195,29 @@ export class AssistantService {
       });
       throw rateLimited();
     }
+    // 第二把限流：每匿名身份（cookie hash），共享 IP 的访客互不挤占，伪造新身份也受各自上限约束
+    if (!this.rateLimit.consume(`assistant:anon:${anonHash}`, RATE_LIMITS.assistantAnonPerWindow, RATE_LIMITS.windowSeconds)) {
+      void this.safeEvent({
+        featureKey: 'assistant.ask',
+        event: 'fail',
+        actorType,
+        failCode: FEATURE_FAIL_CODES.rateLimited,
+      });
+      throw rateLimited();
+    }
 
     if (!isValidAssistantBody(input.body)) {
       throw validationError('assistant-body-too-short');
     }
 
-    // 会话归属校验：只有「已登记 + 属于当前访客 + harness 会话」才允许续轮；
+    // 会话归属校验：只有「已登记 + 属于当前访客（hash 一致）+ harness 会话」才允许续轮；
     // 未知/他人/规则会话/存储不可用一律降级为新会话（fail-closed，不阻断提问）。
     // 拿到他人 sessionId 的访客无法续接或污染对方上下文。
     let sessionId: string | null = null;
     if (input.sessionId) {
       try {
         const owned = await this.repo.findSession(input.sessionId);
-        if (owned && owned.anonId === input.anonId && owned.runner === 'harness') {
+        if (owned && owned.anonId === anonHash && owned.runner === 'harness') {
           sessionId = input.sessionId;
         }
       } catch {
@@ -162,9 +225,23 @@ export class AssistantService {
       }
     }
 
+    // 持久 requestKey 幂等：重复发送返回原 run，不重新调用模型、不再计预算
+    if (input.requestKey !== undefined && input.requestKey !== null) {
+      if (!/^[a-zA-Z0-9_-]{8,128}$/.test(input.requestKey)) throw validationError('request-key-invalid');
+      try {
+        const prior = await this.repo.findRunByRequest(anonHash, input.requestKey);
+        if (prior) return { actorType, anonHash, duplicate: prior, askInput: null, degradeReason: null };
+      } catch {
+        /* 存储不可用不阻断提问，按新请求处理 */
+      }
+    }
+
+    // V09：进入 SDK 前做一次必要脱敏，落库（settle）复用同一份结果，
+    // 避免 native session 与业务存储各留一份未处理原文。
+    const redacted = redactSensitiveText(input.body.trim());
     const askInput = {
       sessionId,
-      text: input.body.trim(),
+      text: redacted.text,
       visitorKey: input.anonId,
       ...(input.signal ? { signal: input.signal } : {}),
     };
@@ -204,7 +281,7 @@ export class AssistantService {
         degradeReason = 'budget-exceeded';
       }
     }
-    return { actorType, askInput, degradeReason };
+    return { actorType, anonHash, duplicate: null, askInput, degradeReason, redactedText: redacted.text };
   }
 
   /** 网关级降级（AI 关 / 预算触顶）直接走规则版并附原因；其余交给 runner 自行降级 */
@@ -224,24 +301,29 @@ export class AssistantService {
     input: AssistantAskServiceInput,
     actorType: 'guest' | 'user',
     result: AssistantRunResult,
+    redactedText: string,
   ) {
     try {
+      const anonHash = hashAnonId(input.anonId);
       await this.repo.upsertSession({
         id: newId(),
-        anonId: input.anonId,
+        anonId: anonHash,
         sessionId: result.sessionId,
         runner: result.aiUsedFlag ? 'harness' : 'rule',
       });
       await this.repo.saveRun({
         id: newId(),
         sessionId: result.sessionId,
-        question: input.body.trim(),
+        // V09：落库与发给模型的同一份脱敏文本，不另存原文
+        question: redactedText,
         answer: result.answer,
         citations: JSON.stringify(result.citations.map((c) => c.slug)),
         aiUsedFlag: result.aiUsedFlag,
         elapsedMs: result.elapsedMs,
         traceId: null,
         source: input.source ?? 'assistant-panel',
+        anonIdHash: anonHash,
+        requestKey: input.requestKey ?? null,
         // 观测 P1：token / 首字 / 排队 / 降级原因（规则路径为 0 与 null）
         tokensIn: result.usage?.inputTokens ?? 0,
         tokensOut: result.usage?.outputTokens ?? 0,

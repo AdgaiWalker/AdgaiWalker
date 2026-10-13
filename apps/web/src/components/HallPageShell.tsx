@@ -13,7 +13,7 @@ const CONTENT_LINKS = [
   { label: '教程', href: WEB_ROUTES.tutorials },
   { label: '探索', href: WEB_ROUTES.explore },
   { label: '札记', href: WEB_ROUTES.lab },
-  { label: '逛', href: dualEntry.browse.path },
+  { label: dualEntry.browse.label, href: dualEntry.browse.path },
 ] as const;
 
 type Props = {
