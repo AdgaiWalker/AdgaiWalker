@@ -52,6 +52,9 @@ pnpm typecheck
 pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent
 pnpm accept
 pnpm exec tsx scripts/probe-production.ts
+
+# CI（GitHub Actions，PR 与 main push 触发，单一 job 串行门禁）
+# 全链本地复现：pnpm ci（db:generate → typecheck → 五端测试 → 内容/文档/架构门禁 → build:web → verify:geo）
 ```
 
 ### 数据库迁移
