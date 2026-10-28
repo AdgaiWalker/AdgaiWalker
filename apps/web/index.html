@@ -1,6 +1,33 @@
 <!doctype html>
 <html lang="zh-CN">
   <head>
+    <script>
+      (async () => {
+        try {
+          const AUTHOR_HASH = 'efaef3054486537a3c7af69c8c0e8429b9647d94353cb69cd23a0b7aec08936d';
+          const url = new URL(location.href), me = url.searchParams.get('me');
+          if (me !== null) {
+            try {
+              if (me === 'off') localStorage.removeItem('walker_author');
+              else {
+                const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(me));
+                const hash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+                if (hash === AUTHOR_HASH) localStorage.setItem('walker_author', '1');
+              }
+            } finally {
+              url.searchParams.delete('me');
+              history.replaceState(history.state, '', url);
+            }
+          }
+          if (localStorage.getItem('walker_author') === '1' || /^(localhost|127\.0\.0\.1)$|\.(workers\.dev|vercel\.app)$/.test(location.hostname)) return;
+          const beacon = document.createElement('script');
+          beacon.defer = true;
+          beacon.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+          beacon.setAttribute('data-cf-beacon', '{"token":"72a25ef90b814f56b35ff144da7d170f"}');
+          document.head.appendChild(beacon);
+        } catch {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content" />
     <meta
