@@ -51,7 +51,7 @@ export const communities: Community[] = [
     name: '点子共促',
     desc: '一起学 AI、聊点子、找合作。学以致用，把想法变成现实。',
     badge: '我的群',
-    qrCode: '/images/qr/dianzi-gongcu.jpg',
+    qrCode: '/images/qr/dianzi-gongcu.jpg?v=20261029',
     featured: true,
   },
   {
