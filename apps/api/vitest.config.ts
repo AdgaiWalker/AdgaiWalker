@@ -35,6 +35,9 @@ process.env.WALKER_DB_PROVIDER = 'sqlite';
 if (!process.env.WALKER_MEMORY_HEADROOM_MB) {
   process.env.WALKER_MEMORY_HEADROOM_MB = '0';
 }
+if (!process.env.WALKER_JEV_FAST_PATH_ENABLED) {
+  process.env.WALKER_JEV_FAST_PATH_ENABLED = 'false';
+}
 
 export default defineConfig({
   test: {

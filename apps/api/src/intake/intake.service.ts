@@ -1,6 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   assertClueBody,
+  consumesGuestQuota,
   FEATURE_FAIL_CODES,
   isClueSource,
   RATE_LIMITS,
@@ -28,6 +29,7 @@ import {
 } from '../ports/nextstep.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { RATE_LIMIT, type RateLimitPort } from '../ports/rate-limit.port';
+import { JevFastPathService, recordQuotaExempt } from '../assistant/jev-fast-path.service';
 
 export interface IntakeInput {
   body: string;
@@ -46,6 +48,7 @@ export class IntakeService {
     @Inject(RATE_LIMIT) private readonly rateLimit: RateLimitPort,
     @Inject(GUEST_QUOTA) private readonly guestQuota: GuestQuotaPort,
     @Inject(FEATURE_EVENT) private readonly events: FeatureEventPort,
+    @Optional() @Inject(JevFastPathService) private readonly jevFastPath?: JevFastPathService,
   ) {}
 
   async intake(input: IntakeInput) {
@@ -88,17 +91,29 @@ export class IntakeService {
       throw rateLimited();
     }
 
-    if (!input.isAuthenticated) {
-      const exhausted = await this.guestQuota.isExhausted(input.anonId);
-      if (exhausted) {
+    // JEV Fast-Path 轻量意图前置分流与额度豁免 (Quota Exemption)
+    // 礼貌问候、站点/站主/模型说明、提示词防御直接极速直出，不扣减 15 次额度，不污染线索池
+    const fastPathService = this.jevFastPath ?? new JevFastPathService();
+    if (fastPathService.isEnabled()) {
+      const fastPath = await fastPathService.check(input.body);
+      if (fastPath && fastPath.fastPathReason !== 'action_stuck') {
+        recordQuotaExempt();
         await this.events.record({
           id: newId(),
           featureKey: 'match.intake',
-          event: 'fail',
+          event: 'success',
           actorType,
-          failCode: FEATURE_FAIL_CODES.guestQuotaExceeded,
+          props: { fastPathReason: fastPath.fastPathReason, quotaExempt: true },
         });
-        throw guestQuotaExceeded();
+        return {
+          clueId: `exempt-${newId()}`,
+          nextStep: fastPath.result.answer,
+          bucketId: 'general_start',
+          aiUsedFlag: fastPath.result.aiUsedFlag,
+          suggestedSlug: fastPath.result.citations?.[0]?.slug ?? null,
+          suggestedTitle: null,
+          poolStatus: 'candidate',
+        };
       }
     }
 
@@ -115,6 +130,23 @@ export class IntakeService {
       throw validationError('clue-body-too-short');
     }
 
+    // 少于 4 字视为轻量问候/试探，允许发送但不扣减访客 30 天完整体验配额
+    const shouldConsumeQuota = !input.isAuthenticated && consumesGuestQuota(input.body);
+
+    if (shouldConsumeQuota) {
+      const exhausted = await this.guestQuota.isExhausted(input.anonId);
+      if (exhausted) {
+        await this.events.record({
+          id: newId(),
+          featureKey: 'match.intake',
+          event: 'fail',
+          actorType,
+          failCode: FEATURE_FAIL_CODES.guestQuotaExceeded,
+        });
+        throw guestQuotaExceeded();
+      }
+    }
+
     const sourceRaw = input.source ?? 'tools-visitor';
     if (!isClueSource(sourceRaw)) {
       throw validationError('invalid-source');
@@ -124,7 +156,7 @@ export class IntakeService {
     // 预留/释放语义：先原子扣配额，配额拒绝时不产生任何线索；
     // AI 调用留在预留之后、建线索之前（不进事务）；建线索失败补偿释放，
     // 不留「扣了次数没线索」的反向孤儿。模型消耗无法回滚，属已知边界。
-    if (!input.isAuthenticated) {
+    if (shouldConsumeQuota) {
       const reserved = await this.guestQuota.consume(input.anonId);
       if (!reserved) {
         await this.events.record({
@@ -149,7 +181,7 @@ export class IntakeService {
         anonId: input.isAuthenticated ? null : input.anonId,
       });
     } catch (error) {
-      if (!input.isAuthenticated) {
+      if (shouldConsumeQuota) {
         await this.guestQuota.release(input.anonId).catch(() => {});
       }
       throw error;

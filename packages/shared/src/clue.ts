@@ -9,7 +9,16 @@ export type ClueSource =
 /** 池状态 */
 export type CluePoolStatus = 'candidate' | 'in-pool' | 'discarded';
 
-export const CLUE_BODY_MIN_LENGTH = 4;
+/** 线索正文发送门槛：trim 后 ≥ 1（非空即可发送，不再硬性卡 4 字） */
+export const CLUE_BODY_MIN_LENGTH = 1;
+
+/** 完整体验/消耗配额的字数阈值（少于 4 字为轻量问候或探寻，不扣减体验配额） */
+export const CLUE_QUOTA_MIN_LENGTH = 4;
+
+/** 判断是否达到扣减访客体验配额的门槛（≥4 字） */
+export function consumesGuestQuota(body: string): boolean {
+  return body.trim().length >= CLUE_QUOTA_MIN_LENGTH;
+}
 
 export const CLUE_SOURCES: readonly ClueSource[] = [
   'manual-self',

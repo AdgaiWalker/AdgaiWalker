@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Inject, Param, Put, Query } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Put, Query } from "@nestjs/common";
 import { parseOpsPagination } from "@walker/shared";
 import {
   getAdminUsername,
   updateAdminPassword,
   verifyAdminPassword,
 } from "../auth/admin-token.middleware";
+import { getGuestQuota, updateGuestQuota } from "../adapters/prisma-guest-quota.adapter";
+import { getJevRoiStats } from "../assistant/jev-fast-path.service";
 import { ApiError, validationError } from "../common/http-error";
 import { OperationsService } from "./operations.service";
 
@@ -38,6 +40,30 @@ export class OperationsController {
     }
     updateAdminPassword(newPassword);
     return { ok: true, username: getAdminUsername() };
+  }
+
+  @Get("guest-quota")
+  async getGuestQuota() {
+    const quota = getGuestQuota();
+    const stats = await this.operations.guestQuotaStats();
+    const jevRoi = getJevRoiStats();
+    return { quota, ...stats, jevRoi };
+  }
+
+  @Put("guest-quota")
+  updateGuestQuota(@Body() body: { quota?: unknown }) {
+    const quota = Number(body?.quota);
+    if (!Number.isInteger(quota) || quota < 1 || quota > 100000) {
+      throw validationError("额度必须是 1 到 100000 之间的整数");
+    }
+    updateGuestQuota(quota);
+    return { ok: true, quota };
+  }
+
+  @Post("guest-quota/reset")
+  async resetGuestQuotas() {
+    await this.operations.resetAllGuestQuotas();
+    return { ok: true, quota: getGuestQuota() };
   }
   @Get("agents") agents() {
     return this.operations.agents();

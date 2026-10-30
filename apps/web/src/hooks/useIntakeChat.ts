@@ -5,9 +5,20 @@
  * 提交走 useIntakeSubmit → `/intake`，请求与响应契约不变；
  * 最近一条结果写入会话存储，供 /tools/result 刷新还原与深链使用。
  */
-import { CLUE_BODY_MIN_LENGTH, isValidClueBody } from '@walker/shared';
-import { useCallback, useMemo, useState } from 'react';
-import type { IntakeResult } from '../api/public-api';
+import {
+  CLUE_BODY_MIN_LENGTH,
+  CLUE_QUOTA_MIN_LENGTH,
+  GUEST_INTAKE_QUOTA,
+  RATE_LIMITS,
+  RATE_WINDOW_MINUTES,
+  isValidClueBody,
+} from '@walker/shared';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  publicApi,
+  type IntakePublicConfig,
+  type IntakeResult,
+} from '../api/public-api';
 import { writeIntakeResult } from '../lib/intake-result-store';
 import { useIntakeSubmit } from './useIntakeSubmit';
 
@@ -23,6 +34,29 @@ export function useIntakeChat() {
   const { loading, submit } = useIntakeSubmit();
   const [draft, setDraft] = useState('');
   const [turns, setTurns] = useState<IntakeChatTurn[]>([]);
+  const [config, setConfig] = useState<IntakePublicConfig>({
+    guestQuota: GUEST_INTAKE_QUOTA,
+    quotaMinLength: CLUE_QUOTA_MIN_LENGTH,
+    rateLimit: RATE_LIMITS.guestPerWindow,
+    rateWindowMinutes: RATE_WINDOW_MINUTES,
+  });
+
+  useEffect(() => {
+    let active = true;
+    publicApi
+      .intakeConfig()
+      .then((cfg) => {
+        if (active && cfg && typeof cfg.guestQuota === 'number') {
+          setConfig(cfg);
+        }
+      })
+      .catch(() => {
+        // 优雅降级，保留默认配置
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const draftOk = useMemo(() => isValidClueBody(draft), [draft]);
   const remaining = Math.max(0, CLUE_BODY_MIN_LENGTH - draft.trim().length);
@@ -41,7 +75,7 @@ export function useIntakeChat() {
         { id, body: raw, answer: null, error: null },
       ]);
 
-      const { result, error } = await submit(raw);
+      const { result, error } = await submit(raw, config.guestQuota);
       setTurns((prev) =>
         prev.map((turn) =>
           turn.id === id ? { ...turn, answer: result, error } : turn,
@@ -55,7 +89,7 @@ export function useIntakeChat() {
       // 失败：内容还给输入框，方便直接重试
       setDraft((current) => (current ? current : raw));
     },
-    [draft, loading, submit],
+    [config.guestQuota, draft, loading, submit],
   );
 
   const reset = useCallback(() => {
@@ -68,6 +102,8 @@ export function useIntakeChat() {
     draftOk,
     remaining,
     minLength: CLUE_BODY_MIN_LENGTH,
+    quotaMinLength: config.quotaMinLength,
+    config,
     loading,
     turns,
     onDraftChange: setDraft,

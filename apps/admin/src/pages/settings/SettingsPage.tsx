@@ -5,6 +5,7 @@ import { useCapabilities } from "../../app/AdminShell";
 import { ErrorState, LoadingState, PageHeading } from "../../components/States";
 import { capabilityLabels, timeLabel } from "../../shared/labels";
 import { ModelConfigPanel } from "./ModelConfigPanel";
+import { GuestQuotaPanel } from "./GuestQuotaPanel";
 
 function AdminPasswordSection() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -134,8 +135,9 @@ export function SettingsPage() {
   const query = useCapabilities();
   return (
     <>
-      <PageHeading title="设置" description="管理站主登录密码、配置模型连接，查看当前可用能力。" />
+      <PageHeading title="设置" description="管理站主登录密码、访客额度、配置模型连接，查看当前可用能力。" />
       <AdminPasswordSection />
+      <GuestQuotaPanel />
       <section className="panel">
         <h2>模型连接</h2>
         <p className="muted">

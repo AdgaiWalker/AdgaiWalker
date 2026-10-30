@@ -1,9 +1,41 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
+import { GUEST_INTAKE_QUOTA } from '@walker/shared';
 import type { GuestQuotaPort } from '../ports/guest-quota.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { storageUnavailable } from '../common/http-error';
 
-const MAX_GUEST = 1;
+export function getGuestQuota(): number {
+  const configured = Number(process.env.WALKER_GUEST_INTAKE_QUOTA);
+  return Number.isFinite(configured) && configured > 0 ? configured : GUEST_INTAKE_QUOTA;
+}
+
+export function updateGuestQuota(
+  newQuota: number,
+  apiRoot = path.resolve(__dirname, '../..'),
+): void {
+  process.env.WALKER_GUEST_INTAKE_QUOTA = String(newQuota);
+  const envFile = path.join(apiRoot, '.env');
+  if (!fs.existsSync(envFile)) return;
+  const content = fs.readFileSync(envFile, 'utf8');
+  const lines = content.split(/\r?\n/);
+  let found = false;
+  const nextLines = lines.map((line) => {
+    if (/^\s*WALKER_GUEST_INTAKE_QUOTA\s*=/.test(line)) {
+      found = true;
+      return `WALKER_GUEST_INTAKE_QUOTA=${newQuota}`;
+    }
+    return line;
+  });
+  if (!found) {
+    nextLines.push(`WALKER_GUEST_INTAKE_QUOTA=${newQuota}`);
+  }
+  const tmpFile = `${envFile}.${process.pid}.tmp`;
+  fs.writeFileSync(tmpFile, nextLines.join('\n'), 'utf8');
+  fs.renameSync(tmpFile, envFile);
+}
+
 const TTL_MS = 30 * 24 * 3600 * 1000;
 
 @Injectable()
@@ -20,7 +52,7 @@ export class PrismaGuestQuotaAdapter implements GuestQuotaPort {
     const row = await this.db().guestQuota.findUnique({ where: { anonId } });
     if (!row) return false;
     if (row.expiresAt.getTime() < Date.now()) return false;
-    return row.usedCount >= MAX_GUEST;
+    return row.usedCount >= getGuestQuota();
   }
 
   /**
@@ -31,10 +63,11 @@ export class PrismaGuestQuotaAdapter implements GuestQuotaPort {
     const db = this.db();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + TTL_MS);
+    const maxGuest = getGuestQuota();
 
     // 1) 未过期且未触顶：+1
     const bumped = await db.guestQuota.updateMany({
-      where: { anonId, expiresAt: { gte: now }, usedCount: { lt: MAX_GUEST } },
+      where: { anonId, expiresAt: { gte: now }, usedCount: { lt: maxGuest } },
       data: { usedCount: { increment: 1 } },
     });
     if (bumped.count === 1) return true;
@@ -52,7 +85,7 @@ export class PrismaGuestQuotaAdapter implements GuestQuotaPort {
       return true;
     } catch {
       const retried = await db.guestQuota.updateMany({
-        where: { anonId, expiresAt: { gte: now }, usedCount: { lt: MAX_GUEST } },
+        where: { anonId, expiresAt: { gte: now }, usedCount: { lt: maxGuest } },
         data: { usedCount: { increment: 1 } },
       });
       return retried.count === 1;

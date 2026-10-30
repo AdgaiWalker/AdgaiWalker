@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 import {
   assertPrimaryHasClue,
+  consumesGuestQuota,
   isCountableLoop,
   isValidClueBody,
   ruleNextStep,
@@ -74,8 +75,11 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
     executions = new ExecutionService(prismaPort, execRepo, seedRepo, events);
   });
 
-  it('shared 规则：短正文非法；nextStep 非空', () => {
-    expect(isValidClueBody('ab')).toBe(false);
+  it('shared 规则：短正文非法；nextStep 非空；配额消费判定符合长度门禁', () => {
+    expect(isValidClueBody('')).toBe(false);
+    expect(isValidClueBody('a')).toBe(true);
+    expect(consumesGuestQuota('ab')).toBe(false);
+    expect(consumesGuestQuota('想学AI')).toBe(true);
     expect(ruleNextStep('想学AI').nextStep.length).toBeGreaterThanOrEqual(4);
   });
 
@@ -128,53 +132,67 @@ describe.runIf(Boolean(url))('推进核集成（真实 PG）', () => {
     expect(ok).toBe(true);
   });
 
-  it('游客第二次完整 intake → guest-quota-exceeded', async () => {
-    const anonId = `anon-q-${newId()}`;
-    const ipKey = `ip-q-${newId()}`;
-    await intake.intake({
-      body: '第一次完整问答场景描述足够长',
-      anonId,
-      ipKey,
-    });
-    await expect(
-      intake.intake({
-        body: '第二次应被配额拦住的场景描述',
+  it('游客在配额耗尽后完整 intake → guest-quota-exceeded', async () => {
+    const prevQuota = process.env.WALKER_GUEST_INTAKE_QUOTA;
+    process.env.WALKER_GUEST_INTAKE_QUOTA = '1';
+    try {
+      const anonId = `anon-q-${newId()}`;
+      const ipKey = `ip-q-${newId()}`;
+      await intake.intake({
+        body: '第一次完整问答场景描述足够长',
         anonId,
-        ipKey: `ip-q2-${newId()}`,
-      }),
-    ).rejects.toSatisfy(
-      (e: { getResponse?: () => { code?: string } }) =>
-        e.getResponse?.()?.code === 'guest-quota-exceeded',
-    );
+        ipKey,
+      });
+      await expect(
+        intake.intake({
+          body: '第二次应被配额拦住的场景描述',
+          anonId,
+          ipKey: `ip-q2-${newId()}`,
+        }),
+      ).rejects.toSatisfy(
+        (e: { getResponse?: () => { code?: string } }) =>
+          e.getResponse?.()?.code === 'guest-quota-exceeded',
+      );
+    } finally {
+      if (prevQuota === undefined) delete process.env.WALKER_GUEST_INTAKE_QUOTA;
+      else process.env.WALKER_GUEST_INTAKE_QUOTA = prevQuota;
+    }
   });
 
   it('并发同游客 intake：配额恰好消费一次，只落一条线索，拒绝不留孤儿', async () => {
-    const anonId = `anon-race-${newId()}`;
-    const results = await Promise.allSettled([
-      intake.intake({ body: '并发场景第一问描述足够长', anonId, ipKey: `ip-r1-${newId()}` }),
-      intake.intake({ body: '并发场景第二问描述足够长', anonId, ipKey: `ip-r2-${newId()}` }),
-    ]);
-    const fulfilled = results.filter((r) => r.status === 'fulfilled');
-    const quotaRejected = results.filter(
-      (r) =>
-        r.status === 'rejected' &&
-        (r.reason as { getResponse?: () => { code?: string } })?.getResponse?.()?.code === 'guest-quota-exceeded',
-    );
-    expect(fulfilled).toHaveLength(1);
-    expect(quotaRejected).toHaveLength(1);
+    const prevQuota = process.env.WALKER_GUEST_INTAKE_QUOTA;
+    process.env.WALKER_GUEST_INTAKE_QUOTA = '1';
+    try {
+      const anonId = `anon-race-${newId()}`;
+      const results = await Promise.allSettled([
+        intake.intake({ body: '并发场景第一问描述足够长', anonId, ipKey: `ip-r1-${newId()}` }),
+        intake.intake({ body: '并发场景第二问描述足够长', anonId, ipKey: `ip-r2-${newId()}` }),
+      ]);
+      const fulfilled = results.filter((r) => r.status === 'fulfilled');
+      const quotaRejected = results.filter(
+        (r) =>
+          r.status === 'rejected' &&
+          (r.reason as { getResponse?: () => { code?: string } })?.getResponse?.()?.code === 'guest-quota-exceeded',
+      );
+      expect(fulfilled).toHaveLength(1);
+      expect(quotaRejected).toHaveLength(1);
 
-    const quotaRow = await client.guestQuota.findUnique({ where: { anonId } });
-    expect(quotaRow?.usedCount).toBe(1);
-    // 拒绝的那次不留任何线索；成功的那次恰好一条
-    expect(await client.clue.count({ where: { anonId } })).toBe(1);
+      const quotaRow = await client.guestQuota.findUnique({ where: { anonId } });
+      expect(quotaRow?.usedCount).toBe(1);
+      // 拒绝的那次不留任何线索；成功的那次恰好一条
+      expect(await client.clue.count({ where: { anonId } })).toBe(1);
 
-    await expect(
-      intake.intake({ body: '第三次同样应被配额拦住', anonId, ipKey: `ip-r3-${newId()}` }),
-    ).rejects.toSatisfy(
-      (e: { getResponse?: () => { code?: string } }) =>
-        e.getResponse?.()?.code === 'guest-quota-exceeded',
-    );
-    expect(await client.clue.count({ where: { anonId } })).toBe(1);
+      await expect(
+        intake.intake({ body: '第三次同样应被配额拦住', anonId, ipKey: `ip-r3-${newId()}` }),
+      ).rejects.toSatisfy(
+        (e: { getResponse?: () => { code?: string } }) =>
+          e.getResponse?.()?.code === 'guest-quota-exceeded',
+      );
+      expect(await client.clue.count({ where: { anonId } })).toBe(1);
+    } finally {
+      if (prevQuota === undefined) delete process.env.WALKER_GUEST_INTAKE_QUOTA;
+      else process.env.WALKER_GUEST_INTAKE_QUOTA = prevQuota;
+    }
   });
 
   it('无存储时写路径 storage-unavailable', async () => {

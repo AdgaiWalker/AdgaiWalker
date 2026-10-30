@@ -169,44 +169,47 @@ beforeAll(async () => {
 }, 30_000);
 
 afterAll(async () => {
-  await app?.close();
-  if (db) {
-    const conversations = await db.conversation.findMany({
-      where: { placementKey: 'post-detail', scopeSlug: articleSlug }, select: { id: true },
-    });
-    const conversationIds = [...new Set([conversationId, ...conversations.map((row) => row.id)].filter((id): id is string => Boolean(id)))];
-    const runs = await db.executionRun.findMany({
-      where: { OR: [
-        { agentRevisionId: { in: [firstRevisionId, secondRevisionId] } },
-        { requestKey: { startsWith: releaseRunPrefix } },
-      ] },
-      select: { id: true },
-    });
-    const runIds = runs.map((run) => run.id);
-    await db.executionEvent.deleteMany({ where: { runId: { in: runIds } } });
-    await db.processRecord.deleteMany({ where: { runId: { in: runIds } } });
-    await db.executionQuotaHold.deleteMany({ where: { runId: { in: runIds } } });
-    await db.executionRun.deleteMany({ where: { id: { in: runIds } } });
-    const resourceFilters = [
-      ...(conversationIds.length ? [{ conversationId: { in: conversationIds } }] : []),
-      ...(exportIds.length ? [{ parentKey: { in: exportIds } }] : []),
-    ];
-    if (resourceFilters.length) await db.conversationLogResource.deleteMany({ where: { OR: resourceFilters } });
-    await db.conversationExportJob.deleteMany({ where: { id: { in: exportIds } } });
-    if (conversationIds.length) {
-      await db.featureEvent.deleteMany({ where: { conversationId: { in: conversationIds } } });
-      await db.assistantRun.deleteMany({ where: { anonIdHash: hashAnonId(visitorCookie) } });
-      await db.deletionTombstone.deleteMany({ where: { conversationId: { in: conversationIds } } });
-      await db.conversation.deleteMany({ where: { id: { in: conversationIds } } });
+  try {
+    if (db) {
+      const conversations = await db.conversation.findMany({
+        where: { placementKey: 'post-detail', scopeSlug: articleSlug }, select: { id: true },
+      });
+      const conversationIds = [...new Set([conversationId, ...conversations.map((row) => row.id)].filter((id): id is string => Boolean(id)))];
+      const runs = await db.executionRun.findMany({
+        where: { OR: [
+          { agentRevisionId: { in: [firstRevisionId, secondRevisionId] } },
+          { requestKey: { startsWith: releaseRunPrefix } },
+        ] },
+        select: { id: true },
+      });
+      const runIds = runs.map((run) => run.id);
+      await db.executionEvent.deleteMany({ where: { runId: { in: runIds } } });
+      await db.processRecord.deleteMany({ where: { runId: { in: runIds } } });
+      await db.executionQuotaHold.deleteMany({ where: { runId: { in: runIds } } });
+      await db.executionRun.deleteMany({ where: { id: { in: runIds } } });
+      const resourceFilters = [
+        ...(conversationIds.length ? [{ conversationId: { in: conversationIds } }] : []),
+        ...(exportIds.length ? [{ parentKey: { in: exportIds } }] : []),
+      ];
+      if (resourceFilters.length) await db.conversationLogResource.deleteMany({ where: { OR: resourceFilters } });
+      await db.conversationExportJob.deleteMany({ where: { id: { in: exportIds } } });
+      if (conversationIds.length) {
+        await db.featureEvent.deleteMany({ where: { conversationId: { in: conversationIds } } });
+        await db.assistantRun.deleteMany({ where: { anonIdHash: hashAnonId(visitorCookie) } });
+        await db.deletionTombstone.deleteMany({ where: { conversationId: { in: conversationIds } } });
+        await db.conversation.deleteMany({ where: { id: { in: conversationIds } } });
+      }
+      await db.auditRecord.deleteMany({ where: { targetId: { in: [deploymentId, conversationId, ...exportIds].filter((id): id is string => Boolean(id)) } } });
+      await db.deploymentMember.deleteMany({ where: { agentRevisionId: { in: [firstRevisionId, secondRevisionId] } } });
+      if (deploymentId) await db.agentDeployment.deleteMany({ where: { id: deploymentId } });
+      await db.agentRevision.deleteMany({ where: { id: { in: [firstRevisionId, secondRevisionId] } } });
+      await db.agentUnit.deleteMany({ where: { id: agentId } });
     }
-    await db.auditRecord.deleteMany({ where: { targetId: { in: [deploymentId, conversationId, ...exportIds].filter((id): id is string => Boolean(id)) } } });
-    await db.deploymentMember.deleteMany({ where: { agentRevisionId: { in: [firstRevisionId, secondRevisionId] } } });
-    if (deploymentId) await db.agentDeployment.deleteMany({ where: { id: deploymentId } });
-    await db.agentRevision.deleteMany({ where: { id: { in: [firstRevisionId, secondRevisionId] } } });
-    await db.agentUnit.deleteMany({ where: { id: agentId } });
+  } finally {
+    await app?.close();
+    vi.unstubAllEnvs();
+    if (tempRoot) await rm(tempRoot, { recursive: true, force: true });
   }
-  vi.unstubAllEnvs();
-  if (tempRoot) await rm(tempRoot, { recursive: true, force: true });
 });
 
 it('runs a two-member article conversation through history, export, deletion, and backup replay', async () => {

@@ -15,6 +15,7 @@ const REQUIRED_PUBLIC_ROUTES = [
   'GET assistant/conversations/*/*',
   'GET likes',
   'POST intake',
+  'GET intake/config',
   'POST assistant',
   'POST assistant/stream',
   'POST assistant/events',

@@ -38,6 +38,7 @@ function makeService(options: {
   historyDetail?: unknown;
   hangSessionSave?: boolean;
   conversationDeleted?: boolean;
+  jevFastPath?: any;
 } = {}) {
   const config: AppConfigPort = {
     getDatabaseUrl: () => 'file:test.db',
@@ -126,6 +127,10 @@ function makeService(options: {
     sdkSessionFor: vi.fn(async (_conversationId: string, revisionId: string) => options.sdkSessions?.[revisionId] ?? options.sdkSession ?? null),
     async recordEvent() { return 'recorded'; },
   };
+  const defaultJevFastPath = options.jevFastPath ?? {
+    isEnabled: () => false,
+    check: vi.fn(async () => null),
+  };
   const service = new PublicAssistantService(
     config,
     execution as never,
@@ -136,6 +141,7 @@ function makeService(options: {
     events,
     content,
     conversations,
+    defaultJevFastPath as never,
   );
   return { service, execution, deployments, fallback, repo, conversations, events };
 }
@@ -467,5 +473,37 @@ describe('PublicAssistantService V10', () => {
     expect(JSON.stringify(history)).not.toContain('private-sdk-session');
     expect(JSON.stringify(history)).not.toContain('private-run');
     expect(JSON.stringify(history)).not.toContain('revision-1');
+  });
+
+  it('JEV 极速意图前置分流：当 JEV 判定命中时直接秒级交付，不触碰后端 runner', async () => {
+    const mockJev = {
+      isEnabled: () => true,
+      check: vi.fn().mockResolvedValue({
+        result: {
+          answer: 'Dora 在 /tools 页面为你准备了系统化的行动卡点清单：',
+          citations: [{ slug: 'tools' }],
+          sessionId: 'jev-fast-path-123',
+          aiUsedFlag: true,
+          elapsedMs: 80,
+        },
+        fastPathReason: 'action_stuck',
+        latencyMs: 80,
+      }),
+    };
+    const h = makeService();
+    (h.service as any).jevFastPath = mockJev;
+
+    const result = await h.service.ask({
+      body: '我想做个网站但是卡住了',
+      anonId: 'anon-test-1',
+      ipKey: '127.0.0.1',
+      placementKey: 'site-home',
+      scopeSlug: 'home',
+    });
+
+    expect(result.answer).toContain('/tools');
+    expect(result.citations).toEqual([{ slug: 'tools' }]);
+    expect(h.execution.runPublicChat).not.toHaveBeenCalled();
+    expect(h.fallback.ask).not.toHaveBeenCalled();
   });
 });

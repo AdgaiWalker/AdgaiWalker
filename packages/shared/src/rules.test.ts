@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertClueBody,
+  consumesGuestQuota,
   isExternalSource,
   isValidClueBody,
   sourceBucket,
@@ -31,14 +32,26 @@ import {
 import { GUEST_INTAKE_QUOTA, RATE_LIMITS, RATE_WINDOW_MINUTES } from './rate-limits.js';
 
 describe('线索规则', () => {
-  it('正文 trim 后长度 ≥4 才合法', () => {
-    expect(isValidClueBody('  ab  ')).toBe(false);
-    expect(isValidClueBody('abcd')).toBe(true);
+  it('正文 trim 后非空即可发送，≥4 字计体验配额', () => {
+    expect(isValidClueBody('')).toBe(false);
+    expect(isValidClueBody('   ')).toBe(false);
+    expect(isValidClueBody('a')).toBe(true);
+    expect(isValidClueBody('  hi  ')).toBe(true);
+    expect(isValidClueBody('你好')).toBe(true);
     expect(isValidClueBody('  学AI入门  ')).toBe(true);
+
+    // 配额扣减门槛测试
+    expect(consumesGuestQuota('hi')).toBe(false);
+    expect(consumesGuestQuota('你好')).toBe(false);
+    expect(consumesGuestQuota('你好呀')).toBe(false);
+    expect(consumesGuestQuota('你好呀！')).toBe(true);
+    expect(consumesGuestQuota('怎么做AI应用')).toBe(true);
   });
 
-  it('过短正文 assert 抛 validation', () => {
-    expect(() => assertClueBody('x')).toThrow(/validation-error/);
+  it('空正文 assert 抛 validation', () => {
+    expect(() => assertClueBody('')).toThrow(/validation-error/);
+    expect(() => assertClueBody('   ')).toThrow(/validation-error/);
+    expect(() => assertClueBody('a')).not.toThrow();
   });
 
   it('external 来源判定：非 manual-self', () => {
@@ -244,12 +257,12 @@ describe('sourceBucket (A11)', () => {
 });
 
 describe('限流与 failCode SSOT', () => {
-  it('RATE_LIMITS 与历史行为一致（10/30/600）', () => {
-    expect(RATE_LIMITS.guestPerWindow).toBe(10);
-    expect(RATE_LIMITS.userPerWindow).toBe(30);
+  it('RATE_LIMITS 与当前配置一致（20/60/600）', () => {
+    expect(RATE_LIMITS.guestPerWindow).toBe(20);
+    expect(RATE_LIMITS.userPerWindow).toBe(60);
     expect(RATE_LIMITS.windowSeconds).toBe(600);
     expect(RATE_WINDOW_MINUTES).toBe(10);
-    expect(GUEST_INTAKE_QUOTA).toBe(1);
+    expect(GUEST_INTAKE_QUOTA).toBe(15);
   });
 
   it('FEATURE_FAIL_CODES 与 HTTP ErrorCode 统一 kebab', () => {

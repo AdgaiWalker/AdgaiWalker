@@ -74,6 +74,7 @@
     "apps/api/src/assistant/assistant-v09.service.test.ts",
     "apps/api/src/assistant/assistant.controller.test.ts",
     "apps/api/src/assistant/assistant.service.test.ts",
+    "apps/api/src/assistant/jev-fast-path.service.test.ts",
     "apps/api/src/assistant/public-assistant.controller.integration.test.ts",
     "apps/api/src/assistant/public-assistant.service.test.ts",
     "apps/api/src/assistant/public-journey.kernel.integration.test.ts",
@@ -117,6 +118,7 @@
     "apps/api/src/graph/graph.service.test.ts",
     "apps/api/src/health/health.service.test.ts",
     "apps/api/src/insights/insights.service.test.ts",
+    "apps/api/src/intake/intake.service.test.ts",
     "apps/api/src/kernel.integration.test.ts",
     "apps/api/src/log-resources/conversation-deletion.controller.test.ts",
     "apps/api/src/log-resources/conversation-deletion.kernel.integration.test.ts",
@@ -309,15 +311,15 @@
   "hubs": [
     {
       "path": "packages/shared/src/index.ts",
-      "linkDegree": 315
+      "linkDegree": 318
     },
     {
       "path": "apps/api/src/kernel.module.ts",
-      "linkDegree": 272
+      "linkDegree": 273
     },
     {
       "path": "apps/api/src/ports/prisma.port.ts",
-      "linkDegree": 128
+      "linkDegree": 129
     },
     {
       "path": "apps/api/src/common/http-error.ts",
@@ -359,7 +361,7 @@
     },
     {
       "path": "apps/api/src/assistant/public-assistant.service.ts",
-      "lines": 1042
+      "lines": 1067
     },
     {
       "path": "apps/api/src/execution/agent-execution.service.ts",
@@ -367,7 +369,7 @@
     },
     {
       "path": "apps/admin/src/pages/content/ContentReleasePanel.tsx",
-      "lines": 795
+      "lines": 816
     },
     {
       "path": "apps/web/src/components/graph/obsidian/engine.ts",
@@ -382,16 +384,16 @@
       "lines": 699
     },
     {
+      "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "lines": 611
+    },
+    {
       "path": "packages/shared/src/graph.ts",
       "lines": 597
     },
     {
       "path": "apps/admin/src/api/queries.ts",
       "lines": 596
-    },
-    {
-      "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
-      "lines": 594
     },
     {
       "path": "packages/shared/src/graph-query.ts",
@@ -403,21 +405,25 @@
     },
     {
       "path": "apps/api/src/kernel.module.ts",
-      "lines": 515
+      "lines": 517
+    },
+    {
+      "path": "apps/api/src/assistant/public-assistant.service.test.ts",
+      "lines": 509
     }
   ],
   "nominated": [],
   "schemaVersion": 1,
-  "sourceCommit": "a88f629f0efd7a71f3a7d62fa8d8ff5c52533fc7",
-  "generatedAt": "2026-10-30T05:25:19.367Z",
+  "sourceCommit": "014b0271c6ac3ec72f1bfabac51d44db22ada5da",
+  "generatedAt": "2026-10-30T14:01:30.713Z",
   "counts": {
-    "files": 823,
+    "files": 827,
     "attachments": 16,
     "tags": 5,
     "ghosts": 0,
     "edges": {
-      "total": 3436,
-      "dependency": 2589
+      "total": 3460,
+      "dependency": 2609
     }
   }
 }

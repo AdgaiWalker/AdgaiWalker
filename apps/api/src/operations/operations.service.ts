@@ -315,4 +315,23 @@ export class OperationsService {
     if (!row) throw new ApiError("run-not-found", 404, "找不到这条运行记录");
     return row;
   }
+
+  async guestQuotaStats(): Promise<{ activeGuests: number; totalExhausted: number }> {
+    const db = this.prisma.getClient();
+    if (!db) return { activeGuests: 0, totalExhausted: 0 };
+    const now = new Date();
+    const [activeGuests, all] = await Promise.all([
+      db.guestQuota.count({ where: { expiresAt: { gt: now } } }),
+      db.guestQuota.findMany({ select: { usedCount: true } }),
+    ]);
+    const quota = Number(process.env.WALKER_GUEST_INTAKE_QUOTA) || 15;
+    const totalExhausted = all.filter((r) => r.usedCount >= quota).length;
+    return { activeGuests, totalExhausted };
+  }
+
+  async resetAllGuestQuotas(): Promise<void> {
+    const db = this.prisma.getClient();
+    if (!db) return;
+    await db.guestQuota.deleteMany({});
+  }
 }

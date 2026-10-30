@@ -184,6 +184,7 @@ export class AssistantController {
         await this.publicAssistant.markUnknown(anonId, result.messageId);
       }
     } catch (error) {
+      console.error('[assistant.controller stream error]', error);
       sequence += 1;
       if (res.destroyed) return;
       const response = error instanceof HttpException ? error.getResponse() : null;

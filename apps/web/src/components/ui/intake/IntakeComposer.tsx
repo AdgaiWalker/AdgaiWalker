@@ -7,6 +7,7 @@ export type IntakeComposerProps = {
   draftOk: boolean;
   remaining: number;
   minLength: number;
+  quotaMinLength?: number;
   loading: boolean;
   onDraftChange: (value: string) => void;
   onSend: () => void;
@@ -17,10 +18,18 @@ export function IntakeComposer({
   draftOk,
   remaining,
   minLength,
+  quotaMinLength = 4,
   loading,
   onDraftChange,
   onSend,
 }: IntakeComposerProps) {
+  const trimmedLength = draft.trim().length;
+  let counterText = '';
+  if (trimmedLength > 0 && trimmedLength < quotaMinLength) {
+    counterText = `${quotaMinLength} 字以下不消耗体验次数`;
+  } else if (trimmedLength >= quotaMinLength) {
+    counterText = `${trimmedLength} 字`;
+  }
   return (
     <div className="assistant-composer chat-composer">
       <label htmlFor="need" className="sr-only">
@@ -46,7 +55,7 @@ export function IntakeComposer({
       />
       <div className="chat-composer-side">
         <span className="meta chat-counter">
-          {draftOk ? `字数 OK（≥${minLength}）` : `还差约 ${remaining} 字`}
+          {counterText}
         </span>
         <button
           type="button"

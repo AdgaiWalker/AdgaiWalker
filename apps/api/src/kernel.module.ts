@@ -124,6 +124,7 @@ import { RuleAssistantAdapter } from './adapters/rule-assistant.adapter';
 import { HarnessAssistantAdapter } from './adapters/harness-assistant.adapter';
 import { AssistantService } from './assistant/assistant.service';
 import { PublicAssistantService } from './assistant/public-assistant.service';
+import { JevFastPathService } from './assistant/jev-fast-path.service';
 import { InsightsService } from './insights/insights.service';
 import { InsightsController } from './insights/insights.controller';
 import { AssistantController } from './assistant/assistant.controller';
@@ -426,6 +427,7 @@ import { ReminderController } from './reminder/reminder.controller';
     },
     AssistantService,
     PublicAssistantService,
+    JevFastPathService,
     InsightsService,
     {
       // AI 策略内嵌规则兜底：AI_ENABLED≠true 或 runner 失败时行为与规则版一致

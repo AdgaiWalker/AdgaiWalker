@@ -14,13 +14,13 @@ function looksLikeNetworkMessage(msg: string): boolean {
   );
 }
 
-export function formatApiError(e: unknown): string {
+export function formatApiError(e: unknown, quota?: number): string {
   if (e instanceof ApiError) {
-    return explainErrorCode(e.code, e.message);
+    return explainErrorCode(e.code, e.message, quota);
   }
   if (e instanceof Error) {
     if (looksLikeNetworkMessage(e.message)) {
-      return explainErrorCode('network-error');
+      return explainErrorCode('network-error', undefined, quota);
     }
     return e.message;
   }

@@ -19,6 +19,13 @@ export interface IntakeResult {
   poolStatus: string;
 }
 
+export interface IntakePublicConfig {
+  guestQuota: number;
+  quotaMinLength: number;
+  rateLimit: number;
+  rateWindowMinutes: number;
+}
+
 export interface LikeResult {
   path: string;
   count: number;
@@ -98,6 +105,10 @@ export const publicApi = {
       method: 'POST',
       body: JSON.stringify({ body, source }),
     });
+  },
+
+  intakeConfig(): Promise<IntakePublicConfig> {
+    return publicRequest<IntakePublicConfig>('/intake/config');
   },
 
   assistant(

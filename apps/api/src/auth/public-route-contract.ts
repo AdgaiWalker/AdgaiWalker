@@ -14,6 +14,7 @@ export const PUBLIC_ROUTE_EXCLUSIONS: PublicRoute[] = [
   { path: 'assistant/conversations/:placementKey/:scopeSlug', method: RequestMethod.GET },
   { path: 'assistant/conversations/:placementKey/:scopeSlug/stop', method: RequestMethod.POST },
   { path: 'intake', method: RequestMethod.POST },
+  { path: 'intake/config', method: RequestMethod.GET },
   { path: 'assistant', method: RequestMethod.POST },
   { path: 'assistant/stream', method: RequestMethod.POST },
   { path: 'assistant/messages/:messageId/ack', method: RequestMethod.POST },

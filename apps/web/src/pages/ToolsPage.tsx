@@ -8,7 +8,7 @@ import { IntakeComposer } from '../components/ui/intake/IntakeComposer';
 import { useIntakeChat } from '../hooks/useIntakeChat';
 import { dualEntry } from '../shared/dual-entry';
 import { INTAKE_TYPES } from '../shared/intake-types';
-import { INTAKE_RULE_HINTS } from '../shared/rules-ui';
+import { INTAKE_RULE_HINTS, formatGuestQuotaHint } from '../shared/rules-ui';
 
 const SERVICE_NOTE =
   '站点处理服务在公网已可用：提交后写入线索并返回下一步建议；失败会说明原因，不会假装成功。';
@@ -79,13 +79,14 @@ export function ToolsPage() {
         draftOk={chat.draftOk}
         remaining={chat.remaining}
         minLength={chat.minLength}
+        quotaMinLength={chat.quotaMinLength}
         loading={chat.loading}
         onDraftChange={chat.onDraftChange}
         onSend={handleSend}
       />
 
       <p className="meta chat-footnote">
-        {INTAKE_RULE_HINTS[1]} · {INTAKE_RULE_HINTS[3]}
+        {formatGuestQuotaHint(chat.config.guestQuota)} · {INTAKE_RULE_HINTS[3]}
       </p>
     </div>
   );

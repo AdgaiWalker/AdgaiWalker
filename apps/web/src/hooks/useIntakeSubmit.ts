@@ -18,13 +18,13 @@ export function useIntakeSubmit() {
   const [loading, setLoading] = useState(false);
 
   const submit = useCallback(
-    async (raw: string): Promise<IntakeSubmitOutcome> => {
+    async (raw: string, quota?: number): Promise<IntakeSubmitOutcome> => {
       setLoading(true);
       try {
         const result = await publicApi.intake(raw);
         return { result, error: null };
       } catch (e) {
-        return { result: null, error: formatApiError(e) };
+        return { result: null, error: formatApiError(e, quota) };
       } finally {
         setLoading(false);
       }

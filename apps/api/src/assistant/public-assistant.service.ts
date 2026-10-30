@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   FEATURE_FAIL_CODES,
   ASSISTANT_INTERACTION_FEATURE_KEY,
@@ -36,6 +36,7 @@ import { ASSISTANT_EVENT_RECORDER, type AssistantEventRecorderPort } from '../po
 import { AgentExecutionService, type PublicChatExecutionResult } from '../execution/agent-execution.service';
 import { DeploymentService } from '../deployments/deployment.service';
 import { buildFirstTurnPrompt } from './public-assistant-prompt';
+import { JevFastPathService } from './jev-fast-path.service';
 
 export const PUBLIC_ASSISTANT_TIMEOUT_MS = (() => {
   const value = Number(process.env.WALKER_ASSISTANT_ASK_TIMEOUT_MS?.trim());
@@ -124,6 +125,7 @@ function stableId(anonHash: string, requestKey: string, kind: string): string {
 @Injectable()
 export class PublicAssistantService {
   private readonly dailyLimit: number;
+  private readonly jevFastPath: JevFastPathService;
   private readonly inFlight = new Map<string, Promise<PublicAssistantAskResult>>();
   private fallbackDate = '';
   private fallbackCount = 0;
@@ -138,7 +140,9 @@ export class PublicAssistantService {
     @Inject(ASSISTANT_EVENT_RECORDER) private readonly events: AssistantEventRecorderPort,
     @Inject(SITE_CONTENT_INDEX) private readonly content: SiteContentIndexPort,
     @Inject(CONVERSATION_REPOSITORY) private readonly conversations: ConversationRepositoryPort,
+    @Optional() @Inject(JevFastPathService) jevFastPath?: JevFastPathService,
   ) {
+    this.jevFastPath = jevFastPath ?? new JevFastPathService();
     const configured = Number(process.env.ASSISTANT_DAILY_LIMIT);
     this.dailyLimit = Number.isFinite(configured) && configured > 0 ? configured : 200;
   }
@@ -428,7 +432,8 @@ export class PublicAssistantService {
     stream?: PublicAssistantStreamSink;
   }): Promise<PublicAssistantAskResult> {
     const { input, gate, prior, modelAvailable, stream } = options;
-    if (prior.aiUsedFlag && !modelAvailable) {
+    const isFastPath = prior.sessionId?.startsWith('jev-fast-path-');
+    if (prior.aiUsedFlag && !modelAvailable && !isFastPath) {
       throw new ApiError('placement-generation-conflict', 409, '公开成员列表已更新，请刷新后重试');
     }
     const conversation = await this.ensureConversation(input, gate);
@@ -727,7 +732,8 @@ export class PublicAssistantService {
           input.deploymentGeneration ?? null,
         ), null);
       } catch (error) {
-        if (error instanceof ApiError) throw error;
+        const candidate = error instanceof ApiError ? (error.getResponse() as Record<string, unknown>)?.code : '';
+        if (error instanceof ApiError && candidate !== 'public-readiness-blocked') throw error;
         void this.safeEvent({ featureKey: 'assistant.ask', event: 'fail', actorType: 'guest', failCode: 'deployment-storage-failed', conversationId: logicalConversationId });
       }
     }
@@ -740,6 +746,25 @@ export class PublicAssistantService {
     this.emitAccepted(gate, stream);
     const delivery = this.createDelivery(gate, stream, conversation);
     const fallbackResult = (reason: DegradeReason) => this.fallbackAnswer({ input, gate, delivery, reason });
+
+    // JEV System One 毫秒级意图前置分流门控 (Fast-Path Intent Gating)
+    if (this.jevFastPath.isEnabled()) {
+      const fastPath = await this.jevFastPath.check(gate.redactedText);
+      if (fastPath) {
+        delivery.emitDelta(fastPath.result.answer);
+        await this.waitForAnswerPersistence(delivery.waitWrites());
+        const finished = await this.finish({
+          input,
+          gate,
+          result: fastPath.result,
+          runId: null,
+          conversation: delivery.state.conversation,
+        });
+        delivery.emitDone(finished);
+        return finished;
+      }
+    }
+
     if (!aiEnabled) {
       return fallbackResult('ai-disabled');
     }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-30T05:25:19.336Z",
+  "generatedAt": "2026-10-30T14:01:30.682Z",
   "seed": 20260914,
   "nodes": [
     {
@@ -88,9 +88,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 22,
-      "linkDegree": 21,
-      "inDegree": 21,
+      "totalDegree": 23,
+      "linkDegree": 22,
+      "inDegree": 22,
       "outDegree": 1,
       "path": "apps/admin/src/api/http.ts",
       "label": "apps/admin/src/api/http",
@@ -419,7 +419,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 594,
+      "lines": 611,
       "id": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
       "kind": "note"
     },
@@ -489,7 +489,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 795,
+      "lines": 816,
       "id": "note:apps/admin/src/pages/content/ContentReleasePanel.tsx",
       "kind": "note"
     },
@@ -820,6 +820,20 @@
       "linkDegree": 2,
       "inDegree": 1,
       "outDegree": 2,
+      "path": "apps/admin/src/pages/settings/GuestQuotaPanel.tsx",
+      "label": "GuestQuotaPanel",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "",
+      "lines": 288,
+      "id": "note:apps/admin/src/pages/settings/GuestQuotaPanel.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 1,
+      "outDegree": 2,
       "path": "apps/admin/src/pages/settings/ModelConfigPanel.tsx",
       "label": "ModelConfigPanel",
       "app": "apps/admin",
@@ -830,16 +844,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 7,
-      "linkDegree": 6,
+      "totalDegree": 8,
+      "linkDegree": 7,
       "inDegree": 1,
-      "outDegree": 6,
+      "outDegree": 7,
       "path": "apps/admin/src/pages/settings/SettingsPage.tsx",
       "label": "SettingsPage",
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 200,
+      "lines": 202,
       "id": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
       "kind": "note"
     },
@@ -2398,16 +2412,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 6,
-      "linkDegree": 5,
-      "inDegree": 2,
-      "outDegree": 4,
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 4,
+      "outDegree": 5,
       "path": "apps/api/src/adapters/prisma-guest-quota.adapter.ts",
       "label": "prisma-guest-quota.adapter",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 68,
+      "lines": 101,
       "id": "note:apps/api/src/adapters/prisma-guest-quota.adapter.ts",
       "kind": "note"
     },
@@ -2925,7 +2939,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:09:15+08:00",
-      "lines": 213,
+      "lines": 214,
       "id": "note:apps/api/src/assistant/assistant.controller.ts",
       "kind": "note"
     },
@@ -2955,6 +2969,34 @@
       "created": "2026-09-03T01:09:15+08:00",
       "lines": 377,
       "id": "note:apps/api/src/assistant/assistant.service.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/assistant/jev-fast-path.service.test.ts",
+      "label": "jev-fast-path.service.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 134,
+      "id": "note:apps/api/src/assistant/jev-fast-path.service.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 8,
+      "linkDegree": 7,
+      "inDegree": 6,
+      "outDegree": 2,
+      "path": "apps/api/src/assistant/jev-fast-path.service.ts",
+      "label": "jev-fast-path.service",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 332,
+      "id": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "note"
     },
     {
@@ -2995,21 +3037,21 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 471,
+      "lines": 509,
       "id": "note:apps/api/src/assistant/public-assistant.service.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 19,
-      "linkDegree": 18,
+      "totalDegree": 20,
+      "linkDegree": 19,
       "inDegree": 4,
-      "outDegree": 15,
+      "outDegree": 16,
       "path": "apps/api/src/assistant/public-assistant.service.ts",
       "label": "public-assistant.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 1042,
+      "lines": 1067,
       "id": "note:apps/api/src/assistant/public-assistant.service.ts",
       "kind": "note"
     },
@@ -3023,7 +3065,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 372,
+      "lines": 375,
       "id": "note:apps/api/src/assistant/public-journey.kernel.integration.test.ts",
       "kind": "note"
     },
@@ -3121,7 +3163,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 57,
+      "lines": 58,
       "id": "note:apps/api/src/auth/public-route-contract.ts",
       "kind": "note"
     },
@@ -4288,30 +4330,44 @@
       "kind": "note"
     },
     {
-      "totalDegree": 4,
-      "linkDegree": 3,
+      "totalDegree": 6,
+      "linkDegree": 5,
       "inDegree": 1,
-      "outDegree": 3,
+      "outDegree": 5,
       "path": "apps/api/src/intake/intake.controller.ts",
       "label": "intake.controller",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 43,
+      "lines": 60,
       "id": "note:apps/api/src/intake/intake.controller.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 13,
-      "linkDegree": 12,
-      "inDegree": 3,
-      "outDegree": 10,
+      "totalDegree": 9,
+      "linkDegree": 8,
+      "inDegree": 0,
+      "outDegree": 9,
+      "path": "apps/api/src/intake/intake.service.test.ts",
+      "label": "intake.service.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 133,
+      "id": "note:apps/api/src/intake/intake.service.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 15,
+      "linkDegree": 14,
+      "inDegree": 4,
+      "outDegree": 11,
       "path": "apps/api/src/intake/intake.service.ts",
       "label": "intake.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 176,
+      "lines": 208,
       "id": "note:apps/api/src/intake/intake.service.ts",
       "kind": "note"
     },
@@ -4325,21 +4381,21 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 195,
+      "lines": 213,
       "id": "note:apps/api/src/kernel.integration.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 273,
-      "linkDegree": 272,
+      "totalDegree": 274,
+      "linkDegree": 273,
       "inDegree": 33,
-      "outDegree": 240,
+      "outDegree": 241,
       "path": "apps/api/src/kernel.module.ts",
       "label": "kernel.module",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 515,
+      "lines": 517,
       "id": "note:apps/api/src/kernel.module.ts",
       "kind": "note"
     },
@@ -5114,16 +5170,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 6,
-      "linkDegree": 5,
+      "totalDegree": 8,
+      "linkDegree": 7,
       "inDegree": 1,
-      "outDegree": 5,
+      "outDegree": 7,
       "path": "apps/api/src/operations/operations.controller.ts",
       "label": "operations.controller",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 62,
+      "lines": 88,
       "id": "note:apps/api/src/operations/operations.controller.ts",
       "kind": "note"
     },
@@ -5151,7 +5207,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 318,
+      "lines": 337,
       "id": "note:apps/api/src/operations/operations.service.ts",
       "kind": "note"
     },
@@ -5422,9 +5478,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 11,
-      "linkDegree": 10,
-      "inDegree": 9,
+      "totalDegree": 12,
+      "linkDegree": 11,
+      "inDegree": 10,
       "outDegree": 2,
       "path": "apps/api/src/ports/clue.repository.ts",
       "label": "clue.repository",
@@ -5716,9 +5772,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 19,
-      "linkDegree": 18,
-      "inDegree": 18,
+      "totalDegree": 20,
+      "linkDegree": 19,
+      "inDegree": 19,
       "outDegree": 1,
       "path": "apps/api/src/ports/feature-event.port.ts",
       "label": "feature-event.port",
@@ -5744,9 +5800,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 4,
-      "linkDegree": 3,
-      "inDegree": 3,
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 4,
       "outDegree": 1,
       "path": "apps/api/src/ports/guest-quota.port.ts",
       "label": "guest-quota.port",
@@ -5856,9 +5912,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 5,
-      "linkDegree": 4,
-      "inDegree": 4,
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 5,
       "outDegree": 1,
       "path": "apps/api/src/ports/nextstep.port.ts",
       "label": "nextstep.port",
@@ -5898,9 +5954,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 129,
-      "linkDegree": 128,
-      "inDegree": 128,
+      "totalDegree": 130,
+      "linkDegree": 129,
+      "inDegree": 129,
       "outDegree": 1,
       "path": "apps/api/src/ports/prisma.port.ts",
       "label": "prisma.port",
@@ -5982,9 +6038,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 10,
-      "linkDegree": 9,
-      "inDegree": 9,
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 10,
       "outDegree": 1,
       "path": "apps/api/src/ports/rate-limit.port.ts",
       "label": "rate-limit.port",
@@ -6243,7 +6299,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 88,
+      "lines": 89,
       "id": "note:apps/api/src/public-route-boundary.test.ts",
       "kind": "note"
     },
@@ -7223,7 +7279,7 @@
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-07-21T11:47:00+08:00",
-      "lines": 197,
+      "lines": 208,
       "id": "note:apps/web/src/api/public-api.ts",
       "kind": "note"
     },
@@ -7979,7 +8035,7 @@
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 62,
+      "lines": 71,
       "id": "note:apps/web/src/components/ui/intake/IntakeComposer.tsx",
       "kind": "note"
     },
@@ -8217,7 +8273,7 @@
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 77,
+      "lines": 113,
       "id": "note:apps/web/src/hooks/useIntakeChat.ts",
       "kind": "note"
     },
@@ -8875,7 +8931,7 @@
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 153,
+      "lines": 174,
       "id": "note:apps/web/src/pages/ToolsPage.test.tsx",
       "kind": "note"
     },
@@ -8889,7 +8945,7 @@
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 92,
+      "lines": 93,
       "id": "note:apps/web/src/pages/ToolsPage.tsx",
       "kind": "note"
     },
@@ -9295,7 +9351,7 @@
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 106,
+      "lines": 118,
       "id": "note:apps/web/src/shared/rules-ui.ts",
       "kind": "note"
     },
@@ -9743,7 +9799,7 @@
       "app": "packages/shared",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 49,
+      "lines": 58,
       "id": "note:packages/shared/src/clue.ts",
       "kind": "note"
     },
@@ -10308,9 +10364,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 316,
-      "linkDegree": 315,
-      "inDegree": 254,
+      "totalDegree": 319,
+      "linkDegree": 318,
+      "inDegree": 257,
       "outDegree": 62,
       "path": "packages/shared/src/index.ts",
       "label": "packages/shared/src/index",
@@ -10807,7 +10863,7 @@
       "app": "packages/shared",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 277,
+      "lines": 290,
       "id": "note:packages/shared/src/rules.test.ts",
       "kind": "note"
     },
@@ -11784,9 +11840,9 @@
       "kind": "tag",
       "label": ".ts",
       "tag": ".ts",
-      "totalDegree": 689,
+      "totalDegree": 692,
       "linkDegree": 0,
-      "inDegree": 689,
+      "inDegree": 692,
       "outDegree": 0
     },
     {
@@ -11794,9 +11850,9 @@
       "kind": "tag",
       "label": ".tsx",
       "tag": ".tsx",
-      "totalDegree": 132,
+      "totalDegree": 133,
       "linkDegree": 0,
-      "inDegree": 132,
+      "inDegree": 133,
       "outDegree": 0
     }
   ],
@@ -12747,6 +12803,11 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/admin/src/pages/settings/GuestQuotaPanel.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/admin/src/pages/settings/ModelConfigPanel.tsx",
       "target": "note:apps/admin/src/api/http.ts",
       "kind": "link"
@@ -12774,6 +12835,11 @@
     {
       "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
       "target": "note:apps/admin/src/pages/settings/ModelConfigPanel.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "target": "note:apps/admin/src/pages/settings/GuestQuotaPanel.tsx",
       "kind": "link"
     },
     {
@@ -14133,6 +14199,11 @@
     },
     {
       "source": "note:apps/api/src/adapters/prisma-guest-quota.adapter.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-guest-quota.adapter.ts",
       "target": "note:apps/api/src/ports/guest-quota.port.ts",
       "kind": "link"
     },
@@ -14947,6 +15018,16 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/assistant/jev-fast-path.service.test.ts",
+      "target": "note:apps/api/src/assistant/jev-fast-path.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/assistant/jev-fast-path.service.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/assistant/public-assistant-prompt.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
@@ -15114,6 +15195,11 @@
     {
       "source": "note:apps/api/src/assistant/public-assistant.service.ts",
       "target": "note:apps/api/src/assistant/public-assistant-prompt.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/assistant/public-assistant.service.ts",
+      "target": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "link"
     },
     {
@@ -17258,12 +17344,62 @@
     },
     {
       "source": "note:apps/api/src/intake/intake.controller.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.controller.ts",
+      "target": "note:apps/api/src/adapters/prisma-guest-quota.adapter.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.controller.ts",
       "target": "note:apps/api/src/auth/anon-cookie.ts",
       "kind": "link"
     },
     {
       "source": "note:apps/api/src/intake/intake.controller.ts",
       "target": "note:apps/api/src/intake/intake.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/intake/intake.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/ports/clue.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/ports/nextstep.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/ports/rate-limit.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/ports/guest-quota.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/ports/feature-event.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
+      "target": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "link"
     },
     {
@@ -17309,6 +17445,11 @@
     {
       "source": "note:apps/api/src/intake/intake.service.ts",
       "target": "note:apps/api/src/ports/rate-limit.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.ts",
+      "target": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "link"
     },
     {
@@ -17994,6 +18135,11 @@
     {
       "source": "note:apps/api/src/kernel.module.ts",
       "target": "note:apps/api/src/assistant/public-assistant.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "link"
     },
     {
@@ -19789,6 +19935,16 @@
     {
       "source": "note:apps/api/src/operations/operations.controller.ts",
       "target": "note:apps/api/src/auth/admin-token.middleware.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "note:apps/api/src/adapters/prisma-guest-quota.adapter.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "link"
     },
     {
@@ -25097,6 +25253,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/admin/src/pages/settings/GuestQuotaPanel.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/admin/src/pages/settings/ModelConfigPanel.tsx",
       "target": "tag:.tsx",
       "kind": "tag"
@@ -25862,6 +26023,16 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/assistant/jev-fast-path.service.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/assistant/jev-fast-path.service.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/assistant/public-assistant-prompt.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -26338,6 +26509,11 @@
     },
     {
       "source": "note:apps/api/src/intake/intake.controller.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/intake/intake.service.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },

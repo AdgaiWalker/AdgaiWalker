@@ -10,7 +10,19 @@ import { ToolsPage } from './ToolsPage';
 vi.mock('../api/public-api', async () => {
   const actual =
     await vi.importActual<typeof import('../api/public-api')>('../api/public-api');
-  return { ...actual, publicApi: { ...actual.publicApi, intake: vi.fn() } };
+  return {
+    ...actual,
+    publicApi: {
+      ...actual.publicApi,
+      intake: vi.fn(),
+      intakeConfig: vi.fn().mockResolvedValue({
+        guestQuota: 15,
+        quotaMinLength: 4,
+        rateLimit: 20,
+        rateWindowMinutes: 10,
+      }),
+    },
+  };
 });
 
 import { publicApi } from '../api/public-api';
@@ -79,18 +91,27 @@ describe('卡口对话页', () => {
     expect(document.querySelectorAll('.assistant-msg-user')).toHaveLength(1);
   });
 
-  it('字数不足时发送按钮禁用，补足后可发送', async () => {
+  it('空白时发送按钮禁用，输入短句即可发送（提示 4 字以下不消耗体验次数）', async () => {
     const user = userEvent.setup();
     renderChat();
 
     const send = screen.getByRole('button', { name: '发送' });
     expect(send).toBeDisabled();
 
-    await user.type(screen.getByLabelText('描述你的卡点'), '太短');
+    // 纯空格仍为禁用
+    await user.type(screen.getByLabelText('描述你的卡点'), '   ');
     expect(send).toBeDisabled();
 
+    // 输入 2 个字，允许发送并友好提示不计入配额
+    await user.clear(screen.getByLabelText('描述你的卡点'));
+    await user.type(screen.getByLabelText('描述你的卡点'), '太短');
+    expect(send).toBeEnabled();
+    expect(screen.getByText('4 字以下不消耗体验次数')).toBeInTheDocument();
+
+    // 补足 4 字以上，显示具体字数
     await typeBody(user);
     expect(send).toBeEnabled();
+    expect(screen.queryByText('4 字以下不消耗体验次数')).not.toBeInTheDocument();
   });
 
   it('发送后原地出现问答：回答含下一步与依据', async () => {

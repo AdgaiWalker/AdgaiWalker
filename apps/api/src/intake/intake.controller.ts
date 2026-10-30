@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Headers,
   Inject,
   Post,
@@ -8,6 +9,12 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import {
+  CLUE_QUOTA_MIN_LENGTH,
+  RATE_LIMITS,
+  RATE_WINDOW_MINUTES,
+} from '@walker/shared';
+import { getGuestQuota } from '../adapters/prisma-guest-quota.adapter';
 import {
   extractClientIpKey,
   resolveOrSetAnonId,
@@ -20,6 +27,16 @@ export class IntakeController {
   constructor(
     @Inject(IntakeService) private readonly intake: IntakeService,
   ) {}
+
+  @Get('config')
+  config() {
+    return {
+      guestQuota: getGuestQuota(),
+      quotaMinLength: CLUE_QUOTA_MIN_LENGTH,
+      rateLimit: RATE_LIMITS.guestPerWindow,
+      rateWindowMinutes: RATE_WINDOW_MINUTES,
+    };
+  }
 
   @Post()
   async create(

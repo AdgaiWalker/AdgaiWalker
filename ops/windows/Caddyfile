@@ -20,6 +20,14 @@
       reverse_proxy 127.0.0.1:8788
     }
 
+    @intakeConfig {
+      method GET
+      path /intake/config
+    }
+    handle @intakeConfig {
+      reverse_proxy 127.0.0.1:8788
+    }
+
     @assistantPlacement {
       method GET
       path /assistant/placements/*/*

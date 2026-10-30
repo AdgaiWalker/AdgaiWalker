@@ -14,7 +14,7 @@ export { CLUE_BODY_MIN_LENGTH, GUEST_INTAKE_QUOTA, RATE_WINDOW_MINUTES };
 
 export const ERROR_CODE_LABELS: Record<string, string> = {
   'guest-quota-exceeded':
-    '游客完整问答次数已用完（每位访客 1 次）。登录后可继续，或改用管理端热记。',
+    `游客完整问答次数已用完（每位访客 ${GUEST_INTAKE_QUOTA} 次）。登录后可继续，或改用管理端热记。`,
   'rate-limited': `请求过于频繁（游客 ${GUEST_RATE_LIMIT} 次 / ${RATE_WINDOW_MINUTES} 分钟）。请稍后再试。`,
   'storage-unavailable': '服务暂时无法写入，请稍后再试。',
   'validation-error': '输入不合法，请检查后重试。',
@@ -29,8 +29,20 @@ export const ERROR_CODE_LABELS: Record<string, string> = {
   'request-failed': '请求失败，请稍后再试。',
 };
 
-export function explainErrorCode(code: string | undefined, fallback?: string): string {
+export function formatGuestQuotaHint(quota: number = GUEST_INTAKE_QUOTA): string {
+  return `游客可完整体验 ${quota} 次（30 天内）`;
+}
+
+export function explainErrorCode(
+  code: string | undefined,
+  fallback?: string,
+  quota?: number,
+): string {
   if (!code) return fallback ?? '请求失败';
+  if (code === 'guest-quota-exceeded') {
+    const q = quota ?? GUEST_INTAKE_QUOTA;
+    return `游客完整问答次数已用完（每位访客 ${q} 次）。登录后可继续，或改用管理端热记。`;
+  }
   return ERROR_CODE_LABELS[code] ?? fallback ?? code;
 }
 
