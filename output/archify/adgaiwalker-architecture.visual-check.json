@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "pending",
   "provenance": "current",
-  "deliveryReceiptId": "83834df5-c420-43c7-8e48-c935efd38460",
+  "deliveryReceiptId": "3b554170-e9e9-45ce-8043-d949dd866c89",
   "artifact": {
     "path": "/Users/happy/Desktop/AdgaiWalker/output/archify/adgaiwalker-architecture.html",
-    "sha256": "1212efd0a7ddde5090bd73a84113a22be0550aa36925305aa2dea89842a8146f",
-    "bytes": 781209
+    "sha256": "4aee47f5cd92d45067e3f809f6ef668474f0e1278c5df869090447719201ccc7",
+    "bytes": 781370
   },
   "state": {
     "detail": "read",
@@ -937,23 +937,23 @@
         "file": "adgaiwalker-architecture.visual-check.html"
       },
       {
-        "sha256": "a96078912aac71d325edbbb9f0e569ec90866b6502a0c357d362f25e2ae19581",
-        "bytes": 142243,
+        "sha256": "0d76f674d57cfc3552b4b8d88ea32236e46398f26e74bbfeee8a3623200d881d",
+        "bytes": 141467,
         "file": "adgaiwalker-architecture.visual-check.1440x900.light.png"
       },
       {
-        "sha256": "62d504e3b5bc2cb4c81b4692011b5129f168cb71a58da0da98d153cf947753da",
-        "bytes": 152800,
+        "sha256": "e3b3b6b365604ea633d88fce42e426c4ef4702c638e53a13055b42ceef7f2b99",
+        "bytes": 151976,
         "file": "adgaiwalker-architecture.visual-check.1440x900.dark.png"
       },
       {
-        "sha256": "d9741f55c56c928d23aaee402a9d6dd7aa5f7c25bdfbc045e4aa06cd4fb2007c",
-        "bytes": 208220,
+        "sha256": "21e5b8c8bffa063b435d9425590fdd4addb42e68ba39dc894f2625f04118601e",
+        "bytes": 206849,
         "file": "adgaiwalker-architecture.visual-check.2048x1320.light.png"
       },
       {
-        "sha256": "3e4ff059eab27befacc11c3739d89a9dde73b7acad3041f70a1a79e4611e8aee",
-        "bytes": 223511,
+        "sha256": "8bbe6fd9f3cb90d8abf3d405c454105194d512a8bf337c1c285842f72dd8321c",
+        "bytes": 222146,
         "file": "adgaiwalker-architecture.visual-check.2048x1320.dark.png"
       }
     ]

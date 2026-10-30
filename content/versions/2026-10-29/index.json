@@ -1,0 +1,12 @@
+{
+  "slug": "2026-10-29",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "a0c24c9e812f4ab23c79740ab309a8fe4ac29d5d6062f76c3ef05633661f2714",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-30T05:25:03.463Z",
+      "releaseId": "backfill_825e339a-0a7"
+    }
+  ]
+}

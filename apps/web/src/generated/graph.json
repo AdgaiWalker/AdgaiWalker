@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T02:50:31.848Z",
+  "generatedAt": "2026-10-30T05:24:58.685Z",
   "seed": 20260914,
   "nodes": [
     {
@@ -9,7 +9,7 @@
       "title": "我的思考被额度绑架了",
       "date": "2026-10-29T00:00:00.000Z",
       "updated": "2026-10-29T00:00:00.000Z",
-      "created": "2026-10-29T00:00:00.000Z",
+      "created": "2026-10-30T10:51:09+08:00",
       "hall": "lab",
       "type": "knowledge",
       "form": "note",
@@ -417,6 +417,33 @@
       "outDegree": 4
     },
     {
+      "id": "note:on-people-and-skill",
+      "kind": "note",
+      "slug": "on-people-and-skill",
+      "title": "关于人与 Skill",
+      "date": "2026-06-08T16:00:00.000Z",
+      "updated": "2026-06-08T16:00:00.000Z",
+      "created": "2026-07-22T03:55:13+08:00",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "diary",
+      "domain": "philosophy",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "Skill",
+        "哲学",
+        "反思",
+        "AI",
+        "实践"
+      ],
+      "summary": "Skill 不是把经验写进去，而是把已经能稳定复现的经验封装成一个有边界、可调用、可验证的判断函数，并且连接着工具、知识。站在错误的位置，实践→结果→永远够不着标准——不是标准的问题，不是努力的问题，是位置的问题。",
+      "totalDegree": 6,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
       "id": "note:side-hustle-blueprint",
       "kind": "note",
       "slug": "side-hustle-blueprint",
@@ -781,9 +808,9 @@
       "id": "tag:AI",
       "kind": "tag",
       "tag": "AI",
-      "totalDegree": 21,
+      "totalDegree": 22,
       "linkDegree": 0,
-      "inDegree": 21,
+      "inDegree": 22,
       "outDegree": 0
     },
     {
@@ -898,9 +925,9 @@
       "id": "tag:Skill",
       "kind": "tag",
       "tag": "Skill",
-      "totalDegree": 2,
+      "totalDegree": 3,
       "linkDegree": 0,
-      "inDegree": 2,
+      "inDegree": 3,
       "outDegree": 0
     },
     {
@@ -1048,12 +1075,21 @@
       "outDegree": 0
     },
     {
+      "id": "tag:反思",
+      "kind": "tag",
+      "tag": "反思",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
       "id": "tag:哲学",
       "kind": "tag",
       "tag": "哲学",
-      "totalDegree": 4,
+      "totalDegree": 5,
       "linkDegree": 0,
-      "inDegree": 4,
+      "inDegree": 5,
       "outDegree": 0
     },
     {
@@ -1081,6 +1117,15 @@
       "totalDegree": 4,
       "linkDegree": 0,
       "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "tag:实践",
+      "kind": "tag",
+      "tag": "实践",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
       "outDegree": 0
     },
     {
@@ -1330,9 +1375,9 @@
       "id": "attachment:content/log/skill结构图.png",
       "kind": "attachment",
       "path": "content/log/skill结构图.png",
-      "totalDegree": 0,
+      "totalDegree": 1,
       "linkDegree": 0,
-      "inDegree": 0,
+      "inDegree": 1,
       "outDegree": 0
     },
     {
@@ -1360,6 +1405,11 @@
       "source": "note:419a2f",
       "target": "note:ideas-beyond-time",
       "kind": "link"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "attachment:content/log/skill结构图.png",
+      "kind": "attachment"
     },
     {
       "source": "note:side-hustle-blueprint",
@@ -1749,6 +1799,31 @@
     {
       "source": "note:codex-intro",
       "target": "tag:agent",
+      "kind": "tag"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "tag:Skill",
+      "kind": "tag"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "tag:哲学",
+      "kind": "tag"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "tag:反思",
+      "kind": "tag"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "tag:实践",
       "kind": "tag"
     },
     {

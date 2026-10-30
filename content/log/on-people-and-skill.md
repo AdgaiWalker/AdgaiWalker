@@ -14,21 +14,21 @@ form: diary
 domain: philosophy
 intent: reflect
 valueMode: both
-published: false
+published: true
+visibility: public
 summary: >-
   Skill
   不是把经验写进去，而是把已经能稳定复现的经验封装成一个有边界、可调用、可验证的判断函数，并且连接着工具、知识。站在错误的位置，实践→结果→永远够不着标准——不是标准的问题，不是努力的问题，是位置的问题。
 aiUsePolicy:
-  level: AI-1
+  level: AI-2
   readable: true
-  citable: false
+  citable: true
   actionable: false
-  reason: 个人日记反思，含对话场景和主观判断，仅可读作背景
+  reason: 个人日记反思与哲学思考，全面开放公开阅读与引用
 related:
   - walkcraft-skill-craft
   - subtraction-dialogue
   - ferry-theory
-visibility: draft
 layout: immersive
 ---
 

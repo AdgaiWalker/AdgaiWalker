@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-30T02:50:33.569Z",
+  "generatedAt": "2026-10-30T05:25:19.336Z",
   "seed": 20260914,
   "nodes": [
     {
@@ -432,7 +432,7 @@
       "label": "ContentHistoryPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 156,
       "id": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
       "kind": "note"
@@ -1174,7 +1174,7 @@
       "label": "article-versions-dir.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 43,
       "id": "note:apps/api/src/adapters/article-versions-dir.test.ts",
       "kind": "note"
@@ -1188,7 +1188,7 @@
       "label": "article-versions-dir",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 47,
       "id": "note:apps/api/src/adapters/article-versions-dir.ts",
       "kind": "note"
@@ -1300,7 +1300,7 @@
       "label": "fs-article-version-store.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 87,
       "id": "note:apps/api/src/adapters/fs-article-version-store.test.ts",
       "kind": "note"
@@ -1314,7 +1314,7 @@
       "label": "fs-article-version-store",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 165,
       "id": "note:apps/api/src/adapters/fs-article-version-store.ts",
       "kind": "note"
@@ -3596,7 +3596,7 @@
       "label": "article-version-history.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 306,
       "id": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
       "kind": "note"
@@ -5318,7 +5318,7 @@
       "label": "article-version-store.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 30,
       "id": "note:apps/api/src/ports/article-version-store.port.ts",
       "kind": "note"
@@ -7250,7 +7250,7 @@
       "label": "article-versions",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 31,
       "id": "note:apps/web/src/article-versions.ts",
       "kind": "note"
@@ -8790,7 +8790,7 @@
       "label": "PostHistoryPage",
       "app": "apps/web",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 93,
       "id": "note:apps/web/src/pages/PostHistoryPage.tsx",
       "kind": "note"
@@ -8804,7 +8804,7 @@
       "label": "PostVersionPage",
       "app": "apps/web",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 118,
       "id": "note:apps/web/src/pages/PostVersionPage.tsx",
       "kind": "note"
@@ -9560,7 +9560,7 @@
       "label": "article-version.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 107,
       "id": "note:packages/shared/src/article-version.test.ts",
       "kind": "note"
@@ -9574,7 +9574,7 @@
       "label": "article-version",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 174,
       "id": "note:packages/shared/src/article-version.ts",
       "kind": "note"
@@ -11072,7 +11072,7 @@
       "label": "backfill-article-versions",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 76,
       "id": "note:scripts/backfill-article-versions.ts",
       "kind": "note"
@@ -11212,7 +11212,7 @@
       "label": "article-versions-projection",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T10:51:09+08:00",
       "lines": 90,
       "id": "note:scripts/lib/article-versions-projection.ts",
       "kind": "note"
@@ -11590,8 +11590,8 @@
       "label": "article-versions.json",
       "app": "apps/web",
       "extension": ".json",
-      "created": "",
-      "lines": 257,
+      "created": "2026-10-30T10:51:09+08:00",
+      "lines": 275,
       "id": "attachment:apps/web/src/generated/article-versions.json",
       "kind": "attachment"
     },
@@ -11619,7 +11619,7 @@
       "app": "apps/web",
       "extension": ".json",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 1361,
+      "lines": 1407,
       "id": "attachment:apps/web/src/generated/content.json",
       "kind": "attachment"
     },
@@ -11633,7 +11633,7 @@
       "app": "apps/web",
       "extension": ".json",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 1995,
+      "lines": 2070,
       "id": "attachment:apps/web/src/generated/graph.json",
       "kind": "attachment"
     },

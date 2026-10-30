@@ -2,12 +2,14 @@
 status: active
 type: architecture
 title: 架构（权威）：当前态 · 最终态 · 演进对照
-last_verified: 2026-09-25
+last_verified: 2026-10-30
 ssot: true
 applies_to: [web, admin, api, agent, shared]
 ---
 
 # 架构（权威）：当前态 · 最终态 · 演进对照
+
+> **2026-10-30 图面刷新（G07 生产上线与 admin 云端常驻）**：`output/archify/adgaiwalker-architecture.json` / `.html` 已重出至 HEAD `a88f629`，四门全绿并通过视觉真审。图面事实：①站主工作台由本地运行更新为生产常驻 `admin.iwalk.pro`（经 Caddy 静态托管与鉴权双防线）；②SQLite 27 条迁移全部在生产无损应用；③C01–C24 与 O01–O10 闭环全部上线；④公共位置 readiness 仍阻断模型问答启用，生产模型启用待 G08 核验。
 
 > **2026-10-12 目标拓扑：盒子退场、本机直供（未实施）**：站主指令去掉腾讯云盒子，AI 与 API 由本机直接提供。目标图另存为 `output/archify/adgaiwalker-architecture-local.json` / `.html`（revision 钉 85b597b，四门全绿 + visual-check 通过并已人工看图）；**当前态图 `output/archify/adgaiwalker-architecture.json` 不替换**，因为盒子尚未退场。图上把出口 / Nest / dsh / admin / SQLite / data 六个节点收进「本机 · Mac」边界，Vercel 静态面不动；卡片写明退场清单、必须先起本机再停盒子的顺序、以及三条已知后果：公网白名单退场后只剩 Nest 一侧（`public-route-boundary.test.ts` 的 `compareCaddyPublicRoutes` 契约要重定义）、本机必须 24×7 否则动态功能全停、`resourceHeadroom` 512MB 门禁口径是 2C2G 盒子而非本机。仓库内没有语音/麦克风实现，该项属新增能力，不入图。
 

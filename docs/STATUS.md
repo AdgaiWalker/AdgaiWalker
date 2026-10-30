@@ -2,12 +2,14 @@
 status: active
 type: status
 title: 生产状态与验证时钟
-last_verified: 2026-09-28
+last_verified: 2026-10-30
 ssot: true
 applies_to: [web, api]
 ---
 
 # 状态（权威）
+
+> **2026-10-30 G07 生产上线与 admin.iwalk.pro 云端常驻**：生产环境已完成完整发布。①旧库与配置备份至 `C:\WalkerBackups`；②生产数据库无损迁移至 `walker-v2.db`，全量 27 条迁移应用，405 行历史数据（8 张表）100% 迁入，diff 零差异；③激活已核验快照基线（`04105a1bf8ff…`）；④服务重启，Cloudflare DNS 将 `admin.iwalk.pro` 解析切至 A 记录 `43.163.4.104`，Caddy 自动签发 Let's Encrypt 证书并静态托管 Admin；⑤端到端核验：`https://api.iwalk.pro/health` 200 回显 `e21b301`，`https://admin.iwalk.pro/` 200，账密鉴权正常。下一项为 G08（生产公共问答模型启用核验）。
 
 > **2026-09-29 本地后台补项，未部署**：第 26 条 SQLite 迁移新增 `AdminRequestLog`；人工触发的后台管理请求记录开始/结果，自动轮询跳过，运营记录新增“后台日志”查询。Agent 未单独配置模型时使用系统当前默认，并在页面显示配置来源和共享 API 地址。本地开发库先备份后迁移；生产库与站点未更改。
 
@@ -61,6 +63,16 @@ applies_to: [web, api]
 | 今 · 内容壳 / 五类 IA / 人·站 / 远景文案 | **已进生产** |
 
 ## 生产探针
+
+### 2026-10-30（G07 生产部署后复检）
+
+| 路径 / 项 | 结果 |
+|---|---|
+| `https://api.iwalk.pro/health` | 200 `{"ok":true,"db":true,"aiEnabled":true,"version":"e21b301"}` |
+| `https://admin.iwalk.pro/` | 200 HTML（Let's Encrypt 证书生效，Admin 静态托管在线） |
+| 未鉴权访问 Admin API | 401（未授权拒绝，管理双防线生效） |
+| `https://www.iwalk.pro/` | 200 HTML（Vercel 静态托管正常） |
+| `https://www.iwalk.pro/api/health` | 200 同源反向代理正常连通 |
 
 ### 2026-09-05 19:28（北京时间，切流后复检）
 

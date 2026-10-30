@@ -2,11 +2,11 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "AdgaiWalker 架构图 · 当前拓扑（85b597b + 2026-10-12 工作树）",
+    "title": "AdgaiWalker 架构图 · 当前拓扑（a88f629 + G07 生产上线）",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/AdgaiWalker/AdgaiWalker",
-      "revision": "85b597b4d2f38045265e0c7d8e6915e2bb28ddb0"
+      "revision": "a88f629f0efd7a71f3a7d62fa8d8ff5c52533fc7"
     },
     "views": [
       {
@@ -234,8 +234,8 @@
       "id": "admin",
       "type": "frontend",
       "label": "站主 · apps/admin",
-      "sublabel": "概览 / 内容 / Agent / 记录",
-      "tag": "本地验收 · 未部署",
+      "sublabel": "admin.iwalk.pro · 四面布局",
+      "tag": "生产上线 · 云端常驻",
       "pos": [
         300,
         560
@@ -248,6 +248,10 @@
         {
           "path": "apps/admin/src/shared/routes.ts",
           "label": "路由唯一来源"
+        },
+        {
+          "path": "ops/windows/Caddyfile",
+          "label": "Caddy 静态托管与鉴权"
         }
       ]
     },
@@ -390,7 +394,7 @@
     {
       "from": "admin",
       "to": "caddy",
-      "label": "SSH 隧道 :8790",
+      "label": "admin.iwalk.pro",
       "variant": "security"
     },
     {
@@ -433,7 +437,7 @@
       "title": "三面与唯一运行时",
       "items": [
         "访客面：静态站 + 预渲染文章，运行时只读 content.json",
-        "站主面：apps/admin 经 SSH 隧道与双防线，AI 只起草不主选",
+        "站主面：admin.iwalk.pro 生产常驻与双防线鉴权，AI 只起草不主选",
         "AI 面：dsh 是唯一运行时，助手 / 卡口 / 配方共用一个引擎"
       ]
     },
@@ -451,8 +455,8 @@
       "title": "真相源与实施状态",
       "items": [
         "内容正本只有 content/log；content.json 与图谱都是可重算投影",
-        "盒子坚持单 Nest + SQLite，26 条迁移；不引入 Docker / Redis / PostgreSQL / 外部监控栈",
-        "C01–C24 与 O01–O10 已验收，G01–G06 完成、下一项 G07；2026-10-12 的监控台与 Agent 直调修复仍是本地未提交，生产未部署，readiness 仍阻断公共位置启用"
+        "盒子坚持单 Nest + SQLite，27 条迁移全部应用；不引入 Docker / Redis / PostgreSQL / 外部监控栈",
+        "C01–C24 与 O01–O10 已验收，G01–G07 生产上线完成，admin.iwalk.pro 云端常驻；下一项 G08，当前公共位置 readiness 仍阻断启用"
       ]
     },
     {
