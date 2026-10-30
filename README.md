@@ -74,7 +74,7 @@ pnpm accept          # 需三端已起
 
 | 文件 | 用途 |
 |------|------|
-| [`CLAUDE.md`](CLAUDE.md) | 对话默认上下文 |
+| [`AGENTS.md`](AGENTS.md) | Agent 常驻指令与工程约定 |
 | [`docs/PRODUCT.md`](docs/PRODUCT.md) | 产品 |
 | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | 工程 + 部署 |
 | [`docs/STATUS.md`](docs/STATUS.md) | 状态 |

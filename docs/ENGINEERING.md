@@ -10,7 +10,7 @@ applies_to: [web, admin, api, shared]
 # 工程（权威）
 
 > 栈、分层、内容命名、部署、切流就绪。细节契约见 [`api/README.md`](./api/README.md)。
-> 对话默认上下文：根目录 `CLAUDE.md`。
+> 对话默认上下文：根目录 `AGENTS.md`。
 
 ## 1. 栈与目录
 

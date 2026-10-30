@@ -176,6 +176,6 @@ P2 数据页（等数据存在）、观测 P3 全部（按触发条件）、Cord
 | `docs/STATUS.md` / `docs/ENGINEERING.md` / `docs/api/README.md` | 生产状态 / 工程事实 / API 契约 |
 | `ops/windows/README.md` | 盒子运维：部署验证清单、备份恢复、runtime |
 | `docs/PRD-SITE-ASSISTANT.md` | 站内助手 PRD 与技术决策 |
-| `AGENTS.md` / `CLAUDE.md` | 项目级 agent 指令 / 工程约定 |
+| `AGENTS.md` | 项目级 agent 指令与工程约定 |
 
 已完成清单不在现行索引：`docs/archive/TODO-OPTIMIZATION.md`（T0–T4）、`docs/archive/TODO-SITE-ASSISTANT.md`（助手执行实录）。

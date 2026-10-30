@@ -29,7 +29,7 @@ function collectActiveDocFiles(): string[] {
   const files: string[] = [];
 
   // 1. 根目录核心文档
-  const rootFiles = ['README.md', 'CLAUDE.md', 'AGENTS.md', 'PLAN.md', 'to-do.md'];
+  const rootFiles = ['README.md', 'AGENTS.md', 'PLAN.md', 'to-do.md'];
   for (const rf of rootFiles) {
     const full = path.join(repoRoot, rf);
     if (existsSync(full)) files.push(full);

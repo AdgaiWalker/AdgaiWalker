@@ -29,13 +29,13 @@
 > **2026-09-21 后台重构状态（优先于下文旧界面说明）**：站主要求清空管理界面。`apps/admin` 仅保留空白开发/构建入口与 API 代理；计划、内容、复盘、设置、旧路由及管理 UI 均已退役。API、数据库、文章与共享规则保留，生产未部署此变更。旧后台页面图与验收记录仅作历史参考，不作为新重构需求。资产清单见 [后台重构前资产清单](docs/evidence/ADMIN-REBUILD-INVENTORY.md)。
 
 
-本文件是本仓库内 Agent 的项目级常驻指令。开始工作前，先阅读本文件，并同时遵守根目录 `CLAUDE.md` 中的工程约定。
+本文件是本仓库内 Agent 的项目级常驻指令与工程约定单一真相源（SSOT）。
 
 > **2026-09-25 本地实现状态**：新 admin 默认 `/overview`，四面 `/overview`、`/content`、`/agents`、`/records`，低频 `/settings`；路径唯一来源 `apps/admin/src/shared/routes.ts`。框架、Agent 修订/试跑/部署管理及 V01–V24 访客文章助手、日志保留/删除、备份恢复、会话回看、受控导出、公网路由边界、启用 readiness、首个文章日志闭环、C01 合同、C02 持久模型、C03 文件 CAS、C04 apply/reconcile 崩溃恢复、C05 人工保存受控审计出口、C06 文章编辑/差异/预览及未保存保护、C07 独立候选文件仓储、C08 后台生成内容候选、C09 精确审批与一次性消费、C10 候选差异与审批 UI 面板、C11 写入旁路清点封闭、C12 发布范围预检、C13 全工作区发布锁及清单复检、C14 发布阶段与幂等调用、C15 网页构建版本证明、C16 线上版本核验器、C17 问答快照自动切换、C18 结果不明发布核对、C19 发布脚本进程树终止核验、C20 发布清单和版本状态界面、C21 旧工作站发布接入同一出口、C22 对齐项目与小店内容边界、C23 审批撤销与并发写入边界与 C24 完整内容更新闭环已本地验收；新发布链和生产部署未完成。真实 runtime probe 尚未配置，公共位置 readiness 保持 blocked。测试库仅接受绝对 SQLite `.test.db` 文件并重建。
 
 ## 文档阅读顺序
 
-1. 根 `PLAN.md`（主执行计划：北极星 · 宪法 · 主线排期 · 冻结条款）→ 2. 根 `CLAUDE.md`（栈 / 命令 / 部署须知）→ 3. `docs/README.md`（文档地图）+ `docs/ARCHITECTURE.md`（架构图面：当前态/最终/飞轮）→ 4. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
+1. 根 `PLAN.md`（主执行计划：北极星 · 宪法 · 主线排期 · 冻结条款）→ 2. 根 `AGENTS.md`（栈 / 命令 / 部署须知）→ 3. `docs/README.md`（文档地图）+ `docs/ARCHITECTURE.md`（架构图面：当前态/最终/飞轮）→ 4. 按改动区域读 `docs/PRODUCT.md`（产品红线）、`docs/api/README.md`（API 契约）、`docs/STATUS.md`（生产状态）。
 改站内助手必须先读 `docs/PRD-SITE-ASSISTANT.md`。执行实录与决策日志在 `docs/archive/TODO-SITE-ASSISTANT.md`（已完成，禁止当待办队列）。`docs/archive/` 是退役方案，禁止当现行契约。
 
 ### 架构图（archify）· 每次进场必读
@@ -60,6 +60,109 @@
 - 测试库隔离：`apps/api` 的 vitest 把 `DATABASE_URL` 强制改写到独立 `walker.test.db`（globalSetup 每次删库重建 schema）；如需指定测试库，`API_TEST_DB_URL` 只接受绝对 SQLite `.test.db` 文件。测试绝不写开发库。真实 kernel 接线的集成测用 `Test.createTestingModule` + `KernelModule`（假 runner/临时目录用 `overrideProvider`/env 覆盖，见 `promote.kernel.integration.test.ts`、`workstation.chain.integration.test.ts`）。
 - 改生产拓扑 / 部署流程 / 产品行为后，**必须回写文档**（AGENTS.md / PRD / TODO / STATUS / api/README 对应处），保持文档与生产一致。
 - SQLite 迁移只走绝对 `file:` 路径。新库 `pnpm db:migrate`；已有库先备份，只有 schema 与基线完全一致时才可 `pnpm db:baseline`。当前生产旧库与基线不一致，须按 `ops/windows/README.md` 的 G07 重建搬迁流程处理；`dev:api` 不再隐式改 schema。旧 PG schema/迁移仅在 `apps/api/prisma/legacy-postgresql/` 供历史查阅。
+
+## 技术栈（唯一）
+
+- **pnpm monorepo**：`apps/web` · `apps/admin` · `apps/api` · `packages/shared`
+- **前端**：React + Vite + TypeScript（**无 Astro**）
+- **后端**：NestJS + Prisma + **SQLite**（本地开发、隔离测试和现有生产分别使用独立文件；不使用 PostgreSQL）
+- **内容真相源**：`content/log/**/*.{md,mdx}` → `pnpm content:gen` → `apps/web/src/generated/content.json`（**进 Git 才上 Vercel**；Admin 保存≠自动 push）
+
+## 常用命令与工作流
+
+```bash
+pnpm install
+
+# 内容生成与版本历史（改 content/log 后或切换分支后必跑）
+pnpm content:gen
+pnpm content:backfill-versions
+
+# 本地三端开发（SQLite 默认）
+pnpm db:generate && pnpm db:migrate
+pnpm dev:api    # :8788
+pnpm dev:web    # :5173（自动先 content:gen）
+pnpm dev:admin  # :5174
+
+# 内容受控发布 → GitHub → Vercel
+pnpm content:publish --push
+
+# 验证门禁链
+pnpm typecheck
+pnpm test:shared && pnpm test:api && pnpm test:web && pnpm test:agent && pnpm test:admin
+pnpm check:content-fields   # 校验所有 Markdown frontmatter 必需字段
+pnpm verify:docs            # 校验全仓文档链接单一事实源
+pnpm verify:geo             # 校验生成搜索引擎与 AI 爬取元数据
+pnpm build:web              # 前端全量静态预渲染构建（含 feeds、llms.txt、pagefind）
+pnpm accept                 # 验收测试
+```
+
+## 内容管道与构建依赖
+
+```
+content/log/**/*.{md,mdx}  →  scripts/generate-content.ts  →  apps/web/src/generated/content.json
+```
+
+- `content/log` 是内容**唯一真相源**；生成的 JSON 是 WebApp 的只读内容模型。
+- `dev:web` 和 `build:web` 自动运行 `content:gen`。
+- `build:shared` 是隐式前置条件——`packages/shared` 必须先编译，`apps/api`、`apps/admin` 和 `apps/web` 才能使用它。
+
+## 领域词汇（SSOT）
+
+同一概念只用一个词；不同概念禁止同名。全文见 [`docs/PRODUCT.md`](docs/PRODUCT.md)。
+
+| 术语 | 含义 | 出现位置 |
+|------|------|----------|
+| **提问** | "带着问题来" — `/tools` 入口，接收问题 | `dualEntry.ask`、`ToolsPage` |
+| **文章** | 阅读公开内容的 `/posts` 总览与详情 | `dualEntry.browse`、`PostsPage` |
+| **线索** (Clue) | 用户提交的原始问题 | `/clues` 端点、`CluesPage` |
+| **题苗** (Seed) | 从线索升级而来的潜在主题 | `/seeds`、`SeedsPage` |
+| **执行** (Execution) | 有效交付——可追踪的工作单元 | `/executions` |
+| **nextStep** | 下次该做什么——由规则或 AI 生成 | `NextStepStrategy`、intake 响应 |
+
+**禁止在页面中硬编码路径字符串**（如 `'/tools'`、`'/posts'`）——始终从 `dualEntry` 或 `WEB_ROUTES` / `ADMIN_ROUTES` 读取。
+
+## 前端分层规范
+
+**Component ≠ 只有 UI/UX。** 按责任分层；展开见 [`docs/ENGINEERING.md`](docs/ENGINEERING.md)。
+
+| 层 | 做什么 |
+|----|--------|
+| **配置** | `dual-entry` / `nav` 等产品语义 SSOT |
+| **规则** | shared 纯函数、错误码与限流约束 |
+| **门面** | `public-api`（Web）/ API 数据层（Admin），无 className |
+| **页** | 路由任务编排，调门面、组块 |
+| **块/壳** | 可复用 UI+UX；壳只布局 |
+
+禁止：块里写领域规则；页复制第二套校验；规则 import React；壳办业务。
+
+## 开发纪律与禁止事项
+
+- 严禁重新引入 Astro / `.astro` 组件 / `@astrojs/*`
+- 严禁在 React 正文里保留对 `.astro` 的 import
+- 严禁把旧 WorkItem 巨石后台、Match 双轨当默认路径
+- 严禁绕过受控发布流程直改线上构建
+
+## 功能开发检查清单
+
+添加任何功能时，按顺序确认：
+1. **配置？** — 新 path / 文案 / 导航项 → `dual-entry` / `nav`
+2. **规则？** — 新校验 / 纯计算 → `packages/shared`
+3. **门面？** — 新 HTTP 调用 → `public-api`（Web）/ 数据层（Admin），并同步 `docs/api/README.md`
+4. **页 + 块？** — UI 编排：页调门面 + 组合块；UI 块仅 `props + onXxx`，能测补测
+
+## 部署与发版链路
+
+| 项 | 事实 |
+|----|------|
+| GitHub | `https://github.com/AdgaiWalker/AdgaiWalker` · 分支 **`main`** |
+| Vercel 项目 | **`adgai-walker`**（账号/团队 `praxiswalker-6245`） |
+| 生产域名 | **https://www.iwalk.pro**（访客端）· **https://admin.iwalk.pro**（管理端）· **https://api.iwalk.pro**（后端 API） |
+| 触发方式 | **`git push origin main` → Vercel 自动构建部署 Web；盒子上执行受控发布** |
+| 构建流程 | 根 `vercel.json`：`pnpm build:web` → `apps/web/dist`（含字段门禁、预渲染、sitemap、llms、GEO、pagefind） |
+
+```text
+改代码/改内容 → commit → push main → Vercel 构建 web → 发布 www.iwalk.pro
+```
 
 ## 生产拓扑（2026-09-03 切流后）
 

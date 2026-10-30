@@ -21,7 +21,7 @@ applies_to: [web, admin, api, agent, shared]
 | 根 [`PLAN.md`](../PLAN.md) | **主执行计划**（北极星 · 宪法 · 主线排期 · 冻结条款 · 想法记录） |
 | 根 [`to-do.md`](../to-do.md) | **新后台原子执行清单**（框架优先 · 依赖 · 验收 · 任务进度唯一真相源） |
 | 根 [`README.md`](../README.md) | 安装与三端启动 |
-| 根 [`CLAUDE.md`](../CLAUDE.md) | **对话默认上下文**（栈 / 命令 / 部署须知） |
+| 根 [`AGENTS.md`](../AGENTS.md) | **Agent 常驻指令与工程约定**（栈 / 命令 / 部署须知） |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | **系统架构权威图面**（当前态 · 最终架构 · 循环飞轮 · 演进对照） |
 | [`PRODUCT.md`](./PRODUCT.md) | **产品权威与红线**（近端卡/逛验收 · 远景意图与 NorthStar 边界） |
 | [`ENGINEERING.md`](./ENGINEERING.md) | **工程规范**（分层、命名、部署、切流就绪） |
@@ -55,7 +55,7 @@ applies_to: [web, admin, api, agent, shared]
   - [`evidence/ADMIN-REBUILD-INVENTORY.md`](./evidence/ADMIN-REBUILD-INVENTORY.md)（重构前资产清单）
 - **历史归档 `archive/`**：[`archive/README.md`](./archive/README.md)（所有已退役方案、历史待办与旧版 PRD）
 
-冲突时：**代码 + `api/README` + PRODUCT/ENGINEERING/STATUS + `CLAUDE.md` > `archive/`**。近端行为以 PRODUCT 为准。
+冲突时：**代码 + `api/README` + PRODUCT/ENGINEERING/STATUS + `AGENTS.md` > `archive/`**。近端行为以 PRODUCT 为准。
 
 历史 PRD / 退役 Goal / 切流长文 / 旧分层全文 / Astro 契约 / AI 工作站 MVP 三件套（`archive/ai-workstation/`，2026-08 验证期）/ 已完成执行清单（`archive/TODO-OPTIMIZATION.md` · `archive/TODO-SITE-ASSISTANT.md`）→ [`archive/`](./archive/)。
 **禁止**把 `archive/api-astro-era` 或已归档 TODO 当现行待办。
