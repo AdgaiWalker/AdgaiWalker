@@ -40,12 +40,15 @@ export class ContentReleaseController {
     changeId?: unknown;
     grantId?: unknown;
     requestKey?: unknown;
+    versionNote?: unknown;
   }) {
     const slug = requireSlug(body);
     const changeId = typeof body?.changeId === 'string' && body.changeId.trim() ? body.changeId.trim() : undefined;
     const grantId = typeof body?.grantId === 'string' && body.grantId.trim() ? body.grantId.trim() : undefined;
     const requestKey = typeof body?.requestKey === 'string' && body.requestKey.trim() ? body.requestKey.trim() : undefined;
-    return this.releases.prepareRelease({ slug, changeId, grantId, requestKey });
+    const versionNote = typeof body?.versionNote === 'string' ? body.versionNote.trim() : '';
+    if (!versionNote) throw validationError('version-note-required');
+    return this.releases.prepareRelease({ slug, changeId, grantId, requestKey, versionNote });
   }
 
   @Post(':id/verify')

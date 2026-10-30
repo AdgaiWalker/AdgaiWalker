@@ -254,6 +254,7 @@ model ContentRelease {
   verifiedHash          String?
   verifiedAt            DateTime?
   errorCode             String?
+  versionNote           String?
   requestKey            String   @unique
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

@@ -25,6 +25,32 @@ export class ContentAdminController {
     return this.content.list();
   }
 
+  @Get(':slug/history')
+  history(@Param('slug') slug: string) {
+    return this.content.listVersions(slug);
+  }
+
+  @Get(':slug/history/:version')
+  versionDetail(@Param('slug') slug: string, @Param('version') version: string) {
+    const n = Number(version);
+    if (!Number.isInteger(n) || n < 1) throw validationError('version-invalid');
+    return this.content.getVersion(slug, n);
+  }
+
+  @Get(':slug/diff/:a/:b')
+  versionDiff(
+    @Param('slug') slug: string,
+    @Param('a') a: string,
+    @Param('b') b: string,
+  ) {
+    const na = Number(a);
+    const nb = Number(b);
+    if (!Number.isInteger(na) || na < 1 || !Number.isInteger(nb) || nb < 1) {
+      throw validationError('version-invalid');
+    }
+    return this.content.diffVersions(slug, na, nb);
+  }
+
   @Get(':slug')
   get(@Param('slug') slug: string) {
     return this.content.get(slug);

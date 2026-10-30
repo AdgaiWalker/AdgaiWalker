@@ -1,6 +1,46 @@
 {
-  "generatedAt": "2026-09-14T13:46:46.124Z",
+  "generatedAt": "2026-10-30T02:50:31.734Z",
   "items": [
+    {
+      "slug": "2026-10-29",
+      "title": "我的思考被额度绑架了",
+      "date": "2026-10-29T00:00:00.000Z",
+      "updated": "2026-10-29T00:00:00.000Z",
+      "author": "duola",
+      "type": "knowledge",
+      "form": "note",
+      "domain": "ai",
+      "intent": "record",
+      "valueMode": "existence",
+      "status": "",
+      "summary": "当把注意力全部放在“额度快要完了”这件事上，越担心就越做不好——我的思考被额度绑架了。",
+      "body": "今天晚上，是用 Grokbot 的第三天。今天一共有 48% 的额度，我有很多事情没有做完，一直在尝试用 Grokbot 去省额度。\n\n但是由于我是初尝试，我的 Grokbot 不太听话。即使我把 Codex 和 gemini 账号都交给他了，他也没有尽心尽力地去使用它们，去省 bot 自己的额度。尤其是在做到最后 10% 的时候，也就是今天晚上 8 点半，额度还剩 10% 了。我就越来越担心，额度用完我的任务还做不完怎么办。\n\n但是我现在发现，我越担心这件事就越做不好。因为我把注意力全部放在了“额度快要完了”这件事上，我的思考被额度绑架了。",
+      "tags": [
+        "日记",
+        "随想",
+        "AI"
+      ],
+      "level": "",
+      "emoji": "",
+      "image": "",
+      "url": "",
+      "visibility": "public",
+      "published": true,
+      "hall": "lab",
+      "series": "",
+      "seriesOrder": null,
+      "related": [],
+      "version": null,
+      "previousVersion": "",
+      "aiUsePolicy": {
+        "level": "AI-2",
+        "readable": true,
+        "citable": true,
+        "actionable": false,
+        "reason": ""
+      },
+      "resources": []
+    },
     {
       "slug": "dorazoom",
       "title": "DoraZoom — macOS 屏幕讲解与标注工具",

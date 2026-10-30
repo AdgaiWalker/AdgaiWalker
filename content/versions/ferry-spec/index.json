@@ -1,0 +1,12 @@
+{
+  "slug": "ferry-spec",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "d41191977d819165280333d609131ad1fa4c8c9dba1c2c4b259362dda10b88ea",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.211Z",
+      "releaseId": "backfill_2b7a98ee-47c"
+    }
+  ]
+}

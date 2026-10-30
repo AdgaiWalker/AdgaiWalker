@@ -27,6 +27,7 @@ import { MarkdownPreview } from "../../components/MarkdownPreview";
 import { ContentChangeReviewPanel } from "./ContentChangeReviewPanel";
 import { ContentReleasePanel } from "./ContentReleasePanel";
 import { ContentReminderPanel } from "./ContentReminderPanel";
+import { ContentHistoryPanel } from "./ContentHistoryPanel";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 import { timeLabel, typeLabel } from "../../shared/labels";
 
@@ -56,7 +57,7 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
   const [savedRaw, setSavedRaw] = useState(item.raw);
   const [baseHash, setBaseHash] = useState(item.hash || "");
   const [activeTab, setActiveTab] = useState<
-    "edit" | "preview" | "diff" | "raw" | "conflict" | "review" | "release" | "reminder"
+    "edit" | "preview" | "diff" | "raw" | "conflict" | "review" | "release" | "reminder" | "history"
   >("edit");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -70,7 +71,8 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
   const isDirty = draft !== savedRaw;
   const activeGroup = activeTab === "review" || activeTab === "release"
     ? "review"
-    : activeTab === "reminder" ? "reminder" : "edit";
+    : activeTab === "reminder" ? "reminder"
+    : activeTab === "history" ? "history" : "edit";
   const blocker = useBlocker(({ currentLocation, nextLocation }) =>
     isDirty && currentLocation.pathname !== nextLocation.pathname,
   );
@@ -287,8 +289,28 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
       )}
 
       {saveStatus && (
-        <div className="notice" style={{ background: "#edfcf2", color: "#166534", border: "1px solid #bbf7d0" }}>
-          {saveStatus}
+        <div
+          className="notice"
+          style={{
+            background: "#edfcf2",
+            color: "#166534",
+            border: "1px solid #bbf7d0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          <span>{saveStatus}</span>
+          <button
+            type="button"
+            className="button"
+            onClick={() => setActiveTab("release")}
+            style={{ fontSize: 12, padding: "4px 10px", background: "white", borderColor: "#86efac" }}
+          >
+            前往审核并推送到 GitHub &rarr;
+          </button>
         </div>
       )}
 
@@ -321,6 +343,19 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
                 撤回未保存改动
               </button>
             )}
+
+            {!isDirty && (
+              <button
+                type="button"
+                className="button"
+                onClick={() => setActiveTab("release")}
+                title="前往审核与发布面板，将已保存内容推送到 GitHub"
+                style={{ color: "#0e7490", borderColor: "#0e7490" }}
+              >
+                <UploadCloud size={15} />
+                推送到 GitHub 上线 &rarr;
+              </button>
+            )}
           </div>
 
           <div className="content-status-info">
@@ -336,9 +371,10 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
           <button type="button" aria-current={activeGroup === "edit" ? "page" : undefined} onClick={() => setActiveTab("edit")}>编辑</button>
           <button type="button" aria-current={activeGroup === "review" ? "page" : undefined} onClick={() => setActiveTab("review")}>审核与发布</button>
           <button type="button" aria-current={activeGroup === "reminder" ? "page" : undefined} onClick={() => setActiveTab("reminder")}>更新事项</button>
+          <button type="button" aria-current={activeGroup === "history" ? "page" : undefined} onClick={() => setActiveTab("history")}>历史</button>
         </nav>
 
-        {activeGroup !== "reminder" && <div className="tabs" role="tablist" aria-label="当前工作区操作">
+        {activeGroup !== "reminder" && activeGroup !== "history" && <div className="tabs" role="tablist" aria-label="当前工作区操作">
           {activeGroup === "edit" && <>
           <button
             type="button"
@@ -455,6 +491,17 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
 
         {activeTab === "reminder" && (
           <ContentReminderPanel slug={item.slug} title={item.title} />
+        )}
+
+        {activeTab === "history" && (
+          <ContentHistoryPanel
+            slug={item.slug}
+            onRestore={(raw, fromVersion) => {
+              setDraft(raw);
+              setSaveStatus(`已以 v${fromVersion} 正文开草稿——保存并发布后才会成为新版本`);
+              setActiveTab("edit");
+            }}
+          />
         )}
 
         {activeTab === "raw" && <pre className="raw-content">{draft}</pre>}

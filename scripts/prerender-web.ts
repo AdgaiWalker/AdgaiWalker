@@ -6,6 +6,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { expandWikiLinks } from '../packages/shared/src/content';
+import {
+  articleHistoryLabel,
+  articleHistorySummary,
+  stripFrontmatterBlock,
+} from '../packages/shared/src/article-version';
 import type {
   GeneratedContent,
   GeneratedContentItem,
@@ -70,6 +75,30 @@ const parsed = JSON.parse(
 const publicItems = parsed.items ?? [];
 const docs = getBrowseItems(publicItems);
 const docsBySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+
+// 文章版本历史投影（content/versions 的静态化产物）；无文件即无历史，不阻断构建
+const articleVersionsData = (() => {
+  try {
+    return JSON.parse(
+      fs.readFileSync(path.join(webGeneratedDir, 'article-versions.json'), 'utf8'),
+    ) as {
+      articles?: Record<
+        string,
+        { version: number; note: string; publishedAt: string; body: string }[]
+      >;
+    };
+  } catch {
+    return { articles: {} };
+  }
+})();
+/**
+ * 文章页版本短标签（单点来自 shared articleHistoryLabel）：
+ * 单版本返回 null —— 静态页同样不出声，与 SPA 行为一致。
+ */
+function historyLabelFor(slug: string): string | null {
+  return articleHistoryLabel(articleVersionsData.articles?.[slug]?.length ?? 0);
+}
+
 const viteTemplate = fs.readFileSync(path.join(webDistDir, 'index.html'), 'utf8');
 
 function escapeHtml(value: string): string {
@@ -120,10 +149,13 @@ function metaTags({
   contentHash = '',
   buildId = '',
   gitCommit = '',
+  canonicalPath = '',
 }: {
   title: string;
   description: string;
   pathname: string;
+  /** canonical 覆盖（默认 = pathname 自身；历史版本页指向当前版） */
+  canonicalPath?: string;
   type?: 'website' | 'article' | 'profile';
   image?: string;
   published?: string;
@@ -135,7 +167,7 @@ function metaTags({
   buildId?: string;
   gitCommit?: string | null;
 }): string {
-  const canonical = absoluteUrl(pathname);
+  const canonical = absoluteUrl(canonicalPath || pathname);
   const socialImage = image || defaultImageUrl();
   const articleMeta =
     type === 'article'
@@ -862,7 +894,7 @@ for (const doc of docs) {
     <article>
       <header data-content-hash="${escapeHtml(contentHash)}">
         <h1>${escapeHtml(doc.title)}</h1>
-        <p>作者：<a href="/me">${escapeHtml(authorName)}</a> · <time datetime="${escapeHtml(published)}">发布 ${escapeHtml(displayDate(doc.date))}</time>${modified && modified !== published ? ` · <time datetime="${escapeHtml(modified)}">更新 ${escapeHtml(displayDate(doc.updated))}</time>` : ''}</p>
+        <p>作者：<a href="/me">${escapeHtml(authorName)}</a> · <time datetime="${escapeHtml(published)}">发布 ${escapeHtml(displayDate(doc.date))}</time>${modified && modified !== published ? ` · <time datetime="${escapeHtml(modified)}">更新 ${escapeHtml(displayDate(doc.updated))}</time>` : ''}${historyLabelFor(doc.slug) ? ` · <a href="${escapeHtml(`${pathname}/history`)}">${escapeHtml(historyLabelFor(doc.slug)!)}</a>` : ''}</p>
         <p>${escapeHtml(doc.summary)}</p>
         ${doc.tags.length ? `<p>标签：${doc.tags.map(escapeHtml).join('、')}</p>` : ''}
       </header>
@@ -966,6 +998,95 @@ for (const doc of docs) {
     }),
   );
 }
+// ---- 文章版本历史静态页（公开演进史）----
+// 纪律：版本页 canonical 指向当前版；页面明示永久保留承诺；数据全部来自构建期投影。
+for (const [versionSlug, versionList] of Object.entries(
+  articleVersionsData.articles ?? {},
+)) {
+  const versionDoc = docsBySlug.get(versionSlug);
+  if (!versionDoc || versionList.length === 0) continue;
+  const currentPath = `/posts/${encodeURIComponent(versionSlug)}`;
+
+  // 历史列表页
+  const historyPath = `${currentPath}/history`;
+  const firstAt = versionList[0]!.publishedAt;
+  const latestAt = versionList[versionList.length - 1]!.publishedAt;
+  const historyBody = `<main data-pagefind-body>
+    <nav aria-label="面包屑"><a href="/">Walker</a> / <a href="/posts">证据</a> / <a href="${escapeHtml(currentPath)}">${escapeHtml(versionDoc.title)}</a></nav>
+    <header><h1>版本历史 · ${escapeHtml(versionDoc.title)}</h1>
+    <p>${escapeHtml(
+      versionList.length > 1
+        ? articleHistorySummary({
+            count: versionList.length,
+            firstPublishedAt: firstAt,
+            latestPublishedAt: latestAt,
+          })
+        : '本文只有一个公开版本——首版就是当前版，没有更早的内容可看。',
+    )}</p></header>
+    <ol>${[...versionList]
+      .reverse()
+      .map(
+        (v) =>
+          `<li><a href="${escapeHtml(currentPath)}/v/${v.version}"><strong>v${v.version}</strong></a> · <time datetime="${escapeHtml(v.publishedAt)}">${escapeHtml(v.publishedAt.slice(0, 10))}</time><p>${escapeHtml(v.note)}</p></li>`,
+      )
+      .join('')}</ol>
+    <p><a href="${escapeHtml(currentPath)}">回到当前版本</a></p>
+  </main>`;
+  writeRoute(
+    historyPath,
+    renderPage({
+      head: metaTags({
+        title: `版本历史 · ${versionDoc.title} · Walker`,
+        description: `${versionDoc.title} 的公开版本演进史，共 ${versionList.length} 个版本`,
+        pathname: historyPath,
+        canonicalPath: currentPath,
+      }),
+      body: historyBody,
+      schema: {
+        '@context': 'https://schema.org',
+        '@graph': commonGraph(historyPath, `版本历史 · ${versionDoc.title}`, versionDoc.summary),
+      },
+    }),
+  );
+
+  // 各版本详情页
+  for (const v of versionList) {
+    const versionPath = `${currentPath}/v/${v.version}`;
+    const bodyMd = stripFrontmatterBlock(v.body);
+    const versionHtml = renderMarkdown(bodyMd);
+    const versionBody = `<main data-pagefind-body>
+      <nav aria-label="面包屑"><a href="/">Walker</a> / <a href="/posts">证据</a> / <a href="${escapeHtml(currentPath)}">${escapeHtml(versionDoc.title)}</a> / <a href="${escapeHtml(historyPath)}">版本历史</a></nav>
+      <article>
+        <header>
+          <h1>${escapeHtml(versionDoc.title)} <small>v${v.version}</small></h1>
+          <p>发布于 <time datetime="${escapeHtml(v.publishedAt)}">${escapeHtml(displayDate(v.publishedAt))}</time></p>
+          <p>这是历史版本，内容可能已过时；<a href="${escapeHtml(currentPath)}">当前版本见这里</a>。</p>
+          <p>变更说明：${escapeHtml(v.note)}</p>
+        </header>
+        <div class="prose-md">${versionHtml}</div>
+        <footer><p>本版本已永久保留（不可修改、不可删除）；如日后下架会在此说明。</p>
+        <p><a href="${escapeHtml(historyPath)}">查看全部 ${versionList.length} 个版本</a> · <a href="${escapeHtml(currentPath)}">当前版本</a></p></footer>
+      </article>
+    </main>`;
+    writeRoute(
+      versionPath,
+      renderPage({
+        head: metaTags({
+          title: `${versionDoc.title} v${v.version} · Walker`,
+          description: `${versionDoc.title} 的历史版本 v${v.version}（发布于 ${v.publishedAt.slice(0, 10)}）`,
+          pathname: versionPath,
+          canonicalPath: currentPath,
+        }),
+        body: versionBody,
+        schema: {
+          '@context': 'https://schema.org',
+          '@graph': commonGraph(versionPath, `${versionDoc.title} v${v.version}`, versionDoc.summary),
+        },
+      }),
+    );
+  }
+}
+
 for (const route of SPA_SHELL_ROUTES) {
   writeRoute(
     route.pathname,

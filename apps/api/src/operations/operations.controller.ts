@@ -1,6 +1,11 @@
-import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Put, Query } from "@nestjs/common";
 import { parseOpsPagination } from "@walker/shared";
-import { validationError } from "../common/http-error";
+import {
+  getAdminUsername,
+  updateAdminPassword,
+  verifyAdminPassword,
+} from "../auth/admin-token.middleware";
+import { ApiError, validationError } from "../common/http-error";
 import { OperationsService } from "./operations.service";
 
 /** 默认管理鉴权；不加入公开白名单。 */
@@ -16,6 +21,23 @@ export class OperationsController {
   }
   @Get("capabilities") capabilities() {
     return this.operations.capabilities();
+  }
+  @Put("admin-password")
+  changePassword(
+    @Body() body: { currentPassword?: unknown; newPassword?: unknown },
+  ) {
+    const currentPassword =
+      typeof body?.currentPassword === "string" ? body.currentPassword.trim() : "";
+    const newPassword =
+      typeof body?.newPassword === "string" ? body.newPassword.trim() : "";
+    if (!verifyAdminPassword(currentPassword)) {
+      throw new ApiError("invalid-current-password", 400, "当前密码不正确");
+    }
+    if (newPassword.length < 6) {
+      throw validationError("新密码长度至少为 6 位");
+    }
+    updateAdminPassword(newPassword);
+    return { ok: true, username: getAdminUsername() };
   }
   @Get("agents") agents() {
     return this.operations.agents();

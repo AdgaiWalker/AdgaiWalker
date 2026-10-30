@@ -1,7 +1,32 @@
 {
-  "generatedAt": "2026-09-14T13:41:14.631Z",
+  "generatedAt": "2026-10-30T02:50:31.848Z",
   "seed": 20260914,
   "nodes": [
+    {
+      "id": "note:2026-10-29",
+      "kind": "note",
+      "slug": "2026-10-29",
+      "title": "我的思考被额度绑架了",
+      "date": "2026-10-29T00:00:00.000Z",
+      "updated": "2026-10-29T00:00:00.000Z",
+      "created": "2026-10-29T00:00:00.000Z",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "note",
+      "domain": "ai",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "日记",
+        "随想",
+        "AI"
+      ],
+      "summary": "当把注意力全部放在“额度快要完了”这件事上，越担心就越做不好——我的思考被额度绑架了。",
+      "totalDegree": 3,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 3
+    },
     {
       "id": "note:dorazoom",
       "kind": "note",
@@ -756,9 +781,9 @@
       "id": "tag:AI",
       "kind": "tag",
       "tag": "AI",
-      "totalDegree": 20,
+      "totalDegree": 21,
       "linkDegree": 0,
-      "inDegree": 20,
+      "inDegree": 21,
       "outDegree": 0
     },
     {
@@ -1149,6 +1174,15 @@
       "outDegree": 0
     },
     {
+      "id": "tag:日记",
+      "kind": "tag",
+      "tag": "日记",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
       "id": "tag:未来",
       "kind": "tag",
       "tag": "未来",
@@ -1287,9 +1321,9 @@
       "id": "tag:随想",
       "kind": "tag",
       "tag": "随想",
-      "totalDegree": 2,
+      "totalDegree": 3,
       "linkDegree": 0,
-      "inDegree": 2,
+      "inDegree": 3,
       "outDegree": 0
     },
     {
@@ -1406,6 +1440,21 @@
       "source": "note:walker-launch",
       "target": "note:fear-as-fuel",
       "kind": "link"
+    },
+    {
+      "source": "note:2026-10-29",
+      "target": "tag:日记",
+      "kind": "tag"
+    },
+    {
+      "source": "note:2026-10-29",
+      "target": "tag:随想",
+      "kind": "tag"
+    },
+    {
+      "source": "note:2026-10-29",
+      "target": "tag:AI",
+      "kind": "tag"
     },
     {
       "source": "note:dorazoom",

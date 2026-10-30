@@ -1,0 +1,12 @@
+{
+  "slug": "design-for-people",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "4fdad83e6b52e9e2dd4fc8b2072a43cc1c9e2828060aebf9c35a637af463340a",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.209Z",
+      "releaseId": "backfill_09d59985-ece"
+    }
+  ]
+}

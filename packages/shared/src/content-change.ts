@@ -110,6 +110,8 @@ export interface ContentRelease {
   verifiedHash: ContentSha256 | null;
   verifiedAt: string | null;
   errorCode: string | null;
+  /** 变更说明（文章版本历史的「为什么」，发布确证时固化为一条公开版本） */
+  versionNote?: string | null;
   requestKey: string;
   createdAt: string;
   updatedAt: string;

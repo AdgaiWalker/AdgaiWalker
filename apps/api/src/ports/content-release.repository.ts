@@ -16,6 +16,8 @@ export type NewContentRelease = {
   /** 公开版本身份：线上 content-hash 与 public-manifest 条目 hash 的同一口径。 */
   sourceHash: string;
   publishApproval: ContentApproval<'publish-website'>;
+  /** 变更说明：发布确证时固化为公开版本历史的「为什么」 */
+  versionNote?: string | null;
   requestKey: string;
 };
 

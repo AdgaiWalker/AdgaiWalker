@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { NextFunction, Request, Response } from 'express';
 import { AdminTokenMiddleware } from './admin-token.middleware';
 
@@ -37,8 +37,14 @@ function run(req: Request, res: Response): boolean {
   return nextCalled;
 }
 
+beforeEach(() => {
+  delete process.env.WALKER_ADMIN_TOKEN;
+  delete process.env.WALKER_ADMIN_USERNAME;
+});
+
 afterEach(() => {
   delete process.env.WALKER_ADMIN_TOKEN;
+  delete process.env.WALKER_ADMIN_USERNAME;
 });
 
 describe('AdminTokenMiddleware', () => {
@@ -69,6 +75,16 @@ describe('AdminTokenMiddleware', () => {
     process.env.WALKER_ADMIN_TOKEN = TOKEN;
     const { res } = mockRes();
     expect(run(mockReq({ 'x-admin-token': TOKEN }), res)).toBe(true);
+  });
+
+  it('同时传 x-admin-username=Dora 与正确密码时放行，账号错误时拒绝', () => {
+    process.env.WALKER_ADMIN_TOKEN = TOKEN;
+    const { res } = mockRes();
+    expect(run(mockReq({ 'x-admin-username': 'Dora', 'x-admin-token': TOKEN }), res)).toBe(true);
+
+    const { res: resWrongUser, state } = mockRes();
+    expect(run(mockReq({ 'x-admin-username': 'other', 'x-admin-token': TOKEN }), resWrongUser)).toBe(false);
+    expect(state.status).toBe(401);
   });
 
   it('错误的 x-admin-token 拒绝', () => {

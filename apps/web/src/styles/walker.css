@@ -4996,3 +4996,44 @@ textarea {
 @media (min-width: 1024px) and (min-height: 1280px) {
   .xiaoying-home #desktop-canvas { zoom: 1.72; }
 }
+
+/* ---- 文章版本历史（公开演进史）---- */
+.article-version-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.6em 0.9em;
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.3));
+  border-radius: 8px;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+.article-version-note {
+  font-size: 0.92em;
+  opacity: 0.8;
+}
+.article-version-footer {
+  margin-top: 2.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--line, rgba(128, 128, 128, 0.3));
+  font-size: 0.9em;
+}
+.article-version-permanence {
+  opacity: 0.7;
+}
+.article-history-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 1em;
+}
+.article-history-item {
+  padding: 0.8em 1em;
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.3));
+  border-radius: 10px;
+}
+.article-history-note {
+  margin: 0.4em 0 0;
+  font-size: 0.92em;
+  opacity: 0.85;
+}

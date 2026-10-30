@@ -1,0 +1,12 @@
+{
+  "slug": "vibe0s",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "db16f5869f0446982925e8e9b14e507c791cd065ed9d644a3e34a0b874d1cc62",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.221Z",
+      "releaseId": "backfill_71315c66-17a"
+    }
+  ]
+}

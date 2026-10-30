@@ -1,0 +1,12 @@
+{
+  "slug": "molan-ai-file-assistant",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "311a09c46f40362806cb60f55821d4fae039bf270c30b8d8ab76575a2ddb1f7e",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.219Z",
+      "releaseId": "backfill_d1385c5e-cf7"
+    }
+  ]
+}

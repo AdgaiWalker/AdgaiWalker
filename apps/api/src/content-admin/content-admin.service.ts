@@ -1,5 +1,5 @@
 /** 管理端内容应用服务 — 读取文件仓储，人工保存委托给受审计 mutation service。 */
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import matter from 'gray-matter';
 import { validateProjectMetadata } from '@walker/shared';
 import { ApiError } from '../common/http-error';
@@ -9,6 +9,8 @@ import {
   type ContentFileRepositoryPort,
 } from '../ports/content-file.repository';
 import { CONTENT_MUTATION_SERVICE, type ContentMutationPort } from '../ports/content-mutation.port';
+import { ARTICLE_VERSION_STORE, type ArticleVersionStorePort } from '../ports/article-version-store.port';
+import { computeTextDiff } from '@walker/shared';
 
 @Injectable()
 export class ContentAdminService {
@@ -17,6 +19,8 @@ export class ContentAdminService {
     private readonly files: ContentFileRepositoryPort,
     @Inject(CONTENT_MUTATION_SERVICE)
     private readonly mutations: ContentMutationPort,
+    @Optional() @Inject(ARTICLE_VERSION_STORE)
+    private readonly versions?: ArticleVersionStorePort,
   ) {}
 
   list() {
@@ -94,6 +98,49 @@ export class ContentAdminService {
         msg,
       );
     }
+  }
+
+  // ---- 版本历史（只读；版本库为只追加公开区，此处无写路径） ----
+
+  /** 列版本（不带正文） */
+  async listVersions(slug: string) {
+    if (!this.versions) throw new ApiError('article-versions-unavailable', HttpStatus.SERVICE_UNAVAILABLE, '版本库不可用');
+    const index = await this.versions.readIndex(slug);
+    return { slug, versions: index ? [...index.versions].reverse() : [] };
+  }
+
+  /** 看某版（带正文） */
+  async getVersion(slug: string, version: number) {
+    if (!this.versions) throw new ApiError('article-versions-unavailable', HttpStatus.SERVICE_UNAVAILABLE, '版本库不可用');
+    const index = await this.versions.readIndex(slug);
+    const entry = index?.versions.find((v) => v.version === version);
+    if (!index || !entry) {
+      throw new ApiError('article-version-not-found', HttpStatus.NOT_FOUND, '找不到该版本');
+    }
+    const body = await this.versions.readBody(entry.contentHash);
+    if (body === null) {
+      throw new ApiError('article-version-body-missing', HttpStatus.INTERNAL_SERVER_ERROR, '版本正文缺失');
+    }
+    return { slug, version: entry, body };
+  }
+
+  /** 比两版（diff 现算，不落盘） */
+  async diffVersions(slug: string, a: number, b: number) {
+    if (!this.versions) throw new ApiError('article-versions-unavailable', HttpStatus.SERVICE_UNAVAILABLE, '版本库不可用');
+    const index = await this.versions.readIndex(slug);
+    const va = index?.versions.find((v) => v.version === a);
+    const vb = index?.versions.find((v) => v.version === b);
+    if (!va || !vb) {
+      throw new ApiError('article-version-not-found', HttpStatus.NOT_FOUND, '找不到该版本');
+    }
+    const [bodyA, bodyB] = await Promise.all([
+      this.versions.readBody(va.contentHash),
+      this.versions.readBody(vb.contentHash),
+    ]);
+    if (bodyA === null || bodyB === null) {
+      throw new ApiError('article-version-body-missing', HttpStatus.INTERNAL_SERVER_ERROR, '版本正文缺失');
+    }
+    return { slug, a: va, b: vb, diff: computeTextDiff(bodyA, bodyB) };
   }
 
 }

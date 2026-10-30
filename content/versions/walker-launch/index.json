@@ -1,0 +1,12 @@
+{
+  "slug": "walker-launch",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "ec262a9a317d9d99aeef9edf6bd350c64384866cf98a7de7312748a71e300f0d",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.222Z",
+      "releaseId": "backfill_147002b8-b7a"
+    }
+  ]
+}

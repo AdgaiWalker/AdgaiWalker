@@ -1,0 +1,12 @@
+{
+  "slug": "idea-cocreate",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "ba0fd2e4253e6548004d5df6f6b4525f1ab6e824731169c000c042ba9fd35adc",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.217Z",
+      "releaseId": "backfill_f7e24927-914"
+    }
+  ]
+}

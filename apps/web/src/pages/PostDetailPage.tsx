@@ -24,6 +24,11 @@ import {
   getVersionChain,
 } from '../content';
 import { getGraphBodies, getKnowledgeGraph } from '../graph';
+import { getArticleVersions } from '../article-versions';
+import {
+  articleHistoryLabel,
+  articleVersionListPath,
+} from '@walker/shared';
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
 import { createContentGraphDomain } from '../components/graph/domains';
 import { WEB_ROUTES } from '../shared/routes';
@@ -129,6 +134,8 @@ function PostDetailBody({
   const statusLabel = post.status
     ? (STATUS_LABELS[post.status] ?? post.status)
     : '';
+  // 单版本不显示（首版即当前版，无旧版可看）；多版本才给一个极短的可点标签
+  const historyLabel = articleHistoryLabel(getArticleVersions(post.slug).length);
 
   return (
     <div className="reading-stage">
@@ -156,6 +163,12 @@ function PostDetailBody({
             {formatDateLocale(parseIsoDate(post.date))}
             {` · 约 ${mins} 分钟`}
             {statusLabel ? ` · ${statusLabel}` : ''}
+            {historyLabel ? (
+              <>
+                {' · '}
+                <Link to={articleVersionListPath(post.slug)}>{historyLabel}</Link>
+              </>
+            ) : null}
           </p>
           {post.summary ? (
             <p className="article-summary">{post.summary}</p>

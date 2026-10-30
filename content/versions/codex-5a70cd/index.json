@@ -1,0 +1,12 @@
+{
+  "slug": "codex-5a70cd",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "d65a15a9ce30749d50e3d35949b14c416fcbbac268315b0c21378408582fbe60",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.208Z",
+      "releaseId": "backfill_27b4281d-a4b"
+    }
+  ]
+}

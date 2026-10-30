@@ -12,8 +12,8 @@ export function clearPrivateSession() {
   queryClient.clear();
 }
 export const authProvider: AuthProvider = {
-  async login({ token }: { token?: string }) {
-    setAdminToken(token);
+  async login({ username, token }: { username?: string; token?: string }) {
+    setAdminToken(token, username);
     try {
       await requestJson<OpsCapabilities>("/ops/capabilities");
       return { success: true };

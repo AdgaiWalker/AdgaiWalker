@@ -1,0 +1,12 @@
+{
+  "slug": "itab-agent-spaces",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "c6abf40ece1ca421764018c2699b7393921f0765ed14ebf9103747b71d1a1e4e",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.218Z",
+      "releaseId": "backfill_bcbe7468-e08"
+    }
+  ]
+}

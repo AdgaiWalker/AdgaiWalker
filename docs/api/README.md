@@ -277,7 +277,19 @@ body：`{ "slug": string }`。返回 `ok`、`missing`、文件 `targetHash`、�
 
 ### `POST /admin/content/release/prepare` 已落地
 
-body：`{ slug, changeId?, grantId?, requestKey? }`。站主手工点击生成独立的 `PREPARED` 发布单；显式填写 `grantId` 时必须是当前文章有效的 `content:publish` 授权。返回发布单及批准绑定。
+body：`{ slug, changeId?, grantId?, requestKey?, versionNote }`。`versionNote` **必填**（空即 400 `version-note-required`）——发布确证 PUBLISHED 时固化为文章版本历史的公开「为什么」。站主手工点击生成独立的 `PREPARED` 发布单；显式填写 `grantId` 时必须是当前文章有效的 `content:publish` 授权。返回发布单及批准绑定。
+
+### `GET /admin/content/:slug/history` 已落地（版本历史，2026-10-13 本地验收）
+
+倒序返回该文章的公开版本列表（不含正文）：`{ slug, versions: [{ version, contentHash, note, publishedAt, releaseId }] }`。数据来自只追加公开区 `content/versions`，此端点只读。
+
+### `GET /admin/content/:slug/history/:version` 已落地
+
+返回某版完整正文：`{ slug, version, body }`。版本不存在 404 `article-version-not-found`。
+
+### `GET /admin/content/:slug/diff/:a/:b` 已落地
+
+两版行级 diff **现算**（不落盘）：`{ slug, a, b, diff: TextDiffSummary }`。
 
 ### `POST /admin/content/release` 已落地
 

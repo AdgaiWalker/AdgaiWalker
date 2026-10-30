@@ -1,0 +1,12 @@
+{
+  "slug": "ai-low-cost-access",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "6beb05b0e264a46be10e1f4b5173db4bee56c45c07b3b4bd6f671f1f2a2f8b19",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.206Z",
+      "releaseId": "backfill_2684346d-6d1"
+    }
+  ]
+}

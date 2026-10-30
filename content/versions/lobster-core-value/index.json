@@ -1,0 +1,12 @@
+{
+  "slug": "lobster-core-value",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "da8faee5d39a7a997a9ec4f75ae190db14d61ca9a018a342aa0ee0f8429b1066",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.218Z",
+      "releaseId": "backfill_034f4426-943"
+    }
+  ]
+}

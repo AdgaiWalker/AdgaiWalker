@@ -227,6 +227,8 @@ import { CONTENT_CHANGE_REPOSITORY } from './ports/content-change.repository';
 import { PrismaContentChangeRepository } from './adapters/prisma-content-change.repository';
 import { CONTENT_RELEASE_REPOSITORY } from './ports/content-release.repository';
 import { PrismaContentReleaseRepository } from './adapters/prisma-content-release.repository';
+import { FsArticleVersionStore } from './adapters/fs-article-version-store';
+import { ARTICLE_VERSION_STORE } from './ports/article-version-store.port';
 import { CONTENT_MUTATION_SERVICE } from './ports/content-mutation.port';
 import { ContentMutationService } from './content-mutation/content-mutation.service';
 import { CONVERSATION_EXPORT_FILE_STORE } from './ports/conversation-export-file-store.port';
@@ -378,6 +380,7 @@ import { ReminderController } from './reminder/reminder.controller';
     { provide: CANDIDATE_FILE_REPOSITORY, useClass: FsCandidateFileRepository },
     { provide: CONTENT_CHANGE_REPOSITORY, useClass: PrismaContentChangeRepository },
     { provide: CONTENT_RELEASE_REPOSITORY, useClass: PrismaContentReleaseRepository },
+    { provide: ARTICLE_VERSION_STORE, useClass: FsArticleVersionStore },
     { provide: REMINDER_OCCURRENCE_REPOSITORY, useClass: PrismaReminderOccurrenceRepository },
     { provide: REVIEW_ENTRY_REPOSITORY, useClass: PrismaReviewEntryRepository },
     { provide: REMINDER_DISPOSITION, useClass: PrismaReminderDispositionRepository },

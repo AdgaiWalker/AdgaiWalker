@@ -9,6 +9,7 @@
   },
   "scripts": {
     "content:gen": "tsx scripts/generate-content.ts",
+    "content:backfill-versions": "tsx scripts/backfill-article-versions.ts",
     "code:gen": "tsx scripts/generate-code-graph.ts",
     "content:publish": "tsx scripts/content-publish.ts",
     "snapshot:import": "tsx scripts/import-public-snapshot.ts",

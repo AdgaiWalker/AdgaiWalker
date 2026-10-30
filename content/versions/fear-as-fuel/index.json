@@ -1,0 +1,12 @@
+{
+  "slug": "fear-as-fuel",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "14cc1150e8085b19dd139f6383bc8d5bfd479bc3c5eedd49b95e732a5516a782",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.210Z",
+      "releaseId": "backfill_31382bb3-abb"
+    }
+  ]
+}

@@ -229,7 +229,7 @@ export function useContentReleaseRecord(id: string, options?: { enabled?: boolea
 
 export function usePrepareContentRelease() {
   return useMutation({
-    mutationFn: (input: { slug: string; grantId?: string; changeId?: string; requestKey?: string }) =>
+    mutationFn: (input: { slug: string; grantId?: string; changeId?: string; requestKey?: string; versionNote: string }) =>
       requestJson<ContentRelease>(`/admin/content/release/prepare`, {
         method: "POST",
         body: input,
@@ -553,5 +553,44 @@ export function useActivity(input: { kinds: string; before: string | null; enabl
         backgroundPoll: true,
       });
     },
+  });
+}
+
+// ---- 文章版本历史（只读；版本库为公开区只追加存储） ----
+
+export interface AdminArticleVersionEntry {
+  version: number;
+  contentHash: string;
+  note: string;
+  publishedAt: string;
+  releaseId: string;
+}
+
+export function useContentVersionHistory(slug: string) {
+  return useQuery({
+    queryKey: ["content-version-history", slug],
+    queryFn: ({ signal }) =>
+      requestJson<{ slug: string; versions: AdminArticleVersionEntry[] }>(
+        `/admin/content/${encodeURIComponent(slug)}/history`,
+        { signal },
+      ),
+  });
+}
+
+export async function fetchContentVersionDetail(slug: string, version: number) {
+  return requestJson<{ slug: string; version: AdminArticleVersionEntry; body: string }>(
+    `/admin/content/${encodeURIComponent(slug)}/history/${version}`,
+    { timeoutMs: REQUEST_TIMEOUTS.read },
+  );
+}
+
+export async function fetchContentVersionDiff(slug: string, a: number, b: number) {
+  return requestJson<{
+    slug: string;
+    a: AdminArticleVersionEntry;
+    b: AdminArticleVersionEntry;
+    diff: import("@walker/shared").TextDiffSummary;
+  }>(`/admin/content/${encodeURIComponent(slug)}/diff/${a}/${b}`, {
+    timeoutMs: REQUEST_TIMEOUTS.read,
   });
 }

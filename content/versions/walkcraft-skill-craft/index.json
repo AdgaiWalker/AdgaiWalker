@@ -1,0 +1,12 @@
+{
+  "slug": "walkcraft-skill-craft",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "5564036d8329841cd38c35e8bbaded876933b21c062514f33c7233593cb87a60",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.221Z",
+      "releaseId": "backfill_b7477ab1-ea8"
+    }
+  ]
+}

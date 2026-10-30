@@ -4,12 +4,22 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ContentLedgerEntry } from '@walker/shared';
 import { ContentListPage } from './ContentListPage';
 
-const { useContentMock } = vi.hoisted(() => ({
-  useContentMock: vi.fn(),
-}));
+const { useContentMock, useSaveContentMock, saveMutationMock } = vi.hoisted(() => {
+  const saveMutation = {
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  };
+  return {
+    useContentMock: vi.fn(),
+    useSaveContentMock: vi.fn(() => saveMutation),
+    saveMutationMock: saveMutation,
+  };
+});
 
 vi.mock('../../api/queries', () => ({
   useContent: useContentMock,
+  useSaveContent: useSaveContentMock,
 }));
 
 const mockItems: ContentLedgerEntry[] = [
@@ -127,5 +137,41 @@ describe('ContentListPage (C22 类型筛选与小店内容边界)', () => {
     expect(screen.getByText(/不建立订单或库存数据模型，不提供可执行交易操作/)).toBeDefined();
     expect(screen.getByText('小店暂无商品或服务介绍')).toBeDefined();
     expect(screen.getByText(/不建立订单\/库存数据模型，不提供在线交易功能/)).toBeDefined();
+  });
+
+  it('点击新建文章按钮弹出模态框，填写标题与标识并提交', async () => {
+    saveMutationMock.mutateAsync.mockResolvedValueOnce({
+      slug: 'my-new-diary',
+      raw: 'content',
+    });
+
+    render(
+      <MemoryRouter>
+        <ContentListPage />
+      </MemoryRouter>,
+    );
+
+    const newBtn = screen.getByRole('button', { name: /新建文章 \/ 日记/ });
+    expect(newBtn).toBeDefined();
+    fireEvent.click(newBtn);
+
+    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(screen.getByRole('heading', { name: '新建文章 / 日记' })).toBeDefined();
+
+    const titleInput = screen.getByLabelText(/文章 \/ 日记标题/);
+    const slugInput = screen.getByLabelText(/文件名标识/);
+
+    fireEvent.change(titleInput, { target: { value: '我的第一篇测试日记' } });
+    fireEvent.change(slugInput, { target: { value: 'my-new-diary' } });
+
+    const submitBtn = screen.getByRole('button', { name: '创建并开写' });
+    fireEvent.click(submitBtn);
+
+    expect(saveMutationMock.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'my-new-diary',
+        expectedHash: null,
+      }),
+    );
   });
 });

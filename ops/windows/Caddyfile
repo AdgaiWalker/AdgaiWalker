@@ -140,3 +140,19 @@ http://127.0.0.1:8790 {
     file_server
   }
 }
+
+# Owner surface over HTTPS (admin.iwalk.pro): static Admin SPA + /api/* reverse proxy.
+# Protected by Nest AdminTokenMiddleware (SessionGate login: x-admin-username + x-admin-token).
+{$WALKER_ADMIN_HOST} {
+  encode zstd gzip
+
+  route {
+    handle_path /api/* {
+      reverse_proxy 127.0.0.1:8788
+    }
+
+    root * {$WALKER_ADMIN_DIST}
+    try_files {path} /index.html
+    file_server
+  }
+}

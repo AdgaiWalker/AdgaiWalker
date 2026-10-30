@@ -10,6 +10,7 @@ export class ApiError extends Error {
   }
 }
 let token: string | undefined;
+let username: string | undefined;
 let sessionVersion = 0;
 const requests = new Set<AbortController>();
 const authListeners = new Set<() => void>();
@@ -19,8 +20,12 @@ export function onUnauthorized(listener: () => void) {
     authListeners.delete(listener);
   };
 }
-export function setAdminToken(value?: string) {
+export function getAdminUsername(): string {
+  return username ?? "Dora";
+}
+export function setAdminToken(value?: string, user?: string) {
   token = value?.trim() || undefined;
+  username = user?.trim() || undefined;
   sessionVersion++;
   for (const request of requests) request.abort();
   requests.clear();
@@ -80,6 +85,7 @@ export async function requestJson<T>(
         Accept: "application/json",
         ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { "x-admin-token": token } : {}),
+        ...(username ? { "x-admin-username": username } : {}),
         ...(options.backgroundPoll ? { 'x-admin-background-poll': '1' } : {}),
       },
       signal: controller.signal,

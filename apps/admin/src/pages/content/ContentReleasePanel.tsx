@@ -72,6 +72,7 @@ export function ContentReleasePanel({
   const cancelMutation = useCancelContentRelease();
 
   const [grantIdInput, setGrantIdInput] = useState("");
+  const [versionNoteInput, setVersionNoteInput] = useState("");
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | "info">("info");
@@ -129,7 +130,8 @@ export function ContentReleasePanel({
     latestRelease.target.slug === slug && latestRelease.sourceHash === currentPublicHash,
   );
   const alreadyPublished = Boolean(currentPublicHash && versionSnapshot?.publishedHash === currentPublicHash);
-  const canPrepare = Boolean(preflight?.ok && currentPublicHash && !preparedForCurrent && !alreadyPublished && !isReleasing);
+  const versionNote = versionNoteInput.trim();
+  const canPrepare = Boolean(preflight?.ok && currentPublicHash && !preparedForCurrent && !alreadyPublished && !isReleasing && versionNote);
 
   // 独立发布批准与发布准备
   const handlePrepareRelease = async () => {
@@ -139,6 +141,7 @@ export function ContentReleasePanel({
       const prepared = await prepareMutation.mutateAsync({
         slug,
         grantId,
+        versionNote,
       });
       setFeedbackType("success");
       setFeedback(`发布单已生成并完成独立发布批准（单号：${prepared.id}，状态：${prepared.stage}）`);
@@ -567,6 +570,13 @@ export function ContentReleasePanel({
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           {!preparedForCurrent && !alreadyPublished && (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="text"
+                placeholder="变更说明（必填，将公开在版本历史）"
+                value={versionNoteInput}
+                onChange={(e) => setVersionNoteInput(e.target.value)}
+                style={{ width: 280 }}
+              />
               <input
                 type="text"
                 placeholder="输入 L2 授权编号（可选）"

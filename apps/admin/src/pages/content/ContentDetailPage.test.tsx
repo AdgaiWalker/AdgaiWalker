@@ -94,11 +94,11 @@ describe('ContentDetailPage (C06 文章编辑、差异与预览)', () => {
     expect(saveBtn.disabled).toBe(true);
   });
 
-  it('把内容工作区收为编辑、审核与发布、更新事项三组', () => {
+  it('把内容工作区收为编辑、审核与发布、更新事项、历史四组', () => {
     renderPage();
     const nav = within(screen.getByRole('navigation', { name: '内容工作区' }));
     expect(nav.getAllByRole('button').map((button) => button.textContent?.trim())).toEqual([
-      '编辑', '审核与发布', '更新事项',
+      '编辑', '审核与发布', '更新事项', '历史',
     ]);
   });
 

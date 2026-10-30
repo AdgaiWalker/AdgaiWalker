@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-12T12:49:29.116Z",
+  "generatedAt": "2026-10-30T02:50:33.569Z",
   "seed": 20260914,
   "nodes": [
     {
@@ -88,30 +88,30 @@
       "kind": "note"
     },
     {
-      "totalDegree": 21,
-      "linkDegree": 20,
-      "inDegree": 20,
+      "totalDegree": 22,
+      "linkDegree": 21,
+      "inDegree": 21,
       "outDegree": 1,
       "path": "apps/admin/src/api/http.ts",
       "label": "apps/admin/src/api/http",
       "app": "apps/admin",
       "extension": ".ts",
       "created": "2026-07-21T11:47:00+08:00",
-      "lines": 222,
+      "lines": 228,
       "id": "note:apps/admin/src/api/http.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 22,
-      "linkDegree": 21,
-      "inDegree": 19,
+      "totalDegree": 23,
+      "linkDegree": 22,
+      "inDegree": 20,
       "outDegree": 3,
       "path": "apps/admin/src/api/queries.ts",
       "label": "queries",
       "app": "apps/admin",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 557,
+      "lines": 596,
       "id": "note:apps/admin/src/api/queries.ts",
       "kind": "note"
     },
@@ -124,7 +124,7 @@
       "label": "apps/admin/src/api/vite-proxy.test",
       "app": "apps/admin",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 14,
       "id": "note:apps/admin/src/api/vite-proxy.test.ts",
       "kind": "note"
@@ -153,7 +153,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 84,
+      "lines": 95,
       "id": "note:apps/admin/src/app/SessionGate.tsx",
       "kind": "note"
     },
@@ -167,7 +167,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 53,
+      "lines": 54,
       "id": "note:apps/admin/src/app/router.tsx",
       "kind": "note"
     },
@@ -222,7 +222,7 @@
       "label": "ReminderInboxPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 250,
       "id": "note:apps/admin/src/components/ReminderInboxPanel.test.tsx",
       "kind": "note"
@@ -236,7 +236,7 @@
       "label": "ReminderInboxPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 282,
       "id": "note:apps/admin/src/components/ReminderInboxPanel.tsx",
       "kind": "note"
@@ -256,9 +256,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 20,
-      "linkDegree": 19,
-      "inDegree": 18,
+      "totalDegree": 21,
+      "linkDegree": 20,
+      "inDegree": 19,
       "outDegree": 2,
       "path": "apps/admin/src/components/States.tsx",
       "label": "States",
@@ -306,7 +306,7 @@
       "label": "AgentModelConfigPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 193,
       "id": "note:apps/admin/src/pages/agents/AgentModelConfigPanel.tsx",
       "kind": "note"
@@ -376,7 +376,7 @@
       "label": "ContentChangeReviewPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 187,
       "id": "note:apps/admin/src/pages/content/ContentChangeReviewPanel.test.tsx",
       "kind": "note"
@@ -390,7 +390,7 @@
       "label": "ContentChangeReviewPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 326,
       "id": "note:apps/admin/src/pages/content/ContentChangeReviewPanel.tsx",
       "kind": "note"
@@ -404,23 +404,37 @@
       "label": "ContentDetailPage.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 284,
       "id": "note:apps/admin/src/pages/content/ContentDetailPage.test.tsx",
       "kind": "note"
     },
     {
-      "totalDegree": 13,
-      "linkDegree": 12,
+      "totalDegree": 14,
+      "linkDegree": 13,
       "inDegree": 2,
-      "outDegree": 11,
+      "outDegree": 12,
       "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
       "label": "ContentDetailPage",
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 547,
+      "lines": 594,
       "id": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 1,
+      "outDegree": 5,
+      "path": "apps/admin/src/pages/content/ContentHistoryPanel.tsx",
+      "label": "ContentHistoryPanel",
+      "app": "apps/admin",
+      "extension": ".tsx",
+      "created": "",
+      "lines": 156,
+      "id": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
       "kind": "note"
     },
     {
@@ -432,22 +446,22 @@
       "label": "ContentListPage.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
-      "lines": 131,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 177,
       "id": "note:apps/admin/src/pages/content/ContentListPage.test.tsx",
       "kind": "note"
     },
     {
-      "totalDegree": 7,
-      "linkDegree": 6,
+      "totalDegree": 8,
+      "linkDegree": 7,
       "inDegree": 2,
-      "outDegree": 5,
+      "outDegree": 6,
       "path": "apps/admin/src/pages/content/ContentListPage.tsx",
       "label": "ContentListPage",
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 148,
+      "lines": 392,
       "id": "note:apps/admin/src/pages/content/ContentListPage.tsx",
       "kind": "note"
     },
@@ -460,7 +474,7 @@
       "label": "ContentReleasePanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 313,
       "id": "note:apps/admin/src/pages/content/ContentReleasePanel.test.tsx",
       "kind": "note"
@@ -474,8 +488,8 @@
       "label": "ContentReleasePanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
-      "lines": 785,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 795,
       "id": "note:apps/admin/src/pages/content/ContentReleasePanel.tsx",
       "kind": "note"
     },
@@ -488,7 +502,7 @@
       "label": "ContentReminderPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 107,
       "id": "note:apps/admin/src/pages/content/ContentReminderPanel.tsx",
       "kind": "note"
@@ -502,7 +516,7 @@
       "label": "DeploymentDraftId.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 51,
       "id": "note:apps/admin/src/pages/deployments/DeploymentDraftId.test.tsx",
       "kind": "note"
@@ -516,7 +530,7 @@
       "label": "DeploymentsPage.test",
       "app": "apps/admin",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 74,
       "id": "note:apps/admin/src/pages/deployments/DeploymentsPage.test.ts",
       "kind": "note"
@@ -530,7 +544,7 @@
       "label": "DeploymentsPage",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 274,
       "id": "note:apps/admin/src/pages/deployments/DeploymentsPage.tsx",
       "kind": "note"
@@ -544,7 +558,7 @@
       "label": "PublicReadinessPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 32,
       "id": "note:apps/admin/src/pages/deployments/PublicReadinessPanel.test.tsx",
       "kind": "note"
@@ -558,7 +572,7 @@
       "label": "PublicReadinessPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 60,
       "id": "note:apps/admin/src/pages/deployments/PublicReadinessPanel.tsx",
       "kind": "note"
@@ -572,7 +586,7 @@
       "label": "OpsStatsPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 190,
       "id": "note:apps/admin/src/pages/overview/OpsStatsPanel.test.tsx",
       "kind": "note"
@@ -586,7 +600,7 @@
       "label": "OpsStatsPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 265,
       "id": "note:apps/admin/src/pages/overview/OpsStatsPanel.tsx",
       "kind": "note"
@@ -614,7 +628,7 @@
       "label": "ActivityStreamPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 188,
       "id": "note:apps/admin/src/pages/records/ActivityStreamPanel.test.tsx",
       "kind": "note"
@@ -628,7 +642,7 @@
       "label": "ActivityStreamPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 266,
       "id": "note:apps/admin/src/pages/records/ActivityStreamPanel.tsx",
       "kind": "note"
@@ -642,7 +656,7 @@
       "label": "ContentReviewPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 212,
       "id": "note:apps/admin/src/pages/records/ContentReviewPanel.test.tsx",
       "kind": "note"
@@ -656,7 +670,7 @@
       "label": "ContentReviewPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 461,
       "id": "note:apps/admin/src/pages/records/ContentReviewPanel.tsx",
       "kind": "note"
@@ -670,7 +684,7 @@
       "label": "ConversationActionPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 78,
       "id": "note:apps/admin/src/pages/records/ConversationActionPanel.test.tsx",
       "kind": "note"
@@ -684,7 +698,7 @@
       "label": "ConversationActionPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 181,
       "id": "note:apps/admin/src/pages/records/ConversationActionPanel.tsx",
       "kind": "note"
@@ -698,8 +712,8 @@
       "label": "ConversationLog.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
-      "lines": 183,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 218,
       "id": "note:apps/admin/src/pages/records/ConversationLog.test.tsx",
       "kind": "note"
     },
@@ -712,7 +726,7 @@
       "label": "ConversationLogDetailPage",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 141,
       "id": "note:apps/admin/src/pages/records/ConversationLogDetailPage.tsx",
       "kind": "note"
@@ -726,7 +740,7 @@
       "label": "ConversationLogListPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 231,
       "id": "note:apps/admin/src/pages/records/ConversationLogListPanel.tsx",
       "kind": "note"
@@ -740,7 +754,7 @@
       "label": "RunDetailPage",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 94,
       "id": "note:apps/admin/src/pages/records/RunDetailPage.tsx",
       "kind": "note"
@@ -768,7 +782,7 @@
       "label": "RuntimeLogStreamPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 153,
       "id": "note:apps/admin/src/pages/records/RuntimeLogStreamPanel.tsx",
       "kind": "note"
@@ -782,7 +796,7 @@
       "label": "RuntimeMonitorPanel.test",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 247,
       "id": "note:apps/admin/src/pages/records/RuntimeMonitorPanel.test.tsx",
       "kind": "note"
@@ -796,7 +810,7 @@
       "label": "RuntimeMonitorPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 257,
       "id": "note:apps/admin/src/pages/records/RuntimeMonitorPanel.tsx",
       "kind": "note"
@@ -810,29 +824,29 @@
       "label": "ModelConfigPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 314,
       "id": "note:apps/admin/src/pages/settings/ModelConfigPanel.tsx",
       "kind": "note"
     },
     {
-      "totalDegree": 6,
-      "linkDegree": 5,
+      "totalDegree": 7,
+      "linkDegree": 6,
       "inDegree": 1,
-      "outDegree": 5,
+      "outDegree": 6,
       "path": "apps/admin/src/pages/settings/SettingsPage.tsx",
       "label": "SettingsPage",
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 71,
+      "lines": 200,
       "id": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
       "kind": "note"
     },
     {
-      "totalDegree": 20,
-      "linkDegree": 19,
-      "inDegree": 18,
+      "totalDegree": 21,
+      "linkDegree": 20,
+      "inDegree": 19,
       "outDegree": 2,
       "path": "apps/admin/src/shared/labels.ts",
       "label": "apps/admin/src/shared/labels",
@@ -844,9 +858,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 17,
-      "linkDegree": 16,
-      "inDegree": 16,
+      "totalDegree": 18,
+      "linkDegree": 17,
+      "inDegree": 17,
       "outDegree": 1,
       "path": "apps/admin/src/shared/routes.ts",
       "label": "apps/admin/src/shared/routes",
@@ -950,7 +964,7 @@
       "label": "knowledge-snapshot.test",
       "app": "apps/agent",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 130,
       "id": "note:apps/agent/src/knowledge-snapshot.test.ts",
       "kind": "note"
@@ -1152,15 +1166,43 @@
       "kind": "note"
     },
     {
-      "totalDegree": 11,
-      "linkDegree": 10,
-      "inDegree": 9,
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/adapters/article-versions-dir.test.ts",
+      "label": "article-versions-dir.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 43,
+      "id": "note:apps/api/src/adapters/article-versions-dir.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "apps/api/src/adapters/article-versions-dir.ts",
+      "label": "article-versions-dir",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 47,
+      "id": "note:apps/api/src/adapters/article-versions-dir.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 12,
+      "linkDegree": 11,
+      "inDegree": 10,
       "outDegree": 2,
       "path": "apps/api/src/adapters/content-approval.persistence.ts",
       "label": "content-approval.persistence",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 44,
       "id": "note:apps/api/src/adapters/content-approval.persistence.ts",
       "kind": "note"
@@ -1188,7 +1230,7 @@
       "label": "content-publish-script-lock.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 117,
       "id": "note:apps/api/src/adapters/content-publish-script-lock.test.ts",
       "kind": "note"
@@ -1230,7 +1272,7 @@
       "label": "execution-object-policy.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 14,
       "id": "note:apps/api/src/adapters/execution-object-policy.test.ts",
       "kind": "note"
@@ -1247,6 +1289,34 @@
       "created": "2026-09-22T17:12:25+08:00",
       "lines": 26,
       "id": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/api/src/adapters/fs-article-version-store.test.ts",
+      "label": "fs-article-version-store.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 87,
+      "id": "note:apps/api/src/adapters/fs-article-version-store.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 8,
+      "linkDegree": 7,
+      "inDegree": 3,
+      "outDegree": 5,
+      "path": "apps/api/src/adapters/fs-article-version-store.ts",
+      "label": "fs-article-version-store",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 165,
+      "id": "note:apps/api/src/adapters/fs-article-version-store.ts",
       "kind": "note"
     },
     {
@@ -1286,7 +1356,7 @@
       "label": "fs-assistant-event-spool.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 73,
       "id": "note:apps/api/src/adapters/fs-assistant-event-spool.test.ts",
       "kind": "note"
@@ -1300,7 +1370,7 @@
       "label": "fs-assistant-event-spool",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 293,
       "id": "note:apps/api/src/adapters/fs-assistant-event-spool.ts",
       "kind": "note"
@@ -1314,7 +1384,7 @@
       "label": "fs-candidate-file.repository.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 102,
       "id": "note:apps/api/src/adapters/fs-candidate-file.repository.test.ts",
       "kind": "note"
@@ -1328,8 +1398,8 @@
       "label": "fs-candidate-file.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
-      "lines": 160,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 162,
       "id": "note:apps/api/src/adapters/fs-candidate-file.repository.ts",
       "kind": "note"
     },
@@ -1412,7 +1482,7 @@
       "label": "fs-content-lock",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 173,
       "id": "note:apps/api/src/adapters/fs-content-lock.ts",
       "kind": "note"
@@ -1426,7 +1496,7 @@
       "label": "fs-conversation-export-file-store.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 34,
       "id": "note:apps/api/src/adapters/fs-conversation-export-file-store.test.ts",
       "kind": "note"
@@ -1440,7 +1510,7 @@
       "label": "fs-conversation-export-file-store",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 129,
       "id": "note:apps/api/src/adapters/fs-conversation-export-file-store.ts",
       "kind": "note"
@@ -1454,7 +1524,7 @@
       "label": "fs-deletion-manifest.store.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 69,
       "id": "note:apps/api/src/adapters/fs-deletion-manifest.store.test.ts",
       "kind": "note"
@@ -1468,7 +1538,7 @@
       "label": "fs-deletion-manifest.store",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 185,
       "id": "note:apps/api/src/adapters/fs-deletion-manifest.store.ts",
       "kind": "note"
@@ -1496,7 +1566,7 @@
       "label": "fs-log-resource.cleaner.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 85,
       "id": "note:apps/api/src/adapters/fs-log-resource.cleaner.test.ts",
       "kind": "note"
@@ -1510,7 +1580,7 @@
       "label": "fs-log-resource.cleaner",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 95,
       "id": "note:apps/api/src/adapters/fs-log-resource.cleaner.ts",
       "kind": "note"
@@ -1524,7 +1594,7 @@
       "label": "fs-model-credential.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 80,
       "id": "note:apps/api/src/adapters/fs-model-credential.test.ts",
       "kind": "note"
@@ -1538,7 +1608,7 @@
       "label": "fs-model-credential",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 52,
       "id": "note:apps/api/src/adapters/fs-model-credential.ts",
       "kind": "note"
@@ -1552,7 +1622,7 @@
       "label": "fs-model-directory.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 197,
       "id": "note:apps/api/src/adapters/fs-model-directory.test.ts",
       "kind": "note"
@@ -1566,7 +1636,7 @@
       "label": "fs-model-directory",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 108,
       "id": "note:apps/api/src/adapters/fs-model-directory.ts",
       "kind": "note"
@@ -1580,7 +1650,7 @@
       "label": "fs-public-route-boundary",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 17,
       "id": "note:apps/api/src/adapters/fs-public-route-boundary.ts",
       "kind": "note"
@@ -1636,7 +1706,7 @@
       "label": "fs-site-content-index.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 108,
       "id": "note:apps/api/src/adapters/fs-site-content-index.test.ts",
       "kind": "note"
@@ -1664,7 +1734,7 @@
       "label": "fs-skill-file.store.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 98,
       "id": "note:apps/api/src/adapters/fs-skill-file.store.test.ts",
       "kind": "note"
@@ -1832,7 +1902,7 @@
       "label": "http-website-deployment-verifier.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 166,
       "id": "note:apps/api/src/adapters/http-website-deployment-verifier.test.ts",
       "kind": "note"
@@ -1860,7 +1930,7 @@
       "label": "in-memory-runtime-buffer",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 167,
       "id": "note:apps/api/src/adapters/in-memory-runtime-buffer.ts",
       "kind": "note"
@@ -1874,7 +1944,7 @@
       "label": "log-resource.writer",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 53,
       "id": "note:apps/api/src/adapters/log-resource.writer.ts",
       "kind": "note"
@@ -2014,7 +2084,7 @@
       "label": "prisma-admin-request-log",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 29,
       "id": "note:apps/api/src/adapters/prisma-admin-request-log.ts",
       "kind": "note"
@@ -2029,7 +2099,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 132,
+      "lines": 137,
       "id": "note:apps/api/src/adapters/prisma-agent-execution.repository.test.ts",
       "kind": "note"
     },
@@ -2043,7 +2113,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 382,
+      "lines": 423,
       "id": "note:apps/api/src/adapters/prisma-agent-execution.repository.ts",
       "kind": "note"
     },
@@ -2126,7 +2196,7 @@
       "label": "prisma-content-change.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 301,
       "id": "note:apps/api/src/adapters/prisma-content-change.repository.ts",
       "kind": "note"
@@ -2140,8 +2210,8 @@
       "label": "prisma-content-release.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
-      "lines": 272,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 274,
       "id": "note:apps/api/src/adapters/prisma-content-release.repository.ts",
       "kind": "note"
     },
@@ -2154,22 +2224,22 @@
       "label": "prisma-conversation-action-commit",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 66,
       "id": "note:apps/api/src/adapters/prisma-conversation-action-commit.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 9,
-      "linkDegree": 8,
+      "totalDegree": 10,
+      "linkDegree": 9,
       "inDegree": 4,
-      "outDegree": 5,
+      "outDegree": 6,
       "path": "apps/api/src/adapters/prisma-conversation-deletion.repository.ts",
       "label": "prisma-conversation-deletion.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
-      "lines": 145,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 143,
       "id": "note:apps/api/src/adapters/prisma-conversation-deletion.repository.ts",
       "kind": "note"
     },
@@ -2182,7 +2252,7 @@
       "label": "prisma-conversation-export.repository.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 55,
       "id": "note:apps/api/src/adapters/prisma-conversation-export.repository.integration.test.ts",
       "kind": "note"
@@ -2196,7 +2266,7 @@
       "label": "prisma-conversation-export.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 246,
       "id": "note:apps/api/src/adapters/prisma-conversation-export.repository.ts",
       "kind": "note"
@@ -2210,7 +2280,7 @@
       "label": "prisma-conversation-query.repository.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 227,
       "id": "note:apps/api/src/adapters/prisma-conversation-query.repository.integration.test.ts",
       "kind": "note"
@@ -2224,7 +2294,7 @@
       "label": "prisma-conversation-query.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 354,
       "id": "note:apps/api/src/adapters/prisma-conversation-query.repository.ts",
       "kind": "note"
@@ -2238,7 +2308,7 @@
       "label": "prisma-conversation.repository.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 146,
       "id": "note:apps/api/src/adapters/prisma-conversation.repository.test.ts",
       "kind": "note"
@@ -2252,7 +2322,7 @@
       "label": "prisma-conversation.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 317,
       "id": "note:apps/api/src/adapters/prisma-conversation.repository.ts",
       "kind": "note"
@@ -2266,7 +2336,7 @@
       "label": "prisma-deployment.repository.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 153,
       "id": "note:apps/api/src/adapters/prisma-deployment.repository.test.ts",
       "kind": "note"
@@ -2280,7 +2350,7 @@
       "label": "prisma-deployment.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 175,
       "id": "note:apps/api/src/adapters/prisma-deployment.repository.ts",
       "kind": "note"
@@ -2364,7 +2434,7 @@
       "label": "prisma-log-resource.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 133,
       "id": "note:apps/api/src/adapters/prisma-log-resource.repository.ts",
       "kind": "note"
@@ -2420,7 +2490,7 @@
       "label": "prisma-reminder-disposition.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 157,
       "id": "note:apps/api/src/adapters/prisma-reminder-disposition.repository.ts",
       "kind": "note"
@@ -2434,7 +2504,7 @@
       "label": "prisma-reminder.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 87,
       "id": "note:apps/api/src/adapters/prisma-reminder.repository.ts",
       "kind": "note"
@@ -2448,7 +2518,7 @@
       "label": "prisma-review-entry.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 71,
       "id": "note:apps/api/src/adapters/prisma-review-entry.repository.ts",
       "kind": "note"
@@ -2616,7 +2686,7 @@
       "label": "agent-model-config.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 139,
       "id": "note:apps/api/src/agents/agent-model-config.service.test.ts",
       "kind": "note"
@@ -2630,7 +2700,7 @@
       "label": "agent-model-config.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 278,
       "id": "note:apps/api/src/agents/agent-model-config.service.ts",
       "kind": "note"
@@ -2784,7 +2854,7 @@
       "label": "assistant-event-recorder.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 102,
       "id": "note:apps/api/src/assistant/assistant-event-recorder.service.test.ts",
       "kind": "note"
@@ -2798,7 +2868,7 @@
       "label": "assistant-event-recorder.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 120,
       "id": "note:apps/api/src/assistant/assistant-event-recorder.service.ts",
       "kind": "note"
@@ -2812,7 +2882,7 @@
       "label": "assistant-v08.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 151,
       "id": "note:apps/api/src/assistant/assistant-v08.service.test.ts",
       "kind": "note"
@@ -2826,7 +2896,7 @@
       "label": "assistant-v09.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 93,
       "id": "note:apps/api/src/assistant/assistant-v09.service.test.ts",
       "kind": "note"
@@ -2840,7 +2910,7 @@
       "label": "assistant.controller.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 60,
       "id": "note:apps/api/src/assistant/assistant.controller.test.ts",
       "kind": "note"
@@ -2896,7 +2966,7 @@
       "label": "public-assistant-prompt",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 39,
       "id": "note:apps/api/src/assistant/public-assistant-prompt.ts",
       "kind": "note"
@@ -2910,7 +2980,7 @@
       "label": "public-assistant.controller.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 428,
       "id": "note:apps/api/src/assistant/public-assistant.controller.integration.test.ts",
       "kind": "note"
@@ -2924,7 +2994,7 @@
       "label": "public-assistant.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 471,
       "id": "note:apps/api/src/assistant/public-assistant.service.test.ts",
       "kind": "note"
@@ -2938,7 +3008,7 @@
       "label": "public-assistant.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 1042,
       "id": "note:apps/api/src/assistant/public-assistant.service.ts",
       "kind": "note"
@@ -2952,7 +3022,7 @@
       "label": "public-journey.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 372,
       "id": "note:apps/api/src/assistant/public-journey.kernel.integration.test.ts",
       "kind": "note"
@@ -2966,7 +3036,7 @@
       "label": "admin-background-request",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 24,
       "id": "note:apps/api/src/auth/admin-background-request.ts",
       "kind": "note"
@@ -2980,7 +3050,7 @@
       "label": "admin-request-log.middleware",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 47,
       "id": "note:apps/api/src/auth/admin-request-log.middleware.ts",
       "kind": "note"
@@ -2995,21 +3065,21 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:57:08+08:00",
-      "lines": 104,
+      "lines": 120,
       "id": "note:apps/api/src/auth/admin-token.middleware.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 4,
-      "linkDegree": 3,
-      "inDegree": 3,
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 4,
       "outDegree": 1,
       "path": "apps/api/src/auth/admin-token.middleware.ts",
       "label": "admin-token.middleware",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-03T01:57:08+08:00",
-      "lines": 74,
+      "lines": 119,
       "id": "note:apps/api/src/auth/admin-token.middleware.ts",
       "kind": "note"
     },
@@ -3022,7 +3092,7 @@
       "label": "anon-cookie.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 46,
       "id": "note:apps/api/src/auth/anon-cookie.test.ts",
       "kind": "note"
@@ -3050,7 +3120,7 @@
       "label": "public-route-contract",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 57,
       "id": "note:apps/api/src/auth/public-route-contract.ts",
       "kind": "note"
@@ -3064,7 +3134,7 @@
       "label": "same-origin.middleware.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 48,
       "id": "note:apps/api/src/auth/same-origin.middleware.test.ts",
       "kind": "note"
@@ -3078,7 +3148,7 @@
       "label": "same-origin.middleware",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 33,
       "id": "note:apps/api/src/auth/same-origin.middleware.ts",
       "kind": "note"
@@ -3140,9 +3210,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 92,
-      "linkDegree": 91,
-      "inDegree": 90,
+      "totalDegree": 93,
+      "linkDegree": 92,
+      "inDegree": 91,
       "outDegree": 2,
       "path": "apps/api/src/common/http-error.ts",
       "label": "http-error",
@@ -3176,7 +3246,7 @@
       "label": "process-tree.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 46,
       "id": "note:apps/api/src/common/process-tree.test.ts",
       "kind": "note"
@@ -3190,15 +3260,15 @@
       "label": "process-tree",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
-      "lines": 121,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 122,
       "id": "note:apps/api/src/common/process-tree.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 34,
-      "linkDegree": 33,
-      "inDegree": 31,
+      "totalDegree": 35,
+      "linkDegree": 34,
+      "inDegree": 32,
       "outDegree": 3,
       "path": "apps/api/src/config/config.module.ts",
       "label": "config.module",
@@ -3260,7 +3330,7 @@
       "label": "load-api-env.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 27,
       "id": "note:apps/api/src/config/load-api-env.test.ts",
       "kind": "note"
@@ -3274,7 +3344,7 @@
       "label": "load-api-env",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 19,
       "id": "note:apps/api/src/config/load-api-env.ts",
       "kind": "note"
@@ -3303,7 +3373,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-22T13:16:47+08:00",
-      "lines": 41,
+      "lines": 67,
       "id": "note:apps/api/src/content-admin/content-admin.controller.ts",
       "kind": "note"
     },
@@ -3316,22 +3386,22 @@
       "label": "content-admin.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 47,
       "id": "note:apps/api/src/content-admin/content-admin.service.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 13,
-      "linkDegree": 12,
-      "inDegree": 7,
-      "outDegree": 6,
+      "totalDegree": 15,
+      "linkDegree": 14,
+      "inDegree": 8,
+      "outDegree": 7,
       "path": "apps/api/src/content-admin/content-admin.service.ts",
       "label": "content-admin.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-22T13:16:47+08:00",
-      "lines": 99,
+      "lines": 146,
       "id": "note:apps/api/src/content-admin/content-admin.service.ts",
       "kind": "note"
     },
@@ -3344,7 +3414,7 @@
       "label": "content-project-boundary.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 99,
       "id": "note:apps/api/src/content-admin/content-project-boundary.kernel.integration.test.ts",
       "kind": "note"
@@ -3400,7 +3470,7 @@
       "label": "content-lifecycle.closed-loop.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 299,
       "id": "note:apps/api/src/content-lifecycle.closed-loop.kernel.integration.test.ts",
       "kind": "note"
@@ -3414,7 +3484,7 @@
       "label": "content-lifecycle.repository.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 257,
       "id": "note:apps/api/src/content-lifecycle.repository.kernel.integration.test.ts",
       "kind": "note"
@@ -3428,7 +3498,7 @@
       "label": "content-mutation.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 499,
       "id": "note:apps/api/src/content-mutation.kernel.integration.test.ts",
       "kind": "note"
@@ -3442,7 +3512,7 @@
       "label": "content-approval.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 247,
       "id": "note:apps/api/src/content-mutation/content-approval.kernel.integration.test.ts",
       "kind": "note"
@@ -3456,7 +3526,7 @@
       "label": "content-change.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 89,
       "id": "note:apps/api/src/content-mutation/content-change.controller.ts",
       "kind": "note"
@@ -3470,7 +3540,7 @@
       "label": "content-concurrency-fault.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 254,
       "id": "note:apps/api/src/content-mutation/content-concurrency-fault.kernel.integration.test.ts",
       "kind": "note"
@@ -3484,7 +3554,7 @@
       "label": "content-mutation-bypass-audit.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 232,
       "id": "note:apps/api/src/content-mutation/content-mutation-bypass-audit.kernel.integration.test.ts",
       "kind": "note"
@@ -3498,7 +3568,7 @@
       "label": "content-mutation.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 419,
       "id": "note:apps/api/src/content-mutation/content-mutation.service.ts",
       "kind": "note"
@@ -3512,9 +3582,23 @@
       "label": "content-propose.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 422,
       "id": "note:apps/api/src/content-mutation/content-propose.kernel.integration.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 12,
+      "linkDegree": 11,
+      "inDegree": 0,
+      "outDegree": 12,
+      "path": "apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "label": "article-version-history.kernel.integration.test",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 306,
+      "id": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
       "kind": "note"
     },
     {
@@ -3526,7 +3610,7 @@
       "label": "content-release-cancel.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 275,
       "id": "note:apps/api/src/content-release/content-release-cancel.kernel.integration.test.ts",
       "kind": "note"
@@ -3540,7 +3624,7 @@
       "label": "content-release-lock.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 255,
       "id": "note:apps/api/src/content-release/content-release-lock.kernel.integration.test.ts",
       "kind": "note"
@@ -3554,7 +3638,7 @@
       "label": "content-release-panel.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 212,
       "id": "note:apps/api/src/content-release/content-release-panel.kernel.integration.test.ts",
       "kind": "note"
@@ -3568,7 +3652,7 @@
       "label": "content-release-preflight.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 195,
       "id": "note:apps/api/src/content-release/content-release-preflight.kernel.integration.test.ts",
       "kind": "note"
@@ -3582,7 +3666,7 @@
       "label": "content-release-reconcile.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 293,
       "id": "note:apps/api/src/content-release/content-release-reconcile.kernel.integration.test.ts",
       "kind": "note"
@@ -3596,7 +3680,7 @@
       "label": "content-release-snapshot-sync.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 325,
       "id": "note:apps/api/src/content-release/content-release-snapshot-sync.kernel.integration.test.ts",
       "kind": "note"
@@ -3610,7 +3694,7 @@
       "label": "content-release-stages.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 361,
       "id": "note:apps/api/src/content-release/content-release-stages.kernel.integration.test.ts",
       "kind": "note"
@@ -3624,7 +3708,7 @@
       "label": "content-release-verify.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 247,
       "id": "note:apps/api/src/content-release/content-release-verify.kernel.integration.test.ts",
       "kind": "note"
@@ -3639,7 +3723,7 @@
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 80,
+      "lines": 83,
       "id": "note:apps/api/src/content-release/content-release.controller.ts",
       "kind": "note"
     },
@@ -3658,16 +3742,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 32,
-      "linkDegree": 31,
-      "inDegree": 17,
-      "outDegree": 15,
+      "totalDegree": 34,
+      "linkDegree": 33,
+      "inDegree": 18,
+      "outDegree": 16,
       "path": "apps/api/src/content-release/content-release.service.ts",
       "label": "content-release.service",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 1168,
+      "lines": 1215,
       "id": "note:apps/api/src/content-release/content-release.service.ts",
       "kind": "note"
     },
@@ -3694,7 +3778,7 @@
       "label": "deployment.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 56,
       "id": "note:apps/api/src/deployments/deployment.controller.ts",
       "kind": "note"
@@ -3708,7 +3792,7 @@
       "label": "deployment.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 240,
       "id": "note:apps/api/src/deployments/deployment.kernel.integration.test.ts",
       "kind": "note"
@@ -3722,7 +3806,7 @@
       "label": "deployment.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 260,
       "id": "note:apps/api/src/deployments/deployment.service.ts",
       "kind": "note"
@@ -3736,7 +3820,7 @@
       "label": "public-readiness.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 104,
       "id": "note:apps/api/src/deployments/public-readiness.service.test.ts",
       "kind": "note"
@@ -3750,7 +3834,7 @@
       "label": "public-readiness.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 169,
       "id": "note:apps/api/src/deployments/public-readiness.service.ts",
       "kind": "note"
@@ -3876,7 +3960,7 @@
       "label": "agent-execution.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 81,
       "id": "note:apps/api/src/execution/agent-execution.service.test.ts",
       "kind": "note"
@@ -4016,7 +4100,7 @@
       "label": "resource-concurrency.g03.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 319,
       "id": "note:apps/api/src/execution/resource-concurrency.g03.kernel.integration.test.ts",
       "kind": "note"
@@ -4246,16 +4330,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 270,
-      "linkDegree": 269,
-      "inDegree": 32,
-      "outDegree": 238,
+      "totalDegree": 273,
+      "linkDegree": 272,
+      "inDegree": 33,
+      "outDegree": 240,
       "path": "apps/api/src/kernel.module.ts",
       "label": "kernel.module",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 512,
+      "lines": 515,
       "id": "note:apps/api/src/kernel.module.ts",
       "kind": "note"
     },
@@ -4268,7 +4352,7 @@
       "label": "conversation-deletion.controller.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 18,
       "id": "note:apps/api/src/log-resources/conversation-deletion.controller.test.ts",
       "kind": "note"
@@ -4282,7 +4366,7 @@
       "label": "conversation-deletion.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 17,
       "id": "note:apps/api/src/log-resources/conversation-deletion.controller.ts",
       "kind": "note"
@@ -4296,7 +4380,7 @@
       "label": "conversation-deletion.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 191,
       "id": "note:apps/api/src/log-resources/conversation-deletion.kernel.integration.test.ts",
       "kind": "note"
@@ -4310,7 +4394,7 @@
       "label": "conversation-deletion.restore.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 105,
       "id": "note:apps/api/src/log-resources/conversation-deletion.restore.integration.test.ts",
       "kind": "note"
@@ -4324,21 +4408,21 @@
       "label": "conversation-deletion.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 172,
       "id": "note:apps/api/src/log-resources/conversation-deletion.service.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 23,
-      "linkDegree": 22,
+      "totalDegree": 24,
+      "linkDegree": 23,
       "inDegree": 12,
-      "outDegree": 11,
+      "outDegree": 12,
       "path": "apps/api/src/log-resources/conversation-deletion.service.ts",
       "label": "conversation-deletion.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 236,
       "id": "note:apps/api/src/log-resources/conversation-deletion.service.ts",
       "kind": "note"
@@ -4352,7 +4436,7 @@
       "label": "conversation-export.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 32,
       "id": "note:apps/api/src/log-resources/conversation-export.controller.ts",
       "kind": "note"
@@ -4366,7 +4450,7 @@
       "label": "conversation-export.format.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 16,
       "id": "note:apps/api/src/log-resources/conversation-export.format.test.ts",
       "kind": "note"
@@ -4380,7 +4464,7 @@
       "label": "conversation-export.format",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 22,
       "id": "note:apps/api/src/log-resources/conversation-export.format.ts",
       "kind": "note"
@@ -4394,7 +4478,7 @@
       "label": "conversation-export.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 175,
       "id": "note:apps/api/src/log-resources/conversation-export.integration.test.ts",
       "kind": "note"
@@ -4408,7 +4492,7 @@
       "label": "conversation-export.policy",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 6,
       "id": "note:apps/api/src/log-resources/conversation-export.policy.ts",
       "kind": "note"
@@ -4422,7 +4506,7 @@
       "label": "conversation-export.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 46,
       "id": "note:apps/api/src/log-resources/conversation-export.service.test.ts",
       "kind": "note"
@@ -4436,7 +4520,7 @@
       "label": "conversation-export.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 326,
       "id": "note:apps/api/src/log-resources/conversation-export.service.ts",
       "kind": "note"
@@ -4450,7 +4534,7 @@
       "label": "conversation-query.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 27,
       "id": "note:apps/api/src/log-resources/conversation-query.controller.ts",
       "kind": "note"
@@ -4464,7 +4548,7 @@
       "label": "conversation-query.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 108,
       "id": "note:apps/api/src/log-resources/conversation-query.kernel.integration.test.ts",
       "kind": "note"
@@ -4478,7 +4562,7 @@
       "label": "conversation-query.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 80,
       "id": "note:apps/api/src/log-resources/conversation-query.service.test.ts",
       "kind": "note"
@@ -4492,7 +4576,7 @@
       "label": "conversation-query.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 112,
       "id": "note:apps/api/src/log-resources/conversation-query.service.ts",
       "kind": "note"
@@ -4506,7 +4590,7 @@
       "label": "deletion-manifest-replay.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 69,
       "id": "note:apps/api/src/log-resources/deletion-manifest-replay.service.test.ts",
       "kind": "note"
@@ -4520,7 +4604,7 @@
       "label": "deletion-manifest-replay.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 116,
       "id": "note:apps/api/src/log-resources/deletion-manifest-replay.service.ts",
       "kind": "note"
@@ -4534,7 +4618,7 @@
       "label": "log-maintenance.cli.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 63,
       "id": "note:apps/api/src/log-resources/log-maintenance.cli.test.ts",
       "kind": "note"
@@ -4548,7 +4632,7 @@
       "label": "log-maintenance.cli",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 145,
       "id": "note:apps/api/src/log-resources/log-maintenance.cli.ts",
       "kind": "note"
@@ -4562,7 +4646,7 @@
       "label": "log-resource.controller.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 30,
       "id": "note:apps/api/src/log-resources/log-resource.controller.test.ts",
       "kind": "note"
@@ -4576,7 +4660,7 @@
       "label": "log-resource.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 60,
       "id": "note:apps/api/src/log-resources/log-resource.controller.ts",
       "kind": "note"
@@ -4590,7 +4674,7 @@
       "label": "log-resource.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 72,
       "id": "note:apps/api/src/log-resources/log-resource.kernel.integration.test.ts",
       "kind": "note"
@@ -4604,7 +4688,7 @@
       "label": "log-resource.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 77,
       "id": "note:apps/api/src/log-resources/log-resource.service.test.ts",
       "kind": "note"
@@ -4618,7 +4702,7 @@
       "label": "log-resource.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 130,
       "id": "note:apps/api/src/log-resources/log-resource.service.ts",
       "kind": "note"
@@ -4632,7 +4716,7 @@
       "label": "log-retention-cleanup.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 51,
       "id": "note:apps/api/src/log-resources/log-retention-cleanup.integration.test.ts",
       "kind": "note"
@@ -4646,7 +4730,7 @@
       "label": "log-retention-cleanup.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 60,
       "id": "note:apps/api/src/log-resources/log-retention-cleanup.service.test.ts",
       "kind": "note"
@@ -4660,7 +4744,7 @@
       "label": "log-retention-cleanup.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 46,
       "id": "note:apps/api/src/log-resources/log-retention-cleanup.service.ts",
       "kind": "note"
@@ -4716,7 +4800,7 @@
       "label": "legacy-data-migration.core",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 238,
       "id": "note:apps/api/src/migration/legacy-data-migration.core.ts",
       "kind": "note"
@@ -4730,7 +4814,7 @@
       "label": "legacy-data-migration.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 255,
       "id": "note:apps/api/src/migration/legacy-data-migration.kernel.integration.test.ts",
       "kind": "note"
@@ -4744,7 +4828,7 @@
       "label": "legacy-data-migration.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 23,
       "id": "note:apps/api/src/migration/legacy-data-migration.service.ts",
       "kind": "note"
@@ -4758,7 +4842,7 @@
       "label": "model-config.controller.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 55,
       "id": "note:apps/api/src/model-config/model-config.controller.test.ts",
       "kind": "note"
@@ -4772,7 +4856,7 @@
       "label": "model-config.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 49,
       "id": "note:apps/api/src/model-config/model-config.controller.ts",
       "kind": "note"
@@ -4786,7 +4870,7 @@
       "label": "model-config.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 137,
       "id": "note:apps/api/src/model-config/model-config.service.test.ts",
       "kind": "note"
@@ -4800,7 +4884,7 @@
       "label": "model-config.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 304,
       "id": "note:apps/api/src/model-config/model-config.service.ts",
       "kind": "note"
@@ -4884,7 +4968,7 @@
       "label": "runtime-monitor.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 159,
       "id": "note:apps/api/src/observability/runtime-monitor.integration.test.ts",
       "kind": "note"
@@ -4898,7 +4982,7 @@
       "label": "apps/api/src/observability/runtime-monitor.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 418,
       "id": "note:apps/api/src/observability/runtime-monitor.test.ts",
       "kind": "note"
@@ -4912,7 +4996,7 @@
       "label": "runtime-monitoring",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 34,
       "id": "note:apps/api/src/observability/runtime-monitoring.ts",
       "kind": "note"
@@ -4926,7 +5010,7 @@
       "label": "runtime-tee-logger",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 82,
       "id": "note:apps/api/src/observability/runtime-tee-logger.ts",
       "kind": "note"
@@ -4940,7 +5024,7 @@
       "label": "operations-lifecycle.closed-loop.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 457,
       "id": "note:apps/api/src/operations-lifecycle.closed-loop.kernel.integration.test.ts",
       "kind": "note"
@@ -4954,7 +5038,7 @@
       "label": "activity.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 41,
       "id": "note:apps/api/src/operations/activity.controller.ts",
       "kind": "note"
@@ -4968,7 +5052,7 @@
       "label": "activity.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 171,
       "id": "note:apps/api/src/operations/activity.integration.test.ts",
       "kind": "note"
@@ -4982,7 +5066,7 @@
       "label": "activity.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 176,
       "id": "note:apps/api/src/operations/activity.service.ts",
       "kind": "note"
@@ -4996,7 +5080,7 @@
       "label": "admin-request-log.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 21,
       "id": "note:apps/api/src/operations/admin-request-log.controller.ts",
       "kind": "note"
@@ -5024,22 +5108,22 @@
       "label": "operations-stats.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 251,
       "id": "note:apps/api/src/operations/operations-stats.kernel.integration.test.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 5,
-      "linkDegree": 4,
+      "totalDegree": 6,
+      "linkDegree": 5,
       "inDegree": 1,
-      "outDegree": 4,
+      "outDegree": 5,
       "path": "apps/api/src/operations/operations.controller.ts",
       "label": "operations.controller",
       "app": "apps/api",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 40,
+      "lines": 62,
       "id": "note:apps/api/src/operations/operations.controller.ts",
       "kind": "note"
     },
@@ -5094,7 +5178,7 @@
       "label": "runtime-monitor.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 70,
       "id": "note:apps/api/src/operations/runtime-monitor.controller.ts",
       "kind": "note"
@@ -5164,7 +5248,7 @@
       "label": "admin-request-log.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 17,
       "id": "note:apps/api/src/ports/admin-request-log.port.ts",
       "kind": "note"
@@ -5226,6 +5310,20 @@
       "kind": "note"
     },
     {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 5,
+      "outDegree": 2,
+      "path": "apps/api/src/ports/article-version-store.port.ts",
+      "label": "article-version-store.port",
+      "app": "apps/api",
+      "extension": ".ts",
+      "created": "",
+      "lines": 30,
+      "id": "note:apps/api/src/ports/article-version-store.port.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 8,
       "linkDegree": 7,
       "inDegree": 7,
@@ -5248,7 +5346,7 @@
       "label": "assistant-event-recorder.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 15,
       "id": "note:apps/api/src/ports/assistant-event-recorder.port.ts",
       "kind": "note"
@@ -5262,7 +5360,7 @@
       "label": "assistant-event-spool.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 25,
       "id": "note:apps/api/src/ports/assistant-event-spool.port.ts",
       "kind": "note"
@@ -5318,7 +5416,7 @@
       "label": "candidate-file.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 29,
       "id": "note:apps/api/src/ports/candidate-file.repository.ts",
       "kind": "note"
@@ -5352,15 +5450,15 @@
       "kind": "note"
     },
     {
-      "totalDegree": 20,
-      "linkDegree": 19,
-      "inDegree": 18,
+      "totalDegree": 21,
+      "linkDegree": 20,
+      "inDegree": 19,
       "outDegree": 2,
       "path": "apps/api/src/ports/content-change.repository.ts",
       "label": "content-change.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 35,
       "id": "note:apps/api/src/ports/content-change.repository.ts",
       "kind": "note"
@@ -5402,7 +5500,7 @@
       "label": "content-lock.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 34,
       "id": "note:apps/api/src/ports/content-lock.port.ts",
       "kind": "note"
@@ -5416,7 +5514,7 @@
       "label": "content-mutation.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 40,
       "id": "note:apps/api/src/ports/content-mutation.port.ts",
       "kind": "note"
@@ -5436,16 +5534,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 22,
-      "linkDegree": 21,
-      "inDegree": 20,
+      "totalDegree": 23,
+      "linkDegree": 22,
+      "inDegree": 21,
       "outDegree": 2,
       "path": "apps/api/src/ports/content-release.repository.ts",
       "label": "content-release.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
-      "lines": 57,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 59,
       "id": "note:apps/api/src/ports/content-release.repository.ts",
       "kind": "note"
     },
@@ -5458,7 +5556,7 @@
       "label": "conversation-action-commit.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 9,
       "id": "note:apps/api/src/ports/conversation-action-commit.port.ts",
       "kind": "note"
@@ -5472,7 +5570,7 @@
       "label": "conversation-deletion.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 17,
       "id": "note:apps/api/src/ports/conversation-deletion.repository.ts",
       "kind": "note"
@@ -5486,7 +5584,7 @@
       "label": "conversation-export-file-store.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 14,
       "id": "note:apps/api/src/ports/conversation-export-file-store.port.ts",
       "kind": "note"
@@ -5500,7 +5598,7 @@
       "label": "conversation-export-revoker.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 5,
       "id": "note:apps/api/src/ports/conversation-export-revoker.port.ts",
       "kind": "note"
@@ -5514,7 +5612,7 @@
       "label": "conversation-export.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 39,
       "id": "note:apps/api/src/ports/conversation-export.repository.ts",
       "kind": "note"
@@ -5528,7 +5626,7 @@
       "label": "conversation-query.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 28,
       "id": "note:apps/api/src/ports/conversation-query.repository.ts",
       "kind": "note"
@@ -5542,7 +5640,7 @@
       "label": "conversation.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 47,
       "id": "note:apps/api/src/ports/conversation.repository.ts",
       "kind": "note"
@@ -5556,7 +5654,7 @@
       "label": "deletion-manifest.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 14,
       "id": "note:apps/api/src/ports/deletion-manifest.port.ts",
       "kind": "note"
@@ -5570,7 +5668,7 @@
       "label": "deployment.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 36,
       "id": "note:apps/api/src/ports/deployment.repository.ts",
       "kind": "note"
@@ -5632,9 +5730,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 22,
-      "linkDegree": 21,
-      "inDegree": 21,
+      "totalDegree": 23,
+      "linkDegree": 22,
+      "inDegree": 22,
       "outDegree": 1,
       "path": "apps/api/src/ports/git-status.repository.ts",
       "label": "git-status.repository",
@@ -5710,7 +5808,7 @@
       "label": "log-resource-cleaner.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 7,
       "id": "note:apps/api/src/ports/log-resource-cleaner.port.ts",
       "kind": "note"
@@ -5724,7 +5822,7 @@
       "label": "log-resource.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 87,
       "id": "note:apps/api/src/ports/log-resource.repository.ts",
       "kind": "note"
@@ -5738,7 +5836,7 @@
       "label": "model-credential.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 25,
       "id": "note:apps/api/src/ports/model-credential.port.ts",
       "kind": "note"
@@ -5752,7 +5850,7 @@
       "label": "model-directory.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 27,
       "id": "note:apps/api/src/ports/model-directory.port.ts",
       "kind": "note"
@@ -5800,9 +5898,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 128,
-      "linkDegree": 127,
-      "inDegree": 127,
+      "totalDegree": 129,
+      "linkDegree": 128,
+      "inDegree": 128,
       "outDegree": 1,
       "path": "apps/api/src/ports/prisma.port.ts",
       "label": "prisma.port",
@@ -5836,7 +5934,7 @@
       "label": "public-route-boundary.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 11,
       "id": "note:apps/api/src/ports/public-route-boundary.port.ts",
       "kind": "note"
@@ -5906,7 +6004,7 @@
       "label": "reminder-disposition.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 47,
       "id": "note:apps/api/src/ports/reminder-disposition.port.ts",
       "kind": "note"
@@ -5920,7 +6018,7 @@
       "label": "reminder.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 44,
       "id": "note:apps/api/src/ports/reminder.repository.ts",
       "kind": "note"
@@ -5934,7 +6032,7 @@
       "label": "review-entry.repository",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 30,
       "id": "note:apps/api/src/ports/review-entry.repository.ts",
       "kind": "note"
@@ -5948,7 +6046,7 @@
       "label": "runtime-monitor.port",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 66,
       "id": "note:apps/api/src/ports/runtime-monitor.port.ts",
       "kind": "note"
@@ -6066,9 +6164,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 15,
-      "linkDegree": 14,
-      "inDegree": 14,
+      "totalDegree": 16,
+      "linkDegree": 15,
+      "inDegree": 15,
       "outDegree": 1,
       "path": "apps/api/src/ports/website-deployment-verifier.port.ts",
       "label": "website-deployment-verifier.port",
@@ -6144,7 +6242,7 @@
       "label": "public-route-boundary.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 88,
       "id": "note:apps/api/src/public-route-boundary.test.ts",
       "kind": "note"
@@ -6158,7 +6256,7 @@
       "label": "recovery-order.g02.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 377,
       "id": "note:apps/api/src/recovery-order.g02.kernel.integration.test.ts",
       "kind": "note"
@@ -6172,7 +6270,7 @@
       "label": "content-review.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 214,
       "id": "note:apps/api/src/reminder/content-review.kernel.integration.test.ts",
       "kind": "note"
@@ -6186,7 +6284,7 @@
       "label": "conversation-action.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 357,
       "id": "note:apps/api/src/reminder/conversation-action.kernel.integration.test.ts",
       "kind": "note"
@@ -6200,7 +6298,7 @@
       "label": "conversation-action.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 230,
       "id": "note:apps/api/src/reminder/conversation-action.service.ts",
       "kind": "note"
@@ -6214,7 +6312,7 @@
       "label": "reminder-disposition-http.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 154,
       "id": "note:apps/api/src/reminder/reminder-disposition-http.integration.test.ts",
       "kind": "note"
@@ -6228,7 +6326,7 @@
       "label": "reminder-disposition.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 284,
       "id": "note:apps/api/src/reminder/reminder-disposition.kernel.integration.test.ts",
       "kind": "note"
@@ -6242,7 +6340,7 @@
       "label": "reminder-http.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 129,
       "id": "note:apps/api/src/reminder/reminder-http.integration.test.ts",
       "kind": "note"
@@ -6256,7 +6354,7 @@
       "label": "reminder-scan.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 239,
       "id": "note:apps/api/src/reminder/reminder-scan.kernel.integration.test.ts",
       "kind": "note"
@@ -6270,7 +6368,7 @@
       "label": "reminder-scan.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 114,
       "id": "note:apps/api/src/reminder/reminder-scan.service.ts",
       "kind": "note"
@@ -6284,7 +6382,7 @@
       "label": "reminder.controller",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 124,
       "id": "note:apps/api/src/reminder/reminder.controller.ts",
       "kind": "note"
@@ -6298,7 +6396,7 @@
       "label": "reminder.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 212,
       "id": "note:apps/api/src/reminder/reminder.kernel.integration.test.ts",
       "kind": "note"
@@ -6312,7 +6410,7 @@
       "label": "reminder.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 395,
       "id": "note:apps/api/src/reminder/reminder.service.ts",
       "kind": "note"
@@ -6326,7 +6424,7 @@
       "label": "review-to-action.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 169,
       "id": "note:apps/api/src/reminder/review-to-action.kernel.integration.test.ts",
       "kind": "note"
@@ -6368,7 +6466,7 @@
       "label": "dsh-credentials-file",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 87,
       "id": "note:apps/api/src/runtime/dsh-credentials-file.ts",
       "kind": "note"
@@ -6382,7 +6480,7 @@
       "label": "dsh-home-paths",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 38,
       "id": "note:apps/api/src/runtime/dsh-home-paths.ts",
       "kind": "note"
@@ -6396,7 +6494,7 @@
       "label": "dsh-session-resource-path.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 18,
       "id": "note:apps/api/src/runtime/dsh-session-resource-path.test.ts",
       "kind": "note"
@@ -6410,7 +6508,7 @@
       "label": "dsh-session-resource-path",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 49,
       "id": "note:apps/api/src/runtime/dsh-session-resource-path.ts",
       "kind": "note"
@@ -6424,7 +6522,7 @@
       "label": "dsh-settings-file",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 96,
       "id": "note:apps/api/src/runtime/dsh-settings-file.ts",
       "kind": "note"
@@ -6494,7 +6592,7 @@
       "label": "restore-gate.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 39,
       "id": "note:apps/api/src/runtime/restore-gate.test.ts",
       "kind": "note"
@@ -6508,7 +6606,7 @@
       "label": "restore-gate",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 28,
       "id": "note:apps/api/src/runtime/restore-gate.ts",
       "kind": "note"
@@ -6620,7 +6718,7 @@
       "label": "registered-trace.writer.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 16,
       "id": "note:apps/api/src/traces/registered-trace.writer.test.ts",
       "kind": "note"
@@ -6634,7 +6732,7 @@
       "label": "registered-trace.writer",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 16,
       "id": "note:apps/api/src/traces/registered-trace.writer.ts",
       "kind": "note"
@@ -6872,7 +6970,7 @@
       "label": "publication-content-release.kernel.integration.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 222,
       "id": "note:apps/api/src/workflow/publication-content-release.kernel.integration.test.ts",
       "kind": "note"
@@ -7046,16 +7144,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 34,
-      "linkDegree": 33,
+      "totalDegree": 36,
+      "linkDegree": 35,
       "inDegree": 1,
-      "outDegree": 33,
+      "outDegree": 35,
       "path": "apps/web/src/App.tsx",
       "label": "App",
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 120,
+      "lines": 130,
       "id": "note:apps/web/src/App.tsx",
       "kind": "note"
     },
@@ -7110,7 +7208,7 @@
       "label": "public-api.test",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 107,
       "id": "note:apps/web/src/api/public-api.test.ts",
       "kind": "note"
@@ -7138,9 +7236,23 @@
       "label": "apps/web/src/api/vite-proxy.test",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 14,
       "id": "note:apps/web/src/api/vite-proxy.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 3,
+      "outDegree": 2,
+      "path": "apps/web/src/article-versions.ts",
+      "label": "article-versions",
+      "app": "apps/web",
+      "extension": ".ts",
+      "created": "",
+      "lines": 31,
+      "id": "note:apps/web/src/article-versions.ts",
       "kind": "note"
     },
     {
@@ -7614,7 +7726,7 @@
       "label": "ArticleAssistantPanel.test",
       "app": "apps/web",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 358,
       "id": "note:apps/web/src/components/ui/ArticleAssistantPanel.test.tsx",
       "kind": "note"
@@ -7628,7 +7740,7 @@
       "label": "ArticleAssistantPanel",
       "app": "apps/web",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 226,
       "id": "note:apps/web/src/components/ui/ArticleAssistantPanel.tsx",
       "kind": "note"
@@ -7908,7 +8020,7 @@
       "label": "XiaoyingPanel",
       "app": "apps/web",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 152,
       "id": "note:apps/web/src/components/xiaoying/XiaoyingPanel.tsx",
       "kind": "note"
@@ -7978,7 +8090,7 @@
       "label": "useHomeAssistant",
       "app": "apps/web",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 55,
       "id": "note:apps/web/src/components/xiaoying/useHomeAssistant.ts",
       "kind": "note"
@@ -7998,9 +8110,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 23,
-      "linkDegree": 22,
-      "inDegree": 20,
+      "totalDegree": 25,
+      "linkDegree": 24,
+      "inDegree": 22,
       "outDegree": 3,
       "path": "apps/web/src/content.ts",
       "label": "apps/web/src/content",
@@ -8063,7 +8175,7 @@
       "app": "apps/web",
       "extension": ".ts",
       "created": "2026-09-03T01:09:15+08:00",
-      "lines": 248,
+      "lines": 251,
       "id": "note:apps/web/src/hooks/useAssistant.ts",
       "kind": "note"
     },
@@ -8292,9 +8404,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 3,
-      "linkDegree": 2,
-      "inDegree": 2,
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 3,
       "outDegree": 1,
       "path": "apps/web/src/lib/sanitize-html.ts",
       "label": "sanitize-html",
@@ -8656,17 +8768,45 @@
       "kind": "note"
     },
     {
-      "totalDegree": 25,
-      "linkDegree": 24,
+      "totalDegree": 26,
+      "linkDegree": 25,
       "inDegree": 1,
-      "outDegree": 24,
+      "outDegree": 25,
       "path": "apps/web/src/pages/PostDetailPage.tsx",
       "label": "PostDetailPage",
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 338,
+      "lines": 351,
       "id": "note:apps/web/src/pages/PostDetailPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 6,
+      "linkDegree": 5,
+      "inDegree": 1,
+      "outDegree": 5,
+      "path": "apps/web/src/pages/PostHistoryPage.tsx",
+      "label": "PostHistoryPage",
+      "app": "apps/web",
+      "extension": ".tsx",
+      "created": "",
+      "lines": 93,
+      "id": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 7,
+      "linkDegree": 6,
+      "inDegree": 1,
+      "outDegree": 6,
+      "path": "apps/web/src/pages/PostVersionPage.tsx",
+      "label": "PostVersionPage",
+      "app": "apps/web",
+      "extension": ".tsx",
+      "created": "",
+      "lines": 118,
+      "id": "note:apps/web/src/pages/PostVersionPage.tsx",
       "kind": "note"
     },
     {
@@ -9006,9 +9146,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 6,
-      "linkDegree": 5,
-      "inDegree": 5,
+      "totalDegree": 8,
+      "linkDegree": 7,
+      "inDegree": 7,
       "outDegree": 1,
       "path": "apps/web/src/shared/format.ts",
       "label": "format",
@@ -9308,7 +9448,7 @@
       "label": "packages/shared/src/activity",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 195,
       "id": "note:packages/shared/src/activity.ts",
       "kind": "note"
@@ -9337,7 +9477,7 @@
       "app": "packages/shared",
       "extension": ".ts",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 101,
+      "lines": 104,
       "id": "note:packages/shared/src/agent-execution.ts",
       "kind": "note"
     },
@@ -9350,7 +9490,7 @@
       "label": "agent-home.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 107,
       "id": "note:packages/shared/src/agent-home.test.ts",
       "kind": "note"
@@ -9364,7 +9504,7 @@
       "label": "agent-home",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 175,
       "id": "note:packages/shared/src/agent-home.ts",
       "kind": "note"
@@ -9416,11 +9556,39 @@
       "linkDegree": 1,
       "inDegree": 0,
       "outDegree": 2,
+      "path": "packages/shared/src/article-version.test.ts",
+      "label": "article-version.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "",
+      "lines": 107,
+      "id": "note:packages/shared/src/article-version.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 5,
+      "linkDegree": 4,
+      "inDegree": 4,
+      "outDegree": 1,
+      "path": "packages/shared/src/article-version.ts",
+      "label": "article-version",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "",
+      "lines": 174,
+      "id": "note:packages/shared/src/article-version.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
       "path": "packages/shared/src/assistant-context.test.ts",
       "label": "assistant-context.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 95,
       "id": "note:packages/shared/src/assistant-context.test.ts",
       "kind": "note"
@@ -9434,7 +9602,7 @@
       "label": "assistant-context",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 121,
       "id": "note:packages/shared/src/assistant-context.ts",
       "kind": "note"
@@ -9448,7 +9616,7 @@
       "label": "assistant-interaction.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 37,
       "id": "note:packages/shared/src/assistant-interaction.test.ts",
       "kind": "note"
@@ -9462,8 +9630,8 @@
       "label": "assistant-interaction",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 62,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 66,
       "id": "note:packages/shared/src/assistant-interaction.ts",
       "kind": "note"
     },
@@ -9476,7 +9644,7 @@
       "label": "assistant-stream.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 53,
       "id": "note:packages/shared/src/assistant-stream.test.ts",
       "kind": "note"
@@ -9490,7 +9658,7 @@
       "label": "assistant-stream",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 92,
       "id": "note:packages/shared/src/assistant-stream.ts",
       "kind": "note"
@@ -9560,7 +9728,7 @@
       "label": "build-version-proof.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 170,
       "id": "note:packages/shared/src/build-version-proof.test.ts",
       "kind": "note"
@@ -9770,7 +9938,7 @@
       "label": "content-change.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 119,
       "id": "note:packages/shared/src/content-change.test.ts",
       "kind": "note"
@@ -9784,8 +9952,8 @@
       "label": "content-change",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 292,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 294,
       "id": "note:packages/shared/src/content-change.ts",
       "kind": "note"
     },
@@ -9840,7 +10008,7 @@
       "label": "content-lock.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 62,
       "id": "note:packages/shared/src/content-lock.test.ts",
       "kind": "note"
@@ -9854,15 +10022,15 @@
       "label": "content-lock",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 45,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 47,
       "id": "note:packages/shared/src/content-lock.ts",
       "kind": "note"
     },
     {
-      "totalDegree": 10,
-      "linkDegree": 9,
-      "inDegree": 9,
+      "totalDegree": 11,
+      "linkDegree": 10,
+      "inDegree": 10,
       "outDegree": 1,
       "path": "packages/shared/src/content.ts",
       "label": "packages/shared/src/content",
@@ -9882,7 +10050,7 @@
       "label": "conversation-ops",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 170,
       "id": "note:packages/shared/src/conversation-ops.ts",
       "kind": "note"
@@ -9896,7 +10064,7 @@
       "label": "conversation",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 71,
       "id": "note:packages/shared/src/conversation.ts",
       "kind": "note"
@@ -9910,7 +10078,7 @@
       "label": "deployment.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 70,
       "id": "note:packages/shared/src/deployment.test.ts",
       "kind": "note"
@@ -9924,7 +10092,7 @@
       "label": "deployment",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 103,
       "id": "note:packages/shared/src/deployment.ts",
       "kind": "note"
@@ -10140,16 +10308,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 308,
-      "linkDegree": 307,
-      "inDegree": 247,
-      "outDegree": 61,
+      "totalDegree": 316,
+      "linkDegree": 315,
+      "inDegree": 254,
+      "outDegree": 62,
       "path": "packages/shared/src/index.ts",
       "label": "packages/shared/src/index",
       "app": "packages/shared",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 61,
+      "lines": 62,
       "id": "note:packages/shared/src/index.ts",
       "kind": "note"
     },
@@ -10246,7 +10414,7 @@
       "label": "model-directory.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 262,
       "id": "note:packages/shared/src/model-directory.test.ts",
       "kind": "note"
@@ -10260,7 +10428,7 @@
       "label": "model-directory",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 466,
       "id": "note:packages/shared/src/model-directory.ts",
       "kind": "note"
@@ -10358,7 +10526,7 @@
       "label": "ops-stats.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 150,
       "id": "note:packages/shared/src/ops-stats.test.ts",
       "kind": "note"
@@ -10372,7 +10540,7 @@
       "label": "ops-stats",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 234,
       "id": "note:packages/shared/src/ops-stats.ts",
       "kind": "note"
@@ -10456,7 +10624,7 @@
       "label": "public-deny.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 81,
       "id": "note:packages/shared/src/public-deny.test.ts",
       "kind": "note"
@@ -10470,8 +10638,8 @@
       "label": "public-readiness",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 25,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 36,
       "id": "note:packages/shared/src/public-readiness.ts",
       "kind": "note"
     },
@@ -10526,7 +10694,7 @@
       "label": "redaction.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 86,
       "id": "note:packages/shared/src/redaction.test.ts",
       "kind": "note"
@@ -10540,7 +10708,7 @@
       "label": "redaction",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 139,
       "id": "note:packages/shared/src/redaction.ts",
       "kind": "note"
@@ -10582,7 +10750,7 @@
       "label": "reminder.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 133,
       "id": "note:packages/shared/src/reminder.test.ts",
       "kind": "note"
@@ -10596,7 +10764,7 @@
       "label": "reminder",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 283,
       "id": "note:packages/shared/src/reminder.ts",
       "kind": "note"
@@ -10610,7 +10778,7 @@
       "label": "resource-gate.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 31,
       "id": "note:packages/shared/src/resource-gate.test.ts",
       "kind": "note"
@@ -10624,8 +10792,8 @@
       "label": "resource-gate",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 39,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 40,
       "id": "note:packages/shared/src/resource-gate.ts",
       "kind": "note"
     },
@@ -10652,7 +10820,7 @@
       "label": "packages/shared/src/runtime-monitor.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 219,
       "id": "note:packages/shared/src/runtime-monitor.test.ts",
       "kind": "note"
@@ -10666,7 +10834,7 @@
       "label": "runtime-monitor",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 377,
       "id": "note:packages/shared/src/runtime-monitor.ts",
       "kind": "note"
@@ -10750,7 +10918,7 @@
       "label": "text-diff.test",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 55,
       "id": "note:packages/shared/src/text-diff.test.ts",
       "kind": "note"
@@ -10764,8 +10932,8 @@
       "label": "text-diff",
       "app": "packages/shared",
       "extension": ".ts",
-      "created": "",
-      "lines": 146,
+      "created": "2026-10-13T19:30:04+08:00",
+      "lines": 192,
       "id": "note:packages/shared/src/text-diff.ts",
       "kind": "note"
     },
@@ -10896,6 +11064,20 @@
       "kind": "note"
     },
     {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 0,
+      "outDegree": 4,
+      "path": "scripts/backfill-article-versions.ts",
+      "label": "backfill-article-versions",
+      "app": "scripts",
+      "extension": ".ts",
+      "created": "",
+      "lines": 76,
+      "id": "note:scripts/backfill-article-versions.ts",
+      "kind": "note"
+    },
+    {
       "totalDegree": 3,
       "linkDegree": 2,
       "inDegree": 0,
@@ -10980,16 +11162,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 8,
-      "linkDegree": 7,
+      "totalDegree": 9,
+      "linkDegree": 8,
       "inDegree": 0,
-      "outDegree": 8,
+      "outDegree": 9,
       "path": "scripts/generate-content.ts",
       "label": "generate-content",
       "app": "scripts",
       "extension": ".ts",
       "created": "2026-07-21T19:49:05+08:00",
-      "lines": 268,
+      "lines": 273,
       "id": "note:scripts/generate-content.ts",
       "kind": "note"
     },
@@ -11002,7 +11184,7 @@
       "label": "import-public-snapshot",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 87,
       "id": "note:scripts/import-public-snapshot.ts",
       "kind": "note"
@@ -11019,6 +11201,20 @@
       "created": "2026-07-21T21:05:43+08:00",
       "lines": 55,
       "id": "note:scripts/lib/accept-http.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 1,
+      "outDegree": 3,
+      "path": "scripts/lib/article-versions-projection.ts",
+      "label": "article-versions-projection",
+      "app": "scripts",
+      "extension": ".ts",
+      "created": "",
+      "lines": 90,
+      "id": "note:scripts/lib/article-versions-projection.ts",
       "kind": "note"
     },
     {
@@ -11064,9 +11260,9 @@
       "kind": "note"
     },
     {
-      "totalDegree": 16,
-      "linkDegree": 15,
-      "inDegree": 15,
+      "totalDegree": 18,
+      "linkDegree": 17,
+      "inDegree": 17,
       "outDegree": 1,
       "path": "scripts/lib/paths.ts",
       "label": "paths",
@@ -11142,7 +11338,7 @@
       "label": "migrate-legacy-data",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 65,
       "id": "note:scripts/migrate-legacy-data.ts",
       "kind": "note"
@@ -11162,16 +11358,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 10,
-      "linkDegree": 9,
+      "totalDegree": 11,
+      "linkDegree": 10,
       "inDegree": 0,
-      "outDegree": 10,
+      "outDegree": 11,
       "path": "scripts/prerender-web.ts",
       "label": "prerender-web",
       "app": "scripts",
       "extension": ".ts",
       "created": "2026-07-21T19:49:05+08:00",
-      "lines": 1004,
+      "lines": 1125,
       "id": "note:scripts/prerender-web.ts",
       "kind": "note"
     },
@@ -11226,7 +11422,7 @@
       "label": "rebuild-legacy-db",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 222,
       "id": "note:scripts/rebuild-legacy-db.ts",
       "kind": "note"
@@ -11240,7 +11436,7 @@
       "label": "sdk-version",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 123,
       "id": "note:scripts/sdk-version.ts",
       "kind": "note"
@@ -11268,7 +11464,7 @@
       "label": "verify-deploy-readiness.test",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 18,
       "id": "note:scripts/verify-deploy-readiness.test.ts",
       "kind": "note"
@@ -11282,7 +11478,7 @@
       "label": "verify-deploy-readiness",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 190,
       "id": "note:scripts/verify-deploy-readiness.ts",
       "kind": "note"
@@ -11296,7 +11492,7 @@
       "label": "verify-doc-links",
       "app": "scripts",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-13T19:30:04+08:00",
       "lines": 200,
       "id": "note:scripts/verify-doc-links.ts",
       "kind": "note"
@@ -11386,6 +11582,20 @@
       "kind": "attachment"
     },
     {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 1,
+      "outDegree": 1,
+      "path": "apps/web/src/generated/article-versions.json",
+      "label": "article-versions.json",
+      "app": "apps/web",
+      "extension": ".json",
+      "created": "",
+      "lines": 257,
+      "id": "attachment:apps/web/src/generated/article-versions.json",
+      "kind": "attachment"
+    },
+    {
       "totalDegree": 1,
       "linkDegree": 1,
       "inDegree": 1,
@@ -11409,7 +11619,7 @@
       "app": "apps/web",
       "extension": ".json",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 1321,
+      "lines": 1361,
       "id": "attachment:apps/web/src/generated/content.json",
       "kind": "attachment"
     },
@@ -11423,7 +11633,7 @@
       "app": "apps/web",
       "extension": ".json",
       "created": "2026-09-14T01:43:37+08:00",
-      "lines": 1946,
+      "lines": 1995,
       "id": "attachment:apps/web/src/generated/graph.json",
       "kind": "attachment"
     },
@@ -11451,7 +11661,7 @@
       "app": "apps/web",
       "extension": ".css",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 4998,
+      "lines": 5039,
       "id": "attachment:apps/web/src/styles/walker.css",
       "kind": "attachment"
     },
@@ -11564,9 +11774,9 @@
       "kind": "tag",
       "label": ".json",
       "tag": ".json",
-      "totalDegree": 7,
+      "totalDegree": 8,
       "linkDegree": 0,
-      "inDegree": 7,
+      "inDegree": 8,
       "outDegree": 0
     },
     {
@@ -11574,9 +11784,9 @@
       "kind": "tag",
       "label": ".ts",
       "tag": ".ts",
-      "totalDegree": 678,
+      "totalDegree": 689,
       "linkDegree": 0,
-      "inDegree": 678,
+      "inDegree": 689,
       "outDegree": 0
     },
     {
@@ -11584,9 +11794,9 @@
       "kind": "tag",
       "label": ".tsx",
       "tag": ".tsx",
-      "totalDegree": 129,
+      "totalDegree": 132,
       "linkDegree": 0,
-      "inDegree": 129,
+      "inDegree": 132,
       "outDegree": 0
     }
   ],
@@ -11698,16 +11908,6 @@
     },
     {
       "source": "note:apps/admin/src/app/router.tsx",
-      "target": "note:apps/admin/src/components/States.tsx",
-      "kind": "link"
-    },
-    {
-      "source": "note:apps/admin/src/app/router.tsx",
-      "target": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
-      "kind": "embed"
-    },
-    {
-      "source": "note:apps/admin/src/app/router.tsx",
       "target": "note:apps/admin/src/pages/agents/AgentListPage.tsx",
       "kind": "link"
     },
@@ -11735,6 +11935,16 @@
       "source": "note:apps/admin/src/app/router.tsx",
       "target": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
       "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/app/router.tsx",
+      "target": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "kind": "embed"
     },
     {
       "source": "note:apps/admin/src/components/ContentTable.tsx",
@@ -12023,11 +12233,36 @@
     },
     {
       "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
       "target": "note:apps/admin/src/shared/routes.ts",
       "kind": "link"
     },
     {
       "source": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
+      "target": "note:apps/admin/src/api/queries.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
+      "target": "note:apps/admin/src/components/States.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
       "target": "note:apps/admin/src/shared/labels.ts",
       "kind": "link"
     },
@@ -12059,6 +12294,11 @@
     {
       "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
       "target": "note:apps/admin/src/shared/labels.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/content/ContentListPage.tsx",
+      "target": "note:apps/admin/src/shared/routes.ts",
       "kind": "link"
     },
     {
@@ -12513,6 +12753,11 @@
     },
     {
       "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
+      "target": "note:apps/admin/src/api/http.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/admin/src/pages/settings/SettingsPage.tsx",
       "target": "note:apps/admin/src/app/AdminShell.tsx",
       "kind": "link"
     },
@@ -12737,6 +12982,11 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/adapters/article-versions-dir.test.ts",
+      "target": "note:apps/api/src/adapters/article-versions-dir.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/adapters/content-approval.persistence.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
@@ -12809,6 +13059,31 @@
     {
       "source": "note:apps/api/src/adapters/execution-object-policy.ts",
       "target": "note:apps/api/src/ports/execution-object-policy.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.test.ts",
+      "target": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "target": "note:apps/api/src/common/http-error.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "target": "note:apps/api/src/ports/article-version-store.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "target": "note:apps/api/src/adapters/article-versions-dir.ts",
       "kind": "link"
     },
     {
@@ -13639,6 +13914,11 @@
     {
       "source": "note:apps/api/src/adapters/prisma-conversation-action-commit.ts",
       "target": "note:apps/api/src/ports/conversation-action-commit.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/adapters/prisma-conversation-deletion.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
       "kind": "link"
     },
     {
@@ -15142,6 +15422,11 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/content-admin/content-admin.service.ts",
+      "target": "note:apps/api/src/ports/article-version-store.port.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/content-admin/content-project-boundary.kernel.integration.test.ts",
       "target": "note:apps/api/src/app.module.ts",
       "kind": "link"
@@ -15662,6 +15947,61 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/config/config.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/kernel.module.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/content-release/content-release.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/content-admin/content-admin.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/content-release.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/content-change.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/git-status.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/website-deployment-verifier.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/article-version-store.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/ports/prisma.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "note:apps/api/src/adapters/content-approval.persistence.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/api/src/content-release/content-release-cancel.kernel.integration.test.ts",
       "target": "note:apps/api/src/config/config.module.ts",
       "kind": "link"
@@ -16124,6 +16464,11 @@
     {
       "source": "note:apps/api/src/content-release/content-release.service.ts",
       "target": "note:apps/api/src/ports/operations-journal.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/content-release/content-release.service.ts",
+      "target": "note:apps/api/src/ports/article-version-store.port.ts",
       "kind": "link"
     },
     {
@@ -18123,6 +18468,16 @@
     },
     {
       "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
+      "target": "note:apps/api/src/ports/article-version-store.port.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/kernel.module.ts",
       "target": "note:apps/api/src/ports/content-mutation.port.ts",
       "kind": "link"
     },
@@ -18459,6 +18814,11 @@
     {
       "source": "note:apps/api/src/log-resources/conversation-deletion.service.ts",
       "target": "note:apps/api/src/execution/agent-execution.service.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/log-resources/conversation-deletion.service.ts",
+      "target": "note:packages/shared/src/index.ts",
       "kind": "link"
     },
     {
@@ -19428,6 +19788,11 @@
     },
     {
       "source": "note:apps/api/src/operations/operations.controller.ts",
+      "target": "note:apps/api/src/auth/admin-token.middleware.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/operations/operations.controller.ts",
       "target": "note:apps/api/src/common/http-error.ts",
       "kind": "link"
     },
@@ -19618,6 +19983,11 @@
     },
     {
       "source": "note:apps/api/src/ports/agent-revision.repository.ts",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/api/src/ports/article-version-store.port.ts",
       "target": "note:packages/shared/src/index.ts",
       "kind": "link"
     },
@@ -21253,6 +21623,16 @@
     },
     {
       "source": "note:apps/web/src/App.tsx",
+      "target": "note:apps/web/src/pages/PostVersionPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/App.tsx",
+      "target": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/App.tsx",
       "target": "note:apps/web/src/pages/GraphPage.tsx",
       "kind": "link"
     },
@@ -21440,6 +21820,11 @@
       "source": "note:apps/web/src/api/vite-proxy.test.ts",
       "target": "note:apps/web/vite.config.ts",
       "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/article-versions.ts",
+      "target": "attachment:apps/web/src/generated/article-versions.json",
+      "kind": "attachment"
     },
     {
       "source": "note:apps/web/src/code-graph.ts",
@@ -22768,6 +23153,11 @@
     },
     {
       "source": "note:apps/web/src/pages/PostDetailPage.tsx",
+      "target": "note:apps/web/src/article-versions.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostDetailPage.tsx",
       "target": "note:apps/web/src/components/graph/KnowledgeGraph.tsx",
       "kind": "link"
     },
@@ -22864,6 +23254,51 @@
     {
       "source": "note:apps/web/src/pages/PostDetailPage.tsx",
       "target": "note:apps/web/src/shared/reading.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "target": "note:apps/web/src/content.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "target": "note:apps/web/src/article-versions.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "target": "note:apps/web/src/shared/format.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostVersionPage.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostVersionPage.tsx",
+      "target": "note:apps/web/src/content.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostVersionPage.tsx",
+      "target": "note:apps/web/src/article-versions.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostVersionPage.tsx",
+      "target": "note:apps/web/src/lib/sanitize-html.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostVersionPage.tsx",
+      "target": "note:apps/web/src/shared/format.ts",
       "kind": "link"
     },
     {
@@ -23217,6 +23652,11 @@
       "kind": "link"
     },
     {
+      "source": "note:packages/shared/src/article-version.test.ts",
+      "target": "note:packages/shared/src/article-version.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:packages/shared/src/assistant-context.test.ts",
       "target": "note:packages/shared/src/assistant-context.ts",
       "kind": "link"
@@ -23554,6 +23994,11 @@
     {
       "source": "note:packages/shared/src/index.ts",
       "target": "note:packages/shared/src/content-ledger.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/article-version.ts",
       "kind": "link"
     },
     {
@@ -24032,6 +24477,21 @@
       "kind": "link"
     },
     {
+      "source": "note:scripts/backfill-article-versions.ts",
+      "target": "note:scripts/lib/paths.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/backfill-article-versions.ts",
+      "target": "note:packages/shared/src/content.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/backfill-article-versions.ts",
+      "target": "note:apps/api/src/adapters/fs-article-version-store.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:scripts/build-web.ts",
       "target": "note:scripts/lib/paths.ts",
       "kind": "link"
@@ -24108,6 +24568,11 @@
     },
     {
       "source": "note:scripts/generate-content.ts",
+      "target": "note:scripts/lib/article-versions-projection.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/generate-content.ts",
       "target": "note:scripts/lib/git-created.ts",
       "kind": "link"
     },
@@ -24129,6 +24594,16 @@
     {
       "source": "note:scripts/import-public-snapshot.ts",
       "target": "note:apps/api/src/adapters/fs-public-snapshot.repository.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/lib/article-versions-projection.ts",
+      "target": "note:packages/shared/src/article-version.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/lib/article-versions-projection.ts",
+      "target": "note:scripts/lib/paths.ts",
       "kind": "link"
     },
     {
@@ -24189,6 +24664,11 @@
     {
       "source": "note:scripts/prerender-web.ts",
       "target": "note:packages/shared/src/content.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:scripts/prerender-web.ts",
+      "target": "note:packages/shared/src/article-version.ts",
       "kind": "link"
     },
     {
@@ -24477,6 +24957,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/admin/src/pages/content/ContentHistoryPanel.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/admin/src/pages/content/ContentListPage.test.tsx",
       "target": "tag:.tsx",
       "kind": "tag"
@@ -24737,6 +25222,16 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/adapters/article-versions-dir.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/article-versions-dir.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/adapters/content-approval.persistence.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -24768,6 +25263,16 @@
     },
     {
       "source": "note:apps/api/src/adapters/execution-object-policy.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/adapters/fs-article-version-store.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -25582,6 +26087,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/api/src/content-release/content-release-cancel.kernel.integration.test.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -26188,6 +26698,11 @@
     },
     {
       "source": "note:apps/api/src/ports/agent-unit.repository.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/api/src/ports/article-version-store.port.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -26877,6 +27392,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/web/src/article-versions.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/web/src/code-graph.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -27207,6 +27727,11 @@
       "kind": "tag"
     },
     {
+      "source": "attachment:apps/web/src/generated/article-versions.json",
+      "target": "tag:.json",
+      "kind": "tag"
+    },
+    {
       "source": "attachment:apps/web/src/generated/content.json",
       "target": "tag:.json",
       "kind": "tag"
@@ -27448,6 +27973,16 @@
     },
     {
       "source": "note:apps/web/src/pages/PostDetailPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostHistoryPage.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostVersionPage.tsx",
       "target": "tag:.tsx",
       "kind": "tag"
     },
@@ -27728,6 +28263,16 @@
     },
     {
       "source": "note:packages/shared/src/agent-revision.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/article-version.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/article-version.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },
@@ -28267,6 +28812,11 @@
       "kind": "tag"
     },
     {
+      "source": "note:scripts/backfill-article-versions.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
       "source": "note:scripts/build-web.ts",
       "target": "tag:.ts",
       "kind": "tag"
@@ -28308,6 +28858,11 @@
     },
     {
       "source": "note:scripts/lib/accept-http.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:scripts/lib/article-versions-projection.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },

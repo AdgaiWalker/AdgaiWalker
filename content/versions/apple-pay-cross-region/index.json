@@ -1,0 +1,12 @@
+{
+  "slug": "apple-pay-cross-region",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "566136b2dde59d55c64d2115f420492d5e344ce502b51ca80a2a8aa677f9aadc",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.206Z",
+      "releaseId": "backfill_12562678-998"
+    }
+  ]
+}

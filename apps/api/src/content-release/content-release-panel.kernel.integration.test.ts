@@ -143,7 +143,7 @@ describe('C20 接通发布清单和版本状态界面（Kernel 集成测试）',
     const res = await fetch(`${baseUrl}/admin/content/release/prepare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-      body: JSON.stringify({ slug: 'c20-post' }),
+      body: JSON.stringify({ slug: 'c20-post', versionNote: 'C20 测试发布' }),
     });
     expect(res.status).toBe(201);
     const release = await res.json();
@@ -186,7 +186,7 @@ describe('C20 接通发布清单和版本状态界面（Kernel 集成测试）',
     const res = await fetch(`${baseUrl}/admin/content/release/prepare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-      body: JSON.stringify({ slug: 'c20-post', grantId: 'missing-l2-grant' }),
+      body: JSON.stringify({ slug: 'c20-post', grantId: 'missing-l2-grant', versionNote: 'C20 测试发布' }),
     });
     expect(res.status).toBe(403);
   });
@@ -195,7 +195,7 @@ describe('C20 接通发布清单和版本状态界面（Kernel 集成测试）',
     const prepRes = await fetch(`${baseUrl}/admin/content/release/prepare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-      body: JSON.stringify({ slug: 'c20-post', requestKey: `c20-prep-${Date.now()}` }),
+      body: JSON.stringify({ slug: 'c20-post', requestKey: `c20-prep-${Date.now()}`, versionNote: 'C20 测试发布' }),
     });
     const prep = await prepRes.json();
 

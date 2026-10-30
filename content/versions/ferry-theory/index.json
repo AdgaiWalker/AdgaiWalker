@@ -1,0 +1,12 @@
+{
+  "slug": "ferry-theory",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "18be49442365950db29797e7f9fc4175042d9552a25bf763502844d2feaadbc7",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.211Z",
+      "releaseId": "backfill_d36f9110-5e5"
+    }
+  ]
+}

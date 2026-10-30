@@ -1,0 +1,12 @@
+{
+  "slug": "codex-intro",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "3cd7aad19abdc31cce94110e49e4d00bf69b80da3c21a2ce3dd1ac320c525873",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.208Z",
+      "releaseId": "backfill_344ea067-789"
+    }
+  ]
+}

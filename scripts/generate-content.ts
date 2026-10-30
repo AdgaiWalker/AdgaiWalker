@@ -12,6 +12,7 @@ import { dualEntry } from '../apps/web/src/shared/dual-entry';
 import { createHash } from 'node:crypto';
 import { buildKnowledgeGraph } from '../packages/shared/src/graph';
 import { normalizeLegacyBody, publicManifest } from '../packages/shared/src/public-snapshot';
+import { writeArticleVersionsProjection } from './lib/article-versions-projection';
 import { loadContentCreatedDates } from './lib/git-created';
 import type {
   AiUsePolicy,
@@ -266,3 +267,7 @@ if (graphUnchanged) {
       .join(' / ')}; ${graph.edges.length} edges)`,
   );
 }
+
+// ---- 文章版本历史产物（公开演进史）----
+// 只读 content/versions（公开区只追加存储），投影为 web 静态数据源；索引不变量逐篇校验，损坏即构建失败。
+writeArticleVersionsProjection();

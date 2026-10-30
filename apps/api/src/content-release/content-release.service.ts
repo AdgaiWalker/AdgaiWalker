@@ -12,6 +12,8 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import {
   missingPublishedPostFields,
+  requireVersionNote,
+  stripFrontmatterBlock,
   verifyPublicSnapshot,
   contentApprovalBindingKey,
   toPublicSnapshotSource,
@@ -61,6 +63,7 @@ import {
 } from '../ports/content-release-runner.port';
 import { TRACE_WRITER, type TraceAppendInput, type TraceWriterPort } from '../ports/trace.repository';
 import { OPERATIONS_JOURNAL, type OperationsJournalPort } from '../ports/operations-journal.port';
+import { ARTICLE_VERSION_STORE, type ArticleVersionStorePort } from '../ports/article-version-store.port';
 
 /** 输出尾部保留行数（PRD A10：失败回显原始输出尾部若干行） */
 const RELEASE_TAIL_LINES = 12;
@@ -160,6 +163,8 @@ export class ContentReleaseService {
     private readonly grants?: AuthorizationRepositoryPort,
     @Inject(OPERATIONS_JOURNAL)
     private readonly journal?: OperationsJournalPort,
+    @Optional() @Inject(ARTICLE_VERSION_STORE)
+    private readonly articleVersions?: ArticleVersionStorePort,
   ) {}
 
   /**
@@ -180,7 +185,7 @@ export class ContentReleaseService {
     if (!doc) throw new ApiError('content-not-found', HttpStatus.NOT_FOUND, '发布正本文件不存在');
     const targetHash = doc.hash;
     const publicHash = publicItemHash(
-      toPublicSnapshotSource({ slug, data: entry.frontmatter, body: doc.raw.replace(/^---[\s\S]*?---\r?\n?/, '') }),
+      toPublicSnapshotSource({ slug, data: entry.frontmatter, body: stripFrontmatterBlock(doc.raw) }),
       (text) => createHash('sha256').update(text).digest('hex'),
     );
 
@@ -457,12 +462,49 @@ export class ContentReleaseService {
       };
     }
 
+    const verifiedAt = new Date().toISOString();
     const updated = await this.releasesRepo.updateStage({
       id: release.id,
       stage: 'PUBLISHED',
       verifiedHash: release.sourceHash,
-      verifiedAt: new Date().toISOString(),
+      verifiedAt,
     });
+
+    // 文章版本历史（公开演进史）：发布确证那一刻固化一条不可变版本。
+    // 变更说明来自发布单准备时登记的 versionNote（「为什么」必填）。
+    // 失败不拖垮发布（fail-open）：网页已确证上线是更高优先级事实，版本缺失可补票。
+    //
+    // 对账红线：线上确证的是 PREPARED 时刻的 sourceHash 内容，不是「此刻的文件」。
+    // 若批准后文件又被动过（appliedHash ≠ 当前文件 hash），此刻文件就是「没上线的新草稿」，
+    // 记进公开历史等于伪造发布内容——此时如实报错不写入，等待下次发布或人工补票。
+    if (this.articleVersions) {
+      try {
+        const doc = await this.files?.get(release.target.slug);
+        const note = requireVersionNote(release.versionNote?.trim() || '发布新版本');
+        const change = this.changesRepo ? await this.changesRepo.findById(release.changeId) : null;
+        const appliedHash = change?.appliedHash ?? null;
+        if (!doc) {
+          throw new Error('version-source-file-missing');
+        }
+        if (appliedHash !== null && appliedHash !== doc.hash) {
+          throw new Error(
+            `version-source-drift: 线上内容是 appliedHash=${appliedHash.slice(0, 12)} 的版本，` +
+            `当前文件已是 ${doc.hash.slice(0, 12)}（未上线的新草稿），拒绝把草稿记成已发布版本`,
+          );
+        }
+        await this.articleVersions.appendVersion({
+          slug: release.target.slug,
+          rawBody: doc.raw,
+          note,
+          publishedAt: verifiedAt,
+          releaseId: release.id,
+        });
+      } catch (err: unknown) {
+        this.log.error(
+          `版本历史写入失败 releaseId=${release.id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
 
     // 问答快照切换（C17）：上线核验后导入该次构建快照并切指针，网页成功与问答索引成功分别记录
     let finalRelease = updated;
@@ -575,6 +617,8 @@ export class ContentReleaseService {
     actor?: string;
     changeId?: string;
     requestKey?: string;
+    /** 变更说明：发布确证时固化为公开版本历史的「为什么」（HTTP 层必填；内部调用缺省补默认说明） */
+    versionNote?: string;
   }): Promise<ContentRelease> {
     if (!this.releasesRepo) throw validationError('content-release-repository-unavailable');
     const slug = input.slug.trim();
@@ -707,6 +751,8 @@ export class ContentReleaseService {
       approvedAt: new Date().toISOString(),
     };
 
+    // HTTP 入口（controller）已必填校验；内部直调缺省时补默认说明，仍过「非空」闸
+    const versionNote = requireVersionNote(input.versionNote?.trim() || '发布新版本');
     const releaseId = `rel_${randomUUID().slice(0, 12)}`;
     return await this.releasesRepo.createOnce({
       id: releaseId,
@@ -715,6 +761,7 @@ export class ContentReleaseService {
       baseHash,
       sourceHash,
       publishApproval,
+      versionNote,
       requestKey,
     });
   }

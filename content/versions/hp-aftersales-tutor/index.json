@@ -1,0 +1,12 @@
+{
+  "slug": "hp-aftersales-tutor",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "88a4d80661f4f7a1d77b923f3100fc0562694dca817b68ca4cd3bea18ff76c57",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.216Z",
+      "releaseId": "backfill_16eb6395-756"
+    }
+  ]
+}

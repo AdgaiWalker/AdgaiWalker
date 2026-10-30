@@ -1,0 +1,12 @@
+{
+  "slug": "card-table",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "0e520cf4530788630bc7cab4348ecd36ea46d5532d6271863680e6e25953c738",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.207Z",
+      "releaseId": "backfill_ff6f238a-5db"
+    }
+  ]
+}

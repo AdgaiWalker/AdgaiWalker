@@ -8,6 +8,8 @@ import { RouteMetadata } from './components/RouteMetadata';
 import { HomePage } from './pages/HomePage';
 import { PostsPage } from './pages/PostsPage';
 import { PostDetailPage } from './pages/PostDetailPage';
+import { PostVersionPage } from './pages/PostVersionPage';
+import { PostHistoryPage } from './pages/PostHistoryPage';
 import { GraphPage } from './pages/GraphPage';
 import { ArchitecturePage } from './pages/ArchitecturePage';
 import { ToolsPage } from './pages/ToolsPage';
@@ -53,6 +55,14 @@ export function App() {
           <Route index element={<HomePage />} />
           <Route path={browseBase} element={<PostsPage />} />
           <Route path={`${browseBase}/:slug`} element={<PostDetailPage />} />
+          <Route
+            path={`${browseBase}/:slug/history`}
+            element={<PostHistoryPage />}
+          />
+          <Route
+            path={`${browseBase}/:slug/v/:version`}
+            element={<PostVersionPage />}
+          />
           <Route path={strip(WEB_ROUTES.graph)} element={<GraphPage />} />
           <Route
             path={strip(WEB_ROUTES.architecture)}

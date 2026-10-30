@@ -31,9 +31,11 @@
     "apps/agent/src/telemetry.test.ts",
     "apps/api/src/action/action.service.test.ts",
     "apps/api/src/adapters/ai-nextstep.adapter.test.ts",
+    "apps/api/src/adapters/article-versions-dir.test.ts",
     "apps/api/src/adapters/content-publish-script-lock.test.ts",
     "apps/api/src/adapters/dsh-agent.runner.test.ts",
     "apps/api/src/adapters/execution-object-policy.test.ts",
+    "apps/api/src/adapters/fs-article-version-store.test.ts",
     "apps/api/src/adapters/fs-artifact.repository.test.ts",
     "apps/api/src/adapters/fs-assistant-event-spool.test.ts",
     "apps/api/src/adapters/fs-candidate-file.repository.test.ts",
@@ -92,6 +94,7 @@
     "apps/api/src/content-mutation/content-concurrency-fault.kernel.integration.test.ts",
     "apps/api/src/content-mutation/content-mutation-bypass-audit.kernel.integration.test.ts",
     "apps/api/src/content-mutation/content-propose.kernel.integration.test.ts",
+    "apps/api/src/content-release/article-version-history.kernel.integration.test.ts",
     "apps/api/src/content-release/content-release-cancel.kernel.integration.test.ts",
     "apps/api/src/content-release/content-release-lock.kernel.integration.test.ts",
     "apps/api/src/content-release/content-release-panel.kernel.integration.test.ts",
@@ -223,6 +226,7 @@
     "packages/shared/src/agent-execution.test.ts",
     "packages/shared/src/agent-home.test.ts",
     "packages/shared/src/agent-ops.test.ts",
+    "packages/shared/src/article-version.test.ts",
     "packages/shared/src/assistant-context.test.ts",
     "packages/shared/src/assistant-interaction.test.ts",
     "packages/shared/src/assistant-stream.test.ts",
@@ -272,6 +276,7 @@
     "packages/shared/src/work.test.ts",
     "scripts/accept-deep.ts",
     "scripts/accept-dual-entry.ts",
+    "scripts/backfill-article-versions.ts",
     "scripts/build-web.ts",
     "scripts/check-content-fields.ts",
     "scripts/check-uncommitted-content.ts",
@@ -304,19 +309,19 @@
   "hubs": [
     {
       "path": "packages/shared/src/index.ts",
-      "linkDegree": 307
+      "linkDegree": 315
     },
     {
       "path": "apps/api/src/kernel.module.ts",
-      "linkDegree": 269
+      "linkDegree": 272
     },
     {
       "path": "apps/api/src/ports/prisma.port.ts",
-      "linkDegree": 127
+      "linkDegree": 128
     },
     {
       "path": "apps/api/src/common/http-error.ts",
-      "linkDegree": 91
+      "linkDegree": 92
     },
     {
       "path": "apps/web/src/shared/routes.ts",
@@ -327,34 +332,34 @@
       "linkDegree": 36
     },
     {
-      "path": "apps/api/src/config/config.module.ts",
-      "linkDegree": 33
+      "path": "apps/web/src/App.tsx",
+      "linkDegree": 35
     },
     {
-      "path": "apps/web/src/App.tsx",
+      "path": "apps/api/src/config/config.module.ts",
+      "linkDegree": 34
+    },
+    {
+      "path": "apps/api/src/content-release/content-release.service.ts",
       "linkDegree": 33
     },
     {
       "path": "apps/api/src/app.module.ts",
-      "linkDegree": 32
-    },
-    {
-      "path": "apps/api/src/common/ids.ts",
       "linkDegree": 32
     }
   ],
   "largeFiles": [
     {
       "path": "apps/api/src/content-release/content-release.service.ts",
-      "lines": 1168
+      "lines": 1215
+    },
+    {
+      "path": "scripts/prerender-web.ts",
+      "lines": 1125
     },
     {
       "path": "apps/api/src/assistant/public-assistant.service.ts",
       "lines": 1042
-    },
-    {
-      "path": "scripts/prerender-web.ts",
-      "lines": 1004
     },
     {
       "path": "apps/api/src/execution/agent-execution.service.ts",
@@ -362,7 +367,7 @@
     },
     {
       "path": "apps/admin/src/pages/content/ContentReleasePanel.tsx",
-      "lines": 785
+      "lines": 795
     },
     {
       "path": "apps/web/src/components/graph/obsidian/engine.ts",
@@ -382,15 +387,15 @@
     },
     {
       "path": "apps/admin/src/api/queries.ts",
-      "lines": 557
+      "lines": 596
+    },
+    {
+      "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
+      "lines": 594
     },
     {
       "path": "packages/shared/src/graph-query.ts",
       "lines": 556
-    },
-    {
-      "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
-      "lines": 547
     },
     {
       "path": "packages/shared/src/code-graph.ts",
@@ -398,21 +403,21 @@
     },
     {
       "path": "apps/api/src/kernel.module.ts",
-      "lines": 512
+      "lines": 515
     }
   ],
   "nominated": [],
   "schemaVersion": 1,
-  "sourceCommit": "85b597b4d2f38045265e0c7d8e6915e2bb28ddb0",
-  "generatedAt": "2026-10-12T12:49:29.146Z",
+  "sourceCommit": "1f2401df412a1ec39fdb061cda3921b792b207c3",
+  "generatedAt": "2026-10-30T02:50:33.600Z",
   "counts": {
-    "files": 809,
-    "attachments": 15,
+    "files": 823,
+    "attachments": 16,
     "tags": 5,
     "ghosts": 0,
     "edges": {
-      "total": 3367,
-      "dependency": 2536
+      "total": 3436,
+      "dependency": 2589
     }
   }
 }

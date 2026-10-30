@@ -169,7 +169,7 @@ web 与 API 是两条独立发布链：Vercel（push main 自动发）与盒子�
 | 代码版本 | `git rev-parse --short HEAD` → 写入 `WALKER_BUILD_VERSION` | Git 工作树 |
 | SDK / runtime | `0.1.5-rc.3`（dsh 家族 23 个包同版本） | `apps/api/package.json` |
 | Node | 22+ | 盒子 `C:\Walker\bin` |
-| 目标迁移 | 26 个，最新 `20260929130000_admin_request_log`；生产尚未应用 | `apps/api/prisma/migrations` |
+| 目标迁移 | 27 个，最新 `20261013230000_article_version_note` | `apps/api/prisma/migrations` |
 | 构建产物 | `build:shared` → `build:api`（+`build:admin`） | 本仓库脚本 |
 
 `install-dsh.ps1` **不硬编码** SDK 版本，而是从 `apps/api/package.json` 派生——adapter 要求 SDK 与 dsh 同版本，写死在两处必然漂移（实测曾钉 `0.1.2-alpha.3` 而代码已到 `0.1.5-rc.3`，会导致运行时起不来）。

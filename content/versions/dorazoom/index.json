@@ -1,0 +1,12 @@
+{
+  "slug": "dorazoom",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "b1526adfec0922d4337ac0ab89e8bf861f500c235724d6dc94148e3028e05ac4",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.210Z",
+      "releaseId": "backfill_576b966d-12b"
+    }
+  ]
+}

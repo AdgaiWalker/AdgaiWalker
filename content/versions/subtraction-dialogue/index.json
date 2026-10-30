@@ -1,0 +1,12 @@
+{
+  "slug": "subtraction-dialogue",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "352c30062e24c39d461e1989795d8c2d7c67c3844a5199aa0e986e9c6b5e64d3",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.220Z",
+      "releaseId": "backfill_02f7b8f8-4bb"
+    }
+  ]
+}

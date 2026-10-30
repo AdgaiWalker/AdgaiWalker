@@ -1,0 +1,12 @@
+{
+  "slug": "future-already-here",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "6504947c0a6830e1dc5d8934d619c7575b844e07578f236505f68ab38cdec62b",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.215Z",
+      "releaseId": "backfill_c5994b09-340"
+    }
+  ]
+}

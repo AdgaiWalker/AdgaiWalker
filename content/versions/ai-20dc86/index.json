@@ -1,0 +1,12 @@
+{
+  "slug": "ai-20dc86",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "e3bcde96ca7d1aad88ae0cb9cc2b53f6a35505f87a1af1d050e0526f35b24ade",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.205Z",
+      "releaseId": "backfill_5bfe69ab-e65"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "goout",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "206ad48f4526259bdaef05f3c5998368fd6e2d8f96057969cfffbb1fb621a00b",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.216Z",
+      "releaseId": "backfill_1666d8dd-0c8"
+    }
+  ]
+}

@@ -71,6 +71,7 @@ function view(row: ContentReleaseRow): ContentRelease {
     verifiedHash: row.verifiedHash,
     verifiedAt: row.verifiedAt?.toISOString() ?? null,
     errorCode: row.errorCode,
+    versionNote: row.versionNote,
     requestKey: row.requestKey,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -143,6 +144,7 @@ export class PrismaContentReleaseRepository implements ContentReleaseRepositoryP
           publishGrantRevision: input.publishApproval.binding.grantRevision,
           publishApprovedBy: input.publishApproval.approvedBy,
           publishApprovedAt: new Date(input.publishApproval.approvedAt),
+          versionNote: input.versionNote ?? null,
           requestKey: input.requestKey,
         },
       });

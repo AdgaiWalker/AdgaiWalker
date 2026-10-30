@@ -1,0 +1,12 @@
+{
+  "slug": "cli-command-palette",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "0696a234ed4708d3e5f5a61cccf01f2426c7bc7e92b87c91cf43150fa9a7a380",
+      "note": "初始版本入库",
+      "publishedAt": "2026-10-13T14:58:35.207Z",
+      "releaseId": "backfill_5a6350eb-a76"
+    }
+  ]
+}
