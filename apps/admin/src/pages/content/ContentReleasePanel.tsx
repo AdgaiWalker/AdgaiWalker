@@ -6,6 +6,7 @@ import {
   Ban,
   CheckCircle2,
   Clock,
+  Copy,
   ExternalLink,
   FileText,
   GitCommit,
@@ -22,6 +23,12 @@ import type {
   OpsContentDetail,
   ReleaseManifest,
   ReleasePreflightResult,
+} from "@walker/shared";
+import {
+  buildSocialCopyText,
+  buildXShareIntentUrl,
+  extractSummaryFromRaw,
+  getPublicPostUrl,
 } from "@walker/shared";
 import {
   useCancelContentRelease,
@@ -76,6 +83,31 @@ export function ContentReleasePanel({
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | "info">("info");
+  const [copiedShareText, setCopiedShareText] = useState(false);
+
+  const handleShareToX = () => {
+    const url = buildXShareIntentUrl({
+      title: currentDoc.title || slug,
+      slug,
+      summary: extractSummaryFromRaw(currentDoc.raw),
+    });
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyShareText = async () => {
+    const text = buildSocialCopyText({
+      title: currentDoc.title || slug,
+      slug,
+      summary: extractSummaryFromRaw(currentDoc.raw),
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedShareText(true);
+      setTimeout(() => setCopiedShareText(false), 2000);
+    } catch {
+      // 容错兜底
+    }
+  };
 
   // 15 秒陈旧检测：记录最近一次拉取成功的时刻
   const [lastFetchedAt, setLastFetchedAt] = useState<number>(Date.now());
@@ -739,6 +771,119 @@ export function ContentReleasePanel({
               </div>
             )}
           </div>
+
+          {/* 已确证发布：社媒同步与宣发卡片 */}
+          {latestRelease.stage === "PUBLISHED" && (
+            <div
+              style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: 8,
+                padding: "16px 18px",
+                marginBottom: 16,
+              }}
+              data-testid="social-share-panel"
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ fontWeight: 600, color: "#166534", display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <CheckCircle2 size={18} color="#16a34a" />
+                  <span>文章已确证上线！一键同步宣发到社媒</span>
+                </div>
+                <span className="badge green" style={{ fontSize: 11 }}>
+                  即开即用 · 0 凭据依赖
+                </span>
+              </div>
+
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "#15803d", lineHeight: 1.6 }}>
+                已根据文章标题与摘要自动组装精炼推文。点击直接唤起 X 发推窗口（文案与链接已预填），或一键复制排版文案用于朋友圈、即刻、小红书。
+              </p>
+
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #dcfce7",
+                  borderRadius: 6,
+                  padding: "10px 12px",
+                  marginBottom: 12,
+                  fontSize: 12,
+                  color: "#334155",
+                  fontFamily: "var(--font-mono, monospace)",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.6,
+                }}
+              >
+                {buildSocialCopyText({
+                  title: currentDoc.title || slug,
+                  slug,
+                  summary: extractSummaryFromRaw(currentDoc.raw),
+                })}
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                <button
+                  type="button"
+                  className="button primary"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "#0f1419",
+                    color: "#ffffff",
+                    borderColor: "#0f1419",
+                    padding: "6px 14px",
+                    fontWeight: 500,
+                  }}
+                  onClick={handleShareToX}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  发到 X (Twitter)
+                </button>
+
+                <button
+                  type="button"
+                  className="button"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                  }}
+                  onClick={handleCopyShareText}
+                >
+                  {copiedShareText ? <CheckCircle2 size={14} color="#16a34a" /> : <Copy size={14} />}
+                  <span>{copiedShareText ? "已复制到剪贴板！" : "复制宣发文案"}</span>
+                </button>
+
+                <a
+                  href={getPublicPostUrl(slug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="button"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    textDecoration: "none",
+                    padding: "6px 14px",
+                  }}
+                >
+                  <ExternalLink size={14} />
+                  查看线上文章
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* 失败与异常阶段说明 */}
           {(latestRelease.stage === "FAILED" || latestRelease.stage === "UNKNOWN") && (

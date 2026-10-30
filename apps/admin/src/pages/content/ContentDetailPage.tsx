@@ -14,7 +14,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import type { OpsContentDetail } from "@walker/shared";
-import { computeTextDiff } from "@walker/shared";
+import { buildXShareIntentUrl, computeTextDiff, extractSummaryFromRaw } from "@walker/shared";
 import {
   fetchContentDetail,
   useContentDetail,
@@ -195,15 +195,47 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
         description={typeLabel(item.type) + " · 更新于 " + timeLabel(item.updatedAt)}
       />
 
-      <div className="notice">
-        <span>网页状态：</span>
-        <strong>{versionQuery.isPending ? "核对中" : versionQuery.isError ? "状态待核对" : versionQuery.data?.publishedHash ? "线上已确证" : "线上未核验"}</strong>
-        <span> · 基线版本 SHA-256：</span>
-        <code>{baseHash}</code>
-        <br />
-        <small className="muted">
-          保存操作将写入工作区并受对象锁与 CAS 保护，不会直接发布上线或刷新公共索引。上线走受控发布。
-        </small>
+      <div className="notice" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <span>网页状态：</span>
+          <strong>{versionQuery.isPending ? "核对中" : versionQuery.isError ? "状态待核对" : versionQuery.data?.publishedHash ? "线上已确证" : "线上未核验"}</strong>
+          <span> · 基线版本 SHA-256：</span>
+          <code>{baseHash}</code>
+          <br />
+          <small className="muted">
+            保存操作将写入工作区并受对象锁与 CAS 保护，不会直接发布上线或刷新公共索引。上线走受控发布。
+          </small>
+        </div>
+        {Boolean(versionQuery.data?.publishedHash) && (
+          <button
+            type="button"
+            className="button"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              background: "#0f1419",
+              color: "#ffffff",
+              borderColor: "#0f1419",
+              fontWeight: 500,
+            }}
+            onClick={() => {
+              const url = buildXShareIntentUrl({
+                title: item.title,
+                slug: item.slug,
+                summary: extractSummaryFromRaw(item.raw),
+              });
+              window.open(url, "_blank", "noopener,noreferrer");
+            }}
+            title="在 X (Twitter) 上分享此文章"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            发到 X
+          </button>
+        )}
       </div>
 
       {item.type === "project" && (

@@ -35,6 +35,7 @@ import { WEB_ROUTES } from '../shared/routes';
 import type { BrowseReturnState } from '../components/ItemList';
 import { ArticleToc } from '../components/ui/ArticleToc';
 import { ArticleAssistantPanel } from '../components/ui/ArticleAssistantPanel';
+import { ArticleShare } from '../components/ui/ArticleShare';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
 import { GiscusComments } from '../components/ui/GiscusComments';
 import { LikeButton } from '../components/ui/LikeButton';
@@ -322,6 +323,11 @@ function PostDetailBody({
         </section>
 
         <div className="article-end">
+          <ArticleShare
+            title={post.title}
+            slug={post.slug}
+            summary={post.summary}
+          />
           <LikeButton
             count={like.count}
             busy={like.busy}

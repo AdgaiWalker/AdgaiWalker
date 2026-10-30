@@ -60,3 +60,4 @@ export * from './content-lock.js';
 export * from './resource-gate.js';
 export * from './runtime-monitor.js';
 export * from './activity.js';
+export * from './social-share.js';

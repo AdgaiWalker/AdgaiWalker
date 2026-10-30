@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-30T14:01:30.682Z",
+  "generatedAt": "2026-10-30T22:32:09.500Z",
   "seed": 20260914,
   "nodes": [
     {
@@ -419,7 +419,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-09-22T17:12:25+08:00",
-      "lines": 611,
+      "lines": 643,
       "id": "note:apps/admin/src/pages/content/ContentDetailPage.tsx",
       "kind": "note"
     },
@@ -475,7 +475,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 313,
+      "lines": 354,
       "id": "note:apps/admin/src/pages/content/ContentReleasePanel.test.tsx",
       "kind": "note"
     },
@@ -489,7 +489,7 @@
       "app": "apps/admin",
       "extension": ".tsx",
       "created": "2026-10-13T19:30:04+08:00",
-      "lines": 816,
+      "lines": 961,
       "id": "note:apps/admin/src/pages/content/ContentReleasePanel.tsx",
       "kind": "note"
     },
@@ -824,7 +824,7 @@
       "label": "GuestQuotaPanel",
       "app": "apps/admin",
       "extension": ".tsx",
-      "created": "",
+      "created": "2026-10-30T22:02:51+08:00",
       "lines": 288,
       "id": "note:apps/admin/src/pages/settings/GuestQuotaPanel.tsx",
       "kind": "note"
@@ -2980,7 +2980,7 @@
       "label": "jev-fast-path.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T22:02:51+08:00",
       "lines": 134,
       "id": "note:apps/api/src/assistant/jev-fast-path.service.test.ts",
       "kind": "note"
@@ -2994,7 +2994,7 @@
       "label": "jev-fast-path.service",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T22:02:51+08:00",
       "lines": 332,
       "id": "note:apps/api/src/assistant/jev-fast-path.service.ts",
       "kind": "note"
@@ -4352,7 +4352,7 @@
       "label": "intake.service.test",
       "app": "apps/api",
       "extension": ".ts",
-      "created": "",
+      "created": "2026-10-30T22:02:51+08:00",
       "lines": 133,
       "id": "note:apps/api/src/intake/intake.service.test.ts",
       "kind": "note"
@@ -7802,6 +7802,34 @@
       "kind": "note"
     },
     {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "apps/web/src/components/ui/ArticleShare.test.tsx",
+      "label": "ArticleShare.test",
+      "app": "apps/web",
+      "extension": ".tsx",
+      "created": "",
+      "lines": 59,
+      "id": "note:apps/web/src/components/ui/ArticleShare.test.tsx",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 4,
+      "linkDegree": 3,
+      "inDegree": 2,
+      "outDegree": 2,
+      "path": "apps/web/src/components/ui/ArticleShare.tsx",
+      "label": "ArticleShare",
+      "app": "apps/web",
+      "extension": ".tsx",
+      "created": "",
+      "lines": 61,
+      "id": "note:apps/web/src/components/ui/ArticleShare.tsx",
+      "kind": "note"
+    },
+    {
       "totalDegree": 3,
       "linkDegree": 2,
       "inDegree": 1,
@@ -8824,16 +8852,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 26,
-      "linkDegree": 25,
+      "totalDegree": 27,
+      "linkDegree": 26,
       "inDegree": 1,
-      "outDegree": 25,
+      "outDegree": 26,
       "path": "apps/web/src/pages/PostDetailPage.tsx",
       "label": "PostDetailPage",
       "app": "apps/web",
       "extension": ".tsx",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 351,
+      "lines": 357,
       "id": "note:apps/web/src/pages/PostDetailPage.tsx",
       "kind": "note"
     },
@@ -10364,16 +10392,16 @@
       "kind": "note"
     },
     {
-      "totalDegree": 319,
-      "linkDegree": 318,
-      "inDegree": 257,
-      "outDegree": 62,
+      "totalDegree": 321,
+      "linkDegree": 320,
+      "inDegree": 258,
+      "outDegree": 63,
       "path": "packages/shared/src/index.ts",
       "label": "packages/shared/src/index",
       "app": "packages/shared",
       "extension": ".ts",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 62,
+      "lines": 63,
       "id": "note:packages/shared/src/index.ts",
       "kind": "note"
     },
@@ -10963,6 +10991,34 @@
       "created": "2026-09-22T17:12:25+08:00",
       "lines": 218,
       "id": "note:packages/shared/src/skill.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 2,
+      "linkDegree": 1,
+      "inDegree": 0,
+      "outDegree": 2,
+      "path": "packages/shared/src/social-share.test.ts",
+      "label": "social-share.test",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "",
+      "lines": 104,
+      "id": "note:packages/shared/src/social-share.test.ts",
+      "kind": "note"
+    },
+    {
+      "totalDegree": 3,
+      "linkDegree": 2,
+      "inDegree": 2,
+      "outDegree": 1,
+      "path": "packages/shared/src/social-share.ts",
+      "label": "social-share",
+      "app": "packages/shared",
+      "extension": ".ts",
+      "created": "",
+      "lines": 123,
+      "id": "note:packages/shared/src/social-share.ts",
       "kind": "note"
     },
     {
@@ -11717,7 +11773,7 @@
       "app": "apps/web",
       "extension": ".css",
       "created": "2026-07-21T05:05:30+08:00",
-      "lines": 5039,
+      "lines": 5069,
       "id": "attachment:apps/web/src/styles/walker.css",
       "kind": "attachment"
     },
@@ -11840,9 +11896,9 @@
       "kind": "tag",
       "label": ".ts",
       "tag": ".ts",
-      "totalDegree": 692,
+      "totalDegree": 694,
       "linkDegree": 0,
-      "inDegree": 692,
+      "inDegree": 694,
       "outDegree": 0
     },
     {
@@ -11850,9 +11906,9 @@
       "kind": "tag",
       "label": ".tsx",
       "tag": ".tsx",
-      "totalDegree": 133,
+      "totalDegree": 135,
       "linkDegree": 0,
-      "inDegree": 133,
+      "inDegree": 135,
       "outDegree": 0
     }
   ],
@@ -22438,6 +22494,16 @@
       "kind": "link"
     },
     {
+      "source": "note:apps/web/src/components/ui/ArticleShare.test.tsx",
+      "target": "note:apps/web/src/components/ui/ArticleShare.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/components/ui/ArticleShare.tsx",
+      "target": "note:packages/shared/src/index.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:apps/web/src/components/ui/ArticleToc.tsx",
       "target": "note:apps/web/src/shared/article-outline.ts",
       "kind": "link"
@@ -23340,6 +23406,11 @@
     {
       "source": "note:apps/web/src/pages/PostDetailPage.tsx",
       "target": "note:apps/web/src/components/ui/ArticleAssistantPanel.tsx",
+      "kind": "link"
+    },
+    {
+      "source": "note:apps/web/src/pages/PostDetailPage.tsx",
+      "target": "note:apps/web/src/components/ui/ArticleShare.tsx",
       "kind": "link"
     },
     {
@@ -24388,6 +24459,11 @@
       "kind": "link"
     },
     {
+      "source": "note:packages/shared/src/index.ts",
+      "target": "note:packages/shared/src/social-share.ts",
+      "kind": "link"
+    },
+    {
       "source": "note:packages/shared/src/insights.test.ts",
       "target": "note:packages/shared/src/insights.ts",
       "kind": "link"
@@ -24580,6 +24656,11 @@
     {
       "source": "note:packages/shared/src/skill.ts",
       "target": "note:packages/shared/src/parse-result.ts",
+      "kind": "link"
+    },
+    {
+      "source": "note:packages/shared/src/social-share.test.ts",
+      "target": "note:packages/shared/src/social-share.ts",
       "kind": "link"
     },
     {
@@ -27748,6 +27829,16 @@
       "kind": "tag"
     },
     {
+      "source": "note:apps/web/src/components/ui/ArticleShare.test.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
+      "source": "note:apps/web/src/components/ui/ArticleShare.tsx",
+      "target": "tag:.tsx",
+      "kind": "tag"
+    },
+    {
       "source": "note:apps/web/src/components/ui/ArticleToc.tsx",
       "target": "tag:.tsx",
       "kind": "tag"
@@ -28924,6 +29015,16 @@
     },
     {
       "source": "note:packages/shared/src/skill.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/social-share.test.ts",
+      "target": "tag:.ts",
+      "kind": "tag"
+    },
+    {
+      "source": "note:packages/shared/src/social-share.ts",
       "target": "tag:.ts",
       "kind": "tag"
     },

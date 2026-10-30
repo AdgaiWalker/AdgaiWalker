@@ -310,4 +310,45 @@ describe('ContentReleasePanel (C20 发布清单与版本状态界面)', () => {
 
     expect(screen.getByText(/Git 提交已在远程存在，正等待 Vercel 部署生效/)).toBeDefined();
   });
+
+  it('发布成功为 PUBLISHED 阶段时展示社媒宣发卡片，支持发到 X 与复制文案', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const writeTextSpy = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextSpy },
+      configurable: true,
+      writable: true,
+    });
+
+    useLatestContentReleaseMock.mockReturnValue({
+      data: { ...mockRelease, stage: 'PUBLISHED', verifiedHash: 'a'.repeat(64) },
+      dataUpdatedAt: Date.now(),
+      refetch: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter>
+        <ContentReleasePanel slug="test-article" currentDoc={mockDoc} />
+      </MemoryRouter>,
+    );
+
+    const shareCard = screen.getByTestId('social-share-panel');
+    expect(shareCard).toBeDefined();
+    expect(screen.getByText(/文章已确证上线！/)).toBeDefined();
+    expect(screen.getByText(/已根据文章标题与摘要自动组装精炼推文/)).toBeDefined();
+
+    // 点击发到 X 按钮
+    const xButton = screen.getByRole('button', { name: /发到 X \(Twitter\)/ });
+    fireEvent.click(xButton);
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining('https://x.com/intent/tweet'),
+      '_blank',
+      'noopener,noreferrer',
+    );
+
+    // 点击复制宣发文案
+    const copyButton = screen.getByRole('button', { name: /复制宣发文案/ });
+    fireEvent.click(copyButton);
+    expect(writeTextSpy).toHaveBeenCalled();
+  });
 });

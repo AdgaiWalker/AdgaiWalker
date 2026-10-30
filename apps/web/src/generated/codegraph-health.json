@@ -195,6 +195,7 @@
     "apps/web/src/components/graph/obsidian/reveal.test.ts",
     "apps/web/src/components/shell/MobileBar.test.tsx",
     "apps/web/src/components/ui/ArticleAssistantPanel.test.tsx",
+    "apps/web/src/components/ui/ArticleShare.test.tsx",
     "apps/web/src/components/ui/AssistantThread.test.tsx",
     "apps/web/src/components/ui/ContentFeedback.test.tsx",
     "apps/web/src/components/ui/GiscusComments.test.tsx",
@@ -272,6 +273,7 @@
     "packages/shared/src/runtime-monitor.test.ts",
     "packages/shared/src/skill-export.test.ts",
     "packages/shared/src/skill.test.ts",
+    "packages/shared/src/social-share.test.ts",
     "packages/shared/src/text-diff.test.ts",
     "packages/shared/src/topic.test.ts",
     "packages/shared/src/trace.test.ts",
@@ -311,7 +313,7 @@
   "hubs": [
     {
       "path": "packages/shared/src/index.ts",
-      "linkDegree": 318
+      "linkDegree": 320
     },
     {
       "path": "apps/api/src/kernel.module.ts",
@@ -369,7 +371,7 @@
     },
     {
       "path": "apps/admin/src/pages/content/ContentReleasePanel.tsx",
-      "lines": 816
+      "lines": 961
     },
     {
       "path": "apps/web/src/components/graph/obsidian/engine.ts",
@@ -385,7 +387,7 @@
     },
     {
       "path": "apps/admin/src/pages/content/ContentDetailPage.tsx",
-      "lines": 611
+      "lines": 643
     },
     {
       "path": "packages/shared/src/graph.ts",
@@ -414,16 +416,16 @@
   ],
   "nominated": [],
   "schemaVersion": 1,
-  "sourceCommit": "014b0271c6ac3ec72f1bfabac51d44db22ada5da",
-  "generatedAt": "2026-10-30T14:01:30.713Z",
+  "sourceCommit": "4d6f16eb60090de27f55bca3507848fba12b759b",
+  "generatedAt": "2026-10-30T22:32:09.532Z",
   "counts": {
-    "files": 827,
+    "files": 831,
     "attachments": 16,
     "tags": 5,
     "ghosts": 0,
     "edges": {
-      "total": 3460,
-      "dependency": 2609
+      "total": 3469,
+      "dependency": 2614
     }
   }
 }

@@ -2328,6 +2328,36 @@ body::before {
   filter: none;
 }
 
+.article-share-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 0.65rem 0.95rem;
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in srgb, var(--color-card) 55%, transparent);
+  border: 1px solid var(--color-border);
+}
+.article-share-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--color-parchment-dim);
+}
+.article-share-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.article-share-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .reading-chrome {
     padding: 0.45rem 0.65rem;
