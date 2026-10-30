@@ -297,7 +297,7 @@ export function ContentListPage() {
             </div>
 
             <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--muted)" }}>
-              创建后直接进入在线编辑器书写；写完保存后可一键推送到 GitHub 上线。
+              创建后直接进入在线编辑器书写；写完保存后可进入发布流程推送到 GitHub 上线。
             </p>
 
             {createError && (

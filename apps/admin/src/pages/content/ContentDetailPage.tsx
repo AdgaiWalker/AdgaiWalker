@@ -169,6 +169,21 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
     setSaveError(null);
   };
 
+  const handleGoToRelease = () => {
+    setActiveTab("release");
+    setTimeout(() => {
+      const target =
+        document.getElementById("release-version-note-input") ||
+        document.getElementById("release-approval-section");
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        if ("focus" in target) {
+          (target as HTMLElement).focus();
+        }
+      }
+    }, 100);
+  };
+
   return (
     <>
       <Link className="back-link" to={R.content}>
@@ -303,14 +318,16 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
           }}
         >
           <span>{saveStatus}</span>
-          <button
-            type="button"
-            className="button"
-            onClick={() => setActiveTab("release")}
-            style={{ fontSize: 12, padding: "4px 10px", background: "white", borderColor: "#86efac" }}
-          >
-            前往审核并推送到 GitHub &rarr;
-          </button>
+          {activeGroup !== "review" && (
+            <button
+              type="button"
+              className="button"
+              onClick={handleGoToRelease}
+              style={{ fontSize: 12, padding: "4px 10px", background: "white", borderColor: "#86efac" }}
+            >
+              前往发布上线 &rarr;
+            </button>
+          )}
         </div>
       )}
 
@@ -344,16 +361,16 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
               </button>
             )}
 
-            {!isDirty && (
+            {!isDirty && activeGroup !== "review" && (
               <button
                 type="button"
                 className="button"
-                onClick={() => setActiveTab("release")}
-                title="前往审核与发布面板，将已保存内容推送到 GitHub"
+                onClick={handleGoToRelease}
+                title="前往发布上线面板，填写变更说明并推送到 GitHub"
                 style={{ color: "#0e7490", borderColor: "#0e7490" }}
               >
                 <UploadCloud size={15} />
-                推送到 GitHub 上线 &rarr;
+                前往发布上线 &rarr;
               </button>
             )}
           </div>

@@ -527,6 +527,7 @@ export function ContentReleasePanel({
 
       {/* 3. 独立发布批准与执行上线 */}
       <section
+        id="release-approval-section"
         style={{
           background: "#f8fafc",
           border: "1px solid var(--line)",
@@ -567,10 +568,25 @@ export function ContentReleasePanel({
           </div>
         )}
 
+        {alreadyPublished ? (
+          <div style={{ fontSize: 13, color: "#166534", marginBottom: 14, background: "#f0fdf4", padding: "8px 12px", borderRadius: 6, border: "1px solid #bbf7d0" }}>
+            ✓ 当前内容已在线上确证发布，与工作区完全一致，无需重复发布。
+          </div>
+        ) : preparedForCurrent ? (
+          <div style={{ fontSize: 13, color: "#0e7490", marginBottom: 14, background: "#ecfeff", padding: "8px 12px", borderRadius: 6, border: "1px solid #a5f3fc" }}>
+            ✓ 独立发布批准已就绪！点击下方「执行发布上线」，后台将提交并推送到 GitHub 触发线上部署。
+          </div>
+        ) : (
+          <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14, background: "white", padding: "8px 12px", borderRadius: 6, border: "1px solid var(--line)" }}>
+            发布流程：① 在下方输入变更说明并点击「独立发布批准」&rarr; ② 批准完成后点击「执行发布上线」（推送到 GitHub 触发全站构建与线上核验）。
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           {!preparedForCurrent && !alreadyPublished && (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
+                id="release-version-note-input"
                 type="text"
                 placeholder="变更说明（必填，将公开在版本历史）"
                 value={versionNoteInput}
@@ -601,6 +617,11 @@ export function ContentReleasePanel({
             className="button primary"
             disabled={!preparedForCurrent || isReleasing}
             onClick={handleExecuteRelease}
+            title={
+              preparedForCurrent
+                ? "提交变更并推送到 GitHub origin main，触发线上自动化部署与核验"
+                : "请先填写变更说明并完成独立发布批准"
+            }
           >
             <UploadCloud size={15} />
             {isReleasing ? "正在发布中..." : "执行发布上线"}
