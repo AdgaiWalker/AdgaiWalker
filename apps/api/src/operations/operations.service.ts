@@ -147,14 +147,18 @@ export class OperationsService {
     const until = new Date(to);
     const range = { gte: since, lte: until };
 
-    // 1) 提问：唯一访客消息 / 唯一会话 / 轮次；重生成单独计
-    const [visitorMessages, turns, attempts] = await Promise.all([
+    // 1) 提问：唯一访客消息 / 唯一会话 / 轮次；重生成单独计（并入卡口 Clue 提问）
+    const [visitorMessages, turns, attempts, clues] = await Promise.all([
       db.conversationMessage.findMany({
         where: { role: 'visitor', createdAt: range },
         select: { id: true, turnId: true, turn: { select: { conversationId: true } } },
       }),
       db.conversationTurn.findMany({ where: { createdAt: range }, select: { id: true } }),
       db.conversationAttempt.groupBy({ by: ['turnId'], where: { createdAt: range }, _count: { _all: true } }),
+      db.clue.findMany({
+        where: { createdAt: range },
+        select: { id: true, anonId: true },
+      }),
     ]);
 
     // 重生成只统计**窗口内轮次**的 attempt，避免把窗口外轮次算进来
@@ -163,10 +167,14 @@ export class OperationsService {
       .filter((row) => inWindowTurnIds.has(row.turnId))
       .map((row) => row._count._all);
 
+    const clueMsgIds = clues.map((c) => `clue:${c.id}`);
+    const clueConvIds = clues.map((c) => (c.anonId ? `anon:${c.anonId}` : `clue:${c.id}`));
+    const clueTurnIds = clues.map((c) => `turn:${c.id}`);
+
     const asks = countAsks({
-      visitorMessageIds: visitorMessages.map((message) => message.id),
-      conversationIds: visitorMessages.map((message) => message.turn.conversationId),
-      turnIds: turns.map((turn) => turn.id),
+      visitorMessageIds: [...visitorMessages.map((message) => message.id), ...clueMsgIds],
+      conversationIds: [...visitorMessages.map((message) => message.turn.conversationId), ...clueConvIds],
+      turnIds: [...turns.map((turn) => turn.id), ...clueTurnIds],
       attemptCountByTurn,
     });
 
@@ -204,7 +212,16 @@ export class OperationsService {
         degradeReason: matched?.degradeReason ?? null,
       };
     });
-    const answers = countAnswers({ assistantMessages, runs: answerRuns });
+    const clueRuns = clues.map(() => ({
+      state: 'SUCCEEDED',
+      aiUsedFlag: true,
+      degradeReason: null,
+    }));
+    const clueDelivery = clues.map(() => ({ delivery: 'ack' }));
+    const answers = countAnswers({
+      assistantMessages: [...assistantMessages, ...clueDelivery],
+      runs: [...answerRuns, ...clueRuns],
+    });
     const usage = summarizeUsage(runs);
 
     // 3) 提醒事实（复用 O01–O03 既有表，不重复造数据）
@@ -262,9 +279,9 @@ export class OperationsService {
         to,
         hours,
         sources: [
-          'ConversationMessage(role=visitor) → 提问数（按消息 id 去重）',
-          'ConversationTurn + ConversationAttempt → 轮次与重生成',
-          'AssistantRun(traceId→ExecutionRun) + ConversationMessage.delivery → 成功/降级/交付确认/未知',
+          'ConversationMessage(role=visitor) + Clue → 提问数（按消息 id 去重）',
+          'ConversationTurn + ConversationAttempt + Clue → 轮次与重生成',
+          'AssistantRun(traceId→ExecutionRun) + ConversationMessage.delivery + Clue → 成功/降级/交付确认/未知',
           'ExecutionRun.tokensIn/tokensOut → 用量（缺失不计 0）',
           'Action + ReminderOccurrence → 到期与处置',
           'ContentChange + ContentRelease → 内容与发布',

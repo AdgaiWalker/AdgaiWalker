@@ -7,7 +7,7 @@
  * 分页（shared activity.ts 纪律③）：每源取最近 N 条，按时间游标 before 过滤后归并。
  * 某一源事件更密时，深处历史会稀疏不均，界面明说"翻更早建议按类型筛"。
  */
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   ACTIVITY_TODO_TS,
   beforeCursor,
@@ -26,6 +26,7 @@ import { AgentExecutionService } from '../execution/agent-execution.service';
 import { ReminderService } from '../reminder/reminder.service';
 import { ConversationQueryService } from '../log-resources/conversation-query.service';
 import { OperationsService } from './operations.service';
+import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 
 /** 每源参与归并前取多少条。归并分页精度受它约束，超过它只能靠"按类型筛"。 */
 const SOURCE_FETCH = 30;
@@ -38,6 +39,7 @@ export class ActivityService {
     @Inject(ReminderService) private readonly reminders: ReminderService,
     @Inject(ADMIN_REQUEST_LOG) private readonly adminLog: AdminRequestLogPort,
     @Inject(OperationsService) private readonly operations: OperationsService,
+    @Optional() @Inject(PRISMA) private readonly prisma?: PrismaPort,
   ) {}
 
   async page(input: {
@@ -105,7 +107,7 @@ export class ActivityService {
 
   private async visitorSource(): Promise<ActivityEvent[]> {
     const page = await this.conversations.list({ limit: '50' });
-    return page.items.map((item) => {
+    const convEvents: ActivityEvent[] = page.items.map((item) => {
       const bad = item.latestRunState === 'FAILED';
       return {
         key: 'visitor:' + item.conversationId,
@@ -118,6 +120,32 @@ export class ActivityService {
         isTodo: false,
       };
     });
+
+    const db = this.prisma?.getClient();
+    let clueEvents: ActivityEvent[] = [];
+    if (db) {
+      try {
+        const clues = await db.clue.findMany({
+          take: SOURCE_FETCH,
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, body: true, createdAt: true },
+        });
+        clueEvents = clues.map((c) => ({
+          key: 'clue:' + c.id,
+          ts: c.createdAt.toISOString(),
+          kind: 'visitor' as const,
+          severity: 'info' as ActivitySeverity,
+          title: c.body.length > 40 ? c.body.slice(0, 40) + '…' : c.body,
+          detail: '提问卡口 · 候选',
+          provenance: { kind: 'visitor' as const, id: c.id, ref: 'clue' },
+          isTodo: false,
+        }));
+      } catch {
+        clueEvents = [];
+      }
+    }
+
+    return [...convEvents, ...clueEvents];
   }
 
   private async reminderSource(): Promise<ActivityEvent[]> {

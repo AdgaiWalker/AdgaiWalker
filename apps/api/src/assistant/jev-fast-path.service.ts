@@ -7,6 +7,9 @@ export interface JevFastPathDecision {
   latencyMs: number;
 }
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 export interface JevRoiStats {
   fastPathHits: number;
   l1CacheHits: number;
@@ -16,16 +19,60 @@ export interface JevRoiStats {
   avgLatencyMs: number;
 }
 
-const roiStats: JevRoiStats = {
-  fastPathHits: 0,
-  l1CacheHits: 0,
-  networkCalls: 0,
-  quotaExemptHits: 0,
-  savedTokensEstimate: 0,
-  avgLatencyMs: 0,
-};
+function getRoiFilePath(): string {
+  const custom = process.env.WALKER_DATA_DIR?.trim();
+  if (custom) return path.resolve(custom, 'jev-roi.json');
+  return path.resolve(__dirname, '../../data/jev-roi.json');
+}
 
-let totalLatencySum = 0;
+function loadRoiStats(): { stats: JevRoiStats; latencySum: number } {
+  const file = getRoiFilePath();
+  try {
+    if (fs.existsSync(file)) {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (parsed && typeof parsed.fastPathHits === 'number') {
+        const stats: JevRoiStats = {
+          fastPathHits: parsed.fastPathHits || 0,
+          l1CacheHits: parsed.l1CacheHits || 0,
+          networkCalls: parsed.networkCalls || 0,
+          quotaExemptHits: parsed.quotaExemptHits || 0,
+          savedTokensEstimate: parsed.savedTokensEstimate || 0,
+          avgLatencyMs: parsed.avgLatencyMs || 0,
+        };
+        const latencySum =
+          typeof parsed._latencySum === 'number'
+            ? parsed._latencySum
+            : stats.avgLatencyMs * stats.fastPathHits;
+        return { stats, latencySum };
+      }
+    }
+  } catch {}
+  return {
+    stats: {
+      fastPathHits: 0,
+      l1CacheHits: 0,
+      networkCalls: 0,
+      quotaExemptHits: 0,
+      savedTokensEstimate: 0,
+      avgLatencyMs: 0,
+    },
+    latencySum: 0,
+  };
+}
+
+const loaded = loadRoiStats();
+const roiStats: JevRoiStats = loaded.stats;
+let totalLatencySum = loaded.latencySum;
+
+function persistRoiStats(): void {
+  const file = getRoiFilePath();
+  try {
+    const dir = path.dirname(file);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const payload = JSON.stringify({ ...roiStats, _latencySum: totalLatencySum }, null, 2);
+    fs.writeFileSync(file, payload, 'utf8');
+  } catch {}
+}
 
 export function getJevRoiStats(): JevRoiStats {
   return { ...roiStats };
@@ -33,6 +80,7 @@ export function getJevRoiStats(): JevRoiStats {
 
 export function recordQuotaExempt(): void {
   roiStats.quotaExemptHits += 1;
+  persistRoiStats();
 }
 
 function recordDecision(latencyMs: number, isL1: boolean) {
@@ -46,6 +94,7 @@ function recordDecision(latencyMs: number, isL1: boolean) {
   roiStats.savedTokensEstimate += 1000;
   totalLatencySum += latencyMs;
   roiStats.avgLatencyMs = Math.round(totalLatencySum / roiStats.fastPathHits);
+  persistRoiStats();
 }
 
 // ── L1 零延迟高频特征库 ──

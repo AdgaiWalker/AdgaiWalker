@@ -30,16 +30,44 @@ export type IntakeChatTurn = {
   error: string | null;
 };
 
+const STORAGE_CHAT_KEY = 'walker:intake-chat-turns';
+
+function loadStoredTurns(): IntakeChatTurn[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_CHAT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function useIntakeChat() {
   const { loading, submit } = useIntakeSubmit();
   const [draft, setDraft] = useState('');
-  const [turns, setTurns] = useState<IntakeChatTurn[]>([]);
+  const [turns, setTurns] = useState<IntakeChatTurn[]>(() => loadStoredTurns());
   const [config, setConfig] = useState<IntakePublicConfig>({
     guestQuota: GUEST_INTAKE_QUOTA,
     quotaMinLength: CLUE_QUOTA_MIN_LENGTH,
     rateLimit: RATE_LIMITS.guestPerWindow,
     rateWindowMinutes: RATE_WINDOW_MINUTES,
   });
+
+  // 持久化对话流，刷新页面不丢失
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (turns.length === 0) {
+        window.sessionStorage.removeItem(STORAGE_CHAT_KEY);
+      } else {
+        window.sessionStorage.setItem(STORAGE_CHAT_KEY, JSON.stringify(turns));
+      }
+    } catch {
+      // 容错处理
+    }
+  }, [turns]);
 
   useEffect(() => {
     let active = true;
@@ -95,6 +123,11 @@ export function useIntakeChat() {
   const reset = useCallback(() => {
     setTurns([]);
     setDraft('');
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(STORAGE_CHAT_KEY);
+      }
+    } catch {}
   }, []);
 
   return {

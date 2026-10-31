@@ -65,7 +65,10 @@ function CountCard({
 
 /** 展开详情跳既有详情页；提醒/复盘没有独立详情页的回 null（只显示分类结果）。 */
 function eventHref(event: ActivityEvent): string | null {
-  if (event.kind === "visitor") return R.conversationDetail(event.provenance.id);
+  if (event.kind === "visitor") {
+    if (event.provenance.ref === "clue") return null;
+    return R.conversationDetail(event.provenance.id);
+  }
   if (event.kind === "run") return R.runDetail(event.provenance.id);
   return null;
 }
