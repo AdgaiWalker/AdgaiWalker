@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ContentLedgerEntry } from '@walker/shared';
 import { ContentListPage } from './ContentListPage';
 
-const { useContentMock, useSaveContentMock, saveMutationMock } = vi.hoisted(() => {
+const { useContentMock, useSaveContentMock, saveMutationMock, useAllContentSocialStatsMock } = vi.hoisted(() => {
   const saveMutation = {
     mutateAsync: vi.fn(),
     isPending: false,
@@ -14,12 +14,14 @@ const { useContentMock, useSaveContentMock, saveMutationMock } = vi.hoisted(() =
     useContentMock: vi.fn(),
     useSaveContentMock: vi.fn(() => saveMutation),
     saveMutationMock: saveMutation,
+    useAllContentSocialStatsMock: vi.fn(() => ({ data: {}, isLoading: false, refetch: vi.fn() })),
   };
 });
 
 vi.mock('../../api/queries', () => ({
   useContent: useContentMock,
   useSaveContent: useSaveContentMock,
+  useAllContentSocialStats: useAllContentSocialStatsMock,
 }));
 
 const mockItems: ContentLedgerEntry[] = [

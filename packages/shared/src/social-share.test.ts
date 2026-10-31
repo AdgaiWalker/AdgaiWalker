@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SOCIAL_SHARE_ANGLES,
+  buildAngleShareText,
   buildSocialCopyText,
   buildXShareIntentUrl,
   buildXShareText,
@@ -100,5 +102,30 @@ description: "这是 description 中的摘要"
 
     expect(extractSummaryFromRaw('')).toBe('');
     expect(extractSummaryFromRaw(null)).toBe('');
+  });
+
+  it('支持根据不同角度（金句引用/实战技巧/概览）生成推文文案', () => {
+    const payload = {
+      title: '设计深模块',
+      slug: 'deep-module',
+      summary: '最好的模块是深模块：接口简单，实现强大。',
+      tags: ['架构', 'APoSD'],
+    };
+
+    const quoteText = buildAngleShareText(payload, 'quote');
+    expect(quoteText).toContain('“最好的模块是深模块：接口简单，实现强大。”');
+    expect(quoteText).toContain('—— 摘自《设计深模块》');
+    expect(quoteText).toContain('#架构 #APoSD');
+
+    const practicalText = buildAngleShareText(payload, 'practical');
+    expect(practicalText).toContain('💡 实战技巧与要点速查：');
+    expect(practicalText).toContain('【设计深模块】');
+    expect(practicalText).toContain('最好的模块是深模块');
+
+    const intentQuote = buildXShareIntentUrl({ ...payload, angle: 'quote' });
+    const parsedQuoteUrl = new URL(intentQuote);
+    expect(parsedQuoteUrl.searchParams.get('text')).toContain('—— 摘自《设计深模块》');
+
+    expect(SOCIAL_SHARE_ANGLES.length).toBe(3);
   });
 });

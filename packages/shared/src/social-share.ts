@@ -5,12 +5,46 @@
  * 不依赖第三方外部 SDK，零配置、零凭据泄露风险。
  */
 
+export type SocialShareAngle = 'overview' | 'quote' | 'practical';
+
+export interface SocialShareAngleOption {
+  id: SocialShareAngle;
+  label: string;
+  desc: string;
+}
+
+export const SOCIAL_SHARE_ANGLES: SocialShareAngleOption[] = [
+  { id: 'overview', label: '速览概要', desc: '提炼全文结论与精炼摘要，适合首次发布与新篇速递' },
+  { id: 'quote', label: '金句引用', desc: '提取核心犀利观点与金句，适合隔周二次引用' },
+  { id: 'practical', label: '技巧避坑', desc: '提炼实战技巧与要点速查，适合结合痛点重复推广' },
+];
+
+export interface SocialShareRecord {
+  id: string;
+  slug: string;
+  channel: string;
+  angle?: string | null;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface ContentSocialStats {
+  slug: string;
+  shareCount: number;
+  lastSharedAt: string | null;
+  records: SocialShareRecord[];
+}
+
+export type AllContentSocialStats = Record<string, { shareCount: number; lastSharedAt: string | null }>;
+
 export interface SocialSharePayload {
   title: string;
   slug: string;
   summary?: string | null;
   tags?: string[];
   siteBaseUrl?: string;
+  angle?: SocialShareAngle;
+  customText?: string;
 }
 
 export const DEFAULT_SITE_BASE_URL = 'https://www.iwalk.pro';
@@ -86,11 +120,41 @@ export function buildXShareText(payload: SocialSharePayload): string {
 }
 
 /**
+ * 根据预设的不同宣发角度（新篇速递 / 金句引用 / 技巧避坑）组装适合推文的文案
+ */
+export function buildAngleShareText(
+  payload: SocialSharePayload,
+  angle: SocialShareAngle = 'overview',
+): string {
+  const title = payload.title.trim();
+  const summary = cleanSummary(payload.summary, 90);
+  const tags = (payload.tags && payload.tags.length > 0 ? payload.tags : DEFAULT_SHARE_TAGS)
+    .map((tag) => `#${tag.replace(/^[#\s]+/, '')}`)
+    .join(' ');
+
+  if (angle === 'quote') {
+    const cleanQuote = summary ? `“${summary}”` : `“${title}”`;
+    const lines = [cleanQuote, `—— 摘自《${title}》`];
+    if (tags) lines.push('', tags);
+    return lines.join('\n');
+  }
+
+  if (angle === 'practical') {
+    const lines = [`💡 实战技巧与要点速查：`, `【${title}】`];
+    if (summary) lines.push(summary);
+    if (tags) lines.push('', tags);
+    return lines.join('\n');
+  }
+
+  return buildXShareText(payload);
+}
+
+/**
  * 生成 X (Twitter) 官方标准的 Web Intent 发推链接
  * 文案与链接将直接预填进发推编辑框，无需用户手动输入
  */
 export function buildXShareIntentUrl(payload: SocialSharePayload): string {
-  const text = buildXShareText(payload);
+  const text = payload.customText?.trim() || buildAngleShareText(payload, payload.angle || 'overview');
   const url = getPublicPostUrl(payload.slug, payload.siteBaseUrl);
   const params = new URLSearchParams({
     text,
@@ -109,6 +173,21 @@ export function buildSocialCopyText(payload: SocialSharePayload): string {
   const tags = (payload.tags && payload.tags.length > 0 ? payload.tags : DEFAULT_SHARE_TAGS)
     .map((tag) => `#${tag.replace(/^[#\s]+/, '')}`)
     .join(' ');
+
+  if (payload.angle === 'quote') {
+    const cleanQuote = summary ? `“${summary}”` : `“${title}”`;
+    const lines = [cleanQuote, `—— 摘自《${title}》`, '', `🔗 阅读全文：${url}`];
+    if (tags) lines.push(tags);
+    return lines.join('\n');
+  }
+
+  if (payload.angle === 'practical') {
+    const lines = [`💡 实战技巧与要点速查：`, `【${title}】`];
+    if (summary) lines.push(summary);
+    lines.push('', `🔗 阅读全文：${url}`);
+    if (tags) lines.push(tags);
+    return lines.join('\n');
+  }
 
   const lines: string[] = [`【${title}】`];
   if (summary) {

@@ -23,8 +23,11 @@ import type {
   OpsContentDetail,
   ReleaseManifest,
   ReleasePreflightResult,
+  SocialShareAngle,
 } from "@walker/shared";
 import {
+  SOCIAL_SHARE_ANGLES,
+  buildAngleShareText,
   buildSocialCopyText,
   buildXShareIntentUrl,
   extractSummaryFromRaw,
@@ -33,10 +36,12 @@ import {
 import {
   useCancelContentRelease,
   useContentPreflight,
+  useContentSocialStats,
   useContentVersion,
   useLatestContentRelease,
   usePrepareContentRelease,
   useReconcileContentRelease,
+  useRecordSocialShare,
   useTriggerContentRelease,
   useVerifyContentRelease,
 } from "../../api/queries";
@@ -84,21 +89,45 @@ export function ContentReleasePanel({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | "info">("info");
   const [copiedShareText, setCopiedShareText] = useState(false);
+  const [activeAngle, setActiveAngle] = useState<SocialShareAngle>("overview");
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualNote, setManualNote] = useState("");
+
+  const socialStatsQuery = useContentSocialStats(slug);
+  const recordSocialShareMutation = useRecordSocialShare(slug);
 
   const handleShareToX = () => {
+    const summary = extractSummaryFromRaw(currentDoc.raw);
     const url = buildXShareIntentUrl({
       title: currentDoc.title || slug,
       slug,
-      summary: extractSummaryFromRaw(currentDoc.raw),
+      summary,
+      angle: activeAngle,
     });
     window.open(url, "_blank", "noopener,noreferrer");
+
+    // 自动上报宣发流水并无感刷新
+    Promise.resolve(
+      recordSocialShareMutation.mutateAsync({
+        channel: "x",
+        angle: activeAngle,
+      }),
+    )
+      .then(() => {
+        void socialStatsQuery.refetch();
+      })
+      .catch(() => {
+        // fail-open 不阻碍正常发推
+      });
   };
 
   const handleCopyShareText = async () => {
+    const summary = extractSummaryFromRaw(currentDoc.raw);
     const text = buildSocialCopyText({
       title: currentDoc.title || slug,
       slug,
-      summary: extractSummaryFromRaw(currentDoc.raw),
+      summary,
+      angle: activeAngle,
     });
     try {
       await navigator.clipboard.writeText(text);
@@ -106,6 +135,21 @@ export function ContentReleasePanel({
       setTimeout(() => setCopiedShareText(false), 2000);
     } catch {
       // 容错兜底
+    }
+  };
+
+  const handleManualRecord = async () => {
+    try {
+      await recordSocialShareMutation.mutateAsync({
+        channel: "x",
+        angle: activeAngle,
+        note: manualNote.trim() || undefined,
+      });
+      setShowManualModal(false);
+      setManualNote("");
+      void socialStatsQuery.refetch();
+    } catch {
+      // fail-open
     }
   };
 
@@ -690,14 +734,61 @@ export function ContentReleasePanel({
                 : "文章社媒同步与宣发助手"}
             </span>
           </div>
-          <span className="badge green" style={{ fontSize: 11 }}>
-            即开即用 · 0 凭据依赖
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {socialStatsQuery.data && socialStatsQuery.data.shareCount > 0 ? (
+              <span
+                className="badge"
+                style={{
+                  background: "#e0f2fe",
+                  color: "#0369a1",
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
+              >
+                已发 X ({socialStatsQuery.data.shareCount}次) · 最近：{timeLabel(socialStatsQuery.data.lastSharedAt || "")}
+              </span>
+            ) : (
+              <span className="badge" style={{ background: "#f1f5f9", color: "#64748b", fontSize: 11 }}>
+                未宣发
+              </span>
+            )}
+            <span className="badge green" style={{ fontSize: 11 }}>
+              即开即用 · 0 凭据依赖
+            </span>
+          </div>
         </div>
 
         <p style={{ margin: "0 0 10px", fontSize: 13, color: "#15803d", lineHeight: 1.6 }}>
-          已根据文章标题与摘要自动组装精炼推文。点击直接唤起 X 发推窗口（文案与链接已预填），或一键复制排版文案用于朋友圈、即刻、小红书。
+          已根据文章标题与摘要自动组装精炼推文。提供多种推文角度，适合首次宣发或多轮重复引用，点击直接唤起 X 发推窗口（文案与链接已预填），或一键复制排版文案用于各社媒。
         </p>
+
+        {/* 宣发角度切换 Pills */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          {SOCIAL_SHARE_ANGLES.map((angle) => {
+            const isActive = activeAngle === angle.id;
+            return (
+              <button
+                key={angle.id}
+                type="button"
+                className="button"
+                style={{
+                  fontSize: 12,
+                  padding: "4px 10px",
+                  borderRadius: 20,
+                  background: isActive ? "#166534" : "#ffffff",
+                  color: isActive ? "#ffffff" : "#334155",
+                  borderColor: isActive ? "#166534" : "#cbd5e1",
+                  fontWeight: isActive ? 600 : 400,
+                  cursor: "pointer",
+                }}
+                onClick={() => setActiveAngle(angle.id)}
+                title={angle.desc}
+              >
+                {angle.label}
+              </button>
+            );
+          })}
+        </div>
 
         <div
           style={{
@@ -717,10 +808,11 @@ export function ContentReleasePanel({
             title: currentDoc.title || slug,
             slug,
             summary: extractSummaryFromRaw(currentDoc.raw),
+            angle: activeAngle,
           })}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           <button
             type="button"
             className="button primary"
@@ -740,7 +832,9 @@ export function ContentReleasePanel({
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            发到 X (Twitter)
+            {socialStatsQuery.data && socialStatsQuery.data.shareCount > 0
+              ? `+ 再发一次到 X（已发 ${socialStatsQuery.data.shareCount} 次）`
+              : "发到 X (Twitter)"}
           </button>
 
           <button
@@ -759,6 +853,23 @@ export function ContentReleasePanel({
             <span>{copiedShareText ? "已复制到剪贴板！" : "复制宣发文案"}</span>
           </button>
 
+          <button
+            type="button"
+            className="button"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              fontSize: 12,
+              cursor: "pointer",
+              color: "#475569",
+            }}
+            onClick={() => setShowManualModal(!showManualModal)}
+          >
+            {showManualModal ? "收起补记" : "手动补记已发"}
+          </button>
+
           <a
             href={getPublicPostUrl(slug)}
             target="_blank"
@@ -770,12 +881,75 @@ export function ContentReleasePanel({
               gap: 6,
               textDecoration: "none",
               padding: "6px 14px",
+              marginLeft: "auto",
             }}
           >
             <ExternalLink size={14} />
             查看线上文章
           </a>
         </div>
+
+        {/* 手动补记表单 */}
+        {showManualModal && (
+          <div
+            style={{
+              marginTop: 12,
+              padding: 10,
+              background: "#ffffff",
+              border: "1px dashed #cbd5e1",
+              borderRadius: 6,
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+            }}
+          >
+            <input
+              type="text"
+              placeholder="备注说明（可选，例如：在移动端或第三方客户端分享）"
+              value={manualNote}
+              onChange={(e) => setManualNote(e.target.value)}
+              style={{ flex: 1, padding: "5px 8px", fontSize: 12 }}
+            />
+            <button
+              type="button"
+              className="button primary"
+              style={{ padding: "5px 12px", fontSize: 12 }}
+              onClick={handleManualRecord}
+            >
+              确认登记
+            </button>
+            <button
+              type="button"
+              className="button"
+              style={{ padding: "5px 8px", fontSize: 12 }}
+              onClick={() => setShowManualModal(false)}
+            >
+              取消
+            </button>
+          </div>
+        )}
+
+        {/* 宣发历史流水 */}
+        {socialStatsQuery.data && socialStatsQuery.data.records.length > 0 && (
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px dashed #bbf7d0" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#166534", marginBottom: 6 }}>
+              宣发历史记录（共 {socialStatsQuery.data.records.length} 次）：
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "#334155", lineHeight: 1.8 }}>
+              {socialStatsQuery.data.records.map((rec) => {
+                const angleInfo = SOCIAL_SHARE_ANGLES.find((a) => a.id === rec.angle);
+                return (
+                  <li key={rec.id || `${rec.channel}-${rec.createdAt}`}>
+                    <strong>{timeLabel(rec.createdAt)}</strong> · 渠道：
+                    <span style={{ textTransform: "uppercase" }}>{rec.channel}</span> · 角度：
+                    {angleInfo?.label || rec.angle}
+                    {rec.note && <span style={{ color: "#64748b" }}> ({rec.note})</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* 5. Release 详情与阶段状态机 */}

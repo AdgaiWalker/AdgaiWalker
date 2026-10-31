@@ -2,6 +2,9 @@ import { useList, useOne } from "@refinedev/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   AgentRevisionDetail,
+  AllContentSocialStats,
+  ContentSocialStats,
+  SocialShareRecord,
   ConversationLogDetail,
   ConversationLogPage,
   ConversationExportCreateInput,
@@ -592,5 +595,41 @@ export async function fetchContentVersionDiff(slug: string, a: number, b: number
     diff: import("@walker/shared").TextDiffSummary;
   }>(`/admin/content/${encodeURIComponent(slug)}/diff/${a}/${b}`, {
     timeoutMs: REQUEST_TIMEOUTS.read,
+  });
+}
+
+export function useContentSocialStats(slug: string) {
+  return useQuery({
+    queryKey: ["content-social-stats", slug],
+    enabled: Boolean(slug),
+    queryFn: ({ signal }) =>
+      requestJson<ContentSocialStats>(
+        `/admin/content/${encodeURIComponent(slug)}/social-shares`,
+        { signal },
+      ),
+  });
+}
+
+export function useAllContentSocialStats() {
+  return useQuery({
+    queryKey: ["all-content-social-stats"],
+    queryFn: ({ signal }) =>
+      requestJson<AllContentSocialStats>(
+        `/admin/content/social-shares/summary`,
+        { signal },
+      ),
+  });
+}
+
+export function useRecordSocialShare(slug: string) {
+  return useMutation({
+    mutationFn: (body: { channel?: string; angle?: string; note?: string }) =>
+      requestJson<{ ok: boolean; record: SocialShareRecord; stats: ContentSocialStats }>(
+        `/admin/content/${encodeURIComponent(slug)}/social-shares`,
+        {
+          method: "POST",
+          body,
+        },
+      ),
   });
 }

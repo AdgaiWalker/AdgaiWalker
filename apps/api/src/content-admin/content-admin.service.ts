@@ -1,7 +1,8 @@
 /** 管理端内容应用服务 — 读取文件仓储，人工保存委托给受审计 mutation service。 */
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import matter from 'gray-matter';
-import { validateProjectMetadata } from '@walker/shared';
+import type { AllContentSocialStats, ContentSocialStats, SocialShareRecord } from '@walker/shared';
+import { computeTextDiff, validateProjectMetadata } from '@walker/shared';
 import { ApiError } from '../common/http-error';
 import { newId } from '../common/ids';
 import {
@@ -10,7 +11,7 @@ import {
 } from '../ports/content-file.repository';
 import { CONTENT_MUTATION_SERVICE, type ContentMutationPort } from '../ports/content-mutation.port';
 import { ARTICLE_VERSION_STORE, type ArticleVersionStorePort } from '../ports/article-version-store.port';
-import { computeTextDiff } from '@walker/shared';
+import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 
 @Injectable()
 export class ContentAdminService {
@@ -21,6 +22,8 @@ export class ContentAdminService {
     private readonly mutations: ContentMutationPort,
     @Optional() @Inject(ARTICLE_VERSION_STORE)
     private readonly versions?: ArticleVersionStorePort,
+    @Optional() @Inject(PRISMA)
+    private readonly prisma?: PrismaPort,
   ) {}
 
   list() {
@@ -143,4 +146,115 @@ export class ContentAdminService {
     return { slug, a: va, b: vb, diff: computeTextDiff(bodyA, bodyB) };
   }
 
+  // ---- 社交媒体宣发与同步追踪 ----
+
+  async recordSocialShare(
+    slug: string,
+    payload: { channel?: string; angle?: string; note?: string; actor?: string },
+  ): Promise<{ ok: boolean; record: SocialShareRecord; stats: ContentSocialStats }> {
+    await this.get(slug);
+    const client = this.prisma?.getClient();
+    if (!client) {
+      throw new ApiError('database-unavailable', HttpStatus.SERVICE_UNAVAILABLE, '数据库连接不可用');
+    }
+
+    const id = newId();
+    const createdAt = new Date();
+    const channel = payload.channel || 'x';
+    const angle = payload.angle || 'overview';
+    const note = payload.note || null;
+    const actor = payload.actor || 'admin';
+
+    await client.auditRecord.create({
+      data: {
+        id,
+        actor,
+        action: 'content.social-share',
+        targetType: 'content',
+        targetId: slug,
+        outcome: channel,
+        beforeHash: angle,
+        afterHash: note,
+        requestId: newId(),
+        createdAt,
+      },
+    });
+
+    const stats = await this.getSocialStats(slug);
+    const record: SocialShareRecord = {
+      id,
+      slug,
+      channel,
+      angle,
+      note,
+      createdAt: createdAt.toISOString(),
+    };
+
+    return { ok: true, record, stats };
+  }
+
+  async getSocialStats(slug: string): Promise<ContentSocialStats> {
+    const client = this.prisma?.getClient();
+    if (!client) {
+      return { slug, shareCount: 0, lastSharedAt: null, records: [] };
+    }
+
+    const rows = await client.auditRecord.findMany({
+      where: {
+        targetType: 'content',
+        targetId: slug,
+        action: 'content.social-share',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    const records: SocialShareRecord[] = rows.map((r) => ({
+      id: r.id,
+      slug: r.targetId,
+      channel: r.outcome,
+      angle: r.beforeHash,
+      note: r.afterHash,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
+    return {
+      slug,
+      shareCount: records.length,
+      lastSharedAt: records[0]?.createdAt ?? null,
+      records,
+    };
+  }
+
+  async getAllSocialStatsSummary(): Promise<AllContentSocialStats> {
+    const client = this.prisma?.getClient();
+    if (!client) {
+      return {};
+    }
+
+    const rows = await client.auditRecord.findMany({
+      where: {
+        targetType: 'content',
+        action: 'content.social-share',
+      },
+      select: {
+        targetId: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const result: AllContentSocialStats = {};
+    for (const row of rows) {
+      const slug = row.targetId;
+      const iso = row.createdAt.toISOString();
+      if (!result[slug]) {
+        result[slug] = { shareCount: 1, lastSharedAt: iso };
+      } else {
+        result[slug].shareCount += 1;
+      }
+    }
+
+    return result;
+  }
 }

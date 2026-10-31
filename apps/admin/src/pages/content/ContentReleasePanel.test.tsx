@@ -19,6 +19,8 @@ const {
   useVerifyContentReleaseMock,
   useReconcileContentReleaseMock,
   useCancelContentReleaseMock,
+  useContentSocialStatsMock,
+  useRecordSocialShareMock,
   triggerMutationMock,
   prepareMutationMock,
   verifyMutationMock,
@@ -30,6 +32,7 @@ const {
   const verifyMutation = { mutateAsync: vi.fn(), isPending: false };
   const reconcileMutation = { mutateAsync: vi.fn(), isPending: false };
   const cancelMutation = { mutateAsync: vi.fn(), isPending: false };
+  const recordSocialShareMutation = { mutateAsync: vi.fn().mockResolvedValue({}), isPending: false };
 
   return {
     useContentVersionMock: vi.fn(),
@@ -40,11 +43,14 @@ const {
     useVerifyContentReleaseMock: vi.fn(() => verifyMutation),
     useReconcileContentReleaseMock: vi.fn(() => reconcileMutation),
     useCancelContentReleaseMock: vi.fn(() => cancelMutation),
+    useContentSocialStatsMock: vi.fn(() => ({ data: { shareCount: 0, lastSharedAt: null, records: [] }, refetch: vi.fn() })),
+    useRecordSocialShareMock: vi.fn(() => recordSocialShareMutation),
     triggerMutationMock: triggerMutation,
     prepareMutationMock: prepareMutation,
     verifyMutationMock: verifyMutation,
     reconcileMutationMock: reconcileMutation,
     cancelMutationMock: cancelMutation,
+    recordSocialShareMutationMock: recordSocialShareMutation,
   };
 });
 
@@ -57,6 +63,8 @@ vi.mock('../../api/queries', () => ({
   useVerifyContentRelease: useVerifyContentReleaseMock,
   useReconcileContentRelease: useReconcileContentReleaseMock,
   useCancelContentRelease: useCancelContentReleaseMock,
+  useContentSocialStats: useContentSocialStatsMock,
+  useRecordSocialShare: useRecordSocialShareMock,
 }));
 
 const mockDoc: OpsContentDetail = {

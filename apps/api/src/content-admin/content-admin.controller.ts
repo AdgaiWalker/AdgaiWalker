@@ -8,6 +8,7 @@ import {
   Get,
   Inject,
   Param,
+  Post,
   Put,
 } from '@nestjs/common';
 import { validationError } from '../common/http-error';
@@ -49,6 +50,24 @@ export class ContentAdminController {
       throw validationError('version-invalid');
     }
     return this.content.diffVersions(slug, na, nb);
+  }
+
+  @Get('social-shares/summary')
+  allSocialSharesSummary() {
+    return this.content.getAllSocialStatsSummary();
+  }
+
+  @Get(':slug/social-shares')
+  socialShares(@Param('slug') slug: string) {
+    return this.content.getSocialStats(slug);
+  }
+
+  @Post(':slug/social-shares')
+  recordSocialShare(
+    @Param('slug') slug: string,
+    @Body() body: { channel?: string; angle?: string; note?: string },
+  ) {
+    return this.content.recordSocialShare(slug, body ?? {});
   }
 
   @Get(':slug')

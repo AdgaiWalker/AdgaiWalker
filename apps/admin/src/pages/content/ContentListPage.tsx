@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, RefreshCw, Search, X } from "lucide-react";
-import { useContent, useSaveContent } from "../../api/queries";
+import { buildXShareIntentUrl } from "@walker/shared";
+import { requestJson } from "../../api/http";
+import { useAllContentSocialStats, useContent, useSaveContent } from "../../api/queries";
 import { ContentTable } from "../../components/ContentTable";
 import {
   EmptyState,
@@ -34,6 +36,7 @@ function autoSlug(text: string): string {
 
 export function ContentListPage() {
   const query = useContent();
+  const socialStatsQuery = useAllContentSocialStats();
   const saveMutation = useSaveContent();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -41,8 +44,29 @@ export function ContentListPage() {
   const type = params.get("type") ?? "";
   const stage = params.get("stage") ?? "";
   const website = params.get("website") ?? "";
+  const social = params.get("social") ?? "";
   const indexState = params.get("index") ?? (params.get("version") === "index-behind" ? "behind" : "");
   const versionFilter = params.get("version") ?? "";
+
+  const handleShareToX = (slug: string, title: string) => {
+    const url = buildXShareIntentUrl({
+      title,
+      slug,
+    });
+    window.open(url, "_blank", "noopener,noreferrer");
+
+    // 静默登记宣发流水并无感刷新计数
+    requestJson(`/admin/content/${encodeURIComponent(slug)}/social-shares`, {
+      method: "POST",
+      body: { channel: "x", angle: "overview" },
+    })
+      .then(() => {
+        void socialStatsQuery.refetch();
+      })
+      .catch(() => {
+        // fail-open 不影响正常发推体验
+      });
+  };
 
   // 新建模态框状态（极简开写：不要求动笔前填摘要）
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -140,17 +164,26 @@ export function ContentListPage() {
 
   const data = query.data;
   const all = data?.data ?? [];
+  const socialStats = socialStatsQuery.data;
   const items = all.filter(
-    (item) =>
-      (!type || item.type === type) &&
-      (!stage || item.stage === stage) &&
-      (!website || (website === "unknown" ? data?.publicationAvailable === false :
-        data?.publicationAvailable === true && (website === "verified") === Boolean(item.publication.publishedHash))) &&
-      (!indexState || (indexState === "behind" && Boolean(item.publication.publishedHash) &&
-        Boolean(item.publication.indexedHash) && item.publication.indexedHash !== item.publication.publishedHash)) &&
-      (versionFilter !== "working-ahead" || Boolean(item.publication.publishedHash && item.publication.currentPublicHash &&
-        item.publication.currentPublicHash !== item.publication.publishedHash)) &&
-      `${item.title} ${item.slug}`.toLowerCase().includes(search.toLowerCase()),
+    (item) => {
+      const stats = socialStats?.[item.slug];
+      const hasShared = Boolean(stats && stats.shareCount > 0);
+      if (social === "unshared" && hasShared) return false;
+      if (social === "shared" && !hasShared) return false;
+
+      return (
+        (!type || item.type === type) &&
+        (!stage || item.stage === stage) &&
+        (!website || (website === "unknown" ? data?.publicationAvailable === false :
+          data?.publicationAvailable === true && (website === "verified") === Boolean(item.publication.publishedHash))) &&
+        (!indexState || (indexState === "behind" && Boolean(item.publication.publishedHash) &&
+          Boolean(item.publication.indexedHash) && item.publication.indexedHash !== item.publication.publishedHash)) &&
+        (versionFilter !== "working-ahead" || Boolean(item.publication.publishedHash && item.publication.currentPublicHash &&
+          item.publication.currentPublicHash !== item.publication.publishedHash)) &&
+        `${item.title} ${item.slug}`.toLowerCase().includes(search.toLowerCase())
+      );
+    },
   );
   return (
     <>
@@ -221,6 +254,11 @@ export function ContentListPage() {
             <option value="unverified">未核验</option>
             <option value="unknown">状态待核对</option>
           </select>
+          <select aria-label="宣发状态" value={social} onChange={(e) => updateParam("social", e.target.value)}>
+            <option value="">全部宣发状态</option>
+            <option value="unshared">未在社媒宣发</option>
+            <option value="shared">已发 X (Twitter)</option>
+          </select>
         </div>
 
         {type === "project" && (
@@ -243,6 +281,8 @@ export function ContentListPage() {
             items={items}
             gitAvailable={data?.gitAvailable === true}
             publicationAvailable={data?.publicationAvailable === true}
+            socialStats={socialStats}
+            onShareToX={handleShareToX}
           />
         ) : (
           <EmptyState
