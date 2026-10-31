@@ -148,17 +148,19 @@ export interface AiNextStepOutput {
  * 校验 AI 产出的 nextStep JSON。返回 null 表示拒收整个输出。
  * suggestedSlug 不合法时不拒收整体，只降为 null——fail-closed 在边界上。
  */
+import { extractJsonObject } from './assistant.js';
+
 export function parseAiNextStepOutput(
   raw: unknown,
   citableSlugs: ReadonlySet<string>,
 ): AiNextStepOutput | null {
   let candidate = raw;
   if (typeof candidate === 'string') {
-    try {
-      candidate = JSON.parse(candidate);
-    } catch {
+    const extracted = extractJsonObject(candidate);
+    if (extracted === null) {
       return null;
     }
+    candidate = extracted;
   }
   if (!candidate || typeof candidate !== 'object') return null;
   const obj = candidate as Record<string, unknown>;

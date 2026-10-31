@@ -151,7 +151,7 @@ function extractCitationSlugs(value: unknown): string[] {
  * 实测小影就长期因此走规则兜底。这里按「围栏 → 首尾大括号」的次序退让，
  * 但仍然**只接受能解析出的对象**，不把散文当合同。
  */
-function extractJsonObject(text: string): unknown | null {
+export function extractJsonObject(text: string): unknown | null {
   const tryParse = (candidate: string): unknown | null => {
     try {
       return JSON.parse(candidate);

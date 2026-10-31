@@ -13,6 +13,7 @@
  * prompt 走 JSON-RPC stdin，永不进命令行。
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { extractJsonObject } from '@walker/shared';
 import type { AgentRunInput, AgentRunResult, AgentRunnerPort } from '../ports/agent-runner.port';
 import { APP_CONFIG, type AppConfigPort } from '../config/config.port';
 import {
@@ -134,11 +135,19 @@ export class DshAgentRunner implements AgentRunnerPort {
       throw new Error(input.signal?.aborted ? 'runner-aborted' : 'runner-timeout');
     }
     let output: unknown;
-    try {
-      output =
-        typeof timed.finalResponse === 'string' ? JSON.parse(timed.finalResponse) : timed.finalResponse;
-    } catch {
-      throw new Error('runner-output-invalid-json');
+    if (typeof timed.finalResponse === 'string') {
+      const extracted = extractJsonObject(timed.finalResponse);
+      if (extracted !== null) {
+        output = extracted;
+      } else {
+        try {
+          output = JSON.parse(timed.finalResponse);
+        } catch {
+          throw new Error('runner-output-invalid-json');
+        }
+      }
+    } else {
+      output = timed.finalResponse;
     }
     return { output, rawEvents: [], elapsedMs: Date.now() - started };
   }
