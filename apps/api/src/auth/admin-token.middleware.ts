@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { findApiEnvPath } from '../config/resolve-env-file';
 
 export function getAdminUsername(): string {
   return process.env.WALKER_ADMIN_USERNAME?.trim() || 'Dora';
@@ -15,10 +16,10 @@ export function verifyAdminPassword(candidate: string): boolean {
 
 export function updateAdminPassword(
   newPassword: string,
-  apiRoot = path.resolve(__dirname, '../..'),
+  apiRoot?: string,
 ): void {
   process.env.WALKER_ADMIN_TOKEN = newPassword;
-  const envFile = path.join(apiRoot, '.env');
+  const envFile = findApiEnvPath(apiRoot);
   if (!fs.existsSync(envFile)) return;
   const content = fs.readFileSync(envFile, 'utf8');
   const lines = content.split(/\r?\n/);

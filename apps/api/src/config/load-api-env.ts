@@ -1,8 +1,8 @@
 import fs from 'node:fs';
-import path from 'node:path';
+import { findApiEnvPath } from './resolve-env-file';
 
-export function loadApiEnvFile(apiRoot = path.resolve(__dirname, '../..')): void {
-  const envFile = path.join(apiRoot, '.env');
+export function loadApiEnvFile(apiRoot?: string): void {
+  const envFile = findApiEnvPath(apiRoot);
   if (!fs.existsSync(envFile)) return;
   for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
     const trimmed = line.trim();

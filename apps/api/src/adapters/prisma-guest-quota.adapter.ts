@@ -5,6 +5,7 @@ import { GUEST_INTAKE_QUOTA } from '@walker/shared';
 import type { GuestQuotaPort } from '../ports/guest-quota.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 import { storageUnavailable } from '../common/http-error';
+import { findApiEnvPath } from '../config/resolve-env-file';
 
 export function getGuestQuota(): number {
   const configured = Number(process.env.WALKER_GUEST_INTAKE_QUOTA);
@@ -13,10 +14,10 @@ export function getGuestQuota(): number {
 
 export function updateGuestQuota(
   newQuota: number,
-  apiRoot = path.resolve(__dirname, '../..'),
+  apiRoot?: string,
 ): void {
   process.env.WALKER_GUEST_INTAKE_QUOTA = String(newQuota);
-  const envFile = path.join(apiRoot, '.env');
+  const envFile = findApiEnvPath(apiRoot);
   if (!fs.existsSync(envFile)) return;
   const content = fs.readFileSync(envFile, 'utf8');
   const lines = content.split(/\r?\n/);
