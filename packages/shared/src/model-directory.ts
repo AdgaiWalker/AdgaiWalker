@@ -136,7 +136,7 @@ export const KNOWN_PROVIDER_INTERFACES: readonly KnownProviderInterface[] = [
   {
     route: 'openai',
     settingsSection: 'llm-pi-ai',
-    protocol: 'openai-responses',
+    protocol: 'openai-completions',
     defaultBaseURL: 'https://api.openai.com/v1',
     defaultApiKeyRef: 'OPENAI_API_KEY',
     label: 'OpenAI',

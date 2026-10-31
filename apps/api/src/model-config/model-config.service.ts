@@ -280,11 +280,29 @@ export class ModelConfigService {
       const latencyMs = Date.now() - started;
       if (!response.ok) {
         const detail = await response.text().catch(() => '');
+        let hint = '';
+        if (response.status === 404 && provider.protocol === 'openai-responses') {
+          // 许多第三方代理或国内中转仅支持 /chat/completions，尝试辅助探活
+          try {
+            const fallbackRes = await fetch(`${base}/chat/completions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+              body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 4 }),
+              signal: AbortSignal.timeout(5_000),
+            });
+            if (fallbackRes.ok) {
+              hint = '（检测到该网关支持「OpenAI Chat Completions」协议，请将协议切换为「OpenAI Chat Completions」后再保存试用）';
+            }
+          } catch {}
+          if (!hint) {
+            hint = '（提示：若该地址是第三方中转或代理，通常不支持 /responses，请将协议切换为「OpenAI Chat Completions」）';
+          }
+        }
         return {
           ok: false,
           latencyMs,
           model,
-          error: `上游返回 ${response.status}：${detail.slice(0, 200)}`,
+          error: `上游返回 ${response.status}：${detail.slice(0, 200)}${hint ? ` ${hint}` : ''}`,
         };
       }
       return { ok: true, latencyMs, model, error: null };

@@ -178,11 +178,18 @@ export class JevFastPathService {
       };
     }
 
-    if (DORA_EXACT.has(normalized) || MODEL_IDENTITY_REGEX.test(normalized)) {
+    // 只有纯粹且简短的身份问询才在 L1 秒回；若带复合标点、指令或较长，必须放行由大模型真实处理
+    const isPureModelQuery =
+      MODEL_IDENTITY_REGEX.test(normalized) &&
+      cleanText.length <= 12 &&
+      !/[，,。？！?!、\n]/.test(cleanText) &&
+      !/(?:数|算|写|做|给|帮|查|测|变|不要|不是)/.test(cleanText);
+
+    if (DORA_EXACT.has(normalized) || isPureModelQuery) {
       const elapsed = Date.now() - startedAt;
       recordDecision(elapsed, true);
       this.logger.log(`[JEV-L1-Cache] Instant 0ms about Dora/site/model hit for "${cleanText}" in ${elapsed}ms`);
-      const isModelQuestion = MODEL_IDENTITY_REGEX.test(normalized);
+      const isModelQuestion = isPureModelQuery;
       const answer = isModelQuestion
         ? '我是 Walker 站里的提问助手，底层由 DeepSeek 大语言模型配合 TypeSafe JEV 决策引擎协同驱动。你先说说眼下卡在哪一步，比如想用 AI 做什么、卡了多久，我来帮你拆出下一个具体动作。'
         : 'Dora 是个人站 Walker（iwalk.pro）的站主。这个站秉持「如无必要，勿增实体」的原则，专注于把真实卡点变成可检验的下一步。你可以在「关于」页面了解更多她的背景与技术札记。';

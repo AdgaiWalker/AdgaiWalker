@@ -1,4 +1,4 @@
-﻿# 站内助手 runtime 安装（一次性；对应 docs/TODO-SITE-ASSISTANT.md T3.2/T3.3）
+# 站内助手 runtime 安装（一次性；对应 docs/TODO-SITE-ASSISTANT.md T3.2/T3.3）
 # 前置：Node 22+ 与 npm 已装；盒子以 C:\Walker\bin 为运行工具目录。
 # 用法：powershell -NoProfile -ExecutionPolicy Bypass -File C:\Walker\app\ops\windows\install-dsh.ps1
 $ErrorActionPreference = "Stop"
@@ -16,12 +16,21 @@ if (-not $dshVersion) { throw "apps/api/package.json 未钉 @deepseek-ai/dsh 版
 
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
 Set-Location $binDir
-if (-not (Test-Path $dshBin)) {
+$needInstall = $true
+$pkgJson = Join-Path $binDir "node_modules\@deepseek-ai\dsh\package.json"
+if ((Test-Path $dshBin) -and (Test-Path $pkgJson)) {
+  $installedVersion = (Get-Content -Raw $pkgJson | ConvertFrom-Json).version
+  if ($installedVersion -eq $dshVersion) {
+    Write-Host "已存在 @deepseek-ai/dsh@$installedVersion，跳过安装"
+    $needInstall = $false
+  } else {
+    Write-Host "版本不一致：已安装 $installedVersion，目标 $dshVersion，正在更新..."
+  }
+}
+if ($needInstall) {
   Write-Host "安装 @deepseek-ai/dsh@$dshVersion（来自 apps/api/package.json）"
   npm i --no-audit --no-fund "@deepseek-ai/dsh@$dshVersion"
   if ($LASTEXITCODE -ne 0) { throw "npm install @deepseek-ai/dsh failed" }
-} else {
-  Write-Host "已存在 $dshBin，跳过安装（如需换版请先删除该目录）"
 }
 
 # 助手专用 DSH_HOME：deepseek 默认模型 + 只读权限（与任何开发者配置隔离）
