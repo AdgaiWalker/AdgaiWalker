@@ -143,6 +143,7 @@ export class DshAgentRunner implements AgentRunnerPort {
         try {
           output = JSON.parse(timed.finalResponse);
         } catch {
+          console.error('[dsh-runner] bad finalResponse:', typeof timed.finalResponse, JSON.stringify(timed.finalResponse).slice(0, 300));
           throw new Error('runner-output-invalid-json');
         }
       }
