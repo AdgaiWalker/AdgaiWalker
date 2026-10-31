@@ -187,4 +187,38 @@ describe('AiNextStepAdapter', () => {
     await adapter.generate('不知道卡在哪');
     expect(seen[0]).toBeLessThanOrEqual(15_000);
   });
+
+  it('支持前序对话历史与 sessionId 贯通', async () => {
+    let capturedPrompt = '';
+    let capturedSessionId: string | undefined;
+    const runner: AgentRunnerPort = {
+      async run(input) {
+        capturedPrompt = input.prompt;
+        capturedSessionId = input.sessionId;
+        return {
+          output: { bucketId: 'learn-ai', nextStep: '你刚才提到了 Apple Pay 购买海外会员。' },
+          rawEvents: [],
+          elapsedMs: 1,
+          sessionId: 'harness-session-xyz',
+        };
+      },
+    };
+    const adapter = new AiNextStepAdapter(makeConfig(true), runner, makeIndex(ENTRIES));
+    const r = await adapter.generate('我说过什么', {
+      history: [
+        { role: 'user', text: '我用 Apple Pay 跨区买海外 AI 会员' },
+        { role: 'assistant', text: '用 Apple Pay 先只订最常用的那个' },
+      ],
+      sessionId: 'test-session-123',
+    });
+
+    expect(capturedPrompt).toContain('前序对话记录：');
+    expect(capturedPrompt).toContain('- 访客：我用 Apple Pay 跨区买海外 AI 会员');
+    expect(capturedPrompt).toContain('- 助手：用 Apple Pay 先只订最常用的那个');
+    expect(capturedPrompt).toContain('当前访客卡点：我说过什么');
+    expect(capturedSessionId).toBe('test-session-123');
+    expect(r.aiUsedFlag).toBe(true);
+    expect(r.nextStep).toContain('Apple Pay');
+    expect(r.sessionId).toBe('harness-session-xyz');
+  });
 });

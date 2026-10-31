@@ -13,6 +13,7 @@ import {
   type AgentRunnerPort,
 } from '../ports/agent-runner.port';
 import {
+  type NextStepOptions,
   type NextStepResult,
   type NextStepStrategyPort,
 } from '../ports/nextstep.port';
@@ -29,22 +30,36 @@ export const AI_NEXT_STEP_TIMEOUT_MS = 15_000;
 export function buildAiNextStepPrompt(
   body: string,
   entries: readonly SiteContentIndexEntry[],
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>,
 ): string {
   const lines = entries.map(
     (e) =>
       `- ${e.slug}｜${e.title}${e.actionable ? '｜可整理为行动步骤' : ''}${e.summary ? `｜${e.summary}` : ''}${e.tags.length ? `｜#${e.tags.join(' #')}` : ''}`,
   );
+  const historyLines: string[] = [];
+  if (history && history.length > 0) {
+    historyLines.push('前序对话记录：');
+    for (const h of history.slice(-6)) {
+      const roleName = h.role === 'user' ? '访客' : '助手';
+      const cleanText = (h.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      if (cleanText) {
+        historyLines.push(`- ${roleName}：${cleanText}`);
+      }
+    }
+  }
+
   return [
     '你是个人站 Walker 的提问助手。访客描述了自己的卡点，你要给出一个最小、可执行的下一步。',
     '规则：',
     '1. nextStep 是一句口语化的具体行动指令，不超过 120 字，不空泛、不列清单。',
     '2. 只有当某篇「可引用内容」确实对准卡点时，才把它的 slug 填进 suggestedSlug；至多一篇；没有就填 null，不要硬推。',
     '3. bucketId 必须是 learn-ai / writing / coding / form / productivity / default 之一。',
-    '4. 若访客是在测试、闲聊、或发出了明确指令（如数数、计算、写诗、确认模型），在 nextStep 中先如实简要回应或执行其指令（如数出数字），再自然引导其告知实际卡点。',
+    '4. 若访客在询问前序对话、刚才说了什么、上下文测试、闲聊，或者发出了明确指令（如数数、计算、写诗、确认模型），结合前序对话记录如实回应或执行指令，再自然引导其告知实际卡点。',
     '5. 只输出一个 JSON 对象，不要输出其它内容：{"bucketId":"...","nextStep":"...","suggestedSlug":null}',
     lines.length ? '可引用内容（仅限以下条目可推荐）：' : '（本站暂无可引用内容，suggestedSlug 必须为 null）',
     ...lines,
-    `访客卡点：${body}`,
+    ...(historyLines.length ? ['', ...historyLines] : []),
+    `当前访客卡点：${body}`,
   ].join('\n');
 }
 
@@ -58,9 +73,9 @@ export class AiNextStepAdapter implements NextStepStrategyPort {
     private readonly timeoutMs: number = AI_NEXT_STEP_TIMEOUT_MS,
   ) {}
 
-  async generate(body: string): Promise<NextStepResult> {
+  async generate(body: string, options?: NextStepOptions): Promise<NextStepResult> {
     if (!this.config.isAiEnabled()) {
-      return this.fallback.generate(body);
+      return this.fallback.generate(body, options);
     }
     // 索引不可用时带空包继续：通用建议仍可用，slug 推荐自动失效
     let entries: SiteContentIndexEntry[] = [];
@@ -72,12 +87,13 @@ export class AiNextStepAdapter implements NextStepStrategyPort {
     const citableSlugs = new Set(entries.map((e) => e.slug));
     try {
       const run = await this.runner.run({
-        prompt: buildAiNextStepPrompt(body, entries),
+        prompt: buildAiNextStepPrompt(body, entries, options?.history),
         cwd: process.cwd(),
         timeoutMs: this.timeoutMs,
+        sessionId: options?.sessionId,
       });
       const parsed = parseAiNextStepOutput(run.output, citableSlugs);
-      if (!parsed) return this.fallback.generate(body);
+      if (!parsed) return this.fallback.generate(body, options);
       const suggested = entries.find((e) => e.slug === parsed.suggestedSlug);
       return {
         nextStep: parsed.nextStep,
@@ -85,11 +101,12 @@ export class AiNextStepAdapter implements NextStepStrategyPort {
         aiUsedFlag: true,
         suggestedSlug: parsed.suggestedSlug,
         suggestedTitle: suggested?.title ?? null,
+        sessionId: run.sessionId ?? options?.sessionId ?? null,
       };
     } catch (error) {
       // 降级原因落日志（AI 可用率排查；失败如实，不假装 AI）
       console.error('[nextstep] AI 降级：', error instanceof Error ? error.message : error);
-      return this.fallback.generate(body);
+      return this.fallback.generate(body, options);
     }
   }
 }

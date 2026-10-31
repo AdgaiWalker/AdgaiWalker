@@ -31,6 +31,7 @@ export type IntakeChatTurn = {
 };
 
 const STORAGE_CHAT_KEY = 'walker:intake-chat-turns';
+const STORAGE_SESSION_KEY = 'walker:intake-chat-session-id';
 
 function loadStoredTurns(): IntakeChatTurn[] {
   if (typeof window === 'undefined') return [];
@@ -44,10 +45,20 @@ function loadStoredTurns(): IntakeChatTurn[] {
   }
 }
 
+function loadStoredSessionId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage.getItem(STORAGE_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function useIntakeChat() {
   const { loading, submit } = useIntakeSubmit();
   const [draft, setDraft] = useState('');
   const [turns, setTurns] = useState<IntakeChatTurn[]>(() => loadStoredTurns());
+  const [sessionId, setSessionId] = useState<string | null>(() => loadStoredSessionId());
   const [config, setConfig] = useState<IntakePublicConfig>({
     guestQuota: GUEST_INTAKE_QUOTA,
     quotaMinLength: CLUE_QUOTA_MIN_LENGTH,
@@ -103,7 +114,20 @@ export function useIntakeChat() {
         { id, body: raw, answer: null, error: null },
       ]);
 
-      const { result, error } = await submit(raw, config.guestQuota);
+      const history: Array<{ role: 'user' | 'assistant'; text: string }> = [];
+      for (const turn of turns) {
+        if (turn.body) history.push({ role: 'user', text: turn.body });
+        if (turn.answer?.nextStep) {
+          history.push({ role: 'assistant', text: turn.answer.nextStep });
+        }
+      }
+      const trimmedHistory = history.slice(-6);
+
+      const { result, error } = await submit(raw, {
+        quota: config.guestQuota,
+        history: trimmedHistory,
+        sessionId,
+      });
       setTurns((prev) =>
         prev.map((turn) =>
           turn.id === id ? { ...turn, answer: result, error } : turn,
@@ -111,21 +135,29 @@ export function useIntakeChat() {
       );
 
       if (result) {
+        if (result.sessionId && result.sessionId !== sessionId) {
+          setSessionId(result.sessionId);
+          try {
+            window.sessionStorage.setItem(STORAGE_SESSION_KEY, result.sessionId);
+          } catch {}
+        }
         writeIntakeResult({ result, body: raw });
         return;
       }
       // 失败：内容还给输入框，方便直接重试
       setDraft((current) => (current ? current : raw));
     },
-    [config.guestQuota, draft, loading, submit],
+    [config.guestQuota, draft, loading, sessionId, submit, turns],
   );
 
   const reset = useCallback(() => {
     setTurns([]);
     setDraft('');
+    setSessionId(null);
     try {
       if (typeof window !== 'undefined') {
         window.sessionStorage.removeItem(STORAGE_CHAT_KEY);
+        window.sessionStorage.removeItem(STORAGE_SESSION_KEY);
       }
     } catch {}
   }, []);

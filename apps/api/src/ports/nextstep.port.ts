@@ -1,3 +1,13 @@
+export interface NextStepHistoryItem {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface NextStepOptions {
+  history?: NextStepHistoryItem[];
+  sessionId?: string;
+}
+
 export interface NextStepResult {
   nextStep: string;
   bucketId: string;
@@ -6,10 +16,11 @@ export interface NextStepResult {
   suggestedSlug?: string | null;
   /** 与 suggestedSlug 配套的站内标题（取自内容索引，不信任模型原文） */
   suggestedTitle?: string | null;
+  sessionId?: string | null;
 }
 
 export interface NextStepStrategyPort {
-  generate(body: string): Promise<NextStepResult>;
+  generate(body: string, options?: NextStepOptions): Promise<NextStepResult>;
 }
 
 export const NEXT_STEP_STRATEGY = Symbol('NEXT_STEP_STRATEGY');

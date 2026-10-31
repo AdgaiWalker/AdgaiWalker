@@ -125,7 +125,10 @@ export class DshAgentRunner implements AgentRunnerPort {
   ): Promise<AgentRunResult> {
     const started = Date.now();
     const prompt = appendContract ? withJsonOutputContract(input.prompt) : input.prompt;
-    const runPromise: Promise<RunOutcome> = runtime.run(prompt, {});
+    const runPromise: Promise<RunOutcome> = runtime.run(
+      prompt,
+      input.sessionId ? { sessionId: input.sessionId } : {},
+    );
     const timed = await Promise.race([
       runPromise,
       new Promise<null>((r) => setTimeout(() => r(null), input.timeoutMs ?? DSH_STAGE_TIMEOUT_MS)),
@@ -153,6 +156,6 @@ export class DshAgentRunner implements AgentRunnerPort {
     } else {
       output = timed.finalResponse;
     }
-    return { output, rawEvents: [], elapsedMs: Date.now() - started };
+    return { output, rawEvents: [], elapsedMs: Date.now() - started, sessionId: timed.sessionId };
   }
 }

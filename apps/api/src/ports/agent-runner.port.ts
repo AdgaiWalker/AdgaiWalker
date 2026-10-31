@@ -4,12 +4,14 @@ export interface AgentRunInput {
   outputSchemaPath?: string;
   timeoutMs?: number;
   signal?: AbortSignal;
+  sessionId?: string;
 }
 
 export interface AgentRunResult {
   output: unknown;
   rawEvents: unknown[];
   elapsedMs: number;
+  sessionId?: string;
 }
 
 export interface AgentRunnerPort {

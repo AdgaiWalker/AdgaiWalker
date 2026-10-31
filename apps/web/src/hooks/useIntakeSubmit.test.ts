@@ -51,4 +51,24 @@ describe('useIntakeSubmit', () => {
     expect(outcome?.error).toMatch(/游客|配额|用完/);
     expect(result.current.loading).toBe(false);
   });
+
+  it('透传 options 中的 history 与 sessionId', async () => {
+    intake.mockResolvedValue({ ...OK_RESULT, sessionId: 'session-xyz' });
+    const { result } = renderHook(() => useIntakeSubmit());
+    let outcome: IntakeSubmitOutcome | undefined;
+
+    await act(async () => {
+      outcome = await result.current.submit('我说过什么', {
+        history: [{ role: 'user', text: '前序提问' }],
+        sessionId: 'session-prev',
+      });
+    });
+
+    expect(outcome?.result?.sessionId).toBe('session-xyz');
+    expect(intake).toHaveBeenCalledWith('我说过什么', {
+      source: 'tools-visitor',
+      history: [{ role: 'user', text: '前序提问' }],
+      sessionId: 'session-prev',
+    });
+  });
 });

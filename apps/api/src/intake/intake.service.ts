@@ -37,6 +37,8 @@ export interface IntakeInput {
   anonId: string;
   ipKey: string;
   isAuthenticated?: boolean;
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+  sessionId?: string;
 }
 
 @Injectable()
@@ -170,7 +172,10 @@ export class IntakeService {
       }
     }
 
-    const step = await this.nextStep.generate(input.body.trim());
+    const step = await this.nextStep.generate(input.body.trim(), {
+      history: input.history,
+      sessionId: input.sessionId,
+    });
     let clue;
     try {
       clue = await this.clues.create({
@@ -203,6 +208,7 @@ export class IntakeService {
       suggestedSlug: step.suggestedSlug ?? null,
       suggestedTitle: step.suggestedTitle ?? null,
       poolStatus: clue.poolStatus,
+      sessionId: step.sessionId ?? input.sessionId ?? null,
     };
   }
 }

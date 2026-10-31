@@ -17,6 +17,7 @@ export interface IntakeResult {
   suggestedSlug?: string | null;
   suggestedTitle?: string | null;
   poolStatus: string;
+  sessionId?: string | null;
 }
 
 export interface IntakePublicConfig {
@@ -100,10 +101,28 @@ export const publicApi = {
     );
   },
 
-  intake(body: string, source = 'tools-visitor'): Promise<IntakeResult> {
+  intake(
+    body: string,
+    options?:
+      | string
+      | {
+          source?: string;
+          history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+          sessionId?: string | null;
+        },
+  ): Promise<IntakeResult> {
+    const isLegacySource = typeof options === 'string';
+    const source = isLegacySource ? options : (options?.source ?? 'tools-visitor');
+    const history = !isLegacySource ? options?.history : undefined;
+    const sessionId = !isLegacySource ? options?.sessionId : undefined;
     return publicRequest<IntakeResult>('/intake', {
       method: 'POST',
-      body: JSON.stringify({ body, source }),
+      body: JSON.stringify({
+        body,
+        source,
+        ...(history && history.length > 0 ? { history } : {}),
+        ...(sessionId ? { sessionId } : {}),
+      }),
     });
   },
 

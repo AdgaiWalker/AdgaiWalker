@@ -14,14 +14,40 @@ export type IntakeSubmitOutcome = {
   error: string | null;
 };
 
+export type IntakeSubmitOptions = {
+  quota?: number;
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+  sessionId?: string | null;
+  source?: string;
+};
+
 export function useIntakeSubmit() {
   const [loading, setLoading] = useState(false);
 
   const submit = useCallback(
-    async (raw: string, quota?: number): Promise<IntakeSubmitOutcome> => {
+    async (
+      raw: string,
+      quotaOrOptions?: number | IntakeSubmitOptions,
+    ): Promise<IntakeSubmitOutcome> => {
       setLoading(true);
+      const quota =
+        typeof quotaOrOptions === 'number'
+          ? quotaOrOptions
+          : quotaOrOptions?.quota;
+      const opts =
+        typeof quotaOrOptions === 'object' && quotaOrOptions !== null
+          ? quotaOrOptions
+          : undefined;
+
       try {
-        const result = await publicApi.intake(raw);
+        const result =
+          opts && (opts.history || opts.sessionId || opts.source)
+            ? await publicApi.intake(raw, {
+                source: opts.source ?? 'tools-visitor',
+                history: opts.history,
+                sessionId: opts.sessionId,
+              })
+            : await publicApi.intake(raw);
         return { result, error: null };
       } catch (e) {
         return { result: null, error: formatApiError(e, quota) };

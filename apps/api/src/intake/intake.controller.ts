@@ -40,7 +40,13 @@ export class IntakeController {
 
   @Post()
   async create(
-    @Body() body: { body?: string; source?: string },
+    @Body()
+    body: {
+      body?: string;
+      source?: string;
+      history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+      sessionId?: string;
+    },
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Headers('cookie') cookieHeader?: string,
@@ -53,6 +59,8 @@ export class IntakeController {
       anonId,
       ipKey,
       isAuthenticated: false,
+      history: Array.isArray(body.history) ? body.history : undefined,
+      sessionId: typeof body.sessionId === 'string' && body.sessionId.trim() ? body.sessionId.trim() : undefined,
     });
     res.status(201);
     return result;
