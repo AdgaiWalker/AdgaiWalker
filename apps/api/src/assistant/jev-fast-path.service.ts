@@ -334,8 +334,12 @@ export class JevFastPathService {
           latencyMs: elapsed
         };
       }
-      // 3. 站主或站点简介直出 (置信度 >= 0.75)
-      else if (aboutProb >= 0.75) {
+      // 3. 站主或站点简介直出 (置信度 >= 0.75)；复合指令或长句放行给大模型
+      else if (
+        aboutProb >= 0.75 &&
+        cleanText.length <= 15 &&
+        !/(?:数|算|写|做|给|帮|查|测|变|不要|不是)/.test(cleanText)
+      ) {
         this.logger.log(`[JEV-FastPath] Intercepted about Dora/site (${aboutProb}) in ${elapsed}ms`);
         decision = {
           result: {
