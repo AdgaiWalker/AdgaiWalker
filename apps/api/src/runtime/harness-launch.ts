@@ -425,6 +425,7 @@ export function buildHarnessRuntimeFactory(
       dshHome: launch.dshHome,
       processCwd: launch.processCwd,
       env: launch.env,
+      initializeTimeoutMs: 30_000,
       requestTimeoutMs: 60_000,
     });
   };
