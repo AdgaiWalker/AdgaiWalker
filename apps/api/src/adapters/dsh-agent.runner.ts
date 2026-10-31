@@ -12,10 +12,11 @@
  * 语义与安全：站主面无规则兜底（失败如实抛错）；经 node + args 直启（无 shell），
  * prompt 走 JSON-RPC stdin，永不进命令行。
  */
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { extractJsonObject } from '@walker/shared';
 import type { AgentRunInput, AgentRunResult, AgentRunnerPort } from '../ports/agent-runner.port';
 import { APP_CONFIG, type AppConfigPort } from '../config/config.port';
+import { MODEL_DIRECTORY, type ModelDirectoryPort } from '../ports/model-directory.port';
 import {
   type HarnessRuntimeFactory,
   type HarnessRuntimeLike,
@@ -56,6 +57,7 @@ export class DshAgentRunner implements AgentRunnerPort {
     @Inject(APP_CONFIG) private readonly config: AppConfigPort,
     /** 测试注入假工厂用；生产经 kernel useFactory 构造，不参与 DI 解析 */
     private readonly runtimeFactory: HarnessRuntimeFactory | null = null,
+    @Optional() @Inject(MODEL_DIRECTORY) private readonly modelDirectory?: ModelDirectoryPort | null,
   ) {}
 
   async run(input: AgentRunInput): Promise<AgentRunResult> {
@@ -65,6 +67,7 @@ export class DshAgentRunner implements AgentRunnerPort {
     // 短调用是访客卡口，长调用是后台工作站；会话目录按这个分界分开。
     const factory = this.runtimeFactory ?? buildHarnessRuntimeFactory({
       audience: isShortCall ? 'public' : 'admin',
+      modelDirectory: this.modelDirectory ?? undefined,
     });
     return isShortCall ? this.runResident(factory, input) : this.runIsolated(factory, input);
   }

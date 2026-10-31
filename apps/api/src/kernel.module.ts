@@ -469,13 +469,13 @@ import { ReminderController } from './reminder/reminder.controller';
       inject: [APP_CONFIG],
       useFactory: (config: AppConfigPort) => new FsPublicationPackageRepository(config.getWorkRootDir()),
     },
-    // AGENT_RUNTER 统一走 dsh（2026-09-06 定案）：卡口 nextStep + 工作站配方共用，
+    // AGENT_RUNNER 统一走 dsh（2026-09-06 定案）：卡口 nextStep + 工作站配方共用，
     // 与助手/洞察同一运行时家族；站主面无规则兜底，失败如实抛错
     {
       provide: AGENT_RUNNER,
-      inject: [APP_CONFIG],
-      useFactory: (config: import('./config/config.port').AppConfigPort) =>
-        new DshAgentRunner(config),
+      inject: [APP_CONFIG, MODEL_DIRECTORY],
+      useFactory: (config: AppConfigPort, directory: ModelDirectoryPort) =>
+        new DshAgentRunner(config, null, directory),
     },
     {
       provide: STAGE_ARTIFACT_REPOSITORY,
