@@ -24,7 +24,7 @@ import {
 import { RuleNextStepAdapter } from './rule-nextstep.adapter';
 
 /** 访客同步等待，AI 链路必须在这个预算内出结果，超时降级规则 */
-export const AI_NEXT_STEP_TIMEOUT_MS = 25_000;
+export const AI_NEXT_STEP_TIMEOUT_MS = 15_000;
 
 export function buildAiNextStepPrompt(
   body: string,
