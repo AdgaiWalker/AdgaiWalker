@@ -71,4 +71,22 @@ describe('useIntakeSubmit', () => {
       sessionId: 'session-prev',
     });
   });
+
+  it('被 signal 打断时如实返回打断提示并不抛异常', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    intake.mockRejectedValue(new DOMException('The user aborted a request.', 'AbortError'));
+    const { result } = renderHook(() => useIntakeSubmit());
+    let outcome: IntakeSubmitOutcome | undefined;
+
+    await act(async () => {
+      outcome = await result.current.submit('这句被用户打断了', {
+        signal: controller.signal,
+      });
+    });
+
+    expect(outcome?.result).toBeNull();
+    expect(outcome?.error).toBe('已打断生成。');
+    expect(result.current.loading).toBe(false);
+  });
 });

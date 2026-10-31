@@ -83,6 +83,7 @@ export function ToolsPage() {
         loading={chat.loading}
         onDraftChange={chat.onDraftChange}
         onSend={handleSend}
+        onStop={chat.stop}
       />
 
       <p className="meta chat-footnote">

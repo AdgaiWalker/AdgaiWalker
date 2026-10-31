@@ -13,7 +13,7 @@ import {
   RATE_WINDOW_MINUTES,
   isValidClueBody,
 } from '@walker/shared';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   publicApi,
   type IntakePublicConfig,
@@ -59,6 +59,7 @@ export function useIntakeChat() {
   const [draft, setDraft] = useState('');
   const [turns, setTurns] = useState<IntakeChatTurn[]>(() => loadStoredTurns());
   const [sessionId, setSessionId] = useState<string | null>(() => loadStoredSessionId());
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [config, setConfig] = useState<IntakePublicConfig>({
     guestQuota: GUEST_INTAKE_QUOTA,
     quotaMinLength: CLUE_QUOTA_MIN_LENGTH,
@@ -100,6 +101,13 @@ export function useIntakeChat() {
   const draftOk = useMemo(() => isValidClueBody(draft), [draft]);
   const remaining = Math.max(0, CLUE_BODY_MIN_LENGTH - draft.trim().length);
 
+  const stop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   const send = useCallback(
     async (text?: string) => {
       const raw = (text ?? draft).trim();
@@ -123,34 +131,47 @@ export function useIntakeChat() {
       }
       const trimmedHistory = history.slice(-6);
 
-      const { result, error } = await submit(raw, {
-        quota: config.guestQuota,
-        history: trimmedHistory,
-        sessionId,
-      });
-      setTurns((prev) =>
-        prev.map((turn) =>
-          turn.id === id ? { ...turn, answer: result, error } : turn,
-        ),
-      );
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
-      if (result) {
-        if (result.sessionId && result.sessionId !== sessionId) {
-          setSessionId(result.sessionId);
-          try {
-            window.sessionStorage.setItem(STORAGE_SESSION_KEY, result.sessionId);
-          } catch {}
+      try {
+        const { result, error } = await submit(raw, {
+          quota: config.guestQuota,
+          history: trimmedHistory,
+          sessionId,
+          signal: controller.signal,
+        });
+        setTurns((prev) =>
+          prev.map((turn) =>
+            turn.id === id ? { ...turn, answer: result, error } : turn,
+          ),
+        );
+
+        if (result) {
+          if (result.sessionId && result.sessionId !== sessionId) {
+            setSessionId(result.sessionId);
+            try {
+              window.sessionStorage.setItem(STORAGE_SESSION_KEY, result.sessionId);
+            } catch {}
+          }
+          writeIntakeResult({ result, body: raw });
+          return;
         }
-        writeIntakeResult({ result, body: raw });
-        return;
+        // 失败：内容还给输入框，方便直接重试（若为用户主动打断则不回填）
+        if (!controller.signal.aborted) {
+          setDraft((current) => (current ? current : raw));
+        }
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
-      // 失败：内容还给输入框，方便直接重试
-      setDraft((current) => (current ? current : raw));
     },
     [config.guestQuota, draft, loading, sessionId, submit, turns],
   );
 
   const reset = useCallback(() => {
+    stop();
     setTurns([]);
     setDraft('');
     setSessionId(null);
@@ -160,7 +181,13 @@ export function useIntakeChat() {
         window.sessionStorage.removeItem(STORAGE_SESSION_KEY);
       }
     } catch {}
-  }, []);
+  }, [stop]);
+
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
 
   return {
     draft,
@@ -173,6 +200,7 @@ export function useIntakeChat() {
     turns,
     onDraftChange: setDraft,
     send,
+    stop,
     reset,
   };
 }

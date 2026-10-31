@@ -19,6 +19,7 @@ export type IntakeSubmitOptions = {
   history?: Array<{ role: 'user' | 'assistant'; text: string }>;
   sessionId?: string | null;
   source?: string;
+  signal?: AbortSignal;
 };
 
 export function useIntakeSubmit() {
@@ -41,15 +42,19 @@ export function useIntakeSubmit() {
 
       try {
         const result =
-          opts && (opts.history || opts.sessionId || opts.source)
+          opts && (opts.history || opts.sessionId || opts.source || opts.signal)
             ? await publicApi.intake(raw, {
                 source: opts.source ?? 'tools-visitor',
                 history: opts.history,
                 sessionId: opts.sessionId,
+                signal: opts.signal,
               })
             : await publicApi.intake(raw);
         return { result, error: null };
       } catch (e) {
+        if (opts?.signal?.aborted || (e instanceof Error && e.name === 'AbortError')) {
+          return { result: null, error: '已打断生成。' };
+        }
         return { result: null, error: formatApiError(e, quota) };
       } finally {
         setLoading(false);

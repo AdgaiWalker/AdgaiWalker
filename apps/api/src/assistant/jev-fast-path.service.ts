@@ -161,6 +161,44 @@ export class JevFastPathService {
     // ───────────────────────────────────────────────
     const fastSessionId = `jev-fast-path-${Date.now().toString(36)}`;
 
+    // 纯标点/符号灌水（如 ???、......、！！！ 等）：0ms 直出引导，不扣减体验次数、不浪费模型算力
+    if (normalized.length === 0) {
+      const elapsed = Date.now() - startedAt;
+      recordDecision(elapsed, true);
+      this.logger.log(`[JEV-L1-Cache] Instant 0ms punctuation hit for "${cleanText}" in ${elapsed}ms`);
+      return {
+        result: {
+          answer: '用一句具体场景描述你卡在哪一步吧：谁、在什么情况下、想做成什么、现在卡在哪（至少 10 个字，不空泛）。',
+          citations: [],
+          sessionId: fastSessionId,
+          aiUsedFlag: true,
+          elapsedMs: elapsed,
+        },
+        fastPathReason: 'greeting',
+        latencyMs: elapsed,
+      };
+    }
+
+    // 防鹈鹕测试（Pelican Test）与无边界代码生成请求拦截
+    const isPelicanBenchmark = /(?:鹈鹕.*自行车|自行车.*鹈鹕|pelican.*(?:bicycle|bike)|(?:bicycle|bike).*pelican|生成.*svg|画.*svg|写.*svg|画一只|svg.*图)/i.test(cleanText);
+    const isCodeDumpRequest = /(?:帮我写(?:个|一段|一套)?(?:贪吃蛇|俄罗斯方块|完整代码|项目源码|管理系统|脚手架|小游戏)|写个(?:贪吃蛇|俄罗斯方块)|生成完整(?:代码|前端|后端))/i.test(cleanText);
+    if (isPelicanBenchmark || isCodeDumpRequest) {
+      const elapsed = Date.now() - startedAt;
+      recordDecision(elapsed, true);
+      this.logger.log(`[JEV-L1-Cache] Instant 0ms pelican/code-dump defense for "${cleanText}" in ${elapsed}ms`);
+      return {
+        result: {
+          answer: '本站提问助手专注于真实行动卡点的拆解与下一步指引，不提供全量代码生成或 SVG 矢量图绘制（如鹈鹕基准测试）。若你在某个具体的代码报错或架构步骤上卡住了，欢迎把具体问题告诉我。',
+          citations: [],
+          sessionId: fastSessionId,
+          aiUsedFlag: true,
+          elapsedMs: elapsed,
+        },
+        fastPathReason: 'security_rejection',
+        latencyMs: elapsed,
+      };
+    }
+
     if (GREETING_EXACT.has(normalized) || /^(你好|您好|在吗|hi|hello|哈喽).{0,4}$/i.test(normalized)) {
       const elapsed = Date.now() - startedAt;
       recordDecision(elapsed, true);
@@ -337,7 +375,7 @@ export class JevFastPathService {
       // 3. 站主或站点简介直出 (置信度 >= 0.75)；复合指令或长句放行给大模型
       else if (
         aboutProb >= 0.75 &&
-        cleanText.length <= 15 &&
+        cleanText.length <= 25 &&
         !/(?:数|算|写|做|给|帮|查|测|变|不要|不是)/.test(cleanText)
       ) {
         this.logger.log(`[JEV-FastPath] Intercepted about Dora/site (${aboutProb}) in ${elapsed}ms`);

@@ -27,6 +27,7 @@ export const ERROR_CODE_LABELS: Record<string, string> = {
     '提问接口暂不可用；你仍可以阅读文章。',
   'api-unavailable': '提问服务暂时不可用，请稍后再试，或先读读文章。',
   'request-failed': '请求失败，请稍后再试。',
+  'client-abort': '已打断生成。',
 };
 
 export function formatGuestQuotaHint(quota: number = GUEST_INTAKE_QUOTA): string {

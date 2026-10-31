@@ -11,6 +11,7 @@ export type IntakeComposerProps = {
   loading: boolean;
   onDraftChange: (value: string) => void;
   onSend: () => void;
+  onStop?: () => void;
 };
 
 export function IntakeComposer({
@@ -22,6 +23,7 @@ export function IntakeComposer({
   loading,
   onDraftChange,
   onSend,
+  onStop,
 }: IntakeComposerProps) {
   const trimmedLength = draft.trim().length;
   let counterText = '';
@@ -40,9 +42,18 @@ export function IntakeComposer({
         rows={2}
         value={draft}
         disabled={loading}
-        placeholder="说清你卡在哪…（Enter 发送，Shift+Enter 换行）"
+        placeholder={
+          loading
+            ? '正在整理下一步，可点击打断或按 Esc 停止…'
+            : '说清你卡在哪…（Enter 发送，Shift+Enter 换行）'
+        }
         onChange={(e) => onDraftChange(e.target.value)}
         onKeyDown={(e) => {
+          if (e.key === 'Escape' && loading) {
+            e.preventDefault();
+            onStop?.();
+            return;
+          }
           if (
             e.key === 'Enter' &&
             !e.shiftKey &&
@@ -57,14 +68,25 @@ export function IntakeComposer({
         <span className="meta chat-counter">
           {counterText}
         </span>
-        <button
-          type="button"
-          className="btn-primary assistant-send"
-          disabled={loading || !draftOk}
-          onClick={onSend}
-        >
-          {loading ? '回答中…' : '发送'}
-        </button>
+        {loading ? (
+          <button
+            type="button"
+            className="btn-ghost assistant-stop chat-stop-btn"
+            onClick={onStop}
+            title="打断当前回答（按 Esc 键亦可）"
+          >
+            打断
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn-primary assistant-send"
+            disabled={!draftOk}
+            onClick={onSend}
+          >
+            发送
+          </button>
+        )}
       </div>
     </div>
   );

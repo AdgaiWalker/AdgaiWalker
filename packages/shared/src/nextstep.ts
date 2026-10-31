@@ -166,6 +166,10 @@ export function parseAiNextStepOutput(
   const obj = candidate as Record<string, unknown>;
   if (!isNextStepBucketId(obj.bucketId)) return null;
   if (typeof obj.nextStep !== 'string') return null;
+  // 结构防线：防鹈鹕测试与代码倾泻（禁止直接输出 SVG 标签、viewBox 或大段代码块）
+  if (/<svg\b|<\/svg>|<path\b|viewbox=|```(?:svg|xml|html|tsx|jsx|javascript|python|bash)?/i.test(obj.nextStep)) {
+    return null;
+  }
   const nextStep = sanitizeNextStepText(obj.nextStep);
   if (nextStep.length < 4 || nextStep.length > AI_NEXT_STEP_MAX_LENGTH) {
     return null;

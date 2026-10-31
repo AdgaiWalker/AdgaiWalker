@@ -109,12 +109,14 @@ export const publicApi = {
           source?: string;
           history?: Array<{ role: 'user' | 'assistant'; text: string }>;
           sessionId?: string | null;
+          signal?: AbortSignal;
         },
   ): Promise<IntakeResult> {
     const isLegacySource = typeof options === 'string';
     const source = isLegacySource ? options : (options?.source ?? 'tools-visitor');
     const history = !isLegacySource ? options?.history : undefined;
     const sessionId = !isLegacySource ? options?.sessionId : undefined;
+    const signal = !isLegacySource ? options?.signal : undefined;
     return publicRequest<IntakeResult>('/intake', {
       method: 'POST',
       body: JSON.stringify({
@@ -123,6 +125,7 @@ export const publicApi = {
         ...(history && history.length > 0 ? { history } : {}),
         ...(sessionId ? { sessionId } : {}),
       }),
+      signal,
     });
   },
 

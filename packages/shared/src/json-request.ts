@@ -34,7 +34,15 @@ export async function fetchJson<T>(
       ...init,
       headers,
     });
-  } catch {
+  } catch (err: unknown) {
+    if (init?.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+      return {
+        ok: false,
+        status: 0,
+        code: 'client-abort',
+        message: '已停止回答',
+      };
+    }
     /* 断网 / 代理挂 / 无 API 主机 */
     return {
       ok: false,

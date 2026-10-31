@@ -51,6 +51,21 @@ describe('nextStep AI 输出契约', () => {
     expect(parseAiNextStepOutput(null, CITABLE)).toBeNull();
   });
 
+  it('拒收包含 SVG 矢量图代码或大段代码块的鹈鹕测试输出', () => {
+    expect(
+      parseAiNextStepOutput(
+        { bucketId: 'coding', nextStep: '这是鹈鹕代码：<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>' },
+        CITABLE,
+      ),
+    ).toBeNull();
+    expect(
+      parseAiNextStepOutput(
+        { bucketId: 'coding', nextStep: '这是完整贪吃蛇实现：```python\ndef snake(): pass\n```' },
+        CITABLE,
+      ),
+    ).toBeNull();
+  });
+
   it('sanitize：折叠 markdown 链接、去尖括号、压空白', () => {
     expect(sanitizeNextStepText('看[这篇](/posts/x)再动手  <b>hi</b>')).toBe(
       '看这篇再动手 bhi/b',
