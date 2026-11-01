@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ruleNextStep } from '@walker/shared';
+import { DEFAULT_QUICK_REPLIES, ruleNextStep } from '@walker/shared';
 import type {
   NextStepOptions,
   NextStepResult,
@@ -17,6 +17,7 @@ export class RuleNextStepAdapter implements NextStepStrategyPort {
       aiUsedFlag: false,
       suggestedSlug: null,
       suggestedTitle: null,
+      quickReplies: DEFAULT_QUICK_REPLIES[r.bucketId] ?? DEFAULT_QUICK_REPLIES.default,
     };
   }
 }

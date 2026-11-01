@@ -30,6 +30,13 @@ export function ToolsPage() {
     void chat.send();
   }, [chat]);
 
+  const handleQuickReply = useCallback(
+    (replyText: string) => {
+      void chat.send(replyText);
+    },
+    [chat],
+  );
+
   return (
     <div className="chat-page">
       <header className="chat-head">
@@ -70,7 +77,11 @@ export function ToolsPage() {
             </div>
           </div>
         ) : (
-          <IntakeChatThread turns={turns} />
+          <IntakeChatThread
+            turns={turns}
+            onSendQuickReply={handleQuickReply}
+            loading={loading}
+          />
         )}
       </div>
 

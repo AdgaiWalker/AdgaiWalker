@@ -115,6 +115,11 @@ export class IntakeService {
           suggestedSlug: fastPath.result.citations?.[0]?.slug ?? null,
           suggestedTitle: null,
           poolStatus: 'candidate',
+          quickReplies: [
+            '想做个小项目但不知从哪起步',
+            '在学 AI 找实用场景',
+            '在做开发卡在具体报错',
+          ],
         };
       }
     }
@@ -209,6 +214,7 @@ export class IntakeService {
       suggestedTitle: step.suggestedTitle ?? null,
       poolStatus: clue.poolStatus,
       sessionId: step.sessionId ?? input.sessionId ?? null,
+      quickReplies: step.quickReplies ?? [],
     };
   }
 }

@@ -15,13 +15,19 @@ const CITABLE = new Set(['ai-low-cost-access', 'vibe0s']);
 describe('nextStep AI 输出契约', () => {
   it('合法输出通过；字符串包裹的 JSON 也能解析', () => {
     const ok = parseAiNextStepOutput(
-      { bucketId: 'learn-ai', nextStep: '先挑一个最小场景，连做三次。', suggestedSlug: 'ai-low-cost-access' },
+      {
+        bucketId: 'learn-ai',
+        nextStep: '先挑一个最小场景，连做三次。',
+        suggestedSlug: 'ai-low-cost-access',
+        quickReplies: ['海外支付怎么搞', '提示词总写不好'],
+      },
       CITABLE,
     );
     expect(ok).toEqual({
       bucketId: 'learn-ai',
       nextStep: '先挑一个最小场景，连做三次。',
       suggestedSlug: 'ai-low-cost-access',
+      quickReplies: ['海外支付怎么搞', '提示词总写不好'],
     });
 
     const wrapped = parseAiNextStepOutput(
@@ -30,6 +36,7 @@ describe('nextStep AI 输出契约', () => {
     );
     expect(wrapped?.bucketId).toBe('writing');
     expect(wrapped?.suggestedSlug).toBeNull();
+    expect(wrapped?.quickReplies?.length).toBeGreaterThan(0);
   });
 
   it('非 citable 的 suggestedSlug 强制降为 null，不拒收整体', () => {

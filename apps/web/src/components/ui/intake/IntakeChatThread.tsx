@@ -7,9 +7,15 @@ import { IntakeAnswerCard } from './IntakeAnswerCard';
 
 export type IntakeChatThreadProps = {
   turns: readonly IntakeChatTurn[];
+  onSendQuickReply?: (text: string) => void;
+  loading?: boolean;
 };
 
-export function IntakeChatThread({ turns }: IntakeChatThreadProps) {
+export function IntakeChatThread({
+  turns,
+  onSendQuickReply,
+  loading = false,
+}: IntakeChatThreadProps) {
   return (
     <div className="assistant-thread">
       {turns.map((turn, index) => {
@@ -31,6 +37,10 @@ export function IntakeChatThread({ turns }: IntakeChatThreadProps) {
                   submittedBody={turn.body}
                   animateNextStep={isLast}
                   variant="plain"
+                  quickReplies={turn.answer.quickReplies}
+                  onSelectQuickReply={onSendQuickReply}
+                  isLatest={isLast}
+                  loading={loading}
                 />
               </div>
             ) : turn.error ? (

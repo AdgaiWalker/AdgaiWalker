@@ -17,6 +17,8 @@ export interface NextStepResult {
   /** 与 suggestedSlug 配套的站内标题（取自内容索引，不信任模型原文） */
   suggestedTitle?: string | null;
   sessionId?: string | null;
+  /** 启发式延伸/追问选项 */
+  quickReplies?: string[];
 }
 
 export interface NextStepStrategyPort {

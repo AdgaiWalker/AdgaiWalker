@@ -142,7 +142,18 @@ export interface AiNextStepOutput {
   nextStep: string;
   /** 仅接受 citable 集合内的 slug；否则强制 null（AI 边界不可放宽） */
   suggestedSlug: string | null;
+  /** 启发式延伸/追问选项（2~3 条，方便访客单键继续） */
+  quickReplies?: string[];
 }
+
+export const DEFAULT_QUICK_REPLIES: Record<NextStepBucketId, string[]> = {
+  'learn-ai': ['海外支付卡在哪了？', '提示词总写不符合预期', '想把 AI 接进已有流程'],
+  writing: ['开头卡住写不出来', '结构太散怎么梳理', '篇幅太长怎么精炼'],
+  coding: ['依赖和环境报错卡住了', '不知该选什么技术方案', '逻辑跑不通想查问题'],
+  productivity: ['工具太多不知道怎么选', '流程太繁琐想做自动化', '怎么让新习惯持续执行'],
+  form: ['需求想不清楚怎么提', '怎么做最小可行 MVP 砍范围', '不知道第一步该先做什么'],
+  default: ['具体第一步我该怎么做？', '有没有更省成本的捷径？', '遇到困难还能怎么解决？'],
+};
 
 /**
  * 校验 AI 产出的 nextStep JSON。返回 null 表示拒收整个输出。
@@ -181,5 +192,16 @@ export function parseAiNextStepOutput(
   ) {
     suggestedSlug = obj.suggestedSlug;
   }
-  return { bucketId: obj.bucketId, nextStep, suggestedSlug };
+  let quickReplies: string[] = [];
+  if (Array.isArray(obj.quickReplies)) {
+    quickReplies = obj.quickReplies
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => sanitizeNextStepText(item))
+      .filter((item) => item.length >= 2 && item.length <= 18)
+      .slice(0, 3);
+  }
+  if (quickReplies.length === 0) {
+    quickReplies = DEFAULT_QUICK_REPLIES[obj.bucketId] ?? DEFAULT_QUICK_REPLIES.default;
+  }
+  return { bucketId: obj.bucketId, nextStep, suggestedSlug, quickReplies };
 }

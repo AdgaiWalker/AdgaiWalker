@@ -34,6 +34,11 @@ export type IntakeAnswerCardProps = {
   animateNextStep?: boolean;
   /** card = 独立页卡片（默认）；plain = 对话流内平铺，不再叠一层卡片材质 */
   variant?: 'card' | 'plain';
+  /** 启发式追问延伸选项 */
+  quickReplies?: string[];
+  onSelectQuickReply?: (text: string) => void;
+  isLatest?: boolean;
+  loading?: boolean;
 };
 
 function InlineText({ text }: { text: string }) {
@@ -59,6 +64,10 @@ export function IntakeAnswerCard({
   submittedBody,
   animateNextStep = false,
   variant = 'card',
+  quickReplies,
+  onSelectQuickReply,
+  isLatest = false,
+  loading = false,
 }: IntakeAnswerCardProps) {
   const { visible, done } = useTypewriter(nextStep, { enabled: animateNextStep });
   const [copied, setCopied] = useState(false);
@@ -150,6 +159,25 @@ export function IntakeAnswerCard({
             {suggestedTitle || suggestedSlug}
           </Link>
         </p>
+      ) : null}
+
+      {quickReplies && quickReplies.length > 0 && isLatest ? (
+        <div className="answer-quick-replies" role="group" aria-label="启发式追问选项">
+          <p className="quick-replies-label">继续追问：</p>
+          <div className="quick-replies-chips">
+            {quickReplies.map((reply, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="chip-quick-reply"
+                disabled={loading}
+                onClick={() => onSelectQuickReply?.(reply)}
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       <details className="answer-basis">

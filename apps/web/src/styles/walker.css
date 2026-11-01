@@ -4332,6 +4332,53 @@ textarea {
   animation: none;
 }
 
+/* 启发式追问选项（Socratic Chips） */
+.answer-quick-replies {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.quick-replies-label {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--text-tertiary, #888);
+}
+
+.quick-replies-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+
+.chip-quick-reply {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-secondary, #444);
+  background: var(--bg-surface-elevated, #f4f5f7);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.1));
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.chip-quick-reply:hover:not(:disabled) {
+  background: var(--accent-subtle, #e8f0fe);
+  color: var(--accent, #1a73e8);
+  border-color: var(--accent, #1a73e8);
+  transform: translateY(-1px);
+}
+
+.chip-quick-reply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 560px) {
   .chat-composer {
     flex-wrap: wrap;

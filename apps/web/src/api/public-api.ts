@@ -18,6 +18,8 @@ export interface IntakeResult {
   suggestedTitle?: string | null;
   poolStatus: string;
   sessionId?: string | null;
+  /** 启发式延伸/追问选项 */
+  quickReplies?: string[];
 }
 
 export interface IntakePublicConfig {
