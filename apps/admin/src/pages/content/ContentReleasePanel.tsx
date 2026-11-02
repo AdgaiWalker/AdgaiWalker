@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Steps } from "antd";
 import {
   AlertOctagon,
   AlertTriangle,
@@ -206,8 +207,12 @@ export function ContentReleasePanel({
     latestRelease.target.slug === slug && latestRelease.sourceHash === currentPublicHash,
   );
   const alreadyPublished = Boolean(currentPublicHash && versionSnapshot?.publishedHash === currentPublicHash);
-  const versionNote = versionNoteInput.trim();
-  const canPrepare = Boolean(preflight?.ok && currentPublicHash && !preparedForCurrent && !alreadyPublished && !isReleasing && versionNote);
+  const nowNoteDefault = () => {
+    const d = new Date();
+    return `发布更新于 ${d.toLocaleDateString("zh-CN")} ${d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`;
+  };
+  const effectiveVersionNote = versionNoteInput.trim() || nowNoteDefault();
+  const canPrepare = Boolean(preflight?.ok && currentPublicHash && !preparedForCurrent && !alreadyPublished && !isReleasing);
 
   // 独立发布批准与发布准备
   const handlePrepareRelease = async () => {
@@ -217,7 +222,7 @@ export function ContentReleasePanel({
       const prepared = await prepareMutation.mutateAsync({
         slug,
         grantId,
-        versionNote,
+        versionNote: effectiveVersionNote,
       });
       setFeedbackType("success");
       setFeedback(`发布单已生成并完成独立发布批准（单号：${prepared.id}，状态：${prepared.stage}）`);
@@ -226,6 +231,37 @@ export function ContentReleasePanel({
     } catch (err: unknown) {
       setFeedbackType("error");
       setFeedback(err instanceof Error ? err.message : "发布批准与准备失败");
+    }
+  };
+
+  // 站长极速模式：一键批准并执行发布上线
+  const handleQuickPublish = async () => {
+    if (isReleasing || !preflight?.ok || !currentPublicHash || alreadyPublished) return;
+    setFeedback(null);
+    try {
+      let relId = latestRelease?.id;
+      if (!preparedForCurrent) {
+        const prepared = await prepareMutation.mutateAsync({
+          slug,
+          grantId: grantIdInput.trim() || undefined,
+          versionNote: effectiveVersionNote,
+        });
+        relId = prepared.id;
+      }
+      if (relId) {
+        const result = await triggerMutation.mutateAsync({
+          slug,
+          releaseId: relId,
+        });
+        setActiveRunId(result.runId);
+        setFeedbackType("success");
+        setFeedback(`已一键批准并触发发布上线（运行 ID: ${result.runId}，当前状态: ${result.status}）`);
+        await latestReleaseQuery.refetch();
+        await versionQuery.refetch();
+      }
+    } catch (err: unknown) {
+      setFeedbackType("error");
+      setFeedback(err instanceof Error ? err.message : "一键发布失败");
     }
   };
 
@@ -306,6 +342,29 @@ export function ContentReleasePanel({
   const isWorkingSynced = publishedHash !== null && currentPublicHash === publishedHash;
   const isIndexSynced = publishedHash !== null && publishedHash === indexedHash;
 
+  const isPreflightBlocked = Boolean(preflight && !preflight.ok);
+  const isApprovalReady = Boolean(preparedForCurrent || alreadyPublished);
+  const isDeploying = Boolean(
+    latestRelease?.stage === "COMMITTING" ||
+    latestRelease?.stage === "PUSHED" ||
+    latestRelease?.stage === "VERIFYING"
+  );
+  const isReconcileNeeded = Boolean(latestRelease?.stage === "UNKNOWN");
+
+  const currentStepIndex = (() => {
+    if (alreadyPublished) return 3;
+    if (isDeploying || latestRelease?.stage === "PUBLISHED") return 3;
+    if (preparedForCurrent) return 2;
+    if (preflight?.ok) return 1;
+    return 0;
+  })();
+
+  const currentStepStatus = (() => {
+    if (isPreflightBlocked || isReconcileNeeded) return "error";
+    if (alreadyPublished) return "finish";
+    return "process";
+  })();
+
   return (
     <div style={{ padding: "18px 24px" }}>
       {/* 顶部轮询与陈旧标记栏 */}
@@ -381,6 +440,53 @@ export function ContentReleasePanel({
           {feedback}
         </div>
       )}
+
+      {/* 发布生命周期流水线 */}
+      <div
+        style={{
+          background: "white",
+          border: "1px solid var(--line)",
+          borderRadius: 8,
+          padding: "16px 20px",
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", marginBottom: 12 }}>
+          发布生命周期（双区物理隔离 · 独立发布批准）：
+        </div>
+        <Steps
+          current={currentStepIndex}
+          status={currentStepStatus}
+          items={[
+            {
+              title: "范围预检",
+              content: preflight?.ok ? "门禁通过" : isPreflightBlocked ? "预检阻断" : "检查中",
+            },
+            {
+              title: "独立批准",
+              content:
+                isApprovalReady
+                  ? "已批准"
+                  : "待签署变更说明",
+            },
+            {
+              title: "提交推送",
+              content:
+                alreadyPublished
+                  ? "已推送 GitHub"
+                  : latestRelease?.stage === "PUSHED"
+                  ? "推送完成"
+                  : isDeploying
+                  ? "正在处理"
+                  : "待触发",
+            },
+            {
+              title: "线上核验",
+              content: alreadyPublished ? "SHA-256 确证" : "待线上核验",
+            },
+          ]}
+        />
+      </div>
 
       {/* 1. 三版本状态对比卡片 */}
       <section style={{ marginBottom: 24 }}>
@@ -654,17 +760,38 @@ export function ContentReleasePanel({
           </div>
         ) : (
           <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14, background: "white", padding: "8px 12px", borderRadius: 6, border: "1px solid var(--line)" }}>
-            发布流程：① 在下方输入变更说明并点击「独立发布批准」&rarr; ② 批准完成后点击「执行发布上线」（推送到 GitHub 触发全站构建与线上核验）。
+            发布流程：点击「一键发布上线」，系统将自动完成预检、版本记录并推送到 GitHub 触发线上部署；亦可下方分步独立批准。
           </div>
         )}
 
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          {!alreadyPublished && preflight?.ok && (
+            <button
+              type="button"
+              className="button primary"
+              disabled={isReleasing}
+              onClick={handleQuickPublish}
+              style={{
+                fontSize: 14,
+                padding: "8px 18px",
+                background: "linear-gradient(135deg, #0e7490 0%, #0891b2 100%)",
+                fontWeight: 600,
+                color: "white",
+                boxShadow: "0 2px 8px rgba(14, 116, 144, 0.25)",
+              }}
+              title="一键完成批准并推送到 GitHub 触发自动化构建上线"
+            >
+              <UploadCloud size={16} />
+              {isReleasing ? "正在发布中..." : "一键发布上线 (推荐)"}
+            </button>
+          )}
+
           {!preparedForCurrent && !alreadyPublished && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <input
                 id="release-version-note-input"
                 type="text"
-                placeholder="变更说明（必填，将公开在版本历史）"
+                placeholder="变更说明（选填，留空自动记录当前时间）"
                 value={versionNoteInput}
                 onChange={(e) => setVersionNoteInput(e.target.value)}
                 style={{ width: 280 }}
@@ -674,7 +801,7 @@ export function ContentReleasePanel({
                 placeholder="输入 L2 授权编号（可选）"
                 value={grantIdInput}
                 onChange={(e) => setGrantIdInput(e.target.value)}
-                style={{ width: 220 }}
+                style={{ width: 180 }}
               />
               <button
                 type="button"
@@ -690,13 +817,13 @@ export function ContentReleasePanel({
 
           <button
             type="button"
-            className="button primary"
+            className="button"
             disabled={!preparedForCurrent || isReleasing}
             onClick={handleExecuteRelease}
             title={
               preparedForCurrent
                 ? "提交变更并推送到 GitHub origin main，触发线上自动化部署与核验"
-                : "请先填写变更说明并完成独立发布批准"
+                : "请先填写变更说明并完成独立发布批准，或直接点击左侧「一键发布上线」"
             }
           >
             <UploadCloud size={15} />

@@ -165,7 +165,14 @@ export function OpsStatsPanel() {
               type="button"
               className="button"
               aria-pressed={window === option}
-              style={window === option ? { fontWeight: 600 } : undefined}
+              style={{
+                borderRadius: "20px",
+                padding: "6px 14px",
+                fontSize: "13px",
+                ...(window === option
+                  ? { fontWeight: 600, background: "var(--accent)", color: "white", borderColor: "var(--accent)" }
+                  : {}),
+              }}
               onClick={() => setWindow(option)}
             >
               {WINDOW_LABELS[option]}

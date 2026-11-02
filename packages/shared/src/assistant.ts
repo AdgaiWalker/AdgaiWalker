@@ -42,6 +42,16 @@ export function isDegradeReason(value: unknown): value is DegradeReason {
   );
 }
 
+export interface NextStepAction {
+  nextStep: string;
+  bucketId?: string;
+  bucketLabel?: string;
+  triggers?: string[];
+  quickReplies?: string[];
+  suggestedSlug?: string | null;
+  suggestedTitle?: string | null;
+}
+
 export interface AssistantRunResult {
   answer: string;
   citations: AssistantCitation[];
@@ -64,6 +74,38 @@ export interface AssistantRunResult {
    * 「说到一半」是真实状态，「AI 未启用」是假话。只有一个字都没生成时才降级。
    */
   partial?: boolean;
+  /** 可选的结构化下一步建议 */
+  nextStep?: NextStepAction | null;
+  /** 启发式快速追问选项 */
+  quickReplies?: string[];
+}
+
+/** 统一问答消息：统一卡口与小影的双向消息结构 */
+export interface UnifiedMessage {
+  id?: string;
+  role: 'user' | 'assistant' | 'system';
+  text: string;
+  citations?: string[];
+  nextStep?: NextStepAction | null;
+  quickReplies?: string[];
+  aiUsedFlag?: boolean;
+  member?: { name: string; revision: number } | null;
+  createdAt?: string;
+  error?: string | null;
+  partial?: boolean;
+  stopped?: boolean;
+}
+
+/** 统一会话：预留 userId 供用户系统对接 */
+export interface UnifiedConversation {
+  id: string;
+  sessionId?: string | null;
+  userId?: string | null;
+  placementKey?: string;
+  scopeSlug?: string;
+  messages: UnifiedMessage[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AiAssistantOutput {

@@ -1,5 +1,7 @@
 import { ArrowLeft, Bot, Clock3, MessageSquareText } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { XMarkdown } from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/dist/x-markdown.css";
 import { useConversationLogDetail } from "../../api/queries";
 import { EmptyState, ErrorState, LoadingState, PageHeading } from "../../components/States";
 import { findPlacement, HOME_XIAOYING_PLACEMENT, PUBLIC_SITE_SCOPE, type ConversationLogDetail, type ConversationLogRun } from "@walker/shared";
@@ -92,7 +94,13 @@ function ConversationDetail({ detail }: { detail: ConversationLogDetail }) {
                   <strong>{message.role === "visitor" ? "访客问题" : "对外回答"}</strong>
                   <span className="muted">{timeLabel(message.createdAt)} · {DELIVERY_LABELS[message.delivery] ?? "送达未知"}</span>
                 </div>
-                <pre>{message.body}</pre>
+                {message.role === "visitor" ? (
+                  <pre>{message.body}</pre>
+                ) : (
+                  <div className="conversation-message-markdown">
+                    <XMarkdown content={message.body} openLinksInNewTab escapeRawHtml />
+                  </div>
+                )}
                 {message.citations && <div className="conversation-citations">
                   <span>引用：</span>
                   {message.citations.length ? message.citations.map((slug) => <Link key={slug} to={R.contentDetail(slug)}>{slug}</Link>) : <span className="muted">没有引用</span>}

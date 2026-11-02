@@ -5,12 +5,16 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  Eye,
   FileText,
   GitCompare,
   Save,
 } from "lucide-react";
+import { Segmented } from "antd";
+import { XMarkdown } from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/dist/x-markdown.css";
 import type { ContentChangeView, OpsContentDetail } from "@walker/shared";
-import { computeTextDiff } from "@walker/shared";
+import { computeTextDiff, stripFrontmatterBlock } from "@walker/shared";
 import {
   useApplyContentChange,
   useApproveContentChange,
@@ -32,6 +36,7 @@ export function ContentChangeReviewPanel({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [grantIdInput, setGrantIdInput] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"diff" | "preview">("diff");
 
   const items = data?.items ?? [];
   const selectedChange = items.find((i) => i.id === selectedId) ?? items[0] ?? null;
@@ -93,23 +98,77 @@ export function ContentChangeReviewPanel({
   return (
     <div style={{ padding: "16px 22px" }}>
       {items.length > 1 && (
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, color: "var(--muted)", marginRight: 8 }}>
-            选择候选提案：
-          </label>
-          <select
-            value={selectedChange?.id ?? ""}
-            onChange={(e) => {
-              setSelectedId(e.target.value);
-              setFeedback(null);
-            }}
-          >
-            {items.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.id} ({item.state}) · {timeLabel(item.createdAt)}
-              </option>
-            ))}
-          </select>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>
+              候选提案列表（共 {items.length} 个版本）：
+            </span>
+            <select
+              aria-label="选择候选提案"
+              value={selectedChange?.id ?? ""}
+              onChange={(e) => {
+                setSelectedId(e.target.value);
+                setFeedback(null);
+              }}
+              style={{ fontSize: 12 }}
+            >
+              {items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.id} ({item.state}) · {timeLabel(item.createdAt)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
+            {items.map((item) => {
+              const isSelected = item.id === selectedChange?.id;
+              const isItemConflicted = currentDoc.hash !== item.baseHash;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    setSelectedId(item.id);
+                    setFeedback(null);
+                  }}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 6,
+                    border: isSelected ? "2px solid #6366f1" : "1px solid var(--line)",
+                    background: isSelected ? "#f8f9ff" : "var(--surface)",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <code style={{ fontWeight: 600, fontSize: 12 }}>{item.id}</code>
+                    <span
+                      className={
+                        item.state === "APPLIED"
+                          ? "badge green"
+                          : item.state === "APPROVED"
+                          ? "badge"
+                          : isItemConflicted || item.state === "CONFLICT"
+                          ? "badge red"
+                          : "badge"
+                      }
+                      style={{ fontSize: 11 }}
+                    >
+                      {item.state === "PROPOSED"
+                        ? "待审批"
+                        : item.state === "APPROVED"
+                        ? "已批准"
+                        : item.state === "APPLIED"
+                        ? "已应用"
+                        : "冲突"}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                    {timeLabel(item.createdAt)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -264,11 +323,118 @@ export function ContentChangeReviewPanel({
           </div>
 
           <div>
-            <h4 style={{ margin: "0 0 10px" }}>原文与候选差异比对：</h4>
-            <ReviewDiffTable oldText={currentDoc.raw} newText={selectedChange.candidateRaw || ""} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                margin: "0 0 12px",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              <h4 style={{ margin: 0 }}>原文与候选差异比对：</h4>
+              <Segmented
+                value={viewMode}
+                onChange={(val) => setViewMode(val as "diff" | "preview")}
+                options={[
+                  { label: "代码行差异 (Diff)", value: "diff" },
+                  { label: "排版渲染预览 (Preview)", value: "preview" },
+                ]}
+              />
+            </div>
+            {viewMode === "diff" ? (
+              <ReviewDiffTable oldText={currentDoc.raw} newText={selectedChange.candidateRaw || ""} />
+            ) : (
+              <ReviewRenderedPreview oldRaw={currentDoc.raw} newRaw={selectedChange.candidateRaw || ""} />
+            )}
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function ReviewRenderedPreview({ oldRaw, newRaw }: { oldRaw: string; newRaw: string }) {
+  const oldBody = stripFrontmatterBlock(oldRaw);
+  const newBody = stripFrontmatterBlock(newRaw);
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+      <div
+        style={{
+          border: "1px solid var(--line)",
+          borderRadius: 8,
+          padding: "14px 16px",
+          background: "var(--surface)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--muted)",
+            marginBottom: 10,
+            paddingBottom: 8,
+            borderBottom: "1px solid var(--line)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <FileText size={15} />
+          <span>当前正本渲染 (Before)</span>
+        </div>
+        <div
+          className="agent-trial-output"
+          style={{
+            maxHeight: 460,
+            overflowY: "auto",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+          }}
+        >
+          <XMarkdown content={oldBody} openLinksInNewTab escapeRawHtml />
+        </div>
+      </div>
+      <div
+        style={{
+          border: "1px solid #bbf7d0",
+          borderRadius: 8,
+          padding: "14px 16px",
+          background: "#f0fdf4",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#166534",
+            marginBottom: 10,
+            paddingBottom: 8,
+            borderBottom: "1px solid #bbf7d0",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <CheckCircle2 size={15} color="#166534" />
+          <span>候选提案渲染 (After · 新版视觉效果)</span>
+        </div>
+        <div
+          className="agent-trial-output"
+          style={{
+            maxHeight: 460,
+            overflowY: "auto",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+          }}
+        >
+          <XMarkdown content={newBody} openLinksInNewTab escapeRawHtml />
+        </div>
+      </div>
     </div>
   );
 }

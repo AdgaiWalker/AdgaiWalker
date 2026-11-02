@@ -184,4 +184,19 @@ describe('ContentChangeReviewPanel (C10 候选差异与审批 UI)', () => {
     const approveBtn = screen.getByRole('button', { name: '批准保存' }) as HTMLButtonElement;
     expect(approveBtn.disabled).toBe(true);
   });
+
+  it('支持切换代码行差异与排版渲染预览', () => {
+    render(<ContentChangeReviewPanel slug="test-article" currentDoc={mockDoc} />);
+
+    // 默认展示代码差异
+    expect(screen.getByText('- 旧内容行')).toBeDefined();
+
+    // 切换到排版渲染预览
+    const previewOption = screen.getByText('排版渲染预览 (Preview)');
+    fireEvent.click(previewOption);
+
+    // 渲染预览展示 Before 与 After 区域
+    expect(screen.getByText(/当前正本渲染 \(Before\)/)).toBeDefined();
+    expect(screen.getByText(/候选提案渲染 \(After/)).toBeDefined();
+  });
 });

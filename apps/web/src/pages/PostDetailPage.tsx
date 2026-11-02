@@ -5,7 +5,7 @@
  * 依赖：content、sanitize、outline、反馈/赞/进度
  * 触发：路由 /posts/:slug
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -138,6 +138,40 @@ function PostDetailBody({
   // 单版本不显示（首版即当前版，无旧版可看）；多版本才给一个极短的可点标签
   const historyLabel = articleHistoryLabel(getArticleVersions(post.slug).length);
 
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = bodyRef.current;
+    if (!container) return;
+    const pres = container.querySelectorAll('pre');
+    const cleanups: (() => void)[] = [];
+    pres.forEach((pre) => {
+      if (pre.querySelector('.code-copy-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'code-copy-btn';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', '复制代码');
+      btn.innerText = '复制';
+      const onClick = () => {
+        const text = pre.querySelector('code')?.innerText ?? pre.innerText;
+        navigator.clipboard?.writeText(text).then(() => {
+          btn.innerText = '已复制 √';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.innerText = '复制';
+            btn.classList.remove('copied');
+          }, 2000);
+        }).catch(() => {});
+      };
+      btn.addEventListener('click', onClick);
+      pre.appendChild(btn);
+      cleanups.push(() => btn.removeEventListener('click', onClick));
+    });
+    return () => {
+      cleanups.forEach((c) => c());
+    };
+  }, [html]);
+
   return (
     <div className="reading-stage">
       <ReadingProgress ratio={progress} />
@@ -167,7 +201,7 @@ function PostDetailBody({
             {historyLabel ? (
               <>
                 {' · '}
-                <Link to={articleVersionListPath(post.slug)}>{historyLabel}</Link>
+                <Link to={articleVersionListPath(post.slug)} className="article-history-badge">{historyLabel}</Link>
               </>
             ) : null}
           </p>
@@ -184,6 +218,7 @@ function PostDetailBody({
           ) : null}
           <div className="article-body">
             <div
+              ref={bodyRef}
               className="prose-md"
               dangerouslySetInnerHTML={{ __html: html }}
             />

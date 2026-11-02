@@ -3,6 +3,7 @@
  * 路径与文案读 dualEntry / WEB_ROUTES / INTAKE_TYPES，页面不硬编码。
  */
 import { useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { IntakeChatThread } from '../components/ui/intake/IntakeChatThread';
 import { IntakeComposer } from '../components/ui/intake/IntakeComposer';
 import { useIntakeChat } from '../hooks/useIntakeChat';
@@ -17,9 +18,15 @@ const SERVICE_NOTE =
 const EXAMPLE_CHIPS = INTAKE_TYPES.map((type) => type.examples[0]);
 
 export function ToolsPage() {
+  const [params] = useSearchParams();
   const chat = useIntakeChat();
-  const { turns, loading } = chat;
+  const { turns, loading, onDraftChange } = chat;
   const logRef = useRef<HTMLDivElement>(null);
+
+  const q = params.get('q');
+  useEffect(() => {
+    if (q) onDraftChange(q);
+  }, [q, onDraftChange]);
 
   useEffect(() => {
     // jsdom 等环境无 Element.scrollTo，可选调用兜底

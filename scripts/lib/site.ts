@@ -14,7 +14,6 @@ export const INDEXABLE_STATIC_ROUTES = [
   '/',
   '/posts',
   '/graph',
-  '/architecture',
   '/tutorials',
   '/learn',
   '/explore',
@@ -76,6 +75,7 @@ export const LEGACY_REDIRECTS = [
   { source: '/projects', destination: '/explore?view=project' },
   { source: '/content', destination: '/posts' },
   { source: '/ideas/new', destination: '/tools' },
+  { source: '/architecture', destination: '/graph' },
 ] as const;
 
 /** Walker 是站名；人是 Dora。 */

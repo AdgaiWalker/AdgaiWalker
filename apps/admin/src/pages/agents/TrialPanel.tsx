@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Prompts, Sender } from "@ant-design/x";
+import { XMarkdown } from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/dist/x-markdown.css";
 import { grantRemaining, pickUsableGrant, type AuthorizationGrantState, type ExecutionRunView } from "@walker/shared";
 import { openEventStream, requestJson } from "../../api/http";
 import { readExecutionStream } from "../../api/execution-stream";
@@ -8,6 +11,12 @@ import { useExecutionEvents, useExecutionRun } from "../../api/queries";
 import { statusLabel } from "../../shared/labels";
 
 const ACTIVE = ["QUEUED", "CLAIMED", "RUNNING", "STOPPING"];
+
+const TRIAL_PROMPTS = [
+  { key: "site", label: "站点核心定位", description: "向小影询问站点的设计原则与文章库边界" },
+  { key: "articles", label: "测试文章检索", description: "询问最近更新的文章和版本演进" },
+  { key: "graph", label: "测试图谱邻居", description: "要求读取知识图谱节点和邻居引用" },
+];
 
 /**
  * 挑一条能拿去试跑的授权——**判据与挑选顺序都在 shared**，与 `selectUsable`（服务端唯一入口）
@@ -111,10 +120,45 @@ export function TrialPanel({ agentId, revisionId }: { agentId: string; revisionI
     <section className="panel agent-editor">
       <h2>试跑</h2>
       <p className="muted">使用所选修订。没有可用授权时，会签发一小时、一次调用的只读授权。刷新只恢复已保存结果，不会重新调用模型。</p>
-      <label>输入<textarea required rows={4} value={input} onChange={(event) => setInput(event.target.value)} /></label>
+      <div style={{ marginBottom: 12 }}>
+        <Prompts
+          title="快速预设 Prompt"
+          items={TRIAL_PROMPTS}
+          onItemClick={(info) => {
+            const desc = info.data?.description;
+            const label = info.data?.label;
+            setInput(typeof desc === "string" ? desc : typeof label === "string" ? label : "");
+          }}
+        />
+      </div>
+      <div className="agent-trial-sender" style={{ marginBottom: 8 }}>
+        <Sender
+          value={input}
+          onChange={(v) => setInput(v)}
+          onSubmit={() => void submit()}
+          onCancel={() => void stop()}
+          loading={pending || stopping || Boolean(state && ACTIVE.includes(state))}
+          disabled={pending}
+          placeholder="输入提示词给 Agent 试跑…（Enter 提交，Shift+Enter 换行）"
+          autoSize={{ minRows: 2, maxRows: 6 }}
+        />
+      </div>
       {error && <p role="alert">{error}</p>}
-      <button className="primary" disabled={pending || !input.trim()} onClick={() => void submit()}>{pending ? "正在提交" : available ? "试跑" : "签发一次授权并试跑"}</button>
-      {available && <span className="muted"> 剩余次数：{remainingLabel(available)}</span>}
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+        <button
+          className="primary"
+          disabled={pending || !input.trim() || Boolean(state && ACTIVE.includes(state))}
+          onClick={() => void submit()}
+        >
+          {pending ? "正在提交" : available ? "试跑" : "签发一次授权并试跑"}
+        </button>
+        {state && ACTIVE.includes(state) && (
+          <button disabled={stopping} onClick={() => void stop()}>
+            {stopping ? "正在确认停止" : "停止"}
+          </button>
+        )}
+        {available && <span className="muted"> 剩余次数：{remainingLabel(available)}</span>}
+      </div>
       {!available && granted.length > 0 && (
         <p className="muted">名下 {granted.length} 条授权现在都不可用（用满 / 过期 / 已撤销），不会再被拿去空跑；点上面的按钮会签发一条新的。</p>
       )}
@@ -128,11 +172,25 @@ export function TrialPanel({ agentId, revisionId }: { agentId: string; revisionI
           {" · "}用量：{detail.data?.tokensIn === null || detail.data?.tokensOut === null || detail.data?.tokensIn === undefined ? "未知" : "输入 " + detail.data.tokensIn + " / 输出 " + detail.data.tokensOut}
         </div>
       )}
-      {state && ACTIVE.includes(state) && <button disabled={stopping} onClick={() => void stop()}>{stopping ? "正在确认停止" : "停止"}</button>}
       {runId && (
         <label>
           输出（模型的回答）
-          <pre>{text || (state && ACTIVE.includes(state) ? "正在生成…" : "没有输出记录")}</pre>
+          {text ? (
+            <div className="agent-trial-output">
+              <XMarkdown
+                content={text}
+                openLinksInNewTab
+                escapeRawHtml
+                streaming={
+                  state && ACTIVE.includes(state)
+                    ? { hasNextChunk: true, tail: true }
+                    : undefined
+                }
+              />
+            </div>
+          ) : (
+            <pre>{state && ACTIVE.includes(state) ? "正在生成…" : "没有输出记录"}</pre>
+          )}
         </label>
       )}
     </section>

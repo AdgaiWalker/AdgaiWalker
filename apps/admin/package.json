@@ -21,10 +21,13 @@
     "vitest": "3.2.7"
   },
   "dependencies": {
+    "@ant-design/x": "^2.10.0",
+    "@ant-design/x-markdown": "^2.10.0",
     "@assistant-ui/react": "0.15.21",
     "@refinedev/core": "5.0.12",
     "@tanstack/react-query": "5.81.5",
     "@walker/shared": "workspace:^",
+    "antd": "^6.6.8",
     "dompurify": "3.4.12",
     "lucide-react": "1.25.0",
     "marked": "15.0.12",

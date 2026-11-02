@@ -85,8 +85,8 @@ describe('ModelConfigService（模型连接配置）', () => {
     expect(settings()).not.toContain('api:');
 
     // llm-pi-ai 通道允许在路由上改写协议（接自建兼容网关）
-    service.save({ providerId: 'openai', baseURL: 'https://gateway.example.com/v1', protocol: 'openai-completions' });
-    expect(settings()).toContain('api: openai-completions');
+    service.save({ providerId: 'openai', baseURL: 'https://gateway.example.com/v1', protocol: 'openai-responses' });
+    expect(settings()).toContain('api: openai-responses');
   });
 
   it('save：单协议适配器（llm-deepseek）拒绝被塞别的协议', () => {

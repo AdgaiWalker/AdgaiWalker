@@ -1,42 +1,16 @@
 /**
- * 小影页 — useAssistant 编排 + ?q= 预填（来自搜索无结果升级）
+ * 小影页（兼容重定向）：统一收敛至提问页（/tools）
+ * 立即重定向并保留 ?q= 参数，确保全站搜索无结果等跳入预填不丢失。
  */
-import { isValidAssistantBody } from '@walker/shared';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { AssistantPanel } from '../components/ui/AssistantPanel';
-import { useAssistant } from '../hooks/useAssistant';
+import { Navigate, useLocation } from 'react-router-dom';
+import { dualEntry } from '../shared/dual-entry';
 
 export function AskPage() {
-  const [params] = useSearchParams();
-  const { messages, loading, streaming, error, send, stop, reset } = useAssistant();
-  const [draft, setDraft] = useState(() => params.get('q') ?? '');
-
-  // 搜索升级跳入只预填，不自动发送——发送即产生一次 AI 调用，让访客确认。
-  // 仅当 q 真变化时同步，避免重渲染/热更时清掉访客已输入的内容。
-  const q = params.get('q');
-  useEffect(() => {
-    if (q) setDraft(q);
-  }, [q]);
-
-  const draftOk = isValidAssistantBody(draft);
-
+  const location = useLocation();
   return (
-    <AssistantPanel
-      draft={draft}
-      draftOk={draftOk}
-      loading={loading}
-      streaming={streaming}
-      error={error}
-      messages={messages}
-      onDraftChange={setDraft}
-      onSubmit={() => void send(draft)}
-      onStop={stop}
-      onReset={() => {
-        reset();
-        setDraft('');
-      }}
-      onAskExample={(text) => void send(text)}
+    <Navigate
+      to={{ pathname: dualEntry.ask.path, search: location.search }}
+      replace
     />
   );
 }

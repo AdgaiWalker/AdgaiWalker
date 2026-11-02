@@ -32,9 +32,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export const CONTENT_PATHS = [
   'content/log',
+  'content/versions',
   'content/support-config.json',
   'apps/web/src/generated/content.json',
   'apps/web/src/generated/graph.json',
+  'apps/web/src/generated/article-versions.json',
 ] as const;
 
 /** --json 模式下回报的输出尾部行数（够定位失败原因，不塞整段构建日志） */
@@ -254,7 +256,13 @@ function runPipeline(
 ): number {
   const { commit, push, json, message } = options;
 
-  reporter.log('== 1/3 content:gen ==');
+  reporter.log('== 1/3 content:backfill-versions & content:gen ==');
+  const backfill = run('pnpm', ['content:backfill-versions'], {
+    shell: process.platform === 'win32',
+    json,
+  });
+  if (json) reporter.child(backfill.stdout);
+
   const gen = run('pnpm', ['content:gen'], {
     shell: process.platform === 'win32',
     json,

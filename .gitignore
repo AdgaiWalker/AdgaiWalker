@@ -13,6 +13,7 @@ apps/api/prisma/*.db
 apps/api/prisma/*.db-journal
 apps/api/prisma/data/
 apps/api/data/
+/data/
 apps/api/control/
 *.db
 *.db-journal

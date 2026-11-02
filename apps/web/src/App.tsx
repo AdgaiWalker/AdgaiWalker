@@ -11,7 +11,6 @@ import { PostDetailPage } from './pages/PostDetailPage';
 import { PostVersionPage } from './pages/PostVersionPage';
 import { PostHistoryPage } from './pages/PostHistoryPage';
 import { GraphPage } from './pages/GraphPage';
-import { ArchitecturePage } from './pages/ArchitecturePage';
 import { ToolsPage } from './pages/ToolsPage';
 import { ToolsResultPage } from './pages/ToolsResultPage';
 import { ToolsResourcesPage } from './pages/ToolsResourcesPage';
@@ -66,7 +65,7 @@ export function App() {
           <Route path={strip(WEB_ROUTES.graph)} element={<GraphPage />} />
           <Route
             path={strip(WEB_ROUTES.architecture)}
-            element={<ArchitecturePage />}
+            element={<Navigate to={WEB_ROUTES.graph} replace />}
           />
           <Route path={strip(WEB_ROUTES.explore)} element={<ExplorePage />} />
           <Route

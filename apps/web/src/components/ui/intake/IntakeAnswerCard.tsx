@@ -153,8 +153,8 @@ export function IntakeAnswerCard({
       </div>
 
       {suggestedSlug ? (
-        <p className="success-meta">
-          相关阅读：
+        <p className="success-meta answer-suggested-post">
+          <span>相关阅读：</span>
           <Link to={`${dualEntry.browse.path}/${encodeURIComponent(suggestedSlug)}`}>
             {suggestedTitle || suggestedSlug}
           </Link>

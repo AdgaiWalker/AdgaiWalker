@@ -17,6 +17,7 @@ import {
   type AssistantStreamError,
   type AssistantRunResult,
   type DegradeReason,
+  type NextStepAction,
   parseAssistantInteraction,
   type PublicConversationHistory,
   type PublicAssistantStopStatus,
@@ -74,6 +75,8 @@ export interface PublicAssistantAskResult {
   attemptId: string;
   runId: string | null;
   conversationId: string | null;
+  nextStep?: NextStepAction | null;
+  quickReplies?: string[];
 }
 
 export interface PublicAssistantStreamSink {
@@ -992,6 +995,8 @@ export class PublicAssistantService {
       attemptId: gate.attemptId,
       runId,
       conversationId: conversation?.id ?? null,
+      nextStep: result.nextStep ?? null,
+      quickReplies: result.quickReplies,
     };
   }
 

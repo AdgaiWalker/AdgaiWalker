@@ -4,8 +4,11 @@
  * 回退语义：以旧版正文开草稿，发布后才成为新版本——历史本身永远只追加，不回改。
  */
 import { useState } from "react";
-import { GitCompare, History, RotateCcw } from "lucide-react";
+import { GitCompare, History, RotateCcw, X } from "lucide-react";
+import { XMarkdown } from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/dist/x-markdown.css";
 import type { TextDiffSummary } from "@walker/shared";
+import { stripFrontmatterBlock } from "@walker/shared";
 import {
   fetchContentVersionDetail,
   fetchContentVersionDiff,
@@ -127,26 +130,44 @@ export function ContentHistoryPanel({
           </ul>
 
           {viewing ? (
-            <details open style={{ marginTop: 16 }}>
-              <summary>v{viewing.version} 正文</summary>
-              <pre style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto" }}>
-                {viewing.body}
-              </pre>
+            <details open style={{ marginTop: 20, border: "1px solid var(--line)", borderRadius: 8, padding: "12px 16px", background: "var(--surface)" }}>
+              <summary style={{ cursor: "pointer", fontWeight: 600, marginBottom: 12 }}>v{viewing.version} 正文（排版预览）</summary>
+              <div style={{ maxHeight: 420, overflowY: "auto", padding: "8px 0" }}>
+                <XMarkdown content={stripFrontmatterBlock(viewing.body)} openLinksInNewTab escapeRawHtml />
+              </div>
             </details>
           ) : null}
 
           {diff ? (
-            <details open style={{ marginTop: 16 }}>
-              <summary>
+            <details open style={{ marginTop: 20, border: "1px solid var(--line)", borderRadius: 8, padding: "12px 16px", background: "var(--surface)" }}>
+              <summary style={{ cursor: "pointer", fontWeight: 600, marginBottom: 12 }}>
                 v{diff.a} ↔ v{diff.b} 差异（+{diff.result.addedCount} / -{diff.result.removedCount}）
               </summary>
-              <pre style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto", fontSize: 12 }}>
-                {diff.result.lines
-                  .map((l) =>
-                    l.type === "added" ? `+ ${l.text}` : l.type === "removed" ? `- ${l.text}` : `  ${l.text}`,
-                  )
-                  .join("\n")}
-              </pre>
+              <div className="diff-view" style={{ padding: 0, marginTop: 10 }}>
+                <table className="diff-table" style={{ width: "100%", margin: 0 }}>
+                  <tbody>
+                    {diff.result.lines.map((l, idx) => (
+                      <tr
+                        key={idx}
+                        className={
+                          l.type === "added"
+                            ? "diff-added"
+                            : l.type === "removed"
+                            ? "diff-removed"
+                            : "diff-unchanged"
+                        }
+                      >
+                        <td className="diff-line-no">{l.oldLineNumber ?? ""}</td>
+                        <td className="diff-line-no">{l.newLineNumber ?? ""}</td>
+                        <td>
+                          {l.type === "added" ? "+ " : l.type === "removed" ? "- " : "  "}
+                          {l.text}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </details>
           ) : null}
         </>

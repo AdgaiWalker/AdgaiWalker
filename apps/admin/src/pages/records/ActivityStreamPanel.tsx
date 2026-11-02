@@ -30,6 +30,14 @@ const SEVERITY_STYLE: Record<string, { color?: string; fontWeight?: number }> = 
   info: {},
 };
 
+const KIND_BADGE_STYLE: Record<ActivityKind, { bg: string; color: string; border: string }> = {
+  visitor: { bg: "#f5f3ff", color: "#6366f1", border: "#e0e7ff" },
+  run: { bg: "#ecfeff", color: "#0891b2", border: "#cffafe" },
+  reminder: { bg: "#fffbeb", color: "#d97706", border: "#fef3c7" },
+  review: { bg: "#f0fdf4", color: "#16a34a", border: "#dcfce7" },
+  admin: { bg: "#f8fafc", color: "#475569", border: "#e2e8f0" },
+};
+
 function CountCard({
   label,
   value,
@@ -43,15 +51,30 @@ function CountCard({
   kinds: string;
   setKinds: (next: string) => void;
 }) {
+  const isAlert = value !== null && value > 0;
   return (
     <button
       type="button"
       className="metric"
       aria-label={label + "：" + (value === null ? "待核对" : value)}
       onClick={() => setKinds(kinds)}
-      style={{ textAlign: "left", cursor: "pointer" }}
+      style={{
+        textAlign: "left",
+        cursor: "pointer",
+        background: isAlert ? "linear-gradient(180deg, #ffffff 0%, #fffcf5 100%)" : "white",
+        borderColor: isAlert ? "#fed7aa" : undefined,
+        transition: "all 0.2s ease",
+      }}
     >
-      <AlertTriangle size={22} style={{ color: value && value > 0 ? "#b45309" : "#94a3b8" }} />
+      <AlertTriangle
+        size={22}
+        style={{
+          color: isAlert ? "#d97706" : "#94a3b8",
+          background: isAlert ? "#fef3c7" : "#f1f5f9",
+          borderRadius: 8,
+          padding: 3,
+        }}
+      />
       <span>
         {label}
         <strong>{value === null ? "—" : value.toLocaleString("zh-CN")}</strong>
@@ -137,7 +160,7 @@ export function ActivityStreamPanel() {
         ) : counts.isError ? (
           <ErrorState error={counts.error} retry={counts.refetch} />
         ) : counts.data ? (
-          <div className="metrics" style={{ paddingBottom: 10 }}>
+          <div className="metrics" style={{ paddingBottom: 10, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <CountCard
               label="未完成事项"
               value={counts.data.remindersPending}
@@ -175,26 +198,43 @@ export function ActivityStreamPanel() {
       </Panel>
 
       <Panel title="时间线">
-        <div className="toolbar" style={{ flexWrap: "wrap" }}>
+        <div className="toolbar" style={{ flexWrap: "wrap", gap: 6 }}>
           <button
             type="button"
             aria-pressed={selected.length === 0}
-            style={selected.length === 0 ? { fontWeight: 600 } : undefined}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "13px",
+              ...(selected.length === 0
+                ? { fontWeight: 600, background: "var(--accent)", color: "white", borderColor: "var(--accent)" }
+                : {}),
+            }}
             onClick={() => go("", null)}
           >
             全部
           </button>
-          {ACTIVITY_KINDS.map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              aria-pressed={selected.includes(kind)}
-              style={selected.includes(kind) ? { fontWeight: 600 } : undefined}
-              onClick={() => toggleKind(kind)}
-            >
-              {ACTIVITY_KIND_LABELS[kind]}
-            </button>
-          ))}
+          {ACTIVITY_KINDS.map((kind) => {
+            const isSelected = selected.includes(kind);
+            return (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={isSelected}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontSize: "13px",
+                  ...(isSelected
+                    ? { fontWeight: 600, background: "var(--accent)", color: "white", borderColor: "var(--accent)" }
+                    : {}),
+                }}
+                onClick={() => toggleKind(kind)}
+              >
+                {ACTIVITY_KIND_LABELS[kind]}
+              </button>
+            );
+          })}
         </div>
 
         {query.isPending ? (
@@ -212,32 +252,101 @@ export function ActivityStreamPanel() {
             <table>
               <thead>
                 <tr>
-                  <th>时间</th>
-                  <th>类型</th>
+                  <th style={{ width: 140 }}>时间</th>
+                  <th style={{ width: 100 }}>类型</th>
                   <th>事件</th>
-                  <th>结果</th>
+                  <th style={{ width: 120 }}>结果</th>
                 </tr>
               </thead>
               <tbody>
                 {events.map((event) => {
                   const style = SEVERITY_STYLE[event.severity] ?? {};
                   const href = eventHref(event);
+                  const badgeStyle = KIND_BADGE_STYLE[event.kind] ?? {
+                    bg: "#f1f5f9",
+                    color: "#475569",
+                    border: "#e2e8f0",
+                  };
                   return (
                     <tr key={event.key}>
-                      <td className="muted">{timeLabel(event.ts)}</td>
-                      <td>{ACTIVITY_KIND_LABELS[event.kind]}</td>
+                      <td className="muted" style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+                        {timeLabel(event.ts)}
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "2px 8px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: 500,
+                            background: badgeStyle.bg,
+                            color: badgeStyle.color,
+                            border: `1px solid ${badgeStyle.border}`,
+                          }}
+                        >
+                          {ACTIVITY_KIND_LABELS[event.kind]}
+                        </span>
+                      </td>
                       <td style={style}>
                         {event.title}
                         {event.detail ? <small className="muted"> · {event.detail}</small> : null}
                       </td>
                       <td>
                         {href ? (
-                          <Link to={href} className="muted" style={style}>
+                          <Link
+                            to={href}
+                            className="muted"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              background:
+                                event.severity === "error"
+                                  ? "#fef2f2"
+                                  : event.severity === "todo"
+                                  ? "#eff6ff"
+                                  : "#f8fafc",
+                              border: `1px solid ${
+                                event.severity === "error"
+                                  ? "#fecaca"
+                                  : event.severity === "todo"
+                                  ? "#bfdbfe"
+                                  : "#e2e8f0"
+                              }`,
+                              fontSize: 12,
+                              ...style,
+                            }}
+                          >
                             {ACTIVITY_SEVERITY_LABELS[event.severity]}
-                            <ArrowRight size={13} style={{ marginLeft: 4, verticalAlign: "-2px" }} />
+                            <ArrowRight size={13} style={{ marginLeft: 2 }} />
                           </Link>
                         ) : (
-                          <span className="muted" style={style}>
+                          <span
+                            className="muted"
+                            style={{
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              background:
+                                event.severity === "error"
+                                  ? "#fef2f2"
+                                  : event.severity === "todo"
+                                  ? "#eff6ff"
+                                  : "#f8fafc",
+                              border: `1px solid ${
+                                event.severity === "error"
+                                  ? "#fecaca"
+                                  : event.severity === "todo"
+                                  ? "#bfdbfe"
+                                  : "#e2e8f0"
+                              }`,
+                              fontSize: 12,
+                              ...style,
+                            }}
+                          >
                             {ACTIVITY_SEVERITY_LABELS[event.severity]}
                           </span>
                         )}

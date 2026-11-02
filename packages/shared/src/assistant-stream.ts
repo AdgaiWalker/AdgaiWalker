@@ -1,3 +1,5 @@
+import type { NextStepAction } from './assistant';
+
 /** 站内助手 SSE v2：所有帧共享稳定消息/尝试身份和消息内序号。 */
 export interface AssistantStreamIds {
   version: 2;
@@ -32,6 +34,8 @@ export type AssistantStreamResult = {
   attemptId: string;
   runId: string | null;
   conversationId: string | null;
+  nextStep?: NextStepAction | null;
+  quickReplies?: string[];
 };
 
 export type AssistantStreamDone = AssistantStreamIds & {
@@ -84,7 +88,9 @@ function isResult(value: unknown): value is AssistantStreamResult {
     (value.partial === undefined || typeof value.partial === 'boolean') &&
     typeof value.requestId === 'string' && typeof value.messageId === 'string' && typeof value.attemptId === 'string' &&
     (typeof value.runId === 'string' || value.runId === null) &&
-    (typeof value.conversationId === 'string' || value.conversationId === null);
+    (typeof value.conversationId === 'string' || value.conversationId === null) &&
+    (value.nextStep === undefined || value.nextStep === null || isRecord(value.nextStep)) &&
+    (value.quickReplies === undefined || Array.isArray(value.quickReplies));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

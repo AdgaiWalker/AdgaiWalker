@@ -5,6 +5,8 @@
 import { useEffect, useRef } from 'react';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { XMarkdown } from '@ant-design/x-markdown';
+import '@ant-design/x-markdown/dist/x-markdown.css';
 import { getPostBySlug } from '../../content';
 import type { AssistantMessage } from '../../hooks/useAssistant';
 import { dualEntry } from '../../shared/dual-entry';
@@ -74,6 +76,14 @@ export function AssistantThread({
     logRef.current?.scrollTo?.({ top: logRef.current.scrollHeight });
   }, [messages, loading]);
 
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const next = Math.min(Math.max(el.scrollHeight, 44), 180);
+    el.style.height = `${next}px`;
+  }, [draft, inputRef]);
+
   const inputId = `${idPrefix}-input`;
   const inputDisabled = loading || disabled;
 
@@ -110,7 +120,18 @@ export function AssistantThread({
                 <div key={i} className="assistant-msg assistant-msg-bot">
                   {m.hidden ? (
                     <p className="meta">{HIDDEN_HISTORY_ANSWER}</p>
-                  ) : <p>{m.text}</p>}
+                  ) : (
+                    <XMarkdown
+                      content={m.text}
+                      openLinksInNewTab
+                      escapeRawHtml
+                      streaming={
+                        i === messages.length - 1 && streaming
+                          ? { hasNextChunk: true, enableAnimation: true, tail: true }
+                          : undefined
+                      }
+                    />
+                  )}
                   {!m.hidden && m.citations.length ? (
                     <p className="success-meta">
                       相关：
@@ -135,6 +156,37 @@ export function AssistantThread({
                       {m.delivery === 'partial' ? ' · 未完成' : ''}
                       {m.stopped ? ' · 已停止' : ''}
                     </p>
+                  ) : null}
+                  {!m.hidden && m.nextStep ? (
+                    <div className="assistant-next-step" style={{ marginTop: 8, padding: '8px 12px', borderLeft: '3px solid var(--accent, #6366f1)', background: 'var(--surface-sunken, rgba(0,0,0,0.03))', borderRadius: '0 4px 4px 0' }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.9em', margin: '0 0 4px', color: 'var(--accent, #6366f1)' }}>
+                        {m.nextStep.bucketLabel ? `建议下一步（${m.nextStep.bucketLabel}）` : '建议下一步'}
+                      </p>
+                      <p style={{ margin: 0 }}>{m.nextStep.nextStep}</p>
+                      {m.nextStep.suggestedSlug ? (
+                        <p className="success-meta" style={{ marginTop: 4 }}>
+                          推荐参考：
+                          <Link to={`${dualEntry.browse.path}/${encodeURIComponent(m.nextStep.suggestedSlug)}`}>
+                            《{m.nextStep.suggestedTitle ?? m.nextStep.suggestedSlug}》
+                          </Link>
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {!m.hidden && m.quickReplies && m.quickReplies.length > 0 ? (
+                    <div className="assistant-examples" style={{ marginTop: 8 }}>
+                      {m.quickReplies.map((reply) => (
+                        <button
+                          key={reply}
+                          type="button"
+                          className="assistant-example-chip"
+                          disabled={inputDisabled}
+                          onClick={() => onAskExample?.(reply)}
+                        >
+                          {reply}
+                        </button>
+                      ))}
+                    </div>
                   ) : null}
                   {!m.hidden && m.id && onFeedback ? (
                     <div className="assistant-feedback-actions" aria-label="回答反馈">
@@ -184,6 +236,11 @@ export function AssistantThread({
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}
           onKeyDown={(e) => {
+            if (e.key === 'Escape' && loading && onStop) {
+              e.preventDefault();
+              onStop();
+              return;
+            }
             // Enter 发送、Shift+Enter 换行；输入法组词中不触发
             if (
               e.key === 'Enter' &&
@@ -194,18 +251,34 @@ export function AssistantThread({
               if (draftOk && !inputDisabled) onSubmit();
             }
           }}
-          placeholder="问点什么…（两字起送，Enter 发送）"
+          placeholder={
+            loading
+              ? `${assistantName}正在回答…（按 Esc 键或点击停止）`
+              : '问点什么…（两字起送，Enter 发送）'
+          }
           disabled={inputDisabled}
           rows={2}
         />
-        <button
-          type="button"
-          className="btn-primary assistant-send"
-          disabled={inputDisabled || !draftOk}
-          onClick={onSubmit}
-        >
-          {loading ? '回答中…' : '发送'}
-        </button>
+        {loading && onStop ? (
+          <button
+            type="button"
+            className="btn-ghost assistant-stop chat-stop-btn"
+            onClick={onStop}
+            disabled={stopPending || !stopAvailable}
+            title="停止生成（按 Esc 键亦可）"
+          >
+            {stopPending ? '停止中…' : '停止回答'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn-primary assistant-send"
+            disabled={inputDisabled || !draftOk}
+            onClick={onSubmit}
+          >
+            发送
+          </button>
+        )}
       </div>
 
       <p className="meta" style={{ margin: '4px 0 0' }}>
@@ -220,9 +293,7 @@ export function AssistantThread({
 
       {!compact ? (
         <p className="meta assistant-footnote">
-          回答只依据站内公开内容 · 想做成某事？去
-          <Link to={dualEntry.ask.path}>{dualEntry.ask.label}</Link>
-          拿行动建议
+          回答依据站内公开内容与行动模型 · 说清真实卡点，即可获得下一步拆解
         </p>
       ) : null}
     </>

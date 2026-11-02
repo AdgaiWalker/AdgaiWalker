@@ -186,6 +186,11 @@ describe('ContentReleasePanel (C20 发布清单与版本状态界面)', () => {
     expect(screen.getByText('问答快照版本（公开助理索引）')).toBeDefined();
     expect(screen.getByText('有待发布修改')).toBeDefined();
     expect(screen.getByText('索引待同步')).toBeDefined();
+    expect(screen.getByText('发布生命周期（双区物理隔离 · 独立发布批准）：')).toBeDefined();
+    expect(screen.getByText('范围预检')).toBeDefined();
+    expect(screen.getByText('独立批准')).toBeDefined();
+    expect(screen.getByText('提交推送')).toBeDefined();
+    expect(screen.getByText('线上核验')).toBeDefined();
   });
 
   it('预检通过时正确展示稳定清单 manifest 与提交文件列表', () => {
@@ -317,6 +322,45 @@ describe('ContentReleasePanel (C20 发布清单与版本状态界面)', () => {
     });
 
     expect(screen.getByText(/Git 提交已在远程存在，正等待 Vercel 部署生效/)).toBeDefined();
+  });
+
+  it('预检通过时支持「一键发布上线」，自动准备并触发上线流程', async () => {
+    useLatestContentReleaseMock.mockReturnValue({
+      data: null,
+      dataUpdatedAt: Date.now(),
+      refetch: vi.fn(),
+    });
+    prepareMutationMock.mutateAsync.mockResolvedValueOnce({
+      id: 'rel-quick-123',
+      stage: 'PREPARED',
+    });
+    triggerMutationMock.mutateAsync.mockResolvedValueOnce({
+      runId: 'run-quick-888',
+      status: 'RUNNING',
+    });
+
+    render(
+      <MemoryRouter>
+        <ContentReleasePanel slug="test-article" currentDoc={mockDoc} />
+      </MemoryRouter>,
+    );
+
+    const quickBtn = screen.getByRole('button', { name: /一键发布上线/ });
+    expect(quickBtn).toBeDefined();
+
+    fireEvent.click(quickBtn);
+
+    await waitFor(() => {
+      expect(prepareMutationMock.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ slug: 'test-article' }),
+      );
+    });
+    await waitFor(() => {
+      expect(triggerMutationMock.mutateAsync).toHaveBeenCalledWith({
+        slug: 'test-article',
+        releaseId: 'rel-quick-123',
+      });
+    });
   });
 
   it('发布成功为 PUBLISHED 阶段时展示社媒宣发卡片，支持发到 X 与复制文案', async () => {

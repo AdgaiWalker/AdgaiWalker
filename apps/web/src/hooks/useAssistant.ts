@@ -1,29 +1,13 @@
 /**
  * useAssistant — 小影编排：消息流状态 + 流式提交（SSE 逐字）+ 停止 + 多轮 sessionId（内存态）
  */
-import { extractStreamedAnswer, isValidAssistantBody, type AssistantStreamAccepted, type PublicConversationHistory } from '@walker/shared';
+import { isValidAssistantBody, type AssistantStreamAccepted, type NextStepAction, type PublicConversationHistory } from '@walker/shared';
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { formatApiError } from '../api/format-api-error';
 import { publicApi, type AssistantRequestContext, type AssistantResult } from '../api/public-api';
+import { assistantChatProvider, type AssistantChatMessage } from '../api/assistant-provider';
 
-export type AssistantMessage =
-  | { role: 'user'; text: string; id?: string }
-  | {
-      role: 'assistant';
-      text: string;
-      citations: string[];
-      aiUsedFlag: boolean;
-      member?: { name: string; revision: number } | null;
-      delivery?: string;
-      hidden?: boolean;
-      id?: string;
-      /** 从已保存会话恢复，便于界面区分旧回答与本轮结果。 */
-      restored?: boolean;
-      /** 用户点停止后保留已收文字 */
-      stopped?: boolean;
-      /** 模型还在生成时到了运行预算：这条是真回答，只是没写完 */
-      partial?: boolean;
-    };
+export type AssistantMessage = AssistantChatMessage;
 
 type AssistantContext = Pick<AssistantRequestContext, 'placementKey' | 'scopeSlug' | 'memberKey' | 'deploymentGeneration'> & {
   member?: { name: string; revision: number } | null;
@@ -35,11 +19,10 @@ function createDeltaHandler(setMessages: SetMessages): (delta: string) => void {
   let buffer = '';
   return (delta) => {
     buffer += delta;
-    const visible = extractStreamedAnswer(buffer) || buffer;
     setMessages((prev) => {
       const last = prev[prev.length - 1];
       if (!last || last.role !== 'assistant') return prev;
-      return [...prev.slice(0, -1), { ...last, text: visible }];
+      return [...prev.slice(0, -1), assistantChatProvider.transformMessage(last, buffer)];
     });
   };
 }
@@ -118,7 +101,7 @@ export function useAssistant(context?: AssistantContext) {
     setStopPending(false);
     const member = context?.member ?? null;
     const requestKey = globalThis.crypto.randomUUID();
-    appendUser(text);
+    appendUser(assistantChatProvider.transformLocalMessage({ body: text }).text);
     // 助手占位：空文本，流式逐字填充
     setMessages((prev) => [
       ...prev,
@@ -130,34 +113,28 @@ export function useAssistant(context?: AssistantContext) {
     const ac = new AbortController();
     abortRef.current = ac;
     try {
-      const done: AssistantResult = await publicApi.assistantStream({
-        body: text,
-        sessionId: sessionIdRef.current,
-        onText: createDeltaHandler(setMessages),
-        signal: ac.signal,
-        source: 'assistant-stream',
-        context: {
-          placementKey: context?.placementKey,
-          scopeSlug: context?.scopeSlug,
-          memberKey: context?.memberKey,
-          deploymentGeneration: context?.deploymentGeneration,
-          conversationId: conversationIdRef.current,
-          requestKey,
+      const done: AssistantResult = await assistantChatProvider.requestStream(
+        {
+          body: text,
+          sessionId: sessionIdRef.current,
+          context: {
+            placementKey: context?.placementKey,
+            scopeSlug: context?.scopeSlug,
+            memberKey: context?.memberKey,
+            deploymentGeneration: context?.deploymentGeneration,
+            conversationId: conversationIdRef.current,
+            requestKey,
+          },
         },
-        onAccepted: createAcceptedHandler({ context, hadMessages: messages.length > 0, setMessages, setActiveMessageId }),
-      });
+        {
+          onDelta: createDeltaHandler(setMessages),
+          onAccepted: createAcceptedHandler({ context, hadMessages: messages.length > 0, setMessages, setActiveMessageId }),
+        },
+        ac.signal,
+      );
       sessionIdRef.current = done.sessionId;
       conversationIdRef.current = done.conversationId;
-      patchLastAssistant(() => ({
-        role: 'assistant',
-        text: done.answer,
-        citations: done.citations.map((c) => c.slug),
-        aiUsedFlag: done.aiUsedFlag,
-        member: done.aiUsedFlag ? member : null,
-        ...(done.partial ? { partial: true } : {}),
-        delivery: 'sent',
-        id: done.messageId,
-      }));
+      patchLastAssistant((last) => assistantChatProvider.transformCompletedMessage(last, done, member));
     } catch (e) {
       const code = typeof e === 'object' && e !== null && 'code' in e ? e.code : null;
       if (code === 'user-stopped') {

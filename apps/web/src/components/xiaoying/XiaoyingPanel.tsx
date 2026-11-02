@@ -60,6 +60,11 @@ export function XiaoyingPanel({ assistant, open, setOpen, draft, setDraft, onMee
   }
 
   function onKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Escape' && busy) {
+      event.preventDefault();
+      stop();
+      return;
+    }
     if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
     submit();

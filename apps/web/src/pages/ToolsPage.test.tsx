@@ -86,7 +86,10 @@ describe('卡口对话页', () => {
     expect(intake).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: '发送' }));
     await waitFor(() => {
-      expect(intake).toHaveBeenCalledWith(EXAMPLE);
+      expect(intake).toHaveBeenCalledWith(
+        EXAMPLE,
+        expect.objectContaining({ source: 'tools-visitor' }),
+      );
     });
     expect(document.querySelectorAll('.assistant-msg-user')).toHaveLength(1);
   });
@@ -130,7 +133,10 @@ describe('卡口对话页', () => {
     expect(screen.getByText('这份结论是怎么来的？')).toBeInTheDocument();
     expect(screen.getByText(/命中触发词/)).toBeInTheDocument();
     // 提交的正文不含类型标签：类型只是前端引导
-    expect(intake).toHaveBeenCalledWith(BODY);
+    expect(intake).toHaveBeenCalledWith(
+      BODY,
+      expect.objectContaining({ source: 'tools-visitor' }),
+    );
   });
 
   it('失败时对话内说明原因，并把内容还给输入框', async () => {

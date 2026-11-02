@@ -31,4 +31,29 @@ describe('AssistantThread 引用', () => {
       `${dualEntry.browse.path}/cc-intro`,
     );
   });
+
+  it('正确使用 XMarkdown 渲染富文本与代码', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantThread
+          draft=""
+          draftOk={false}
+          loading={false}
+          error={null}
+          messages={[
+            {
+              role: 'assistant',
+              text: '**加粗答案**\n```js\nconsole.log(1);\n```',
+              citations: [],
+              aiUsedFlag: true,
+            },
+          ]}
+          onDraftChange={() => {}}
+          onSubmit={() => {}}
+        />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('strong')?.textContent).toBe('加粗答案');
+    expect(container.querySelector('code')?.textContent).toContain('console.log(1)');
+  });
 });

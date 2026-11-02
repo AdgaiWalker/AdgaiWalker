@@ -212,11 +212,14 @@ export class ContentReleaseService {
       };
     }
 
-    // 1. 保留“不夹带代码”检查
-    const codeDirty = ws.dirtyFiles.filter((f) =>
-      f.startsWith('apps/') || f.startsWith('packages/') || f.startsWith('scripts/') ||
-      ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'turbo.json', 'vercel.json'].includes(f)
-    );
+    // 1. 保留“不夹带代码”检查（apps/web/src/generated/ 下为构建期内容与图谱投影，非代码文件）
+    const codeDirty = ws.dirtyFiles.filter((f) => {
+      if (f.startsWith('apps/web/src/generated/')) return false;
+      return (
+        f.startsWith('apps/') || f.startsWith('packages/') || f.startsWith('scripts/') ||
+        ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'turbo.json', 'vercel.json'].includes(f)
+      );
+    });
     if (codeDirty.length > 0) {
       return {
         ok: false,

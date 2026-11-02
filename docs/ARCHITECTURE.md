@@ -289,10 +289,8 @@ flowchart LR
 | 项 | 内容 |
 |---|---|
 | 抽取实现（唯一） | `scripts/lib/code-extract.ts`（解析规则在 `packages/shared/src/code-resolve.ts`，语法抽取在 `code-imports.ts`） |
-| 产物（公开面） | `apps/web/src/generated/codegraph.json` —— 只有节点与边，被 `/architecture` 动态引入 |
-| 产物（内部面） | `apps/web/src/generated/codegraph-health.json` —— 体检明细，只有门禁 / api / admin / agent 读 |
-| 门禁 | `pnpm verify:architecture`（`build:web` 链上，紧随 `code:gen`）；硬伤新增即失败，基线在 `scripts/architecture-baseline.json` |
-| 消费方 | 访客 `/architecture`（indexable）· admin `/architecture`（noindex）· MCP `dependencies`/`dependents`/`impact`/`architecture_health` |
+| 产物与门禁 | `pnpm verify:architecture`（`build:web` 链上直接抽取，硬伤新增即失败，基线在 `scripts/architecture-baseline.json`） |
+| 前台变动 | 访客端 3D 代码图谱（原 `/architecture`）已按减法原则下线并 301 重定向至 `/graph`，消除约 696kB 冗余包袱；保留编译器级语法树体检门禁 |
 | 规格与偏离 | [`PRD-CODE-GRAPH.md`](specs/PRD-CODE-GRAPH.md) |
 
 **规模实测（2026-09-15）**：430 个源文件 / 1101 条内部依赖边 / 0 个环 / 1 个解析不到的引用 /

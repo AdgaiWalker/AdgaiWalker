@@ -150,6 +150,18 @@ describe('C12 实际发布范围预检与 manifest 生成', () => {
     });
   });
 
+  it('apps/web/src/generated/ 下的内容投影不被误判为代码脏状态', async () => {
+    fakeGitStatus.files = [
+      { path: 'content/log/post-a.md', staged: false, dirty: true, statusCode: ' M' },
+      { path: 'apps/web/src/generated/article-versions.json', staged: false, dirty: true, statusCode: ' M' },
+    ];
+    fakeGitStatus.dirtyFiles = ['content/log/post-a.md', 'apps/web/src/generated/article-versions.json'];
+
+    const preflight = await service.preflight('post-a');
+    expect(preflight.ok).toBe(true);
+    expect(preflight.scopeConflict).toBeNull();
+  });
+
   it('工作区无范围冲突且字段齐全时，生成结构化 manifest，hash 稳定可见', async () => {
     fakeGitStatus.files = [
       { path: 'content/log/post-a.md', staged: false, dirty: true, statusCode: ' M' },

@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ant-design/x-markdown": "^2.10.0",
     "@walker/shared": "workspace:^",
     "dompurify": "^3.4.12",
     "lucide-react": "^1.25.0",

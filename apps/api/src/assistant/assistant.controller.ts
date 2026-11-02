@@ -148,6 +148,7 @@ export class AssistantController {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
     const send = (event: AssistantStreamEvent) => {
+      if (res.writableEnded || res.destroyed) return;
       res.write(`id: ${event.eventId}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
       const flushable = res as Response & { flush?: () => void };
       flushable.flush?.();
@@ -186,7 +187,7 @@ export class AssistantController {
     } catch (error) {
       console.error('[assistant.controller stream error]', error);
       sequence += 1;
-      if (res.destroyed) return;
+      if (res.destroyed || res.writableEnded) return;
       const response = error instanceof HttpException ? error.getResponse() : null;
       const responseRecord = typeof response === 'object' && response !== null
         ? response as Record<string, unknown>
@@ -208,7 +209,9 @@ export class AssistantController {
         message: code === 'assistant-stream-failed' ? '本次请求无法处理，请稍后重试。' : '公开成员列表已更新，请刷新后重试。',
       });
     } finally {
-      res.end();
+      if (!res.writableEnded) {
+        res.end();
+      }
     }
   }
 }

@@ -9,9 +9,10 @@
   },
   "scripts": {
     "content:gen": "tsx scripts/generate-content.ts",
-    "content:backfill-versions": "tsx scripts/backfill-article-versions.ts",
-    "code:gen": "tsx scripts/generate-code-graph.ts",
+    "content:new": "tsx scripts/new-content.ts",
     "content:publish": "tsx scripts/content-publish.ts",
+    "content:push": "tsx scripts/content-publish.ts --push",
+    "content:backfill-versions": "tsx scripts/backfill-article-versions.ts",
     "snapshot:import": "tsx scripts/import-public-snapshot.ts",
     "legacy:migrate": "tsx scripts/migrate-legacy-data.ts",
     "dev:web": "pnpm content:gen && pnpm --filter @walker/web dev",
