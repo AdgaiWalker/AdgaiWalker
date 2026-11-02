@@ -161,8 +161,7 @@ export function AppSidebar({
       </nav>
 
       <div className="app-sidebar-foot">
-        {sidebarFooterLinks.length > 0 ? (
-          <div className="app-sidebar-foot-links">
+        <div className="app-sidebar-foot-links">
             {sidebarFooterLinks.map((l) => (
               <Link
                 key={l.href}
@@ -176,8 +175,10 @@ export function AppSidebar({
                 {l.label}
               </Link>
             ))}
-          </div>
-        ) : null}
+          <a href="https://goodloop.si" target="_blank" rel="noopener">
+            我的工作室 · 未然界域
+          </a>
+        </div>
         <div className="app-sidebar-foot-icons">
           <a
             href={SITE_LINKS.github}
