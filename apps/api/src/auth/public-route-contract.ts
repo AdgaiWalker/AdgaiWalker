@@ -23,6 +23,7 @@ export const PUBLIC_ROUTE_EXCLUSIONS: PublicRoute[] = [
   { path: 'likes', method: RequestMethod.POST },
   { path: 'content-feedback', method: RequestMethod.POST },
   { path: 'search-events', method: RequestMethod.POST },
+  { path: 'webhooks/github', method: RequestMethod.POST },
 ];
 
 export type PublicRouteParity = { matches: boolean; missingFromCaddy: string[]; extraInCaddy: string[] };

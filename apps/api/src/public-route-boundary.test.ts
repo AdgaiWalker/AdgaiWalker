@@ -24,6 +24,7 @@ const REQUIRED_PUBLIC_ROUTES = [
   'POST likes',
   'POST content-feedback',
   'POST search-events',
+  'POST webhooks/github',
 ];
 
 function appRoutes(): { public: string[]; sameOriginGlobal: boolean; adminProtectedAllRoutes: boolean } {

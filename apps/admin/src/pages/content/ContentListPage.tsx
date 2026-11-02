@@ -3,8 +3,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, RefreshCw, Search, X } from "lucide-react";
 import { buildXShareIntentUrl } from "@walker/shared";
 import { requestJson } from "../../api/http";
-import { useAllContentSocialStats, useContent, useSaveContent } from "../../api/queries";
+import {
+  useAllContentSocialStats,
+  useContent,
+  useContentSyncPull,
+  useContentSyncStatus,
+  useSaveContent,
+} from "../../api/queries";
 import { ContentTable } from "../../components/ContentTable";
+import { GitSyncBadge } from "../../components/GitSyncBadge";
 import {
   EmptyState,
   ErrorState,
@@ -37,6 +44,8 @@ function autoSlug(text: string): string {
 export function ContentListPage() {
   const query = useContent();
   const socialStatsQuery = useAllContentSocialStats();
+  const syncStatusQuery = useContentSyncStatus();
+  const syncPullMutation = useContentSyncPull();
   const saveMutation = useSaveContent();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -192,6 +201,7 @@ export function ContentListPage() {
         description="浏览文章、项目与想法，了解内容的当前状态。"
         action={
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <GitSyncBadge />
             <button className="primary" onClick={handleOpenCreateModal}>
               <Plus size={16} />
               新建文章 / 日记
@@ -203,6 +213,47 @@ export function ContentListPage() {
           </div>
         }
       />
+      {Boolean(syncStatusQuery.data?.behind && syncStatusQuery.data.behind > 0) && (
+        <div
+          style={{
+            marginBottom: "16px",
+            padding: "12px 16px",
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: "8px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, color: "#92400e", fontSize: "14px" }}>
+              💡 检测到远端 GitHub 有新内容（落后 {syncStatusQuery.data?.behind} 个提交）
+            </div>
+            <div style={{ fontSize: "13px", color: "#b45309", marginTop: "2px" }}>
+              {syncStatusQuery.data?.incomingFiles.length
+                ? `待拉取文章：${syncStatusQuery.data.incomingFiles.slice(0, 4).join("、")}${syncStatusQuery.data.incomingFiles.length > 4 ? " 等" : ""}`
+                : "包含内容更新，点击右侧按钮立即同步到当前网页工作台"}
+            </div>
+          </div>
+          <button
+            className="primary"
+            style={{ background: "#d97706", borderColor: "#b45309", whiteSpace: "nowrap" }}
+            disabled={syncPullMutation.isPending}
+            onClick={async () => {
+              await syncPullMutation.mutateAsync();
+              await Promise.all([
+                syncStatusQuery.refetch(),
+                query.refetch(),
+                socialStatsQuery.refetch(),
+              ]);
+            }}
+          >
+            {syncPullMutation.isPending ? "正在拉取同步..." : "立即从 GitHub 同步"}
+          </button>
+        </div>
+      )}
       <div className="notice">
         列表用于查看状态；打开条目可编辑。工作区、网页和问答索引分别显示，不以 Git 状态推断已上线。
       </div>

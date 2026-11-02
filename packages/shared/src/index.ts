@@ -59,6 +59,7 @@ export * from './text-diff.js';
 export * from './content-lock.js';
 export * from './resource-gate.js';
 export * from './user.js';
+export * from './git-sync.js';
 export * from './runtime-monitor.js';
 export * from './activity.js';
 export * from './social-share.js';

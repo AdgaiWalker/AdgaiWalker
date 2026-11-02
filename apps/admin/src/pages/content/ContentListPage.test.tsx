@@ -4,8 +4,21 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ContentLedgerEntry } from '@walker/shared';
 import { ContentListPage } from './ContentListPage';
 
-const { useContentMock, useSaveContentMock, saveMutationMock, useAllContentSocialStatsMock } = vi.hoisted(() => {
+const {
+  useContentMock,
+  useSaveContentMock,
+  saveMutationMock,
+  useAllContentSocialStatsMock,
+  useContentSyncStatusMock,
+  useContentSyncPullMock,
+  syncPullMutationMock,
+} = vi.hoisted(() => {
   const saveMutation = {
+    mutateAsync: vi.fn(),
+    isPending: false,
+    error: null,
+  };
+  const syncPullMutation = {
     mutateAsync: vi.fn(),
     isPending: false,
     error: null,
@@ -15,6 +28,21 @@ const { useContentMock, useSaveContentMock, saveMutationMock, useAllContentSocia
     useSaveContentMock: vi.fn(() => saveMutation),
     saveMutationMock: saveMutation,
     useAllContentSocialStatsMock: vi.fn(() => ({ data: {}, isLoading: false, refetch: vi.fn() })),
+    useContentSyncStatusMock: vi.fn(() => ({
+      data: {
+        available: true,
+        behind: 0,
+        ahead: 0,
+        headCommit: 'a1b2c3d',
+        remoteCommit: 'a1b2c3d',
+        dirtyFiles: [] as string[],
+        incomingFiles: [] as string[],
+        lastCheckedAt: '',
+      },
+      refetch: vi.fn(),
+    })),
+    useContentSyncPullMock: vi.fn(() => syncPullMutation),
+    syncPullMutationMock: syncPullMutation,
   };
 });
 
@@ -22,6 +50,8 @@ vi.mock('../../api/queries', () => ({
   useContent: useContentMock,
   useSaveContent: useSaveContentMock,
   useAllContentSocialStats: useAllContentSocialStatsMock,
+  useContentSyncStatus: useContentSyncStatusMock,
+  useContentSyncPull: useContentSyncPullMock,
 }));
 
 const mockItems: ContentLedgerEntry[] = [
@@ -175,5 +205,43 @@ describe('ContentListPage (C22 类型筛选与小店内容边界)', () => {
         expectedHash: null,
       }),
     );
+  });
+
+  it('展示 GitHub 同步状态徽章，支持点击一键从远端拉取同步', async () => {
+    useContentSyncStatusMock.mockReturnValue({
+      data: {
+        available: true,
+        behind: 2,
+        ahead: 0,
+        headCommit: 'a1b2c3d',
+        remoteCommit: 'e4f5a6b',
+        dirtyFiles: [],
+        incomingFiles: ['2026-11-02.md'],
+        lastCheckedAt: '2026-11-02T16:00:00Z',
+      },
+      refetch: vi.fn(),
+    });
+    syncPullMutationMock.mutateAsync.mockResolvedValueOnce({
+      ok: true,
+      pulledCommits: 2,
+      incomingFiles: ['2026-11-02.md'],
+      message: '已成功从 GitHub 同步 2 个提交',
+    });
+
+    render(
+      <MemoryRouter>
+        <ContentListPage />
+      </MemoryRouter>,
+    );
+
+    // 智能横幅提示
+    expect(screen.getByText(/检测到远端 GitHub 有新内容（落后 2 个提交）/)).toBeDefined();
+    expect(screen.getByText(/待拉取文章：2026-11-02.md/)).toBeDefined();
+
+    // 点击横幅的同步按钮
+    const pullBtn = screen.getByRole('button', { name: /立即从 GitHub 同步/ });
+    fireEvent.click(pullBtn);
+
+    expect(syncPullMutationMock.mutateAsync).toHaveBeenCalled();
   });
 });

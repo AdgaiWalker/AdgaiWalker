@@ -633,3 +633,29 @@ export function useRecordSocialShare(slug: string) {
       ),
   });
 }
+
+export function useContentSyncStatus() {
+  return useQuery({
+    queryKey: ["content-sync-status"],
+    queryFn: ({ signal }) =>
+      requestJson<import("@walker/shared").ContentSyncStatus>(
+        "/admin/content/sync/status",
+        { signal, backgroundPoll: true },
+      ),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useContentSyncPull() {
+  return useMutation({
+    mutationFn: () =>
+      requestJson<import("@walker/shared").ContentSyncPullResult>(
+        "/admin/content/sync/pull",
+        {
+          method: "POST",
+          timeoutMs: 60_000,
+        },
+      ),
+  });
+}
+

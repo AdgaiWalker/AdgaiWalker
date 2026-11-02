@@ -84,6 +84,14 @@
       reverse_proxy 127.0.0.1:8788
     }
 
+    @webhooks_github {
+      method POST
+      path /webhooks/github
+    }
+    handle @webhooks_github {
+      reverse_proxy 127.0.0.1:8788
+    }
+
     respond "Not Found" 404
   }
 }

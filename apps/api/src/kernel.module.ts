@@ -103,6 +103,8 @@ import { CANDIDATE_FILE_REPOSITORY } from './ports/candidate-file.repository';
 import { FsCandidateFileRepository } from './adapters/fs-candidate-file.repository';
 import { ContentAdminService } from './content-admin/content-admin.service';
 import { ContentAdminController } from './content-admin/content-admin.controller';
+import { ContentSyncService } from './content-sync/content-sync.service';
+import { ContentSyncController, GithubWebhookController } from './content-sync/content-sync.controller';
 import { SUPPORT_CONFIG_REPOSITORY } from './ports/support-config.repository';
 import { FsSupportConfigRepository } from './adapters/fs-support-config.repository';
 import { SupportService } from './support/support.service';
@@ -279,9 +281,11 @@ import { ReminderController } from './reminder/reminder.controller';
     LikeController,
     ContentFeedbackController,
     SearchEventsController,
-    // 路由顺序约束：ledger 必须在 ContentAdminController 之前注册 ——
-    // 后者已有 @Get(':slug')（content-admin.controller.ts:27-30），注册在前会把 'ledger' 当 slug 吃掉
+    // 路由顺序约束：ledger 与 sync 必须在 ContentAdminController 之前注册 ——
+    // 后者已有 @Get(':slug')（content-admin.controller.ts:27-30），注册在前会把 'ledger'/'sync' 当 slug 吃掉
     ContentLedgerController,
+    ContentSyncController,
+    GithubWebhookController,
     ContentAdminController,
     ContentChangeController,
     ContentReleaseController,
@@ -304,6 +308,7 @@ import { ReminderController } from './reminder/reminder.controller';
     ArchitectureController,
   ],
   providers: [
+    ContentSyncService,
     AgentExecutionService,
     ReleaseTestService,
     RunRetentionService,

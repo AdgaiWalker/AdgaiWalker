@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { OpsCapabilities } from "@walker/shared";
 import { ADMIN_ROUTES as R } from "../shared/routes";
 import { requestJson } from "../api/http";
+import { GitSyncBadge } from "../components/GitSyncBadge";
 export const useCapabilities = () =>
   useQuery({
     queryKey: ["ops-capabilities"],
@@ -71,16 +72,19 @@ export function AdminShell() {
           <span>
             工作台 <span className="separator">/</span> {title}
           </span>
-          <span
-            className={`connection ${capabilities.isError ? "offline" : ""}`}
-          >
-            <i />
-            {capabilities.isError
-              ? "连接中断"
-              : capabilities.isPending
-                ? "正在连接"
-                : "API 已连接"}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <GitSyncBadge compact />
+            <span
+              className={`connection ${capabilities.isError ? "offline" : ""}`}
+            >
+              <i />
+              {capabilities.isError
+                ? "连接中断"
+                : capabilities.isPending
+                  ? "正在连接"
+                  : "API 已连接"}
+            </span>
+          </div>
         </div>
         <Outlet />
         <footer className="workspace-footer">

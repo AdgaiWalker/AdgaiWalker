@@ -12,6 +12,7 @@
     "content:new": "tsx scripts/new-content.ts",
     "content:publish": "tsx scripts/content-publish.ts",
     "content:push": "tsx scripts/content-publish.ts --push",
+    "content:pull": "tsx scripts/content-pull.ts",
     "content:backfill-versions": "tsx scripts/backfill-article-versions.ts",
     "snapshot:import": "tsx scripts/import-public-snapshot.ts",
     "legacy:migrate": "tsx scripts/migrate-legacy-data.ts",
