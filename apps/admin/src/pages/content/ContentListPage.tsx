@@ -18,6 +18,12 @@ import {
   LoadingState,
   PageHeading,
 } from "../../components/States";
+import {
+  CustomContentType,
+  DEFAULT_CONTENT_TYPES,
+  getCustomContentTypes,
+  saveCustomContentType,
+} from "../../shared/content-types";
 import { timeLabel, typeLabel } from "../../shared/labels";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 
@@ -85,6 +91,13 @@ export function ContentListPage() {
   const [isPublished, setIsPublished] = useState(true);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // 自定义内容类型管理
+  const [customTypes, setCustomTypes] = useState<CustomContentType[]>(() => getCustomContentTypes());
+  const [isAddingType, setIsAddingType] = useState(false);
+  const [newCustomTypeValue, setNewCustomTypeValue] = useState("");
+  const [newCustomTypeLabel, setNewCustomTypeLabel] = useState("");
+  const [customTypeError, setCustomTypeError] = useState<string | null>(null);
+
   const handleOpenCreateModal = () => {
     const today = new Date().toISOString().slice(0, 10);
     const defaultTitle = `${today} 站主日记`;
@@ -93,7 +106,32 @@ export function ContentListPage() {
     setNewType("knowledge");
     setIsPublished(true);
     setCreateError(null);
+    setIsAddingType(false);
+    setNewCustomTypeValue("");
+    setNewCustomTypeLabel("");
+    setCustomTypeError(null);
+    setCustomTypes(getCustomContentTypes());
     setShowCreateModal(true);
+  };
+
+  const handleConfirmAddCustomType = () => {
+    setCustomTypeError(null);
+    const val = newCustomTypeValue.trim().toLowerCase();
+    if (!val) {
+      setCustomTypeError("请输入类型英文标识");
+      return;
+    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(val)) {
+      setCustomTypeError("类型标识仅限小写英文、数字与短横线，例如 essay、review");
+      return;
+    }
+    const label = newCustomTypeLabel.trim() || val;
+    const updated = saveCustomContentType({ value: val, label });
+    setCustomTypes(updated);
+    setNewType(val);
+    setNewCustomTypeValue("");
+    setNewCustomTypeLabel("");
+    setIsAddingType(false);
   };
 
   const handleTitleChange = (val: string) => {
@@ -117,7 +155,8 @@ export function ContentListPage() {
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const defaultTag = newType === "knowledge" ? "日记, 随笔" : newType;
+    const matchedCustom = customTypes.find((c) => c.value === newType);
+    const defaultTag = newType === "knowledge" ? "日记, 随笔" : (matchedCustom?.label || newType);
     const raw = [
       "---",
       `title: "${title.replace(/"/g, '\\"')}"`,
@@ -280,7 +319,7 @@ export function ContentListPage() {
             <option value="tool">工具 (tool)</option>
             <option value="idea">想法 (idea)</option>
             <option value="shop">小店 (shop)</option>
-            {[...new Set(all.map((item) => item.type))]
+            {[...new Set([...all.map((item) => item.type), ...customTypes.map((c) => c.value)])]
               .filter((t) => !["knowledge", "learn", "project", "tool", "idea", "shop"].includes(t))
               .map((t) => (
                 <option key={t} value={t}>
@@ -433,18 +472,153 @@ export function ContentListPage() {
                 </label>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500 }}>
-                    内容类型
-                    <select
-                      value={newType}
-                      onChange={(e) => setNewType(e.target.value)}
-                    >
-                      <option value="knowledge">知识文章 / 日记 (knowledge)</option>
-                      <option value="learn">学习笔记 (learn)</option>
-                      <option value="idea">灵感想法 (idea)</option>
-                      <option value="project">项目 (project)</option>
-                    </select>
-                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <label htmlFor="create-content-type" style={{ fontSize: 13, fontWeight: 500 }}>
+                        内容类型
+                      </label>
+                      <button
+                        type="button"
+                        aria-label="添加新类型"
+                        onClick={() => setIsAddingType((prev) => !prev)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "2px 6px",
+                          fontSize: 12,
+                          background: isAddingType ? "var(--bg-subtle, #f1f5f9)" : "transparent",
+                          border: "1px dashed var(--border)",
+                          borderRadius: 4,
+                          color: "var(--primary)",
+                          cursor: "pointer",
+                        }}
+                        title="添加自定义内容类型"
+                      >
+                        <Plus size={13} />
+                        {isAddingType ? "收起" : "添加类型"}
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <select
+                        id="create-content-type"
+                        aria-label="新建内容类型"
+                        style={{ flex: 1 }}
+                        value={newType}
+                        onChange={(e) => {
+                          if (e.target.value === "__add_new__") {
+                            setIsAddingType(true);
+                          } else {
+                            setNewType(e.target.value);
+                          }
+                        }}
+                      >
+                        <option value="knowledge">知识文章 / 日记 (knowledge)</option>
+                        <option value="learn">学习笔记 (learn)</option>
+                        <option value="idea">灵感想法 (idea)</option>
+                        <option value="project">项目 (project)</option>
+                        <option value="tool">工具 (tool)</option>
+                        {customTypes.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label} ({t.value})
+                          </option>
+                        ))}
+                        <option value="__add_new__">➕ 添加新内容类型...</option>
+                      </select>
+                      <button
+                        type="button"
+                        aria-label="添加新内容类型按钮"
+                        onClick={() => setIsAddingType((prev) => !prev)}
+                        className="button"
+                        style={{
+                          padding: "0 10px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: 38,
+                        }}
+                        title="添加新内容类型"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
+                    {isAddingType && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          padding: "10px",
+                          background: "#f8fafc",
+                          border: "1px solid var(--border)",
+                          borderRadius: 6,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+                          添加自定义内容类型
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <input
+                            type="text"
+                            aria-label="新类型标识"
+                            value={newCustomTypeValue}
+                            onChange={(e) => setNewCustomTypeValue(e.target.value.toLowerCase().trim())}
+                            placeholder="英文标识，如 essay"
+                            style={{ flex: 1, fontSize: 12, padding: "4px 8px", height: 30 }}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleConfirmAddCustomType();
+                              }
+                            }}
+                          />
+                          <input
+                            type="text"
+                            aria-label="新类型名称"
+                            value={newCustomTypeLabel}
+                            onChange={(e) => setNewCustomTypeLabel(e.target.value)}
+                            placeholder="显示名称，如 思考随笔"
+                            style={{ flex: 1, fontSize: 12, padding: "4px 8px", height: 30 }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleConfirmAddCustomType();
+                              }
+                            }}
+                          />
+                        </div>
+                        {customTypeError && (
+                          <div style={{ fontSize: 12, color: "var(--danger, #dc2626)" }}>
+                            {customTypeError}
+                          </div>
+                        )}
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                          <button
+                            type="button"
+                            className="button"
+                            style={{ padding: "2px 8px", fontSize: 12, height: 26 }}
+                            onClick={() => {
+                              setIsAddingType(false);
+                              setCustomTypeError(null);
+                            }}
+                          >
+                            取消
+                          </button>
+                          <button
+                            type="button"
+                            className="button primary"
+                            style={{ padding: "2px 10px", fontSize: 12, height: 26 }}
+                            onClick={handleConfirmAddCustomType}
+                          >
+                            确定添加
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginTop: 24, cursor: "pointer" }}>
                     <input

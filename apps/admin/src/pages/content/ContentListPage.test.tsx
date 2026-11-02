@@ -207,6 +207,58 @@ describe('ContentListPage (C22 类型筛选与小店内容边界)', () => {
     );
   });
 
+  it('支持在新建模态框中点击 + 添加自定义内容类型并选中创建', async () => {
+    saveMutationMock.mutateAsync.mockResolvedValueOnce({
+      slug: 'my-essay-1',
+      raw: 'content',
+    });
+
+    render(
+      <MemoryRouter>
+        <ContentListPage />
+      </MemoryRouter>,
+    );
+
+    // 打开模态框
+    const newBtn = screen.getByRole('button', { name: /新建文章 \/ 日记/ });
+    fireEvent.click(newBtn);
+
+    // 点击 + 按钮展开添加表单
+    const plusBtn = screen.getByRole('button', { name: '添加新内容类型按钮' });
+    fireEvent.click(plusBtn);
+
+    // 输入标识与名称
+    const valInput = screen.getByLabelText('新类型标识');
+    const labelInput = screen.getByLabelText('新类型名称');
+
+    fireEvent.change(valInput, { target: { value: 'essay' } });
+    fireEvent.change(labelInput, { target: { value: '随笔感悟' } });
+
+    // 确认添加
+    const confirmBtn = screen.getByRole('button', { name: '确定添加' });
+    fireEvent.click(confirmBtn);
+
+    // 检查下拉选择器已选中新类型
+    const typeSelect = screen.getByLabelText('新建内容类型') as HTMLSelectElement;
+    expect(typeSelect.value).toBe('essay');
+
+    // 提交创建
+    const titleInput = screen.getByLabelText(/文章 \/ 日记标题/);
+    const slugInput = screen.getByLabelText(/文件名标识/);
+    fireEvent.change(titleInput, { target: { value: '我的第一篇随笔' } });
+    fireEvent.change(slugInput, { target: { value: 'my-essay-1' } });
+
+    const submitBtn = screen.getByRole('button', { name: '创建并开写' });
+    fireEvent.click(submitBtn);
+
+    expect(saveMutationMock.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'my-essay-1',
+        raw: expect.stringContaining('type: essay'),
+      }),
+    );
+  });
+
   it('展示 GitHub 同步状态徽章，支持点击一键从远端拉取同步', async () => {
     useContentSyncStatusMock.mockReturnValue({
       data: {

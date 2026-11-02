@@ -10,15 +10,34 @@ export const capabilityLabels: Record<OpsCapabilityKey, string> = {
   conversations: "访客对话",
   reminders: "更新提醒",
 };
-export const typeLabel = (value: string) =>
-  ({
+export const typeLabel = (value: string) => {
+  const builtin: Record<string, string> = {
     knowledge: "文章",
     learn: "学习笔记",
     project: "项目",
     tool: "工具",
     idea: "想法",
     shop: "小店",
-  })[value] ?? value;
+  };
+  if (builtin[value]) return builtin[value];
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem("walker:custom_content_types");
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const match = list.find((it: any) => it && it.value === value);
+          if (match && typeof match.label === "string" && match.label.trim()) {
+            return match.label.trim();
+          }
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return value;
+};
 export const visibilityLabel = (value: string) =>
   ({ public: "公开", draft: "草稿", private: "私密" })[value] ?? "未知";
 export const statusLabel = (value: string) =>
