@@ -1,7 +1,31 @@
 {
-  "generatedAt": "2026-10-30T05:24:58.685Z",
+  "generatedAt": "2026-11-02T05:15:59.743Z",
   "seed": 20260914,
   "nodes": [
+    {
+      "id": "note:2026-11-02",
+      "kind": "note",
+      "slug": "2026-11-02",
+      "title": "2026-11-02 站主日记",
+      "date": "2026-11-02T00:00:00.000Z",
+      "updated": "2026-11-02T00:00:00.000Z",
+      "created": "2026-11-02T00:00:00.000Z",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "note",
+      "domain": "life",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "日记",
+        "随笔"
+      ],
+      "summary": "待写完后提炼",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 2
+    },
     {
       "id": "note:2026-10-29",
       "kind": "note",
@@ -26,6 +50,58 @@
       "linkDegree": 0,
       "inDegree": 0,
       "outDegree": 3
+    },
+    {
+      "id": "note:molan-ai-file-assistant",
+      "kind": "note",
+      "slug": "molan-ai-file-assistant",
+      "title": "墨览 — 跨手机与电脑的 AI 文件助手",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "idea",
+      "form": "idea",
+      "domain": "product",
+      "series": "桌面点子",
+      "seriesOrder": 4,
+      "tags": [
+        "文件阅读",
+        "AI",
+        "跨端",
+        "Office 转换"
+      ],
+      "summary": "手机先把收到的文件读起来，再把主动收集的文件同步到电脑，转换成 AI 可读内容，并让处理结果回到手机。覆盖原生移动端、桌面端、CLI 与共享合同。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "id": "note:vibe0s",
+      "kind": "note",
+      "slug": "vibe0s",
+      "title": "vibe0s — 让 AI 帮你选 Skill、排流程、留方法",
+      "date": "2026-08-20T00:00:00.000Z",
+      "updated": "2026-08-20T00:00:00.000Z",
+      "created": "2026-09-03T01:09:15+08:00",
+      "hall": "showcase",
+      "type": "project",
+      "form": "project",
+      "domain": "ai",
+      "series": "桌面项目",
+      "seriesOrder": 1,
+      "tags": [
+        "AI",
+        "Skill",
+        "人机协作",
+        "工作流"
+      ],
+      "summary": "面向不会挑 Skill、不会组织 AI 工作流的人：先把目标说清，再选择最少够用的能力推进，最后把做成的方法沉淀下来。当前仍在真实任务中验证。",
+      "totalDegree": 4,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 4
     },
     {
       "id": "note:dorazoom",
@@ -106,58 +182,6 @@
       "outDegree": 4
     },
     {
-      "id": "note:molan-ai-file-assistant",
-      "kind": "note",
-      "slug": "molan-ai-file-assistant",
-      "title": "墨览 — 跨手机与电脑的 AI 文件助手",
-      "date": "2026-08-20T00:00:00.000Z",
-      "updated": "2026-08-20T00:00:00.000Z",
-      "created": "2026-09-03T01:09:15+08:00",
-      "hall": "showcase",
-      "type": "idea",
-      "form": "idea",
-      "domain": "product",
-      "series": "桌面点子",
-      "seriesOrder": 4,
-      "tags": [
-        "文件阅读",
-        "AI",
-        "跨端",
-        "Office 转换"
-      ],
-      "summary": "手机先把收到的文件读起来，再把主动收集的文件同步到电脑，转换成 AI 可读内容，并让处理结果回到手机。覆盖原生移动端、桌面端、CLI 与共享合同。",
-      "totalDegree": 4,
-      "linkDegree": 0,
-      "inDegree": 0,
-      "outDegree": 4
-    },
-    {
-      "id": "note:vibe0s",
-      "kind": "note",
-      "slug": "vibe0s",
-      "title": "vibe0s — 让 AI 帮你选 Skill、排流程、留方法",
-      "date": "2026-08-20T00:00:00.000Z",
-      "updated": "2026-08-20T00:00:00.000Z",
-      "created": "2026-09-03T01:09:15+08:00",
-      "hall": "showcase",
-      "type": "project",
-      "form": "project",
-      "domain": "ai",
-      "series": "桌面项目",
-      "seriesOrder": 1,
-      "tags": [
-        "AI",
-        "Skill",
-        "人机协作",
-        "工作流"
-      ],
-      "summary": "面向不会挑 Skill、不会组织 AI 工作流的人：先把目标说清，再选择最少够用的能力推进，最后把做成的方法沉淀下来。当前仍在真实任务中验证。",
-      "totalDegree": 4,
-      "linkDegree": 0,
-      "inDegree": 0,
-      "outDegree": 4
-    },
-    {
       "id": "note:lobster-core-value",
       "kind": "note",
       "slug": "lobster-core-value",
@@ -191,7 +215,7 @@
       "title": "Codex 入门与第一次成功",
       "date": "2026-08-04T15:00:15.719Z",
       "updated": "2026-08-04T00:00:00.000Z",
-      "created": "2026-08-04T23:24:43+08:00",
+      "created": "2026-08-04T23:31:11+08:00",
       "hall": "condition",
       "type": "knowledge",
       "form": "tutorial",
@@ -217,7 +241,7 @@
       "title": "低成本 AI 社群的真实问题",
       "date": "2026-08-04T15:00:15.457Z",
       "updated": "2026-08-04T00:00:00.000Z",
-      "created": "2026-08-04T23:24:43+08:00",
+      "created": "2026-08-04T23:31:11+08:00",
       "hall": "kit",
       "type": "knowledge",
       "form": "resource",
@@ -242,7 +266,7 @@
       "title": "把害怕开始变成可执行动作",
       "date": "2026-08-04T15:00:14.264Z",
       "updated": "2026-08-04T00:00:00.000Z",
-      "created": "2026-08-04T23:24:43+08:00",
+      "created": "2026-08-04T23:31:11+08:00",
       "hall": "lab",
       "type": "knowledge",
       "form": "article",
@@ -438,10 +462,10 @@
         "实践"
       ],
       "summary": "Skill 不是把经验写进去，而是把已经能稳定复现的经验封装成一个有边界、可调用、可验证的判断函数，并且连接着工具、知识。站在错误的位置，实践→结果→永远够不着标准——不是标准的问题，不是努力的问题，是位置的问题。",
-      "totalDegree": 6,
+      "totalDegree": 5,
       "linkDegree": 0,
       "inDegree": 0,
-      "outDegree": 6
+      "outDegree": 5
     },
     {
       "id": "note:side-hustle-blueprint",
@@ -1222,9 +1246,9 @@
       "id": "tag:日记",
       "kind": "tag",
       "tag": "日记",
-      "totalDegree": 1,
+      "totalDegree": 2,
       "linkDegree": 0,
-      "inDegree": 1,
+      "inDegree": 2,
       "outDegree": 0
     },
     {
@@ -1372,18 +1396,27 @@
       "outDegree": 0
     },
     {
-      "id": "attachment:content/log/skill结构图.png",
-      "kind": "attachment",
-      "path": "content/log/skill结构图.png",
+      "id": "tag:随笔",
+      "kind": "tag",
+      "tag": "随笔",
       "totalDegree": 1,
       "linkDegree": 0,
       "inDegree": 1,
       "outDegree": 0
     },
     {
-      "id": "attachment:content/log/微信支付码.jpg",
+      "id": "attachment:content\\log\\skill结构图.png",
       "kind": "attachment",
-      "path": "content/log/微信支付码.jpg",
+      "path": "content\\log\\skill结构图.png",
+      "totalDegree": 0,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "attachment:content\\log\\微信支付码.jpg",
+      "kind": "attachment",
+      "path": "content\\log\\微信支付码.jpg",
       "totalDegree": 0,
       "linkDegree": 0,
       "inDegree": 0,
@@ -1405,11 +1438,6 @@
       "source": "note:419a2f",
       "target": "note:ideas-beyond-time",
       "kind": "link"
-    },
-    {
-      "source": "note:on-people-and-skill",
-      "target": "attachment:content/log/skill结构图.png",
-      "kind": "attachment"
     },
     {
       "source": "note:side-hustle-blueprint",
@@ -1492,6 +1520,16 @@
       "kind": "link"
     },
     {
+      "source": "note:2026-11-02",
+      "target": "tag:日记",
+      "kind": "tag"
+    },
+    {
+      "source": "note:2026-11-02",
+      "target": "tag:随笔",
+      "kind": "tag"
+    },
+    {
       "source": "note:2026-10-29",
       "target": "tag:日记",
       "kind": "tag"
@@ -1504,6 +1542,46 @@
     {
       "source": "note:2026-10-29",
       "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:文件阅读",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:跨端",
+      "kind": "tag"
+    },
+    {
+      "source": "note:molan-ai-file-assistant",
+      "target": "tag:Office 转换",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:AI",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:Skill",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:人机协作",
+      "kind": "tag"
+    },
+    {
+      "source": "note:vibe0s",
+      "target": "tag:工作流",
       "kind": "tag"
     },
     {
@@ -1564,46 +1642,6 @@
     {
       "source": "note:itab-agent-spaces",
       "target": "tag:DeepSeek Harness",
-      "kind": "tag"
-    },
-    {
-      "source": "note:molan-ai-file-assistant",
-      "target": "tag:文件阅读",
-      "kind": "tag"
-    },
-    {
-      "source": "note:molan-ai-file-assistant",
-      "target": "tag:AI",
-      "kind": "tag"
-    },
-    {
-      "source": "note:molan-ai-file-assistant",
-      "target": "tag:跨端",
-      "kind": "tag"
-    },
-    {
-      "source": "note:molan-ai-file-assistant",
-      "target": "tag:Office 转换",
-      "kind": "tag"
-    },
-    {
-      "source": "note:vibe0s",
-      "target": "tag:AI",
-      "kind": "tag"
-    },
-    {
-      "source": "note:vibe0s",
-      "target": "tag:Skill",
-      "kind": "tag"
-    },
-    {
-      "source": "note:vibe0s",
-      "target": "tag:人机协作",
-      "kind": "tag"
-    },
-    {
-      "source": "note:vibe0s",
-      "target": "tag:工作流",
       "kind": "tag"
     },
     {
