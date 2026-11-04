@@ -19,11 +19,12 @@ const files: ContentFileRepositoryPort = {
       updatedAt: '2026-08-12T00:00:00.000Z',
     },
   ],
-  get: async () => null,
+  get: async (slug) => slug === 'hello-world' ? { slug, title: slug, type: 'knowledge', updatedAt: '2026-09-25T00:00:00.000Z', raw: 'text', hash: 'a'.repeat(64), ext: '.md' } : null,
   save: async (slug, raw, expectedHash) => {
     savedExpectedHash = expectedHash;
     return { slug, title: slug, type: 'knowledge', updatedAt: '2026-09-25T00:00:00.000Z', raw, hash: expectedHash ?? 'b'.repeat(64), ext: '.md' };
   },
+  delete: async (slug) => slug === 'hello-world',
 };
 let savedExpectedHash: string | null | undefined;
 const mutation = {
@@ -75,5 +76,16 @@ describe('ContentAdminController dependency injection', () => {
     await expect(controller.save('hello-world', { raw, expectedHash: 'a'.repeat(64) }))
       .resolves.toMatchObject({ hash: 'a'.repeat(64), raw });
     expect(savedExpectedHash).toBe('a'.repeat(64));
+  });
+
+  it('支持调用 DELETE :slug 删除内容', async () => {
+    const app = await NestFactory.createApplicationContext(ContentAdminTestModule, { logger: false });
+    close = () => app.close();
+    const controller = app.get(ContentAdminController);
+
+    await expect(controller.delete('hello-world')).resolves.toEqual({
+      ok: true,
+      slug: 'hello-world',
+    });
   });
 });

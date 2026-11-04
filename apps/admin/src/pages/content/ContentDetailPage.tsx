@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useBlocker, useParams } from "react-router-dom";
+import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   Ban,
@@ -11,14 +11,17 @@ import {
   Pencil,
   RotateCcw,
   Save,
+  Trash2,
   UploadCloud,
 } from "lucide-react";
 import type { OpsContentDetail } from "@walker/shared";
 import { buildXShareIntentUrl, computeTextDiff, extractSummaryFromRaw } from "@walker/shared";
 import {
   fetchContentDetail,
+  useContentChanges,
   useContentDetail,
   useContentVersion,
+  useDeleteContent,
   useSaveContent,
 } from "../../api/queries";
 import { ApiError } from "../../api/http";
@@ -50,8 +53,12 @@ export function ContentDetailPage() {
 }
 
 function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
+  const navigate = useNavigate();
   const saveMutation = useSaveContent();
+  const deleteMutation = useDeleteContent();
   const versionQuery = useContentVersion(item.slug);
+  const changesQuery = useContentChanges(item.slug);
+  const hasCandidates = Boolean(changesQuery.data?.items && changesQuery.data.items.length > 0);
 
   const [draft, setDraft] = useState(item.raw);
   const [savedRaw, setSavedRaw] = useState(item.raw);
@@ -67,6 +74,7 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
     remoteUpdatedAt: string;
   } | null>(null);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const isDirty = draft !== savedRaw;
   const activeGroup = activeTab === "review" || activeTab === "release"
@@ -434,6 +442,17 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
                 前往发布上线 &rarr;
               </button>
             )}
+
+            <button
+              type="button"
+              className="button"
+              onClick={() => setShowDeleteModal(true)}
+              style={{ color: "#dc2626", borderColor: "#fca5a5" }}
+              title="删除此文章或草稿"
+            >
+              <Trash2 size={15} />
+              删除
+            </button>
           </div>
 
           <div className="content-status-info">
@@ -447,7 +466,7 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
 
         <nav className="tabs content-workflow-nav" aria-label="内容工作区">
           <button type="button" aria-current={activeGroup === "edit" ? "page" : undefined} onClick={() => setActiveTab("edit")}>编辑</button>
-          <button type="button" aria-current={activeGroup === "review" ? "page" : undefined} onClick={() => setActiveTab("review")}>审核与发布</button>
+          <button type="button" aria-current={activeGroup === "review" ? "page" : undefined} onClick={() => setActiveTab("release")}>发布上线</button>
           <button type="button" aria-current={activeGroup === "reminder" ? "page" : undefined} onClick={() => setActiveTab("reminder")}>更新事项</button>
           <button type="button" aria-current={activeGroup === "history" ? "page" : undefined} onClick={() => setActiveTab("history")}>历史</button>
         </nav>
@@ -498,16 +517,18 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
           )}
           </>}
           {activeGroup === "review" && <>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "review"}
-            aria-pressed={activeTab === "review"}
-            onClick={() => setActiveTab("review")}
-          >
-            <GitCompare size={14} style={{ marginRight: 6 }} />
-            候选审阅
-          </button>
+          {hasCandidates && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "review"}
+              aria-pressed={activeTab === "review"}
+              onClick={() => setActiveTab("review")}
+            >
+              <GitCompare size={14} style={{ marginRight: 6 }} />
+              候选审阅 ({changesQuery.data?.items.length})
+            </button>
+          )}
           <button
             type="button"
             role="tab"
@@ -516,7 +537,7 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
             onClick={() => setActiveTab("release")}
           >
             <UploadCloud size={14} style={{ marginRight: 6 }} />
-            发布管理
+            发布上线
           </button>
           </>}
           {activeGroup === "edit" &&
@@ -610,6 +631,44 @@ function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
                 }}
               >
                 放弃更改并离开
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+          <div className="modal-card">
+            <h3 id="delete-modal-title" style={{ color: "#991b1b" }}>确认删除此文章/草稿？</h3>
+            <p>
+              即将删除《<strong>{item.title}</strong>》（<code>{item.slug}</code>）。此操作将从工作区永久移除该文件，不可恢复。
+            </p>
+            <div className="modal-card-actions">
+              <button
+                type="button"
+                className="button"
+                disabled={deleteMutation.isPending}
+                onClick={() => setShowDeleteModal(false)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="button primary"
+                style={{ background: "#dc2626", borderColor: "#dc2626" }}
+                disabled={deleteMutation.isPending}
+                onClick={async () => {
+                  try {
+                    await deleteMutation.mutateAsync({ slug: item.slug });
+                    navigate(R.content);
+                  } catch (err: unknown) {
+                    setSaveError(err instanceof Error ? err.message : "删除失败");
+                    setShowDeleteModal(false);
+                  }
+                }}
+              >
+                {deleteMutation.isPending ? "正在删除..." : "确认删除"}
               </button>
             </div>
           </div>

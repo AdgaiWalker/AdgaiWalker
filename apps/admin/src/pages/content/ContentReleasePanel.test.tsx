@@ -26,12 +26,14 @@ const {
   verifyMutationMock,
   reconcileMutationMock,
   cancelMutationMock,
+  useDeleteContentMock,
 } = vi.hoisted(() => {
   const triggerMutation = { mutateAsync: vi.fn(), isPending: false };
   const prepareMutation = { mutateAsync: vi.fn(), isPending: false };
   const verifyMutation = { mutateAsync: vi.fn(), isPending: false };
   const reconcileMutation = { mutateAsync: vi.fn(), isPending: false };
   const cancelMutation = { mutateAsync: vi.fn(), isPending: false };
+  const deleteMutation = { mutateAsync: vi.fn().mockResolvedValue({ ok: true }), isPending: false };
   const recordSocialShareMutation = { mutateAsync: vi.fn().mockResolvedValue({}), isPending: false };
 
   return {
@@ -43,6 +45,7 @@ const {
     useVerifyContentReleaseMock: vi.fn(() => verifyMutation),
     useReconcileContentReleaseMock: vi.fn(() => reconcileMutation),
     useCancelContentReleaseMock: vi.fn(() => cancelMutation),
+    useDeleteContentMock: vi.fn(() => deleteMutation),
     useContentSocialStatsMock: vi.fn(() => ({ data: { shareCount: 0, lastSharedAt: null, records: [] }, refetch: vi.fn() })),
     useRecordSocialShareMock: vi.fn(() => recordSocialShareMutation),
     triggerMutationMock: triggerMutation,
@@ -63,6 +66,7 @@ vi.mock('../../api/queries', () => ({
   useVerifyContentRelease: useVerifyContentReleaseMock,
   useReconcileContentRelease: useReconcileContentReleaseMock,
   useCancelContentRelease: useCancelContentReleaseMock,
+  useDeleteContent: useDeleteContentMock,
   useContentSocialStats: useContentSocialStatsMock,
   useRecordSocialShare: useRecordSocialShareMock,
 }));
@@ -238,6 +242,44 @@ describe('ContentReleasePanel (C20 发布清单与版本状态界面)', () => {
 
     const publishBtn = screen.getByRole('button', { name: '执行发布上线' }) as HTMLButtonElement;
     expect(publishBtn.disabled).toBe(true);
+  });
+
+  it('其他文章未提交导致冲突时，展示废弃草稿列表并支持一键清理草稿', async () => {
+    const refetch = vi.fn();
+    useContentPreflightMock.mockReturnValue({
+      data: {
+        ok: false,
+        missing: [],
+        scopeConflict: {
+          reason: 'other-content-dirty',
+          message: '检测到其他文章存在未提交修改（content/log/abandoned-draft.md），单篇发布范围冲突',
+          details: ['content/log/abandoned-draft.md'],
+        },
+      },
+      dataUpdatedAt: Date.now(),
+      isPending: false,
+      isError: false,
+      refetch,
+    });
+
+    render(
+      <MemoryRouter>
+        <ContentReleasePanel slug="test-article" currentDoc={mockDoc} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('abandoned-draft')).toBeDefined();
+    expect(screen.getByText(/工作区存在其他未提交的草稿文件/)).toBeDefined();
+    const deleteDraftBtn = screen.getByRole('button', { name: /删除废弃草稿/ });
+    expect(deleteDraftBtn).toBeDefined();
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(deleteDraftBtn);
+
+    await waitFor(() => {
+      expect(useDeleteContentMock().mutateAsync).toHaveBeenCalledWith({ slug: 'abandoned-draft' });
+      expect(refetch).toHaveBeenCalled();
+    });
   });
 
   it('展示独立发布批准信息，点击执行发布触发上线流程并防重复点击', async () => {

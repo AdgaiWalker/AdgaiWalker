@@ -5,6 +5,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -82,5 +83,10 @@ export class ContentAdminController {
       throw validationError('保存正文必须提供 expectedHash；新建时传 null');
     }
     return this.content.save(slug, typeof body.raw === 'string' ? body.raw : '', body.expectedHash as string | null);
+  }
+
+  @Delete(':slug')
+  delete(@Param('slug') slug: string) {
+    return this.content.deleteDoc(slug);
   }
 }

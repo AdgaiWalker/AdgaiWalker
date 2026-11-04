@@ -123,6 +123,18 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
       return detail(slug, raw, sha256(bytes), ext, stat.mtime);
     });
   }
+
+  async delete(slug: string): Promise<boolean> {
+    if (!SLUG_RE.test(slug)) return false;
+    const dir = await resolveContentLogDir();
+    const lockKey = path.join(path.resolve(dir), slug);
+    return withContentLock(lockKey, async () => {
+      const existing = await existingTarget(dir, slug);
+      if (!existing) return false;
+      await fs.unlink(existing.full);
+      return true;
+    });
+  }
 }
 
 function detail(slug: string, raw: string, hash: string, ext: '.md' | '.mdx', mtime: Date): ContentFileDetail {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import type { ContentLedgerEntry } from '@walker/shared';
@@ -12,6 +12,8 @@ const {
   useContentSyncStatusMock,
   useContentSyncPullMock,
   syncPullMutationMock,
+  useDeleteContentMock,
+  deleteMutationMock,
 } = vi.hoisted(() => {
   const saveMutation = {
     mutateAsync: vi.fn(),
@@ -23,10 +25,16 @@ const {
     isPending: false,
     error: null,
   };
+  const deleteMutation = {
+    mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
+    isPending: false,
+  };
   return {
     useContentMock: vi.fn(),
     useSaveContentMock: vi.fn(() => saveMutation),
     saveMutationMock: saveMutation,
+    useDeleteContentMock: vi.fn(() => deleteMutation),
+    deleteMutationMock: deleteMutation,
     useAllContentSocialStatsMock: vi.fn(() => ({ data: {}, isLoading: false, refetch: vi.fn() })),
     useContentSyncStatusMock: vi.fn(() => ({
       data: {
@@ -49,6 +57,7 @@ const {
 vi.mock('../../api/queries', () => ({
   useContent: useContentMock,
   useSaveContent: useSaveContentMock,
+  useDeleteContent: useDeleteContentMock,
   useAllContentSocialStats: useAllContentSocialStatsMock,
   useContentSyncStatus: useContentSyncStatusMock,
   useContentSyncPull: useContentSyncPullMock,
@@ -295,5 +304,26 @@ describe('ContentListPage (C22 类型筛选与小店内容边界)', () => {
     fireEvent.click(pullBtn);
 
     expect(syncPullMutationMock.mutateAsync).toHaveBeenCalled();
+  });
+
+  it('支持在内容列表中点击删除按钮并确认删除文章/草稿', async () => {
+    render(
+      <MemoryRouter>
+        <ContentListPage />
+      </MemoryRouter>,
+    );
+
+    const deleteBtns = screen.getAllByRole('button', { name: '删除' });
+    expect(deleteBtns.length).toBeGreaterThan(0);
+
+    fireEvent.click(deleteBtns[0]);
+    expect(screen.getByRole('heading', { name: '确认删除文章/草稿？' })).toBeDefined();
+
+    const confirmBtn = screen.getByRole('button', { name: '确认删除' });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(deleteMutationMock.mutateAsync).toHaveBeenCalledWith({ slug: 'post-1' });
+    });
   });
 });

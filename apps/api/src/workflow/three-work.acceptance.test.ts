@@ -87,6 +87,7 @@ describe('AI workstation three-work acceptance harness', () => {
         await fs.writeFile(full, raw);
         return { slug, title: slug, type: 'knowledge', updatedAt: new Date().toISOString(), raw, hash: createHash('sha256').update(raw).digest('hex'), ext: '.md' as const };
       },
+      async delete() { return true; },
     };
     const packageRepo: PublicationPackageRepositoryPort = {
       async saveWechat(workId: string, value: WechatPublicationPackage) { return packages.saveWechat(workId, value); },

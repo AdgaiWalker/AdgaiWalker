@@ -11,6 +11,7 @@ export function ContentTable({
   publicationAvailable = false,
   socialStats,
   onShareToX,
+  onDelete,
 }: {
   items: ContentLedgerEntry[];
   compact?: boolean;
@@ -18,6 +19,7 @@ export function ContentTable({
   publicationAvailable?: boolean;
   socialStats?: AllContentSocialStats;
   onShareToX?: (slug: string, title: string) => void;
+  onDelete?: (slug: string, title: string) => void;
 }) {
   const stages = {
     draft: "草稿",
@@ -40,6 +42,7 @@ export function ContentTable({
                 <th>问答索引</th>
                 <th>更新时间</th>
                 <th>社交同步</th>
+                {onDelete && <th>操作</th>}
               </>
             )}
           </tr>
@@ -152,6 +155,26 @@ export function ContentTable({
                         </button>
                       </div>
                     </td>
+                    {onDelete && (
+                      <td>
+                        <button
+                          type="button"
+                          className="button"
+                          style={{
+                            padding: "2px 7px",
+                            fontSize: 11,
+                            color: "#dc2626",
+                            borderColor: "#fca5a5",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                          onClick={() => onDelete(item.slug, item.title)}
+                          title={`删除「${item.title}」`}
+                        >
+                          删除
+                        </button>
+                      </td>
+                    )}
                   </>
                 )}
               </tr>

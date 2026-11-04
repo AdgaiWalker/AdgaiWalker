@@ -1,5 +1,5 @@
 import { useList, useOne } from "@refinedev/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AgentRevisionDetail,
   AllContentSocialStats,
@@ -76,6 +76,22 @@ export function useSaveContent() {
         body: { raw, expectedHash },
         timeoutMs: REQUEST_TIMEOUTS.write,
       }),
+  });
+}
+
+export function useDeleteContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slug }: { slug: string }) =>
+      requestJson<{ ok: boolean; slug: string }>(`/admin/content/${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+        timeoutMs: REQUEST_TIMEOUTS.write,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      queryClient.invalidateQueries({ queryKey: ["content-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["ops"] });
+    },
   });
 }
 export function useContentChanges(slug?: string) {

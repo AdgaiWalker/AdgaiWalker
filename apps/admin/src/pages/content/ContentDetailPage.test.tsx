@@ -23,27 +23,39 @@ const {
   useContentDetailMock,
   useSaveContentMock,
   useContentVersionMock,
+  useContentChangesMock,
+  useDeleteContentMock,
   fetchContentDetailMock,
   saveMutationMock,
+  deleteMutationMock,
 } = vi.hoisted(() => {
   const saveMutation = {
     mutateAsync: vi.fn(),
     isPending: false,
     error: null,
   };
+  const deleteMutation = {
+    mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
+    isPending: false,
+  };
   return {
     useContentDetailMock: vi.fn(),
     useSaveContentMock: vi.fn(() => saveMutation),
+    useDeleteContentMock: vi.fn(() => deleteMutation),
     useContentVersionMock: vi.fn(),
+    useContentChangesMock: vi.fn(() => ({ data: { items: [] } })),
     fetchContentDetailMock: vi.fn(),
     saveMutationMock: saveMutation,
+    deleteMutationMock: deleteMutation,
   };
 });
 
 vi.mock('../../api/queries', () => ({
   useContentDetail: useContentDetailMock,
   useSaveContent: useSaveContentMock,
+  useDeleteContent: useDeleteContentMock,
   useContentVersion: useContentVersionMock,
+  useContentChanges: useContentChangesMock,
   fetchContentDetail: fetchContentDetailMock,
 }));
 
@@ -94,12 +106,28 @@ describe('ContentDetailPage (C06 文章编辑、差异与预览)', () => {
     expect(saveBtn.disabled).toBe(true);
   });
 
-  it('把内容工作区收为编辑、审核与发布、更新事项、历史四组', () => {
+  it('把内容工作区收为编辑、发布上线、更新事项、历史四组', () => {
     renderPage();
     const nav = within(screen.getByRole('navigation', { name: '内容工作区' }));
     expect(nav.getAllByRole('button').map((button) => button.textContent?.trim())).toEqual([
-      '编辑', '审核与发布', '更新事项', '历史',
+      '编辑', '发布上线', '更新事项', '历史',
     ]);
+  });
+
+  it('支持点击删除按钮弹出二次确认框并调用删除接口', async () => {
+    renderPage();
+    const deleteBtn = screen.getByRole('button', { name: '删除' });
+    expect(deleteBtn).toBeDefined();
+
+    fireEvent.click(deleteBtn);
+    expect(screen.getByRole('heading', { name: '确认删除此文章/草稿？' })).toBeDefined();
+
+    const confirmBtn = screen.getByRole('button', { name: '确认删除' });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(deleteMutationMock.mutateAsync).toHaveBeenCalledWith({ slug: 'test-slug' });
+    });
   });
 
   it('编辑正文更新草稿并标记为未保存，可切换预览和本地差异', () => {

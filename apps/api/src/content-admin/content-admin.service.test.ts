@@ -25,6 +25,7 @@ it('人工保存委托受控变更服务，不再启动 content:gen 刷新公共
     async list() { return []; },
     async get() { return detail; },
     async save() { return detail; },
+    async delete() { return true; },
   };
   const mutation = { saveManual: vi.fn(async () => detail) };
   const child = { unref: vi.fn(), on: vi.fn().mockReturnThis() };
@@ -72,6 +73,7 @@ it('记录社媒宣发流水，并统计总分享次数与最近分享时间', a
     async list() { return []; },
     async get(slug: string) { return slug === 'test-article' ? detail : null; },
     async save() { return detail; },
+    async delete() { return true; },
   };
   const mutation = { saveManual: vi.fn(async () => detail) };
 
@@ -108,6 +110,52 @@ it('记录社媒宣发流水，并统计总分享次数与最近分享时间', a
     const summary = await service.getAllSocialStatsSummary();
     expect(summary['test-article']?.shareCount).toBe(2);
     expect(summary['test-article']?.lastSharedAt).toBeDefined();
+  } finally {
+    await module.close();
+  }
+});
+
+it('支持删除草稿文章并写入审计日志', async () => {
+  const auditRecords: any[] = [];
+  const mockPrisma = {
+    getClient: vi.fn(() => ({
+      auditRecord: {
+        create: vi.fn(async ({ data }: any) => {
+          auditRecords.push(data);
+          return data;
+        }),
+      },
+    })),
+  };
+  const files: ContentFileRepositoryPort = {
+    async list() { return []; },
+    async get(slug: string) { return slug === 'draft-to-delete' ? detail : null; },
+    async save() { return detail; },
+    delete: vi.fn(async () => true),
+  };
+  const mutation = { saveManual: vi.fn(async () => detail) };
+
+  const module = await Test.createTestingModule({
+    providers: [
+      ContentAdminService,
+      { provide: CONTENT_FILE_REPOSITORY, useValue: files },
+      { provide: CONTENT_MUTATION_SERVICE, useValue: mutation },
+      { provide: PRISMA, useValue: mockPrisma },
+    ],
+  }).compile();
+
+  try {
+    const service = module.get(ContentAdminService);
+    const res = await service.deleteDoc('draft-to-delete');
+    expect(res).toEqual({ ok: true, slug: 'draft-to-delete' });
+    expect(files.delete).toHaveBeenCalledWith('draft-to-delete');
+    expect(auditRecords).toHaveLength(1);
+    expect(auditRecords[0].action).toBe('content.delete');
+    expect(auditRecords[0].targetId).toBe('draft-to-delete');
+
+    await expect(service.deleteDoc('not-exist')).rejects.toMatchObject({
+      response: { code: 'content-not-found' },
+    });
   } finally {
     await module.close();
   }

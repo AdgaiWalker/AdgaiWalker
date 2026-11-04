@@ -8,6 +8,7 @@ import {
   useContent,
   useContentSyncPull,
   useContentSyncStatus,
+  useDeleteContent,
   useSaveContent,
 } from "../../api/queries";
 import { ContentTable } from "../../components/ContentTable";
@@ -53,9 +54,11 @@ export function ContentListPage() {
   const syncStatusQuery = useContentSyncStatus();
   const syncPullMutation = useContentSyncPull();
   const saveMutation = useSaveContent();
+  const deleteMutation = useDeleteContent();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ slug: string; title: string } | null>(null);
   const type = params.get("type") ?? "";
   const stage = params.get("stage") ?? "";
   const website = params.get("website") ?? "";
@@ -373,6 +376,7 @@ export function ContentListPage() {
             publicationAvailable={data?.publicationAvailable === true}
             socialStats={socialStats}
             onShareToX={handleShareToX}
+            onDelete={(slug, title) => setDeleteTarget({ slug, title })}
           />
         ) : (
           <EmptyState
@@ -649,6 +653,56 @@ export function ContentListPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-modal-title"
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            className="modal-card"
+            style={{ maxWidth: 440 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="delete-modal-title" style={{ color: "#991b1b" }}>
+              确认删除文章/草稿？
+            </h3>
+            <p style={{ margin: "12px 0 18px", fontSize: 14, color: "#334155", lineHeight: 1.6 }}>
+              即将删除《<strong>{deleteTarget.title}</strong>》（<code>{deleteTarget.slug}</code>）。此操作将永久移除该文章源文件，不可恢复。
+            </p>
+            <div className="modal-card-actions">
+              <button
+                type="button"
+                className="button"
+                disabled={deleteMutation.isPending}
+                onClick={() => setDeleteTarget(null)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="button primary"
+                style={{ background: "#dc2626", borderColor: "#dc2626" }}
+                disabled={deleteMutation.isPending}
+                onClick={async () => {
+                  try {
+                    await deleteMutation.mutateAsync({ slug: deleteTarget.slug });
+                    setDeleteTarget(null);
+                    query.refetch();
+                  } catch (err: unknown) {
+                    alert(err instanceof Error ? err.message : "删除失败");
+                  }
+                }}
+              >
+                {deleteMutation.isPending ? "正在删除..." : "确认删除"}
+              </button>
+            </div>
           </div>
         </div>
       )}

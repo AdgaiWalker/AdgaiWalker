@@ -17,6 +17,7 @@ export interface ContentFileRepositoryPort {
   get(slug: string): Promise<ContentFileDetail | null>;
   /** expectedHash is null only for create-if-absent; otherwise it must match current UTF-8 bytes. */
   save(slug: string, raw: string, expectedHash: string | null): Promise<ContentFileDetail>;
+  delete(slug: string): Promise<boolean>;
 }
 
 export const CONTENT_FILE_REPOSITORY = Symbol('CONTENT_FILE_REPOSITORY');

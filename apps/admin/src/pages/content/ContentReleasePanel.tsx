@@ -15,6 +15,7 @@ import {
   RefreshCw,
   RotateCw,
   ShieldCheck,
+  Trash2,
   UploadCloud,
   XCircle,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import {
   useContentPreflight,
   useContentSocialStats,
   useContentVersion,
+  useDeleteContent,
   useLatestContentRelease,
   usePrepareContentRelease,
   useReconcileContentRelease,
@@ -83,6 +85,7 @@ export function ContentReleasePanel({
   const verifyMutation = useVerifyContentRelease();
   const reconcileMutation = useReconcileContentRelease();
   const cancelMutation = useCancelContentRelease();
+  const deleteMutation = useDeleteContent();
 
   const [grantIdInput, setGrantIdInput] = useState("");
   const [versionNoteInput, setVersionNoteInput] = useState("");
@@ -93,6 +96,7 @@ export function ContentReleasePanel({
   const [activeAngle, setActiveAngle] = useState<SocialShareAngle>("overview");
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualNote, setManualNote] = useState("");
+  const [isCleaningConflict, setIsCleaningConflict] = useState(false);
 
   const socialStatsQuery = useContentSocialStats(slug);
   const recordSocialShareMutation = useRecordSocialShare(slug);
@@ -616,7 +620,78 @@ export function ContentReleasePanel({
             {preflight.scopeConflict && (
               <div style={{ fontSize: 13, color: "#881337", marginBottom: 12 }}>
                 <p style={{ margin: "4px 0 8px" }}>{preflight.scopeConflict.message}</p>
-                <p style={{ margin: "4px 0 8px" }}>请先处理工作区中的代码改动，再点击“立即刷新”重新预检。</p>
+                {preflight.scopeConflict.reason === "other-content-dirty" ? (
+                  <div style={{ marginTop: 8 }}>
+                    <p style={{ margin: "4px 0 8px", fontWeight: 600 }}>
+                      工作区存在其他未提交的草稿文件。为防止未写完的内容意外一同发布到线上，发布暂时阻断。
+                    </p>
+                    <p style={{ margin: "4px 0 8px", color: "#475569" }}>
+                      您可以清理废弃草稿，或先将其他草稿发布上线后再发布本篇：
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "8px 0" }}>
+                      {preflight.scopeConflict.details
+                        .filter((f) => f.startsWith("content/log/"))
+                        .map((f) => {
+                          const dirtySlug = f.replace(/^content\/log\//, "").replace(/\.(md|mdx)$/i, "");
+                          return (
+                            <div
+                              key={dirtySlug}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                background: "white",
+                                padding: "6px 12px",
+                                borderRadius: 6,
+                                border: "1px solid #fecdd3",
+                              }}
+                            >
+                              <span style={{ fontFamily: "monospace", fontSize: 13, color: "#1e293b" }}>{dirtySlug}</span>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <Link
+                                  to={R.contentDetail(dirtySlug)}
+                                  className="button"
+                                  style={{ fontSize: 12, padding: "2px 8px" }}
+                                  target="_blank"
+                                >
+                                  查看草稿
+                                </Link>
+                                <button
+                                  type="button"
+                                  className="button"
+                                  style={{ fontSize: 12, padding: "2px 8px", color: "#dc2626", borderColor: "#fca5a5" }}
+                                  disabled={isCleaningConflict || deleteMutation.isPending}
+                                  onClick={async () => {
+                                    if (window.confirm(`确定删除废弃草稿 ${dirtySlug} 吗？`)) {
+                                      setIsCleaningConflict(true);
+                                      try {
+                                        await deleteMutation.mutateAsync({ slug: dirtySlug });
+                                        await preflightQuery.refetch();
+                                      } finally {
+                                        setIsCleaningConflict(false);
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <Trash2 size={12} style={{ marginRight: 4 }} />
+                                  删除废弃草稿
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ) : preflight.scopeConflict.reason === "code-dirty" ? (
+                  <div>
+                    <p style={{ margin: "4px 0 8px", fontWeight: 600 }}>
+                      检测到未提交的代码改动（非文章文件）。为防止未经测试的代码夹带上线，发布暂时阻断。
+                    </p>
+                    <p style={{ margin: "4px 0 8px" }}>请先在本地或服务器 Git 仓库中提交或还原代码改动，再点击“立即刷新”重新预检。</p>
+                  </div>
+                ) : (
+                  <p style={{ margin: "4px 0 8px" }}>请先处理相关改动，再点击“立即刷新”重新预检。</p>
+                )}
                 {preflight.scopeConflict.details.length > 0 && (
                   <details>
                     <summary style={{ cursor: "pointer", fontWeight: 600 }}>
@@ -796,22 +871,29 @@ export function ContentReleasePanel({
                 onChange={(e) => setVersionNoteInput(e.target.value)}
                 style={{ width: 280 }}
               />
-              <input
-                type="text"
-                placeholder="输入 L2 授权编号（可选）"
-                value={grantIdInput}
-                onChange={(e) => setGrantIdInput(e.target.value)}
-                style={{ width: 180 }}
-              />
-              <button
-                type="button"
-                className="button"
-                disabled={!canPrepare || prepareMutation.isPending}
-                onClick={handlePrepareRelease}
-              >
-                <ShieldCheck size={15} />
-                {prepareMutation.isPending ? "正在批准..." : "独立发布批准"}
-              </button>
+              <details style={{ display: "inline-block" }}>
+                <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--muted)", padding: "4px 8px", userSelect: "none" }}>
+                  高级发布选项 (L2 授权 / 独立批准)
+                </summary>
+                <div style={{ display: "inline-flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="输入 L2 授权编号（可选）"
+                    value={grantIdInput}
+                    onChange={(e) => setGrantIdInput(e.target.value)}
+                    style={{ width: 180 }}
+                  />
+                  <button
+                    type="button"
+                    className="button"
+                    disabled={!canPrepare || prepareMutation.isPending}
+                    onClick={handlePrepareRelease}
+                  >
+                    <ShieldCheck size={15} />
+                    {prepareMutation.isPending ? "正在批准..." : "独立发布批准"}
+                  </button>
+                </div>
+              </details>
             </div>
           )}
 

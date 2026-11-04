@@ -42,6 +42,44 @@ export class ContentAdminService {
     return doc;
   }
 
+  async deleteDoc(slug: string) {
+    const doc = await this.files.get(slug);
+    if (!doc) {
+      throw new ApiError(
+        'content-not-found',
+        HttpStatus.NOT_FOUND,
+        '内容不存在',
+      );
+    }
+
+    const deleted = await this.files.delete(slug);
+    if (!deleted) {
+      throw new ApiError(
+        'content-delete-failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        '删除内容文件失败',
+      );
+    }
+
+    const client = this.prisma?.getClient();
+    if (client) {
+      await client.auditRecord.create({
+        data: {
+          id: newId(),
+          actor: 'owner',
+          action: 'content.delete',
+          targetType: 'content',
+          targetId: slug,
+          outcome: 'deleted',
+          beforeHash: doc.hash,
+          requestId: newId(),
+        },
+      }).catch(() => undefined);
+    }
+
+    return { ok: true, slug };
+  }
+
   async save(slug: string, raw: string, expectedHash: string | null) {
     // C22 项目字段校验：项目使用现有类型和字段进入受控保存
     let parsedData: Record<string, unknown> | null = null;

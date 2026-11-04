@@ -135,4 +135,12 @@ describe('FsContentFileRepository', () => {
     expect(await fs.readFile(path.join(dir, 'hello-world.md'), 'utf8')).toBe(original?.raw);
     expect((await fs.readdir(dir)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
   });
+
+  it('支持删除存在的内容文件且不存在时返回 false', async () => {
+    const repo = new FsContentFileRepository();
+    expect(await repo.delete('non-existent')).toBe(false);
+    expect(await repo.delete('hello-world')).toBe(true);
+    expect(await repo.get('hello-world')).toBeNull();
+    expect(await repo.delete('hello-world')).toBe(false);
+  });
 });
