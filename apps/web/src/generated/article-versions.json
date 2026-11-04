@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T05:25:12.194Z",
+  "generatedAt": "2026-11-04T07:31:08.943Z",
   "articles": {
     "2026-10-29": [
       {
@@ -8,6 +8,15 @@
         "publishedAt": "2026-10-30T05:25:03.463Z",
         "releaseId": "backfill_825e339a-0a7",
         "body": "---\ntitle: \"我的思考被额度绑架了\"\ndate: 2026-10-29\nupdated: 2026-10-29\ntags: [日记, 随想, AI]\ntype: knowledge\nform: note\ndomain: ai\nintent: record\nvalueMode: existence\npublished: true\nsummary: \"当把注意力全部放在“额度快要完了”这件事上，越担心就越做不好——我的思考被额度绑架了。\"\nauthor: \"duola\"\naiUsePolicy:\n  level: AI-2\n  readable: true\n  citable: true\n  actionable: false\n---\n\n今天晚上，是用 Grokbot 的第三天。今天一共有 48% 的额度，我有很多事情没有做完，一直在尝试用 Grokbot 去省额度。\n\n但是由于我是初尝试，我的 Grokbot 不太听话。即使我把 Codex 和 gemini 账号都交给他了，他也没有尽心尽力地去使用它们，去省 bot 自己的额度。尤其是在做到最后 10% 的时候，也就是今天晚上 8 点半，额度还剩 10% 了。我就越来越担心，额度用完我的任务还做不完怎么办。\n\n但是我现在发现，我越担心这件事就越做不好。因为我把注意力全部放在了“额度快要完了”这件事上，我的思考被额度绑架了。\n"
+      }
+    ],
+    "2026-11-02": [
+      {
+        "version": 1,
+        "note": "初始版本入库",
+        "publishedAt": "2026-11-04T07:31:04.516Z",
+        "releaseId": "backfill_e053f309-903",
+        "body": "---\ntitle: \"2026-11-02 站主日记\"\ndate: 2026-11-02\nupdated: 2026-11-02\ntags: [日记, 随笔]\ntype: knowledge\nform: note\ndomain: life\nintent: record\nvalueMode: existence\npublished: true\nsummary: \"待写完后提炼\"\nauthor: \"duola\"\naiUsePolicy:\n  level: AI-2\n  readable: true\n  citable: true\n  actionable: false\n---\n\n# 2026-11-02 站主日记\n\nAI 是猪猪侠，我好像超人强。\n我很懒，懒到把决策判断慢慢交给了 ai。最近刷抖音刷到猪猪侠与超人强比赛集锦。又联想到平时自己践行人决策、ai 执行。当时没带手机，只能靠脑子想，明明以前能靠自己的知识经验解决的问题，自己想不起来改怎么依次处理啦。\n我在干什么，我的脑子去哪了。暂时戒断半天ai\n"
       }
     ],
     "419a2f": [
@@ -269,6 +278,15 @@
         "publishedAt": "2026-10-13T14:58:35.222Z",
         "releaseId": "backfill_147002b8-b7a",
         "body": "---\ntitle: Walker 启航\ndate: 2026-04-29\nupdated: 2026-05-31\ntags: [随想, 哲学]\ntype: knowledge\nhall: lab\nseries: 站志\nseriesOrder: 1\npublished: true\nsummary: 行过万里水路，记录每一次停靠。这是 Walker 的第一篇日志。\nform: article\ndomain: philosophy\nintent: record\nvalueMode: existence\nauthor: \"duola\"\naction: \"书于\"\nlocation: \"行舟\"\nenvironment: \"夜雨\"\nrelated: [fear-as-fuel, ferry-theory]\naiUsePolicy:\n  level: AI-2\n  readable: true\n  citable: true\n  actionable: false\n---\n\n行过万里水路，记录每一次停靠。\n\n这是 Walker 的第一篇日志。一艘小船驶入夜海，前方是未知，身后是平静。\n\n为什么出发？因为不出发就不会知道海的那边有什么。\n\n后来我发现，出发本身就是一个系统——[[ferry-theory|Ferry]]。差距驱动行动，行动逼近目标。而关于为什么走、走的过程中发现了什么，我写在了 [[fear-as-fuel]] 里。\n"
+      }
+    ],
+    "water-class-phone": [
+      {
+        "version": 1,
+        "note": "初始版本入库",
+        "publishedAt": "2026-11-04T07:31:04.551Z",
+        "releaseId": "backfill_9ad62f3a-1c4",
+        "body": "---\ntitle: \"无法忍受水课收手机\"\ndate: 2026-11-04\nupdated: 2026-11-04\ntags: [随笔, 大学, 思考]\ntype: knowledge\nform: note\ndomain: life\nintent: reflect\nvalueMode: existence\npublished: true\nsummary: \"为了毕业可以忍受上水课，但不能忍受你收手机。技术与时代在变，盲目收手机搞形式主义不仅脱离实际，更是对学生探索方向与时间的抑制。\"\nauthor: \"duola\"\naiUsePolicy:\n  level: AI-2\n  readable: true\n  citable: true\n  actionable: false\n---\n\n# 无法忍受水课收手机\n\n一些老师真是不知道自己的课对于大多数人来说是水课。\n\n为了毕业，可以忍受上水课，不能忍受你收手机。作为学校上头视察，为了学校的名声，我也愿意临时把手机交上去。但你不能领导走了，你觉得当时的规矩立的氛围很好，真把自己当回事了。心善，认不清自己，不知道常干抑制学生成长的蠢事。还有个别领导，新官上任三把火，发现上课氛围不行，要对大三的学生改革，你改就改呗，你改之前倒是了解下我们这个专业、问问我们这些学生为啥不听课啊，老是霍霍我们，不知道大三各个人的方向大多确定了么？这些上层的狗娘养的“老师”，读书都读到狗身上去了。教书育人，教的什么书？育的什么人？\n\n还有“老师”，虽说对于想要从业者不是水课吧，有点权力，全霍霍到学生身上了。谁爱跟你这狗仗人势的玩意儿瞎胡闹，既不是官也没啥能力，站在台上没人理你嗷嗷叫，为上这课做了啥准备，不心疼心疼，心疼你什么？你拿工资心疼你什么？就当我们花学费看几场狗叫吧。\n\n点名某个学院整体领导，我不知道你们是受啥刺激了。平常正常办事，对你们感受就是，事不关己，能避则避。一点风险，一点责任不担啊。是上层压力吗？\n\n总的来说，我对我学校的整体运行系统，真是失望透了。新技术（AI）来了，不学来折腾我们，天天抱着死烂教材。\n\n科技浪潮无法避免，哪怕讲点行业和你们年轻时候的经历经验传授传授，我都认为是好的。没能力，就想混份工资，咱们也配合你，课能正常下去，不增加阻力就好了。妈的，部分称为“老师”的心善干坏事不自知。希望仍有良知的老师们“苟日新、日日新、再日新”加入到我们学生的阵营中。也允许“放弃”部分人吧。\n\n最后，并不是所有水课老师都是糟糕的。这里先谢谢容许我缺课、迟到、不听课，以“放弃我”而纵许我上课做自己事情的老师们。一些实践类课（摄影、唱歌、绘画、AI）、思想（马列、毛、习）、考研，都是值得大三的同学们尝试的，看老师能力有可能也是水课，课不水、人水就没招了。大一大二先读先干中找到方向才配说哪些是水课，不要盲目跟风。\n\n（有家产的除外）上大学吃好玩好，出卖时间；努力找到方向，整个轻松点的工作。四年两样总得占一个吧。吃好玩好又努力的同学，羡慕也恭喜你。\n\n对于我这种师生关系，后果是浪费了时间，玩没玩好，学没学好。\n"
       }
     ]
   }

@@ -1,7 +1,32 @@
 {
-  "generatedAt": "2026-11-02T05:15:59.743Z",
+  "generatedAt": "2026-11-04T07:31:08.935Z",
   "seed": 20260914,
   "nodes": [
+    {
+      "id": "note:water-class-phone",
+      "kind": "note",
+      "slug": "water-class-phone",
+      "title": "无法忍受水课收手机",
+      "date": "2026-11-04T00:00:00.000Z",
+      "updated": "2026-11-04T00:00:00.000Z",
+      "created": "2026-11-04T00:00:00.000Z",
+      "hall": "lab",
+      "type": "knowledge",
+      "form": "note",
+      "domain": "life",
+      "series": "",
+      "seriesOrder": null,
+      "tags": [
+        "随笔",
+        "大学",
+        "思考"
+      ],
+      "summary": "为了毕业可以忍受上水课，但不能忍受你收手机。技术与时代在变，盲目收手机搞形式主义不仅脱离实际，更是对学生探索方向与时间的抑制。",
+      "totalDegree": 3,
+      "linkDegree": 0,
+      "inDegree": 0,
+      "outDegree": 3
+    },
     {
       "id": "note:2026-11-02",
       "kind": "note",
@@ -9,7 +34,7 @@
       "title": "2026-11-02 站主日记",
       "date": "2026-11-02T00:00:00.000Z",
       "updated": "2026-11-02T00:00:00.000Z",
-      "created": "2026-11-02T00:00:00.000Z",
+      "created": "2026-11-02T13:16:02+08:00",
       "hall": "lab",
       "type": "knowledge",
       "form": "note",
@@ -215,7 +240,7 @@
       "title": "Codex 入门与第一次成功",
       "date": "2026-08-04T15:00:15.719Z",
       "updated": "2026-08-04T00:00:00.000Z",
-      "created": "2026-08-04T23:31:11+08:00",
+      "created": "2026-08-04T23:24:43+08:00",
       "hall": "condition",
       "type": "knowledge",
       "form": "tutorial",
@@ -241,7 +266,7 @@
       "title": "低成本 AI 社群的真实问题",
       "date": "2026-08-04T15:00:15.457Z",
       "updated": "2026-08-04T00:00:00.000Z",
-      "created": "2026-08-04T23:31:11+08:00",
+      "created": "2026-08-04T23:24:43+08:00",
       "hall": "kit",
       "type": "knowledge",
       "form": "resource",
@@ -266,7 +291,7 @@
       "title": "把害怕开始变成可执行动作",
       "date": "2026-08-04T15:00:14.264Z",
       "updated": "2026-08-04T00:00:00.000Z",
-      "created": "2026-08-04T23:31:11+08:00",
+      "created": "2026-08-04T23:24:43+08:00",
       "hall": "lab",
       "type": "knowledge",
       "form": "article",
@@ -462,10 +487,10 @@
         "实践"
       ],
       "summary": "Skill 不是把经验写进去，而是把已经能稳定复现的经验封装成一个有边界、可调用、可验证的判断函数，并且连接着工具、知识。站在错误的位置，实践→结果→永远够不着标准——不是标准的问题，不是努力的问题，是位置的问题。",
-      "totalDegree": 5,
+      "totalDegree": 6,
       "linkDegree": 0,
       "inDegree": 0,
-      "outDegree": 5
+      "outDegree": 6
     },
     {
       "id": "note:side-hustle-blueprint",
@@ -1126,6 +1151,15 @@
       "outDegree": 0
     },
     {
+      "id": "tag:大学",
+      "kind": "tag",
+      "tag": "大学",
+      "totalDegree": 1,
+      "linkDegree": 0,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
       "id": "tag:学习",
       "kind": "tag",
       "tag": "学习",
@@ -1201,9 +1235,9 @@
       "id": "tag:思考",
       "kind": "tag",
       "tag": "思考",
-      "totalDegree": 3,
+      "totalDegree": 4,
       "linkDegree": 0,
-      "inDegree": 3,
+      "inDegree": 4,
       "outDegree": 0
     },
     {
@@ -1399,24 +1433,24 @@
       "id": "tag:随笔",
       "kind": "tag",
       "tag": "随笔",
+      "totalDegree": 2,
+      "linkDegree": 0,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "attachment:content/log/skill结构图.png",
+      "kind": "attachment",
+      "path": "content/log/skill结构图.png",
       "totalDegree": 1,
       "linkDegree": 0,
       "inDegree": 1,
       "outDegree": 0
     },
     {
-      "id": "attachment:content\\log\\skill结构图.png",
+      "id": "attachment:content/log/微信支付码.jpg",
       "kind": "attachment",
-      "path": "content\\log\\skill结构图.png",
-      "totalDegree": 0,
-      "linkDegree": 0,
-      "inDegree": 0,
-      "outDegree": 0
-    },
-    {
-      "id": "attachment:content\\log\\微信支付码.jpg",
-      "kind": "attachment",
-      "path": "content\\log\\微信支付码.jpg",
+      "path": "content/log/微信支付码.jpg",
       "totalDegree": 0,
       "linkDegree": 0,
       "inDegree": 0,
@@ -1438,6 +1472,11 @@
       "source": "note:419a2f",
       "target": "note:ideas-beyond-time",
       "kind": "link"
+    },
+    {
+      "source": "note:on-people-and-skill",
+      "target": "attachment:content/log/skill结构图.png",
+      "kind": "attachment"
     },
     {
       "source": "note:side-hustle-blueprint",
@@ -1518,6 +1557,21 @@
       "source": "note:walker-launch",
       "target": "note:fear-as-fuel",
       "kind": "link"
+    },
+    {
+      "source": "note:water-class-phone",
+      "target": "tag:随笔",
+      "kind": "tag"
+    },
+    {
+      "source": "note:water-class-phone",
+      "target": "tag:大学",
+      "kind": "tag"
+    },
+    {
+      "source": "note:water-class-phone",
+      "target": "tag:思考",
+      "kind": "tag"
     },
     {
       "source": "note:2026-11-02",

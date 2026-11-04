@@ -1,0 +1,12 @@
+{
+  "slug": "water-class-phone",
+  "versions": [
+    {
+      "version": 1,
+      "contentHash": "e43a81d22f374bbcfe15efe058b081cf8bea082da28df9f83d6396b3624e840a",
+      "note": "初始版本入库",
+      "publishedAt": "2026-11-04T07:31:04.551Z",
+      "releaseId": "backfill_9ad62f3a-1c4"
+    }
+  ]
+}
