@@ -212,4 +212,48 @@ describe("ContentListPage（极简默认首页）", () => {
     );
     expect(navigateMock).toHaveBeenCalledWith("/content/hello-world");
   });
+
+  it("新建文章正确转义标题反斜杠，且同日纯中文标题自动顺延后缀避免 409 撞车", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const todaySlug = `post-${today}`;
+    useContentMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: {
+        data: [
+          {
+            ...ITEMS[0]!,
+            id: todaySlug,
+            slug: todaySlug,
+            title: "今日第一篇日记",
+          },
+        ],
+        total: 1,
+        generatedAt: "2026-11-24T00:00:00.000Z",
+        gitAvailable: true,
+        publicationAvailable: true,
+      },
+      refetch: vi.fn(),
+    });
+    const saveMutate = vi.fn(async ({ slug }: { slug: string }) => ({ slug, raw: "", hash: "h2" }));
+    useSaveContentMock.mockReturnValue({ isPending: false, mutateAsync: saveMutate });
+
+    render(
+      <MemoryRouter>
+        <ContentListPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "新建文章" }));
+    fireEvent.change(screen.getByPlaceholderText("输入文章标题"), { target: { value: "写给 \\极简\\ 的日记" } });
+    fireEvent.click(screen.getByRole("button", { name: "开始写作" }));
+
+    await waitFor(() =>
+      expect(saveMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          slug: `${todaySlug}-2`,
+          raw: expect.stringContaining('title: "写给 \\\\极简\\\\ 的日记"'),
+        }),
+      ),
+    );
+  });
 });

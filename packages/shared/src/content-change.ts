@@ -117,9 +117,10 @@ export interface ContentRelease {
   updatedAt: string;
 }
 
-/** Read model: the three versions come from distinct authoritative sources. */
+/** Read model: the four versions come from distinct authoritative sources. */
 export interface ContentVersionSnapshot {
   workingHash: ContentSha256 | null;
+  currentPublicHash?: ContentSha256 | null;
   publishedHash: ContentSha256 | null;
   indexedHash: ContentSha256 | null;
 }

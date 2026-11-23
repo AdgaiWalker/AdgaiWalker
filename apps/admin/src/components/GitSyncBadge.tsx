@@ -95,7 +95,17 @@ export function GitSyncBadge({ compact = false }: { compact?: boolean }) {
   };
 
   if (compact) {
-    return <button type="button" onClick={handleSync} disabled={isBusy} title={summary.description} style={btnStyle}>{icon}<span>{label}</span></button>;
+    const hasErr = Boolean(feedback && !feedback.ok);
+    const errStyle: React.CSSProperties = hasErr
+      ? { ...btnStyle, background: TONE.error.bg, borderColor: TONE.error.border, color: TONE.error.color }
+      : btnStyle;
+    const errText = feedback?.text.startsWith("探测") ? "探测失败" : "同步失败";
+    return (
+      <button type="button" onClick={handleSync} disabled={isBusy} title={hasErr ? feedback!.text : summary.description} style={errStyle}>
+        {hasErr ? <AlertCircle size={sz} color={TONE.error.icon} /> : icon}
+        <span>{hasErr ? errText : label}</span>
+      </button>
+    );
   }
 
   return (

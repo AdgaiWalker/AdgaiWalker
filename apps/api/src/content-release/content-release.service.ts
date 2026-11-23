@@ -12,6 +12,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   missingPublishedPostFields,
   requireVersionNote,
+  resolveVisibility,
   stripFrontmatterBlock,
   verifyPublicSnapshot,
   contentApprovalBindingKey,
@@ -531,6 +532,21 @@ export class ContentReleaseService implements OnModuleDestroy {
     const doc = this.files ? await this.files.get(slug) : null;
     const workingHash = doc?.hash ?? null;
 
+    let currentPublicHash: string | null = null;
+    if (doc && this.entries) {
+      try {
+        const entry = await this.entries.get(slug);
+        if (entry && resolveVisibility(entry.frontmatter) === 'public') {
+          currentPublicHash = publicItemHash(
+            toPublicSnapshotSource({ slug, data: entry.frontmatter, body: stripFrontmatterBlock(doc.raw) }),
+            (text) => createHash('sha256').update(text).digest('hex'),
+          );
+        }
+      } catch {
+        currentPublicHash = null;
+      }
+    }
+
     let publishedHash: string | null = null;
     if (this.releasesRepo) {
       const latest = await this.releasesRepo.findLatestPublishedForTarget(slug);
@@ -554,6 +570,7 @@ export class ContentReleaseService implements OnModuleDestroy {
 
     return {
       workingHash,
+      currentPublicHash,
       publishedHash,
       indexedHash,
     };

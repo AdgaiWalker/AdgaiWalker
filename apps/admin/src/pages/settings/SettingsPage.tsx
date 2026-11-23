@@ -11,11 +11,11 @@ const GuestQuotaPanel = lazy(() => import("./GuestQuotaPanel").then((m) => ({ de
 const AgentListPage = lazy(() => import("../agents/AgentListPage").then((m) => ({ default: m.AgentListPage })));
 const RuntimeMonitorPanel = lazy(() => import("../records/RuntimeMonitorPanel").then((m) => ({ default: m.RuntimeMonitorPanel })));
 
-function LazyAccordionItem({ id, title, summaryMeta, defaultOpen = false, children }: {
-  id: string; title: string; summaryMeta?: string; defaultOpen?: boolean; children: React.ReactNode;
+function LazyAccordionItem({ id, title, summaryMeta, defaultOpen = false, navKey, children }: {
+  id: string; title: string; summaryMeta?: string; defaultOpen?: boolean; navKey?: string; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  useEffect(() => { if (defaultOpen) setOpen(true); }, [defaultOpen]);
+  useEffect(() => { if (defaultOpen) setOpen(true); }, [defaultOpen, navKey]);
   return (
     <details id={id} open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
       <summary>
@@ -98,7 +98,8 @@ function ClientTelemetryPreview() {
 }
 
 export function SettingsPage() {
-  const hash = useLocation().hash.replace(/^#/, "");
+  const location = useLocation();
+  const hash = location.hash.replace(/^#/, "");
   const agents = useAgents();
   const caps = useCapabilities();
   const okCount = caps.data?.items.filter((i) => i.state === "available").length ?? 0;
@@ -106,19 +107,19 @@ export function SettingsPage() {
 
   return (
     <section className="sys-accordion" aria-label="系统与低频配置">
-      <LazyAccordionItem id="agents" title="小影与 Agent 管理" summaryMeta={agents.data ? `${agents.data.total} 个 Agent` : undefined} defaultOpen={hash === "agents"}>
+      <LazyAccordionItem id="agents" title="小影与 Agent 管理" summaryMeta={agents.data ? `${agents.data.total} 个 Agent` : undefined} defaultOpen={hash === "agents"} navKey={location.key}>
         <AgentListPage />
       </LazyAccordionItem>
-      <LazyAccordionItem id="model" title="模型连接" summaryMeta="API 与默认模型" defaultOpen={hash === "model"}>
+      <LazyAccordionItem id="model" title="模型连接" summaryMeta="API 与默认模型" defaultOpen={hash === "model"} navKey={location.key}>
         <ModelConfigPanel />
       </LazyAccordionItem>
-      <LazyAccordionItem id="quota" title="访客额度" summaryMeta="每日问答限额" defaultOpen={hash === "quota"}>
+      <LazyAccordionItem id="quota" title="访客额度" summaryMeta="每日问答限额" defaultOpen={hash === "quota"} navKey={location.key}>
         <GuestQuotaPanel />
       </LazyAccordionItem>
-      <LazyAccordionItem id="password" title="站主账号与密码" defaultOpen={hash === "password"}>
+      <LazyAccordionItem id="password" title="站主账号与密码" defaultOpen={hash === "password"} navKey={location.key}>
         <AdminPasswordForm />
       </LazyAccordionItem>
-      <LazyAccordionItem id="diagnostics" title="运行诊断与系统日志" summaryMeta={totalCount > 0 ? `${okCount}/${totalCount} 能力就绪` : "进程内日志"} defaultOpen={hash === "diagnostics"}>
+      <LazyAccordionItem id="diagnostics" title="运行诊断与系统日志" summaryMeta={totalCount > 0 ? `${okCount}/${totalCount} 能力就绪` : "进程内日志"} defaultOpen={hash === "diagnostics"} navKey={location.key}>
         <RuntimeMonitorPanel />
         <ClientTelemetryPreview />
       </LazyAccordionItem>

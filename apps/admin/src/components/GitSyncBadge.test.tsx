@@ -92,4 +92,18 @@ describe("GitSyncBadge（诚实状态展示，禁止假绿灯）", () => {
     });
     expect(screen.getByText(/已将 1 篇草稿备份到 GitHub drafts 分支/)).toBeDefined();
   });
+
+  it("compact 顶栏模式下点击同步失败时显示报错短文案与完整提示，不静默吞错", async () => {
+    pullMutate.mockRejectedValueOnce(new Error("SSH connection reset by peer"));
+    useContentSyncStatusMock.mockReturnValue({
+      data: mockStatus({ behind: 2 }),
+      refetch: vi.fn(),
+    });
+
+    render(<GitSyncBadge compact />);
+    fireEvent.click(screen.getByRole("button", { name: /从 GitHub 同步/ }));
+
+    const failedBtn = await screen.findByRole("button", { name: "同步失败" });
+    expect(failedBtn.getAttribute("title")).toContain("SSH connection reset by peer");
+  });
 });

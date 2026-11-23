@@ -58,13 +58,13 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [conflict, setConflict] = useState<{ remoteRaw: string; remoteHash: string } | null>(null);
-  const [justPublished, setJustPublished] = useState(false);
+  const [publishedReleaseId, setPublishedReleaseId] = useState<string | null>(null);
 
   const parsed = useMemo(() => parseDocFrontmatter(draft), [draft]);
   const [tagsInput, setTagsInput] = useState(() => parseDocFrontmatter(item.raw).tags.join(", "));
   const displayTitle = parsed.title || item.title;
 
-  // 仅真正提交中（COMMITTING/PUSHED）或 10 分钟内的新 VERIFYING 才按 5s 轮询；超时旧 VERIFYING 绝不无限轮询或锁死发布按钮
+  // 仅真正提交中（COMMITTING/PUSHED）或 10 分钟内的新 VERIFYING 或本次发布单等待终态才轮询；超时旧 VERIFYING 绝不锁死
   const [pollActive, setPollActive] = useState(false);
   const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollActive ? 5_000 : false });
   const versionQuery = useContentVersion(item.slug, { refetchInterval: pollActive ? 5_000 : false });
@@ -78,13 +78,17 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     Boolean(release?.updatedAt) &&
     Date.now() - Date.parse(release!.updatedAt) < 10 * 60_000;
   const isStaleVerifying = stage === "VERIFYING" && !verifyingFresh;
+  const trackingNewRelease = Boolean(
+    publishedReleaseId && (release?.id !== publishedReleaseId || (stage !== "PUBLISHED" && stage !== "FAILED")),
+  );
 
   useEffect(() => {
-    setPollActive(isGitBusy || verifyingFresh || (justPublished && stage !== "PUBLISHED" && stage !== "FAILED"));
-  }, [isGitBusy, verifyingFresh, justPublished, stage]);
+    setPollActive(isGitBusy || verifyingFresh || trackingNewRelease);
+  }, [isGitBusy, verifyingFresh, trackingNewRelease]);
 
   const isDirty = draft !== savedRaw;
-  const isLive = Boolean(versionQuery.data?.publishedHash && versionQuery.data.publishedHash === versionQuery.data.workingHash) && !isDirty && !isGitBusy;
+  const curPub = versionQuery.data?.currentPublicHash ?? null;
+  const isLive = Boolean(curPub && (versionQuery.data?.publishedHash === curPub || versionQuery.data?.indexedHash === curPub)) && !isDirty && !isGitBusy;
   const blocker = useBlocker(({ currentLocation, nextLocation }) => isDirty && currentLocation.pathname !== nextLocation.pathname);
 
   useEffect(() => {
@@ -96,7 +100,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const patchDoc = (patch: Parameters<typeof updateDocFrontmatter>[1]) => {
     setDraft((prev) => updateDocFrontmatter(prev, patch));
     setStatusMessage(null);
-    setJustPublished(false);
+    setPublishedReleaseId(null);
   };
 
   const performSave = async (overrideHash?: string, rawOverride?: string): Promise<boolean> => {
@@ -138,7 +142,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const shortcutRef = useRef({ save: () => {}, publish: () => {} });
   shortcutRef.current = {
     save: () => { if (isDirty && !saveMutation.isPending) void performSave(); },
-    publish: openPublish,
+    publish: () => { if (!isGitBusy && !publishing) openPublish(); },
   };
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -153,6 +157,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     e.preventDefault();
     const note = versionNote.trim();
     if (!note) return setErrorMessage("请填写一句公开变更说明");
+    if (parsed.visibility === "private") return setErrorMessage("当前为私密文章，请先点击「转为公开」");
     setPublishing(true); setErrorMessage(null);
     const t0 = Date.now();
     try {
@@ -165,7 +170,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
         slug: item.slug, versionNote: note, requestKey: `pub-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       });
       await triggerMutation.mutateAsync({ slug: item.slug, releaseId: prepared.id });
-      setPublishOpen(false); setVersionNote(""); setJustPublished(true);
+      setPublishOpen(false); setVersionNote(""); setPublishedReleaseId(prepared.id);
       setStatusMessage("已推送到 GitHub，正在自动等待线上确证…");
       trackAdminUiEvent("publish.flow_completed", { slug: item.slug, durationMs: Date.now() - t0 });
       void latestRelease.refetch(); void versionQuery.refetch();
@@ -230,24 +235,28 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     }
   };
 
-  // 按需显现 + 绝不撒谎：未保存编辑态（isDirty）下绝不显示「已在线上确证」，平时已发布文章 0 像素占位
-  const showPublishedConfirm = justPublished && stage === "PUBLISHED" && !isDirty && !isGitBusy;
+  // 按需显现 + 绝不撒谎：严格绑定本次 publishedReleaseId 才确证，平时已发布文章 0 像素占位
+  const showPublishedConfirm = Boolean(publishedReleaseId && release?.id === publishedReleaseId && stage === "PUBLISHED") && !isDirty && !isGitBusy;
   const showStrip = Boolean(
-    errorMessage || statusMessage || isGitBusy || verifyingFresh || (!isDirty && (isStaleVerifying || stage === "FAILED" || stage === "UNKNOWN")) || showPublishedConfirm,
+    errorMessage || statusMessage || isGitBusy || verifyingFresh || (!isDirty && (stage === "PREPARED" || isStaleVerifying || stage === "FAILED" || stage === "UNKNOWN")) || showPublishedConfirm,
   );
-  const stripTone = errorMessage || stage === "FAILED" ? "err" : stage === "UNKNOWN" || isStaleVerifying ? "warn" : showPublishedConfirm ? "ok" : "";
+  const stripTone = errorMessage || stage === "FAILED" ? "err" : stage === "PREPARED" || stage === "UNKNOWN" || isStaleVerifying ? "warn" : showPublishedConfirm ? "ok" : "";
   const stripText =
     errorMessage ??
     statusMessage ??
     (isGitBusy || verifyingFresh
       ? `发布进行中（${stage}），后台自动核验中…`
-      : isStaleVerifying
-        ? "上次发布超时未确证，可点击核对或直接重新发布"
-        : stage === "UNKNOWN"
-          ? "上次发布结果待核对，请点击核对确认状态"
-          : stage === "FAILED"
-            ? `上次发布失败：${release?.errorCode ?? "请重试"}`
-            : "已在线上确证");
+      : stage === "PREPARED"
+        ? "存在未推送的待发布单，可点击重新发布或取消"
+        : isStaleVerifying
+          ? "上次发布超时未确证，可点击核对或直接重新发布"
+          : stage === "UNKNOWN"
+            ? "上次发布结果待核对，请点击核对确认状态"
+            : stage === "FAILED"
+              ? `上次发布失败：${release?.errorCode ?? "请重试"}`
+              : showPublishedConfirm
+                ? "已在线上确证"
+                : "");
 
   return (
     <>
@@ -329,7 +338,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
                 <button type="button" className="btn btn-ghost" onClick={() => { setTagsInput(parsed.tags.join(", ")); setRawYamlMode(false); }}>返回纯净画布</button>
               </div>
             ) : null}
-            <textarea aria-label={rawYamlMode ? "原始 Markdown 源码" : "文章正文"} className="editor-canvas" value={draft} onChange={(e) => { setDraft(e.target.value); setStatusMessage(null); setJustPublished(false); }} />
+            <textarea aria-label={rawYamlMode ? "原始 Markdown 源码" : "文章正文"} className="editor-canvas" value={draft} onChange={(e) => { setDraft(e.target.value); setStatusMessage(null); setPublishedReleaseId(null); }} />
           </div>
         ) : (
           <div className="editor-sheet">
@@ -405,9 +414,11 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
           <ContentHistoryPanel slug={item.slug} onRestore={(raw, v) => { setDraft(raw); setTagsInput(parseDocFrontmatter(raw).tags.join(", ")); setDrawerOpen(false); setStatusMessage(`已载入 v${v} 内容为草稿，保存并发布后成为新版本`); }} />
         ) : drawerSection === "ai" ? (
           <ContentChangeReviewPanel slug={item.slug} currentDoc={{ ...item, raw: draft, hash: baseHash }} onApplied={() => {
-            void fetchContentDetail(item.slug).then((fresh) => {
-              setDraft(fresh.raw); setSavedRaw(fresh.raw); setTagsInput(parseDocFrontmatter(fresh.raw).tags.join(", ")); setBaseHash(fresh.hash || ""); setDrawerOpen(false);
-            });
+            void fetchContentDetail(item.slug)
+              .then((fresh) => {
+                setDraft(fresh.raw); setSavedRaw(fresh.raw); setTagsInput(parseDocFrontmatter(fresh.raw).tags.join(", ")); setBaseHash(fresh.hash || ""); setDrawerOpen(false);
+              })
+              .catch((err) => setErrorMessage(err instanceof Error ? err.message : "应用建议后刷新失败"));
             void changesQuery.refetch();
           }} />
         ) : drawerSection === "share" ? (

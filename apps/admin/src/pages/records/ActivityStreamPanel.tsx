@@ -101,9 +101,9 @@ export function ActivityStreamPanel() {
           <ErrorState error={counts.error} retry={counts.refetch} />
         ) : counts.data ? (
           <div className="metrics">
-            <CountCard label="未完成事项" value={counts.data.remindersPending} hint="提醒箱开放项 · 点它只看提醒" onPick={() => go("reminder", null)} />
-            <CountCard label="降级回答（7 天）" value={counts.data.answersDegraded} hint="与概览同一口径 · 点它只看访客" onPick={() => go("visitor", null)} />
-            <CountCard label="失败回答（7 天）" value={counts.data.runsFailed} hint="与概览同一口径 · 点它只看访客" onPick={() => go("visitor", null)} />
+            <CountCard label="未完成事项" value={counts.data.remindersPending} hint="待处理事项 · 点它只看提醒" onPick={() => go("reminder", null)} />
+            <CountCard label="降级回答（7 天）" value={counts.data.answersDegraded} hint="近 7 天访客降级 · 点它只看访客" onPick={() => go("visitor", null)} />
+            <CountCard label="失败回答（7 天）" value={counts.data.runsFailed} hint="近 7 天访客失败 · 点它只看访客" onPick={() => go("visitor", null)} />
             <CountCard
               label="发布未确证"
               value={counts.data.releaseWorkingAhead}

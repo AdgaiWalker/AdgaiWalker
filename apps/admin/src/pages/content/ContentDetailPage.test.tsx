@@ -279,4 +279,55 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     fireEvent.click(screen.getByRole("button", { name: "转为公开" }));
     expect(submitBtn.disabled).toBe(false);
   });
+
+  it("按 currentPublicHash 同源比对显示「重新发布」次按钮，二次发布绑定新 ID 不瞬闪旧确证，并显式提示孤儿 PREPARED", async () => {
+    useContentVersionMock.mockReturnValue({
+      data: { workingHash: "hash-file-raw", currentPublicHash: "hash-pub-1", publishedHash: null, indexedHash: "hash-pub-1" },
+      refetch: vi.fn(),
+    });
+    const { unmount } = renderDetail();
+    const republishBtn = screen.getByRole("button", { name: "重新发布" });
+    expect(republishBtn.className).toBe("btn");
+    unmount();
+
+    // 二次发布绑定 publishedReleaseId：旧 PUBLISHED 记录在 refetch 切换前绝不误触发「已在线上确证」
+    useContentDetailMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: {
+        data: {
+          id: "demo-post", slug: "demo-post", title: "测试文章", type: "knowledge",
+          raw: "---\ntitle: 测试文章\nsummary: 简短摘要\nvisibility: public\n---\n\n# 已公开正文\n",
+          hash: "hash-1", updatedAt: "2026-11-23T10:00:00.000Z",
+        },
+      },
+      refetch: vi.fn(),
+    });
+    useLatestContentReleaseMock.mockReturnValue({
+      data: { id: "rel-old", stage: "PUBLISHED", updatedAt: "2026-11-23T09:00:00.000Z" },
+      refetch: vi.fn(),
+    });
+    usePrepareContentReleaseMock.mockReturnValue({
+      isPending: false,
+      mutateAsync: vi.fn(async () => ({ id: "rel-new", stage: "PREPARED" })),
+    });
+    const r2 = renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "重新发布" }));
+    fireEvent.change(screen.getByPlaceholderText(/补充一线案例/), { target: { value: "二次修订" } });
+    fireEvent.click(screen.getByRole("button", { name: "发布上线" }));
+    await waitFor(() => expect(screen.getByText(/正在自动等待线上确证/)).toBeTruthy());
+    expect(screen.queryByText("已在线上确证")).toBeNull();
+    expect(screen.queryByRole("link", { name: /打开文章/ })).toBeNull();
+    r2.unmount();
+
+    // 孤儿 PREPARED 发布单可见并支持取消，绝不误报已上线
+    useLatestContentReleaseMock.mockReturnValue({
+      data: { id: "rel-prep", stage: "PREPARED", updatedAt: "2026-11-23T09:30:00.000Z" },
+      refetch: vi.fn(),
+    });
+    renderDetail();
+    expect(screen.getByText(/存在未推送的待发布单/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "取消发布单" })).toBeTruthy();
+    expect(screen.queryByText("已在线上确证")).toBeNull();
+  });
 });

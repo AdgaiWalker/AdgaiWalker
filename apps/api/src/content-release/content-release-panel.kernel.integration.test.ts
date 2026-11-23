@@ -119,6 +119,8 @@ describe('C20 接通发布清单和版本状态界面（Kernel 集成测试）',
     const body = await res.json();
     expect(body).toHaveProperty('workingHash');
     expect(body.workingHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.currentPublicHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.currentPublicHash).not.toBe(body.workingHash);
     expect(body).toHaveProperty('publishedHash');
     expect(body).toHaveProperty('indexedHash');
   });
