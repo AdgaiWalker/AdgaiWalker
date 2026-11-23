@@ -10,7 +10,7 @@ applies_to: [api, admin, web, agent, ops]
 
 # 提案：向 Cordis 时空可组合演进的分阶裁决
 
-> **状态：第 0 关裁决书已完成，待站主确认后进入第 1 关。** 本文是任务书 + 审理记录，不是执行进度源；原子进度仍只在根 `to-do.md`。
+> **状态：第 0 关裁决完成（`53855fd`）、第 1 关已部署上线（`137e447`）、第 2 关（2A：`apps/agent` 响应式 `KnowledgeService`）已验收。** 本文是任务书 + 审理记录，不是执行进度源；原子进度仍只在根 `to-do.md`。
 > 第 0 关前置取证与一页裁决书见：[GATE0-CORDIS-AND-SYNC-2026-11-23.md](../evidence/GATE0-CORDIS-AND-SYNC-2026-11-23.md)。
 
 ## 一、来由（两条线如何合为一件事）

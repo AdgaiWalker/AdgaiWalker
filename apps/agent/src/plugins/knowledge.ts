@@ -27,6 +27,26 @@ export interface KnowledgeConfig {
   contentPath?: string;
   /** 公开上下文：已核验公开快照目录（含 active.json / snapshots/ / deny.json）。与 API 同源。 */
   snapshotDir?: string;
+  /** 经 ctx.plugin 挂载时是否自动监听磁盘变更并热刷新索引（默认 true）。 */
+  watch?: boolean;
+  /** 磁盘变更防抖毫秒数（默认 60ms，合并原子写入/重命名抖动）。 */
+  watchDebounceMs?: number;
+}
+
+export interface KnowledgeVersion {
+  collectionHash: string | null;
+  revision: number;
+  count: number;
+}
+
+export interface KnowledgeUpdatedEvent {
+  collectionHash: string | null;
+  count: number;
+  revision: number;
+}
+
+export interface KnowledgeReloadFailedEvent {
+  reason: string;
 }
 
 /** 与 API 的 FsPublicSnapshotRepository 同一份读取与校验规则（fail-closed）。 */
@@ -74,23 +94,31 @@ export type NeighborsResult = {
 export class KnowledgeService extends Service {
   static readonly provide = 'knowledge';
 
-  private readonly entries: KnowledgeEntry[] = [];
+  private entries: KnowledgeEntry[] = [];
   /** 互引结构：与 web/API 共用 shared 的同一个建图纯函数 */
-  private readonly graph: KnowledgeGraph;
+  private graph!: KnowledgeGraph;
   /** 公开快照目录（仅快照模式存在）；撤销集合从这里逐问读取 */
-  private snapshotDir: string | null = null;
+  private readonly snapshotDir: string | null = null;
+  private readonly contentPath: string | null = null;
+  private readonly watchEnabled: boolean;
+  private readonly watchDebounceMs: number;
+  private collectionHash: string | null = null;
+  private fingerprint = '';
+  private revision = 0;
 
   /** 私有开发读取：content.json 原样入索引，不应用公开撤销集合。 */
-  private loadPrivateDev(full: string): void {
-    const raw = JSON.parse(fs.readFileSync(full, 'utf8')) as { items?: unknown[] };
+  private readPrivateDev(full: string): { entries: KnowledgeEntry[]; collectionHash: null; fingerprint: string } {
+    const rawText = fs.readFileSync(full, 'utf8');
+    const raw = JSON.parse(rawText) as { items?: unknown[] };
     if (!Array.isArray(raw.items)) throw new Error(`knowledge: content.json 无 items（${full}）`);
+    const entries: KnowledgeEntry[] = [];
     for (const item of raw.items) {
       if (!item || typeof item !== 'object') continue;
       const e = item as Record<string, unknown>;
       const policy = (e.aiUsePolicy ?? {}) as { readable?: unknown; citable?: unknown };
       const readable = policy.readable === true;
       if (!readable) continue; // aiUsePolicy.readable=false 永不进索引（fail-closed）
-      this.entries.push({
+      entries.push({
         slug: String(e.slug ?? ''),
         title: String(e.title ?? ''),
         summary: String(e.summary ?? ''),
@@ -103,14 +131,16 @@ export class KnowledgeService extends Service {
         citable: policy.citable === true,
       });
     }
+    return { entries, collectionHash: null, fingerprint: createHash('sha256').update(rawText).digest('hex') };
   }
 
   /** 公开上下文：只读与 API 同源的已核验快照；无基线或 hash 不符直接抛错（fail-closed）。 */
-  private loadPublicSnapshot(root: string): void {
+  private readPublicSnapshot(root: string): { entries: KnowledgeEntry[]; collectionHash: string; fingerprint: string } {
     const snapshot = readActiveSnapshot(root);
+    const entries: KnowledgeEntry[] = [];
     for (const item of snapshot.items) {
       if (!item.readable) continue;
-      this.entries.push({
+      entries.push({
         slug: item.slug,
         title: item.title,
         summary: item.summary,
@@ -120,6 +150,31 @@ export class KnowledgeService extends Service {
         citable: item.citable,
       });
     }
+    return { entries, collectionHash: snapshot.collectionHash, fingerprint: snapshot.collectionHash };
+  }
+
+  private loadState(): { entries: KnowledgeEntry[]; graph: KnowledgeGraph; collectionHash: string | null; fingerprint: string } {
+    const loaded = this.contentPath
+      ? this.readPrivateDev(this.contentPath)
+      : this.readPublicSnapshot(this.snapshotDir!);
+    if (loaded.entries.length === 0) throw new Error('knowledge: 可读条目为 0，拒绝空索引启动');
+
+    // 图只由**已入索引的可读条目**构成：指向不可读文章的链接会成为幽灵节点，
+    // 对机器表现为「存在但不可用」，而不是悄悄带出不可读内容。
+    const graph = buildKnowledgeGraph({
+      items: loaded.entries.map((entry) => ({
+        slug: entry.slug,
+        title: entry.title,
+        date: '',
+        type: entry.form ?? '',
+        domain: entry.domain ?? '',
+        tags: entry.tags,
+        summary: entry.summary,
+        body: entry.body,
+      })),
+      now: new Date().toISOString(),
+    });
+    return { ...loaded, graph };
   }
 
   /** 撤销集合逐问重读：旧进程/旧会话也不能绕过收窄。私有开发模式不适用。 */
@@ -142,30 +197,86 @@ export class KnowledgeService extends Service {
   constructor(ctx: Context, config: KnowledgeConfig) {
     super(ctx, 'knowledge');
     if (config.contentPath) {
-      this.loadPrivateDev(path.resolve(config.contentPath));
+      this.contentPath = path.resolve(config.contentPath);
     } else if (config.snapshotDir) {
       this.snapshotDir = path.resolve(config.snapshotDir);
-      this.loadPublicSnapshot(this.snapshotDir);
     } else {
       throw new Error('knowledge: 缺少内容来源（contentPath 或 snapshotDir）');
     }
-    if (this.entries.length === 0) throw new Error('knowledge: 可读条目为 0，拒绝空索引启动');
+    this.watchEnabled = config.watch ?? true;
+    this.watchDebounceMs = Math.max(0, config.watchDebounceMs ?? 60);
 
-    // 图只由**已入索引的可读条目**构成：指向不可读文章的链接会成为幽灵节点，
-    // 对机器表现为「存在但不可用」，而不是悄悄带出不可读内容。
-    this.graph = buildKnowledgeGraph({
-      items: this.entries.map((entry) => ({
-        slug: entry.slug,
-        title: entry.title,
-        date: '',
-        type: entry.form ?? '',
-        domain: entry.domain ?? '',
-        tags: entry.tags,
-        summary: entry.summary,
-        body: entry.body,
-      })),
-      now: new Date().toISOString(),
-    });
+    const initial = this.loadState();
+    this.entries = initial.entries;
+    this.graph = initial.graph;
+    this.collectionHash = initial.collectionHash;
+    this.fingerprint = initial.fingerprint;
+    this.revision = 1;
+  }
+
+  /** Cordis 插件激活钩子：用 ctx.effect 托管文件监听，Fiber 卸载时句柄与定时器自动归零。 */
+  [Service.init](): void {
+    if (!this.watchEnabled) return;
+    const watchDir = this.snapshotDir ?? path.dirname(this.contentPath!);
+    const targetName = this.snapshotDir ? 'active.json' : path.basename(this.contentPath!);
+    const watchBase = path.basename(watchDir);
+
+    this.ctx.effect(() => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let closed = false;
+      const scheduleReload = () => {
+        if (closed) return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          timer = undefined;
+          if (!closed) this.reload();
+        }, this.watchDebounceMs);
+        timer.unref?.();
+      };
+      const watcher = fs.watch(watchDir, (_eventType, filename) => {
+        if (closed) return;
+        const name = filename ? filename.toString() : '';
+        if (name && name !== targetName && name !== watchBase) return;
+        scheduleReload();
+      });
+      watcher.on('error', (err) => {
+        if (!closed) this.ctx.emit('knowledge/reload-failed', { reason: err.message });
+      });
+      // 闭合 constructor 读取与 fs.watch(FSEvents) 绑定之间的启动窗口竞态；无变更时指纹 O(1) 跳过
+      scheduleReload();
+      return () => {
+        closed = true;
+        if (timer) clearTimeout(timer);
+        watcher.close();
+      };
+    }, 'knowledge:watch');
+  }
+
+  get version(): KnowledgeVersion {
+    return { collectionHash: this.collectionHash, revision: this.revision, count: this.entries.length };
+  }
+
+  /** 按需或响应磁盘变更重新加载索引；校验失败保留旧基线（fail-safe retention）。 */
+  reload(): boolean {
+    try {
+      const next = this.loadState();
+      if (next.fingerprint === this.fingerprint) return false;
+      this.entries = next.entries;
+      this.graph = next.graph;
+      this.collectionHash = next.collectionHash;
+      this.fingerprint = next.fingerprint;
+      this.revision += 1;
+      this.ctx.emit('knowledge/updated', {
+        collectionHash: this.collectionHash,
+        count: this.entries.length,
+        revision: this.revision,
+      });
+      return true;
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      this.ctx.emit('knowledge/reload-failed', { reason });
+      return false;
+    }
   }
 
   /**
@@ -279,5 +390,9 @@ export class KnowledgeService extends Service {
 declare module '@deepseek-ai/cordis' {
   interface Context {
     knowledge: KnowledgeService;
+  }
+  interface Events {
+    'knowledge/updated'(event: KnowledgeUpdatedEvent): void;
+    'knowledge/reload-failed'(event: KnowledgeReloadFailedEvent): void;
   }
 }
