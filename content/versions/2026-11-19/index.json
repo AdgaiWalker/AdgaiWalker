@@ -7,6 +7,13 @@
       "note": "初始版本入库",
       "publishedAt": "2026-11-20T05:01:45.619Z",
       "releaseId": "backfill_e7a50501-bb6"
+    },
+    {
+      "version": 2,
+      "contentHash": "403dde8aedbfe4835902ddb23eac108d18abbcb9c2c0a637d1a4e3c776b024ca",
+      "note": "生产关系视角下的人机协作信息生产：模型、编排与数据入口",
+      "publishedAt": "2026-11-23T23:36:47.658Z",
+      "releaseId": "rel_bc3b15dc-d02"
     }
   ]
 }
