@@ -1,50 +1,70 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes, Link } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { AdminShell } from "./AdminShell";
 import { ADMIN_ROUTES as R } from "../shared/routes";
-import { OverviewPage } from "../pages/overview/OverviewPage";
 import { ContentListPage } from "../pages/content/ContentListPage";
-import { AgentListPage, AgentDetailPage } from "../pages/agents/AgentListPage";
-import { DeploymentsPage } from "../pages/deployments/DeploymentsPage";
-import { RunListPage } from "../pages/records/RunListPage";
-import { RunDetailPage } from "../pages/records/RunDetailPage";
-import { ConversationLogDetailPage } from "../pages/records/ConversationLogDetailPage";
-import { SettingsPage } from "../pages/settings/SettingsPage";
 import { LoadingState } from "../components/States";
 
 const ContentDetailPage = lazy(() =>
-  import("../pages/content/ContentDetailPage").then((module) => ({
-    default: module.ContentDetailPage,
+  import("../pages/content/ContentDetailPage").then((m) => ({ default: m.ContentDetailPage })),
+);
+const RunListPage = lazy(() =>
+  import("../pages/records/RunListPage").then((m) => ({ default: m.RunListPage })),
+);
+const RunDetailPage = lazy(() =>
+  import("../pages/records/RunDetailPage").then((m) => ({ default: m.RunDetailPage })),
+);
+const ConversationLogDetailPage = lazy(() =>
+  import("../pages/records/ConversationLogDetailPage").then((m) => ({
+    default: m.ConversationLogDetailPage,
   })),
 );
+const AgentListPage = lazy(() =>
+  import("../pages/agents/AgentListPage").then((m) => ({ default: m.AgentListPage })),
+);
+const AgentDetailPage = lazy(() =>
+  import("../pages/agents/AgentListPage").then((m) => ({ default: m.AgentDetailPage })),
+);
+const DeploymentsPage = lazy(() =>
+  import("../pages/deployments/DeploymentsPage").then((m) => ({ default: m.DeploymentsPage })),
+);
+const SettingsPage = lazy(() =>
+  import("../pages/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AdminShell />}>
-        <Route index element={<Navigate to={R.overview} replace />} />
-        <Route path={R.overview} element={<OverviewPage />} />
+        {/* 默认首页与旧 /overview 书签均直达文章主工作流 */}
+        <Route index element={<Navigate to={R.content} replace />} />
+        <Route path={R.overview} element={<Navigate to={R.content} replace />} />
+
         <Route path={R.content} element={<ContentListPage />} />
-        <Route
-          path={R.contentPattern}
-          element={
-            <Suspense fallback={<LoadingState />}>
-              <ContentDetailPage />
-            </Suspense>
-          }
-        />
-        <Route path={R.agents} element={<AgentListPage />} />
-        <Route path={R.deployments} element={<DeploymentsPage />} />
-        <Route path={R.agentPattern} element={<AgentDetailPage />} />
-        <Route path={R.records} element={<RunListPage />} />
-        <Route path={R.runPattern} element={<RunDetailPage />} />
-        <Route path={R.conversationPattern} element={<ConversationLogDetailPage />} />
-        <Route path={R.settings} element={<SettingsPage />} />
+        <Route path={R.contentPattern} element={<Lazy><ContentDetailPage /></Lazy>} />
+
+        <Route path={R.records} element={<Lazy><RunListPage /></Lazy>} />
+        <Route path={R.runPattern} element={<Lazy><RunDetailPage /></Lazy>} />
+        <Route path={R.conversationPattern} element={<Lazy><ConversationLogDetailPage /></Lazy>} />
+
+        <Route path={R.settings} element={<Lazy><SettingsPage /></Lazy>} />
+        {/* 保留 Agent 与部署深链，零破坏书签 */}
+        <Route path={R.agents} element={<Lazy><AgentListPage /></Lazy>} />
+        <Route path={R.deployments} element={<Lazy><DeploymentsPage /></Lazy>} />
+        <Route path={R.agentPattern} element={<Lazy><AgentDetailPage /></Lazy>} />
+
         <Route
           path="*"
           element={
             <section className="empty-state">
-              <h1>404 · 页面不存在</h1>
-              <Link to={R.overview}>返回概览</Link>
+              <strong>页面不存在</strong>
+              <Link className="btn" to={R.content}>
+                返回文章
+              </Link>
             </section>
           }
         />

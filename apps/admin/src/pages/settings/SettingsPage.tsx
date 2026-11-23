@@ -1,202 +1,224 @@
-import { useState } from "react";
-import { KeyRound } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowRight, KeyRound } from "lucide-react";
 import { getAdminUsername, requestJson, REQUEST_TIMEOUTS, setAdminToken } from "../../api/http";
-import { useCapabilities } from "../../app/AdminShell";
-import { ErrorState, LoadingState, PageHeading } from "../../components/States";
-import { capabilityLabels, timeLabel } from "../../shared/labels";
-import { ModelConfigPanel } from "./ModelConfigPanel";
-import { GuestQuotaPanel } from "./GuestQuotaPanel";
+import { getAdminUiEvents, subscribeAdminUiEvents } from "../../api/telemetry";
+import { useAgents, useCapabilities } from "../../api/queries";
+import { LoadingState } from "../../components/States";
+import { ADMIN_ROUTES as R } from "../../shared/routes";
 
-function AdminPasswordSection() {
+const ModelConfigPanel = lazy(() =>
+  import("./ModelConfigPanel").then((m) => ({ default: m.ModelConfigPanel })),
+);
+const GuestQuotaPanel = lazy(() =>
+  import("./GuestQuotaPanel").then((m) => ({ default: m.GuestQuotaPanel })),
+);
+const AgentListPage = lazy(() =>
+  import("../agents/AgentListPage").then((m) => ({ default: m.AgentListPage })),
+);
+const RuntimeMonitorPanel = lazy(() =>
+  import("../records/RuntimeMonitorPanel").then((m) => ({ default: m.RuntimeMonitorPanel })),
+);
+
+function LazyAccordionItem({
+  id,
+  title,
+  summaryMeta,
+  defaultOpen = false,
+  children,
+}: {
+  id: string;
+  title: string;
+  summaryMeta?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
+
+  return (
+    <details
+      id={id}
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      {/* modern-web-guidance accordion: 不在 summary 内放 h2/h3，保持纯文本可访问语义 */}
+      <summary>
+        <span>{title}</span>
+        {summaryMeta ? <span className="sys-summary-meta">{summaryMeta}</span> : null}
+      </summary>
+      {open ? (
+        <div className="sys-details-body">
+          <Suspense fallback={<LoadingState />}>{children}</Suspense>
+        </div>
+      ) : null}
+    </details>
+  );
+}
+
+function AdminPasswordForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const username = getAdminUsername();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
-    if (!currentPassword.trim()) {
-      setFeedback({ type: "error", text: "请输入当前密码" });
-      return;
-    }
     if (newPassword.trim().length < 6) {
-      setFeedback({ type: "error", text: "新密码长度至少为 6 位" });
+      setFeedback({ ok: false, text: "新密码至少 6 位" });
       return;
     }
     if (newPassword.trim() !== confirmPassword.trim()) {
-      setFeedback({ type: "error", text: "两次输入的新密码不一致" });
+      setFeedback({ ok: false, text: "两次输入的新密码不一致" });
       return;
     }
     setSaving(true);
     try {
-      await requestJson<{ ok: boolean; username: string }>("/ops/admin-password", {
+      await requestJson<{ ok: boolean }>("/ops/admin-password", {
         method: "PUT",
-        body: {
-          currentPassword: currentPassword.trim(),
-          newPassword: newPassword.trim(),
-        },
+        body: { currentPassword: currentPassword.trim(), newPassword: newPassword.trim() },
         timeoutMs: REQUEST_TIMEOUTS.write,
       });
       setAdminToken(newPassword.trim(), username);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setFeedback({ type: "success", text: "密码修改成功！新密码已立即生效并持久化保存。" });
-    } catch (err: unknown) {
-      setFeedback({
-        type: "error",
-        text: err instanceof Error ? err.message : "密码修改失败，请重试",
-      });
+      setFeedback({ ok: true, text: "密码已更新并立即生效" });
+    } catch (err) {
+      setFeedback({ ok: false, text: err instanceof Error ? err.message : "修改失败" });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <section className="panel">
-      <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <KeyRound size={18} />
-        站主账号与密码
-      </h2>
-      <p className="muted">
-        当前站主登录账号：<strong>{username}</strong>。修改密码后立即生效，并自动同步保存到后端配置。
+    <form onSubmit={(e) => void handleSubmit(e)} style={{ maxWidth: 360, display: "grid", gap: 10 }}>
+      <p className="muted" style={{ margin: 0 }}>
+        当前账号：<strong>{username}</strong>
       </p>
-
-      {feedback && (
-        <div
-          className="notice"
-          style={{
-            background: feedback.type === "success" ? "#edfcf2" : "#fef2f2",
-            color: feedback.type === "success" ? "#166534" : "#991b1b",
-            border: feedback.type === "success" ? "1px solid #bbf7d0" : "1px solid #fecaca",
-            marginBottom: 14,
-          }}
-        >
+      {feedback ? (
+        <p className={feedback.ok ? "" : "error-text"} role="status" style={{ margin: 0 }}>
           {feedback.text}
-        </div>
-      )}
+        </p>
+      ) : null}
+      <input
+        type="password"
+        required
+        autoComplete="current-password"
+        placeholder="当前密码"
+        value={currentPassword}
+        onChange={(e) => setCurrentPassword(e.target.value)}
+      />
+      <input
+        type="password"
+        required
+        autoComplete="new-password"
+        placeholder="新密码（至少 6 位）"
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+      />
+      <input
+        type="password"
+        required
+        autoComplete="new-password"
+        placeholder="确认新密码"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+      />
+      <div>
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          <KeyRound size={14} aria-hidden="true" />
+          {saving ? "保存中…" : "更新密码"}
+        </button>
+      </div>
+    </form>
+  );
+}
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: 420, display: "flex", flexDirection: "column", gap: 12 }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500 }}>
-          站主账号
-          <input type="text" value={username} disabled style={{ background: "#f8fafc", color: "#64748b" }} />
-        </label>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500 }}>
-          当前密码 *
-          <input
-            type="password"
-            required
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="输入当前正在使用的密码"
-          />
-        </label>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500 }}>
-          新密码 *
-          <input
-            type="password"
-            required
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="输入新密码（至少 6 位）"
-          />
-        </label>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500 }}>
-          确认新密码 *
-          <input
-            type="password"
-            required
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="再次输入新密码"
-          />
-        </label>
-
-        <div style={{ marginTop: 4 }}>
-          <button type="submit" className="button primary" disabled={saving}>
-            {saving ? "正在保存..." : "保存新密码"}
-          </button>
-        </div>
-      </form>
-    </section>
+function ClientTelemetryPreview() {
+  const [, bump] = useState(0);
+  useEffect(() => subscribeAdminUiEvents(() => bump((n) => n + 1)), []);
+  const events = getAdminUiEvents().slice(-15).reverse();
+  if (events.length === 0) return null;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <p className="muted" style={{ fontSize: 12, margin: "0 0 6px" }}>
+        本次会话交互埋点（最近 {events.length} 条，见 docs/admin-telemetry-events.md）
+      </p>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>事件</th>
+              <th>参数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((ev, i) => (
+              <tr key={`${ev.at}-${i}`}>
+                <td className="mono">{ev.at.slice(11, 19)}</td>
+                <td className="mono">{ev.event}</td>
+                <td className="mono muted">{ev.props ? JSON.stringify(ev.props) : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
 export function SettingsPage() {
-  const query = useCapabilities();
+  const location = useLocation();
+  const hash = location.hash.replace(/^#/, "");
+  const agents = useAgents();
+  const capabilities = useCapabilities();
+  const availableCount = capabilities.data?.items.filter((i) => i.state === "available").length ?? 0;
+  const totalCount = capabilities.data?.items.length ?? 0;
+
   return (
-    <>
-      <PageHeading title="设置" description="管理站主登录密码、访客额度、配置模型连接，查看当前可用能力。" />
-      <AdminPasswordSection />
-      <GuestQuotaPanel />
-      <section className="panel">
-        <h2>模型连接</h2>
-        <p className="muted">
-          提供方、API 网址、API Key 与模型都在这里配置；这是「配好供应商 → 建 Agent → 试跑 →
-          看记录 → 部署」闭环的第一环。配置写入本系统自己的 Harness 目录，与站主个人环境无关。
-        </p>
+    <section className="sys-accordion" aria-label="系统与低频配置">
+      <LazyAccordionItem
+        id="agents"
+        title="小影与 Agent 管理"
+        summaryMeta={agents.data ? `${agents.data.total} 个 Agent` : undefined}
+        defaultOpen={hash === "agents"}
+      >
+        <div className="action-row" style={{ marginBottom: 12 }}>
+          <Link to={R.deployments} className="btn">
+            公开部署管理 <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
+        <AgentListPage />
+      </LazyAccordionItem>
+
+      <LazyAccordionItem id="model" title="模型连接" summaryMeta="API 与默认模型" defaultOpen={hash === "model"}>
         <ModelConfigPanel />
-      </section>
-      <section className="panel">
-        <h2>授权</h2>
-        <p>授权在 Agent 详情里管理。新授权默认一次，修改和发布分开。持续内容全权入口已禁用。前台没有临时提权入口。</p>
-      </section>
-      <section className="panel">
-        {query.isPending ? (
-          <LoadingState />
-        ) : query.isError ? (
-          <ErrorState error={query.error} retry={query.refetch} />
-        ) : (
-          query.data && (
-            <>
-              <div className="detail-fields">
-                <p>数据库：SQLite · 检查于 {timeLabel(query.data.checkedAt)}</p>
-              </div>
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>能力</th>
-                      <th>状态</th>
-                      <th>说明</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {query.data.items.map((item) => (
-                      <tr key={item.key}>
-                        <td>{capabilityLabels[item.key]}</td>
-                        <td>
-                          <span
-                            className={`badge ${item.state === "available" ? "green" : ""}`}
-                          >
-                            {
-                              {
-                                available: "可用",
-                                unavailable: "暂不可用",
-                                "not-connected": "未接入",
-                              }[item.state]
-                            }
-                          </span>
-                        </td>
-                        <td>{item.reason}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )
-        )}
-      </section>
-    </>
+      </LazyAccordionItem>
+
+      <LazyAccordionItem id="quota" title="访客额度" summaryMeta="每日问答限额" defaultOpen={hash === "quota"}>
+        <GuestQuotaPanel />
+      </LazyAccordionItem>
+
+      <LazyAccordionItem id="password" title="站主账号与密码" defaultOpen={hash === "password"}>
+        <AdminPasswordForm />
+      </LazyAccordionItem>
+
+      <LazyAccordionItem
+        id="diagnostics"
+        title="运行诊断与系统日志"
+        summaryMeta={totalCount > 0 ? `${availableCount}/${totalCount} 能力就绪` : "进程内日志"}
+        defaultOpen={hash === "diagnostics"}
+      >
+        <RuntimeMonitorPanel />
+        <ClientTelemetryPreview />
+      </LazyAccordionItem>
+    </section>
   );
 }

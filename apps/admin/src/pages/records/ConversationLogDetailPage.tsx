@@ -1,8 +1,7 @@
 import { ArrowLeft, Bot, Clock3, MessageSquareText } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { XMarkdown } from "@ant-design/x-markdown";
-import "@ant-design/x-markdown/dist/x-markdown.css";
 import { useConversationLogDetail } from "../../api/queries";
+import { MarkdownPreview } from "../../components/MarkdownPreview";
 import { EmptyState, ErrorState, LoadingState, PageHeading } from "../../components/States";
 import { findPlacement, HOME_XIAOYING_PLACEMENT, PUBLIC_SITE_SCOPE, type ConversationLogDetail, type ConversationLogRun } from "@walker/shared";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
@@ -98,7 +97,7 @@ function ConversationDetail({ detail }: { detail: ConversationLogDetail }) {
                   <pre>{message.body}</pre>
                 ) : (
                   <div className="conversation-message-markdown">
-                    <XMarkdown content={message.body} openLinksInNewTab escapeRawHtml />
+                    <MarkdownPreview raw={message.body} />
                   </div>
                 )}
                 {message.citations && <div className="conversation-citations">

@@ -1,731 +1,636 @@
 import { useEffect, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import {
-  AlertTriangle,
-  Ban,
-  CircleAlert,
-  Eye,
-  FileText,
-  GitCompare,
-  Layers,
-  Pencil,
-  RotateCcw,
+  ArrowLeft,
+  Check,
+  Copy,
+  ExternalLink,
+  History,
+  MoreHorizontal,
+  RefreshCw,
   Save,
+  Share2,
+  Sparkles,
   Trash2,
   UploadCloud,
 } from "lucide-react";
 import type { OpsContentDetail } from "@walker/shared";
-import { buildXShareIntentUrl, computeTextDiff, extractSummaryFromRaw } from "@walker/shared";
+import { buildSocialCopyText, buildXShareIntentUrl, extractSummaryFromRaw, getPublicPostUrl } from "@walker/shared";
+import { ApiError } from "../../api/http";
 import {
   fetchContentDetail,
+  useCancelContentRelease,
   useContentChanges,
   useContentDetail,
   useContentVersion,
   useDeleteContent,
+  useLatestContentRelease,
+  usePrepareContentRelease,
+  useReconcileContentRelease,
+  useRecordSocialShare,
   useSaveContent,
+  useTriggerContentRelease,
+  useVerifyContentRelease,
 } from "../../api/queries";
-import { ApiError } from "../../api/http";
-import { ErrorState, LoadingState, PageHeading } from "../../components/States";
+import { trackAdminUiEvent } from "../../api/telemetry";
 import { MarkdownPreview } from "../../components/MarkdownPreview";
-import { ContentChangeReviewPanel } from "./ContentChangeReviewPanel";
-import { ContentReleasePanel } from "./ContentReleasePanel";
-import { ContentReminderPanel } from "./ContentReminderPanel";
-import { ContentHistoryPanel } from "./ContentHistoryPanel";
+import { ModalDialog } from "../../components/ModalDialog";
+import { SlideDrawer } from "../../components/SlideDrawer";
+import { ErrorState, LoadingState } from "../../components/States";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
-import { timeLabel, typeLabel } from "../../shared/labels";
+import { ContentChangeReviewPanel } from "./ContentChangeReviewPanel";
+import { ContentHistoryPanel } from "./ContentHistoryPanel";
+
+type DrawerSection = "history" | "ai" | "share" | "delete";
 
 export function ContentDetailPage() {
   const { slug = "" } = useParams();
   const query = useContentDetail(slug);
   const item = query.data?.data;
 
-  return (
-    <>
-      {query.isPending ? (
-        <LoadingState />
-      ) : query.isError ? (
-        <ErrorState error={query.error} retry={query.refetch} />
-      ) : (
-        item && <ContentDetailEditor item={item} />
-      )}
-    </>
-  );
+  if (query.isPending) return <LoadingState />;
+  if (query.isError) return <ErrorState error={query.error} retry={query.refetch} />;
+  if (!item) return null;
+  return <ContentCanvas key={item.slug} item={item} />;
 }
 
-function ContentDetailEditor({ item }: { item: OpsContentDetail }) {
+function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const navigate = useNavigate();
   const saveMutation = useSaveContent();
   const deleteMutation = useDeleteContent();
-  const versionQuery = useContentVersion(item.slug);
-  const changesQuery = useContentChanges(item.slug);
-  const hasCandidates = Boolean(changesQuery.data?.items && changesQuery.data.items.length > 0);
+  const prepareMutation = usePrepareContentRelease();
+  const triggerMutation = useTriggerContentRelease();
+  const verifyMutation = useVerifyContentRelease();
+  const reconcileMutation = useReconcileContentRelease();
+  const cancelMutation = useCancelContentRelease();
+  const recordShareMutation = useRecordSocialShare(item.slug);
 
   const [draft, setDraft] = useState(item.raw);
   const [savedRaw, setSavedRaw] = useState(item.raw);
   const [baseHash, setBaseHash] = useState(item.hash || "");
-  const [activeTab, setActiveTab] = useState<
-    "edit" | "preview" | "diff" | "raw" | "conflict" | "review" | "release" | "reminder" | "history"
-  >("edit");
-  const [saveStatus, setSaveStatus] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [conflict, setConflict] = useState<{
-    remoteRaw: string;
-    remoteHash: string;
-    remoteUpdatedAt: string;
-  } | null>(null);
-  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // 按需显现状态
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [versionNote, setVersionNote] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerSection, setDrawerSection] = useState<DrawerSection>("history");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
+  const [conflict, setConflict] = useState<{ remoteRaw: string; remoteHash: string } | null>(null);
+
+  // 仅发布在途态按 5s 轮询（空闲态彻底 0 轮询）
+  const [inFlight, setInFlight] = useState(false);
+  const pollInterval = inFlight ? 5_000 : false;
+  const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollInterval });
+  const versionQuery = useContentVersion(item.slug, { refetchInterval: pollInterval });
+  const changesQuery = useContentChanges(item.slug, { enabled: drawerOpen && drawerSection === "ai" });
+
+  const release = latestRelease.data;
+  const stage = release?.stage;
+
+  useEffect(() => {
+    setInFlight(stage === "COMMITTING" || stage === "PUSHED" || stage === "VERIFYING");
+  }, [stage]);
 
   const isDirty = draft !== savedRaw;
-  const activeGroup = activeTab === "review" || activeTab === "release"
-    ? "review"
-    : activeTab === "reminder" ? "reminder"
-    : activeTab === "history" ? "history" : "edit";
-  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    isDirty && currentLocation.pathname !== nextLocation.pathname,
+  const isLive =
+    Boolean(versionQuery.data?.publishedHash && versionQuery.data.publishedHash === versionQuery.data.workingHash) &&
+    !isDirty &&
+    !inFlight;
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) => isDirty && currentLocation.pathname !== nextLocation.pathname,
   );
 
   useEffect(() => {
-    if (blocker.state === 'blocked') setShowUnsavedModal(true);
-  }, [blocker.state]);
-
-  // 刷新/关闭页面未保存保护
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [isDirty]);
 
-  const handleSave = async () => {
-    if (!isDirty || saveMutation.isPending) return;
-    setSaveError(null);
-    setSaveStatus(null);
-
-    // C22 项目字段校验：项目 status 字段如果提供不能为空
+  const performSave = async (overrideHash?: string): Promise<boolean> => {
+    setErrorMessage(null);
+    setStatusMessage(null);
     if (item.type === "project") {
-      const match = draft.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-      if (match) {
-        const fmText = match[1];
-        const statusMatch = fmText.match(/^status:\s*(.*)$/m);
-        if (statusMatch && !statusMatch[1].trim()) {
-          setSaveError("项目字段校验失败：status 不能为空");
+      const fm = draft.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? "";
+      const st = fm.match(/^status:\s*(.*)$/m);
+      if (st && !st[1].trim()) {
+        setErrorMessage("项目字段校验失败：status 不能为空");
+        return false;
+      }
+    }
+    const t0 = Date.now();
+    try {
+      const updated = await saveMutation.mutateAsync({
+        slug: item.slug,
+        raw: draft,
+        expectedHash: overrideHash ?? (baseHash || null),
+      });
+      setSavedRaw(updated.raw);
+      setDraft(updated.raw);
+      setBaseHash(updated.hash || "");
+      setConflict(null);
+      setStatusMessage("已保存");
+      trackAdminUiEvent("editor.save_completed", { durationMs: Date.now() - t0, conflict: false });
+      return true;
+    } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 409) {
+        trackAdminUiEvent("editor.save_completed", { durationMs: Date.now() - t0, conflict: true });
+        try {
+          const latest = await fetchContentDetail(item.slug);
+          setConflict({ remoteRaw: latest.raw, remoteHash: latest.hash || "" });
+        } catch {
+          setErrorMessage("文件已被外部更新，请刷新后再试");
+        }
+        return false;
+      }
+      setErrorMessage(err instanceof Error ? err.message : "保存失败");
+      return false;
+    }
+  };
+
+  // 键盘快捷键：⌘S 保存，⌘⇧P 打开发布
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (isDirty && !saveMutation.isPending) void performSave();
+      } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        setPublishOpen(true);
+        trackAdminUiEvent("publish.flow_started", { slug: item.slug, dirty: isDirty });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  // 核心自动化：1 次点击串行完成 save(如脏) → prepare(versionNote) → release → 后端自动 verify
+  const handleOneClickPublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const note = versionNote.trim();
+    if (!note) {
+      setErrorMessage("请填写一句公开变更说明");
+      return;
+    }
+    setPublishing(true);
+    setErrorMessage(null);
+    const t0 = Date.now();
+    try {
+      if (isDirty) {
+        const ok = await performSave();
+        if (!ok) {
+          setPublishOpen(false);
+          trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "error" });
           return;
         }
       }
-    }
-
-    try {
-      const saved = await saveMutation.mutateAsync({
+      const prepared = await prepareMutation.mutateAsync({
         slug: item.slug,
-        raw: draft,
-        expectedHash: baseHash,
+        versionNote: note,
+        requestKey: `pub-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       });
-      setBaseHash(saved.hash);
-      setSavedRaw(saved.raw);
-      setConflict(null);
-      setSaveStatus("工作区保存成功；网页状态未改变");
-    } catch (err: unknown) {
-      if (err instanceof ApiError && err.statusCode === 409) {
-        try {
-          const remote = await fetchContentDetail(item.slug);
-          setConflict({
-            remoteRaw: remote.raw,
-            remoteHash: remote.hash,
-            remoteUpdatedAt: remote.updatedAt,
-          });
-          setActiveTab("conflict");
-          setSaveError(
-            "检测到版本冲突：远程内容已被修改。您的本地修改未被覆盖，请查看差异并决定如何处理。",
-          );
-        } catch {
-          setSaveError("检测到版本冲突，且无法拉取远程最新版本，请稍后重试");
-        }
-      } else {
-        setSaveError(err instanceof Error ? err.message : "保存失败");
-      }
+      await triggerMutation.mutateAsync({ slug: item.slug, releaseId: prepared.id });
+      setPublishOpen(false);
+      setVersionNote("");
+      setInFlight(true);
+      setStatusMessage("已推送到 GitHub，正在自动等待线上确证…");
+      trackAdminUiEvent("publish.flow_completed", { slug: item.slug, durationMs: Date.now() - t0 });
+      void latestRelease.refetch();
+      void versionQuery.refetch();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "发布失败");
+      trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "error" });
+    } finally {
+      setPublishing(false);
     }
   };
 
-  const handleOverrideRemote = () => {
-    if (!conflict) return;
-    setBaseHash(conflict.remoteHash);
-    setConflict(null);
-    setSaveStatus("以我的修改为准更新基线成功，可重新点击「保存到工作区」");
-    setSaveError(null);
-    setActiveTab("edit");
+  const openDrawer = (section: DrawerSection) => {
+    setDrawerSection(section);
+    setDrawerOpen(true);
+    trackAdminUiEvent("drawer.opened", { section });
   };
 
-  const handleAcceptRemote = () => {
-    if (!conflict) return;
-    setDraft(conflict.remoteRaw);
-    setSavedRaw(conflict.remoteRaw);
-    setBaseHash(conflict.remoteHash);
-    setConflict(null);
-    setSaveStatus("已放弃本地修改并同步至远程版本");
-    setSaveError(null);
-    setActiveTab("edit");
+  const handleCopyShare = async () => {
+    const text = buildSocialCopyText({ title: item.title, slug: item.slug, summary: extractSummaryFromRaw(draft) });
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2000);
+      void recordShareMutation.mutateAsync({ channel: "copy", angle: "overview" }).catch(() => undefined);
+    } catch {
+      setErrorMessage("复制失败，请手动复制链接");
+    }
   };
 
-  const handleDiscardLocal = () => {
-    setDraft(savedRaw);
-    setSaveStatus("已撤回未保存修改");
-    setSaveError(null);
-  };
+  const showReleaseStrip = Boolean(
+    inFlight ||
+      errorMessage ||
+      statusMessage ||
+      stage === "FAILED" ||
+      stage === "UNKNOWN" ||
+      stage === "PUBLISHED",
+  );
 
-  const handleGoToRelease = () => {
-    setActiveTab("release");
-    setTimeout(() => {
-      const target =
-        document.getElementById("release-version-note-input") ||
-        document.getElementById("release-approval-section");
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-        if ("focus" in target) {
-          (target as HTMLElement).focus();
-        }
-      }
-    }, 100);
-  };
+  const stripTone =
+    errorMessage || stage === "FAILED"
+      ? "err"
+      : stage === "UNKNOWN"
+        ? "warn"
+        : stage === "PUBLISHED" && !inFlight
+          ? "ok"
+          : "";
 
   return (
     <>
-      <Link className="back-link" to={R.content}>
-        返回内容列表
-      </Link>
+      <div className="editor-bar">
+        <div className="editor-bar-left">
+          <Link to={R.content} className="icon-btn" aria-label="返回文章列表">
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>文章</span>
+          </Link>
+          <span className="muted mono" style={{ fontSize: 12 }}>
+            {item.slug}
+          </span>
+          <div className="mode-switch" role="tablist" aria-label="编辑与预览切换">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "edit"}
+              className={mode === "edit" ? "is-active" : ""}
+              onClick={() => setMode("edit")}
+            >
+              编辑
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "preview"}
+              className={mode === "preview" ? "is-active" : ""}
+              onClick={() => setMode("preview")}
+            >
+              预览
+            </button>
+          </div>
+        </div>
 
-      <PageHeading
-        title={item.title}
-        description={typeLabel(item.type) + " · 更新于 " + timeLabel(item.updatedAt)}
-        action={
+        <div className="editor-bar-right">
+          {isDirty ? (
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={saveMutation.isPending}
+              onClick={() => void performSave()}
+            >
+              <Save size={14} aria-hidden="true" />
+              {saveMutation.isPending ? "保存中…" : "保存"}
+            </button>
+          ) : null}
+
           <button
             type="button"
-            className="button"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              background: "#0f1419",
-              color: "#ffffff",
-              borderColor: "#0f1419",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
+            className={isDirty || isLive ? "btn" : "btn btn-primary"}
+            disabled={inFlight || publishing}
             onClick={() => {
-              const url = buildXShareIntentUrl({
-                title: item.title,
-                slug: item.slug,
-                summary: extractSummaryFromRaw(item.raw),
-              });
-              window.open(url, "_blank", "noopener,noreferrer");
+              setErrorMessage(null);
+              setPublishOpen(true);
+              trackAdminUiEvent("publish.flow_started", { slug: item.slug, dirty: isDirty });
             }}
-            title="在 X (Twitter) 上同步分享此文章"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            发到 X
+            <UploadCloud size={14} aria-hidden="true" />
+            {inFlight ? "发布中…" : isLive ? "重新发布" : "发布"}
           </button>
-        }
-      />
 
-      <div className="notice" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <span>网页状态：</span>
-          <strong>{versionQuery.isPending ? "核对中" : versionQuery.isError ? "状态待核对" : versionQuery.data?.publishedHash ? "线上已确证" : "线上未核验"}</strong>
-          <span> · 基线版本 SHA-256：</span>
-          <code>{baseHash}</code>
-          <br />
-          <small className="muted">
-            保存操作将写入工作区并受对象锁与 CAS 保护，不会直接发布上线或刷新公共索引。上线走受控发布。
-          </small>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="更多操作"
+            title="历史 · AI 建议 · 宣发 · 删除"
+            onClick={() => openDrawer("history")}
+          >
+            <MoreHorizontal size={17} aria-hidden="true" />
+          </button>
         </div>
-        <button
-          type="button"
-          className="button"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            background: "#0f1419",
-            color: "#ffffff",
-            borderColor: "#0f1419",
-            fontWeight: 500,
-          }}
-          onClick={() => {
-            const url = buildXShareIntentUrl({
-              title: item.title,
-              slug: item.slug,
-              summary: extractSummaryFromRaw(item.raw),
-            });
-            window.open(url, "_blank", "noopener,noreferrer");
-          }}
-          title="在 X (Twitter) 上分享此文章"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
-          发到 X
-        </button>
       </div>
 
-      {item.type === "project" && (
-        <section
-          style={{
-            background: "#f0fdf4",
-            border: "1px solid #bbf7d0",
-            borderRadius: 8,
-            padding: "14px 18px",
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#166534", fontWeight: 600, marginBottom: 6 }}>
-            <Layers size={16} />
-            <span>项目受控内容边界</span>
-          </div>
-          <p style={{ margin: "0 0 6px", fontSize: 13, color: "#14532d", lineHeight: 1.6 }}>
-            项目使用现有内容模型受控管理。项目状态、进度与资源清单受管理鉴权、CAS 和对象锁保护；前台访客及前台 AI 无法修改项目状态或进度。
-          </p>
-        </section>
-      )}
-
-      {item.type === "shop" && (
-        <section
-          style={{
-            background: "#fffbeb",
-            border: "1px solid #fef3c7",
-            borderRadius: 8,
-            padding: "14px 18px",
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#92400e", fontWeight: 600, marginBottom: 6 }}>
-            <AlertTriangle size={16} />
-            <span>小店内容与交易边界</span>
-          </div>
-          <p style={{ margin: "0 0 10px", fontSize: 13, color: "#78350f", lineHeight: 1.6 }}>
-            小店内容仅用于商品与服务介绍展示。交易、下单、库存与支付功能尚未接入，当前不建立订单或库存数据模型。
-          </p>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="button"
-              disabled
-              style={{ opacity: 0.5, cursor: "not-allowed", fontSize: 12, padding: "5px 12px" }}
-            >
-              <Ban size={13} />
-              在线购买（尚未接入）
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled
-              style={{ opacity: 0.5, cursor: "not-allowed", fontSize: 12, padding: "5px 12px" }}
-            >
-              <Ban size={13} />
-              创建订单（尚未接入）
-            </button>
-            <small className="muted">未接通功能不显示可执行交易按钮（PRD A20）。</small>
-          </div>
-        </section>
-      )}
-
-      {conflict && (
-        <section className="conflict-banner" role="alert">
-          <div className="conflict-banner-header">
-            <AlertTriangle size={18} />
-            <span>检测到版本冲突：远程内容已被修改。您的本地修改未被覆盖！</span>
-          </div>
-          <p className="conflict-banner-desc">
-            远程版本已变更为 <code>{conflict.remoteHash}</code>（更新于{" "}
-            {timeLabel(conflict.remoteUpdatedAt)}）。您可以查看冲突差异，并选择以本地修改为准覆盖远程，或放弃本地修改使用远程版本。
-          </p>
-          <div className="conflict-banner-actions">
-            <button
-              type="button"
-              className="button primary"
-              onClick={handleOverrideRemote}
-            >
-              以我的修改为准（更新基线后可重试保存）
-            </button>
-            <button
-              type="button"
-              className="button"
-              onClick={handleAcceptRemote}
-            >
-              放弃本地修改（使用远程版本）
-            </button>
-            <button
-              type="button"
-              className="button"
-              onClick={() => setActiveTab("conflict")}
-            >
-              查看冲突比对
-            </button>
-          </div>
-        </section>
-      )}
-
-      {saveStatus && (
-        <div
-          className="notice"
-          style={{
-            background: "#edfcf2",
-            color: "#166534",
-            border: "1px solid #bbf7d0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 8,
-          }}
-        >
-          <span>{saveStatus}</span>
-          {activeGroup !== "review" && (
-            <button
-              type="button"
-              className="button"
-              onClick={handleGoToRelease}
-              style={{ fontSize: 12, padding: "4px 10px", background: "white", borderColor: "#86efac" }}
-            >
-              前往发布上线 &rarr;
-            </button>
-          )}
-        </div>
-      )}
-
-      {saveError && !conflict && (
-        <div className="notice" style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" }}>
-          {saveError}
-        </div>
-      )}
-
-      <section className="panel">
-        <div className="content-toolbar">
-          <div className="content-toolbar-actions">
-            <button
-              type="button"
-              className="button primary"
-              disabled={!isDirty || saveMutation.isPending}
-              onClick={handleSave}
-            >
-              <Save size={15} />
-              {saveMutation.isPending ? "正在保存..." : "保存到工作区"}
-            </button>
-
-            {isDirty && (
+      {/* 按需显现的状态条：平时 0 像素，仅在发布中/刚保存/失败/未知/已确证时显现 */}
+      {showReleaseStrip ? (
+        <div className={`release-strip ${stripTone}`.trim()} role="status">
+          <span>
+            {errorMessage
+              ? errorMessage
+              : statusMessage
+                ? statusMessage
+                : inFlight
+                  ? `发布进行中（${stage}），后台自动核验中…`
+                  : stage === "UNKNOWN"
+                    ? "上次发布结果待核对，请点击核对确认状态"
+                    : stage === "FAILED"
+                      ? `上次发布失败：${release?.errorCode ?? "请重试"}`
+                      : "已在线上确证"}
+          </span>
+          <div className="action-row">
+            {stage === "PUBLISHED" && !inFlight ? (
+              <>
+                <a
+                  className="btn btn-ghost"
+                  href={getPublicPostUrl(item.slug)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink size={13} aria-hidden="true" /> 打开文章
+                </a>
+                <button type="button" className="btn btn-ghost" onClick={() => void handleCopyShare()}>
+                  {copiedShare ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                  {copiedShare ? "已复制" : "复制推文"}
+                </button>
+              </>
+            ) : null}
+            {release && (stage === "UNKNOWN" || stage === "VERIFYING") ? (
               <button
                 type="button"
-                className="button"
-                onClick={handleDiscardLocal}
+                className="btn"
+                disabled={reconcileMutation.isPending || verifyMutation.isPending}
+                onClick={() => {
+                  const fn =
+                    stage === "UNKNOWN"
+                      ? reconcileMutation.mutateAsync(release.id)
+                      : verifyMutation.mutateAsync(release.id);
+                  void fn.then(() => {
+                    void latestRelease.refetch();
+                    void versionQuery.refetch();
+                  });
+                }}
               >
-                <RotateCcw size={15} />
-                撤回未保存改动
+                <RefreshCw size={13} aria-hidden="true" /> 立即核对
               </button>
-            )}
-
-            {!isDirty && activeGroup !== "review" && (
+            ) : null}
+            {release && (stage === "PREPARED" || stage === "UNKNOWN") ? (
               <button
                 type="button"
-                className="button"
-                onClick={handleGoToRelease}
-                title="前往发布上线面板，填写变更说明并推送到 GitHub"
-                style={{ color: "#0e7490", borderColor: "#0e7490" }}
+                className="btn btn-ghost"
+                disabled={cancelMutation.isPending}
+                onClick={() =>
+                  void cancelMutation.mutateAsync(release.id).then(() => {
+                    void latestRelease.refetch();
+                  })
+                }
               >
-                <UploadCloud size={15} />
-                前往发布上线 &rarr;
+                取消发布单
               </button>
-            )}
-
-            <button
-              type="button"
-              className="button"
-              onClick={() => setShowDeleteModal(true)}
-              style={{ color: "#dc2626", borderColor: "#fca5a5" }}
-              title="删除此文章或草稿"
-            >
-              <Trash2 size={15} />
-              删除
-            </button>
-          </div>
-
-          <div className="content-status-info">
-            {isDirty ? (
-              <span className="badge red">未保存更改</span>
-            ) : (
-              <span className="badge green">已保存到工作区（不代表上线）</span>
-            )}
+            ) : null}
           </div>
         </div>
+      ) : null}
 
-        <nav className="tabs content-workflow-nav" aria-label="内容工作区">
-          <button type="button" aria-current={activeGroup === "edit" ? "page" : undefined} onClick={() => setActiveTab("edit")}>编辑</button>
-          <button type="button" aria-current={activeGroup === "review" ? "page" : undefined} onClick={() => setActiveTab("release")}>发布上线</button>
-          <button type="button" aria-current={activeGroup === "reminder" ? "page" : undefined} onClick={() => setActiveTab("reminder")}>更新事项</button>
-          <button type="button" aria-current={activeGroup === "history" ? "page" : undefined} onClick={() => setActiveTab("history")}>历史</button>
-        </nav>
+      {/* 按需显现：CAS 409 冲突双栏解决 */}
+      {conflict ? (
+        <section className="panel" role="alert">
+          <div className="panel-heading">
+            <h2>检测到外部更新冲突</h2>
+            <div className="action-row">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void performSave(conflict.remoteHash)}
+              >
+                保留我的并覆盖
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setDraft(conflict.remoteRaw);
+                  setSavedRaw(conflict.remoteRaw);
+                  setBaseHash(conflict.remoteHash);
+                  setConflict(null);
+                  setStatusMessage("已采用远端最新版本");
+                }}
+              >
+                采用远端版本
+              </button>
+            </div>
+          </div>
+          <div className="conflict-grid">
+            <div>
+              <strong className="muted">我的编辑</strong>
+              <pre>{draft}</pre>
+            </div>
+            <div>
+              <strong className="muted">远端最新</strong>
+              <pre>{conflict.remoteRaw}</pre>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
-        {activeGroup !== "reminder" && activeGroup !== "history" && <div className="tabs" role="tablist" aria-label="当前工作区操作">
-          {activeGroup === "edit" && <>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "edit"}
-            aria-pressed={activeTab === "edit"}
-            onClick={() => setActiveTab("edit")}
-          >
-            <Pencil size={14} style={{ marginRight: 6 }} />
-            正文
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "preview"}
-            aria-pressed={activeTab === "preview"}
-            onClick={() => setActiveTab("preview")}
-          >
-            <Eye size={14} style={{ marginRight: 6 }} />
-            预览
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "diff"}
-            aria-pressed={activeTab === "diff"}
-            onClick={() => setActiveTab("diff")}
-          >
-            <GitCompare size={14} style={{ marginRight: 6 }} />
-            本地差异
-          </button>
-          {conflict && (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "conflict"}
-              aria-pressed={activeTab === "conflict"}
-              onClick={() => setActiveTab("conflict")}
-            >
-              <CircleAlert size={14} style={{ marginRight: 6 }} />
-              冲突比对
-            </button>
-          )}
-          </>}
-          {activeGroup === "review" && <>
-          {hasCandidates && (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "review"}
-              aria-pressed={activeTab === "review"}
-              onClick={() => setActiveTab("review")}
-            >
-              <GitCompare size={14} style={{ marginRight: 6 }} />
-              候选审阅 ({changesQuery.data?.items.length})
-            </button>
-          )}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "release"}
-            aria-pressed={activeTab === "release"}
-            onClick={() => setActiveTab("release")}
-          >
-            <UploadCloud size={14} style={{ marginRight: 6 }} />
-            发布上线
-          </button>
-          </>}
-          {activeGroup === "edit" &&
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "raw"}
-            aria-pressed={activeTab === "raw"}
-            onClick={() => setActiveTab("raw")}
-          >
-            <FileText size={14} style={{ marginRight: 6 }} />
-            原文与元数据
-          </button>
-          }
-        </div>}
+      {mode === "edit" ? (
+        <textarea
+          aria-label="文章正文"
+          className="editor-canvas"
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setStatusMessage(null);
+          }}
+        />
+      ) : (
+        <div className="editor-preview">
+          <MarkdownPreview raw={draft} />
+        </div>
+      )}
 
-        {activeTab === "edit" && (
-          <textarea
-            aria-label="正文编辑器"
-            className="content-editor-textarea"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="请输入文章正文与 frontmatter..."
-          />
-        )}
-
-        {activeTab === "preview" && <MarkdownPreview raw={draft} />}
-
-        {activeTab === "diff" && (
-          <DiffTable oldText={savedRaw} newText={draft} />
-        )}
-
-        {activeTab === "conflict" && conflict && (
-          <div style={{ padding: 16 }}>
-            <h3>远程版本差异对比</h3>
-            <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-              当前比对：远程最新版本（旧） vs 您的本地修改草稿（新）
+      {/* 一键发布轻浮层：唯一必填 = 一句公开变更说明 */}
+      <ModalDialog
+        open={publishOpen}
+        title="发布上线"
+        onClose={() => {
+          setPublishOpen(false);
+          trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" });
+        }}
+      >
+        <form onSubmit={(e) => void handleOneClickPublish(e)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            变更说明（将公开显示在版本历史中）
+            <input
+              type="text"
+              autoFocus
+              required
+              placeholder="例如：补充一线案例 / 修正错别字"
+              value={versionNote}
+              onChange={(e) => setVersionNote(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  void handleOneClickPublish(e);
+                }
+              }}
+            />
+          </label>
+          {errorMessage ? (
+            <p className="error-text" role="alert">
+              {errorMessage}
             </p>
-            <DiffTable oldText={conflict.remoteRaw} newText={draft} />
+          ) : null}
+          <div className="action-row" style={{ justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setPublishOpen(false);
+                trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" });
+              }}
+            >
+              取消
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={publishing || !versionNote.trim()}>
+              <UploadCloud size={14} aria-hidden="true" />
+              {publishing ? "正在推送…" : "发布上线"}
+            </button>
           </div>
-        )}
+        </form>
+      </ModalDialog>
 
-        {activeTab === "review" && (
-          <ContentChangeReviewPanel slug={item.slug} currentDoc={item} />
-        )}
+      {/* 右侧按需滑出抽屉：历史 / AI 建议 / 宣发 / 删除 */}
+      <SlideDrawer open={drawerOpen} title="文章选项" onClose={() => setDrawerOpen(false)}>
+        <div className="chip-row" role="tablist" aria-label="抽屉功能">
+          {(
+            [
+              ["history", "历史", History],
+              ["ai", "AI 建议", Sparkles],
+              ["share", "宣发", Share2],
+              ["delete", "删除", Trash2],
+            ] as const
+          ).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              type="button"
+              className={`chip ${drawerSection === key ? "is-active" : ""}`}
+              onClick={() => openDrawer(key)}
+            >
+              <Icon size={12} aria-hidden="true" style={{ marginRight: 4 }} />
+              {label}
+            </button>
+          ))}
+        </div>
 
-        {activeTab === "release" && (
-          <ContentReleasePanel slug={item.slug} currentDoc={item} />
-        )}
-
-        {activeTab === "reminder" && (
-          <ContentReminderPanel slug={item.slug} title={item.title} />
-        )}
-
-        {activeTab === "history" && (
+        {drawerSection === "history" ? (
           <ContentHistoryPanel
             slug={item.slug}
             onRestore={(raw, fromVersion) => {
               setDraft(raw);
-              setSaveStatus(`已以 v${fromVersion} 正文开草稿——保存并发布后才会成为新版本`);
-              setActiveTab("edit");
+              setDrawerOpen(false);
+              setStatusMessage(`已载入 v${fromVersion} 内容为草稿，保存并发布后成为新版本`);
             }}
           />
-        )}
+        ) : null}
 
-        {activeTab === "raw" && <pre className="raw-content">{draft}</pre>}
-      </section>
+        {drawerSection === "ai" ? (
+          <ContentChangeReviewPanel
+            slug={item.slug}
+            currentDoc={{ ...item, raw: draft, hash: baseHash }}
+            onApplied={() => {
+              void fetchContentDetail(item.slug).then((fresh) => {
+                setDraft(fresh.raw);
+                setSavedRaw(fresh.raw);
+                setBaseHash(fresh.hash || "");
+                setDrawerOpen(false);
+              });
+              void changesQuery.refetch();
+            }}
+          />
+        ) : null}
 
-      {showUnsavedModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="unsaved-modal-title">
-          <div className="modal-card">
-            <h3 id="unsaved-modal-title">存在未保存的更改</h3>
-            <p>当前文章内容已有修改尚未保存到工作区，确定要放弃更改并离开吗？离开后未保存的内容将丢失。</p>
-            <div className="modal-card-actions">
-              <button
-                type="button"
-                className="button"
-                onClick={() => {
-                  setShowUnsavedModal(false);
-                  if (blocker.state === 'blocked') blocker.reset();
-                }}
-              >
-                留在本页
+        {drawerSection === "share" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <pre className="panel mono" style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+              {buildSocialCopyText({ title: item.title, slug: item.slug, summary: extractSummaryFromRaw(draft) })}
+            </pre>
+            <div className="action-row">
+              <button type="button" className="btn btn-primary" onClick={() => void handleCopyShare()}>
+                {copiedShare ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                {copiedShare ? "已复制文案" : "复制全文案"}
               </button>
-              <button
-                type="button"
-                className="button primary"
-                onClick={() => {
-                  setShowUnsavedModal(false);
-                  if (blocker.state === 'blocked') blocker.proceed();
-                }}
+              <a
+                className="btn"
+                href={buildXShareIntentUrl({ title: item.title, slug: item.slug })}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => void recordShareMutation.mutateAsync({ channel: "x", angle: "overview" }).catch(() => undefined)}
               >
-                放弃更改并离开
-              </button>
+                <ExternalLink size={14} aria-hidden="true" /> 去 X 发帖
+              </a>
             </div>
           </div>
-        </div>
-      )}
+        ) : null}
 
-      {showDeleteModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
-          <div className="modal-card">
-            <h3 id="delete-modal-title" style={{ color: "#991b1b" }}>确认删除此文章/草稿？</h3>
-            <p>
-              即将删除《<strong>{item.title}</strong>》（<code>{item.slug}</code>）。此操作将从工作区永久移除该文件，不可恢复。
-            </p>
-            <div className="modal-card-actions">
-              <button
-                type="button"
-                className="button"
-                disabled={deleteMutation.isPending}
-                onClick={() => setShowDeleteModal(false)}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                className="button primary"
-                style={{ background: "#dc2626", borderColor: "#dc2626" }}
-                disabled={deleteMutation.isPending}
-                onClick={async () => {
-                  try {
-                    await deleteMutation.mutateAsync({ slug: item.slug });
-                    navigate(R.content);
-                  } catch (err: unknown) {
-                    setSaveError(err instanceof Error ? err.message : "删除失败");
-                    setShowDeleteModal(false);
-                  }
-                }}
-              >
-                {deleteMutation.isPending ? "正在删除..." : "确认删除"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-function DiffTable({ oldText, newText }: { oldText: string; newText: string }) {
-  const diff = computeTextDiff(oldText, newText);
-
-  if (!diff.hasChanges) {
-    return (
-      <div className="notice" style={{ margin: "20px" }}>
-        内容完全一致，没有文本差异。
-      </div>
-    );
-  }
-
-  return (
-    <div className="diff-view">
-      <div className="diff-summary">
-        <span>差异统计：</span>
-        <strong style={{ color: "#166534" }}>+{diff.addedCount} 行新增</strong>
-        <span>·</span>
-        <strong style={{ color: "#991b1b" }}>-{diff.removedCount} 行删除</strong>
-        <span>·</span>
-        <span>{diff.unchangedCount} 行未变</span>
-      </div>
-      <table className="diff-table">
-        <tbody>
-          {diff.lines.map((line, idx) => (
-            <tr
-              key={idx}
-              className={
-                line.type === "added"
-                  ? "diff-added"
-                  : line.type === "removed"
-                  ? "diff-removed"
-                  : "diff-unchanged"
-              }
+        {drawerSection === "delete" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p className="muted">删除仅移除本地草稿区 `content/log/{item.slug}`，公开已发布历史保留。</p>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => {
+                setDrawerOpen(false);
+                setDeleteOpen(true);
+              }}
             >
-              <td className="diff-line-no">{line.oldLineNumber ?? ""}</td>
-              <td className="diff-line-no">{line.newLineNumber ?? ""}</td>
-              <td>
-                {line.type === "added"
-                  ? "+ "
-                  : line.type === "removed"
-                  ? "- "
-                  : "  "}
-                {line.text}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              <Trash2 size={14} aria-hidden="true" /> 删除草稿
+            </button>
+          </div>
+        ) : null}
+      </SlideDrawer>
+
+      {/* 删除二次确认：safe Cancel 默认聚焦 */}
+      <ModalDialog open={deleteOpen} title="确认删除草稿？" onClose={() => setDeleteOpen(false)}>
+        <p className="muted">将删除 `content/log/{item.slug}`，未保存修改无法找回。</p>
+        <div className="action-row" style={{ justifyContent: "flex-end" }}>
+          <button type="button" className="btn" autoFocus onClick={() => setDeleteOpen(false)}>
+            取消
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            disabled={deleteMutation.isPending}
+            onClick={() =>
+              void deleteMutation.mutateAsync({ slug: item.slug }).then(() => {
+                setDeleteOpen(false);
+                navigate(R.content, { replace: true });
+              })
+            }
+          >
+            {deleteMutation.isPending ? "删除中…" : "确认删除"}
+          </button>
+        </div>
+      </ModalDialog>
+
+      {/* 未保存离页拦截 */}
+      <ModalDialog
+        open={blocker.state === "blocked"}
+        title="有未保存的改动"
+        dismissible={false}
+        onClose={() => blocker.reset?.()}
+      >
+        <p className="muted">离开当前页面将丢失刚写的内容。</p>
+        <div className="action-row" style={{ justifyContent: "flex-end" }}>
+          <button type="button" className="btn" onClick={() => blocker.proceed?.()}>
+            放弃并离开
+          </button>
+          <button type="button" className="btn btn-primary" autoFocus onClick={() => blocker.reset?.()}>
+            留下继续编辑
+          </button>
+        </div>
+      </ModalDialog>
+    </>
   );
 }

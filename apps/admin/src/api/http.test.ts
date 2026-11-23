@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { REQUEST_TIMEOUTS, requestBlob, requestJson, setAdminToken, onUnauthorized } from "./http";
 import {
-  authProvider,
+  adminSession,
   queryClient,
   clearPrivateSession,
-} from "./auth-provider";
+} from "./session";
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -191,12 +191,12 @@ describe("单一 HTTP 客户端", () => {
   it("登录失败与退出都会清空缓存", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json({}, 401)));
     queryClient.setQueryData(["private"], 1);
-    expect(await authProvider.login({ token: "wrong" })).toMatchObject({
+    expect(await adminSession.login({ token: "wrong" })).toMatchObject({
       success: false,
     });
     expect(queryClient.getQueryData(["private"])).toBeUndefined();
     queryClient.setQueryData(["private"], 1);
-    await authProvider.logout({});
+    await adminSession.logout();
     expect(queryClient.getQueryData(["private"])).toBeUndefined();
   });
 });

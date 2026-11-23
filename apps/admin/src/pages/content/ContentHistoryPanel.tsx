@@ -4,9 +4,7 @@
  * 回退语义：以旧版正文开草稿，发布后才成为新版本——历史本身永远只追加，不回改。
  */
 import { useState } from "react";
-import { GitCompare, History, RotateCcw, X } from "lucide-react";
-import { XMarkdown } from "@ant-design/x-markdown";
-import "@ant-design/x-markdown/dist/x-markdown.css";
+import { GitCompare, History, RotateCcw } from "lucide-react";
 import type { TextDiffSummary } from "@walker/shared";
 import { stripFrontmatterBlock } from "@walker/shared";
 import {
@@ -14,6 +12,7 @@ import {
   fetchContentVersionDiff,
   useContentVersionHistory,
 } from "../../api/queries";
+import { MarkdownPreview } from "../../components/MarkdownPreview";
 import { ErrorState, LoadingState } from "../../components/States";
 import { timeLabel } from "../../shared/labels";
 
@@ -133,7 +132,7 @@ export function ContentHistoryPanel({
             <details open style={{ marginTop: 20, border: "1px solid var(--line)", borderRadius: 8, padding: "12px 16px", background: "var(--surface)" }}>
               <summary style={{ cursor: "pointer", fontWeight: 600, marginBottom: 12 }}>v{viewing.version} 正文（排版预览）</summary>
               <div style={{ maxHeight: 420, overflowY: "auto", padding: "8px 0" }}>
-                <XMarkdown content={stripFrontmatterBlock(viewing.body)} openLinksInNewTab escapeRawHtml />
+                <MarkdownPreview raw={stripFrontmatterBlock(viewing.body)} />
               </div>
             </details>
           ) : null}

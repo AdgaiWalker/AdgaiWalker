@@ -1,10 +1,24 @@
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+function resolveBuildVersion(): string {
+  const fromEnv = process.env.WALKER_BUILD_VERSION?.trim();
+  if (fromEnv) return fromEnv;
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() || 'dev';
+  } catch {
+    return 'dev';
+  }
+}
+
 // 新后台仅通过同源 API 代理读取本站数据。
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __ADMIN_BUILD_VERSION__: JSON.stringify(resolveBuildVersion()),
+  },
   resolve: { alias: { '@walker/shared': fileURLToPath(new URL('../../packages/shared/src/index.ts', import.meta.url)) } },
   server: {
     host: '127.0.0.1',

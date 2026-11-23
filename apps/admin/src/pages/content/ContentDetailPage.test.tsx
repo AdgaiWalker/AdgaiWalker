@@ -1,312 +1,212 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { createMemoryRouter, Link, RouterProvider } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OpsContentDetail } from '@walker/shared';
-import { ContentDetailPage } from './ContentDetailPage';
-import { ApiError } from '../../api/http';
-
-// The data router only needs a navigation request here; Node's Request rejects jsdom's signal.
-class TestNavigationRequest {
-  url: string;
-  method: string;
-  signal: AbortSignal | undefined;
-  headers = new Headers();
-  constructor(url: string, init: RequestInit = {}) {
-    this.url = url;
-    this.method = init.method ?? 'GET';
-    this.signal = init.signal ?? undefined;
-  }
-}
-vi.stubGlobal('Request', TestNavigationRequest);
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "../../api/http";
+import { clearAdminUiEvents, getAdminUiEvents } from "../../api/telemetry";
+import { ContentDetailPage } from "./ContentDetailPage";
 
 const {
   useContentDetailMock,
   useSaveContentMock,
+  useDeleteContentMock,
+  usePrepareContentReleaseMock,
+  useTriggerContentReleaseMock,
+  useVerifyContentReleaseMock,
+  useReconcileContentReleaseMock,
+  useCancelContentReleaseMock,
+  useRecordSocialShareMock,
+  useLatestContentReleaseMock,
   useContentVersionMock,
   useContentChangesMock,
-  useDeleteContentMock,
+  useContentVersionHistoryMock,
   fetchContentDetailMock,
-  saveMutationMock,
-  deleteMutationMock,
-} = vi.hoisted(() => {
-  const saveMutation = {
-    mutateAsync: vi.fn(),
-    isPending: false,
-    error: null,
-  };
-  const deleteMutation = {
-    mutateAsync: vi.fn().mockResolvedValue({ ok: true }),
-    isPending: false,
-  };
-  return {
-    useContentDetailMock: vi.fn(),
-    useSaveContentMock: vi.fn(() => saveMutation),
-    useDeleteContentMock: vi.fn(() => deleteMutation),
-    useContentVersionMock: vi.fn(),
-    useContentChangesMock: vi.fn(() => ({ data: { items: [] } })),
-    fetchContentDetailMock: vi.fn(),
-    saveMutationMock: saveMutation,
-    deleteMutationMock: deleteMutation,
-  };
-});
+} = vi.hoisted(() => ({
+  useContentDetailMock: vi.fn(),
+  useSaveContentMock: vi.fn(),
+  useDeleteContentMock: vi.fn(),
+  usePrepareContentReleaseMock: vi.fn(),
+  useTriggerContentReleaseMock: vi.fn(),
+  useVerifyContentReleaseMock: vi.fn(),
+  useReconcileContentReleaseMock: vi.fn(),
+  useCancelContentReleaseMock: vi.fn(),
+  useRecordSocialShareMock: vi.fn(),
+  useLatestContentReleaseMock: vi.fn(),
+  useContentVersionMock: vi.fn(),
+  useContentChangesMock: vi.fn(),
+  useContentVersionHistoryMock: vi.fn(),
+  fetchContentDetailMock: vi.fn(),
+}));
 
-vi.mock('../../api/queries', () => ({
+vi.mock("../../api/queries", () => ({
   useContentDetail: useContentDetailMock,
   useSaveContent: useSaveContentMock,
   useDeleteContent: useDeleteContentMock,
+  usePrepareContentRelease: usePrepareContentReleaseMock,
+  useTriggerContentRelease: useTriggerContentReleaseMock,
+  useVerifyContentRelease: useVerifyContentReleaseMock,
+  useReconcileContentRelease: useReconcileContentReleaseMock,
+  useCancelContentRelease: useCancelContentReleaseMock,
+  useRecordSocialShare: useRecordSocialShareMock,
+  useLatestContentRelease: useLatestContentReleaseMock,
   useContentVersion: useContentVersionMock,
   useContentChanges: useContentChangesMock,
+  useContentVersionHistory: useContentVersionHistoryMock,
+  useApproveContentChange: () => ({ isPending: false, mutateAsync: vi.fn() }),
+  useApplyContentChange: () => ({ isPending: false, mutateAsync: vi.fn() }),
   fetchContentDetail: fetchContentDetailMock,
+  fetchContentVersionDetail: vi.fn(),
+  fetchContentVersionDiff: vi.fn(),
 }));
 
-const mockArticle: OpsContentDetail = {
-  slug: 'test-slug',
-  title: '测试文章标题',
-  type: 'post',
-  updatedAt: '2026-09-25T10:00:00.000Z',
-  raw: '---\ntitle: 测试文章标题\ntype: post\n---\n# 正文内容\n第一行\n第二行',
-  hash: 'hash-initial-1111',
-  ext: '.md',
-};
+const BASE_RAW = "---\ntitle: 测试文章\nsummary: 简短摘要\n---\n\n# 初始正文\n";
 
-function renderPage(initialEntries = ['/content/test-slug']) {
-  const router = createMemoryRouter([
-    { path: '/content/:slug', element: <><Link to="/overview">概览导航</Link><ContentDetailPage /></> },
-    { path: '/content', element: <div data-testid="content-list-page">内容列表页</div> },
-    { path: '/overview', element: <div data-testid="overview-page">概览页</div> },
-  ], { initialEntries });
-  return { ...render(<RouterProvider router={router} />), router };
+function renderDetail(slug = "demo-post") {
+  const router = createMemoryRouter(
+    [
+      { path: "/content/:slug", element: <ContentDetailPage /> },
+      { path: "/content", element: <div>LIST_PAGE</div> },
+    ],
+    { initialEntries: [`/content/${slug}`] },
+  );
+  return render(<RouterProvider router={router} />);
 }
 
-describe('ContentDetailPage (C06 文章编辑、差异与预览)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useContentDetailMock.mockReturnValue({
-      data: { data: mockArticle },
+beforeEach(() => {
+  vi.clearAllMocks();
+  clearAdminUiEvents();
+  useContentDetailMock.mockReturnValue({
+    isPending: false,
+    isError: false,
+    data: {
+      data: {
+        id: "demo-post",
+        slug: "demo-post",
+        title: "测试文章",
+        type: "knowledge",
+        raw: BASE_RAW,
+        hash: "hash-1",
+        updatedAt: "2026-11-23T10:00:00.000Z",
+      },
+    },
+    refetch: vi.fn(),
+  });
+  useSaveContentMock.mockReturnValue({
+    isPending: false,
+    mutateAsync: vi.fn(async ({ raw }: { raw: string }) => ({ slug: "demo-post", raw, hash: "hash-2" })),
+  });
+  useDeleteContentMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn(async () => ({ ok: true })) });
+  usePrepareContentReleaseMock.mockReturnValue({
+    isPending: false,
+    mutateAsync: vi.fn(async () => ({ id: "rel-1", stage: "PREPARED" })),
+  });
+  useTriggerContentReleaseMock.mockReturnValue({
+    isPending: false,
+    mutateAsync: vi.fn(async () => ({ ok: true })),
+  });
+  useVerifyContentReleaseMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() });
+  useReconcileContentReleaseMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() });
+  useCancelContentReleaseMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() });
+  useRecordSocialShareMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn(async () => ({ ok: true })) });
+  useLatestContentReleaseMock.mockReturnValue({ data: null, refetch: vi.fn() });
+  useContentVersionMock.mockReturnValue({
+    data: { workingHash: "hash-1", publishedHash: null, indexedHash: null },
+    refetch: vi.fn(),
+  });
+  useContentChangesMock.mockReturnValue({ isPending: false, isError: false, data: { items: [] }, refetch: vi.fn() });
+  useContentVersionHistoryMock.mockReturnValue({ isPending: false, isError: false, data: { slug: "demo-post", versions: [] }, refetch: vi.fn() });
+});
+
+describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按需抽屉）", () => {
+  it("无 9-Tab 干扰，支持编辑/预览切换与保存", async () => {
+    renderDetail();
+    const editor = screen.getByLabelText("文章正文") as HTMLTextAreaElement;
+    expect(editor.value).toBe(BASE_RAW);
+    expect(screen.queryByText("发布清单")).toBeNull();
+
+    // 切换预览
+    fireEvent.click(screen.getByRole("tab", { name: "预览" }));
+    expect(screen.getByRole("heading", { name: "初始正文" })).toBeTruthy();
+
+    // 切回编辑并修改 → 露出主按钮「保存」
+    fireEvent.click(screen.getByRole("tab", { name: "编辑" }));
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n新段落" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(screen.getByText("已保存")).toBeTruthy());
+  });
+
+  it("KLM ≤ 3 步一键发布：修改后点「发布」填一句说明，自动串行 save → prepare → release", async () => {
+    const order: string[] = [];
+    useSaveContentMock.mockReturnValue({
       isPending: false,
-      isError: false,
-      refetch: vi.fn(),
+      mutateAsync: vi.fn(async ({ raw }: { raw: string }) => {
+        order.push("save");
+        return { slug: "demo-post", raw, hash: "hash-2" };
+      }),
     });
-    useContentVersionMock.mockReturnValue({ data: { workingHash: mockArticle.hash, publishedHash: null, indexedHash: null }, isPending: false, isError: false });
-    saveMutationMock.isPending = false;
-    saveMutationMock.error = null;
-  });
-
-  it('载入文章时把无确证记录标为未核验，初始编辑框包含当前正文', () => {
-    renderPage();
-
-    expect(screen.getByRole('heading', { name: '测试文章标题' })).toBeDefined();
-    expect(screen.getByText(/hash-initial-1111/)).toBeDefined();
-    expect(screen.getByText(/线上未核验/)).toBeDefined();
-
-    const textarea = screen.getByRole('textbox', { name: '正文编辑器' }) as HTMLTextAreaElement;
-    expect(textarea.value).toBe(mockArticle.raw);
-
-    const saveBtn = screen.getByRole('button', { name: '保存到工作区' }) as HTMLButtonElement;
-    expect(saveBtn.disabled).toBe(true);
-  });
-
-  it('把内容工作区收为编辑、发布上线、更新事项、历史四组', () => {
-    renderPage();
-    const nav = within(screen.getByRole('navigation', { name: '内容工作区' }));
-    expect(nav.getAllByRole('button').map((button) => button.textContent?.trim())).toEqual([
-      '编辑', '发布上线', '更新事项', '历史',
-    ]);
-  });
-
-  it('支持点击删除按钮弹出二次确认框并调用删除接口', async () => {
-    renderPage();
-    const deleteBtn = screen.getByRole('button', { name: '删除' });
-    expect(deleteBtn).toBeDefined();
-
-    fireEvent.click(deleteBtn);
-    expect(screen.getByRole('heading', { name: '确认删除此文章/草稿？' })).toBeDefined();
-
-    const confirmBtn = screen.getByRole('button', { name: '确认删除' });
-    fireEvent.click(confirmBtn);
-
-    await waitFor(() => {
-      expect(deleteMutationMock.mutateAsync).toHaveBeenCalledWith({ slug: 'test-slug' });
+    usePrepareContentReleaseMock.mockReturnValue({
+      isPending: false,
+      mutateAsync: vi.fn(async (input: { versionNote: string }) => {
+        order.push(`prepare:${input.versionNote}`);
+        return { id: "rel-99", stage: "PREPARED" };
+      }),
     });
-  });
-
-  it('编辑正文更新草稿并标记为未保存，可切换预览和本地差异', () => {
-    renderPage();
-
-    const textarea = screen.getByRole('textbox', { name: '正文编辑器' }) as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: mockArticle.raw + '\n新增第三行' } });
-
-    expect(screen.getByText(/未保存更改/)).toBeDefined();
-    const saveBtn = screen.getByRole('button', { name: '保存到工作区' }) as HTMLButtonElement;
-    expect(saveBtn.disabled).toBe(false);
-
-    // 切换到预览标签
-    fireEvent.click(screen.getByRole('tab', { name: '预览' }));
-    expect(screen.getByRole('heading', { level: 1, name: '正文内容' })).toBeDefined();
-
-    // 切换到差异标签
-    fireEvent.click(screen.getByRole('tab', { name: '本地差异' }));
-    expect(screen.getByText('+ 新增第三行')).toBeDefined();
-  });
-
-  it('有未保存更改时返回导航触发保护弹窗，取消停留在页，确认则离开', () => {
-    renderPage();
-
-    const textarea = screen.getByRole('textbox', { name: '正文编辑器' });
-    fireEvent.change(textarea, { target: { value: '改动内容' } });
-
-    // 点击返回内容列表
-    fireEvent.click(screen.getByText('返回内容列表'));
-
-    // 弹出未保存保护确认弹窗
-    expect(screen.getByText('存在未保存的更改')).toBeDefined();
-    expect(screen.getByText(/确定要放弃更改并离开吗/)).toBeDefined();
-
-    // 点击取消：留在本页，草稿仍保留
-    fireEvent.click(screen.getByRole('button', { name: '留在本页' }));
-    expect(screen.queryByText('存在未保存的更改')).toBeNull();
-    expect((screen.getByRole('textbox', { name: '正文编辑器' }) as HTMLTextAreaElement).value).toBe('改动内容');
-
-    // 再次点击返回，点击确认放弃
-    fireEvent.click(screen.getByText('返回内容列表'));
-    fireEvent.click(screen.getByRole('button', { name: '放弃更改并离开' }));
-    expect(screen.getByTestId('content-list-page')).toBeDefined();
-  });
-
-  it('侧栏式站内导航和浏览器后退都不能直接丢失草稿', async () => {
-    const { router } = renderPage(['/overview', '/content/test-slug']);
-    fireEvent.change(screen.getByRole('textbox', { name: '正文编辑器' }), { target: { value: '未保存草稿' } });
-    fireEvent.click(screen.getByText('概览导航'));
-    expect(screen.getByText('存在未保存的更改')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: '留在本页' }));
-    expect((screen.getByRole('textbox', { name: '正文编辑器' }) as HTMLTextAreaElement).value).toBe('未保存草稿');
-
-    await router.navigate(-1);
-    expect(await screen.findByText('存在未保存的更改')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: '放弃更改并离开' }));
-    expect(await screen.findByTestId('overview-page')).toBeDefined();
-  });
-
-  it('保存时携带 expectedHash，保存成功后更新 baseHash 且不宣称已上线', async () => {
-    const savedArticle: OpsContentDetail = {
-      ...mockArticle,
-      raw: mockArticle.raw + '\n新增修改',
-      hash: 'hash-updated-2222',
-      updatedAt: '2026-09-25T11:00:00.000Z',
-    };
-    saveMutationMock.mutateAsync.mockResolvedValueOnce(savedArticle);
-
-    renderPage();
-
-    const textarea = screen.getByRole('textbox', { name: '正文编辑器' });
-    fireEvent.change(textarea, { target: { value: mockArticle.raw + '\n新增修改' } });
-
-    const saveBtn = screen.getByRole('button', { name: '保存到工作区' }) as HTMLButtonElement;
-    fireEvent.click(saveBtn);
-
-    expect(saveMutationMock.mutateAsync).toHaveBeenCalledWith({
-      slug: 'test-slug',
-      raw: mockArticle.raw + '\n新增修改',
-      expectedHash: 'hash-initial-1111',
+    useTriggerContentReleaseMock.mockReturnValue({
+      isPending: false,
+      mutateAsync: vi.fn(async (input: { releaseId: string }) => {
+        order.push(`release:${input.releaseId}`);
+        return { ok: true };
+      }),
     });
 
-    await waitFor(() => {
-      expect(screen.getByText(/hash-updated-2222/)).toBeDefined();
-    });
+    renderDetail();
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n新增案例" } });
+    fireEvent.click(screen.getByRole("button", { name: "发布" }));
+    fireEvent.change(screen.getByPlaceholderText(/补充一线案例/), { target: { value: "补充一线案例" } });
+    fireEvent.click(screen.getByRole("button", { name: "发布上线" }));
 
-    expect(screen.getByText(/工作区保存成功；网页状态未改变/)).toBeDefined();
-    expect(saveBtn.disabled).toBe(true);
-  });
-
-  it('保存遇 409 版本冲突时不自动覆盖本地修改，展示冲突警告并可比对冲突差异', async () => {
-    const conflictError = new ApiError('content-version-conflict', '内容版本冲突，磁盘已有新修改', 409);
-    saveMutationMock.mutateAsync.mockRejectedValueOnce(conflictError);
-
-    const remoteArticle: OpsContentDetail = {
-      ...mockArticle,
-      raw: mockArticle.raw + '\n他人编辑的远程修改',
-      hash: 'hash-remote-3333',
-      updatedAt: '2026-09-25T10:30:00.000Z',
-    };
-    fetchContentDetailMock.mockResolvedValueOnce(remoteArticle);
-
-    renderPage();
-
-    const textarea = screen.getByRole('textbox', { name: '正文编辑器' });
-    fireEvent.change(textarea, { target: { value: mockArticle.raw + '\n我自己的本地改动' } });
-
-    fireEvent.click(screen.getByRole('button', { name: '保存到工作区' }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/检测到版本冲突/)).toBeDefined();
-    });
-
-    // 冲突后切回编辑标签核对：本地修改绝不能被冲掉！
-    fireEvent.click(screen.getByRole('tab', { name: '正文' }));
-    expect((screen.getByRole('textbox', { name: '正文编辑器' }) as HTMLTextAreaElement).value).toBe(
-      mockArticle.raw + '\n我自己的本地改动',
+    await waitFor(() =>
+      expect(order).toEqual(["save", "prepare:补充一线案例", "release:rel-99"]),
     );
-
-    // 查看冲突差异标签
-    const conflictDiffTab = screen.getByRole('tab', { name: '冲突比对' });
-    fireEvent.click(conflictDiffTab);
-    expect(screen.getByText(/远程版本差异/)).toBeDefined();
-
-    // 提供选择：以我的修改为准更新 baseHash 或放弃本地修改使用远程
-    expect(screen.getByRole('button', { name: '以我的修改为准（更新基线后可重试保存）' })).toBeDefined();
-    expect(screen.getByRole('button', { name: '放弃本地修改（使用远程版本）' })).toBeDefined();
-  });
-  it('C22 项目内容边界：展现项目受控管理说明，校验 status 字段非空', () => {
-    const mockProject: OpsContentDetail = {
-      ...mockArticle,
-      type: 'project',
-      title: 'vibe0s 项目',
-      raw: '---\ntitle: vibe0s 项目\ntype: project\nstatus: validating\n---\n# 项目内容',
-    };
-    useContentDetailMock.mockReturnValue({
-      data: { data: mockProject },
-      isPending: false,
-      isError: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage();
-
-    expect(screen.getByText('项目受控内容边界')).toBeDefined();
-    expect(screen.getByText(/前台访客及前台 AI 无法修改项目状态或进度/)).toBeDefined();
-
-    // 尝试清空 status 并保存
-    const textarea = screen.getByRole('textbox', { name: '正文编辑器' }) as HTMLTextAreaElement;
-    fireEvent.change(textarea, {
-      target: { value: '---\ntitle: vibe0s 项目\ntype: project\nstatus: \n---\n# 项目内容' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '保存到工作区' }));
-    expect(screen.getByText(/项目字段校验失败：status 不能为空/)).toBeDefined();
+    expect(getAdminUiEvents().map((e) => e.event)).toContain("publish.flow_completed");
   });
 
-  it('C22 小店内容边界：展示小店边界声明与未接入的禁用交易按钮', () => {
-    const mockShop: OpsContentDetail = {
-      ...mockArticle,
-      type: 'shop',
-      title: '小店服务商品',
-      raw: '---\ntitle: 小店服务商品\ntype: shop\n---\n# 服务介绍内容',
-    };
-    useContentDetailMock.mockReturnValue({
-      data: { data: mockShop },
+  it("保存撞 CAS 409 时按需弹出双栏冲突解决，支持采用远端版本", async () => {
+    useSaveContentMock.mockReturnValue({
       isPending: false,
-      isError: false,
-      refetch: vi.fn(),
+      mutateAsync: vi.fn().mockRejectedValue(new ApiError("conflict", "外部已修改", 409)),
+    });
+    fetchContentDetailMock.mockResolvedValue({
+      slug: "demo-post",
+      raw: "---\ntitle: 测试文章\n---\n\n# 远端新版\n",
+      hash: "hash-remote",
     });
 
-    renderPage();
+    renderDetail();
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n本地改动" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
-    expect(screen.getByText('小店内容与交易边界')).toBeDefined();
-    expect(screen.getByText(/不建立订单或库存数据模型/)).toBeDefined();
+    expect(await screen.findByText("检测到外部更新冲突")).toBeTruthy();
+    expect(screen.getByText(/远端新版/)).toBeTruthy();
 
-    const buyBtn = screen.getByRole('button', { name: /在线购买（尚未接入）/ }) as HTMLButtonElement;
-    const orderBtn = screen.getByRole('button', { name: /创建订单（尚未接入）/ }) as HTMLButtonElement;
-    expect(buyBtn.disabled).toBe(true);
-    expect(orderBtn.disabled).toBe(true);
-    expect(screen.getByText(/未接通功能不显示可执行交易按钮/)).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "采用远端版本" }));
+    expect((screen.getByLabelText("文章正文") as HTMLTextAreaElement).value).toContain("远端新版");
+  });
+
+  it("未保存修改点击离开时弹出离页拦截对话框", async () => {
+    renderDetail();
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n未保存" } });
+    fireEvent.click(screen.getByRole("link", { name: "返回文章列表" }));
+    expect(await screen.findByText("有未保存的改动")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "留下继续编辑" }));
+    expect(screen.queryByText("LIST_PAGE")).toBeNull();
+  });
+
+  it("点击「更多操作」按需展开右侧抽屉并可切换历史与宣发", async () => {
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    expect(await screen.findByText("文章选项")).toBeTruthy();
+    expect(screen.getByText(/还没有公开发布过版本/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "宣发" }));
+    expect(screen.getByRole("button", { name: "复制全文案" })).toBeTruthy();
   });
 });
