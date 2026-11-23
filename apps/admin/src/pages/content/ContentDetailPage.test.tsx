@@ -240,4 +240,43 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: "未保存修改" } });
     expect(screen.queryByText("已在线上确证")).toBeNull();
   });
+
+  it("点击「立即核对」未确证时明确回报原因（不静默空点），私密文章发布前必须先点「转为公开」", async () => {
+    const verifyMutate = vi.fn(async () => ({ verified: false, reason: "online-hash-not-confirmed" }));
+    useVerifyContentReleaseMock.mockReturnValue({ isPending: false, mutateAsync: verifyMutate });
+    useLatestContentReleaseMock.mockReturnValue({
+      data: { id: "rel-old", stage: "VERIFYING", updatedAt: "2026-11-20T00:00:00.000Z" },
+      refetch: vi.fn(),
+    });
+    const { unmount } = renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "立即核对" }));
+    expect(await screen.findByText(/online-hash-not-confirmed/)).toBeTruthy();
+    unmount();
+
+    useLatestContentReleaseMock.mockReturnValue({ data: null, refetch: vi.fn() });
+    useContentDetailMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: {
+        data: {
+          id: "priv-post",
+          slug: "priv-post",
+          title: "私密文章",
+          type: "knowledge",
+          raw: "---\ntitle: 私密文章\nsummary: 私密摘要\nvisibility: private\n---\n\n私密正文\n",
+          hash: "hash-p",
+          updatedAt: "2026-11-23T10:00:00.000Z",
+        },
+      },
+      refetch: vi.fn(),
+    });
+    renderDetail("priv-post");
+    fireEvent.click(screen.getByRole("button", { name: "发布" }));
+    fireEvent.change(screen.getByPlaceholderText(/补充一线案例/), { target: { value: "尝试发布" } });
+    const submitBtn = screen.getByRole("button", { name: "发布上线" }) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "转为公开" }));
+    expect(submitBtn.disabled).toBe(false);
+  });
 });

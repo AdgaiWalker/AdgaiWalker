@@ -1,54 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
-  ActivityCounts,
-  ActivityPage,
-  AgentRevisionDetail,
-  ContentChangeView,
-  ContentDraftBackupResult,
-  ContentLedger,
-  ContentLedgerEntry,
-  ContentRelease,
-  ContentSocialStats,
-  ContentSyncPullResult,
-  ContentSyncStatus,
-  ContentVersionSnapshot,
-  ConversationLogDetail,
-  ExecutionEventView,
-  ExecutionRunView,
-  OpsAgent,
-  OpsCapabilities,
-  OpsContentDetail,
-  PublicDeploymentReadiness,
-  ReleaseCancelResult,
-  ReleaseReconcileResult,
-  ReleaseResult,
-  ReleaseVerificationResult,
-  RuntimeLogChannel,
-  RuntimeLogPage,
-  RuntimeMetrics,
-  RuntimeRequestPage,
-  SocialShareRecord,
-  TextDiffSummary,
+  ActivityCounts, ActivityPage, AgentRevisionDetail, ContentChangeView, ContentDraftBackupResult,
+  ContentLedger, ContentLedgerEntry, ContentRelease, ContentSocialStats, ContentSyncPullResult,
+  ContentSyncStatus, ContentVersionSnapshot, ConversationLogDetail, ExecutionEventView, ExecutionRunView,
+  OpsAgent, OpsCapabilities, OpsContentDetail, PublicDeploymentReadiness, ReleaseCancelResult,
+  ReleaseReconcileResult, ReleaseResult, ReleaseVerificationResult, RuntimeLogChannel, RuntimeLogPage,
+  RuntimeMetrics, RuntimeRequestPage, SocialShareRecord, TextDiffSummary,
 } from "@walker/shared";
 import { ApiError, requestJson, REQUEST_TIMEOUTS } from "./http";
 
 const enc = encodeURIComponent;
 
 export interface AdminArticleVersionEntry {
-  version: number;
-  contentHash: string;
-  note: string;
-  publishedAt: string;
-  releaseId: string;
+  version: number; contentHash: string; note: string; publishedAt: string; releaseId: string;
 }
 
-export function useCapabilities() {
-  return useQuery({
-    queryKey: ["ops-capabilities"],
-    queryFn: ({ signal }) => requestJson<OpsCapabilities>("/ops/capabilities", { signal, backgroundPoll: true }),
-    refetchInterval: 30_000,
-  });
-}
+export const useCapabilities = () => useQuery({
+  queryKey: ["ops-capabilities"],
+  queryFn: ({ signal }) => requestJson<OpsCapabilities>("/ops/capabilities", { signal, backgroundPoll: true }),
+  refetchInterval: 30_000,
+});
 
 export function useDeployedAdminVersion() {
   return useQuery({
@@ -148,154 +119,87 @@ export function useAgents() {
   });
 }
 
-export function useAgentDetail(id: string) {
-  return useQuery<{ data: AgentRevisionDetail }>({
-    queryKey: ["agent-detail", id],
-    enabled: Boolean(id),
-    queryFn: async ({ signal }) => ({
-      data: await requestJson<AgentRevisionDetail>(`/ops/agents/${enc(id)}`, { signal }),
+export const useAgentDetail = (id: string) => useQuery<{ data: AgentRevisionDetail }>({
+  queryKey: ["agent-detail", id], enabled: Boolean(id),
+  queryFn: async ({ signal }) => ({ data: await requestJson<AgentRevisionDetail>(`/ops/agents/${enc(id)}`, { signal }) }),
+});
+
+export const useExecutionRun = (id: string) => useQuery({
+  queryKey: ["execution-run", id], enabled: Boolean(id),
+  queryFn: ({ signal }) => requestJson<ExecutionRunView>(`/ops/execution-runs/${enc(id)}`, { signal }),
+});
+
+export const useExecutionEvents = (id: string) => useQuery({
+  queryKey: ["execution-events", id], enabled: Boolean(id),
+  queryFn: ({ signal }) => requestJson<{ items: ExecutionEventView[] }>(`/ops/execution-runs/${enc(id)}/events`, { signal }),
+});
+
+export const useConversationLogDetail = (id: string) => useQuery({
+  queryKey: ["conversation-log", id], enabled: Boolean(id),
+  queryFn: ({ signal }) => requestJson<ConversationLogDetail>(`/ops/conversations/${enc(id)}`, { signal }),
+});
+
+export const useConversationActionPreview = (conversationId: string) => useQuery({
+  queryKey: ["conversation-action-preview", conversationId], enabled: conversationId.length > 0,
+  queryFn: ({ signal }) => requestJson<{ conversationId: string; contentSlug: string; title: string; summary: string; messageIds: string[]; turnCount: number }>(`/ops/conversations/${enc(conversationId)}/action-preview`, { signal }),
+});
+
+export const useConvertConversationToAction = () => useMutation({
+  mutationFn: (input: { conversationId: string; title: string; note?: string | null; plannedDate?: string | null; messageIds: string[]; requestKey: string }) =>
+    requestJson<{ replayed: boolean; action: { id: string } }>(`/ops/conversations/${enc(input.conversationId)}/action`, {
+      method: "POST", timeoutMs: REQUEST_TIMEOUTS.write,
+      body: { title: input.title, note: input.note ?? null, plannedDate: input.plannedDate ?? null, messageIds: input.messageIds, requestKey: input.requestKey },
     }),
-  });
-}
+});
 
-export function useExecutionRun(id: string) {
-  return useQuery({
-    queryKey: ["execution-run", id],
-    enabled: Boolean(id),
-    queryFn: ({ signal }) => requestJson<ExecutionRunView>(`/ops/execution-runs/${enc(id)}`, { signal }),
-  });
-}
+export const usePublicDeploymentReadiness = (id: string) => useQuery({
+  queryKey: ["public-deployment-readiness", id], enabled: Boolean(id), staleTime: 5_000,
+  queryFn: ({ signal }) => requestJson<PublicDeploymentReadiness>(`/ops/deployments/${enc(id)}/readiness`, { signal }),
+});
 
-export function useExecutionEvents(id: string) {
-  return useQuery({
-    queryKey: ["execution-events", id],
-    enabled: Boolean(id),
-    queryFn: ({ signal }) => requestJson<{ items: ExecutionEventView[] }>(`/ops/execution-runs/${enc(id)}/events`, { signal }),
-  });
-}
+export const useContentChanges = (slug?: string, options?: { enabled?: boolean }) => useQuery({
+  queryKey: ["content-changes", slug], enabled: options?.enabled !== false,
+  queryFn: ({ signal }) => requestJson<{ items: ContentChangeView[] }>(slug ? `/ops/content-changes?slug=${enc(slug)}` : "/ops/content-changes", { signal }),
+});
 
-export function useConversationLogDetail(id: string) {
-  return useQuery({
-    queryKey: ["conversation-log", id],
-    enabled: Boolean(id),
-    queryFn: ({ signal }) => requestJson<ConversationLogDetail>(`/ops/conversations/${enc(id)}`, { signal }),
-  });
-}
+export const useApproveContentChange = () => useMutation({
+  mutationFn: ({ id, grantId }: { id: string; grantId: string }) =>
+    requestJson<ContentChangeView>(`/ops/content-changes/${enc(id)}/approve`, { method: "POST", body: { grantId }, timeoutMs: REQUEST_TIMEOUTS.write }),
+});
 
-export function useConversationActionPreview(conversationId: string) {
-  return useQuery({
-    queryKey: ["conversation-action-preview", conversationId],
-    enabled: conversationId.length > 0,
-    queryFn: ({ signal }) =>
-      requestJson<{ conversationId: string; contentSlug: string; title: string; summary: string; messageIds: string[]; turnCount: number }>(
-        `/ops/conversations/${enc(conversationId)}/action-preview`,
-        { signal },
-      ),
-  });
-}
+export const useApplyContentChange = () => useMutation({
+  mutationFn: ({ id, requestId }: { id: string; requestId?: string }) =>
+    requestJson<ContentChangeView>(`/ops/content-changes/${enc(id)}/apply`, { method: "POST", body: { requestId }, timeoutMs: REQUEST_TIMEOUTS.write }),
+});
 
-export function useConvertConversationToAction() {
-  return useMutation({
-    mutationFn: (input: { conversationId: string; title: string; note?: string | null; plannedDate?: string | null; messageIds: string[]; requestKey: string }) =>
-      requestJson<{ replayed: boolean; action: { id: string } }>(`/ops/conversations/${enc(input.conversationId)}/action`, {
-        method: "POST",
-        body: { title: input.title, note: input.note ?? null, plannedDate: input.plannedDate ?? null, messageIds: input.messageIds, requestKey: input.requestKey },
-        timeoutMs: REQUEST_TIMEOUTS.write,
-      }),
-  });
-}
+export const useContentVersion = (slug: string, options?: { enabled?: boolean; refetchInterval?: number | false }) => useQuery({
+  queryKey: ["content-version", slug], enabled: options?.enabled !== false && Boolean(slug), refetchInterval: options?.refetchInterval,
+  queryFn: ({ signal }) => requestJson<ContentVersionSnapshot>(`/admin/content/release/${enc(slug)}/version`, { signal, backgroundPoll: Boolean(options?.refetchInterval) }),
+});
 
-export function usePublicDeploymentReadiness(id: string) {
-  return useQuery({
-    queryKey: ["public-deployment-readiness", id],
-    enabled: Boolean(id),
-    staleTime: 5_000,
-    queryFn: ({ signal }) => requestJson<PublicDeploymentReadiness>(`/ops/deployments/${enc(id)}/readiness`, { signal }),
-  });
-}
+export const useLatestContentRelease = (slug: string, options?: { enabled?: boolean; refetchInterval?: number | false }) => useQuery({
+  queryKey: ["content-release-latest", slug], enabled: options?.enabled !== false && Boolean(slug), refetchInterval: options?.refetchInterval,
+  queryFn: ({ signal }) => requestJson<ContentRelease | null>(`/admin/content/release/target/${enc(slug)}/latest`, { signal, backgroundPoll: Boolean(options?.refetchInterval) }),
+});
 
-export function useContentChanges(slug?: string, options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: ["content-changes", slug],
-    enabled: options?.enabled !== false,
-    queryFn: ({ signal }) =>
-      requestJson<{ items: ContentChangeView[] }>(slug ? `/ops/content-changes?slug=${enc(slug)}` : "/ops/content-changes", { signal }),
-  });
-}
+export const usePrepareContentRelease = () => useMutation({
+  mutationFn: (input: { slug: string; grantId?: string; changeId?: string; requestKey?: string; versionNote: string }) =>
+    requestJson<ContentRelease>("/admin/content/release/prepare", { method: "POST", body: input, timeoutMs: REQUEST_TIMEOUTS.write }),
+});
 
-export function useApproveContentChange() {
-  return useMutation({
-    mutationFn: ({ id, grantId }: { id: string; grantId: string }) =>
-      requestJson<ContentChangeView>(`/ops/content-changes/${enc(id)}/approve`, { method: "POST", body: { grantId }, timeoutMs: REQUEST_TIMEOUTS.write }),
-  });
-}
+export const useTriggerContentRelease = () => useMutation({
+  mutationFn: (input: { slug: string; releaseId: string }) =>
+    requestJson<ReleaseResult>("/admin/content/release", { method: "POST", body: input, timeoutMs: REQUEST_TIMEOUTS.write }),
+});
 
-export function useApplyContentChange() {
-  return useMutation({
-    mutationFn: ({ id, requestId }: { id: string; requestId?: string }) =>
-      requestJson<ContentChangeView>(`/ops/content-changes/${enc(id)}/apply`, { method: "POST", body: { requestId }, timeoutMs: REQUEST_TIMEOUTS.write }),
-  });
-}
+export const useVerifyContentRelease = () => useMutation({ mutationFn: (id: string) => requestJson<ReleaseVerificationResult>(`/admin/content/release/${enc(id)}/verify`, { method: "POST", timeoutMs: 30_000 }) });
+export const useReconcileContentRelease = () => useMutation({ mutationFn: (id: string) => requestJson<ReleaseReconcileResult>(`/admin/content/release/${enc(id)}/reconcile`, { method: "POST", timeoutMs: 30_000 }) });
+export const useCancelContentRelease = () => useMutation({ mutationFn: (id: string) => requestJson<ReleaseCancelResult>(`/admin/content/release/${enc(id)}/cancel`, { method: "POST", timeoutMs: 30_000 }) });
 
-export function useContentVersion(slug: string, options?: { enabled?: boolean; refetchInterval?: number | false }) {
-  return useQuery({
-    queryKey: ["content-version", slug],
-    enabled: options?.enabled !== false && Boolean(slug),
-    queryFn: ({ signal }) =>
-      requestJson<ContentVersionSnapshot>(`/admin/content/release/${enc(slug)}/version`, { signal, backgroundPoll: Boolean(options?.refetchInterval) }),
-    refetchInterval: options?.refetchInterval,
-  });
-}
-
-export function useLatestContentRelease(slug: string, options?: { enabled?: boolean; refetchInterval?: number | false }) {
-  return useQuery({
-    queryKey: ["content-release-latest", slug],
-    enabled: options?.enabled !== false && Boolean(slug),
-    queryFn: ({ signal }) =>
-      requestJson<ContentRelease | null>(`/admin/content/release/target/${enc(slug)}/latest`, { signal, backgroundPoll: Boolean(options?.refetchInterval) }),
-    refetchInterval: options?.refetchInterval,
-  });
-}
-
-export function usePrepareContentRelease() {
-  return useMutation({
-    mutationFn: (input: { slug: string; grantId?: string; changeId?: string; requestKey?: string; versionNote: string }) =>
-      requestJson<ContentRelease>("/admin/content/release/prepare", { method: "POST", body: input, timeoutMs: REQUEST_TIMEOUTS.write }),
-  });
-}
-
-export function useTriggerContentRelease() {
-  return useMutation({
-    mutationFn: (input: { slug: string; releaseId: string }) =>
-      requestJson<ReleaseResult>("/admin/content/release", { method: "POST", body: input, timeoutMs: REQUEST_TIMEOUTS.write }),
-  });
-}
-
-export function useVerifyContentRelease() {
-  return useMutation({
-    mutationFn: (id: string) => requestJson<ReleaseVerificationResult>(`/admin/content/release/${enc(id)}/verify`, { method: "POST", timeoutMs: 30_000 }),
-  });
-}
-
-export function useReconcileContentRelease() {
-  return useMutation({
-    mutationFn: (id: string) => requestJson<ReleaseReconcileResult>(`/admin/content/release/${enc(id)}/reconcile`, { method: "POST", timeoutMs: 30_000 }),
-  });
-}
-
-export function useCancelContentRelease() {
-  return useMutation({
-    mutationFn: (id: string) => requestJson<ReleaseCancelResult>(`/admin/content/release/${enc(id)}/cancel`, { method: "POST", timeoutMs: 30_000 }),
-  });
-}
-
-export function useRuntimeMetrics(options: { refetchInterval?: number | false } = {}) {
-  return useQuery({
-    queryKey: ["runtime-metrics"],
-    queryFn: ({ signal }) => requestJson<RuntimeMetrics>("/ops/runtime/metrics", { signal, backgroundPoll: true }),
-    refetchInterval: options.refetchInterval,
-  });
-}
+export const useRuntimeMetrics = (options: { refetchInterval?: number | false } = {}) => useQuery({
+  queryKey: ["runtime-metrics"], refetchInterval: options.refetchInterval,
+  queryFn: ({ signal }) => requestJson<RuntimeMetrics>("/ops/runtime/metrics", { signal, backgroundPoll: true }),
+});
 
 export function useRuntimeRequests(input: { limit: number; errorsOnly: boolean; humanOnly: boolean; refetchInterval?: number | false }) {
   return useQuery({

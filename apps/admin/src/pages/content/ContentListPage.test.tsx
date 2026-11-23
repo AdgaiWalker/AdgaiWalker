@@ -91,6 +91,25 @@ const ITEMS: Array<ContentLedgerEntry & { id: string }> = [
     },
     updatedAt: "2026-11-23T08:00:00.000Z",
   },
+  {
+    id: "post-pending",
+    slug: "post-pending",
+    title: "Git 新公开待索引文章",
+    type: "knowledge",
+    group: "article",
+    stage: "live",
+    visibility: "public",
+    missing: [],
+    dirty: false,
+    publication: {
+      currentPublicHash: "hash-pending",
+      publishedHash: null,
+      verifiedAt: null,
+      indexedHash: null,
+      latestAttemptStage: null,
+    },
+    updatedAt: "2026-11-23T07:00:00.000Z",
+  },
 ];
 
 beforeEach(() => {
@@ -111,7 +130,7 @@ beforeEach(() => {
 });
 
 describe("ContentListPage（极简默认首页）", () => {
-  it("严格区分已上线（发布单确证）/ 已公开（公开索引命中）/ 草稿，不反向把老文章全标草稿", () => {
+  it("严格区分已上线 / 已公开 / 待核验 / 草稿，不把干净公开文章误标草稿", () => {
     render(
       <MemoryRouter initialEntries={["/content"]}>
         <ContentListPage />
@@ -120,21 +139,24 @@ describe("ContentListPage（极简默认首页）", () => {
     expect(screen.getByText("草稿文章一")).toBeTruthy();
     expect(screen.getByText("已确证文章")).toBeTruthy();
     expect(screen.getByText("Git 老文章已公开")).toBeTruthy();
-    expect(screen.getAllByText("草稿").length).toBe(1);
-    expect(screen.getAllByText("已公开").length).toBe(1);
-    expect(screen.getAllByText("已上线").length).toBe(2); // 1 筛选芯片 + 1 行徽章
+    expect(screen.getByText("Git 新公开待索引文章")).toBeTruthy();
+    expect(screen.getAllByText("草稿").length).toBe(2); // 1 筛选芯片 + 1 行徽章
+    expect(screen.getAllByText("已公开").length).toBe(2); // 1 筛选芯片 + 1 行徽章
+    expect(screen.getAllByText("已上线").length).toBe(1);
+    expect(screen.getAllByText("待核验").length).toBe(1);
   });
 
-  it("支持搜索与 3 态筛选（全部 / 未上线 / 已上线）", () => {
+  it("支持搜索与 3 态筛选（全部 / 草稿 / 已公开）", () => {
     render(
       <MemoryRouter initialEntries={["/content"]}>
         <ContentListPage />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "已上线" }));
+    fireEvent.click(screen.getByRole("button", { name: "已公开" }));
     expect(screen.queryByText("草稿文章一")).toBeNull();
     expect(screen.getByText("已确证文章")).toBeTruthy();
     expect(screen.getByText("Git 老文章已公开")).toBeTruthy();
+    expect(screen.getByText("Git 新公开待索引文章")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "全部" }));
     fireEvent.change(screen.getByLabelText("搜索文章"), { target: { value: "post-draft" } });

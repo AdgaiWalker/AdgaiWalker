@@ -56,13 +56,13 @@ export function ContentListPage() {
   const behindCount = syncQuery.data?.behind ?? 0;
   const conflictCount = syncQuery.data?.conflicts?.length ?? 0;
 
-  type BadgeState = "verified" | "indexed" | "private" | "draft";
+  type BadgeState = "verified" | "indexed" | "pending" | "private" | "draft";
   const badgeOf = (item: (typeof items)[number]): BadgeState => {
     const { publishedHash, currentPublicHash, indexedHash } = item.publication;
     if (publishedHash && currentPublicHash && publishedHash === currentPublicHash) return "verified";
     if (item.visibility === "private") return "private";
-    if (item.visibility === "public" && !item.dirty && item.missing.length === 0 && indexedHash && currentPublicHash && indexedHash === currentPublicHash) {
-      return "indexed";
+    if (item.visibility === "public" && !item.dirty && item.missing.length === 0) {
+      return indexedHash && currentPublicHash && indexedHash === currentPublicHash ? "indexed" : "pending";
     }
     return "draft";
   };
@@ -71,7 +71,7 @@ export function ContentListPage() {
     const q = search.trim().toLowerCase();
     return items.filter((item) => {
       const state = badgeOf(item);
-      const isPublic = state === "verified" || state === "indexed";
+      const isPublic = state === "verified" || state === "indexed" || state === "pending";
       if ((filter === "live" && !isPublic) || (filter === "draft" && isPublic)) return false;
       return !q || item.title.toLowerCase().includes(q) || item.slug.toLowerCase().includes(q);
     });
@@ -123,7 +123,7 @@ export function ContentListPage() {
           <input type="search" aria-label="搜索文章" placeholder="搜索标题或 slug…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="chip-row" role="group" aria-label="按状态筛选">
-          {([["all", "全部"], ["draft", "未上线"], ["live", "已上线"]] as const).map(([key, label]) => (
+          {([["all", "全部"], ["draft", "草稿"], ["live", "已公开"]] as const).map(([key, label]) => (
             <button key={key} type="button" className={`chip ${filter === key ? "is-active" : ""}`} onClick={() => setFilter(key)}>{label}</button>
           ))}
         </div>
@@ -160,7 +160,8 @@ export function ContentListPage() {
             const state = badgeOf(item);
             const badgeMeta: Record<BadgeState, { cls: string; dot: string; text: string; tip?: string }> = {
               verified: { cls: "badge green", dot: "status-dot live", text: "已上线", tip: "后台发布单已线上确证" },
-              indexed: { cls: "badge", dot: "status-dot live", text: "已公开", tip: "已进入公开索引（暂无后台发布单确证记录）" },
+              indexed: { cls: "badge", dot: "status-dot live", text: "已公开", tip: "已进入公开问答索引（暂无后台发布单记录）" },
+              pending: { cls: "badge", dot: "status-dot inflight", text: "待核验", tip: "Git 已公开且无本地改动，尚未同步进问答索引/发布单确证" },
               private: { cls: "badge", dot: "status-dot", text: "私密" },
               draft: { cls: "badge amber", dot: "status-dot draft", text: "草稿" },
             };

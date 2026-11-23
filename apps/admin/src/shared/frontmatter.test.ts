@@ -94,6 +94,20 @@ describe("frontmatter 剥离与无损回写", () => {
     expect(next.endsWith("\n\n新正文")).toBe(true);
   });
 
+  it("输入标题与摘要时绝不吞掉尾随空格，并在发布时自动修剪首尾多余空白", () => {
+    const typingTitle = updateDocFrontmatter(SAMPLE, { title: "AI " });
+    expect(parseDocFrontmatter(typingTitle).title).toBe("AI ");
+    const fullTitle = updateDocFrontmatter(typingTitle, { title: 'AI "极简" 时代 ' });
+    expect(parseDocFrontmatter(fullTitle).title).toBe('AI "极简" 时代 ');
+
+    const typingSummary = updateDocFrontmatter(fullTitle, { summary: "一句话 " });
+    expect(parseDocFrontmatter(typingSummary).summary).toBe("一句话 ");
+
+    const promoted = promoteDraftForPublish(typingSummary, "demo-slug", "2026-11-24");
+    expect(parseDocFrontmatter(promoted.raw).title).toBe('AI "极简" 时代');
+    expect(parseDocFrontmatter(promoted.raw).summary).toBe("一句话");
+  });
+
   it("一键发布自动转正 draft / 旧 published: false 为 visibility: public，且不碰 private", () => {
     const promoted = promoteDraftForPublish(SAMPLE, "demo-slug", "2026-11-24");
     expect(promoted.changed).toBe(true);
@@ -106,7 +120,7 @@ describe("frontmatter 剥离与无损回写", () => {
     expect(legacyFixed.changed).toBe(true);
     expect(legacyFixed.raw).not.toContain("published: false");
 
-    const priv = "---\ntitle: 私密\nsummary: 隐私\nvisibility: private\n---\n\n私密正文";
+    const priv = "---\ntitle: 私密 \nsummary: \nvisibility: private\n---\n\n私密正文";
     expect(promoteDraftForPublish(priv, "priv-post", "2026-11-24").changed).toBe(false);
   });
 });

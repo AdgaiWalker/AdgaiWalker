@@ -21,16 +21,17 @@ export function SlideDrawer({
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
-    if (open) {
-      if (!dialog.open) {
-        if (typeof dialog.showModal === "function") dialog.showModal();
-        else dialog.setAttribute("open", "");
-      }
-    } else if (dialog.open) {
-      if (typeof dialog.close === "function") dialog.close();
-      else dialog.removeAttribute("open");
+    if (!open || !dialog) return;
+    if (!dialog.open) {
+      if (typeof dialog.showModal === "function") dialog.showModal();
+      else dialog.setAttribute("open", "");
     }
+    return () => {
+      if (dialog.open) {
+        if (typeof dialog.close === "function") dialog.close();
+        else dialog.removeAttribute("open");
+      }
+    };
   }, [open]);
 
   useEffect(() => {

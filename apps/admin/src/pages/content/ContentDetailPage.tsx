@@ -189,6 +189,47 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     } catch { setErrorMessage("复制失败，请手动复制链接"); }
   };
 
+  const handleCheckRelease = async () => {
+    if (!release) return;
+    setErrorMessage(null); setStatusMessage(null);
+    try {
+      if (stage === "UNKNOWN") {
+        const res = await reconcileMutation.mutateAsync(release.id);
+        setStatusMessage(res.details);
+      } else {
+        const res = await verifyMutation.mutateAsync(release.id);
+        setStatusMessage(res.verified ? "线上版本已确证发布" : `线上暂未检测到该版本（${res.reason ?? "待部署或已被新提交覆盖"}），可直接重新发布`);
+      }
+      void latestRelease.refetch(); void versionQuery.refetch();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "核对发布状态失败");
+    }
+  };
+
+  const handleCancelRelease = async () => {
+    if (!release) return;
+    setErrorMessage(null); setStatusMessage(null);
+    try {
+      const res = await cancelMutation.mutateAsync(release.id);
+      setStatusMessage(res.message);
+      void latestRelease.refetch();
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "取消发布单失败");
+    }
+  };
+
+  const handleDelete = async () => {
+    setErrorMessage(null);
+    try {
+      await deleteMutation.mutateAsync({ slug: item.slug });
+      setDeleteOpen(false);
+      navigate(R.content, { replace: true });
+    } catch (err) {
+      setDeleteOpen(false);
+      setErrorMessage(err instanceof Error ? err.message : "删除草稿失败");
+    }
+  };
+
   // 按需显现 + 绝不撒谎：未保存编辑态（isDirty）下绝不显示「已在线上确证」，平时已发布文章 0 像素占位
   const showPublishedConfirm = justPublished && stage === "PUBLISHED" && !isDirty && !isGitBusy;
   const showStrip = Boolean(
@@ -248,12 +289,12 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
               </>
             ) : null}
             {release && (stage === "UNKNOWN" || stage === "VERIFYING") ? (
-              <button type="button" className="btn" disabled={reconcileMutation.isPending || verifyMutation.isPending} onClick={() => {
-                void (stage === "UNKNOWN" ? reconcileMutation.mutateAsync(release.id) : verifyMutation.mutateAsync(release.id)).then(() => { void latestRelease.refetch(); void versionQuery.refetch(); });
-              }}><RefreshCw size={13} /> 立即核对</button>
+              <button type="button" className="btn" disabled={reconcileMutation.isPending || verifyMutation.isPending} onClick={() => void handleCheckRelease()}>
+                <RefreshCw size={13} /> 立即核对
+              </button>
             ) : null}
             {release && (stage === "PREPARED" || stage === "UNKNOWN") ? (
-              <button type="button" className="btn btn-ghost" disabled={cancelMutation.isPending} onClick={() => void cancelMutation.mutateAsync(release.id).then(() => void latestRelease.refetch())}>取消发布单</button>
+              <button type="button" className="btn btn-ghost" disabled={cancelMutation.isPending} onClick={() => void handleCancelRelease()}>取消发布单</button>
             ) : null}
           </div>
         </div>
@@ -308,20 +349,23 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
           {parsed.visibility === "draft" || parsed.published === false ? (
             <p className="notice" style={{ margin: 0 }}>当前为草稿，发布上线时将自动转为公开可见。</p>
           ) : parsed.visibility === "private" ? (
-            <p className="notice" style={{ margin: 0 }}>当前为私密文章，不会在公网展示；如需公开请先在「元信息」改为公开。</p>
+            <div className="notice" style={{ margin: 0, justifyContent: "space-between" }}>
+              <span>当前为私密文章，无法直接公开发布。</span>
+              <button type="button" className="btn" onClick={() => patchDoc({ visibility: "public" })}>转为公开</button>
+            </div>
           ) : null}
           <label className="field-col">
             变更说明（将公开显示在版本历史中）
             <input
               type="text" autoFocus required placeholder="例如：补充一线案例 / 修正错别字" value={versionNote}
               onChange={(e) => setVersionNote(e.target.value)}
-              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); void handleOneClickPublish(e); } }}
+              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && parsed.visibility !== "private") { e.preventDefault(); void handleOneClickPublish(e); } }}
             />
           </label>
           {errorMessage ? <p className="error-text" role="alert">{errorMessage}</p> : null}
           <div className="action-row" style={{ justifyContent: "flex-end" }}>
             <button type="button" className="btn" onClick={() => { setPublishOpen(false); trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" }); }}>取消</button>
-            <button type="submit" className="btn btn-primary" disabled={publishing || !versionNote.trim()}><UploadCloud size={14} />{publishing ? "正在推送…" : "发布上线"}</button>
+            <button type="submit" className="btn btn-primary" disabled={publishing || parsed.visibility === "private" || !versionNote.trim()}><UploadCloud size={14} />{publishing ? "正在推送…" : "发布上线"}</button>
           </div>
         </form>
       </ModalDialog>
@@ -386,7 +430,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
         <p className="muted">将删除 `content/log/{item.slug}`，未保存修改无法找回。</p>
         <div className="action-row" style={{ justifyContent: "flex-end" }}>
           <button type="button" className="btn" autoFocus onClick={() => setDeleteOpen(false)}>取消</button>
-          <button type="button" className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => void deleteMutation.mutateAsync({ slug: item.slug }).then(() => { setDeleteOpen(false); navigate(R.content, { replace: true }); })}>
+          <button type="button" className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => void handleDelete()}>
             {deleteMutation.isPending ? "删除中…" : "确认删除"}
           </button>
         </div>

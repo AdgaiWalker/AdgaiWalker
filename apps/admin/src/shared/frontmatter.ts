@@ -28,7 +28,9 @@ const BLOCK_SCALAR_RE = /^([>|])([+-])?\d*$/;
 function unquote(v: string): string {
   const s = v.trim();
   if (s.startsWith('"') && s.endsWith('"') && s.length >= 2) {
-    return s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+    try { return JSON.parse(s) as string; } catch {
+      return s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+    }
   }
   if (s.startsWith("'") && s.endsWith("'") && s.length >= 2) {
     return s.slice(1, -1).replace(/''/g, "'");
@@ -36,7 +38,8 @@ function unquote(v: string): string {
   return s;
 }
 
-const quote = (v: string) => `"${v.replace(/\r?\n/g, " ").trim().replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+// 严禁在输入期 .trim()：受控标题/摘要输入框必须完整保留尾随空格，避免输入法或英文单词敲空格被吞
+const quote = (v: string) => JSON.stringify(v.replace(/\r?\n/g, " "));
 
 /** 定位顶层 key 及其全部缩进续行范围 [start, end)（单点范围查找，杜绝改写多行块标量时残留孤立缩进行）。 */
 function findKeyRange(lines: string[], key: string): { start: number; end: number; header: string } | null {
@@ -152,10 +155,12 @@ export function updateDocFrontmatter(raw: string, patch: FrontmatterPatch): stri
 /** 一键发布前自动转正：将 draft（或旧 published: false）升级为 visibility: public 并补齐 updated/summary。 */
 export function promoteDraftForPublish(raw: string, slug: string, today = new Date().toISOString().slice(0, 10)): { raw: string; changed: boolean } {
   const parsed = parseDocFrontmatter(raw);
-  if (!parsed.hasFrontmatter) return { raw, changed: false };
+  if (!parsed.hasFrontmatter || parsed.visibility === "private") return { raw, changed: false };
   const patch: FrontmatterPatch = {};
   if (parsed.visibility === "draft" || parsed.published === false) { patch.visibility = "public"; patch.updated = today; }
-  if (!parsed.summary.trim()) patch.summary = `${parsed.title || slug} · ${slug}`;
+  if (parsed.title !== parsed.title.trim()) patch.title = parsed.title.trim();
+  if (!parsed.summary.trim()) patch.summary = `${parsed.title.trim() || slug} · ${slug}`;
+  else if (parsed.summary !== parsed.summary.trim()) patch.summary = parsed.summary.trim();
   if (Object.keys(patch).length === 0) return { raw, changed: false };
   const next = updateDocFrontmatter(raw, patch);
   return { raw: next, changed: next !== raw.replace(/\r\n/g, "\n") };

@@ -69,7 +69,9 @@ export function ContentHistoryPanel({ slug, onRestore }: { slug: string; onResto
                         className="btn btn-primary"
                         onClick={() => {
                           setConfirmRestore(null);
-                          void fetchContentVersionDetail(slug, v.version).then((d) => onRestore(d.body, v.version));
+                          void fetchContentVersionDetail(slug, v.version)
+                            .then((d) => onRestore(d.body, v.version))
+                            .catch((err) => setError(err instanceof Error ? err.message : "读取历史版本失败"));
                         }}
                       >
                         确认回退
