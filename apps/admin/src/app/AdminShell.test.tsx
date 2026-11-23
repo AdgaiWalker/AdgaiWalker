@@ -4,16 +4,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminShell } from "./AdminShell";
 import { AppErrorBoundary } from "../components/AppErrorBoundary";
 
-const { useCapabilitiesMock, useServerHealthMock, useActivityCountsMock, useContentMock } = vi.hoisted(() => ({
+const { useCapabilitiesMock, useDeployedAdminVersionMock, useActivityCountsMock, useContentMock } = vi.hoisted(() => ({
   useCapabilitiesMock: vi.fn(),
-  useServerHealthMock: vi.fn(),
+  useDeployedAdminVersionMock: vi.fn(),
   useActivityCountsMock: vi.fn(),
   useContentMock: vi.fn(),
 }));
 
 vi.mock("../api/queries", () => ({
   useCapabilities: useCapabilitiesMock,
-  useServerHealth: useServerHealthMock,
+  useDeployedAdminVersion: useDeployedAdminVersionMock,
   useActivityCounts: useActivityCountsMock,
   useContent: useContentMock,
   useContentSyncStatus: () => ({ data: { available: true, behind: 0, ahead: 0, dirtyFiles: [], incomingFiles: [] }, refetch: vi.fn() }),
@@ -25,8 +25,8 @@ vi.mock("../api/queries", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   useCapabilitiesMock.mockReturnValue({ isPending: false, isError: false, data: { items: [] } });
-  useServerHealthMock.mockReturnValue({ data: { ok: true, db: true, version: "same-sha" } });
-  useActivityCountsMock.mockReturnValue({ data: { remindersPending: 0, runsFailed: 0, answersDegraded: 0, releaseWorkingAhead: 0 } });
+  useDeployedAdminVersionMock.mockReturnValue({ data: "same-sha" });
+  useActivityCountsMock.mockReturnValue({ data: { remindersPending: 0, runsFailed: 0, answersDegraded: 0, releaseWorkingAhead: 3 } });
   useContentMock.mockReturnValue({ data: { data: [{ id: "hello", slug: "hello", title: "测试标题" }] } });
 });
 
@@ -49,6 +49,8 @@ describe("AdminShell 与兜底三件套（混沌验证）", () => {
     expect(screen.queryByText(/上线状态尚未核验/)).toBeNull();
     expect(screen.queryByText("概览")).toBeNull();
     expect(screen.queryByText("Agent")).toBeNull();
+    // 文章未发布计数 releaseWorkingAhead=3 不应污染「访客」红点
+    expect(screen.queryByLabelText(/项需关注/)).toBeNull();
 
     // ⌘K 呼出快速跳转并搜到文章
     fireEvent.keyDown(window, { key: "k", metaKey: true });
@@ -56,8 +58,8 @@ describe("AdminShell 与兜底三件套（混沌验证）", () => {
     expect(screen.getByText("测试标题")).toBeTruthy();
   });
 
-  it("服务端 build version 漂移时，顶栏按需浮现「有新版本 · 刷新」胶囊；一致时不显示", () => {
-    useServerHealthMock.mockReturnValue({ data: { ok: true, db: true, version: "new5678" } });
+  it("静态 /version.json 漂移时，顶栏按需浮现「有新版本 · 刷新」胶囊；一致时不显示", () => {
+    useDeployedAdminVersionMock.mockReturnValue({ data: "new5678" });
     const { rerender } = render(
       <MemoryRouter initialEntries={["/content"]}>
         <Routes>

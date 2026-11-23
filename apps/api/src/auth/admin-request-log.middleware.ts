@@ -18,7 +18,7 @@ export class AdminRequestLogMiddleware implements NestMiddleware {
       isBackgroundAdminRequest({
         marker: req.header(ADMIN_BACKGROUND_POLL_HEADER),
         method: req.method,
-        path: req.path,
+        path: (req.originalUrl ?? `${req.baseUrl ?? ''}${req.path ?? ''}`).split('?')[0],
       })
     ) {
       next();

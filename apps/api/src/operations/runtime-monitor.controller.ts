@@ -1,10 +1,14 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Query } from '@nestjs/common';
 import {
   RUNTIME_LOG_PAGE_LIMIT_MAX,
   RUNTIME_REQUEST_PAGE_LIMIT_MAX,
+  formatAdminUiEventLine,
+  isAdminUiEventName,
   isRuntimeLogChannel,
   parseRuntimeFlag,
   parseRuntimePageLimit,
+  prepareRuntimeLogEntry,
+  redactSensitive,
   type RuntimeLogChannel,
 } from '@walker/shared';
 import { validationError } from '../common/http-error';
@@ -16,14 +20,13 @@ import {
 } from '../ports/runtime-monitor.port';
 
 /**
- * 本地开发运行监控（只读三个端点，管理鉴权内，不进公网白名单）。
+ * 本地开发运行监控（管理鉴权内，不进公网白名单）。
  *
- * 三条边界：
- * - **只读**：这里没有写入口。日志与指标由进程内采集器写入，HTTP 只查询。
- * - **服务端过滤**：channel / errorsOnly 都在服务端生效，前端不做任何本地回退——
- *   面板那次"筛选为空退回未筛选数据，管理员据此查错人"的事故从结构上不会重演。
- * - **参数非法就拒**：limit 越界或 channel 不认识都返回 400，不静默兜成默认值
- *   （否则界面会拿着"我以为的筛选"看"别人的数据"）。
+ * 边界：
+ * - 查询端点只读；`POST /ops/runtime/ui-events` 仅接收白名单内 8 个轻量 UI 交互埋点，
+ *   fail-open 写入进程内日志缓冲与 stdout，零 SQLite 迁移。
+ * - **服务端过滤**：channel / errorsOnly 都在服务端生效，前端不做任何本地回退。
+ * - **参数非法就拒**：limit 越界、channel 或 event 不认识都返回 400，不静默兜成默认值。
  */
 @Controller('ops/runtime')
 export class RuntimeMonitorController {
@@ -66,5 +69,36 @@ export class RuntimeMonitorController {
     const channel: RuntimeLogChannel | undefined =
       rawChannel && isRuntimeLogChannel(rawChannel) ? rawChannel : undefined;
     return this.logs.page({ limit, channel, errorsOnly: parseRuntimeFlag(rawErrorsOnly) });
+  }
+
+  @Post('ui-events')
+  @HttpCode(200)
+  recordUiEvent(@Body() body?: Record<string, unknown>) {
+    const event = body?.event;
+    if (!isAdminUiEventName(event)) throw validationError('event 参数不正确');
+    const props =
+      body?.props && typeof body.props === 'object' && !Array.isArray(body.props)
+        ? (body.props as Record<string, unknown>)
+        : undefined;
+    const text = formatAdminUiEventLine(event, props);
+    const entry = prepareRuntimeLogEntry({
+      ts: new Date(),
+      context: 'AdminUiTelemetry',
+      level: event === 'ai.silent_degraded' ? 'warn' : 'info',
+      text,
+      redact: redactSensitive,
+    });
+    try {
+      this.logs.append(entry);
+    } catch {
+      // fail-open：埋点写入失败绝不影响响应
+    }
+    try {
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify({ level: entry.level, msg: 'admin_ui_event', event, text: entry.text }));
+    } catch {
+      // 终端输出异常忽略
+    }
+    return { ok: true };
   }
 }

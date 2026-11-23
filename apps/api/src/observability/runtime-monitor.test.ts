@@ -415,4 +415,23 @@ describe('运行监控接口：参数非法就拒，不静默兜底', () => {
     expect(api.listRequests('10', '1', '1').entries).toHaveLength(1);
     expect(RUNTIME_REQUEST_PAGE_LIMIT_MAX).toBeGreaterThan(0);
   });
+
+  it('ui-events 仅接受白名单内 8 个事件并写入运行日志，未知事件返回 400，缓冲故障 fail-open', () => {
+    const { controller: api, logs } = controller();
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      expect(() => api.recordUiEvent({ event: 'unknown.event' })).toThrowError(/event/);
+      expect(api.recordUiEvent({ event: 'publish.flow_completed', props: { slug: 'demo', durationMs: 420 } })).toEqual({ ok: true });
+      const entries = logs.page({ limit: 10, errorsOnly: false }).entries;
+      expect(entries.some((e) => e.text === '[ui] publish.flow_completed slug=demo durationMs=420')).toBe(true);
+
+      const broken = new RuntimeMonitorController(
+        { append: () => { throw new Error('disk'); }, dropped: () => 0, page: () => ({ entries: [], counts: { task: 0, chat: 0, sys: 0 }, dropped: 0 }) },
+        new InMemoryRuntimeMetricsBuffer(),
+      );
+      expect(broken.recordUiEvent({ event: 'admin.page_view', props: { surface: 'content' } })).toEqual({ ok: true });
+    } finally {
+      log.mockRestore();
+    }
+  });
 });

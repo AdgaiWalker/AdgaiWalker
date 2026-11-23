@@ -58,7 +58,7 @@ vi.mock("../../api/queries", () => ({
   fetchContentVersionDiff: vi.fn(),
 }));
 
-const BASE_RAW = "---\ntitle: 测试文章\nsummary: 简短摘要\n---\n\n# 初始正文\n";
+const BASE_RAW = "---\ntitle: 测试文章\nsummary: 简短摘要\nvisibility: draft\n---\n\n# 初始正文\n";
 
 function renderDetail(slug = "demo-post") {
   const router = createMemoryRouter(
@@ -117,29 +117,35 @@ beforeEach(() => {
 });
 
 describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按需抽屉）", () => {
-  it("无 9-Tab 干扰，支持编辑/预览切换与保存", async () => {
+  it("无 9-Tab 干扰、无原始 YAML 墙：只露出标题框与纯正文画布，支持预览与保存", async () => {
     renderDetail();
+    const titleInput = screen.getByLabelText("文章标题") as HTMLInputElement;
     const editor = screen.getByLabelText("文章正文") as HTMLTextAreaElement;
-    expect(editor.value).toBe(BASE_RAW);
+    expect(titleInput.value).toBe("测试文章");
+    expect(editor.value).toBe("# 初始正文\n");
+    expect(editor.value).not.toContain("visibility:");
     expect(screen.queryByText("发布清单")).toBeNull();
 
     // 切换预览
     fireEvent.click(screen.getByRole("tab", { name: "预览" }));
     expect(screen.getByRole("heading", { name: "初始正文" })).toBeTruthy();
 
-    // 切回编辑并修改 → 露出主按钮「保存」
+    // 切回编辑并修改标题与正文 → 露出主按钮「保存」
     fireEvent.click(screen.getByRole("tab", { name: "编辑" }));
-    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n新段落" } });
+    fireEvent.change(screen.getByLabelText("文章标题"), { target: { value: "改后标题" } });
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: "# 初始正文\n\n新段落" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(screen.getByText("已保存")).toBeTruthy());
   });
 
-  it("KLM ≤ 3 步一键发布：修改后点「发布」填一句说明，自动串行 save → prepare → release", async () => {
+  it("KLM ≤ 3 步一键发布：草稿自动转正 visibility: public，再串行 save → prepare → release", async () => {
     const order: string[] = [];
+    let savedPayload = "";
     useSaveContentMock.mockReturnValue({
       isPending: false,
       mutateAsync: vi.fn(async ({ raw }: { raw: string }) => {
         order.push("save");
+        savedPayload = raw;
         return { slug: "demo-post", raw, hash: "hash-2" };
       }),
     });
@@ -159,14 +165,15 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     });
 
     renderDetail();
-    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n新增案例" } });
     fireEvent.click(screen.getByRole("button", { name: "发布" }));
+    expect(screen.getByText(/当前为草稿，发布上线时将自动转为公开可见/)).toBeTruthy();
     fireEvent.change(screen.getByPlaceholderText(/补充一线案例/), { target: { value: "补充一线案例" } });
     fireEvent.click(screen.getByRole("button", { name: "发布上线" }));
 
     await waitFor(() =>
       expect(order).toEqual(["save", "prepare:补充一线案例", "release:rel-99"]),
     );
+    expect(savedPayload).toContain("visibility: public");
     expect(getAdminUiEvents().map((e) => e.event)).toContain("publish.flow_completed");
   });
 
@@ -182,7 +189,7 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     });
 
     renderDetail();
-    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n本地改动" } });
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: "# 初始正文\n本地改动" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
     expect(await screen.findByText("检测到外部更新冲突")).toBeTruthy();
@@ -194,17 +201,19 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
 
   it("未保存修改点击离开时弹出离页拦截对话框", async () => {
     renderDetail();
-    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: BASE_RAW + "\n未保存" } });
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: "# 初始正文\n未保存" } });
     fireEvent.click(screen.getByRole("link", { name: "返回文章列表" }));
     expect(await screen.findByText("有未保存的改动")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "留下继续编辑" }));
     expect(screen.queryByText("LIST_PAGE")).toBeNull();
   });
 
-  it("点击「更多操作」按需展开右侧抽屉并可切换历史与宣发", async () => {
+  it("点击「更多操作」按需展开右侧抽屉并支持元信息/历史/宣发切换", async () => {
     renderDetail();
     fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
     expect(await screen.findByText("文章选项")).toBeTruthy();
+    expect(screen.getByLabelText("公开摘要")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "历史" }));
     expect(screen.getByText(/还没有公开发布过版本/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "宣发" }));
     expect(screen.getByRole("button", { name: "复制全文案" })).toBeTruthy();

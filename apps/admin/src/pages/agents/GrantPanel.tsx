@@ -6,14 +6,9 @@ import { timeLabel } from "../../shared/labels";
 
 export function singleRunGrant(agentId: string, requestKey: string, now = Date.now()) {
   return {
-    requestKey,
-    level: "L0" as const,
-    agentId,
-    actions: ["agent:run"],
+    requestKey, level: "L0" as const, agentId, actions: ["agent:run"],
     resourceScope: { kind: "agent" as const, ids: [agentId] },
-    expiresAt: new Date(now + 60 * 60 * 1000).toISOString(),
-    runLimit: 1,
-    usageLimit: 1000,
+    expiresAt: new Date(now + 3600_000).toISOString(), runLimit: 1, usageLimit: 1000,
   };
 }
 
@@ -23,111 +18,47 @@ export function GrantPanel({ agentId }: { agentId: string }) {
     queryFn: ({ signal }) => requestJson<AuthorizationGrantState[]>(`/ops/agents/${encodeURIComponent(agentId)}/grants`, { signal }),
   });
   const [message, setMessage] = useState("");
-  async function issue() {
+  const runOp = async (fn: () => Promise<unknown>, fallback: string) => {
     setMessage("");
-    try {
-      await requestJson("/ops/grants", { method: "POST", body: singleRunGrant(agentId, `grant${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`) });
-      await query.refetch();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "没有签发");
-    }
-  }
-  async function revoke(id: string) {
-    setMessage("");
-    try {
-      await requestJson(`/ops/grants/${encodeURIComponent(id)}/revoke`, { method: "POST", body: {} });
-      await query.refetch();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "没有撤销");
-    }
-  }
+    try { await fn(); await query.refetch(); } catch (err) { setMessage(err instanceof Error ? err.message : fallback); }
+  };
+
   return (
-    <section className="panel">
+    <section className="panel stack">
       <h2>授权管理</h2>
-      <p className="muted">等级只是模板。新授权默认一次。修改和发布必须分开，不能在这里授予持续内容全权。</p>
-      {query.isError ? <p role="alert">{query.error instanceof Error ? query.error.message : "授权读取失败"}</p> : null}
-      {message ? <p role="alert">{message}</p> : null}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        <button className="primary" onClick={() => void issue()}>签发一次运行授权 (L0)</button>
-        <button disabled title="需走内容工作区精确审批">签发修改授权 (L1)</button>
-        <button disabled title="需走发布预检独立签署">签发发布授权 (L2)</button>
-        <button disabled title="安全红线：禁用持续全权">持续内容全权</button>
+      <p className="muted" style={{ margin: 0 }}>新授权默认单次运行；修改与发布分离，禁用持续内容全权。</p>
+      {query.isError ? <p className="error-text" role="alert">{query.error instanceof Error ? query.error.message : "授权读取失败"}</p> : null}
+      {message ? <p className="error-text" role="alert">{message}</p> : null}
+      <div className="button-row">
+        <button className="primary" onClick={() => void runOp(() => requestJson("/ops/grants", { method: "POST", body: singleRunGrant(agentId, `grant${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`) }), "没有签发")}>签发一次运行授权 (L0)</button>
+        <button disabled title="需走内容工作区精确审批">修改授权 (L1)</button>
+        <button disabled title="需走发布预检独立签署">发布授权 (L2)</button>
+        <button disabled title="安全红线：禁用持续全权">持续全权</button>
       </div>
-
-      <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-        {(query.data ?? []).map((grant) => {
-          const displayLevel = grant.actions.includes("content:publish")
-            ? "L2"
-            : grant.actions.includes("content:apply")
-            ? "L1"
-            : "L0";
-          const isExpired = Boolean(grant.expiresAt && new Date(grant.expiresAt).getTime() < Date.now());
-          const isRevoked = Boolean(grant.revokedAt);
-          const runsCharged = grant.runsCharged ?? 0;
-          const usageCharged = grant.usageCharged ?? 0;
-          const isExhausted = grant.runLimit !== null && runsCharged >= grant.runLimit;
-          const isUsable = !isRevoked && !isExpired && !isExhausted;
-
+      <div className="agent-list">
+        {(query.data ?? []).map((g) => {
+          const lvl = g.actions.includes("content:publish") ? "L2" : g.actions.includes("content:apply") ? "L1" : "L0";
+          const expired = Boolean(g.expiresAt && new Date(g.expiresAt).getTime() < Date.now());
+          const revoked = Boolean(g.revokedAt);
+          const runs = g.runsCharged ?? 0;
+          const usable = !revoked && !expired && !(g.runLimit !== null && runs >= g.runLimit);
           return (
-            <div
-              key={grant.id}
-              style={{
-                border: "1px solid var(--line)",
-                borderRadius: 8,
-                padding: "12px 16px",
-                background: isUsable ? "var(--surface)" : "var(--surface-sunken, #f8fafc)",
-                opacity: isUsable ? 1 : 0.8,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className={`badge ${displayLevel === "L2" ? "purple" : displayLevel === "L1" ? "blue" : ""}`}>
-                    {displayLevel}
-                  </span>
-                  <code style={{ fontWeight: 600, fontSize: 13 }}>{grant.id}</code>
-                  <span
-                    className={
-                      isRevoked
-                        ? "badge red"
-                        : isExpired
-                        ? "badge"
-                        : isUsable
-                        ? "badge green"
-                        : "badge"
-                    }
-                  >
-                    {isRevoked ? "已撤销" : isExpired ? "已过期" : isUsable ? "有效" : "额度耗尽"}
-                  </span>
+            <div key={g.id} className="deployment-row" style={{ opacity: usable ? 1 : 0.72 }}>
+              <div className="action-row" style={{ justifyContent: "space-between" }}>
+                <div className="action-row">
+                  <span className={`badge ${lvl === "L2" ? "purple" : lvl === "L1" ? "blue" : ""}`}>{lvl}</span>
+                  <code className="mono">{g.id}</code>
+                  <span className={revoked ? "badge red" : usable ? "badge green" : "badge"}>{revoked ? "已撤销" : expired ? "已过期" : usable ? "有效" : "额度耗尽"}</span>
                 </div>
-                {!grant.revokedAt && (
-                  <button
-                    type="button"
-                    className="button"
-                    style={{ padding: "2px 8px", fontSize: 12 }}
-                    onClick={() => void revoke(grant.id)}
-                  >
-                    撤销
-                  </button>
-                )}
+                {!revoked ? <button type="button" className="btn" onClick={() => void runOp(() => requestJson(`/ops/grants/${encodeURIComponent(g.id)}/revoke`, { method: "POST", body: {} }), "没有撤销")}>撤销</button> : null}
               </div>
-              <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>
-                <div>主体：{grant.principalType}/{grant.principalId} · 范围：{grant.resourceScope.kind}:{grant.resourceScope.ids.join(",")} · 动作：{grant.actions.join(",")}</div>
-                <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
-                  <span>
-                    次数：<strong>{runsCharged}</strong> / {grant.runLimit ?? "不限"}
-                  </span>
-                  <span>
-                    用量：<strong>{usageCharged}</strong> / {grant.usageLimit ?? "不限"} tokens
-                  </span>
-                  <span>
-                    期限：{grant.expiresAt ? timeLabel(grant.expiresAt) : "无"}
-                  </span>
-                </div>
-              </div>
+              <small className="muted">
+                {g.principalType}/{g.principalId} · {g.resourceScope.kind}:{g.resourceScope.ids.join(",")} · 次数 {runs}/{g.runLimit ?? "∞"} · 用量 {g.usageCharged ?? 0}/{g.usageLimit ?? "∞"} · 期限 {g.expiresAt ? timeLabel(g.expiresAt) : "无"}
+              </small>
             </div>
           );
         })}
-        {!query.data?.length && <p className="muted">尚未签发任何授权</p>}
+        {!query.data?.length ? <p className="muted" style={{ margin: 0 }}>尚未签发任何授权</p> : null}
       </div>
     </section>
   );

@@ -6,12 +6,14 @@
  *
  * 判据与既有行为完全一致（这次只是抽函数，不改语义）：
  * - 带 `x-admin-background-poll: 1` 的 GET；
- * - 带该头的发布预检 POST（只读的 POST，不是变更操作）。
+ * - 带该头的发布预检 POST（只读的 POST，不是变更操作）；
+ * - 带该头的前端 UI 观测埋点 POST（进程内 fail-open 环形缓冲，零写库）。
  *
- * **变更方法永不算自动：不信任这个标记。**（既有中间件注释里的原话）
+ * **业务变更方法永不算自动：不信任这个标记。**（既有中间件注释里的原话）
  */
 export const ADMIN_BACKGROUND_POLL_HEADER = 'x-admin-background-poll';
 export const CONTENT_RELEASE_PREFLIGHT_PATH = '/admin/content/release/preflight';
+export const RUNTIME_UI_EVENTS_PATH = '/ops/runtime/ui-events';
 
 export function isBackgroundAdminRequest(input: {
   marker: string | undefined;
@@ -20,5 +22,8 @@ export function isBackgroundAdminRequest(input: {
 }): boolean {
   if (input.marker !== '1') return false;
   if (input.method === 'GET') return true;
-  return input.method === 'POST' && input.path === CONTENT_RELEASE_PREFLIGHT_PATH;
+  return (
+    input.method === 'POST' &&
+    (input.path === CONTENT_RELEASE_PREFLIGHT_PATH || input.path === RUNTIME_UI_EVENTS_PATH)
+  );
 }

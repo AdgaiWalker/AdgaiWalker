@@ -157,3 +157,22 @@ it('轮询这些端点不写后台日志（不污染审计）', async () => {
   expect((await fetch(base + '/ops/runtime/metrics', { headers: { ...headers, 'x-admin-background-poll': '1' } })).status).toBe(200);
   expect(await db.adminRequestLog.count()).toBe(before);
 });
+
+it('UI 埋点经服务端写入运行日志（鉴权内、白名单校验、不污染人工审计日志）', async () => {
+  expect((await fetch(base + '/ops/runtime/ui-events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ event: 'admin.page_view' }) })).status).toBe(401);
+  expect((await fetch(base + '/ops/runtime/ui-events', { method: 'POST', headers, body: JSON.stringify({ event: 'not.allowed' }) })).status).toBe(400);
+
+  const before = await db.adminRequestLog.count();
+  const res = await fetch(base + '/ops/runtime/ui-events', {
+    method: 'POST',
+    headers: { ...headers, 'x-admin-background-poll': '1' },
+    body: JSON.stringify({ event: 'drawer.opened', props: { section: 'meta' } }),
+  });
+  expect(res.status).toBe(200);
+  expect(await db.adminRequestLog.count()).toBe(before);
+
+  const logsPage = (await (await fetch(base + '/ops/runtime/logs?limit=50', { headers })).json()) as {
+    entries: Array<{ text: string; channel: string }>;
+  };
+  expect(logsPage.entries.some((e) => e.text === '[ui] drawer.opened section=meta')).toBe(true);
+});

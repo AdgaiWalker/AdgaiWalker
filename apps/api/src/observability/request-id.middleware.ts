@@ -34,7 +34,7 @@ export class RequestIdMiddleware {
     const background = isBackgroundAdminRequest({
       marker: req.header(ADMIN_BACKGROUND_POLL_HEADER),
       method: req.method,
-      path: req.path,
+      path: (req.originalUrl ?? req.path ?? req.url ?? '').split('?')[0],
     });
     try {
       this.metrics?.begin();

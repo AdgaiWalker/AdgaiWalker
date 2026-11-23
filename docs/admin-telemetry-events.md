@@ -10,8 +10,8 @@ applies_to: [admin]
 
 # Admin 极简工作台埋点事件字典
 
-> 本文件是 `apps/admin` 所有前端交互统计事件的**唯一真相源（SSOT）**，与 [telemetry.ts](../apps/admin/src/api/telemetry.ts) 严格一一对应。
-> 服务端请求事实直接复用既有 `AdminRequestLog`（fail-closed 持久化），前端交互漏斗采用进程内环形缓冲（fail-open，200 条上限，零 SQLite 迁移）。
+> 本文件是 `apps/admin` 所有前端交互统计事件的**唯一真相源（SSOT）**，与 [runtime-monitor.ts](../packages/shared/src/runtime-monitor.ts) 及 [telemetry.ts](../apps/admin/src/api/telemetry.ts) 严格一一对应。
+> 服务端业务请求事实复用 `AdminRequestLog`（fail-closed 持久化）；前端交互漏斗先入内存环形缓冲，并经 `POST /ops/runtime/ui-events`（管理鉴权内、白名单校验、带 `x-admin-background-poll: 1` 不污染人工审计、fail-open + `keepalive`）汇总至 API 进程内运行日志与 `api.log`（零 SQLite 迁移）。
 
 ## 事件清单（严格收敛至 8 个）
 
@@ -24,9 +24,9 @@ applies_to: [admin]
 | `publish.flow_abandoned` | 打开发布浮层后取消或失败离开 | `slug: string`, `reason: cancel \| error` | 定位发布摩擦点 |
 | `drawer.opened` | 打开文章 `···` 滑出抽屉的某个区块 | `section: history \| ai \| share \| meta \| delete` | 检验按需收纳是否合理（若某区块高频打开可评估外置） |
 | `ai.silent_degraded` | AI 能力超时/502/未启用，无声降级回手动 UI | `feature: string`, `reason: string` | 验证优雅降级次数与健康度 |
-| `app.version_drift_refreshed` | 检测到 `/health` version 与构建 SHA 漂移并点击刷新 | `from: string`, `to: string` | 验证静默版本漂移提示生效 |
+| `app.version_drift_refreshed` | 检测到静态 `/version.json` 与构建 SHA 漂移并点击刷新 | `from: string`, `to: string` | 验证静默版本漂移提示生效 |
 
 ## 变更纪律
 
-- 新增或删除任一事件，必须同步更新本表与 [telemetry.ts](../apps/admin/src/api/telemetry.ts)；
+- 新增或删除任一事件，必须同步更新本表与 [runtime-monitor.ts](../packages/shared/src/runtime-monitor.ts) 白名单；
 - 禁止采集文章正文、密码、Token 或访客敏感信息。

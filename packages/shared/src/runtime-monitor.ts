@@ -375,3 +375,45 @@ export function parseRuntimePageLimit(raw: unknown, max: number): number | null 
 export function parseRuntimeFlag(raw: unknown): boolean {
   return raw === true || raw === '1' || raw === 'true' || raw === 'yes';
 }
+
+/**
+ * 极简后台 UI 埋点事件白名单（与 docs/admin-telemetry-events.md 唯一对齐）。
+ * 只收轻量交互信号，严禁夹带正文、凭据或访客敏感信息。
+ */
+export const ADMIN_UI_EVENT_NAMES = [
+  'admin.page_view',
+  'editor.save_completed',
+  'publish.flow_started',
+  'publish.flow_completed',
+  'publish.flow_abandoned',
+  'drawer.opened',
+  'ai.silent_degraded',
+  'app.version_drift_refreshed',
+] as const;
+export type AdminUiEventName = (typeof ADMIN_UI_EVENT_NAMES)[number];
+
+export function isAdminUiEventName(value: unknown): value is AdminUiEventName {
+  return typeof value === 'string' && (ADMIN_UI_EVENT_NAMES as readonly string[]).includes(value);
+}
+
+/** 将受控 UI 埋点压平为单行文本（仅保留标量键值，最多 8 项，单值 ≤ 64 字符）。 */
+export function formatAdminUiEventLine(
+  event: AdminUiEventName,
+  props?: Record<string, unknown>,
+): string {
+  if (!props || typeof props !== 'object' || Array.isArray(props)) return `[ui] ${event}`;
+  const pairs: string[] = [];
+  for (const [key, value] of Object.entries(props)) {
+    if (pairs.length >= 8) break;
+    if (!/^[a-zA-Z0-9_.-]{1,32}$/u.test(key)) continue;
+    if (typeof value === 'string') {
+      const clean = value.replace(/\s+/gu, ' ').trim().slice(0, 64);
+      pairs.push(`${key}=${clean}`);
+    } else if (typeof value === 'number' && Number.isFinite(value)) {
+      pairs.push(`${key}=${value}`);
+    } else if (typeof value === 'boolean') {
+      pairs.push(`${key}=${value ? '1' : '0'}`);
+    }
+  }
+  return pairs.length > 0 ? `[ui] ${event} ${pairs.join(' ')}` : `[ui] ${event}`;
+}
