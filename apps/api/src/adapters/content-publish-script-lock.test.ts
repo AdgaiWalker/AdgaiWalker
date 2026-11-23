@@ -63,14 +63,22 @@ describe('content:publish 的跨进程锁协议', () => {
     expect(resolveContentLockPath(dir)).toBe(configured);
   });
 
-  it('发布包含受跟踪的正文与图谱投影，构建 manifest 不留在 Git 工作树', async () => {
+  it('发布只包含内容源与版本历史，派生 JSON 与构建 manifest 均不留在 Git 追踪树', async () => {
     const { CONTENT_PATHS } = await scriptLock();
-    expect(CONTENT_PATHS).toContain('apps/web/src/generated/content.json');
-    expect(CONTENT_PATHS).toContain('apps/web/src/generated/graph.json');
+    expect(CONTENT_PATHS).toContain('content/log');
+    expect(CONTENT_PATHS).toContain('content/versions');
+    expect(CONTENT_PATHS).not.toContain('apps/web/src/generated/content.json');
+    expect(CONTENT_PATHS).not.toContain('apps/web/src/generated/graph.json');
     const repoRoot = path.resolve(process.cwd(), '../..');
-    const manifest = 'apps/web/src/generated/public-manifest.json';
-    expect(execFileSync('git', ['check-ignore', manifest], { cwd: repoRoot, encoding: 'utf8' }).trim()).toBe(manifest);
-    expect(execFileSync('git', ['ls-files', '--', manifest], { cwd: repoRoot, encoding: 'utf8' }).trim()).toBe('');
+    for (const derived of [
+      'apps/web/src/generated/content.json',
+      'apps/web/src/generated/graph.json',
+      'apps/web/src/generated/article-versions.json',
+      'apps/web/src/generated/public-manifest.json',
+    ]) {
+      expect(execFileSync('git', ['check-ignore', derived], { cwd: repoRoot, encoding: 'utf8' }).trim()).toBe(derived);
+      expect(execFileSync('git', ['ls-files', '--', derived], { cwd: repoRoot, encoding: 'utf8' }).trim()).toBe('');
+    }
   });
 
   it('真实子进程接锁期间第二进程被拒，退出后才可恢复', async () => {

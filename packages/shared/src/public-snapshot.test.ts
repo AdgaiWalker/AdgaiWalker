@@ -116,4 +116,14 @@ describe('版本证明身份唯一性（C16/C17 与 C12/C14 的接缝）', () =>
     const after = publicItemHash(toPublicSnapshotSource({ ...base, body: '第二版正文' }), hash);
     expect(after).not.toBe(before);
   });
+
+  it('Windows CRLF 与 Linux LF 正文必须产生完全一致的公开投影 hash', () => {
+    const base = {
+      slug: 'crlf-proof',
+      data: { title: '换行测试', type: 'knowledge', updated: '2026-11-20', summary: '摘要', aiUsePolicy: { readable: true, citable: true } },
+    };
+    const lf = publicItemHash(toPublicSnapshotSource({ ...base, body: '# 标题\n第一行\n\n第二行\n' }), hash);
+    const crlf = publicItemHash(toPublicSnapshotSource({ ...base, body: '# 标题\r\n第一行\r\n\r\n第二行\r\n' }), hash);
+    expect(crlf).toBe(lf);
+  });
 });

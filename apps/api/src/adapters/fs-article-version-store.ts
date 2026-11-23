@@ -97,10 +97,11 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
   }): Promise<{ index: ArticleVersionIndex; created: boolean }> {
     const slug = input.slug.trim();
     if (!SLUG_RE.test(slug)) throw new ApiError('invalid-slug', 400, 'slug 须为小写 ascii 短横线');
+    const normalizedRawBody = input.rawBody.replace(/\r\n?/g, '\n');
     const dir = await resolveArticleVersionsDir();
     return withVersionLock(path.join(path.resolve(dir), slug), async () => {
       const existing = await this.readIndex(slug) ?? { slug, versions: [] };
-      const contentHash = sha256(input.rawBody);
+      const contentHash = sha256(normalizedRawBody);
       const next = appendArticleVersion(existing, {
         contentHash,
         note: input.note,
@@ -116,15 +117,15 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
       try {
         const handle = await fs.open(blobPath, 'wx', 0o644);
         try {
-          await handle.writeFile(input.rawBody, 'utf8');
+          await handle.writeFile(normalizedRawBody, 'utf8');
           await handle.sync();
         } finally {
           await handle.close();
         }
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-        // 已存在：内容寻址幂等，校验内容一致防哈希碰撞
-        const existingBody = await fs.readFile(blobPath, 'utf8');
+        // 已存在：内容寻址幂等，校验内容一致防哈希碰撞（兼容旧 CRLF blob 归一化）
+        const existingBody = (await fs.readFile(blobPath, 'utf8')).replace(/\r\n?/g, '\n');
         if (sha256(existingBody) !== contentHash) {
           throw new ApiError('article-version-hash-collision', 500, '内容哈希碰撞');
         }

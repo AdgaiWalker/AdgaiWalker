@@ -88,9 +88,9 @@ export function articleCurrentPath(slug: string): string {
   return '/posts/' + encodeURIComponent(slug);
 }
 
-/** 剥掉原始 md 的 YAML frontmatter 块（三处共用一个正则：发布预检 / 预渲染 / 版本页） */
+/** 剥掉原始 md 的 YAML frontmatter 块（三处共用一个正则：发布预检 / 预渲染 / 版本页），统一 LF */
 export function stripFrontmatterBlock(raw: string): string {
-  return raw.replace(/^---[\s\S]*?---\r?\n?/, '');
+  return raw.replace(/\r\n?/g, '\n').replace(/^---[\s\S]*?---\n?/, '');
 }
 
 // ---------- 纯函数守卫 ----------

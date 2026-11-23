@@ -80,7 +80,11 @@ NODE_ENV=production
 AI_ENABLED=false
 WALKER_PUBLIC_ORIGINS=www.iwalk.pro
 WALKER_CONTENT_LOCK_PATH=C:/Walker/data/content-publish.lock
+WALKER_CONTENT_REPO_DIR=C:/Walker/data/content-repo
+WALKER_GITHUB_WEBHOOK_SECRET=<随机长密钥，与 GitHub Webhook Secret 一致>
 ```
+
+> **代码树与内容仓物理隔离（Gate 1）**：运行 `ops/windows/init-content-repo.ps1` 在 `C:\Walker\data\content-repo` 初始化仅检出 `content/` 的稀疏仓库并继承 `core.sshCommand`、强制 `core.autocrlf=false` / `core.eol=lf`。配置 `WALKER_CONTENT_REPO_DIR` 时请同时移除旧 `CONTENT_LOG_DIR`（否则两者会指向不同目录），此后网页后台读写、单篇发布、`drafts` 草稿备份与 3-way 同步全部只在内容仓内完成，永不触碰 `C:\Walker\app` 代码目录。未配置 `WALKER_GITHUB_WEBHOOK_SECRET` 时，公网 `POST /webhooks/github` 默认 fail-closed 返回 403。
 
 API 与手工 `pnpm content:publish --push` 共用此持久锁。手工脚本只读取 `apps/api/.env` 中的锁路径；API 派发的脚本接续同一次锁，不自行释放。进程树退出未证实时锁保持占用。过期死锁恢复使用同目录 `.recovery` 互斥文件；若恢复进程崩溃留下它，先核对所有发布进程确已退出及远端发布事实，再人工清理锁和恢复文件，不能仅凭超时删除。
 

@@ -7,9 +7,8 @@
  * `{ runId, status: 'RUNNING' }`；结果（退出码、耗时、输出尾部）由同一 trace.jsonl 如实落痕，
  * 前端经 `GET /runs/:runId/trace` 轮询读到 run.end / run.error 即为终态（诚实原则）。
  */
-import { HttpStatus, Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import path from 'node:path';
 import {
   missingPublishedPostFields,
   requireVersionNote,
@@ -128,8 +127,9 @@ function fitMessage(text: string): string {
 }
 
 @Injectable()
-export class ContentReleaseService {
+export class ContentReleaseService implements OnModuleDestroy {
   private readonly log = new Logger(ContentReleaseService.name);
+  private readonly autoVerifyTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** 进程内单实例锁：同一时刻只允许一个发布进程，记录当前运行归属与控制器（PRD A9 / C19） */
   private running: {
     runId: string;
@@ -138,6 +138,11 @@ export class ContentReleaseService {
     pid?: number;
     abortController?: AbortController;
   } | null = null;
+
+  onModuleDestroy(): void {
+    for (const timer of this.autoVerifyTimers.values()) clearTimeout(timer);
+    this.autoVerifyTimers.clear();
+  }
 
   constructor(
     @Inject(CONTENT_RELEASE_RUNNER)
@@ -212,69 +217,8 @@ export class ContentReleaseService {
       };
     }
 
-    // 1. 保留“不夹带代码”检查（apps/web/src/generated/ 下为构建期内容与图谱投影，非代码文件）
-    const codeDirty = ws.dirtyFiles.filter((f) => {
-      if (f.startsWith('apps/web/src/generated/')) return false;
-      return (
-        f.startsWith('apps/') || f.startsWith('packages/') || f.startsWith('scripts/') ||
-        ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig.json', 'turbo.json', 'vercel.json'].includes(f)
-      );
-    });
-    if (codeDirty.length > 0) {
-      return {
-        ok: false,
-        missing: [],
-        targetSlug: slug,
-        targetHash,
-        manifest: null,
-        scopeConflict: {
-          reason: 'code-dirty',
-          message: `检测到 ${codeDirty.length} 个代码文件处于未提交状态，为防止夹带代码，禁止发布`,
-          details: codeDirty,
-        },
-      };
-    }
-
-    // 2. 检查 support-config 脏状态
-    const supportConfigDirty = ws.dirtyFiles.filter((f) => f === 'content/support-config.json');
-    if (supportConfigDirty.length > 0) {
-      return {
-        ok: false,
-        missing: [],
-        targetSlug: slug,
-        targetHash,
-        manifest: null,
-        scopeConflict: {
-          reason: 'support-config-dirty',
-          message: '检测到 content/support-config.json 处于未提交状态，单篇发布范围冲突',
-          details: supportConfigDirty,
-        },
-      };
-    }
-
-    // 3. 检查其他文章脏状态（A 发布时 B 也脏返回 scope-conflict）
-    const otherContentDirty = ws.dirtyFiles.filter((f) => {
-      if (!f.startsWith('content/log/')) return false;
-      const baseName = path.basename(f);
-      const fileSlug = baseName.replace(/\.(md|mdx)$/i, '');
-      return fileSlug !== slug;
-    });
-    if (otherContentDirty.length > 0) {
-      return {
-        ok: false,
-        missing: [],
-        targetSlug: slug,
-        targetHash,
-        manifest: null,
-        scopeConflict: {
-          reason: 'other-content-dirty',
-          message: `检测到其他文章存在未提交修改（${otherContentDirty.join(', ')}），单篇发布范围冲突`,
-          details: otherContentDirty,
-        },
-      };
-    }
-
-    // 4. 生成稳定清单 manifest
+    // Gate 1 无工作树单篇原子提交：只把目标文章与它的版本历史写入临时 GIT_INDEX_FILE，
+    // 绝不夹带代码文件、其他未发布草稿或 support-config，因此不再以工作区其他脏文件阻断单篇发布。
     const targetPath = `content/log/${slug}${doc?.ext || '.md'}`;
     const items: ReleaseManifestItem[] = [
       {
@@ -355,6 +299,7 @@ export class ContentReleaseService {
       throw new ApiError('content-locked', HttpStatus.CONFLICT, '工作区发布锁已被占用，正在发布中');
     }
 
+    let targetContext: { ext: '.md' | '.mdx'; rawContent: string; versionNote: string } | undefined;
     try {
       const currentDoc = await this.files.get(slug);
       if (!currentDoc || currentDoc.hash !== preflight.targetHash || !preflight.publicHash) {
@@ -367,6 +312,11 @@ export class ContentReleaseService {
             release.publishApproval.binding.candidateHash !== preflight.publicHash) {
           throw new ApiError('content-release-conflict', HttpStatus.CONFLICT, '发布单与当前批准版本不匹配');
         }
+        targetContext = {
+          ext: currentDoc.ext,
+          rawContent: currentDoc.raw,
+          versionNote: release.versionNote?.trim() || '发布新版本',
+        };
         const change = await this.changesRepo!.findById(release.changeId);
         if (!change || change.target.slug !== slug || change.state !== 'APPLIED' || change.appliedHash !== currentDoc.hash) {
           throw new ApiError('content-release-conflict', HttpStatus.CONFLICT, '已批准文件版本与当前正本不匹配');
@@ -404,7 +354,7 @@ export class ContentReleaseService {
     const abortController = new AbortController();
     this.running = { runId, releaseId, slug, abortController };
 
-    void this.execute(runId, slug, preflight, lock, releaseId, abortController).catch((error: unknown) => {
+    void this.execute(runId, slug, preflight, lock, releaseId, abortController, targetContext).catch((error: unknown) => {
       this.log.error(`发布运行异常结束：${error instanceof Error ? error.message : String(error)}`);
     });
     return { runId, status: 'RUNNING' };
@@ -1040,6 +990,7 @@ export class ContentReleaseService {
     lock?: ContentLockRecord | null,
     releaseId?: string,
     abortController?: AbortController,
+    targetContext?: { ext: '.md' | '.mdx'; rawContent: string; versionNote: string },
   ): Promise<void> {
     const startedAt = Date.now();
     let runnerStarted = false;
@@ -1088,6 +1039,17 @@ export class ContentReleaseService {
       const result = await this.runner.runRelease({
         signal: abortController?.signal,
         ...(lock ? { lock: { lockFile: lock.lockFile, lockId: lock.payload.lockId } } : {}),
+        ...(targetContext && releaseId
+          ? {
+              target: {
+                slug,
+                ext: targetContext.ext,
+                rawContent: targetContext.rawContent,
+                versionNote: targetContext.versionNote,
+                releaseId,
+              },
+            }
+          : {}),
         onSpawn: (pid) => {
           if (this.running?.runId === runId) {
             this.running.pid = pid;
@@ -1106,6 +1068,26 @@ export class ContentReleaseService {
           data: { exitCode: result.exitCode, timedOut: result.timedOut },
         },
       });
+
+      if (result.conflict === true) {
+        if (releaseId && this.releasesRepo) {
+          await this.releasesRepo.updateStage({
+            id: releaseId,
+            stage: 'FAILED',
+            errorCode: 'remote-conflict',
+          }).catch(() => {});
+        }
+        await this.trace.append(runId, {
+          type: 'run.error',
+          source: 'publish',
+          payload: {
+            status: 'FAILED',
+            code: 'remote-conflict',
+            message: fitMessage(tail.join('\n') || '远端已修改该文章，发布取消以避免覆盖'),
+          },
+        });
+        return;
+      }
 
       if (result.timedOut || result.exitCode !== 0 || processExitUnproven) {
         const errorCode = 'release-outcome-unknown';
@@ -1130,9 +1112,8 @@ export class ContentReleaseService {
         return;
       }
 
-      // 读取真实的 HEAD commit
-      const head = await this.git?.snapshot();
-      const gitCommit = head?.headCommit ?? null;
+      // 优先使用原子发布直接返回的提交 SHA，否则回退读取当前 HEAD
+      const gitCommit = result.gitCommit ?? (await this.git?.snapshot())?.headCommit ?? null;
 
       // 阶段推进：COMMITTING -> PUSHED -> VERIFYING（退出码 0 绝不标记为 PUBLISHED，C14 核心红线）
       if (releaseId && this.releasesRepo) {
@@ -1146,6 +1127,7 @@ export class ContentReleaseService {
           id: releaseId,
           stage: 'VERIFYING',
         });
+        this.scheduleAutoVerify(releaseId);
       }
 
       await this.trace.append(runId, {
@@ -1203,6 +1185,41 @@ export class ContentReleaseService {
       .map((line) => redactAbsolutePaths(line.trim()))
       .filter((line) => line.length > 0)
       .slice(-RELEASE_TAIL_LINES);
+  }
+
+  /**
+   * 推送后轻量后台自动核验（退避轮询 Vercel 生效，最多 6 轮约 4.5 分钟）：
+   * 避免发布单永远停在 VERIFYING 与问答快照永远停在 PENDING。
+   * 仅在生产/开发自动调度（单测环境除非显式设 WALKER_AUTO_VERIFY_DELAY_MS 否则跳过，保持测试确定性）。
+   */
+  private scheduleAutoVerify(releaseId: string, attempt = 0): void {
+    const overrideDelay = Number(process.env.WALKER_AUTO_VERIFY_DELAY_MS);
+    if (process.env.NODE_ENV === 'test' && !(Number.isFinite(overrideDelay) && overrideDelay > 0)) {
+      return;
+    }
+    if (!this.websiteVerifier || !this.releasesRepo) return;
+    const delays = [20_000, 30_000, 45_000, 60_000, 60_000, 60_000];
+    if (attempt >= delays.length) return;
+    const delayMs = Number.isFinite(overrideDelay) && overrideDelay > 0 ? overrideDelay : delays[attempt]!;
+
+    const existing = this.autoVerifyTimers.get(releaseId);
+    if (existing) clearTimeout(existing);
+
+    const timer = setTimeout(() => {
+      this.autoVerifyTimers.delete(releaseId);
+      void this.verify(releaseId)
+        .then((res) => {
+          if (!res.verified && res.stage === 'VERIFYING') {
+            this.scheduleAutoVerify(releaseId, attempt + 1);
+          }
+        })
+        .catch(() => {
+          // 核验失败 fail-open：保留 VERIFYING 供下一轮重试或站主手动核验
+          this.scheduleAutoVerify(releaseId, attempt + 1);
+        });
+    }, delayMs);
+    timer.unref?.();
+    this.autoVerifyTimers.set(releaseId, timer);
   }
 
   /** 轨迹写入尽力而为：写不进去也不能把失败包装成成功，只记日志 */

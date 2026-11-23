@@ -13,6 +13,12 @@ export async function resolveContentLogDir(): Promise<string> {
     await fs.access(p);
     return p;
   }
+  const contentRepo = process.env.WALKER_CONTENT_REPO_DIR?.trim();
+  if (contentRepo) {
+    const p = path.resolve(contentRepo, 'content/log');
+    await fs.access(p);
+    return p;
+  }
   const candidates = [
     path.resolve(process.cwd(), 'content/log'),
     path.resolve(process.cwd(), '../../content/log'),

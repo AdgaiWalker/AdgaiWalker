@@ -28,10 +28,18 @@ function main() {
   const beforeHeadRes = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
   const beforeHead = beforeHeadRes.stdout?.trim();
 
-  const pull = run('git', ['pull', 'origin', 'main', '--rebase', '--autostash']);
-  if (pull.status !== 0) {
-    console.error('❌ 拉取失败，请检查网络或本地是否有未提交冲突。');
-    process.exit(pull.status ?? 1);
+  // 禁止 --autostash 静默合并，使用 fetch + ff-only，遇到本地未提交或分叉明确提示不吞稿
+  const fetch = run('git', ['fetch', 'origin', 'main']);
+  if (fetch.status !== 0) {
+    console.error('❌ 无法连接 GitHub 拉取远端提交，请检查网络。');
+    process.exit(fetch.status ?? 1);
+  }
+
+  const merge = run('git', ['merge', '--ff-only', 'origin/main']);
+  if (merge.status !== 0) {
+    console.error('❌ 本地与 GitHub 存在未提交改动或提交分叉，已拒绝静默覆盖。');
+    console.error('💡 请先提交/处理本地改动后再合并；若要拉取云端未发布草稿，可执行：git fetch origin drafts');
+    process.exit(merge.status ?? 1);
   }
 
   const afterHeadRes = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });

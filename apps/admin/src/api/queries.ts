@@ -675,3 +675,28 @@ export function useContentSyncPull() {
   });
 }
 
+export function useContentSyncForceCheck() {
+  return useMutation({
+    mutationFn: () =>
+      requestJson<import("@walker/shared").ContentSyncStatus>(
+        "/admin/content/sync/status?force=true",
+        {
+          timeoutMs: 30_000,
+        },
+      ),
+  });
+}
+
+export function useContentDraftBackup() {
+  return useMutation({
+    mutationFn: () =>
+      requestJson<import("@walker/shared").ContentDraftBackupResult>(
+        "/admin/content/sync/backup-drafts",
+        {
+          method: "POST",
+          timeoutMs: 60_000,
+        },
+      ),
+  });
+}
+

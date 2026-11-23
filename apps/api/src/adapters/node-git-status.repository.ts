@@ -8,7 +8,6 @@
  * git 不可用（未安装 / 非仓库 / 命令失败）一律如实置 available=false，不编造脏/干净。
  */
 import { execFile } from 'node:child_process';
-import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import type {
@@ -17,6 +16,7 @@ import type {
   GitStatusPort,
   WorkspaceGitStatus,
 } from '../ports/git-status.repository';
+import { resolveContentRepoRoot } from './content-repo-dir';
 
 const execFileAsync = promisify(execFile);
 
@@ -25,16 +25,8 @@ const CONTENT_LOG_PATH = 'content/log';
 /** 输出缓冲上限：脏文件多时也不截断 */
 const MAX_BUFFER_BYTES = 4 * 1024 * 1024;
 
-/** 仓库根：从 cwd 向上找 pnpm-workspace.yaml（与 content-admin.service 同一约定） */
 function resolveRepoRoot(): string | null {
-  let dir: string | undefined = process.cwd();
-  while (dir) {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
-  return null;
+  return resolveContentRepoRoot();
 }
 
 /** 解析 porcelain -z 输出为文件名集合（重命名/复制记录会多带一项原路径，需跳过） */

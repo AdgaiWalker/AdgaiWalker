@@ -78,4 +78,38 @@ describe('formatSyncStatusSummary', () => {
     expect(summary.state).toBe('synced');
     expect(summary.label).toBe('与 GitHub 一致');
   });
+
+  it('surfaces error state honestly when fetchError is present instead of reporting synced', () => {
+    const summary = formatSyncStatusSummary({
+      available: true,
+      behind: 0,
+      ahead: 0,
+      headCommit: 'a1b2c3d',
+      remoteCommit: 'a1b2c3d',
+      dirtyFiles: [],
+      incomingFiles: [],
+      lastCheckedAt: '2026-11-23T00:00:00Z',
+      fetchError: 'ssh timeout',
+    });
+
+    expect(summary.state).toBe('error');
+    expect(summary.description).toContain('ssh timeout');
+  });
+
+  it('surfaces conflict state when same-article conflicts exist', () => {
+    const summary = formatSyncStatusSummary({
+      available: true,
+      behind: 0,
+      ahead: 0,
+      headCommit: 'a1b2c3d',
+      remoteCommit: 'a1b2c3d',
+      dirtyFiles: ['2026-11-19.md'],
+      incomingFiles: [],
+      conflicts: ['2026-11-19.md'],
+      lastCheckedAt: '2026-11-23T00:00:00Z',
+    });
+
+    expect(summary.state).toBe('conflict');
+    expect(summary.label).toContain('冲突');
+  });
 });

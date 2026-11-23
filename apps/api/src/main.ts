@@ -36,7 +36,7 @@ async function bootstrap() {
   }
 
   process.env.WALKER_STARTUP_RECONCILIATION = '1';
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] });
+  const app = await NestFactory.create(AppModule, { rawBody: true, logger: ['error', 'warn', 'log'] });
   try {
     app.use(restoreGateMiddleware(restoreGateFile));
     // 本地开发运行监控：Nest Logger 的终端输出照旧，同时留一份可查的进程内副本；

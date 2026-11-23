@@ -96,54 +96,43 @@ describe('C12 实际发布范围预检与 manifest 生成', () => {
     fakeGitStatus.dirtyFiles = [];
   });
 
-  it('A 发布时 B 也脏返回 scope-conflict，不能只检查 A 的 frontmatter', async () => {
-    // 模拟：工作区中 post-a 与 post-b 均脏
+  it('多草稿并存时（post-b 脏），单篇发布 post-a 不再被阻断且清单只包含 post-a', async () => {
     fakeGitStatus.files = [
       { path: 'content/log/post-a.md', staged: false, dirty: true, statusCode: ' M' },
       { path: 'content/log/post-b.md', staged: false, dirty: true, statusCode: ' M' },
     ];
     fakeGitStatus.dirtyFiles = ['content/log/post-a.md', 'content/log/post-b.md'];
 
-    // 预检返回 scopeConflict
     const preflight = await service.preflight('post-a');
-    expect(preflight.ok).toBe(false);
-    expect(preflight.missing).toEqual([]);
-    expect(preflight.scopeConflict?.reason).toBe('other-content-dirty');
-    expect(preflight.scopeConflict?.details).toContain('content/log/post-b.md');
-
-    // 触发发布时直接抛出 scope-conflict 409
-    await expect(service.release({ slug: 'post-a', releaseId: 'unused' })).rejects.toMatchObject({
-      response: { code: 'scope-conflict' },
-    });
+    expect(preflight.ok).toBe(true);
+    expect(preflight.scopeConflict).toBeNull();
+    expect(preflight.manifest?.items.map((item) => item.path)).toEqual(['content/log/post-a.md']);
   });
 
-  it('当 support-config 发生未提交变更时，拒绝发布并返回 scope-conflict', async () => {
-    fakeGitStatus.files = [
-      { path: 'content/log/post-a.md', staged: false, dirty: true, statusCode: ' M' },
-      { path: 'content/support-config.json', staged: false, dirty: true, statusCode: ' M' },
-    ];
-    fakeGitStatus.dirtyFiles = ['content/log/post-a.md', 'content/support-config.json'];
-
-    const preflight = await service.preflight('post-a');
-    expect(preflight.ok).toBe(false);
-    expect(preflight.scopeConflict?.reason).toBe('support-config-dirty');
-
-    await expect(service.release({ slug: 'post-a', releaseId: 'unused' })).rejects.toMatchObject({
-      response: { code: 'scope-conflict' },
-    });
-  });
-
-  it('当工作区存在未提交代码时，触发“不夹带代码”检查并拒绝发布', async () => {
+  it('无关代码改动或 support-config 脏状态不再阻断无工作树单篇发布', async () => {
     fakeGitStatus.files = [
       { path: 'content/log/post-a.md', staged: false, dirty: true, statusCode: ' M' },
       { path: 'apps/api/src/main.ts', staged: false, dirty: true, statusCode: ' M' },
+      { path: 'content/support-config.json', staged: false, dirty: true, statusCode: ' M' },
     ];
-    fakeGitStatus.dirtyFiles = ['content/log/post-a.md', 'apps/api/src/main.ts'];
+    fakeGitStatus.dirtyFiles = [
+      'content/log/post-a.md',
+      'apps/api/src/main.ts',
+      'content/support-config.json',
+    ];
+
+    const preflight = await service.preflight('post-a');
+    expect(preflight.ok).toBe(true);
+    expect(preflight.scopeConflict).toBeNull();
+    expect(preflight.manifest?.items.map((item) => item.path)).toEqual(['content/log/post-a.md']);
+  });
+
+  it('Git 不可用时返回 git-unavailable 阻断预检与发布', async () => {
+    fakeGitStatus.available = false;
 
     const preflight = await service.preflight('post-a');
     expect(preflight.ok).toBe(false);
-    expect(preflight.scopeConflict?.reason).toBe('code-dirty');
-    expect(preflight.scopeConflict?.details).toContain('apps/api/src/main.ts');
+    expect(preflight.scopeConflict?.reason).toBe('git-unavailable');
 
     await expect(service.release({ slug: 'post-a', releaseId: 'unused' })).rejects.toMatchObject({
       response: { code: 'scope-conflict' },

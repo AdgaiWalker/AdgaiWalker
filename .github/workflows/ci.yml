@@ -58,6 +58,9 @@ jobs:
         env:
           DATABASE_URL: file:/tmp/walker/walker-ci.db
 
+      - name: 生成内容投影产物（衍生 JSON 已退出 Git 追踪，构建/类型检查前按正本现算）
+        run: pnpm content:gen
+
       - name: 类型检查（含 build:shared 前置）
         run: pnpm typecheck
 

@@ -19,8 +19,12 @@ const contentLocks = new Map<string, Promise<void>>();
 
 type ContentTargetFile = { full: string; ext: '.md' | '.mdx'; mode: number };
 
-function sha256(bytes: Buffer): string {
-  return createHash('sha256').update(bytes).digest('hex');
+function normalizeLf(text: string): string {
+  return text.replace(/\r\n?/g, '\n');
+}
+
+function sha256(text: string): string {
+  return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
 function withContentLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
@@ -84,21 +88,22 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
     const dir = await resolveContentLogDir();
     const target = await existingTarget(dir, slug);
     if (!target) return null;
-    const bytes = await fs.readFile(target.full);
+    const raw = normalizeLf(await fs.readFile(target.full, 'utf8'));
     const stat = await fs.stat(target.full);
-    return detail(slug, bytes.toString('utf8'), sha256(bytes), target.ext, stat.mtime);
+    return detail(slug, raw, sha256(raw), target.ext, stat.mtime);
   }
 
   async save(slug: string, raw: string, expectedHash: string | null): Promise<ContentFileDetail> {
     if (!SLUG_RE.test(slug)) throw new ApiError('invalid-slug', 400, 'slug 须为小写 ascii 短横线');
-    if (!raw.trimStart().startsWith('---')) throw new ApiError('invalid-frontmatter', 400, '正文须以 YAML frontmatter --- 开头');
+    const normalized = normalizeLf(raw);
+    if (!normalized.trimStart().startsWith('---')) throw new ApiError('invalid-frontmatter', 400, '正文须以 YAML frontmatter --- 开头');
     if (expectedHash !== null && !isContentSha256(expectedHash)) throw validationError('expectedHash 必须是正文 SHA-256 或 null');
     const dir = await resolveContentLogDir();
     const lockKey = path.join(path.resolve(dir), slug);
     return withContentLock(lockKey, async () => {
       const existing = await existingTarget(dir, slug);
-      const previousBytes = existing ? await fs.readFile(existing.full) : null;
-      const currentHash = previousBytes ? sha256(previousBytes) : null;
+      const previousText = existing ? normalizeLf(await fs.readFile(existing.full, 'utf8')) : null;
+      const currentHash = previousText !== null ? sha256(previousText) : null;
       if (currentHash !== expectedHash) {
         throw new ApiError('content-version-conflict', 409, '内容已变化，请重新读取后再保存');
       }
@@ -108,7 +113,7 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
       let handle: Awaited<ReturnType<typeof fs.open>> | undefined;
       try {
         handle = await fs.open(temporary, 'wx', existing?.mode ?? 0o644);
-        await handle.writeFile(raw, 'utf8');
+        await handle.writeFile(normalized, 'utf8');
         await handle.sync();
         await handle.close();
         handle = undefined;
@@ -119,8 +124,7 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
         throw error;
       }
       const stat = await fs.stat(full);
-      const bytes = Buffer.from(raw, 'utf8');
-      return detail(slug, raw, sha256(bytes), ext, stat.mtime);
+      return detail(slug, normalized, sha256(normalized), ext, stat.mtime);
     });
   }
 

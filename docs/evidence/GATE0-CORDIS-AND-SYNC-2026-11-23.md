@@ -93,7 +93,7 @@ applies_to: [api, admin, web, agent, ops]
 | 5 | [conversation-deletion.service.ts](../../apps/api/src/log-resources/conversation-deletion.service.ts) | `resumeTimer` `setInterval` | 在 [main.ts](../../apps/api/src/main.ts) L50 恢复门内执行 `resumePending()` | **否**（绑定 `restoreGate`） |
 | 6 | [conversation-export.service.ts](../../apps/api/src/log-resources/conversation-export.service.ts) | `maintenanceTimer` `setInterval` | 在 [main.ts](../../apps/api/src/main.ts) L54-56 恢复门内执行 | **否**（绑定 `restoreGate`） |
 | 7 | [reminder-scan.service.ts](../../apps/api/src/reminder/reminder-scan.service.ts) | 每 5 分钟 `timer` `setInterval` | 在 [main.ts](../../apps/api/src/main.ts) L62-64 启动补检+定时器 | 弱（纯定时器，无热切换诉求） |
-| 8 | [content-sync.service.ts](../../apps/api/src/content-sync/content-sync.service.ts) + [pnpm-content-release.runner.ts](../../apps/api/src/adapters/pnpm-content-release.runner.ts) | Webhook `setImmediate` 后台任务 / 缓存 / 按需发布子进程 | 独立（当前缺生命周期清理） | **唯一现实候选（待第 1 关重构拓扑后按需决定）** |
+| 8 | [content-sync.service.ts](../../apps/api/src/content-sync/content-sync.service.ts) + `pnpm-content-release.runner.ts`（第 1 关已退役，由 [git-plumbing-content-release.runner.ts](../../apps/api/src/adapters/git-plumbing-content-release.runner.ts) 替代） | Webhook `setImmediate` 后台任务 / 缓存 / 按需发布子进程 | 独立（当前缺生命周期清理） | **唯一现实候选（待第 1 关重构拓扑后按需决定）** |
 
 3. **`apps/agent` 现有 Cordis 使用审计**：
    - [apps/agent/src/index.ts](../../apps/agent/src/index.ts) 线性注册 5 个插件；

@@ -143,4 +143,20 @@ describe('FsContentFileRepository', () => {
     expect(await repo.get('hello-world')).toBeNull();
     expect(await repo.delete('hello-world')).toBe(false);
   });
+
+  it('保存与读取统一归一化为 LF，Windows CRLF 文件产生与 LF 一致的 hash', async () => {
+    const repo = new FsContentFileRepository();
+    const lfText = '---\ntitle: 换行\ntype: knowledge\n---\n\n第一行\n第二行\n';
+    const crlfText = lfText.replace(/\n/g, '\r\n');
+    const lfHash = createHash('sha256').update(lfText, 'utf8').digest('hex');
+
+    await fs.writeFile(path.join(dir, 'crlf-file.md'), crlfText, 'utf8');
+    const loaded = await repo.get('crlf-file');
+    expect(loaded?.raw).toBe(lfText);
+    expect(loaded?.hash).toBe(lfHash);
+
+    const saved = await repo.save('saved-crlf', crlfText, null);
+    expect(saved.hash).toBe(lfHash);
+    expect(await fs.readFile(path.join(dir, 'saved-crlf.md'), 'utf8')).toBe(lfText);
+  });
 });

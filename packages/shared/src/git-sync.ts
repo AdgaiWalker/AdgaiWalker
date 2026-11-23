@@ -20,10 +20,29 @@ export interface ContentSyncStatus {
   incomingFiles: string[];
   /** 最近一次成功检查或 fetch 的时间戳 */
   lastCheckedAt: string;
+  /** 最近一次远端 fetch 失败原因（非空时绝不允许展示「已同步」假绿灯） */
+  fetchError?: string | null;
+  /** 存在同篇并发冲突的文件名列表（本地草稿与远端同时改了同一篇） */
+  conflicts?: string[];
+  /** 最近一次草稿备份到 drafts 分支的提交 hash */
+  draftBackupCommit?: string | null;
+}
+
+export interface ContentSyncConflictDetail {
+  /** 冲突文章 slug */
+  slug: string;
+  /** 冲突文件路径（相对仓库根，如 content/log/foo.md） */
+  path: string;
+  /** 本地保留的草稿正文（LF） */
+  localHash: string;
+  /** 远端最新正文哈希（LF） */
+  remoteHash: string;
+  /** 冲突副本路径（若已旁存远端版本供比对） */
+  conflictFile?: string;
 }
 
 export interface ContentSyncPullResult {
-  /** 拉取是否成功 */
+  /** 拉取是否成功（若有同篇冲突则 ok=false，其余无冲突文件已安全更新） */
   ok: boolean;
   /** 拉取的提交数 */
   pulledCommits: number;
@@ -31,15 +50,30 @@ export interface ContentSyncPullResult {
   incomingFiles: string[];
   /** 结果文案（如 "成功从 GitHub 同步 1 篇新文章"） */
   message: string;
+  /** 同篇并发冲突明细（保留本地草稿不覆盖） */
+  conflicts?: ContentSyncConflictDetail[];
   /** 原始 git 输出日志（排查用） */
   stdout?: string;
 }
 
+export interface ContentDraftBackupResult {
+  /** 备份是否成功 */
+  ok: boolean;
+  /** 备份目标分支（默认 drafts） */
+  branch: string;
+  /** 生成的备份提交 hash（无改动时为 null） */
+  commit: string | null;
+  /** 本次备份的草稿文件列表 */
+  backedUpFiles: string[];
+  /** 人读说明 */
+  message: string;
+}
+
 /**
- * 格式化同步状态的人读文案
+ * 格式化同步状态的人读文案（诚实原则：fetch 失败与同篇冲突优先暴露，绝不假绿灯）
  */
 export function formatSyncStatusSummary(status: ContentSyncStatus | null | undefined): {
-  state: 'synced' | 'behind' | 'ahead' | 'diverged' | 'dirty' | 'unknown';
+  state: 'synced' | 'behind' | 'ahead' | 'diverged' | 'dirty' | 'conflict' | 'error' | 'unknown';
   label: string;
   description: string;
 } {
@@ -47,7 +81,23 @@ export function formatSyncStatusSummary(status: ContentSyncStatus | null | undef
     return {
       state: 'unknown',
       label: '同步状态未知',
-      description: '无法获取 Git 远端状态',
+      description: status?.fetchError ? `无法获取 Git 远端状态：${status.fetchError}` : '无法获取 Git 远端状态',
+    };
+  }
+
+  if (status.fetchError) {
+    return {
+      state: 'error',
+      label: '远端探测失败',
+      description: `无法连接 GitHub 核对最新状态（${status.fetchError}），点击重试`,
+    };
+  }
+
+  if (status.conflicts && status.conflicts.length > 0) {
+    return {
+      state: 'conflict',
+      label: `存在 ${status.conflicts.length} 篇同篇冲突`,
+      description: `两端同时修改了 ${status.conflicts.join('、')}，已保留本地草稿待核对`,
     };
   }
 
@@ -79,8 +129,8 @@ export function formatSyncStatusSummary(status: ContentSyncStatus | null | undef
   if (status.dirtyFiles.length > 0) {
     return {
       state: 'dirty',
-      label: `存在 ${status.dirtyFiles.length} 篇未保存/未提交草稿`,
-      description: '工作区有待发布的改动',
+      label: `有 ${status.dirtyFiles.length} 篇草稿待发布/备份`,
+      description: '工作区草稿不阻断单篇发布，可按需备份到 drafts 分支',
     };
   }
 

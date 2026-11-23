@@ -244,42 +244,15 @@ describe('ContentReleasePanel (C20 发布清单与版本状态界面)', () => {
     expect(publishBtn.disabled).toBe(true);
   });
 
-  it('其他文章未提交导致冲突时，展示废弃草稿列表并支持一键清理草稿', async () => {
-    const refetch = vi.fn();
-    useContentPreflightMock.mockReturnValue({
-      data: {
-        ok: false,
-        missing: [],
-        scopeConflict: {
-          reason: 'other-content-dirty',
-          message: '检测到其他文章存在未提交修改（content/log/abandoned-draft.md），单篇发布范围冲突',
-          details: ['content/log/abandoned-draft.md'],
-        },
-      },
-      dataUpdatedAt: Date.now(),
-      isPending: false,
-      isError: false,
-      refetch,
-    });
-
+  it('空闲态不轮询 preflight（消除 5 秒轮询风暴），仅在发布在途态轮询发布状态', () => {
     render(
       <MemoryRouter>
         <ContentReleasePanel slug="test-article" currentDoc={mockDoc} />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('abandoned-draft')).toBeDefined();
-    expect(screen.getByText(/工作区存在其他未提交的草稿文件/)).toBeDefined();
-    const deleteDraftBtn = screen.getByRole('button', { name: /删除废弃草稿/ });
-    expect(deleteDraftBtn).toBeDefined();
-
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    fireEvent.click(deleteDraftBtn);
-
-    await waitFor(() => {
-      expect(useDeleteContentMock().mutateAsync).toHaveBeenCalledWith({ slug: 'abandoned-draft' });
-      expect(refetch).toHaveBeenCalled();
-    });
+    expect(useContentPreflightMock).toHaveBeenCalledWith('test-article', { refetchInterval: false });
+    expect(useLatestContentReleaseMock).toHaveBeenCalledWith('test-article', { refetchInterval: false });
   });
 
   it('展示独立发布批准信息，点击执行发布触发上线流程并防重复点击', async () => {

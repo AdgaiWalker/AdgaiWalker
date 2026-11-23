@@ -11,12 +11,25 @@ export interface ReleaseProcessResult {
   stderr: string;
   /** Whether the full process tree was proven to have exited. */
   exitProof: 'exited' | 'unproven';
+  /** 原子通道直接产出的提交 SHA（若存在，避免再猜测工作区 HEAD） */
+  gitCommit?: string | null;
+  /** 推送前即发现同篇远端冲突（未发起推送，可安全标记为 FAILED 而非 UNKNOWN） */
+  conflict?: boolean;
+}
+
+export interface RunReleaseTarget {
+  slug: string;
+  ext: '.md' | '.mdx';
+  rawContent: string;
+  versionNote: string;
+  releaseId: string;
 }
 
 export interface RunReleaseOptions {
   signal?: AbortSignal;
   onSpawn?: (pid: number) => void;
   lock?: { lockFile: string; lockId: string };
+  target?: RunReleaseTarget;
 }
 
 export interface ContentReleaseRunnerPort {

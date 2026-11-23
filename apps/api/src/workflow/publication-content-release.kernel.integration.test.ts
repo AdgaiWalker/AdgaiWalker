@@ -156,16 +156,15 @@ describe('C21 将旧工作站发布接入同一出口（Kernel 集成测试）',
     await expect(pubService.publishWebsite(workId, 'wrong-hash')).rejects.toThrow('artifact-hash-mismatch');
   });
 
-  it('范围外脏文件阻断发布：工作区存在其他代码/文章未提交时拒绝发布', async () => {
+  it('Git 不可用时阻断发布：拒绝在缺乏 Git 状态证明时发起发布', async () => {
     const workId = `c21-work-${randomUUID().slice(0, 8)}`;
     const { artifactHash } = await createApprovedWorkFixture(workId, 'c21-post-2');
 
-    // 注入范围外脏代码
     gitWorkspaceStatus = {
-      available: true,
-      headCommit: 'commit-c21-head-999',
-      files: [{ path: 'apps/api/src/index.ts', staged: false, dirty: true, statusCode: ' M' }],
-      dirtyFiles: ['apps/api/src/index.ts'],
+      available: false,
+      headCommit: null,
+      files: [],
+      dirtyFiles: [],
     };
 
     await expect(pubService.publishWebsite(workId, artifactHash)).rejects.toThrow(/发布范围冲突/);

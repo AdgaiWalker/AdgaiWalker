@@ -86,6 +86,9 @@ skills-lock.json
 public/pagefind/
 public/public-manifest.json
 apps/web/src/generated/public-manifest.json
+apps/web/src/generated/content.json
+apps/web/src/generated/graph.json
+apps/web/src/generated/article-versions.json
 
 .vercel
 .idea/

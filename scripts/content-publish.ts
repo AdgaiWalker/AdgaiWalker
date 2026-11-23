@@ -34,9 +34,6 @@ export const CONTENT_PATHS = [
   'content/log',
   'content/versions',
   'content/support-config.json',
-  'apps/web/src/generated/content.json',
-  'apps/web/src/generated/graph.json',
-  'apps/web/src/generated/article-versions.json',
 ] as const;
 
 /** --json 模式下回报的输出尾部行数（够定位失败原因，不塞整段构建日志） */

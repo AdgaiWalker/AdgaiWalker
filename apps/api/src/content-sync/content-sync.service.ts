@@ -1,29 +1,29 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import fs from 'node:fs';
 import path from 'node:path';
-import type { ContentSyncPullResult, ContentSyncStatus } from '@walker/shared';
+import type {
+  ContentDraftBackupResult,
+  ContentSyncPullResult,
+  ContentSyncStatus,
+} from '@walker/shared';
 import { CONTENT_LOCK, type ContentLockPort } from '../ports/content-lock.port';
+import { resolveContentRepoRoot } from '../adapters/content-repo-dir';
+import { backupDraftsToBranch, syncFromRemote } from '../adapters/git-content-plumbing';
 
 const execFileAsync = promisify(execFile);
-
-function resolveRepoRoot(): string {
-  let dir: string | undefined = process.cwd();
-  while (dir) {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return process.cwd();
-}
+const CACHE_TTL_MS = 30_000;
 
 @Injectable()
 export class ContentSyncService {
   private readonly logger = new Logger(ContentSyncService.name);
   private cachedStatus: ContentSyncStatus | null = null;
   private lastFetchTime = 0;
+  private lastFetchError: string | null = null;
+  private lastConflicts: string[] = [];
+  private lastDraftBackupCommit: string | null = null;
+  private inflightFetch: Promise<void> | null = null;
+  private webhookQueued = false;
 
   constructor(
     @Optional()
@@ -32,30 +32,79 @@ export class ContentSyncService {
   ) {}
 
   /**
-   * 获取当前工作区与 GitHub 远端的同步状态
-   * @param forceFetch 是否强制发起远程 git fetch（默认 15 秒缓存）
+   * 获取当前内容仓与 GitHub 远端的同步状态。
+   * - 非强制模式（forceFetch=false）：命中缓存直接毫秒级返回，过期时仅异步后台单飞刷新，不阻塞 HTTP；
+   * - 强制模式（forceFetch=true）：显式等待一次远端 fetch，且 fetch 失败如实写入 fetchError（绝不假绿灯）。
    */
   async getStatus(forceFetch = false): Promise<ContentSyncStatus> {
-    const cwd = resolveRepoRoot();
+    const cwd = resolveContentRepoRoot();
+    if (!cwd) {
+      return {
+        available: false,
+        behind: 0,
+        ahead: 0,
+        headCommit: null,
+        remoteCommit: null,
+        dirtyFiles: [],
+        incomingFiles: [],
+        lastCheckedAt: new Date().toISOString(),
+        fetchError: 'content-repo-root-not-found',
+      };
+    }
+
     const now = Date.now();
+    const isStale = now - this.lastFetchTime > CACHE_TTL_MS;
 
-    // 默认 15 秒缓存探测，避免频繁页面渲染刷爆 GitHub 连接
-    const shouldFetch = forceFetch || now - this.lastFetchTime > 15_000 || !this.cachedStatus;
+    if (forceFetch) {
+      await this.fetchRemoteOnce(cwd);
+    } else if (this.cachedStatus) {
+      if (isStale) {
+        void this.refreshInBackground(cwd);
+      }
+      return this.cachedStatus;
+    } else if (process.env.NODE_ENV !== 'test') {
+      // 首次冷查非阻断：先立即返回本地快照并后台单飞拉取远端指针
+      void this.refreshInBackground(cwd);
+    }
 
-    if (shouldFetch) {
+    return this.buildSnapshot(cwd);
+  }
+
+  private async fetchRemoteOnce(cwd: string): Promise<void> {
+    if (this.inflightFetch) {
+      await this.inflightFetch;
+      return;
+    }
+    this.inflightFetch = (async () => {
       try {
         await execFileAsync('git', ['fetch', 'origin', 'main'], {
           cwd,
-          timeout: 10_000,
+          timeout: 15_000,
           windowsHide: true,
         });
-        this.lastFetchTime = now;
+        this.lastFetchTime = Date.now();
+        this.lastFetchError = null;
       } catch (err: unknown) {
-        this.logger.warn(`git fetch origin main 失败（如实降级）：${err instanceof Error ? err.message : String(err)}`);
-        // fetch 失败时不抛异常，如实按照本地现有指针比对
+        const msg = err instanceof Error ? err.message : String(err);
+        this.lastFetchError = msg.split('\n')[0]?.slice(0, 180) || 'git-fetch-failed';
+        this.logger.warn(`git fetch origin main 失败（已如实上报 fetchError）：${this.lastFetchError}`);
+      } finally {
+        this.inflightFetch = null;
       }
-    }
+    })();
+    await this.inflightFetch;
+  }
 
+  private async refreshInBackground(cwd: string): Promise<void> {
+    try {
+      await this.fetchRemoteOnce(cwd);
+      await this.buildSnapshot(cwd);
+    } catch {
+      // fail-open：错误已记在 lastFetchError
+    }
+  }
+
+  private async buildSnapshot(cwd: string): Promise<ContentSyncStatus> {
     try {
       const [headRes, remoteRes] = await Promise.all([
         execFileAsync('git', ['rev-parse', 'HEAD'], { cwd, windowsHide: true }),
@@ -85,7 +134,6 @@ export class ContentSyncService {
           .map((f) => path.basename(f));
       }
 
-      // 获取当前未提交的内容草稿文件
       const dirtyRes = await execFileAsync('git', ['status', '--porcelain', '-z', '--', 'content/log'], {
         cwd,
         windowsHide: true,
@@ -98,6 +146,10 @@ export class ContentSyncService {
         if (file) dirtyFiles.push(path.basename(file));
       }
 
+      // 若之前记录的冲突文件已不再脏，自动消除冲突提示
+      const dirtySet = new Set(dirtyFiles);
+      this.lastConflicts = this.lastConflicts.filter((file) => dirtySet.has(file));
+
       this.cachedStatus = {
         available: true,
         behind,
@@ -107,11 +159,14 @@ export class ContentSyncService {
         dirtyFiles,
         incomingFiles,
         lastCheckedAt: new Date().toISOString(),
+        fetchError: this.lastFetchError,
+        conflicts: [...this.lastConflicts],
+        draftBackupCommit: this.lastDraftBackupCommit,
       };
-
       return this.cachedStatus;
     } catch (err: unknown) {
-      this.logger.error(`获取 Git 同步状态异常: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`获取 Git 同步状态异常: ${msg}`);
       return {
         available: false,
         behind: 0,
@@ -121,55 +176,33 @@ export class ContentSyncService {
         dirtyFiles: [],
         incomingFiles: [],
         lastCheckedAt: new Date().toISOString(),
+        fetchError: msg.split('\n')[0]?.slice(0, 180) || 'git-unavailable',
       };
     }
   }
 
   /**
-   * 从 GitHub 安全拉取最新提交并刷新内容投影
+   * 3-way 安全拉取：不跑 git pull --rebase --autostash，不跑 pnpm content:gen。
+   * 保留无关本地草稿；同篇并发冲突显式回报并保留本地草稿不覆盖。
    */
   async pull(): Promise<ContentSyncPullResult> {
-    const cwd = resolveRepoRoot();
-
-    // 检查是否有发布流程正在进行
-    if (this.lock) {
-      const isLocked = await this.lock.isLocked();
-      if (isLocked) {
-        return {
-          ok: false,
-          pulledCommits: 0,
-          incomingFiles: [],
-          message: '工作区当前正处于发布加锁状态，请等待发布完成后再同步',
-        };
-      }
+    const cwd = resolveContentRepoRoot();
+    if (!cwd) {
+      return { ok: false, pulledCommits: 0, incomingFiles: [], message: '内容仓目录不可用，无法同步' };
     }
 
-    // 获取一次当前最新状态，记录本次即将拉取的文章
-    const preStatus = await this.getStatus(true);
-    if (!preStatus.available) {
+    if (this.lock && (await this.lock.isLocked())) {
       return {
         ok: false,
         pulledCommits: 0,
         incomingFiles: [],
-        message: 'Git 环境不可用，无法同步',
-      };
-    }
-
-    if (preStatus.behind === 0) {
-      return {
-        ok: true,
-        pulledCommits: 0,
-        incomingFiles: [],
-        message: '当前已是最新，无待拉取提交',
+        message: '工作区当前正处于发布加锁状态，请等待发布完成后再同步',
       };
     }
 
     let lockRecord = null;
     if (this.lock) {
-      lockRecord = await this.lock.tryAcquire({
-        owner: 'content-sync-pull',
-        ttlMs: 60_000,
-      });
+      lockRecord = await this.lock.tryAcquire({ owner: 'content-sync-pull', ttlMs: 60_000 });
       if (!lockRecord) {
         return {
           ok: false,
@@ -181,64 +214,13 @@ export class ContentSyncService {
     }
 
     try {
-      this.logger.log(`开始从 GitHub origin/main 拉取同步 (behind: ${preStatus.behind})...`);
-      const pullRes = await execFileAsync('git', ['pull', 'origin', 'main', '--rebase', '--autostash'], {
-        cwd,
-        timeout: 45_000,
-        windowsHide: true,
-      });
-
-      this.logger.log(`git pull 完成: ${pullRes.stdout.trim()}`);
-
-      // 拉取成功后，执行投影编译与新文章版本补票
-      try {
-        await execFileAsync('pnpm', ['content:backfill-versions'], {
-          cwd,
-          shell: process.platform === 'win32',
-          timeout: 30_000,
-        });
-      } catch (e) {
-        this.logger.warn(`content:backfill-versions 告警（不阻断）：${e}`);
-      }
-
-      try {
-        await execFileAsync('pnpm', ['content:gen'], {
-          cwd,
-          shell: process.platform === 'win32',
-          timeout: 30_000,
-        });
-      } catch (e) {
-        this.logger.warn(`content:gen 告警（不阻断）：${e}`);
-      }
-
-      // 重置缓存以反映最新状态
+      const result = await syncFromRemote({ repoRoot: cwd });
+      this.lastFetchTime = Date.now();
+      this.lastFetchError = result.ok || (result.conflicts?.length ?? 0) > 0 ? null : result.message;
+      this.lastConflicts = (result.conflicts ?? []).map((c) => path.basename(c.path));
       this.cachedStatus = null;
-      this.lastFetchTime = 0;
-      await this.getStatus(false);
-
-      const count = preStatus.incomingFiles.length;
-      const fileNames = preStatus.incomingFiles.slice(0, 3).join('、');
-      const extra = count > 3 ? ` 等共 ${count} 篇` : '';
-
-      return {
-        ok: true,
-        pulledCommits: preStatus.behind,
-        incomingFiles: preStatus.incomingFiles,
-        message: count > 0
-          ? `已成功从 GitHub 同步 ${preStatus.behind} 个提交，更新文章：${fileNames}${extra}`
-          : `已成功从 GitHub 同步 ${preStatus.behind} 个提交`,
-        stdout: pullRes.stdout,
-      };
-    } catch (err: unknown) {
-      this.logger.error(`git pull 异常，尝试回滚 rebase：${err instanceof Error ? err.message : String(err)}`);
-      await execFileAsync('git', ['rebase', '--abort'], { cwd, windowsHide: true }).catch(() => null);
-
-      return {
-        ok: false,
-        pulledCommits: 0,
-        incomingFiles: [],
-        message: `同步失败（可能存在文件冲突）：${err instanceof Error ? err.message : String(err)}`,
-      };
+      await this.buildSnapshot(cwd);
+      return result;
     } finally {
       if (this.lock && lockRecord) {
         await this.lock.release(lockRecord.payload.lockId).catch(() => null);
@@ -246,23 +228,56 @@ export class ContentSyncService {
     }
   }
 
-  /**
-   * 处理 GitHub Webhook 自动推送通知
-   */
+  /** 将未发布的本地草稿备份到 GitHub 独立 drafts 分支（绝不触碰 main） */
+  async backupDrafts(): Promise<ContentDraftBackupResult> {
+    const cwd = resolveContentRepoRoot();
+    if (!cwd) {
+      return { ok: false, branch: 'drafts', commit: null, backedUpFiles: [], message: '内容仓目录不可用' };
+    }
+
+    let lockRecord = null;
+    if (this.lock) {
+      lockRecord = await this.lock.tryAcquire({ owner: 'content-sync-draft-backup', ttlMs: 60_000 });
+      if (!lockRecord) {
+        return { ok: false, branch: 'drafts', commit: null, backedUpFiles: [], message: '内容锁正被占用，请稍后重试' };
+      }
+    }
+
+    try {
+      const res = await backupDraftsToBranch({ repoRoot: cwd });
+      if (res.ok && res.commit) {
+        this.lastDraftBackupCommit = res.commit;
+        this.cachedStatus = null;
+      }
+      return res;
+    } finally {
+      if (this.lock && lockRecord) {
+        await this.lock.release(lockRecord.payload.lockId).catch(() => null);
+      }
+    }
+  }
+
+  /** 处理已通过 HMAC-SHA256 验签的 GitHub Webhook 推送事件（单飞防风暴） */
   async handleWebhook(payload: Record<string, unknown>): Promise<{ ok: boolean; status: string; message: string }> {
     const ref = typeof payload.ref === 'string' ? payload.ref : '';
     if (ref !== 'refs/heads/main') {
       return { ok: true, status: 'ignored', message: `非 main 分支推送 (${ref})，跳过` };
     }
 
-    // 异步排队拉取
+    if (this.webhookQueued) {
+      return { ok: true, status: 'coalesced', message: '后台同步已在排队，合并本次通知' };
+    }
+    this.webhookQueued = true;
+
     setImmediate(async () => {
       try {
-        this.logger.log('GitHub Webhook 触发自动静默同步...');
+        this.logger.log('GitHub Webhook 触发 3-way 自动同步...');
         const res = await this.pull();
         this.logger.log(`Webhook 自动同步结果: ${res.message}`);
       } catch (err) {
         this.logger.error(`Webhook 自动同步异常: ${err}`);
+      } finally {
+        this.webhookQueued = false;
       }
     });
 

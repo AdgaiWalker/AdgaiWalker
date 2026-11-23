@@ -28,6 +28,13 @@ export async function resolveArticleVersionsDir(): Promise<string> {
     return versionsDir;
   }
 
+  const contentRepo = process.env.WALKER_CONTENT_REPO_DIR?.trim();
+  if (contentRepo) {
+    const versionsDir = path.resolve(contentRepo, 'content/versions');
+    await fs.mkdir(versionsDir, { recursive: true });
+    return versionsDir;
+  }
+
   const cwdCandidates = [
     path.resolve(process.cwd(), 'content/log'),
     path.resolve(process.cwd(), '../../content/log'),

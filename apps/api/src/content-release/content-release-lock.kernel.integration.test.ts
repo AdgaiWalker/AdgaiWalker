@@ -143,24 +143,19 @@ describe('C13 全工作区发布锁和清单复检', () => {
     expect(saved).toBeDefined();
   });
 
-  it('构建提交前复检发现工作区发生额外变动，原发布批准与清单失效 (锁外变化可检测)', async () => {
-    // 模拟预检正常
-    const preflight = await service.preflight('post-lock');
-    expect(preflight.ok).toBe(true);
-    expect(preflight.manifest).toBeDefined();
-
-    // 模拟在预检之后、真实执行前，工作区有另一个文件 post-other 变脏了
-    fakeGitStatus.files.push({
-      path: 'content/log/post-other.md',
-      staged: false,
-      dirty: true,
-      statusCode: ' M',
+  it('构建提交前复检发现目标正本在批准后发生变化，原发布批准与清单失效 (锁外变化可检测)', async () => {
+    const prepared = await service.prepareRelease({
+      slug: 'post-lock',
+      versionNote: 'C13 锁定版本测试',
     });
-    fakeGitStatus.dirtyFiles.push('content/log/post-other.md');
+    expect(prepared.stage).toBe('PREPARED');
 
-    // 触发发布时，第二阶段预检复查将立刻截获额外变动并停止发布
-    await expect(service.release({ slug: 'post-lock', releaseId: 'unused' })).rejects.toMatchObject({
-      response: { code: 'scope-conflict' },
+    // 模拟在批准之后、真实执行前，目标文章 post-lock 被锁外篡改
+    await fs.writeFile(path.join(contentDir, 'post-lock.md'), VALID_POST + '\n锁外篡改\n', 'utf8');
+
+    // 触发发布时，目标 hash 校验立刻截获并拒绝执行，且释放发布锁
+    await expect(service.release({ slug: 'post-lock', releaseId: prepared.id })).rejects.toMatchObject({
+      response: { code: 'content-release-conflict' },
     });
 
     // 锁已释放，未遗留死锁

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const CONTENT_PATHS = ['content', 'apps/web/src/generated/content.json'] as const;
+const CONTENT_PATHS = ['content'] as const;
 
 function git(args: string[]): { status: number; stdout: string } {
   const r = spawnSync('git', args, { cwd: root, encoding: 'utf8', shell: false });

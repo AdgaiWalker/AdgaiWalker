@@ -61,6 +61,8 @@ vi.mock('../../api/queries', () => ({
   useAllContentSocialStats: useAllContentSocialStatsMock,
   useContentSyncStatus: useContentSyncStatusMock,
   useContentSyncPull: useContentSyncPullMock,
+  useContentSyncForceCheck: () => ({ isPending: false, mutateAsync: vi.fn() }),
+  useContentDraftBackup: () => ({ isPending: false, mutateAsync: vi.fn() }),
 }));
 
 const mockItems: ContentLedgerEntry[] = [

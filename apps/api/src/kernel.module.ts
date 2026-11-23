@@ -200,7 +200,7 @@ import { NodeGitStatusRepository } from './adapters/node-git-status.repository';
 import { ContentLedgerService } from './content-ledger/content-ledger.service';
 import { ContentLedgerController } from './content-ledger/content-ledger.controller';
 import { CONTENT_RELEASE_RUNNER } from './ports/content-release-runner.port';
-import { PnpmContentReleaseRunner } from './adapters/pnpm-content-release.runner';
+import { GitPlumbingContentReleaseRunner } from './adapters/git-plumbing-content-release.runner';
 import { ContentReleaseService } from './content-release/content-release.service';
 import { ContentReleaseController } from './content-release/content-release.controller';
 import { ContentChangeController } from './content-mutation/content-change.controller';
@@ -403,7 +403,7 @@ import { ReminderController } from './reminder/reminder.controller';
     ReminderScanService,
     ConversationActionService,
     LegacyDataMigrationService,
-    { provide: CONTENT_RELEASE_RUNNER, useClass: PnpmContentReleaseRunner },
+    { provide: CONTENT_RELEASE_RUNNER, useClass: GitPlumbingContentReleaseRunner },
     {
       provide: SUPPORT_CONFIG_REPOSITORY,
       useClass: FsSupportConfigRepository,
