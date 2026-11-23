@@ -31,8 +31,8 @@ if (-not (Test-Path (Join-Path $ContentRepo ".git"))) {
   } else {
     git clone --no-checkout $RemoteUrl $ContentRepo
   }
-  git -C $ContentRepo sparse-checkout init --cone
-  git -C $ContentRepo sparse-checkout set content
+  git -C $ContentRepo sparse-checkout init --no-cone
+  git -C $ContentRepo sparse-checkout set /content/
   git -C $ContentRepo config core.autocrlf false
   git -C $ContentRepo config core.eol lf
   git -C $ContentRepo config user.name "Walker Publisher"
@@ -43,7 +43,7 @@ if (-not (Test-Path (Join-Path $ContentRepo ".git"))) {
   if ($sshCmd) {
     git -C $ContentRepo config core.sshCommand $sshCmd
   }
-  git -C $ContentRepo sparse-checkout set content
+  git -C $ContentRepo sparse-checkout set --no-cone /content/
   git -C $ContentRepo config core.autocrlf false
   git -C $ContentRepo config core.eol lf
   git -C $ContentRepo fetch origin main

@@ -46,14 +46,15 @@ describe('GitContentPlumbing（真实 bare repo + 双克隆 5 类对抗场景）
     await fs.writeFile(path.join(macClone, 'content/log/post-a.md'), postMd('A v1', 'Alpha v1', 'post-a'), 'utf8');
     await fs.writeFile(path.join(macClone, 'content/log/post-b.md'), postMd('B v1', 'Beta v1', 'post-b'), 'utf8');
     await fs.writeFile(path.join(macClone, 'apps/api/code.ts'), 'export const v = 1;\n', 'utf8');
+    await fs.writeFile(path.join(macClone, 'README.md'), '# root v1\n', 'utf8');
     await git(macClone, ['add', '.']);
     await git(macClone, ['commit', '-m', 'init baseline']);
     await git(macClone, ['push', '-u', 'origin', 'main']);
 
-    // 初始化服务器独立内容仓（模拟 Windows 盒子 sparse-checkout 只检出 content/）
+    // 初始化服务器独立内容仓（模拟 Windows 盒子 sparse-checkout --no-cone 仅检出 /content/，不含根目录文件）
     await git(tmpRoot, ['clone', '--no-checkout', bareDir, serverClone]);
-    await git(serverClone, ['sparse-checkout', 'init', '--cone']);
-    await git(serverClone, ['sparse-checkout', 'set', 'content']);
+    await git(serverClone, ['sparse-checkout', 'init', '--no-cone']);
+    await git(serverClone, ['sparse-checkout', 'set', '/content/']);
     await git(serverClone, ['checkout', 'main']);
     await git(serverClone, ['config', 'user.name', 'Walker Publisher']);
     await git(serverClone, ['config', 'user.email', 'walker@iwalk.pro']);
@@ -64,9 +65,10 @@ describe('GitContentPlumbing（真实 bare repo + 双克隆 5 类对抗场景）
     await fs.rm(tmpRoot, { recursive: true, force: true });
   });
 
-  it('场景 1 & 3：本地推了代码 + 改了 post-a 后，网页单篇发布 post-b 零冲突且原子写入版本历史', async () => {
-    // Mac 本地推送代码改动 + post-a 改动
+  it('场景 1 & 3：本地推了代码/根目录文档 + 改了 post-a 后，网页单篇发布 post-b 零冲突且原子写入版本历史', async () => {
+    // Mac 本地推送代码 + 根目录文件 + post-a 改动
     await fs.writeFile(path.join(macClone, 'apps/api/code.ts'), 'export const v = 2;\n', 'utf8');
+    await fs.writeFile(path.join(macClone, 'README.md'), '# root v2\n', 'utf8');
     await fs.writeFile(path.join(macClone, 'content/log/post-a.md'), postMd('A v2', 'Alpha from Mac', 'post-a'), 'utf8');
     await git(macClone, ['add', '.']);
     await git(macClone, ['commit', '-m', 'mac: code + post-a']);
