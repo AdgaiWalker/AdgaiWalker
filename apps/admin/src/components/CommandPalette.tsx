@@ -23,7 +23,7 @@ const STATIC_ITEMS: PaletteItem[] = [
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
-  const content = useContent();
+  const content = useContent({ enabled: open });
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
 

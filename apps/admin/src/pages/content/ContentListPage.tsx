@@ -55,14 +55,24 @@ export function ContentListPage() {
   const dirtyCount = syncQuery.data?.dirtyFiles.length ?? 0;
   const behindCount = syncQuery.data?.behind ?? 0;
   const conflictCount = syncQuery.data?.conflicts?.length ?? 0;
-  const isVerifiedLive = (item: (typeof items)[number]) =>
-    Boolean(item.publication.publishedHash && item.publication.publishedHash === item.publication.currentPublicHash);
+
+  type BadgeState = "verified" | "indexed" | "private" | "draft";
+  const badgeOf = (item: (typeof items)[number]): BadgeState => {
+    const { publishedHash, currentPublicHash, indexedHash } = item.publication;
+    if (publishedHash && currentPublicHash && publishedHash === currentPublicHash) return "verified";
+    if (item.visibility === "private") return "private";
+    if (item.visibility === "public" && !item.dirty && item.missing.length === 0 && indexedHash && currentPublicHash && indexedHash === currentPublicHash) {
+      return "indexed";
+    }
+    return "draft";
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((item) => {
-      const live = isVerifiedLive(item);
-      if ((filter === "live" && !live) || (filter === "draft" && live)) return false;
+      const state = badgeOf(item);
+      const isPublic = state === "verified" || state === "indexed";
+      if ((filter === "live" && !isPublic) || (filter === "draft" && isPublic)) return false;
       return !q || item.title.toLowerCase().includes(q) || item.slug.toLowerCase().includes(q);
     });
   }, [items, filter, search]);
@@ -76,12 +86,13 @@ export function ContentListPage() {
     setCreateError(null);
     const today = new Date().toISOString().slice(0, 10);
     const safe = title.replace(/"/g, '\\"');
+    // 正文留空：标题已存 frontmatter 并由画布/前台 <h1> 渲染，避免双 H1 重复
     const raw = [
       "---", `title: "${safe}"`, `date: ${today}`, `updated: ${today}`, `type: ${newType}`,
       "form: note", "domain: thinking", "intent: clarify", "valueMode: insight",
       `summary: "${safe} · ${slug}"`, "visibility: draft",
       "aiUsePolicy:", "  level: AI-2", "  readable: true", "  citable: true", "  actionable: false",
-      "---", "", `# ${title}`, "",
+      "---", "", "",
     ].join("\n");
     try {
       await saveMutation.mutateAsync({ slug, raw, expectedHash: null });
@@ -146,15 +157,22 @@ export function ContentListPage() {
       ) : (
         <div className="article-list">
           {filtered.map((item) => {
-            const live = isVerifiedLive(item);
+            const state = badgeOf(item);
+            const badgeMeta: Record<BadgeState, { cls: string; dot: string; text: string; tip?: string }> = {
+              verified: { cls: "badge green", dot: "status-dot live", text: "已上线", tip: "后台发布单已线上确证" },
+              indexed: { cls: "badge", dot: "status-dot live", text: "已公开", tip: "已进入公开索引（暂无后台发布单确证记录）" },
+              private: { cls: "badge", dot: "status-dot", text: "私密" },
+              draft: { cls: "badge amber", dot: "status-dot draft", text: "草稿" },
+            };
+            const m = badgeMeta[state];
             return (
               <Link key={item.slug} to={R.contentDetail(item.slug)} className="article-row">
                 <div className="article-row-main">
                   <span className="article-row-title">{item.title}</span>
                   <span className="article-row-meta"><span className="mono">{item.slug}</span><span>·</span><span>{timeLabel(item.updatedAt)}</span></span>
                 </div>
-                <span className={`badge ${live ? "green" : "amber"}`}>
-                  <span className={`status-dot ${live ? "live" : "draft"}`} aria-hidden="true" />{live ? "已上线" : "草稿"}
+                <span className={m.cls} title={m.tip}>
+                  <span className={m.dot} aria-hidden="true" />{m.text}
                 </span>
               </Link>
             );

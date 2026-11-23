@@ -1,10 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
-/**
- * 右侧按需滑出抽屉（原生顶层 <dialog> 实现）：
- * 平时不挂载，触发时滑入，点击遮罩/Esc/关闭按钮退场并自动归位焦点。
- */
+/** 右侧按需滑出抽屉（原生顶层 <dialog>）：pointerdown+pointerup 双判遮罩点击，避免拖选文字误关。 */
 export function SlideDrawer({
   open,
   title,
@@ -18,6 +15,8 @@ export function SlideDrawer({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const titleId = useId();
 
   useEffect(() => {
@@ -36,21 +35,31 @@ export function SlideDrawer({
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
-    const onCancel = (e: Event) => {
-      e.preventDefault();
-      onClose();
+    if (!open || !dialog) return;
+    let pressedOutside = false;
+    const isOutsideSheet = (e: PointerEvent) => {
+      const sheet = sheetRef.current;
+      if (!sheet) return false;
+      const r = sheet.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
     };
-    const onClick = (e: MouseEvent) => {
-      if (sheetRef.current && !sheetRef.current.contains(e.target as Node)) onClose();
+    const onCancel = (e: Event) => { e.preventDefault(); onCloseRef.current(); };
+    const onPointerDown = (e: PointerEvent) => { pressedOutside = isOutsideSheet(e); };
+    const onPointerUp = (e: PointerEvent) => {
+      if (pressedOutside && isOutsideSheet(e)) {
+        pressedOutside = false;
+        onCloseRef.current();
+      }
     };
     dialog.addEventListener("cancel", onCancel);
-    dialog.addEventListener("click", onClick);
+    dialog.addEventListener("pointerdown", onPointerDown);
+    dialog.addEventListener("pointerup", onPointerUp);
     return () => {
       dialog.removeEventListener("cancel", onCancel);
-      dialog.removeEventListener("click", onClick);
+      dialog.removeEventListener("pointerdown", onPointerDown);
+      dialog.removeEventListener("pointerup", onPointerUp);
     };
-  }, [onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -59,7 +68,7 @@ export function SlideDrawer({
       <div ref={sheetRef} className="m-drawer-sheet">
         <div className="m-drawer-head">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" className="icon-btn" aria-label="关闭抽屉" autoFocus onClick={onClose}>
+          <button type="button" className="icon-btn" aria-label="关闭抽屉" autoFocus onClick={() => onCloseRef.current()}>
             <X size={16} aria-hidden="true" />
           </button>
         </div>

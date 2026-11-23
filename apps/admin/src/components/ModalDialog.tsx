@@ -1,12 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
-/**
- * 原生 <dialog> 模态框（遵循 modern-web-guidance `dialog`）：
- * - 使用 showModal() 获得顶层渲染、inert 背景、Esc 关闭与焦点归位；
- * - 不加多余的 role="dialog"/aria-modal；
- * - 使用 closedby="any" 并在 Safari 等不支持时用 boundingRect pointerdown+pointerup 回退。
- */
+/** 原生 <dialog> 模态框：showModal + 稳定事件绑定（依赖 open，用 ref 持有 onClose）+ Safari 遮罩回退。 */
 export function ModalDialog({
   open,
   title,
@@ -23,6 +18,8 @@ export function ModalDialog({
   className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const titleId = useId();
 
   useEffect(() => {
@@ -41,25 +38,15 @@ export function ModalDialog({
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
-
+    if (!open || !dialog) return;
     const handleClose = () => {
       dialog.returnValue = "";
-      onClose();
+      onCloseRef.current();
     };
     const handleCancel = (event: Event) => {
-      if (!dismissible) {
-        event.preventDefault();
-        return;
-      }
       event.preventDefault();
-      onClose();
+      if (dismissible) onCloseRef.current();
     };
-
-    dialog.addEventListener("close", handleClose);
-    dialog.addEventListener("cancel", handleCancel);
-
-    // Safari fallback for closedby="any" (bounding rect, not event.target)
     const supportsClosedBy = typeof HTMLDialogElement !== "undefined" && "closedBy" in HTMLDialogElement.prototype;
     let pressedOutside = false;
     const isOutside = (e: PointerEvent) => {
@@ -72,19 +59,20 @@ export function ModalDialog({
     const onPointerUp = (e: PointerEvent) => {
       if (dismissible && !supportsClosedBy && pressedOutside && isOutside(e)) {
         pressedOutside = false;
-        onClose();
+        onCloseRef.current();
       }
     };
+    dialog.addEventListener("close", handleClose);
+    dialog.addEventListener("cancel", handleCancel);
     dialog.addEventListener("pointerdown", onPointerDown);
     dialog.addEventListener("pointerup", onPointerUp);
-
     return () => {
       dialog.removeEventListener("close", handleClose);
       dialog.removeEventListener("cancel", handleCancel);
       dialog.removeEventListener("pointerdown", onPointerDown);
       dialog.removeEventListener("pointerup", onPointerUp);
     };
-  }, [dismissible, onClose]);
+  }, [open, dismissible]);
 
   if (!open) return null;
 
@@ -98,7 +86,7 @@ export function ModalDialog({
       <div className="m-dialog-head">
         <h2 id={titleId}>{title}</h2>
         {dismissible ? (
-          <button type="button" className="icon-btn" aria-label="关闭" onClick={onClose}>
+          <button type="button" className="icon-btn" aria-label="关闭" onClick={() => onCloseRef.current()}>
             <X size={16} aria-hidden="true" />
           </button>
         ) : null}

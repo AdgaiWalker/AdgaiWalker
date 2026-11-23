@@ -58,23 +58,33 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [conflict, setConflict] = useState<{ remoteRaw: string; remoteHash: string } | null>(null);
-  const [inFlight, setInFlight] = useState(false);
-
-  const pollInterval = inFlight ? 5_000 : false;
-  const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollInterval });
-  const versionQuery = useContentVersion(item.slug, { refetchInterval: pollInterval });
-  const changesQuery = useContentChanges(item.slug, { enabled: drawerOpen && drawerSection === "ai" });
+  const [justPublished, setJustPublished] = useState(false);
 
   const parsed = useMemo(() => parseDocFrontmatter(draft), [draft]);
   const [tagsInput, setTagsInput] = useState(() => parseDocFrontmatter(item.raw).tags.join(", "));
   const displayTitle = parsed.title || item.title;
+
+  // 仅真正提交中（COMMITTING/PUSHED）或 10 分钟内的新 VERIFYING 才按 5s 轮询；超时旧 VERIFYING 绝不无限轮询或锁死发布按钮
+  const [pollActive, setPollActive] = useState(false);
+  const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollActive ? 5_000 : false });
+  const versionQuery = useContentVersion(item.slug, { refetchInterval: pollActive ? 5_000 : false });
+  const changesQuery = useContentChanges(item.slug, { enabled: drawerOpen && drawerSection === "ai" });
+
   const release = latestRelease.data;
   const stage = release?.stage;
+  const isGitBusy = stage === "COMMITTING" || stage === "PUSHED";
+  const verifyingFresh =
+    stage === "VERIFYING" &&
+    Boolean(release?.updatedAt) &&
+    Date.now() - Date.parse(release!.updatedAt) < 10 * 60_000;
+  const isStaleVerifying = stage === "VERIFYING" && !verifyingFresh;
 
-  useEffect(() => { setInFlight(stage === "COMMITTING" || stage === "PUSHED" || stage === "VERIFYING"); }, [stage]);
+  useEffect(() => {
+    setPollActive(isGitBusy || verifyingFresh || (justPublished && stage !== "PUBLISHED" && stage !== "FAILED"));
+  }, [isGitBusy, verifyingFresh, justPublished, stage]);
 
   const isDirty = draft !== savedRaw;
-  const isLive = Boolean(versionQuery.data?.publishedHash && versionQuery.data.publishedHash === versionQuery.data.workingHash) && !isDirty && !inFlight;
+  const isLive = Boolean(versionQuery.data?.publishedHash && versionQuery.data.publishedHash === versionQuery.data.workingHash) && !isDirty && !isGitBusy;
   const blocker = useBlocker(({ currentLocation, nextLocation }) => isDirty && currentLocation.pathname !== nextLocation.pathname);
 
   useEffect(() => {
@@ -86,6 +96,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const patchDoc = (patch: Parameters<typeof updateDocFrontmatter>[1]) => {
     setDraft((prev) => updateDocFrontmatter(prev, patch));
     setStatusMessage(null);
+    setJustPublished(false);
   };
 
   const performSave = async (overrideHash?: string, rawOverride?: string): Promise<boolean> => {
@@ -154,7 +165,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
         slug: item.slug, versionNote: note, requestKey: `pub-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       });
       await triggerMutation.mutateAsync({ slug: item.slug, releaseId: prepared.id });
-      setPublishOpen(false); setVersionNote(""); setInFlight(true);
+      setPublishOpen(false); setVersionNote(""); setJustPublished(true);
       setStatusMessage("已推送到 GitHub，正在自动等待线上确证…");
       trackAdminUiEvent("publish.flow_completed", { slug: item.slug, durationMs: Date.now() - t0 });
       void latestRelease.refetch(); void versionQuery.refetch();
@@ -165,6 +176,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   };
 
   const openDrawer = (section: DrawerSection) => {
+    if (section === "meta") setTagsInput(parsed.tags.join(", "));
     setDrawerSection(section); setDrawerOpen(true);
     trackAdminUiEvent("drawer.opened", { section });
   };
@@ -177,9 +189,24 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     } catch { setErrorMessage("复制失败，请手动复制链接"); }
   };
 
-  const showStrip = Boolean(inFlight || errorMessage || statusMessage || stage === "FAILED" || stage === "UNKNOWN" || stage === "PUBLISHED");
-  const stripTone = errorMessage || stage === "FAILED" ? "err" : stage === "UNKNOWN" ? "warn" : stage === "PUBLISHED" && !inFlight ? "ok" : "";
-  const stripText = errorMessage ?? statusMessage ?? (inFlight ? `发布进行中（${stage}），后台自动核验中…` : stage === "UNKNOWN" ? "上次发布结果待核对，请点击核对确认状态" : stage === "FAILED" ? `上次发布失败：${release?.errorCode ?? "请重试"}` : "已在线上确证");
+  // 按需显现 + 绝不撒谎：未保存编辑态（isDirty）下绝不显示「已在线上确证」，平时已发布文章 0 像素占位
+  const showPublishedConfirm = justPublished && stage === "PUBLISHED" && !isDirty && !isGitBusy;
+  const showStrip = Boolean(
+    errorMessage || statusMessage || isGitBusy || verifyingFresh || (!isDirty && (isStaleVerifying || stage === "FAILED" || stage === "UNKNOWN")) || showPublishedConfirm,
+  );
+  const stripTone = errorMessage || stage === "FAILED" ? "err" : stage === "UNKNOWN" || isStaleVerifying ? "warn" : showPublishedConfirm ? "ok" : "";
+  const stripText =
+    errorMessage ??
+    statusMessage ??
+    (isGitBusy || verifyingFresh
+      ? `发布进行中（${stage}），后台自动核验中…`
+      : isStaleVerifying
+        ? "上次发布超时未确证，可点击核对或直接重新发布"
+        : stage === "UNKNOWN"
+          ? "上次发布结果待核对，请点击核对确认状态"
+          : stage === "FAILED"
+            ? `上次发布失败：${release?.errorCode ?? "请重试"}`
+            : "已在线上确证");
 
   return (
     <>
@@ -199,8 +226,8 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
               <Save size={14} aria-hidden="true" />{saveMutation.isPending ? "保存中…" : "保存"}
             </button>
           ) : null}
-          <button type="button" className={isDirty || isLive ? "btn" : "btn btn-primary"} disabled={inFlight || publishing} onClick={openPublish}>
-            <UploadCloud size={14} aria-hidden="true" />{inFlight ? "发布中…" : isLive ? "重新发布" : "发布"}
+          <button type="button" className={isDirty || isLive ? "btn" : "btn btn-primary"} disabled={isGitBusy || publishing} onClick={openPublish}>
+            <UploadCloud size={14} aria-hidden="true" />{isGitBusy || publishing ? "发布中…" : isLive || isStaleVerifying ? "重新发布" : "发布"}
           </button>
           <button type="button" className="icon-btn" aria-label="更多操作" title="元信息 · 历史 · AI 建议 · 宣发 · 删除" onClick={() => openDrawer("meta")}>
             <MoreHorizontal size={17} aria-hidden="true" />
@@ -212,7 +239,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
         <div className={`release-strip ${stripTone}`.trim()} role="status">
           <span>{stripText}</span>
           <div className="action-row">
-            {stage === "PUBLISHED" && !inFlight ? (
+            {showPublishedConfirm ? (
               <>
                 <a className="btn btn-ghost" href={getPublicPostUrl(item.slug)} target="_blank" rel="noreferrer"><ExternalLink size={13} /> 打开文章</a>
                 <button type="button" className="btn btn-ghost" onClick={() => void handleCopyShare()}>
@@ -258,10 +285,10 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
             {rawYamlMode ? (
               <div className="editor-raw-banner">
                 <span className="muted">正在编辑原始 YAML + Markdown 源码</span>
-                <button type="button" className="btn btn-ghost" onClick={() => setRawYamlMode(false)}>返回纯净画布</button>
+                <button type="button" className="btn btn-ghost" onClick={() => { setTagsInput(parsed.tags.join(", ")); setRawYamlMode(false); }}>返回纯净画布</button>
               </div>
             ) : null}
-            <textarea aria-label={rawYamlMode ? "原始 Markdown 源码" : "文章正文"} className="editor-canvas" value={draft} onChange={(e) => { setDraft(e.target.value); setStatusMessage(null); }} />
+            <textarea aria-label={rawYamlMode ? "原始 Markdown 源码" : "文章正文"} className="editor-canvas" value={draft} onChange={(e) => { setDraft(e.target.value); setStatusMessage(null); setJustPublished(false); }} />
           </div>
         ) : (
           <div className="editor-sheet">

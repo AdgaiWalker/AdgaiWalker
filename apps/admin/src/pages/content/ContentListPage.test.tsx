@@ -72,6 +72,25 @@ const ITEMS: Array<ContentLedgerEntry & { id: string }> = [
     },
     updatedAt: "2026-11-23T09:00:00.000Z",
   },
+  {
+    id: "post-indexed",
+    slug: "post-indexed",
+    title: "Git 老文章已公开",
+    type: "knowledge",
+    group: "article",
+    stage: "live",
+    visibility: "public",
+    missing: [],
+    dirty: false,
+    publication: {
+      currentPublicHash: "hash-idx",
+      publishedHash: null,
+      verifiedAt: null,
+      indexedHash: "hash-idx",
+      latestAttemptStage: null,
+    },
+    updatedAt: "2026-11-23T08:00:00.000Z",
+  },
 ];
 
 beforeEach(() => {
@@ -92,7 +111,7 @@ beforeEach(() => {
 });
 
 describe("ContentListPage（极简默认首页）", () => {
-  it("严格按线上确证 hash 区分已上线与草稿，不把未确证 live 显示为已上线", () => {
+  it("严格区分已上线（发布单确证）/ 已公开（公开索引命中）/ 草稿，不反向把老文章全标草稿", () => {
     render(
       <MemoryRouter initialEntries={["/content"]}>
         <ContentListPage />
@@ -100,7 +119,9 @@ describe("ContentListPage（极简默认首页）", () => {
     );
     expect(screen.getByText("草稿文章一")).toBeTruthy();
     expect(screen.getByText("已确证文章")).toBeTruthy();
+    expect(screen.getByText("Git 老文章已公开")).toBeTruthy();
     expect(screen.getAllByText("草稿").length).toBe(1);
+    expect(screen.getAllByText("已公开").length).toBe(1);
     expect(screen.getAllByText("已上线").length).toBe(2); // 1 筛选芯片 + 1 行徽章
   });
 
@@ -113,6 +134,7 @@ describe("ContentListPage（极简默认首页）", () => {
     fireEvent.click(screen.getByRole("button", { name: "已上线" }));
     expect(screen.queryByText("草稿文章一")).toBeNull();
     expect(screen.getByText("已确证文章")).toBeTruthy();
+    expect(screen.getByText("Git 老文章已公开")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "全部" }));
     fireEvent.change(screen.getByLabelText("搜索文章"), { target: { value: "post-draft" } });

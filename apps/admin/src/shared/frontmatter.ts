@@ -23,33 +23,90 @@ export interface FrontmatterPatch {
 }
 
 const FM_RE = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n)?([\s\S]*)$/;
-const unquote = (v: string) => {
-  const s = v.trim();
-  return (s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")) ? s.slice(1, -1).replace(/\\"/g, '"') : s;
-};
-const quote = (v: string) => `"${v.replace(/\r?\n/g, " ").trim().replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-const readScalar = (yaml: string, key: string) => {
-  const m = yaml.match(new RegExp(`^${key}:[ \\t]*(.*)$`, "m"));
-  return m ? unquote(m[1]) : undefined;
-};
-const setScalar = (yaml: string, key: string, val: string) => {
-  const re = new RegExp(`^${key}:.*$`, "m");
-  return re.test(yaml) ? yaml.replace(re, `${key}: ${val}`) : `${yaml.trimEnd()}\n${key}: ${val}`;
-};
-const removeKey = (yaml: string, key: string) => yaml.split("\n").filter((l) => !new RegExp(`^${key}:`).test(l)).join("\n");
+const BLOCK_SCALAR_RE = /^([>|])([+-])?\d*$/;
 
-function readTags(yaml: string): string[] {
-  const inline = yaml.match(/^tags:[ \t]*\[(.*)\][ \t]*$/m);
-  if (inline) return inline[1].split(",").map(unquote).filter(Boolean);
-  const block = yaml.match(/^tags:[ \t]*\n((?:[ \t]+-[ \t]+.+\n?)*)/m);
-  return block ? block[1].split("\n").map((l) => unquote(l.replace(/^[ \t]+-[ \t]+/, ""))).filter(Boolean) : [];
+function unquote(v: string): string {
+  const s = v.trim();
+  if (s.startsWith('"') && s.endsWith('"') && s.length >= 2) {
+    return s.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+  }
+  if (s.startsWith("'") && s.endsWith("'") && s.length >= 2) {
+    return s.slice(1, -1).replace(/''/g, "'");
+  }
+  return s;
 }
 
-function setTags(yaml: string, tags: string[]): string {
-  const formatted = `tags: [${tags.map(quote).join(", ")}]`;
-  if (/^tags:[ \t]*\[.*\]/m.test(yaml)) return yaml.replace(/^tags:[ \t]*\[.*\][ \t]*$/m, formatted);
-  if (/^tags:[ \t]*\n(?:[ \t]+-[ \t]+.+\n?)*/m.test(yaml)) return yaml.replace(/^tags:[ \t]*\n(?:[ \t]+-[ \t]+.+\n?)*/m, `${formatted}\n`);
-  return `${yaml.trimEnd()}\n${formatted}`;
+const quote = (v: string) => `"${v.replace(/\r?\n/g, " ").trim().replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+
+/** 定位顶层 key 及其全部缩进续行范围 [start, end)（单点范围查找，杜绝改写多行块标量时残留孤立缩进行）。 */
+function findKeyRange(lines: string[], key: string): { start: number; end: number; header: string } | null {
+  const re = new RegExp(`^${key}:[ \\t]*(.*)$`);
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(re);
+    if (!m) continue;
+    const header = m[1].trim();
+    let end = i + 1;
+    while (end < lines.length && (/^[ \t]+/.test(lines[end]) || lines[end].trim() === "")) {
+      end++;
+    }
+    while (end > i + 1 && lines[end - 1].trim() === "") end--;
+    return { start: i, end, header };
+  }
+  return null;
+}
+
+function readBlockScalar(bodyLines: string[], folded: boolean): string {
+  const indents = bodyLines.filter((l) => l.trim().length > 0).map((l) => l.match(/^[ \t]*/)?.[0].length ?? 0);
+  const minIndent = indents.length ? Math.min(...indents) : 0;
+  const stripped = bodyLines.map((l) => (l.length >= minIndent ? l.slice(minIndent) : l.trim()));
+  if (!folded) return stripped.join("\n").trim();
+  const out: string[] = [];
+  let para: string[] = [];
+  for (const line of stripped) {
+    if (line.trim() === "") {
+      if (para.length) { out.push(para.join(" ")); para = []; }
+    } else {
+      para.push(line.trim());
+    }
+  }
+  if (para.length) out.push(para.join(" "));
+  return out.join("\n").trim();
+}
+
+function readScalar(yaml: string, key: string): string | undefined {
+  const lines = yaml.split("\n");
+  const range = findKeyRange(lines, key);
+  if (!range) return undefined;
+  const blockMatch = range.header.match(BLOCK_SCALAR_RE);
+  if (blockMatch) return readBlockScalar(lines.slice(range.start + 1, range.end), blockMatch[1] === ">");
+  if (!range.header && range.end > range.start + 1) {
+    return readBlockScalar(lines.slice(range.start + 1, range.end), true);
+  }
+  return unquote(range.header);
+}
+
+function replaceKeyLines(yaml: string, key: string, replacement: string[] | null): string {
+  const lines = yaml.split("\n");
+  const range = findKeyRange(lines, key);
+  if (range) {
+    lines.splice(range.start, range.end - range.start, ...(replacement ?? []));
+    return lines.join("\n");
+  }
+  if (!replacement) return yaml;
+  return [...lines, ...replacement].join("\n");
+}
+
+function readTags(yaml: string): string[] {
+  const lines = yaml.split("\n");
+  const range = findKeyRange(lines, "tags");
+  if (!range) return [];
+  const inline = range.header.match(/^\[(.*)\]$/);
+  if (inline) return inline[1].split(",").map(unquote).filter(Boolean);
+  return lines
+    .slice(range.start + 1, range.end)
+    .map((l) => l.match(/^[ \t]+-[ \t]+(.+)$/)?.[1] ?? "")
+    .map(unquote)
+    .filter(Boolean);
 }
 
 export function parseDocFrontmatter(raw: string): ParsedDocFrontmatter {
@@ -81,12 +138,14 @@ export function updateDocFrontmatter(raw: string, patch: FrontmatterPatch): stri
     if (!hasMeta) return nextBody;
     yaml = `title: ${quote(patch.title ?? "")}`;
   }
-  if (patch.title !== undefined) yaml = setScalar(yaml, "title", quote(patch.title));
-  if (patch.summary !== undefined) yaml = setScalar(yaml, "summary", quote(patch.summary));
-  if (patch.type !== undefined) yaml = setScalar(yaml, "type", patch.type.trim() || "knowledge");
-  if (patch.updated !== undefined) yaml = setScalar(yaml, "updated", patch.updated);
-  if (patch.tags !== undefined) yaml = setTags(yaml, patch.tags);
-  if (patch.visibility !== undefined) yaml = setScalar(removeKey(yaml, "published"), "visibility", patch.visibility);
+  if (patch.title !== undefined) yaml = replaceKeyLines(yaml, "title", [`title: ${quote(patch.title)}`]);
+  if (patch.summary !== undefined) yaml = replaceKeyLines(yaml, "summary", [`summary: ${quote(patch.summary)}`]);
+  if (patch.type !== undefined) yaml = replaceKeyLines(yaml, "type", [`type: ${patch.type.trim() || "knowledge"}`]);
+  if (patch.updated !== undefined) yaml = replaceKeyLines(yaml, "updated", [`updated: ${patch.updated}`]);
+  if (patch.tags !== undefined) yaml = replaceKeyLines(yaml, "tags", [`tags: [${patch.tags.map(quote).join(", ")}]`]);
+  if (patch.visibility !== undefined) {
+    yaml = replaceKeyLines(replaceKeyLines(yaml, "published", null), "visibility", [`visibility: ${patch.visibility}`]);
+  }
   return `---\n${yaml.trimEnd()}\n---\n\n${nextBody}`;
 }
 

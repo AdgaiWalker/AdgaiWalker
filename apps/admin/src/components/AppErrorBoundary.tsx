@@ -1,22 +1,32 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Link, useInRouterContext } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, RefreshCw, Terminal } from "lucide-react";
 import { ApiError } from "../api/http";
 import { ADMIN_ROUTES as R } from "../shared/routes";
 
-interface Props {
-  children: ReactNode;
-  scope?: string;
+function RecoveryLinks({ onReset }: { onReset: () => void }) {
+  const inRouter = useInRouterContext();
+  if (inRouter) {
+    return (
+      <>
+        <Link className="btn" to={R.content} onClick={onReset}><ArrowLeft size={14} aria-hidden="true" /> 返回文章</Link>
+        <Link className="btn" to={`${R.settings}#diagnostics`} onClick={onReset}><Terminal size={14} aria-hidden="true" /> 查看运行日志</Link>
+      </>
+    );
+  }
+  return (
+    <>
+      <a className="btn" href={R.content} onClick={onReset}><ArrowLeft size={14} aria-hidden="true" /> 返回文章</a>
+      <a className="btn" href={`${R.settings}#diagnostics`} onClick={onReset}><Terminal size={14} aria-hidden="true" /> 查看运行日志</a>
+    </>
+  );
 }
 
-interface State {
-  error: Error | null;
-}
+/** 兜底三件套之一：默认 UI 兜底，路由级走 SPA 导航保留内存凭据，根级回退原生跳转。 */
+export class AppErrorBoundary extends Component<{ children: ReactNode; scope?: string }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
 
-/** 兜底三件套之一：默认 UI 兜底，死守白屏与死胡同，并直通运行日志。 */
-export class AppErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
-
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
@@ -24,9 +34,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     console.error(`[admin:${this.props.scope ?? "root"}]`, error, info.componentStack);
   }
 
-  private reset = () => {
-    this.setState({ error: null });
-  };
+  private reset = () => this.setState({ error: null });
 
   render(): ReactNode {
     const { error } = this.state;
@@ -41,15 +49,8 @@ export class AppErrorBoundary extends Component<Props, State> {
         <p className="muted">{error.message || "渲染发生未预期错误，你的文章内容未受影响。"}</p>
         {requestId ? <p className="mono muted">requestId: {requestId}</p> : null}
         <div className="action-row">
-          <button type="button" className="btn btn-primary" onClick={this.reset}>
-            <RefreshCw size={14} aria-hidden="true" /> 重试
-          </button>
-          <a className="btn" href={R.content} onClick={this.reset}>
-            <ArrowLeft size={14} aria-hidden="true" /> 返回文章
-          </a>
-          <a className="btn" href={`${R.settings}#diagnostics`} onClick={this.reset}>
-            <Terminal size={14} aria-hidden="true" /> 查看运行日志
-          </a>
+          <button type="button" className="btn btn-primary" onClick={this.reset}><RefreshCw size={14} aria-hidden="true" /> 重试</button>
+          <RecoveryLinks onReset={this.reset} />
         </div>
       </section>
     );

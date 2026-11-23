@@ -1,4 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { extractSummaryFromRaw } from "@walker/shared";
 import { parseDocFrontmatter, promoteDraftForPublish, updateDocFrontmatter } from "./frontmatter";
 
 const SAMPLE = [
@@ -26,6 +29,20 @@ const SAMPLE = [
   "内容",
 ].join("\n");
 
+const MULTILINE_SAMPLE = [
+  "---",
+  "title: 龙虾的核心价值",
+  "summary: >-",
+  "  第一行摘要内容，",
+  "  第二行继续展开。",
+  "related:",
+  "  - foo",
+  "visibility: public",
+  "---",
+  "",
+  "正文段落",
+].join("\n");
+
 describe("frontmatter 剥离与无损回写", () => {
   it("正确拆分标题、摘要、标签、可见性与正文，且不含原始 YAML 墙", () => {
     const doc = parseDocFrontmatter(SAMPLE);
@@ -35,6 +52,38 @@ describe("frontmatter 剥离与无损回写", () => {
     expect(doc.tags).toEqual(["设计", "极简"]);
     expect(doc.visibility).toBe("draft");
     expect(doc.body).toBe("# 正文第一段\n\n内容");
+  });
+
+  it("多行块标量（summary: >-）正确读出正文摘要，改写时不残留孤立缩进行", () => {
+    const doc = parseDocFrontmatter(MULTILINE_SAMPLE);
+    expect(doc.summary).toBe("第一行摘要内容， 第二行继续展开。");
+    expect(extractSummaryFromRaw(MULTILINE_SAMPLE)).toBe("第一行摘要内容， 第二行继续展开。");
+
+    const updated = updateDocFrontmatter(MULTILINE_SAMPLE, { summary: "更新后的一句话摘要" });
+    expect(updated).toContain('summary: "更新后的一句话摘要"');
+    expect(updated).not.toContain("第一行摘要内容");
+    expect(updated).not.toContain("第二行继续展开");
+    expect(updated).toContain("related:\n  - foo");
+    expect(parseDocFrontmatter(updated).summary).toBe("更新后的一句话摘要");
+  });
+
+  it("真实全仓回归：content/log/*.md 全部文章均可无损解析且改写摘要不破坏 YAML", () => {
+    const dir = path.resolve(process.cwd(), "../../content/log");
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith(".md"));
+    expect(files.length).toBeGreaterThan(20);
+    for (const file of files) {
+      const raw = fs.readFileSync(path.join(dir, file), "utf8");
+      const parsed = parseDocFrontmatter(raw);
+      expect(parsed.hasFrontmatter, file).toBe(true);
+      expect(parsed.summary, file).not.toBe(">-");
+      expect(parsed.summary, file).not.toBe("|");
+      expect(extractSummaryFromRaw(raw), file).not.toBe(">-");
+      const edited = updateDocFrontmatter(raw, { title: parsed.title, summary: parsed.summary, tags: parsed.tags });
+      const reparsed = parseDocFrontmatter(edited);
+      expect(reparsed.title, file).toBe(parsed.title);
+      expect(reparsed.summary, file).toBe(parsed.summary);
+      expect(reparsed.tags, file).toEqual(parsed.tags);
+    }
   });
 
   it("更新标题与正文时完整保留未知 YAML 字段（aiUsePolicy/form/domain）", () => {

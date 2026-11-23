@@ -65,7 +65,7 @@ export function useDeployedAdminVersion() {
   });
 }
 
-export function useContent() {
+export function useContent(options?: { enabled?: boolean }) {
   return useQuery<{
     data: Array<ContentLedgerEntry & { id: string }>;
     total: number;
@@ -74,6 +74,7 @@ export function useContent() {
     publicationAvailable: boolean;
   }>({
     queryKey: ["content"],
+    enabled: options?.enabled !== false,
     queryFn: async ({ signal }) => {
       const res = await requestJson<ContentLedger>("/admin/content/ledger", { signal });
       if (!Array.isArray(res.items)) throw new ApiError("invalid-response", "内容数据格式不正确");

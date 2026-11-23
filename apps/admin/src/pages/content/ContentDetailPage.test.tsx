@@ -218,4 +218,26 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     fireEvent.click(screen.getByRole("button", { name: "宣发" }));
     expect(screen.getByRole("button", { name: "复制全文案" })).toBeTruthy();
   });
+
+  it("超时旧 VERIFYING 绝不锁死发布按钮，且已发布文章修改中绝不谎称已在线上确证", () => {
+    useLatestContentReleaseMock.mockReturnValue({
+      data: { id: "rel-old", stage: "VERIFYING", updatedAt: "2026-11-20T00:00:00.000Z" },
+      refetch: vi.fn(),
+    });
+    const { unmount } = renderDetail();
+    const republishBtn = screen.getByRole("button", { name: "重新发布" }) as HTMLButtonElement;
+    expect(republishBtn.disabled).toBe(false);
+    expect(screen.getByText(/上次发布超时未确证/)).toBeTruthy();
+    unmount();
+
+    useLatestContentReleaseMock.mockReturnValue({
+      data: { id: "rel-ok", stage: "PUBLISHED", updatedAt: new Date().toISOString() },
+      refetch: vi.fn(),
+    });
+    renderDetail();
+    // 平时已发布文章 0 像素状态条；编辑成脏态时更绝不显示「已在线上确证」
+    expect(screen.queryByText("已在线上确证")).toBeNull();
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: "未保存修改" } });
+    expect(screen.queryByText("已在线上确证")).toBeNull();
+  });
 });

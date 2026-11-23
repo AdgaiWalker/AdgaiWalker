@@ -64,12 +64,23 @@ export function getPublicPostUrl(slug: string, siteBaseUrl = DEFAULT_SITE_BASE_U
  */
 export function extractSummaryFromRaw(raw?: string | null): string {
   if (!raw) return '';
-  const fmMatch = raw.match(/^---[\s\S]*?---/);
+  const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (fmMatch) {
-    const fm = fmMatch[0];
-    const summaryMatch = fm.match(/^(?:summary|description):\s*(?:['"]?)(.*?)(?:['"]?)\s*$/m);
-    if (summaryMatch && summaryMatch[1]?.trim()) {
-      return summaryMatch[1].trim();
+    const lines = fmMatch[1].replace(/\r\n/g, '\n').split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^(?:summary|description):[ \t]*(.*)$/);
+      if (!m) continue;
+      const head = m[1].trim();
+      if (/^[>|][+-]?\d*$/.test(head) || !head) {
+        const parts: string[] = [];
+        for (let j = i + 1; j < lines.length && (/^[ \t]+/.test(lines[j]) || lines[j].trim() === ''); j++) {
+          if (lines[j].trim()) parts.push(lines[j].trim());
+        }
+        if (parts.length > 0) return parts.join(' ');
+      } else {
+        const cleaned = head.replace(/^['"]|['"]$/g, '').trim();
+        if (cleaned) return cleaned;
+      }
     }
   }
   const body = raw.replace(/^---[\s\S]*?---\r?\n?/, '').trim();
