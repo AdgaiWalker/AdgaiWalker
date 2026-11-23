@@ -93,21 +93,25 @@ export function ContentListPage() {
     }
     setCreateError(null);
     const today = new Date().toISOString().slice(0, 10);
+    const safeTitle = title.replace(/"/g, '\\"');
     const raw = [
       "---",
-      `title: "${title.replace(/"/g, '\\"')}"`,
+      `title: "${safeTitle}"`,
+      `date: ${today}`,
+      `updated: ${today}`,
       `type: ${newType}`,
       "form: note",
       "domain: thinking",
       "intent: clarify",
       "valueMode: insight",
-      `updated: ${today}`,
-      `summary: "${title.replace(/"/g, '\\"')}"`,
+      `summary: "${safeTitle} · ${slug}"`,
       "visibility: public",
       "published: false",
       "aiUsePolicy:",
+      "  level: AI-2",
       "  readable: true",
       "  citable: true",
+      "  actionable: false",
       "---",
       "",
       `# ${title}`,

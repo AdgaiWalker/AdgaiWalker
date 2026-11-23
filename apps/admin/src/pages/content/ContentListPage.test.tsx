@@ -159,7 +159,11 @@ describe("ContentListPage（极简默认首页）", () => {
 
     await waitFor(() =>
       expect(saveMutate).toHaveBeenCalledWith(
-        expect.objectContaining({ slug: "hello-world", expectedHash: null }),
+        expect.objectContaining({
+          slug: "hello-world",
+          expectedHash: null,
+          raw: expect.stringMatching(/date: \d{4}-\d{2}-\d{2}[\s\S]*summary: "Hello World · hello-world"[\s\S]*level: AI-2/),
+        }),
       ),
     );
     expect(navigateMock).toHaveBeenCalledWith("/content/hello-world");
