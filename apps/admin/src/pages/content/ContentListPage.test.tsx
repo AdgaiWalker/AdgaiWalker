@@ -189,7 +189,7 @@ describe("ContentListPage（极简默认首页）", () => {
     await waitFor(() => expect(backupMutate).toHaveBeenCalledTimes(1));
   });
 
-  it("点击唯一主按钮「新建文章」后自动生成 slug 并创建跳转至编辑画布", async () => {
+  it("点击唯一主按钮「新建草稿」后自动生成 slug 并创建跳转至编辑画布", async () => {
     const saveMutate = vi.fn(async () => ({ slug: "hello-world", raw: "", hash: "h1" }));
     useSaveContentMock.mockReturnValue({ isPending: false, mutateAsync: saveMutate });
     render(
@@ -197,7 +197,7 @@ describe("ContentListPage（极简默认首页）", () => {
         <ContentListPage />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "新建文章" }));
+    fireEvent.click(screen.getByRole("button", { name: "新建草稿" }));
     fireEvent.change(screen.getByPlaceholderText("输入文章标题"), { target: { value: "Hello World" } });
     fireEvent.click(screen.getByRole("button", { name: "开始写作" }));
 
@@ -213,7 +213,7 @@ describe("ContentListPage（极简默认首页）", () => {
     expect(navigateMock).toHaveBeenCalledWith("/content/hello-world");
   });
 
-  it("新建文章正确转义标题反斜杠，且同日纯中文标题自动顺延后缀避免 409 撞车", async () => {
+  it("新建草稿正确转义标题反斜杠，且同日纯中文标题自动顺延后缀避免 409 撞车", async () => {
     const today = new Date().toISOString().slice(0, 10);
     const todaySlug = `post-${today}`;
     useContentMock.mockReturnValue({
@@ -243,7 +243,7 @@ describe("ContentListPage（极简默认首页）", () => {
         <ContentListPage />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "新建文章" }));
+    fireEvent.click(screen.getByRole("button", { name: "新建草稿" }));
     fireEvent.change(screen.getByPlaceholderText("输入文章标题"), { target: { value: "写给 \\极简\\ 的日记" } });
     fireEvent.click(screen.getByRole("button", { name: "开始写作" }));
 
@@ -255,5 +255,36 @@ describe("ContentListPage（极简默认首页）", () => {
         }),
       ),
     );
+  });
+
+  it("草稿筛选为空时显示「暂无草稿」并提供「新建草稿」空态引导按钮", () => {
+    useContentMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: {
+        data: ITEMS.slice(1),
+        total: ITEMS.length - 1,
+        generatedAt: "2026-11-24T00:00:00.000Z",
+        gitAvailable: true,
+        publicationAvailable: true,
+      },
+      refetch: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/content?filter=draft"]}>
+        <ContentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("暂无草稿")).toBeTruthy();
+    expect(screen.queryByText("没有匹配的文章")).toBeNull();
+
+    const createButtons = screen.getAllByRole("button", { name: "新建草稿" });
+    expect(createButtons).toHaveLength(2);
+    fireEvent.click(createButtons[1]!);
+
+    expect(screen.getByRole("heading", { name: "新建草稿" })).toBeTruthy();
+    expect(screen.getByPlaceholderText("输入文章标题")).toBeTruthy();
   });
 });

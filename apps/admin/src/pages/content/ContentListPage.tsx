@@ -79,6 +79,19 @@ export function ContentListPage() {
     });
   }, [items, filter, search]);
 
+  const hasSearch = search.trim().length > 0;
+  const emptyTitle =
+    items.length === 0
+      ? "还没有文章"
+      : !hasSearch && filter === "draft"
+        ? "暂无草稿"
+        : !hasSearch && filter === "live"
+          ? "暂无已公开文章"
+          : filter === "draft"
+            ? "没有匹配的草稿"
+            : "没有匹配的文章";
+  const showEmptyCreate = items.length === 0 || (!hasSearch && filter === "draft");
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const title = newTitle.trim();
@@ -121,7 +134,7 @@ export function ContentListPage() {
             <button key={key} type="button" className={`chip ${filter === key ? "is-active" : ""}`} onClick={() => setFilter(key)}>{label}</button>
           ))}
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={15} aria-hidden="true" />新建文章</button>
+        <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}><Plus size={15} aria-hidden="true" />新建草稿</button>
       </div>
 
       {dirtyCount > 0 || behindCount > 0 || conflictCount > 0 || syncNotice ? (
@@ -145,8 +158,13 @@ export function ContentListPage() {
       ) : null}
 
       {query.isPending ? <LoadingState /> : query.isError ? <ErrorState error={query.error} retry={query.refetch} /> : filtered.length === 0 ? (
-        <EmptyState title={items.length === 0 ? "还没有文章" : "没有匹配的文章"}>
-          {items.length === 0 ? <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>新建第一篇文章</button> : null}
+        <EmptyState title={emptyTitle}>
+          {showEmptyCreate ? (
+            <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+              <Plus size={15} aria-hidden="true" />
+              {items.length === 0 ? "新建第一篇草稿" : "新建草稿"}
+            </button>
+          ) : null}
         </EmptyState>
       ) : (
         <div className="article-list">
@@ -167,7 +185,7 @@ export function ContentListPage() {
         </div>
       )}
 
-      <ModalDialog open={createOpen} title="新建文章" onClose={() => setCreateOpen(false)}>
+      <ModalDialog open={createOpen} title="新建草稿" onClose={() => setCreateOpen(false)}>
         <form onSubmit={(e) => void handleCreate(e)} className="stack">
           <label className="field-col">
             标题
