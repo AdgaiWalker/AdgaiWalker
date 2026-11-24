@@ -150,6 +150,10 @@ export interface ContentLedgerEntry {
   missing: PublishedPostRequiredField[];
   /** git 工作区该文件是否脏 */
   dirty: boolean;
+  /** 所属系列（来自 frontmatter.series，缺省为空/undefined） */
+  series?: string;
+  /** 系列内顺序号（来自 frontmatter.seriesOrder） */
+  seriesOrder?: number | null;
   publication: {
     /** 公开投影 hash，与发布证明使用同一命名空间。 */
     currentPublicHash: string | null;

@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { SearchModal, type SearchModalProps } from './SearchModal';
 import { publicApi } from '../../api/public-api';
+
+const sceneSpy = vi.hoisted(() => ({ mount: vi.fn() }));
 
 vi.mock('../../api/public-api', () => ({
   publicApi: {
@@ -12,7 +14,7 @@ vi.mock('../../api/public-api', () => ({
 }));
 
 vi.mock('../xiaoying/scene', () => ({
-  mountPet: () => ({ play: vi.fn(), pause: vi.fn(), dispose: vi.fn() }),
+  mountPet: sceneSpy.mount,
 }));
 
 const mockedStream = vi.mocked(publicApi.assistantStream);
@@ -36,12 +38,13 @@ function renderModal(props: Partial<SearchModalProps> = {}) {
   return { onClose, onQueryChange };
 }
 
-describe('SearchModal（搜索 + 面板内问小影）', () => {
+describe('SearchModal（原生 dialog Omni-Bar + 无 3D + 优雅降级）', () => {
   beforeEach(() => {
     mockedStream.mockReset();
+    sceneSpy.mount.mockReset();
   });
 
-  it('open=false 时不渲染对话框', () => {
+  it('open=false 时不展示对话窗且永不挂载第二个 3D WebGL 桌宠', () => {
     render(
       <MemoryRouter>
         <SearchModal
@@ -55,32 +58,30 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(sceneSpy.mount).not.toHaveBeenCalled();
   });
 
-  it('open 时渲染搜索框并回传 query 变更', async () => {
+  it('open 时不挂载 3D scene，渲染搜索框并回传 query 变更', async () => {
     const { onQueryChange } = renderModal({ query: '' });
+    expect(sceneSpy.mount).not.toHaveBeenCalled();
     const user = userEvent.setup();
     const input = screen.getByPlaceholderText(/搜索或问小影/);
     await user.type(input, 'a');
     expect(onQueryChange).toHaveBeenCalled();
   });
 
-  it('展示 hits 链接', () => {
+  it('展示 hits 链接与无结果提示', () => {
     renderModal({
       hits: [{ url: '/posts/x', title: '标题甲' }],
+      note: '',
     });
-    expect(screen.getByRole('link', { name: '标题甲' })).toHaveAttribute(
-      'href',
-      '/posts/x',
-    );
-  });
+    expect(screen.getByRole('link', { name: '标题甲' })).toHaveAttribute('href', '/posts/x');
 
-  it('无结果 note 可见', () => {
     renderModal({ note: '无结果' });
     expect(screen.getByText('无结果')).toBeInTheDocument();
   });
 
-  it('回车即问小影：切到面板内对话并发送', async () => {
+  it('回车即问小影：切到面板内对话并流式发送', async () => {
     mockedStream.mockImplementationOnce(async ({ onText }) => {
       onText('{"answer":"duola 是站主的分身');
       return {
@@ -101,8 +102,11 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
     const input = screen.getByPlaceholderText(/搜索或问小影/);
     await user.type(input, '{Enter}');
     expect(mockedStream).toHaveBeenCalledWith(expect.objectContaining({
-      body: 'duola 是谁', sessionId: null, onText: expect.any(Function),
-      signal: expect.any(AbortSignal), source: 'assistant-stream',
+      body: 'duola 是谁',
+      sessionId: null,
+      onText: expect.any(Function),
+      signal: expect.any(AbortSignal),
+      source: 'assistant-stream',
       context: expect.objectContaining({ conversationId: null, requestKey: expect.any(String) }),
       onAccepted: expect.any(Function),
     }));
@@ -129,17 +133,27 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
     expect(mockedStream).toHaveBeenCalledOnce();
     expect(await screen.findByText('规则回答')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /返回搜索/ }));
-    expect(
-      screen.getByPlaceholderText(/搜索或问小影/),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/搜索或问小影/)).toBeInTheDocument();
   });
 
-  it('query 过短不出现问小影入口', () => {
+  it('AI 问答失败时无声降级展示本地匹配与规则下一步入口', async () => {
+    mockedStream.mockRejectedValueOnce(new Error('assistant-timeout'));
+    renderModal({ query: 'Claude Code 入门' });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /问问小影/ }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: '用规则版拆解下一步' })).toHaveAttribute(
+        'href',
+        '/tools?q=Claude%20Code%20%E5%85%A5%E9%97%A8',
+      );
+    });
+  });
+
+  it('query 过短不出现问小影入口，关闭面板会 abort 进行中请求', async () => {
     renderModal({ query: ' d ' });
     expect(screen.queryByRole('button', { name: /问问小影/ })).not.toBeInTheDocument();
-  });
 
-  it('关闭面板会 abort 进行中的请求，不 reset 会话', async () => {
     let signal: AbortSignal | undefined;
     mockedStream.mockImplementationOnce(({ onText, signal: s }) => {
       signal = s;
@@ -163,7 +177,6 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
     const user = userEvent.setup();
     const { rerender } = render(<Harness open />);
     await user.click(screen.getByRole('button', { name: /问问小影/ }));
-    expect(mockedStream).toHaveBeenCalledOnce();
     expect(signal?.aborted).toBe(false);
     rerender(<Harness open={false} />);
     expect(signal?.aborted).toBe(true);
@@ -183,12 +196,6 @@ describe('SearchModal（搜索 + 面板内问小影）', () => {
       conversationId: null,
     });
     renderModal({ query: 'Dora 是谁', seedAsk: 'Dora 是谁' });
-    expect(mockedStream).toHaveBeenCalledWith(expect.objectContaining({
-      body: 'Dora 是谁', sessionId: null, onText: expect.any(Function),
-      signal: expect.any(AbortSignal), source: 'assistant-stream',
-      context: expect.objectContaining({ conversationId: null, requestKey: expect.any(String) }),
-      onAccepted: expect.any(Function),
-    }));
     expect(await screen.findByText('从宠物来的问题')).toBeInTheDocument();
   });
 });

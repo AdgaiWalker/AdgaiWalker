@@ -40,8 +40,6 @@ export type GeneratedContentItem = {
   series: string;
   seriesOrder: number | null;
   related: string[];
-  version: number | null;
-  previousVersion: string;
   aiUsePolicy: AiUsePolicy;
   resources: ContentResource[];
 };

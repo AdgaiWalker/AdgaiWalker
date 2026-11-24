@@ -1,9 +1,10 @@
 /**
  * 内容列表（块）
- * 职责：整行可点；compact 扫读；带上 browse 回程 state 方便读页返回。
+ * 职责：整行可点；compact 扫读；带 View Transitions 与 browse 回程 state。
  */
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { ContentItem } from '../content';
+import { navigateWithViewTransition } from '../lib/view-transition';
 import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateLocale, parseIsoDate } from '../shared/format';
@@ -31,6 +32,8 @@ export function ItemList({
   editorial?: boolean;
   browseSearch?: string;
 }) {
+  const navigate = useNavigate();
+
   if (items.length === 0) {
     return (
       <p className="meta" style={{ padding: '1rem 1.15rem' }}>
@@ -52,12 +55,22 @@ export function ItemList({
         const mins = estimateReadingMinutes(p.body || p.summary || p.title);
         const space = spaceForType(p.type);
         const Icon = spaceIcon(space.icon);
+        const href = `${detailBase}/${encodeURIComponent(p.slug)}`;
         return (
           <li key={p.slug} className="post-list-item">
             <Link
-              to={`${detailBase}/${encodeURIComponent(p.slug)}`}
+              to={href}
               state={returnState}
               className="post-list-hit"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                const titleEl = e.currentTarget.querySelector<HTMLElement>('.post-list-title');
+                navigateWithViewTransition(navigate, href, {
+                  state: returnState,
+                  sourceElement: titleEl,
+                });
+              }}
             >
               {!editorial ? (
                 <Icon size={15} className="post-list-icon" aria-hidden />

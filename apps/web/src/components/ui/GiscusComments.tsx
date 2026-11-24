@@ -19,6 +19,10 @@ function readGiscusConfig(): {
   return { repo, repoId, category, categoryId };
 }
 
+export function hasGiscusConfig(): boolean {
+  return Boolean(readGiscusConfig());
+}
+
 export function GiscusComments({ term }: { term: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const cfg = readGiscusConfig();

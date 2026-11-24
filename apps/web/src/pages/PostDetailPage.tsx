@@ -1,11 +1,8 @@
 /**
  * 文章详情（页）— 沉浸阅读
- * 职责：单栏光学居中；浮动返回材质；壳层无侧栏。
- *
- * 依赖：content、sanitize、outline、反馈/赞/进度
- * 触发：路由 /posts/:slug
+ * 职责：单栏光学居中；View Transition 标题落焦；文末高信噪比收口（3 个次要区块按需点击加载，平时 0 像素）。
  */
-import { useMemo, useRef } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -13,6 +10,8 @@ import {
   ChevronRight,
   ExternalLink,
   Link2,
+  MessageCircle,
+  MessageSquare,
   Network,
 } from 'lucide-react';
 import { marked } from 'marked';
@@ -27,19 +26,15 @@ import {
   getPostBySlug,
   getRelatedPosts,
   getSeriesNeighborsForSlug,
-  getVersionChain,
 } from '../content';
 import { getGraphBodies, getKnowledgeGraph } from '../graph';
 import { getArticleVersions } from '../article-versions';
-import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
 import { createContentGraphDomain } from '../components/graph/domains';
-import { WEB_ROUTES } from '../shared/routes';
 import type { BrowseReturnState } from '../components/ItemList';
 import { ArticleToc } from '../components/ui/ArticleToc';
-import { ArticleAssistantPanel } from '../components/ui/ArticleAssistantPanel';
 import { ArticleShare } from '../components/ui/ArticleShare';
 import { ContentFeedback } from '../components/ui/ContentFeedback';
-import { GiscusComments } from '../components/ui/GiscusComments';
+import { GiscusComments, hasGiscusConfig } from '../components/ui/GiscusComments';
 import { LikeButton } from '../components/ui/LikeButton';
 import { ReadingProgress } from '../components/ui/ReadingProgress';
 import { useContentFeedback } from '../hooks/useContentFeedback';
@@ -53,6 +48,16 @@ import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateLocale, parseIsoDate } from '../shared/format';
 import { estimateReadingMinutes } from '../shared/reading';
+import { WEB_ROUTES } from '../shared/routes';
+
+const KnowledgeGraph = lazy(() =>
+  import('../components/graph/KnowledgeGraph').then((m) => ({ default: m.KnowledgeGraph })),
+);
+const ArticleAssistantPanel = lazy(() =>
+  import('../components/ui/ArticleAssistantPanel').then((m) => ({
+    default: m.ArticleAssistantPanel,
+  })),
+);
 
 function browseHrefFromState(state: unknown): string {
   const s = state as BrowseReturnState | null;
@@ -60,6 +65,8 @@ function browseHrefFromState(state: unknown): string {
   if (q) return `${dualEntry.browse.path}?${q}`;
   return dualEntry.browse.path;
 }
+
+type TailPanel = 'none' | 'assistant' | 'graph' | 'comments';
 
 export function PostDetailPage() {
   const { slug = '' } = useParams();
@@ -72,7 +79,9 @@ export function PostDetailPage() {
     return (
       <div className="reading-stage">
         <div className="reading-column reading-enter">
-          <h1 className="page-title">未找到</h1>
+          <h1 className="page-title" tabIndex={-1}>
+            未找到
+          </h1>
           <Link to={browseHref} className="article-back-link">
             返回{dualEntry.browse.title}
           </Link>
@@ -100,19 +109,20 @@ function PostDetailBody({
   browseHref: string;
   returnState: BrowseReturnState | null;
 }) {
+  const navigate = useNavigate();
   const likePath = `${dualEntry.browse.path}/${post.slug}`;
   const like = useLike(likePath);
   const feedback = useContentFeedback(post.slug);
   const neighbors = getSeriesNeighborsForSlug(post.slug);
-  const related = getRelatedPosts(post.slug);
-  const versions = getVersionChain(post.slug);
-  // 局部图（Obsidian Local Graph）：中心是当前文章，depth 默认 1，设置与全局图同一套
+  const related = getRelatedPosts(post.slug, [neighbors.prev?.slug, neighbors.next?.slug]);
+  const [tailPanel, setTailPanel] = useState<TailPanel>('none');
+
   const graph = getKnowledgeGraph();
   const graphBodies = getGraphBodies();
   const graphNode = findGraphNode(graph, noteNodeId(post.slug));
   const hasBodyLinks = (graphNode?.linkDegree ?? 0) > 0;
-  // 领域接缝：与全局图共用同一个内容领域（标签、检索文档、点击跳转全一致）
-  const navigate = useNavigate();
+  const hasComments = hasGiscusConfig();
+
   const graphDomain = useMemo(
     () => createContentGraphDomain({ browsePath: dualEntry.browse.path, bodies: graphBodies, navigate }),
     [graphBodies, navigate],
@@ -135,14 +145,15 @@ function PostDetailBody({
   const progress = useReadingProgress(true);
 
   const mins = estimateReadingMinutes(post.body);
-  const statusLabel = post.status
-    ? (STATUS_LABELS[post.status] ?? post.status)
-    : '';
-  // 单版本不显示（首版即当前版，无旧版可看）；多版本才给一个极短的可点标签
+  const statusLabel = post.status ? (STATUS_LABELS[post.status] ?? post.status) : '';
   const historyLabel = articleHistoryLabel(getArticleVersions(post.slug).length);
 
   const bodyRef = useRef<HTMLDivElement>(null);
   useCodeCopyButtons(bodyRef, html);
+
+  const togglePanel = (target: Exclude<TailPanel, 'none'>) => {
+    setTailPanel((current) => (current === target ? 'none' : target));
+  };
 
   return (
     <div className="reading-stage">
@@ -165,7 +176,9 @@ function PostDetailBody({
 
       <article className="reading-column article-shell reading-enter">
         <header className="article-header">
-          <h1 className="article-display-title">{post.title}</h1>
+          <h1 className="article-display-title" tabIndex={-1}>
+            {post.title}
+          </h1>
           <p className="meta article-meta">
             {formatDateLocale(parseIsoDate(post.date))}
             {` · 约 ${mins} 分钟`}
@@ -173,13 +186,13 @@ function PostDetailBody({
             {historyLabel ? (
               <>
                 {' · '}
-                <Link to={articleVersionListPath(post.slug)} className="article-history-badge">{historyLabel}</Link>
+                <Link to={articleVersionListPath(post.slug)} className="article-history-badge">
+                  {historyLabel}
+                </Link>
               </>
             ) : null}
           </p>
-          {post.summary ? (
-            <p className="article-summary">{post.summary}</p>
-          ) : null}
+          {post.summary ? <p className="article-summary">{post.summary}</p> : null}
         </header>
 
         <div className={`article-layout${toc.length ? ' has-toc' : ''}`}>
@@ -208,9 +221,7 @@ function PostDetailBody({
                 <ChevronLeft size={18} aria-hidden />
                 <span>
                   <span className="meta">上一篇</span>
-                  <span className="article-neighbor-title">
-                    {neighbors.prev.title}
-                  </span>
+                  <span className="article-neighbor-title">{neighbors.prev.title}</span>
                 </span>
               </Link>
             ) : (
@@ -224,40 +235,13 @@ function PostDetailBody({
               >
                 <span>
                   <span className="meta">下一篇</span>
-                  <span className="article-neighbor-title">
-                    {neighbors.next.title}
-                  </span>
+                  <span className="article-neighbor-title">{neighbors.next.title}</span>
                 </span>
                 <ChevronRight size={18} aria-hidden />
               </Link>
             ) : null}
           </nav>
         )}
-
-        {versions.length > 1 ? (
-          <section className="article-footer-block" aria-label="版本">
-            <h2>版本</h2>
-            <ul>
-              {versions.map((v) => (
-                <li key={v.slug}>
-                  {v.slug === post.slug ? (
-                    <strong>
-                      {v.title}
-                      {v.version != null ? ` · v${v.version}` : ' · 当前'}
-                    </strong>
-                  ) : (
-                    <Link
-                      to={`${dualEntry.browse.path}/${encodeURIComponent(v.slug)}`}
-                    >
-                      {v.title}
-                      {v.version != null ? ` · v${v.version}` : ''}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
 
         {post.resources?.length ? (
           <section className="article-footer-block" aria-label="项目入口">
@@ -289,9 +273,7 @@ function PostDetailBody({
             <ul>
               {related.map((r) => (
                 <li key={r.slug}>
-                  <Link
-                    to={`${dualEntry.browse.path}/${encodeURIComponent(r.slug)}`}
-                  >
+                  <Link to={`${dualEntry.browse.path}/${encodeURIComponent(r.slug)}`}>
                     {r.title}
                   </Link>
                 </li>
@@ -300,47 +282,21 @@ function PostDetailBody({
           </section>
         ) : null}
 
-        <section className="article-footer-block article-graph-block" aria-label="图谱">
-          <h2>
-            <Network size={16} aria-hidden />
-            图谱
-          </h2>
-          {hasBodyLinks ? (
-            <>
-              <p className="meta">
-                这篇文章在正文互引结构里的位置：默认只看直接互引的文章，可调深度与显示方式。
-              </p>
-              <KnowledgeGraph
-                graph={graph}
-                domain={graphDomain}
-                local={{ centerId: noteNodeId(post.slug) }}
-                height={380}
-                compact
-              />
-              <p className="meta">
-                <Link to={WEB_ROUTES.graph}>看整个站的结构</Link>
-              </p>
-            </>
-          ) : (
-            <p className="meta">
-              这篇文章在正文里还没有与任何文章互相引用。孤立不是错误，但读者很难从别处走到它。
-              <Link to={WEB_ROUTES.graph}>看看整个结构</Link>。
-            </p>
-          )}
-        </section>
-
         <div className="article-end">
-          <ArticleShare
-            title={post.title}
-            slug={post.slug}
-            summary={post.summary}
-          />
-          <LikeButton
-            count={like.count}
-            busy={like.busy}
-            error={like.error}
-            onLike={like.onLike}
-          />
+          <div className="article-action-row">
+            <LikeButton
+              count={like.count}
+              busy={like.busy}
+              error={like.error}
+              onLike={like.onLike}
+            />
+            <ArticleShare
+              title={post.title}
+              slug={post.slug}
+              summary={post.summary}
+            />
+          </div>
+
           <ContentFeedback
             done={feedback.done}
             error={feedback.error}
@@ -353,11 +309,66 @@ function PostDetailBody({
             onNoteChange={feedback.onNoteChange}
             onSubmitPending={feedback.onSubmitPending}
           />
+
+          <div className="article-tail-pills" role="group" aria-label="延伸工具">
+            <button
+              type="button"
+              className={`tail-pill${tailPanel === 'assistant' ? ' is-active' : ''}`}
+              aria-expanded={tailPanel === 'assistant'}
+              onClick={() => togglePanel('assistant')}
+            >
+              <MessageCircle size={14} aria-hidden />
+              <span>问小影这篇</span>
+            </button>
+            {hasBodyLinks ? (
+              <button
+                type="button"
+                className={`tail-pill${tailPanel === 'graph' ? ' is-active' : ''}`}
+                aria-expanded={tailPanel === 'graph'}
+                onClick={() => togglePanel('graph')}
+              >
+                <Network size={14} aria-hidden />
+                <span>局部图谱</span>
+              </button>
+            ) : null}
+            {hasComments ? (
+              <button
+                type="button"
+                className={`tail-pill${tailPanel === 'comments' ? ' is-active' : ''}`}
+                aria-expanded={tailPanel === 'comments'}
+                onClick={() => togglePanel('comments')}
+              >
+                <MessageSquare size={14} aria-hidden />
+                <span>评论</span>
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        <ArticleAssistantPanel key={post.slug} slug={post.slug} title={post.title} />
+        {tailPanel === 'assistant' ? (
+          <Suspense fallback={<p className="meta">正在唤醒小影…</p>}>
+            <ArticleAssistantPanel key={post.slug} slug={post.slug} title={post.title} />
+          </Suspense>
+        ) : null}
 
-        <GiscusComments term={post.slug} />
+        {tailPanel === 'graph' && hasBodyLinks ? (
+          <section className="article-footer-block article-graph-block" aria-label="局部图谱">
+            <Suspense fallback={<p className="meta">正在载入图谱…</p>}>
+              <KnowledgeGraph
+                graph={graph}
+                domain={graphDomain}
+                local={{ centerId: noteNodeId(post.slug) }}
+                height={360}
+                compact
+              />
+            </Suspense>
+            <p className="meta">
+              <Link to={WEB_ROUTES.graph}>打开全站结构图谱</Link>
+            </p>
+          </section>
+        ) : null}
+
+        {tailPanel === 'comments' && hasComments ? <GiscusComments term={post.slug} /> : null}
       </article>
     </div>
   );

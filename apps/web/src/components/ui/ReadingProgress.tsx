@@ -1,12 +1,17 @@
 /**
- * 阅读进度条 — 纯展示，ratio 0..1。
+ * 阅读进度条 — 现代浏览器走纯 CSS scroll() 合成层动画；降级走 transform: scaleX(ratio)。
  */
+import { supportsCssScrollTimeline } from '../../hooks/useReadingProgress';
+
 export type ReadingProgressProps = {
   ratio: number;
 };
 
 export function ReadingProgress({ ratio }: ReadingProgressProps) {
-  const pct = Math.round(Math.min(1, Math.max(0, ratio)) * 100);
+  const clamped = Math.min(1, Math.max(0, ratio));
+  const pct = Math.round(clamped * 100);
+  const nativeCss = supportsCssScrollTimeline();
+
   return (
     <div
       className="reading-progress"
@@ -16,7 +21,10 @@ export function ReadingProgress({ ratio }: ReadingProgressProps) {
       aria-valuenow={pct}
       aria-label="阅读进度"
     >
-      <div className="reading-progress-bar" style={{ width: `${pct}%` }} />
+      <div
+        className={`reading-progress-bar${nativeCss ? ' is-css-driven' : ''}`}
+        style={nativeCss ? undefined : { transform: `scaleX(${clamped})` }}
+      />
     </div>
   );
 }

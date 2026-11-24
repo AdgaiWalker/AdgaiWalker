@@ -89,34 +89,42 @@ describe('小影首页桌宠', () => {
     vi.unstubAllGlobals();
   });
 
-  it('加载中不展示摄影棚静帧', async () => {
-    mock.mount.mockImplementation((_host, _ready, _error, motion) => {
-      mock.play.mockImplementation(motion);
-      return mock;
-    });
+  it('首屏秒出静图待机，不阻塞初始渲染；悬停/点击时按需加载 3D 并支持暂停开关', async () => {
     renderHome();
+    expect(mock.mount).not.toHaveBeenCalled();
+    expect(document.querySelector('.xiaoying-poster')).toBeTruthy();
+    expect(document.querySelector('.xiaoying-stage')).toHaveAttribute('data-pet-status', 'standby');
+
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
     await waitFor(() => expect(mock.mount).toHaveBeenCalledOnce());
-    expect(document.querySelector('.xiaoying-poster')).toBeNull();
-    expect(document.querySelector('.xiaoying-stage')).toHaveAttribute('data-pet-status', 'loading');
+    expect(document.querySelector('.xiaoying-stage')).toHaveAttribute('data-pet-status', 'ready');
+
+    const toggle = screen.getByRole('button', { name: '暂停小影动效' });
+    fireEvent.click(toggle);
+    expect(mock.pause).toHaveBeenCalledWith(true);
+    expect(document.querySelector('.xiaoying-stage')).toHaveAttribute('data-pet-paused', 'true');
+    expect(screen.getByRole('button', { name: '播放小影动效' })).toBeInTheDocument();
   });
 
-  it('模型失败才用静帧', async () => {
+  it('加载中保持静图直到 ready，模型失败时稳落 fallback', async () => {
     mock.mount.mockImplementation((_host, _ready, error, motion) => {
       error();
       mock.play.mockImplementation(motion);
       return mock;
     });
     renderHome();
-    await waitFor(() => expect(document.querySelector('.xiaoying-poster')).toBeTruthy());
-    expect(document.querySelector('.xiaoying-stage')).toHaveAttribute('data-pet-status', 'fallback');
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    await waitFor(() => expect(document.querySelector('.xiaoying-stage')).toHaveAttribute('data-pet-status', 'fallback'));
+    expect(document.querySelector('.xiaoying-poster')).toBeTruthy();
   });
 
   it('点宠物打开悬浮对话，不经过搜索面板', async () => {
     renderHome();
-    await waitFor(() => expect(mock.mount).toHaveBeenCalledOnce());
+    expect(mock.mount).not.toHaveBeenCalled();
     const layer = document.querySelector('.xiaoying-object') as HTMLElement;
     expect(layer).toHaveAttribute('data-panel', 'tucked');
     fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
+    await waitFor(() => expect(mock.mount).toHaveBeenCalledOnce());
     expect(mock.play).toHaveBeenLastCalledWith('joy');
     expect(layer).toHaveAttribute('data-panel', 'open');
     await waitFor(() => expect(screen.getByRole('textbox', { name: '问小影' })).toHaveFocus());
@@ -330,9 +338,9 @@ describe('小影首页桌宠', () => {
   it('模型或 WebGL 失败时显示静态形象，问答仍可使用', async () => {
     mock.mount.mockImplementation((_host, _ready, error) => { error(); return mock; });
     renderHome();
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
     await screen.findByText('小影暂时静静陪你，搜索照常可用');
     expect(screen.getByRole('img', { name: '毛茸茸的影鳐小影' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
     const input = screen.getByRole('textbox', { name: '问小影' });
     fireEvent.change(input, { target: { value: 'AI 入门' } });
     fireEvent.submit(input.closest('form')!);
@@ -354,12 +362,13 @@ describe('小影首页桌宠', () => {
     expect(mock.play).not.toHaveBeenCalledWith('joy');
   });
 
-  it('离开首页释放渲染器', async () => {
+  it('离开首页释放已激活的渲染器', async () => {
     const view = render(
       <MemoryRouter>
         <XiaoyingHome />
       </MemoryRouter>,
     );
+    fireEvent.click(screen.getByRole('button', { name: '摸摸小影' }));
     await waitFor(() => expect(mock.mount).toHaveBeenCalledOnce());
     act(() => view.unmount());
     expect(mock.dispose).toHaveBeenCalledOnce();

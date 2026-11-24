@@ -81,4 +81,15 @@ describe('getRelatedItems', () => {
     const rel = getRelatedItems(fixture, 'a');
     expect(rel.map((i) => i.slug)).toEqual(['b', 'c']);
   });
+
+  it('从正文出链与反向入链自动派生相关文章，合并存量 related 去重，并支持排除上下篇', () => {
+    const graphFixture = [
+      { slug: 'old', title: 'Old', date: '2026-01-01', body: '', related: ['ref'] },
+      { slug: 'next', title: 'Next', date: '2026-01-02', body: '承接 [[old]] 并提到 [[ref]]' },
+      { slug: 'ref', title: 'Ref', date: '2026-01-03', body: '' },
+    ];
+    expect(getRelatedItems(graphFixture, 'old').map((i) => i.slug)).toEqual(['next', 'ref']);
+    expect(getRelatedItems(graphFixture, 'next').map((i) => i.slug)).toEqual(['old', 'ref']);
+    expect(getRelatedItems(graphFixture, 'old', new Set(['next'])).map((i) => i.slug)).toEqual(['ref']);
+  });
 });

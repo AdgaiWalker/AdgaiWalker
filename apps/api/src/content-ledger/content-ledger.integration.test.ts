@@ -137,6 +137,23 @@ describe('内容台账读模型（阶段口径 = shared 唯一实现）', () => 
     expect(items.map((item) => item.group)).toEqual(['product', 'product', 'article', 'idea']);
   });
 
+  it('透出 frontmatter 的 series 与 seriesOrder（字符串数字可解析、空串省略）', async () => {
+    const service = serviceWith(
+      [
+        entry('s1', { ...FULL_PUBLIC, series: ' 设计思考 ', seriesOrder: 2 }),
+        entry('s2', { ...FULL_PUBLIC, series: '设计思考', seriesOrder: '3' }),
+        entry('s3', { ...FULL_PUBLIC, series: '   ', seriesOrder: 'abc' }),
+      ],
+      { available: true, dirtyFiles: [] },
+    );
+    const { items } = await service.ledger();
+    expect(items.map((item) => ({ slug: item.slug, series: item.series, seriesOrder: item.seriesOrder }))).toEqual([
+      { slug: 's1', series: '设计思考', seriesOrder: 2 },
+      { slug: 's2', series: '设计思考', seriesOrder: 3 },
+      { slug: 's3', series: undefined, seriesOrder: null },
+    ]);
+  });
+
   it('git 不可用：如实上报 gitAvailable=false，且不据此断言已上线', async () => {
     const service = serviceWith([entry('live-one', FULL_PUBLIC)], {
       available: false,

@@ -1,4 +1,7 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, type RefObject } from 'react';
+
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const STORAGE_KEY = 'walker:xiaoying-layer-v3';
 const DRAG_THRESHOLD = 10;
@@ -81,7 +84,7 @@ function interactiveTarget(target: EventTarget | null) {
 }
 
 export function usePetDrag(ref: RefObject<HTMLElement | null>) {
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
 

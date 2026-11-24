@@ -1,18 +1,9 @@
 /**
- * 逛列表（页）— 公开证据唯一总览
- * 职责：札记入口 + 可折叠标签 + 年份列表；默认安静可扫。
- *
- * 依赖：content.getBrowseItems/getAllByHall、posts-timeline
- * 触发：dualEntry.browse.path；兼容清理旧 ?type= 深链
+ * 文章总览（/posts）— 首屏直达年份时间线 + 单行子视图胶囊 + 折叠标签筛选。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-  ArrowRight,
-  ChevronDown,
-  Hash,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { ChevronDown, Hash, SlidersHorizontal } from 'lucide-react';
 import { getAllByHall, getBrowseItems } from '../content';
 import { ItemList } from '../components/ItemList';
 import { dualEntry } from '../shared/dual-entry';
@@ -32,7 +23,6 @@ export function PostsPage() {
   const [tagFilter, setTagFilter] = useState<TimelineFilterKey>('all');
   const [tagsOpen, setTagsOpen] = useState(false);
 
-  /* 旧分类深链统一回全部内容，保留其他 query。 */
   useEffect(() => {
     if (!searchParams.has('type')) return;
     const next = new URLSearchParams(searchParams);
@@ -65,53 +55,30 @@ export function PostsPage() {
   return (
     <div className="browse-page">
       <header className="browse-header">
-        <h1 className="browse-title">{dualEntry.browse.title}</h1>
-        <p className="browse-lead meta">
-          {countLabel} 篇
-          {activeTagLabel ? ` · #${activeTagLabel}` : ''}
-        </p>
+        <div>
+          <h1 className="browse-title">{dualEntry.browse.title}</h1>
+          <p className="browse-lead meta">
+            {countLabel} 篇{activeTagLabel ? ` · #${activeTagLabel}` : ''}
+          </p>
+        </div>
+
+        <nav className="browse-pills" aria-label="文章子视图">
+          <Link to={WEB_ROUTES.tutorials} className="browse-pill">
+            教程
+          </Link>
+          <Link
+            to={WEB_ROUTES.lab}
+            className="browse-pill"
+            aria-label={`进入札记，共 ${labCount} 篇`}
+          >
+            札记 <span className="browse-pill-count">{labCount}</span>
+          </Link>
+          <Link to={WEB_ROUTES.graph} className="browse-pill">
+            图谱
+          </Link>
+        </nav>
       </header>
 
-      <Link
-        to={WEB_ROUTES.tutorials}
-        className="browse-lab-entry surface-l2"
-        aria-label="进入教程"
-      >
-        <span className="browse-lab-copy">
-          <strong className="browse-lab-title">教程</strong>
-          <span className="browse-lab-blurb">照着能做的步骤与跟学内容</span>
-        </span>
-        <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
-      </Link>
-
-      <Link
-        to={WEB_ROUTES.lab}
-        className="browse-lab-entry surface-l2"
-        aria-label={`进入札记，共 ${labCount} 篇`}
-      >
-        <span className="browse-lab-copy">
-          <strong className="browse-lab-title">札记</strong>
-          <span className="browse-lab-blurb">
-            经验与思考，在实践中持续生长
-          </span>
-        </span>
-        <span className="browse-lab-count meta">{labCount} 篇</span>
-        <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
-      </Link>
-
-      <Link
-        to={WEB_ROUTES.graph}
-        className="browse-lab-entry surface-l2"
-        aria-label="打开知识图谱，查看文章之间的互相引用"
-      >
-        <span className="browse-lab-copy">
-          <strong className="browse-lab-title">结构</strong>
-          <span className="browse-lab-blurb">看文章之间谁引用了谁</span>
-        </span>
-        <ArrowRight className="browse-lab-arrow" size={17} aria-hidden />
-      </Link>
-
-      {/* 唯一辅助查找：标签默认折叠 */}
       {tags.length > 0 ? (
         <div className="browse-refine">
           <button
@@ -173,7 +140,7 @@ export function PostsPage() {
               </h2>
               <span className="meta">{items.length}</span>
             </div>
-            <div className="browse-list-card surface-l2">
+            <div className="browse-list-card surface-l1">
               <ItemList
                 items={items}
                 editorial

@@ -124,6 +124,59 @@ export function extractBodyLinks(
   return { notes, attachments: attachmentRefs };
 }
 
+export interface RelatedSlugSource {
+  slug: string;
+  body?: string;
+  related?: readonly string[];
+}
+
+/**
+ * 推导单篇文章的关联文章 slug 列表（网状关联唯一真源）：
+ * 按「正文出链 → 其他文章的反向入链 → 存量 related 兼容项」顺序聚合去重，
+ * 过滤不存在的 slug、自环与指定排除项（如已展示的上下篇）。
+ */
+export function deriveRelatedSlugs(
+  items: readonly RelatedSlugSource[],
+  slug: string,
+  options?: { browsePath?: string; excludeSlugs?: ReadonlySet<string> },
+): string[] {
+  const bySlug = new Map(items.map((item) => [item.slug, item]));
+  const current = bySlug.get(slug);
+  if (!current) return [];
+
+  const browsePath = options?.browsePath ?? GRAPH_DEFAULT_BROWSE_PATH;
+  const exclude = options?.excludeSlugs;
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  const push = (candidate: string): void => {
+    const key = candidate.trim();
+    if (!key || key === slug || seen.has(key) || !bySlug.has(key) || exclude?.has(key)) return;
+    seen.add(key);
+    out.push(key);
+  };
+
+  if (current.body) {
+    for (const target of extractBodyLinks(current.body, { browsePath }).notes) {
+      push(target);
+    }
+  }
+
+  for (const other of items) {
+    if (other.slug === slug || !other.body) continue;
+    const links = extractBodyLinks(other.body, { browsePath });
+    if (links.notes.some((target) => target.trim() === slug)) {
+      push(other.slug);
+    }
+  }
+
+  for (const ref of current.related ?? []) {
+    push(ref);
+  }
+
+  return out;
+}
+
 /**
  * 由公开内容条目构建知识图谱。
  *

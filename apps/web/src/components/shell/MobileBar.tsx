@@ -1,40 +1,40 @@
 /**
- * MobileBar — 内页移动顶栏
- * 阅读模式：← 证据 回逛（与桌面 chrome 同路径语义）
- * 搜索入口在 AppShell 的 AskBar，本栏不再放搜索按钮。
+ * MobileBar — 移动端极简壳（阅读模式：顶部返回 + ⌘K；内页：顶部品牌/搜索 + 底部 4 键单手栏）。
  */
-import type { RefObject } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Menu } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { ArrowLeft, Search } from 'lucide-react';
 import { dualEntry } from '../../shared/dual-entry';
+import { primaryNavItems, utilityAboutItem } from '../../shared/nav';
 import { WEB_ROUTES } from '../../shared/routes';
 
 type Props = {
-  /** 非阅读模式必填；阅读顶栏不用菜单 */
-  onToggleMenu?: () => void;
-  menuOpen?: boolean;
-  menuButtonRef?: RefObject<HTMLButtonElement | null>;
-  inactive?: boolean;
   reading?: boolean;
-  /** 阅读页返回逛的完整 href（可含 ?type=） */
   browseHref?: string;
+  searchOpen?: boolean;
+  onOpenSearch?: (trigger?: HTMLElement) => void;
 };
 
+function isNavActive(href: string, pathname: string): boolean {
+  if (href === dualEntry.browse.path) {
+    return (
+      pathname === dualEntry.browse.path ||
+      pathname.startsWith(`${dualEntry.browse.path}/`)
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function MobileBar({
-  onToggleMenu,
-  menuOpen = false,
-  menuButtonRef,
-  inactive = false,
   reading = false,
   browseHref = dualEntry.browse.path,
+  searchOpen = false,
+  onOpenSearch,
 }: Props) {
+  const { pathname } = useLocation();
+
   if (reading) {
     return (
-      <div
-        className="mobile-bar surface-l1 is-reading-bar"
-        inert={inactive}
-        aria-hidden={inactive || undefined}
-      >
+      <div className="mobile-bar surface-chrome is-reading-bar">
         <Link
           to={browseHref}
           className="reading-mobile-back"
@@ -43,38 +43,63 @@ export function MobileBar({
           <ArrowLeft size={18} aria-hidden />
           <span>{dualEntry.browse.title}</span>
         </Link>
+        {onOpenSearch ? (
+          <button
+            type="button"
+            className="mobile-bar-icon-btn"
+            aria-haspopup="dialog"
+            aria-expanded={searchOpen}
+            aria-label="搜索或问小影"
+            onClick={(e) => onOpenSearch(e.currentTarget)}
+          >
+            <Search size={17} aria-hidden />
+          </button>
+        ) : null}
       </div>
     );
   }
 
   return (
-    <div
-      className="mobile-bar surface-l1"
-      inert={inactive}
-      aria-hidden={inactive || undefined}
-    >
-      <button
-        ref={menuButtonRef}
-        type="button"
-        aria-label="菜单"
-        aria-controls="app-sidebar"
-        aria-expanded={menuOpen}
-        onClick={onToggleMenu}
-      >
-        <Menu size={20} />
-      </button>
-      <Link
-        to={WEB_ROUTES.home}
-        className="mobile-bar-brand"
-      >
-        Walker
-      </Link>
-      <Link
-        to={dualEntry.ask.path}
-        className="btn-primary mobile-bar-cta"
-      >
-        {dualEntry.ask.label}
-      </Link>
-    </div>
+    <>
+      <div className="mobile-bar surface-chrome">
+        <Link to={WEB_ROUTES.home} className="mobile-bar-brand">
+          Walker
+        </Link>
+        <div className="mobile-bar-right">
+          {onOpenSearch ? (
+            <button
+              type="button"
+              className="mobile-bar-icon-btn"
+              aria-haspopup="dialog"
+              aria-expanded={searchOpen}
+              aria-label="搜索或问小影"
+              onClick={(e) => onOpenSearch(e.currentTarget)}
+            >
+              <Search size={17} aria-hidden />
+            </button>
+          ) : null}
+          <Link to={utilityAboutItem.href} className="mobile-bar-about">
+            {utilityAboutItem.label}
+          </Link>
+        </div>
+      </div>
+
+      <nav className="mobile-bottom-nav surface-chrome" aria-label="手机底栏">
+        {primaryNavItems.map((item) => {
+          const Icon = item.icon;
+          const active = isNavActive(item.href, pathname);
+          return (
+            <NavLink
+              key={item.href}
+              to={item.href}
+              className={`mobile-bottom-item${active ? ' is-active' : ''}`}
+            >
+              <Icon size={18} aria-hidden />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
+    </>
   );
 }

@@ -40,8 +40,6 @@ export interface ContentItem {
   series?: string;
   seriesOrder?: number | null;
   related?: string[];
-  version?: number | null;
-  previousVersion?: string;
   aiUsePolicy?: {
     level: string;
     readable: boolean;
@@ -135,36 +133,16 @@ export function getSeriesNeighborsForSlug(slug: string): SeriesNeighbors {
   return getSeriesNeighbors(asSeriesItems(getPublishedPosts()), slug);
 }
 
-export function getRelatedPosts(slug: string): ContentItem[] {
+export function getRelatedPosts(
+  slug: string,
+  excludeSlugs?: ReadonlyArray<string | null | undefined>,
+): ContentItem[] {
+  const exclude = excludeSlugs?.length
+    ? new Set(excludeSlugs.filter((s): s is string => Boolean(s)))
+    : undefined;
   return getRelatedItems(
     asSeriesItems(getPublishedPosts()),
     slug,
+    exclude,
   ) as ContentItem[];
-}
-
-/** 沿 previousVersion 向前收集版本链（旧 → 新，当前在末） */
-export function getVersionChain(slug: string): ContentItem[] {
-  const bySlug = new Map(items.map((i) => [i.slug, i]));
-  const chain: ContentItem[] = [];
-  const seen = new Set<string>();
-  let cur = bySlug.get(slug);
-  while (cur && !seen.has(cur.slug)) {
-    seen.add(cur.slug);
-    chain.unshift(cur);
-    const prev = cur.previousVersion?.trim();
-    if (!prev) break;
-    cur = bySlug.get(prev);
-  }
-  // 找以当前为 previousVersion 的更新版（至多一层一层向后）
-  let tip = chain[chain.length - 1];
-  while (tip) {
-    const newer = items.find(
-      (i) => i.previousVersion?.trim() === tip!.slug && !seen.has(i.slug),
-    );
-    if (!newer) break;
-    seen.add(newer.slug);
-    chain.push(newer);
-    tip = newer;
-  }
-  return chain;
 }

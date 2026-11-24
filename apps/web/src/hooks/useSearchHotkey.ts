@@ -1,5 +1,5 @@
 /**
- * useSearchHotkey — ⌘K / Ctrl+K 打开搜索（DOM 监听留在 hook，不进展示块）
+ * useSearchHotkey — ⌘K / Ctrl+K 打开统一 Omni-Bar。
  */
 import { useEffect } from 'react';
 

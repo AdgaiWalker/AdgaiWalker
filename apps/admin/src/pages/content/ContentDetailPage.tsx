@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Check, Code2, Copy, Download, ExternalLink, History, MoreHorizontal, RefreshCw, RotateCcw, Save, Share2, SlidersHorizontal, Sparkles, Trash2, UploadCloud,
+  ArrowLeft, ArrowRight, Check, Code2, Copy, Download, ExternalLink, History, MoreHorizontal, RefreshCw, RotateCcw, Save, Share2, SlidersHorizontal, Sparkles, Trash2, UploadCloud,
 } from "lucide-react";
 import type { ContentVisibility, OpsContentDetail } from "@walker/shared";
-import { buildSocialCopyText, buildXShareIntentUrl, extractSummaryFromRaw, getPublicPostUrl } from "@walker/shared";
+import { buildSocialCopyText, buildXShareIntentUrl, extractSummaryFromRaw, getPublicPostUrl, isValidContentSlug } from "@walker/shared";
 import { ApiError } from "../../api/http";
 import {
-  downloadTextFile, exportAdminContent, fetchContentDetail, useCancelContentRelease, useContentChanges, useContentDetail,
-  useContentVersion, useDeleteContent, useLatestContentRelease, usePrepareContentRelease, useReconcileContentRelease,
+  downloadTextFile, exportAdminContent, fetchContentDetail, useCancelContentRelease, useContent, useContentChanges, useContentDetail,
+  useContentVersion, useContentVersionHistory, useDeleteContent, useLatestContentRelease, usePrepareContentRelease, useReconcileContentRelease,
   useRecordSocialShare, useSaveContent, useTriggerContentRelease, useVerifyContentRelease,
 } from "../../api/queries";
 import { trackAdminUiEvent } from "../../api/telemetry";
@@ -16,7 +16,9 @@ import { MarkdownPreview } from "../../components/MarkdownPreview";
 import { SlideDrawer } from "../../components/SlideDrawer";
 import { ErrorState, LoadingState } from "../../components/States";
 import { DEFAULT_CONTENT_TYPES } from "../../shared/content-types";
-import { parseDocFrontmatter, promoteDraftForPublish, updateDocFrontmatter } from "../../shared/frontmatter";
+import {
+  buildContinuationDraft, computeNextSeriesOrder, parseDocFrontmatter, promoteDraftForPublish, sanitizeMarkdownBody, updateDocFrontmatter,
+} from "../../shared/frontmatter";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 import { ContentChangeReviewPanel } from "./ContentChangeReviewPanel";
 import { ContentDetailDialogs } from "./ContentDetailDialogs";
@@ -63,6 +65,9 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const [copiedShare, setCopiedShare] = useState(false);
   const [conflict, setConflict] = useState<{ remoteRaw: string; remoteHash: string } | null>(null);
   const [publishedReleaseId, setPublishedReleaseId] = useState<string | null>(null);
+  const [continueOpen, setContinueOpen] = useState(false);
+  const [continueError, setContinueError] = useState<string | null>(null);
+  const seriesListId = useId();
 
   const parsed = useMemo(() => parseDocFrontmatter(draft), [draft]);
   const [tagsInput, setTagsInput] = useState(() => parseDocFrontmatter(item.raw).tags.join(", "));
@@ -70,8 +75,10 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
 
   // 仅真正提交中（COMMITTING/PUSHED）或 10 分钟内的新 VERIFYING 或本次发布单等待终态才轮询；超时旧 VERIFYING 绝不锁死
   const [pollActive, setPollActive] = useState(false);
+  const contentQuery = useContent();
   const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollActive ? RELEASE_POLL_INTERVAL_MS : false });
   const versionQuery = useContentVersion(item.slug, { refetchInterval: pollActive ? RELEASE_POLL_INTERVAL_MS : false });
+  const historyQuery = useContentVersionHistory(item.slug);
   const changesQuery = useContentChanges(item.slug, { enabled: drawerOpen && drawerSection === "ai" });
 
   const release = latestRelease.data;
@@ -94,6 +101,18 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const curPub = versionQuery.data?.currentPublicHash ?? null;
   const isTrackedOnSite = Boolean(versionQuery.data?.publishedHash || versionQuery.data?.indexedHash);
   const isLive = Boolean(curPub && (versionQuery.data?.publishedHash === curPub || versionQuery.data?.indexedHash === curPub)) && !isDirty && !isGitBusy;
+  const versionCount = historyQuery.data?.versions?.length ?? 0;
+  const unchangedPublished = isLive && !isDirty && versionCount > 0;
+  const ledgerItems = contentQuery.data?.data ?? [];
+  const existingSlugs = useMemo(() => new Set(ledgerItems.map((i) => i.slug)), [ledgerItems]);
+  const existingSeries = useMemo(
+    () => [...new Set(ledgerItems.map((i) => i.series?.trim() ?? "").filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN")),
+    [ledgerItems],
+  );
+  const computeNextOrder = (seriesName: string) =>
+    computeNextSeriesOrder(ledgerItems, seriesName, { slug: item.slug, series: parsed.series, seriesOrder: parsed.seriesOrder });
+  const computeSelfOrder = (seriesName: string) =>
+    computeNextSeriesOrder(ledgerItems, seriesName, { slug: item.slug }, true);
   const blocker = useBlocker(({ currentLocation, nextLocation }) => isDirty && currentLocation.pathname !== nextLocation.pathname);
 
   useEffect(() => {
@@ -211,9 +230,8 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
 
   const handleCheckRelease = () => release && runAction("核对发布状态失败", async () => {
     setStatusMessage(null);
-    if (stage === "UNKNOWN") {
-      setStatusMessage((await reconcileMutation.mutateAsync(release.id)).details);
-    } else {
+    if (stage === "UNKNOWN") setStatusMessage((await reconcileMutation.mutateAsync(release.id)).details);
+    else {
       const res = await verifyMutation.mutateAsync(release.id);
       setStatusMessage(res.verified ? "线上版本已确证发布" : `线上暂未检测到该版本（${res.reason ?? "待部署或已被新提交覆盖"}），可直接重新发布`);
     }
@@ -221,9 +239,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   });
 
   const handleCancelRelease = () => release && runAction("取消发布单失败", async () => {
-    setStatusMessage(null);
-    setStatusMessage((await cancelMutation.mutateAsync(release.id)).message);
-    void latestRelease.refetch();
+    setStatusMessage(null); setStatusMessage((await cancelMutation.mutateAsync(release.id)).message); void latestRelease.refetch();
   });
 
   const handleExportMarkdown = () => runAction("导出失败", async () => {
@@ -236,39 +252,41 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     const fresh = await fetchContentDetail(item.slug);
     setDraft(fresh.raw); setSavedRaw(fresh.raw); setBaseHash(fresh.hash || "");
     setTagsInput(parseDocFrontmatter(fresh.raw).tags.join(", "));
-    setPublishedReleaseId(null); setDrawerOpen(false); setStatusMessage(res.message);
-    void versionQuery.refetch();
+    setPublishedReleaseId(null); setDrawerOpen(false); setStatusMessage(res.message); void versionQuery.refetch();
   });
 
   const handleDelete = () => runAction("删除失败", async () => {
-    try {
-      const res = await deleteMutation.mutateAsync({ slug: item.slug });
-      navigate(R.content, { replace: true, state: { notice: res.message } });
-    } finally { setDeleteOpen(false); }
+    try { navigate(R.content, { replace: true, state: { notice: (await deleteMutation.mutateAsync({ slug: item.slug })).message } }); }
+    finally { setDeleteOpen(false); }
   });
+
+  const handleCreateContinuation = async ({ title, slug, series }: { title: string; slug: string; series: string }) => {
+    const cleanTitle = title.trim(), cleanSlug = slug.trim().toLowerCase();
+    if (!cleanTitle) return setContinueError("请填写标题");
+    if (!isValidContentSlug(cleanSlug)) return setContinueError("Slug 仅支持小写字母、数字和连字符");
+    if (existingSlugs.has(cleanSlug)) return setContinueError(`Slug「${cleanSlug}」已存在，请更换`);
+    setContinueError(null);
+    const cleanSeries = series.trim();
+    const raw = buildContinuationDraft({
+      title: cleanTitle, slug: cleanSlug, sourceSlug: item.slug, sourceTitle: displayTitle, type: parsed.type,
+      hall: parsed.hall, domain: parsed.domain, series: cleanSeries, seriesOrder: cleanSeries ? computeNextOrder(cleanSeries) : null,
+    });
+    try { await saveMutation.mutateAsync({ slug: cleanSlug, raw, expectedHash: null }); setContinueOpen(false); navigate(R.contentDetail(cleanSlug)); }
+    catch (err) { setContinueError(err instanceof Error ? err.message : "创建失败"); }
+  };
 
   // 按需显现 + 绝不撒谎：严格绑定本次 publishedReleaseId 才确证，平时已发布文章 0 像素占位
   const showPublishedConfirm = Boolean(publishedReleaseId && release?.id === publishedReleaseId && stage === "PUBLISHED") && !isDirty && !isGitBusy;
-  const showStrip = Boolean(
-    errorMessage || statusMessage || isGitBusy || verifyingFresh || (!isDirty && (stage === "PREPARED" || isStaleVerifying || stage === "FAILED" || stage === "UNKNOWN")) || showPublishedConfirm,
-  );
+  const showStrip = Boolean(errorMessage || statusMessage || isGitBusy || verifyingFresh || (!isDirty && (stage === "PREPARED" || isStaleVerifying || stage === "FAILED" || stage === "UNKNOWN")) || showPublishedConfirm);
   const stripTone = errorMessage || stage === "FAILED" ? "err" : stage === "PREPARED" || stage === "UNKNOWN" || isStaleVerifying ? "warn" : showPublishedConfirm ? "ok" : "";
-  const stripText =
-    errorMessage ??
-    statusMessage ??
-    (isGitBusy || verifyingFresh
-      ? `发布进行中（${stage}），后台自动核验中…`
-      : stage === "PREPARED"
-        ? "存在未推送的待发布单，可点击重新发布或取消"
-        : isStaleVerifying
-          ? "上次发布超时未确证，可点击核对或直接重新发布"
-          : stage === "UNKNOWN"
-            ? "上次发布结果待核对，请点击核对确认状态"
-            : stage === "FAILED"
-              ? `上次发布失败：${release?.errorCode ?? "请重试"}`
-              : showPublishedConfirm
-                ? "已在线上确证"
-                : "");
+  const stripText = errorMessage ?? statusMessage ?? (
+    isGitBusy || verifyingFresh ? `发布进行中（${stage}），后台自动核验中…`
+      : stage === "PREPARED" ? "存在未推送的待发布单，可点击重新发布或取消"
+        : isStaleVerifying ? "上次发布超时未确证，可点击核对或直接重新发布"
+          : stage === "UNKNOWN" ? "上次发布结果待核对，请点击核对确认状态"
+            : stage === "FAILED" ? `上次发布失败：${release?.errorCode ?? "请重试"}`
+              : showPublishedConfirm ? "已在线上确证" : ""
+  );
 
   return (
     <>
@@ -350,7 +368,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
                 <button type="button" className="btn btn-ghost" onClick={() => { setTagsInput(parsed.tags.join(", ")); setRawYamlMode(false); }}>返回纯净画布</button>
               </div>
             ) : null}
-            <textarea aria-label={rawYamlMode ? "原始 Markdown 源码" : "文章正文"} className="editor-canvas" value={draft} onChange={(e) => { setDraft(e.target.value); setStatusMessage(null); setPublishedReleaseId(null); }} />
+            <textarea aria-label={rawYamlMode ? "原始 Markdown 源码" : "文章正文"} className="editor-canvas" value={draft} onChange={(e) => { setDraft(sanitizeMarkdownBody(e.target.value)); setStatusMessage(null); setPublishedReleaseId(null); }} />
           </div>
         ) : (
           <div className="editor-sheet">
@@ -366,23 +384,17 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
       )}
 
       <ContentDetailDialogs
-        slug={item.slug}
-        publishOpen={publishOpen}
+        slug={item.slug} sourceTitle={displayTitle} publishOpen={publishOpen}
         onClosePublish={() => { setPublishOpen(false); trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" }); }}
-        onSubmitPublish={handleOneClickPublish}
-        visibility={parsed.visibility}
-        published={parsed.published}
-        onPromotePublic={() => patchDoc({ visibility: "public" })}
-        versionNote={versionNote}
-        onVersionNoteChange={setVersionNote}
-        publishing={publishing}
-        errorMessage={errorMessage}
-        deleteOpen={deleteOpen}
-        onCloseDelete={() => setDeleteOpen(false)}
-        deletePending={deleteMutation.isPending}
-        onConfirmDelete={handleDelete}
-        isTrackedOnSite={isTrackedOnSite}
-        blocker={blocker}
+        onSubmitPublish={handleOneClickPublish} visibility={parsed.visibility} published={parsed.published}
+        onPromotePublic={() => patchDoc({ visibility: "public" })} versionNote={versionNote} onVersionNoteChange={setVersionNote}
+        publishing={publishing} errorMessage={errorMessage} versionCount={versionCount} unchangedPublished={unchangedPublished}
+        onOpenContinue={() => { setPublishOpen(false); setContinueError(null); setContinueOpen(true); }}
+        continueOpen={continueOpen} onCloseContinue={() => setContinueOpen(false)} onSubmitContinue={handleCreateContinuation}
+        existingSeries={existingSeries} existingSlugs={existingSlugs} defaultSeries={parsed.series}
+        computeNextOrder={computeNextOrder} continueSaving={saveMutation.isPending} continueError={continueError}
+        deleteOpen={deleteOpen} onCloseDelete={() => setDeleteOpen(false)} deletePending={deleteMutation.isPending}
+        onConfirmDelete={handleDelete} isTrackedOnSite={isTrackedOnSite} blocker={blocker}
       />
 
       <SlideDrawer open={drawerOpen} title="文章选项" onClose={() => setDrawerOpen(false)}>
@@ -409,9 +421,20 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
                 <option value="private">私密 (private)</option>
               </select>
             </label>
+            <label className="field-col">所属系列（可选）
+              <input type="text" list={seriesListId} value={parsed.series} placeholder="留空则不归入系列" onChange={(e) => {
+                const val = e.target.value, trimmed = val.trim();
+                const order = !trimmed ? null : existingSeries.includes(trimmed) && parsed.series.trim() !== trimmed ? computeSelfOrder(trimmed) : parsed.seriesOrder ?? computeSelfOrder(trimmed);
+                patchDoc({ series: val, seriesOrder: order });
+              }} />
+              <datalist id={seriesListId}>{existingSeries.map((s) => <option key={s} value={s} />)}</datalist>
+            </label>
             <label className="field-col">标签（逗号分隔）
               <input type="text" value={tagsInput} placeholder="例如：架构, 极简" onChange={(e) => { setTagsInput(e.target.value); patchDoc({ tags: e.target.value.split(/[,，]/).map((s) => s.trim()).filter(Boolean) }); }} />
             </label>
+            <button type="button" className="btn btn-primary" onClick={() => { setDrawerOpen(false); setContinueError(null); setContinueOpen(true); }}>
+              <ArrowRight size={14} /> 续写下一篇
+            </button>
             <button type="button" className="btn" onClick={() => { setRawYamlMode((v) => !v); setDrawerOpen(false); }}>
               <Code2 size={14} />{rawYamlMode ? "切回纯净写作画布" : "查看 / 编辑原始 YAML 源码"}
             </button>

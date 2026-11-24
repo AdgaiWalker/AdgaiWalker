@@ -3,6 +3,7 @@ import {
   attachmentNodeId,
   buildKnowledgeGraph,
   computeGraphIssues,
+  deriveRelatedSlugs,
   extractBodyLinks,
   ghostNodeId,
   graphNeighbors,
@@ -228,5 +229,26 @@ describe('结构体检', () => {
   it('报出零引用附件', () => {
     const attachment = issues.filter((issue) => issue.kind === 'attachment-orphan');
     expect(attachment[0]?.title).toBe('孤图.png');
+  });
+});
+
+describe('关联文章派生（deriveRelatedSlugs）', () => {
+  const corpus = [
+    { slug: 'old-essay', body: '正文提到 [[old-essay]] 自环和 [[ghost]] 幽灵。', related: ['legacy-ref', 'missing-ref'] },
+    { slug: 'new-essay', body: '承接自 [[old-essay|旧文]]，并参考 [工具](/posts/legacy-ref)。', related: ['old-essay'] },
+    { slug: 'legacy-ref', body: '' },
+    { slug: 'neighbor-prev', body: '[[old-essay]]' },
+  ];
+
+  it('按出链 → 反向入链 → 存量 related 聚合去重，并过滤不存在与自环', () => {
+    expect(deriveRelatedSlugs(corpus, 'old-essay')).toEqual(['new-essay', 'neighbor-prev', 'legacy-ref']);
+    expect(deriveRelatedSlugs(corpus, 'new-essay')).toEqual(['old-essay', 'legacy-ref']);
+    expect(deriveRelatedSlugs(corpus, 'unknown-slug')).toEqual([]);
+  });
+
+  it('支持排除已展示的上下篇 slug', () => {
+    expect(
+      deriveRelatedSlugs(corpus, 'old-essay', { excludeSlugs: new Set(['neighbor-prev', 'legacy-ref']) }),
+    ).toEqual(['new-essay']);
   });
 });

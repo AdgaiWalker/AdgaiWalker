@@ -109,6 +109,14 @@ export class ContentLedgerService {
     const dirty =
       gitAvailable &&
       (dirtyFiles.has(`${entry.slug}.md`) || dirtyFiles.has(`${entry.slug}.mdx`));
+    const series = typeof entry.frontmatter.series === 'string' ? entry.frontmatter.series.trim() : '';
+    const rawOrder = entry.frontmatter.seriesOrder;
+    const seriesOrder =
+      typeof rawOrder === 'number' && Number.isFinite(rawOrder)
+        ? rawOrder
+        : typeof rawOrder === 'string' && rawOrder.trim() !== '' && Number.isFinite(Number(rawOrder))
+          ? Number(rawOrder)
+          : null;
     return {
       slug: entry.slug,
       title: entry.title,
@@ -118,6 +126,8 @@ export class ContentLedgerService {
       visibility,
       missing: visibility === 'public' ? missing : [],
       dirty,
+      ...(series ? { series } : {}),
+      seriesOrder,
       publication: {
         currentPublicHash: null,
         publishedHash: null,

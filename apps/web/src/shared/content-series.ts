@@ -1,12 +1,14 @@
 /**
  * 主题线 / 系列邻篇 / related 解析 — 纯函数，无 IO。
- * 职责：在已发布内容集合上推导筛选键、同线邻居与存活 related。
+ * 职责：在已发布内容集合上推导筛选键、同线邻居与双向关联文章（出链 + 反链 ∪ 存量 related）。
  */
+import { deriveRelatedSlugs } from '@walker/shared';
 
 export type SeriesContentItem = {
   slug: string;
   title: string;
   date: string;
+  body?: string;
   series?: string;
   seriesOrder?: number | null;
   related?: string[];
@@ -87,24 +89,14 @@ export function getSeriesNeighbors(
   };
 }
 
-/** 仅返回已出现在 items 中的 related 目标 */
+/** 仅返回存在于 items 中的关联文章（正文出链 + 反向入链 ∪ 存量 related），支持排除上下篇 */
 export function getRelatedItems(
   items: readonly SeriesContentItem[],
   slug: string,
+  excludeSlugs?: ReadonlySet<string>,
 ): SeriesContentItem[] {
-  const current = items.find((i) => i.slug === slug);
-  if (!current?.related?.length) return [];
   const bySlug = new Map(items.map((i) => [i.slug, i]));
-  const out: SeriesContentItem[] = [];
-  const seen = new Set<string>();
-  for (const ref of current.related) {
-    const key = ref.trim();
-    if (!key || seen.has(key) || key === slug) continue;
-    const hit = bySlug.get(key);
-    if (hit) {
-      seen.add(key);
-      out.push(hit);
-    }
-  }
-  return out;
+  return deriveRelatedSlugs(items, slug, { excludeSlugs })
+    .map((target) => bySlug.get(target))
+    .filter((item): item is SeriesContentItem => Boolean(item));
 }

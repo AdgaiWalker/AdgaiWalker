@@ -3,7 +3,6 @@
  * 依赖：search-content 纯函数；Pagefind 运行时由 /pagefind/pagefind.js 注入。
  */
 
-import { getAllItems } from '../content';
 import {
   searchContentItems,
   type SearchHit,
@@ -46,6 +45,7 @@ async function tryLoadPagefind(): Promise<PagefindApi | null> {
 function localBackend(): SearchBackend {
   return {
     async search(query: string, limit = 12) {
+      const { getAllItems } = await import('../content');
       return searchContentItems(getAllItems(), query, limit);
     },
   };

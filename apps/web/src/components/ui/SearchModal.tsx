@@ -1,17 +1,27 @@
-import { XiaoyingPet } from '../xiaoying/XiaoyingPet';
-import { getPetActivity } from '../xiaoying/activity';
 /**
- * SearchModal — 「搜索或问小影」一体面板。
- * 搜索 query/hits 受控于壳侧 useContentSearch；面板内自有 useAssistant 会话（与 /ask 独立）。
- * 回车或点「问问小影」在面板内提问，不跳页。
+ * SearchModal — 原生 <dialog closedby="any"> 统一 Omni-Bar（秒搜 + 原地问小影 + AI 无声降级）。
+ * 彻底移除内部第二个 3D WebGL 桌宠；遵循原生 top-layer 对话框规范（无冗余 role/aria-modal/body 锁滚）。
  */
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ArrowLeft, MessageCircle, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
+import { ArrowLeft, CornerDownLeft, MessageCircle, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { isValidAssistantBody } from '@walker/shared';
 import { useAssistant } from '../../hooks/useAssistant';
+import { trackWebEvent } from '../../lib/web-telemetry';
+import { WEB_ROUTES } from '../../shared/routes';
+import { resolveSearchBackend } from '../../shared/search-backend';
 import type { SearchHit } from '../../shared/search-content';
-import { AssistantThread } from './AssistantThread';
+
+const AssistantThread = lazy(() =>
+  import('./AssistantThread').then((m) => ({ default: m.AssistantThread })),
+);
 
 export type SearchModalProps = {
   open: boolean;
@@ -23,6 +33,7 @@ export type SearchModalProps = {
   onClose: () => void;
   onQueryChange: (query: string) => void;
   onSeedAskConsumed?: () => void;
+  onCompositionChange?: (composing: boolean) => void;
 };
 
 export function SearchModal({
@@ -31,63 +42,82 @@ export function SearchModal({
   hits,
   note,
   seedAsk,
-  returnFocusTarget,
   onClose,
   onQueryChange,
   onSeedAskConsumed,
+  onCompositionChange,
 }: SearchModalProps) {
-  const backdropRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const assistantInputRef = useRef<HTMLTextAreaElement>(null);
   const [mode, setMode] = useState<'search' | 'assistant'>('search');
   const [draft, setDraft] = useState('');
-  const { messages, loading, streaming, error, send, stop, reset } =
-    useAssistant();
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [lastAsked, setLastAsked] = useState('');
+  const [fallbackHits, setFallbackHits] = useState<SearchHit[]>([]);
+  const { messages, loading, streaming, error, send, stop, reset } = useAssistant();
 
   useEffect(() => {
-    if (!open) {
-      setMode('search');
-      stop();
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open) {
+      if (!dialog.open) {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+      }
+      setSelectedIndex(-1);
+      window.setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
-    const backdrop = backdropRef.current;
-    if (!backdrop) return;
 
-    const returnFocus =
-      returnFocusTarget ?? (document.activeElement as HTMLElement | null);
-    const parent = backdrop.parentElement;
-    const siblings = parent
-      ? Array.from(parent.children).filter((child) => child !== backdrop)
-      : [];
-    const previous = siblings.map((element) => ({
-      element: element as HTMLElement,
-      inert: (element as HTMLElement).inert,
-      ariaHidden: element.getAttribute('aria-hidden'),
-    }));
-
-    for (const { element } of previous) {
-      element.inert = true;
-      element.setAttribute('aria-hidden', 'true');
+    setMode('search');
+    setSelectedIndex(-1);
+    setFallbackHits([]);
+    stop();
+    if (dialog.open) {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
     }
-    inputRef.current?.focus();
+  }, [open, stop]);
 
-    return () => {
-      for (const item of previous) {
-        item.element.inert = item.inert;
-        if (item.ariaHidden === null) item.element.removeAttribute('aria-hidden');
-        else item.element.setAttribute('aria-hidden', item.ariaHidden);
-      }
-      returnFocus?.focus();
+  useEffect(() => {
+    if (!open || 'closedBy' in HTMLDialogElement.prototype) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const isOutside = (e: PointerEvent) => {
+      const r = dialog.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
     };
-  }, [open, returnFocusTarget, stop]);
+    let pressedOutside = false;
+    const onDown = (e: PointerEvent) => {
+      pressedOutside = isOutside(e);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (pressedOutside && isOutside(e)) dialog.close();
+    };
+    dialog.addEventListener('pointerdown', onDown);
+    dialog.addEventListener('pointerup', onUp);
+    return () => {
+      dialog.removeEventListener('pointerdown', onDown);
+      dialog.removeEventListener('pointerup', onUp);
+    };
+  }, [open]);
 
   const ask = (text: string) => {
-    if (!isValidAssistantBody(text)) return;
+    const trimmed = text.trim();
+    if (!isValidAssistantBody(trimmed)) return;
+    trackWebEvent('web.omnibar_escalated_to_ai', {
+      hasHits: hits.length > 0,
+      queryLength: trimmed.length,
+    });
+    setLastAsked(trimmed);
+    setFallbackHits([]);
     setMode('assistant');
-    void send(text);
+    void send(trimmed);
   };
 
-  // 切到对话视图后把焦点带进对话输入框
   useEffect(() => {
     if (!open || mode !== 'assistant') return;
     const timer = window.setTimeout(() => {
@@ -102,161 +132,234 @@ export function SearchModal({
     onSeedAskConsumed?.();
   }, [open, seedAsk]);
 
-  if (!open) return null;
-
-  const trapFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      onClose();
+  useEffect(() => {
+    if (mode !== 'assistant' || !error || !lastAsked) {
+      setFallbackHits([]);
       return;
     }
-    if (event.key !== 'Tab') return;
+    trackWebEvent('web.ai_graceful_degraded', {
+      surface: 'omnibar',
+      code: 'assistant-error',
+    });
+    let cancelled = false;
+    void resolveSearchBackend().then(async (backend) => {
+      const results = await backend.search(lastAsked, 4);
+      if (!cancelled) setFallbackHits(results);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, error, lastAsked]);
 
-    const focusable = Array.from(
-      event.currentTarget.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href]',
-      ),
-    ).filter((element) => element.offsetParent !== null);
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+  const handleSearchKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key === 'ArrowDown') {
+      if (!hits.length) return;
       event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
+      setSelectedIndex((prev) => (prev + 1) % hits.length);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      if (!hits.length) return;
       event.preventDefault();
-      first.focus();
+      setSelectedIndex((prev) => (prev <= 0 ? hits.length - 1 : prev - 1));
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (selectedIndex >= 0 && hits[selectedIndex]) {
+        onClose();
+        navigate(hits[selectedIndex].url);
+        return;
+      }
+      ask(query);
     }
   };
 
+  const handleDialogClose = () => {
+    const dialog = dialogRef.current;
+    if (dialog) dialog.returnValue = '';
+    onClose();
+  };
+
   return (
-    <div
-      ref={backdropRef}
-      className="search-backdrop"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      className={`omnibar-dialog surface-l2${mode === 'assistant' ? ' is-assistant' : ''}`}
       aria-labelledby="search-dialog-title"
-      onClick={onClose}
-      onKeyDown={trapFocus}
+      onClose={handleDialogClose}
+      {...({ closedby: 'any' } as Record<string, string>)}
     >
-      <div
-        className={`search-panel panel-glass${mode === 'assistant' ? ' is-assistant' : ''}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="xiaoying-dialog-companion">
-          <XiaoyingPet
-            variant="companion"
-            activity={getPetActivity(
-              loading,
-              error,
-              mode === 'assistant' ? messages : [],
-              mode === 'assistant' ? Boolean(draft.trim()) : false,
-              mode === 'search' && Boolean(query.trim()),
-            )}
-          />
-        </div>
-        {mode === 'assistant' ? (
-          <>
-            <div className="search-panel-head">
-              <h2 id="search-dialog-title">问小影</h2>
-              <button type="button" aria-label="关闭" onClick={onClose}>
-                <X size={20} aria-hidden />
-              </button>
+      {open ? (
+        <div className="omnibar-shell">
+          <div className="search-panel-head">
+            <div className="omnibar-title-group">
+              <img
+                src="/xiaoying/poster.jpg"
+                alt=""
+                aria-hidden="true"
+                className="omnibar-avatar"
+                width={26}
+                height={26}
+              />
+              <h2 id="search-dialog-title">
+                {mode === 'assistant' ? '问小影' : '搜索或问小影'}
+              </h2>
             </div>
-            <div className="search-assistant-bar">
-              <button
-                type="button"
-                className="search-assistant-back"
-                onClick={() => {
-                  setMode('search');
-                  inputRef.current?.focus();
-                }}
-              >
-                <ArrowLeft size={14} aria-hidden />
-                返回搜索
-              </button>
-              {messages.length ? (
+            <button
+              type="button"
+              className="omnibar-close-btn"
+              aria-label={mode === 'assistant' ? '关闭' : '关闭搜索'}
+              onClick={() => dialogRef.current?.close()}
+            >
+              <X size={18} aria-hidden />
+            </button>
+          </div>
+
+          {mode === 'assistant' ? (
+            <>
+              <div className="search-assistant-bar">
                 <button
                   type="button"
                   className="search-assistant-back"
                   onClick={() => {
-                    reset();
-                    setDraft('');
+                    setMode('search');
+                    window.setTimeout(() => inputRef.current?.focus(), 0);
                   }}
                 >
-                  新对话
+                  <ArrowLeft size={14} aria-hidden />
+                  返回搜索
+                </button>
+                {messages.length ? (
+                  <button
+                    type="button"
+                    className="search-assistant-back"
+                    onClick={() => {
+                      reset();
+                      setDraft('');
+                    }}
+                  >
+                    新对话
+                  </button>
+                ) : null}
+              </div>
+
+              <Suspense fallback={<p className="meta">正在准备对话…</p>}>
+                <AssistantThread
+                  draft={draft}
+                  draftOk={isValidAssistantBody(draft)}
+                  loading={loading}
+                  streaming={streaming}
+                  error={error}
+                  messages={messages}
+                  onDraftChange={setDraft}
+                  onSubmit={() => ask(draft)}
+                  onAskExample={(text) => ask(text)}
+                  onStop={stop}
+                  idPrefix="search-assistant"
+                  compact
+                  inputRef={assistantInputRef}
+                />
+              </Suspense>
+
+              {error ? (
+                <div className="omnibar-degrade" role="region" aria-label="站内兜底建议">
+                  {fallbackHits.length > 0 ? (
+                    <ul className="post-list is-compact">
+                      {fallbackHits.map((item) => (
+                        <li key={item.url}>
+                          <Link to={item.url} onClick={() => dialogRef.current?.close()}>
+                            {item.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <div className="omnibar-degrade-actions">
+                    {lastAsked ? (
+                      <Link
+                        to={`${WEB_ROUTES.ask}?q=${encodeURIComponent(lastAsked)}`}
+                        className="btn-ghost"
+                        onClick={() => dialogRef.current?.close()}
+                      >
+                        用规则版拆解下一步
+                      </Link>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() => ask(lastAsked)}
+                    >
+                      重试
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <input
+                ref={inputRef}
+                type="text"
+                role="searchbox"
+                inputMode="search"
+                className="omnibar-input"
+                autoFocus
+                placeholder="搜索或问小影…（⌘K）"
+                value={query}
+                onCompositionStart={() => onCompositionChange?.(true)}
+                onCompositionEnd={(e) => {
+                  onCompositionChange?.(false);
+                  onQueryChange(e.currentTarget.value);
+                }}
+                onChange={(e) => {
+                  setSelectedIndex(-1);
+                  onQueryChange(e.target.value);
+                }}
+                onKeyDown={handleSearchKeyDown}
+              />
+
+              {note ? (
+                <p className="meta omnibar-note">
+                  {note}
+                  {note === '无结果' && isValidAssistantBody(query) ? (
+                    <>—— 回车直接问小影</>
+                  ) : null}
+                </p>
+              ) : null}
+
+              {isValidAssistantBody(query) ? (
+                <button
+                  type="button"
+                  className="search-ask-row"
+                  onClick={() => ask(query)}
+                >
+                  <MessageCircle size={15} aria-hidden />
+                  <span>
+                    问问小影：<strong>{query.trim()}</strong>
+                  </span>
+                  <CornerDownLeft size={13} className="omnibar-enter-hint" aria-hidden />
                 </button>
               ) : null}
-            </div>
-            <AssistantThread
-              draft={draft}
-              draftOk={isValidAssistantBody(draft)}
-              loading={loading}
-              streaming={streaming}
-              error={error}
-              messages={messages}
-              onDraftChange={setDraft}
-              onSubmit={() => ask(draft)}
-              onAskExample={(text) => ask(text)}
-              onStop={stop}
-              idPrefix="search-assistant"
-              compact
-              inputRef={assistantInputRef}
-            />
-          </>
-        ) : (
-          <>
-            <div className="search-panel-head">
-              <h2 id="search-dialog-title">搜索或问小影</h2>
-              <button type="button" aria-label="关闭搜索" onClick={onClose}>
-                <X size={20} aria-hidden />
-              </button>
-            </div>
-            <input
-              ref={inputRef}
-              autoFocus
-              placeholder="搜索或问小影…（⌘K）"
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  ask(query);
-                }
-              }}
-            />
-            {note ? (
-              <p className="meta">
-                {note}
-                {note === '无结果' && isValidAssistantBody(query) ? (
-                  <>—— 试试下面问问小影</>
-                ) : null}
-              </p>
-            ) : null}
-            {isValidAssistantBody(query) ? (
-              <button
-                type="button"
-                className="search-ask-row"
-                onClick={() => ask(query)}
-              >
-                <MessageCircle size={15} aria-hidden />
-                <span>
-                  问问小影：<strong>{query.trim()}</strong>
-                </span>
-              </button>
-            ) : null}
-            <ul className="post-list">
-              {hits.map((h) => (
-                <li key={h.url}>
-                  <Link to={h.url} onClick={onClose}>
-                    {h.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
-    </div>
+
+              {hits.length > 0 ? (
+                <ul className="post-list omnibar-hits" role="listbox" aria-label="站内匹配结果">
+                  {hits.map((h, idx) => (
+                    <li
+                      key={h.url}
+                      className={idx === selectedIndex ? 'is-selected' : undefined}
+                    >
+                      <Link to={h.url} onClick={() => dialogRef.current?.close()}>
+                        {h.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
+    </dialog>
   );
 }

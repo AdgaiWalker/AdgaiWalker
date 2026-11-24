@@ -129,8 +129,8 @@ describe('C15 将版本证明写入网页构建', () => {
 
     const graph = buildKnowledgeGraph({
       items: [
-        { ...docA, date: '2026-09-25', author: 'Dora', created: '2026-09-25', tags: [], series: '', seriesOrder: null, related: [], version: null, previousVersion: '', resources: [] },
-        { ...docB, date: '2026-09-25', author: 'Dora', created: '2026-09-25', tags: [], series: '', seriesOrder: null, related: [], version: null, previousVersion: '', resources: [] },
+        { ...docA, date: '2026-09-25', author: 'Dora', created: '2026-09-25', tags: [], series: '', seriesOrder: null, related: [], resources: [] },
+        { ...docB, date: '2026-09-25', author: 'Dora', created: '2026-09-25', tags: [], series: '', seriesOrder: null, related: [], resources: [] },
       ],
       attachments: [],
       browsePath: '/posts',

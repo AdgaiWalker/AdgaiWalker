@@ -32,7 +32,7 @@ describe('AssistantThread 引用', () => {
     );
   });
 
-  it('正确使用 XMarkdown 渲染富文本与代码', () => {
+  it('正确使用 SafeMarkdown 渲染富文本与代码', () => {
     const { container } = render(
       <MemoryRouter>
         <AssistantThread

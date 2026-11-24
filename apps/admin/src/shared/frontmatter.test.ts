@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { extractSummaryFromRaw } from "@walker/shared";
-import { parseDocFrontmatter, promoteDraftForPublish, updateDocFrontmatter } from "./frontmatter";
+import {
+  autoSlug,
+  buildContinuationDraft,
+  computeNextSeriesOrder,
+  parseDocFrontmatter,
+  promoteDraftForPublish,
+  updateDocFrontmatter,
+} from "./frontmatter";
 
 const SAMPLE = [
   "---",
@@ -122,5 +129,76 @@ describe("frontmatter 剥离与无损回写", () => {
 
     const priv = "---\ntitle: 私密 \nsummary: \nvisibility: private\n---\n\n私密正文";
     expect(promoteDraftForPublish(priv, "priv-post", "2026-11-24").changed).toBe(false);
+  });
+
+  it("支持读写与清空 series / seriesOrder，且仅在编辑正文时清洗 \\u2028/\\u2029", () => {
+    const legacyWithLineSep = "---\ntitle: 旧文\nsummary: 摘要\n---\n\n第一行\u2028第二行\u2029第三行";
+    // 读取阶段不改动原正文，避免打开历史文章误变脏
+    expect(parseDocFrontmatter(legacyWithLineSep).body).toContain("\u2028");
+
+    const updated = updateDocFrontmatter(SAMPLE, {
+      series: "设计思考",
+      seriesOrder: 3,
+      body: "行一\u2028行二\u2029行三",
+    });
+    const parsed = parseDocFrontmatter(updated);
+    expect(parsed.series).toBe("设计思考");
+    expect(parsed.seriesOrder).toBe(3);
+    expect(parsed.body).toBe("行一\n行二\n行三");
+
+    const cleared = updateDocFrontmatter(updated, { series: "", seriesOrder: null });
+    expect(cleared).not.toContain("series:");
+    expect(cleared).not.toContain("seriesOrder:");
+    expect(parseDocFrontmatter(cleared).series).toBe("");
+    expect(parseDocFrontmatter(cleared).seriesOrder).toBeNull();
+  });
+
+  it("autoSlug 自动避重，buildContinuationDraft 继承系列与厅并在开头预埋双链（不写 related）", () => {
+    const existing = new Set(["design-principles"]);
+    expect(autoSlug("Design Principles", existing)).toBe("design-principles-2");
+    expect(
+      computeNextSeriesOrder(
+        [{ slug: "a", series: "设计思考", seriesOrder: 1 }, { slug: "b", series: "设计思考", seriesOrder: 2 }],
+        "设计思考",
+      ),
+    ).toBe(3);
+    expect(
+      computeNextSeriesOrder(
+        [{ slug: "a", series: "设计思考", seriesOrder: 1 }, { slug: "b", series: "设计思考", seriesOrder: 2 }],
+        "设计思考",
+        { slug: "b" },
+        true,
+      ),
+    ).toBe(2);
+    expect(computeNextSeriesOrder([{ series: "其他", seriesOrder: 4 }], "新系列")).toBe(1);
+
+    const withSeries = buildContinuationDraft({
+      title: "设计原则 0–5",
+      slug: "design-principles",
+      sourceSlug: "design-for-people",
+      sourceTitle: "设计为人与内容搭桥",
+      type: "knowledge",
+      hall: "lab",
+      domain: "product",
+      series: "设计思考",
+      seriesOrder: 3,
+      today: "2026-11-24",
+    });
+    expect(withSeries).toContain('series: "设计思考"');
+    expect(withSeries).toContain("seriesOrder: 3");
+    expect(withSeries).toContain("hall: lab");
+    expect(withSeries).toContain("承接自 [[design-for-people|设计为人与内容搭桥]]。");
+    expect(withSeries).not.toContain("related:");
+
+    const withoutSeries = buildContinuationDraft({
+      title: "独立续篇",
+      slug: "next-note",
+      sourceSlug: "old-note",
+      sourceTitle: "旧笔记",
+      today: "2026-11-24",
+    });
+    expect(withoutSeries).not.toContain("series:");
+    expect(withoutSeries).not.toContain("seriesOrder:");
+    expect(withoutSeries).toContain("承接自 [[old-note|旧笔记]]。");
   });
 });

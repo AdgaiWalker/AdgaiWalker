@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __WEB_BUILD_VERSION__: string;
+
 interface ImportMetaEnv {
   readonly VITE_GISCUS_REPO?: string;
   readonly VITE_GISCUS_REPO_ID?: string;

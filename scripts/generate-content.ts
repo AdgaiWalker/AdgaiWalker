@@ -154,11 +154,6 @@ if (fs.existsSync(contentLogDir)) {
       series: data.series ? String(data.series).trim() : '',
       seriesOrder: asSeriesOrder(data.seriesOrder),
       related: asStringArray(data.related),
-      version: asSeriesOrder(data.version),
-      previousVersion:
-        typeof data.previousVersion === 'string'
-          ? data.previousVersion.trim()
-          : '',
       aiUsePolicy: asAiUsePolicy(data.aiUsePolicy),
       resources: asResources(data.resources),
     });

@@ -1,145 +1,135 @@
 /**
- * HomePage — 首页画布（页）
- * 职责：小影悬浮桌宠 + 身份卡 + 快捷入口 + 最近文章。
- * 小影停在页底的坞里；开口只亮当前一句。页的证据区不与坞重叠。
- *
- * 依赖：content、XiaoyingHome、GreetingCard
- * 触发：路由 /
+ * HomePage — 「活着的书桌（Living Desk）」
+ * 职责：左列 Dora 身份 + 3D 灵感翻牌；右列 统一对话/搜索唤醒舱 + 4 主入口 + 最近 5 篇；右下角按需 3D 小影。
+ * 去重纪律：全屏只留 1 个品牌头、1 个主对话唤起、4 个不重复入口；严禁零碎堆砌。
  */
-import { Link, useOutletContext } from 'react-router-dom';
-import {
-  ArrowRight,
-  Bookmark,
-  Compass,
-  PenLine,
-  User,
-} from 'lucide-react';
+import { useMemo } from 'react';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { ArrowRight, Search } from 'lucide-react';
 import type { AppShellOutletContext } from '../components/AppShell';
+import { GreetingCard, type Spark } from '../components/GreetingCard';
+import { ASSISTANT_EXAMPLES } from '../components/ui/AssistantThread';
 import { XiaoyingHome } from '../components/xiaoying/XiaoyingHome';
-import { getRecentPosts, getByType } from '../content';
-import { GreetingCard } from '../components/GreetingCard';
+import { getAllByHall, getBrowseItems, getByType, getRecentPosts } from '../content';
+import { navigateWithViewTransition } from '../lib/view-transition';
 import { dualEntry } from '../shared/dual-entry';
 import { formatDateCompact, parseIsoDate } from '../shared/format';
-import { WEB_ROUTES } from '../shared/routes';
+import { primaryNavItems } from '../shared/nav';
 import { SPARK_FALLBACKS } from '../shared/rules-ui';
 
 export function HomePage() {
-  const { petSearchRef } =
+  const navigate = useNavigate();
+  const { openSearch, petSearchRef } =
     useOutletContext<AppShellOutletContext>() ?? {};
 
-  const knowledgePosts = getRecentPosts(20).filter((p) => p.type === 'knowledge');
-  const recentPosts = (
-    knowledgePosts.length ? knowledgePosts : getRecentPosts(8)
-  ).slice(0, 6);
-  const featured =
-    recentPosts.find((p) => p.tags.includes('featured')) ?? recentPosts[0];
+  const { recentPosts, sparks } = useMemo(() => {
+    const knowledgePosts = getRecentPosts(20).filter((p) => p.type === 'knowledge');
+    const pool = knowledgePosts.length ? knowledgePosts : getBrowseItems();
+    const recent = pool.slice(0, 5);
 
-  const realIdeas = getByType('idea').map((i) => ({
-    title: i.title,
-    slug: i.slug,
-    isReal: true as const,
-  }));
-  const sparks = [...realIdeas, ...SPARK_FALLBACKS];
+    const realDocs = [...getByType('idea'), ...getByType('wise'), ...getAllByHall('lab')];
+    const unique = new Map<string, Spark>();
+    for (const item of realDocs) {
+      if (!unique.has(item.slug)) {
+        unique.set(item.slug, {
+          title: item.title,
+          summary: item.summary,
+          slug: item.slug,
+          isReal: true,
+        });
+      }
+    }
+    const list: Spark[] = [...unique.values(), ...SPARK_FALLBACKS];
+    return { recentPosts: recent, sparks: list };
+  }, []);
 
   return (
-    <div id="canvas-container" className="xiaoying-home">
-      <XiaoyingHome searchRef={petSearchRef} />
-      <div id="desktop-canvas">
-        <div className="home-grid">
-          <div
-            className="directory-card panel-glass pop-in draggable-card"
-            style={{ animationDelay: '0.04s' }}
-          >
-            <div className="directory-brand">
-              <span className="directory-mark">W</span>
-              <div>
-                <div className="directory-name">Walker</div>
-                <div className="directory-tagline" id="status-text">
-                  用好 AI 做好事
-                </div>
-              </div>
-            </div>
-            {featured ? (
-              <Link
-                to={`${dualEntry.browse.path}/${encodeURIComponent(featured.slug)}`}
-                className="directory-trace"
-              >
-                <span className="directory-trace-label">本周证据</span>
-                <span className="directory-trace-title">{featured.title}</span>
-                <ArrowRight size={12} aria-hidden />
-              </Link>
-            ) : null}
-            <div className="directory-ghost-nav" aria-label="快捷">
-              <Link to={dualEntry.ask.path}>{dualEntry.ask.label}</Link>
-              <Link to={dualEntry.browse.path}>{dualEntry.browse.label}</Link>
-            </div>
-          </div>
+    <div id="canvas-container" className="xiaoying-home living-desk">
+      <div className="living-desk-grid">
+        <div className="living-col-left">
+          <GreetingCard
+            sparks={sparks}
+            onAskSpark={(title, trigger) => openSearch?.(trigger, title, 'card')}
+          />
+        </div>
 
-          <div
-            className="panel-glass pop-in draggable-card home-panel home-quick-panel"
-            style={{ animationDelay: '0.12s' }}
-          >
-            <div className="mobile-section-head">
-              <span>站内入口</span>
-              <small>从感兴趣的地方开始</small>
-            </div>
-            {/* 与侧栏一致：不重复类型总览，只放正交深页 */}
-            <div className="quick-grid">
-              <Link to={WEB_ROUTES.explore} className="quick-link">
-                <Compass size={15} aria-hidden />
-                <span>探索</span>
-              </Link>
-              <Link to={dualEntry.browse.path} className="quick-link">
-                <PenLine size={15} aria-hidden />
-                <span>文章</span>
-              </Link>
-              <Link to={WEB_ROUTES.toolsResources} className="quick-link">
-                <Bookmark size={15} aria-hidden />
-                <span>资源</span>
-              </Link>
-              <Link to={WEB_ROUTES.me} className="quick-link">
-                <User size={15} aria-hidden />
-                <span>关于</span>
-              </Link>
-            </div>
-          </div>
+        <div className="living-col-right">
+          <section className="living-dock surface-l1" aria-label="站内快速对话与入口">
+            <button
+              type="button"
+              className="living-dock-input"
+              onClick={(e) => openSearch?.(e.currentTarget, undefined, 'card')}
+            >
+              <Search size={16} aria-hidden />
+              <span>搜站内 {getBrowseItems().length} 篇文章，或直接问小影…</span>
+              <kbd aria-hidden>⌘K</kbd>
+            </button>
 
-          <div className="home-col home-col-greeting pop-in draggable-card">
-            <GreetingCard sparks={sparks} />
-          </div>
+            <div className="living-dock-chips" aria-label="热门起手问">
+              {ASSISTANT_EXAMPLES.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="living-chip"
+                  onClick={(e) => openSearch?.(e.currentTarget, prompt, 'card')}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
 
-          <div
-            className="panel-glass pop-in draggable-card home-panel home-panel-pad home-recent-panel"
-            style={{ animationDelay: '0.2s' }}
-          >
+            <nav className="living-nav-row" aria-label="站点主入口">
+              {primaryNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.href} to={item.href} className="living-nav-pill">
+                    <Icon size={15} aria-hidden />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </section>
+
+          <section className="living-recent surface-l1" aria-label={`最近${dualEntry.browse.title}`}>
             <div className="recent-header">
-              <PenLine size={13} color="var(--color-brand)" aria-hidden />
               <span className="recent-label">最近{dualEntry.browse.title}</span>
               <Link to={dualEntry.browse.path} className="recent-more">
-                全部
-                <ArrowRight size={12} aria-hidden style={{ display: 'inline' }} />
+                <span>全部</span>
+                <ArrowRight size={13} aria-hidden />
               </Link>
             </div>
             <div className="recent-rail">
-              {recentPosts.map((p, index) => (
-                <Link
-                  key={p.slug}
-                  to={`${dualEntry.browse.path}/${encodeURIComponent(p.slug)}`}
-                  className="recent-item"
-                >
-                  <span className="recent-item-index" aria-hidden>
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span className="recent-item-title">{p.title}</span>
-                  <span className="recent-item-date">
-                    {formatDateCompact(parseIsoDate(p.date))}
-                  </span>
-                </Link>
-              ))}
+              {recentPosts.map((p, index) => {
+                const href = `${dualEntry.browse.path}/${encodeURIComponent(p.slug)}`;
+                return (
+                  <Link
+                    key={p.slug}
+                    to={href}
+                    className="recent-item"
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
+                      const titleEl = e.currentTarget.querySelector<HTMLElement>('.recent-item-title');
+                      navigateWithViewTransition(navigate, href, { sourceElement: titleEl });
+                    }}
+                  >
+                    <span className="recent-item-index" aria-hidden>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="recent-item-title">{p.title}</span>
+                    <span className="recent-item-date">
+                      {formatDateCompact(parseIsoDate(p.date))}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
-          </div>
+          </section>
         </div>
       </div>
+
+      <XiaoyingHome searchRef={petSearchRef} />
       <div className="xiaoying-dock" aria-hidden="true" />
     </div>
   );

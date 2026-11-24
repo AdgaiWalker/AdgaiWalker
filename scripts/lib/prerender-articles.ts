@@ -1,4 +1,5 @@
 import { isBrowsePostType } from '../../packages/shared/src/content';
+import { deriveRelatedSlugs } from '../../packages/shared/src/graph';
 import {
   articleHistoryLabel,
   articleHistorySummary,
@@ -45,7 +46,7 @@ export function prerenderArticlePages(ctx: PrerenderContext): void {
     const authorName = doc.author || AUTHOR.name;
     const image = resolveSiteAssetUrl(doc.image);
     const articleHtml = renderMarkdown(doc.body);
-    const related = doc.related
+    const related = deriveRelatedSlugs(publicItems, doc.slug)
       .map((slug) => allBySlug.get(slug))
       .filter((item): item is GeneratedContentItem => Boolean(item));
     const resources = doc.resources.filter((resource) => resource.url);

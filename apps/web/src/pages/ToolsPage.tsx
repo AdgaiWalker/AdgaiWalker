@@ -1,20 +1,18 @@
 /**
- * 卡（/tools）— 对话式：说清卡点，原地拿到下一步。
- * 路径与文案读 dualEntry / WEB_ROUTES / INTAKE_TYPES，页面不硬编码。
+ * 提问（/tools）— 对话式拆解下一步；去除多余解释废话；失败时无声附带站内相关文章兜底。
  */
-import { useCallback, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { IntakeChatThread } from '../components/ui/intake/IntakeChatThread';
 import { IntakeComposer } from '../components/ui/intake/IntakeComposer';
+import { getAllItems } from '../content';
 import { useIntakeChat } from '../hooks/useIntakeChat';
+import { trackWebEvent } from '../lib/web-telemetry';
 import { dualEntry } from '../shared/dual-entry';
 import { INTAKE_TYPES } from '../shared/intake-types';
-import { INTAKE_RULE_HINTS, formatGuestQuotaHint } from '../shared/rules-ui';
+import { formatGuestQuotaHint } from '../shared/rules-ui';
+import { searchContentItems } from '../shared/search-content';
 
-const SERVICE_NOTE =
-  '站点处理服务在公网已可用：提交后写入线索并返回下一步建议；失败会说明原因，不会假装成功。';
-
-/** 空态示例：每个卡点类型取一条，点击即发送 */
 const EXAMPLE_CHIPS = INTAKE_TYPES.map((type) => type.examples[0]);
 
 export function ToolsPage() {
@@ -29,9 +27,26 @@ export function ToolsPage() {
   }, [q, onDraftChange]);
 
   useEffect(() => {
-    // jsdom 等环境无 Element.scrollTo，可选调用兜底
     logRef.current?.scrollTo?.({ top: logRef.current.scrollHeight });
   }, [turns, loading]);
+
+  const latestFailedTurn = useMemo(() => {
+    const last = turns[turns.length - 1];
+    return last && last.error ? last : null;
+  }, [turns]);
+
+  const fallbackHits = useMemo(() => {
+    if (!latestFailedTurn) return [];
+    return searchContentItems(getAllItems(), latestFailedTurn.body, 3);
+  }, [latestFailedTurn]);
+
+  useEffect(() => {
+    if (!latestFailedTurn) return;
+    trackWebEvent('web.ai_graceful_degraded', {
+      surface: 'tools',
+      code: 'intake-error',
+    });
+  }, [latestFailedTurn]);
 
   const handleSend = useCallback(() => {
     void chat.send();
@@ -47,28 +62,24 @@ export function ToolsPage() {
   return (
     <div className="chat-page">
       <header className="chat-head">
-        <h1 className="page-title">{dualEntry.ask.title}</h1>
+        <div className="chat-head-row">
+          <h1 className="page-title">{dualEntry.ask.title}</h1>
+          {turns.length > 0 ? (
+            <button
+              type="button"
+              className="btn-ghost chat-reset"
+              onClick={chat.reset}
+            >
+              重新开始
+            </button>
+          ) : null}
+        </div>
         <p className="page-lead">{dualEntry.ask.lead}</p>
-        <p className="meta chat-service-note" role="note">
-          {SERVICE_NOTE}
-        </p>
-        {turns.length > 0 ? (
-          <button
-            type="button"
-            className="btn-ghost chat-reset"
-            onClick={chat.reset}
-          >
-            重新开始
-          </button>
-        ) : null}
       </header>
 
       <div className="assistant-log chat-log" ref={logRef}>
         {turns.length === 0 ? (
           <div className="assistant-empty">
-            <p className="meta chat-empty-lead">
-              把卡点写清楚就行：谁、在什么情况下、想达成什么、现在卡在哪。
-            </p>
             <div className="assistant-examples">
               {EXAMPLE_CHIPS.map((example) => (
                 <button
@@ -84,11 +95,25 @@ export function ToolsPage() {
             </div>
           </div>
         ) : (
-          <IntakeChatThread
-            turns={turns}
-            onSendQuickReply={handleQuickReply}
-            loading={loading}
-          />
+          <>
+            <IntakeChatThread
+              turns={turns}
+              onSendQuickReply={handleQuickReply}
+              loading={loading}
+            />
+            {latestFailedTurn && fallbackHits.length > 0 ? (
+              <aside className="chat-degrade-box" aria-label="站内相关阅读">
+                <p className="meta">可以先参考这几篇站内记录：</p>
+                <ul>
+                  {fallbackHits.map((hit) => (
+                    <li key={hit.url}>
+                      <Link to={hit.url}>{hit.title}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+            ) : null}
+          </>
         )}
       </div>
 
@@ -105,7 +130,7 @@ export function ToolsPage() {
       />
 
       <p className="meta chat-footnote">
-        {formatGuestQuotaHint(chat.config.guestQuota)} · {INTAKE_RULE_HINTS[3]}
+        {formatGuestQuotaHint(chat.config.guestQuota)}
       </p>
     </div>
   );

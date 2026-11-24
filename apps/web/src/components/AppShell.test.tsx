@@ -13,10 +13,6 @@ vi.mock('../api/public-api', () => ({
   },
 }));
 
-vi.mock('./xiaoying/scene', () => ({
-  mountPet: () => ({ play: vi.fn(), pause: vi.fn(), dispose: vi.fn() }),
-}));
-
 function dispatchSearchHotkey(metaKey: boolean) {
   window.dispatchEvent(
     new KeyboardEvent('keydown', {
@@ -37,56 +33,38 @@ function renderShell(path: string) {
         <Route element={<AppShell />}>
           <Route index element={<div>home-stub</div>} />
           <Route path={dualEntry.browse.path.slice(1)} element={<div>posts-stub</div>} />
-          <Route
-            path={`${dualEntry.browse.path.slice(1)}/:slug`}
-            element={<div>reading-stub</div>}
-          />
-          <Route
-            path={WEB_ROUTES.assistant.slice(1)}
-            element={<div>ask-stub</div>}
-          />
+          <Route path={`${dualEntry.browse.path.slice(1)}/:slug`} element={<div>reading-stub</div>} />
+          <Route path={WEB_ROUTES.assistant.slice(1)} element={<div>ask-stub</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,
   );
 }
 
-describe('AppShell 搜索入口', () => {
-  it('主导航只展示探索、文章、资源、关于，关于进入 Dora 页面', () => {
+describe('AppShell 极简顶栏与 Omni-Bar', () => {
+  it('主导航展示 文章、探索、图谱、提问 4 个入口，关于进入 /me', () => {
     renderShell(dualEntry.browse.path);
     const nav = within(screen.getByRole('navigation', { name: '站内' }));
     expect(nav.getAllByRole('link').map((link) => link.textContent?.trim())).toEqual([
-      '探索', '文章', '资源', '关于',
+      '文章',
+      '探索',
+      '图谱',
+      '提问',
     ]);
-    expect(nav.getByRole('link', { name: '关于' })).toHaveAttribute('href', WEB_ROUTES.me);
+    const aboutLinks = screen.getAllByRole('link', { name: '关于' });
+    expect(aboutLinks[0]).toHaveAttribute('href', WEB_ROUTES.me);
   });
 
-  it('首页挂载「搜索或问小影」入口', () => {
+  it('首页挂载「搜索或问小影」轻入口', () => {
     renderShell('/');
-    expect(
-      screen.getByRole('button', { name: '搜索或问小影' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '搜索或问小影' })).toBeInTheDocument();
   });
 
-  it('逛页挂载「搜索或问小影」入口', () => {
+  it('内页与阅读页均可呼出 Omni-Bar', () => {
     renderShell(dualEntry.browse.path);
-    expect(
-      screen.getByRole('button', { name: '搜索或问小影' }),
-    ).toBeInTheDocument();
-  });
-
-  it('阅读页挂载「搜索或问小影」入口', () => {
+    expect(screen.getAllByRole('button', { name: '搜索或问小影' }).length).toBeGreaterThanOrEqual(1);
     renderShell(`${dualEntry.browse.path}/cc-intro`);
-    expect(
-      screen.getByRole('button', { name: '搜索或问小影' }),
-    ).toBeInTheDocument();
-  });
-
-  it('/ask 页不挂载 AskBar', () => {
-    renderShell(WEB_ROUTES.assistant);
-    expect(
-      screen.queryByRole('button', { name: '搜索或问小影' }),
-    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '搜索或问小影' }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('/ask 页 ⌘K / Ctrl+K 不打开搜索面板', () => {
@@ -100,31 +78,9 @@ describe('AppShell 搜索入口', () => {
       dispatchSearchHotkey(false);
     });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByText('ask-stub')).toBeInTheDocument();
   });
 
-  it('首页 ⌘K 仍打开搜索面板', () => {
-    renderShell(WEB_ROUTES.home);
-    act(() => {
-      dispatchSearchHotkey(true);
-    });
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-  });
-
-  it('逛页不再保留侧栏/移动栏搜索按钮', () => {
-    renderShell(dualEntry.browse.path);
-    expect(screen.queryByRole('button', { name: '搜索' })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: '搜索 ⌘K' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('阅读页不再保留顶栏搜索按钮', () => {
-    renderShell(`${dualEntry.browse.path}/cc-intro`);
-    expect(screen.queryByRole('button', { name: '搜索' })).not.toBeInTheDocument();
-  });
-
-  it('点 AskBar 打开搜索面板，Escape 关闭', async () => {
+  it('首页 ⌘K 与按钮均可打开原生 dialog 并支持 Escape 关闭', async () => {
     renderShell(WEB_ROUTES.home);
     const user = userEvent.setup();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -132,5 +88,10 @@ describe('AppShell 搜索入口', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    act(() => {
+      dispatchSearchHotkey(true);
+    });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });

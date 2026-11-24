@@ -12,6 +12,7 @@ import {
 import { ModalDialog } from "../../components/ModalDialog";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { DEFAULT_CONTENT_TYPES } from "../../shared/content-types";
+import { autoSlug, buildContinuationDraft } from "../../shared/frontmatter";
 import { timeLabel } from "../../shared/labels";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 
@@ -25,20 +26,6 @@ const BADGE_META: Record<BadgeState, { cls: string; dot: string; text: string; t
   private: { cls: "badge", dot: "status-dot", text: "私密" },
   draft: { cls: "badge amber", dot: "status-dot draft", text: "草稿" },
 };
-
-function autoSlug(text: string, existing?: ReadonlySet<string>): string {
-  const dm = text.match(/\b(20\d{2})[-_./]?(\d{1,2})[-_./]?(\d{1,2})\b/);
-  const latin = text.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").trim().replace(/\s+/g, "-");
-  const base = isValidContentSlug(latin)
-    ? latin
-    : dm
-      ? `${dm[1]}-${dm[2].padStart(2, "0")}-${dm[3].padStart(2, "0")}-note`
-      : `post-${new Date().toISOString().slice(0, 10)}`;
-  if (!existing?.has(base)) return base;
-  let n = 2;
-  while (existing.has(`${base}-${n}`)) n++;
-  return `${base}-${n}`;
-}
 
 export function ContentListPage() {
   const query = useContent();
@@ -99,15 +86,8 @@ export function ContentListPage() {
     if (!title) return setCreateError("请填写标题");
     if (!isValidContentSlug(slug)) return setCreateError("Slug 仅支持小写字母、数字和连字符");
     setCreateError(null);
-    const today = new Date().toISOString().slice(0, 10);
     // 正文留空：标题已存 frontmatter 并由画布/前台 <h1> 渲染，避免双 H1 重复
-    const raw = [
-      "---", `title: ${JSON.stringify(title)}`, `date: ${today}`, `updated: ${today}`, `type: ${newType}`,
-      "form: note", "domain: thinking", "intent: clarify", "valueMode: insight",
-      `summary: ${JSON.stringify(`${title} · ${slug}`)}`, "visibility: draft",
-      "aiUsePolicy:", "  level: AI-2", "  readable: true", "  citable: true", "  actionable: false",
-      "---", "", "",
-    ].join("\n");
+    const raw = buildContinuationDraft({ title, slug, type: newType });
     try {
       await saveMutation.mutateAsync({ slug, raw, expectedHash: null });
       setCreateOpen(false); setNewTitle(""); setNewSlug(""); setSlugTouched(false);

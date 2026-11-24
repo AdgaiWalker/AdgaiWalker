@@ -6,6 +6,7 @@ import { clearAdminUiEvents, getAdminUiEvents } from "../../api/telemetry";
 import { ContentDetailPage } from "./ContentDetailPage";
 
 const {
+  useContentMock,
   useContentDetailMock,
   useSaveContentMock,
   useDeleteContentMock,
@@ -22,7 +23,9 @@ const {
   fetchContentDetailMock,
   exportAdminContentMock,
   downloadTextFileMock,
+  navigateMock,
 } = vi.hoisted(() => ({
+  useContentMock: vi.fn(),
   useContentDetailMock: vi.fn(),
   useSaveContentMock: vi.fn(),
   useDeleteContentMock: vi.fn(),
@@ -39,9 +42,16 @@ const {
   fetchContentDetailMock: vi.fn(),
   exportAdminContentMock: vi.fn(),
   downloadTextFileMock: vi.fn(),
+  navigateMock: vi.fn(),
 }));
 
+vi.mock("react-router-dom", async (orig) => {
+  const actual = await orig<typeof import("react-router-dom")>();
+  return { ...actual, useNavigate: () => navigateMock };
+});
+
 vi.mock("../../api/queries", () => ({
+  useContent: useContentMock,
   useContentDetail: useContentDetailMock,
   useSaveContent: useSaveContentMock,
   useDeleteContent: useDeleteContentMock,
@@ -80,6 +90,49 @@ function renderDetail(slug = "demo-post") {
 beforeEach(() => {
   vi.clearAllMocks();
   clearAdminUiEvents();
+  useContentMock.mockReturnValue({
+    isPending: false,
+    isError: false,
+    data: {
+      data: [
+        {
+          id: "demo-post",
+          slug: "demo-post",
+          title: "测试文章",
+          type: "knowledge",
+          group: "article",
+          stage: "live",
+          visibility: "public",
+          missing: [],
+          dirty: false,
+          series: "设计思考",
+          seriesOrder: 2,
+          publication: { currentPublicHash: "hash-pub", publishedHash: "hash-pub", verifiedAt: null, indexedHash: "hash-pub", latestAttemptStage: null },
+          updatedAt: "2026-11-23T10:00:00.000Z",
+        },
+        {
+          id: "first-post",
+          slug: "first-post",
+          title: "首篇",
+          type: "knowledge",
+          group: "article",
+          stage: "live",
+          visibility: "public",
+          missing: [],
+          dirty: false,
+          series: "设计思考",
+          seriesOrder: 1,
+          publication: { currentPublicHash: "hash-0", publishedHash: "hash-0", verifiedAt: null, indexedHash: "hash-0", latestAttemptStage: null },
+          updatedAt: "2026-11-20T10:00:00.000Z",
+        },
+      ],
+      total: 2,
+      generatedAt: "2026-11-23T10:00:00.000Z",
+      gitAvailable: true,
+      publicationAvailable: true,
+    },
+    refetch: vi.fn(),
+  });
   useContentDetailMock.mockReturnValue({
     isPending: false,
     isError: false,
@@ -374,5 +427,85 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     fireEvent.click(screen.getByRole("button", { name: /放弃本地修改（恢复线上版）/ }));
     await waitFor(() => expect(deleteMutate).toHaveBeenCalledWith({ slug: "demo-post", mode: "discard-draft" }));
     await waitFor(() => expect((screen.getByLabelText("文章正文") as HTMLTextAreaElement).value).toContain("线上原版"));
+  });
+
+  it("已上线 v1 无改动点重新发布给出诚实提示与续写入口；改过正文则提示将生成 v2", () => {
+    useContentVersionMock.mockReturnValue({
+      data: { workingHash: "hash-1", currentPublicHash: "hash-pub-1", publishedHash: "hash-pub-1", indexedHash: "hash-pub-1" },
+      refetch: vi.fn(),
+    });
+    useContentVersionHistoryMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: { slug: "demo-post", versions: [{ version: 1, contentHash: "c1", note: "初版", publishedAt: "2026-11-23T00:00:00.000Z", releaseId: "r1" }] },
+      refetch: vi.fn(),
+    });
+
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "重新发布" }));
+    expect(screen.getByText(/当前已是线上 v1 且正文无改动：直接发布不会生成新版本/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "续写下一篇" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+
+    fireEvent.change(screen.getByLabelText("文章正文"), { target: { value: "# 修改后的正文" } });
+    fireEvent.click(screen.getByRole("button", { name: "发布" }));
+    expect(screen.getByText(/上线确证后将生成 v2（v1 永久保留在版本历史中）/)).toBeTruthy();
+  });
+
+  it("支持「续写下一篇」自动继承系列并递增顺序、预埋前文双链且不生成 related，以及抽屉无损修改所属系列", async () => {
+    const saveMutate = vi.fn(async ({ slug, raw }: { slug: string; raw: string }) => ({ slug, raw, hash: "hash-new" }));
+    useSaveContentMock.mockReturnValue({ isPending: false, mutateAsync: saveMutate });
+    useContentDetailMock.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: {
+        data: {
+          id: "demo-post",
+          slug: "demo-post",
+          title: "测试文章",
+          type: "knowledge",
+          raw: "---\ntitle: 测试文章\nsummary: 简短摘要\nseries: 设计思考\nseriesOrder: 2\nhall: lab\nvisibility: public\n---\n\n# 原文\n",
+          hash: "hash-1",
+          updatedAt: "2026-11-23T10:00:00.000Z",
+        },
+      },
+      refetch: vi.fn(),
+    });
+
+    renderDetail();
+    // 抽屉修改所属系列，保留空格并真实保存写回 YAML
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    const seriesInput = screen.getByLabelText("所属系列（可选）") as HTMLInputElement;
+    expect(seriesInput.value).toBe("设计思考");
+    fireEvent.change(seriesInput, { target: { value: "新系列 " } });
+    expect(seriesInput.value).toBe("新系列 ");
+    fireEvent.change(seriesInput, { target: { value: "设计思考" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() =>
+      expect(saveMutate).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ slug: "demo-post", raw: expect.stringContaining('series: "设计思考"') }),
+      ),
+    );
+
+    // 从抽屉触发续写下一篇
+    fireEvent.click(screen.getByRole("button", { name: "续写下一篇" }));
+    expect(screen.getByText(/将自动排为「设计思考」第 3 篇，并在开头链接 \[\[demo-post\]\]/)).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText("输入续篇标题"), { target: { value: "Design Principles" } });
+    fireEvent.click(screen.getByRole("button", { name: "创建草稿并写作" }));
+
+    await waitFor(() =>
+      expect(saveMutate).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          slug: "design-principles",
+          expectedHash: null,
+          raw: expect.stringMatching(/hall: lab[\s\S]*series: "设计思考"[\s\S]*seriesOrder: 3[\s\S]*承接自 \[\[demo-post\|测试文章\]\]。/),
+        }),
+      ),
+    );
+    const createdRaw = saveMutate.mock.calls[1]![0].raw as string;
+    expect(createdRaw).not.toContain("related:");
+    expect(navigateMock).toHaveBeenCalledWith("/content/design-principles");
   });
 });

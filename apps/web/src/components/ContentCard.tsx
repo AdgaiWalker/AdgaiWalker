@@ -1,10 +1,7 @@
 /**
- * 内容卡牌（块）
- * 职责：展示单条内容元数据与链接；不读全局、不 fetch。
- * 依赖：content-spaces 配置、space-icons 展示映射。
+ * ContentCard — 探索与专题卡片；构思中仅轻柔雾感提示，悬停/聚焦即散开，1 步点击直达。
  */
 import { Link } from 'react-router-dom';
-import { Lock } from 'lucide-react';
 import type { ContentItem } from '../content';
 import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
@@ -23,43 +20,25 @@ export function ContentCard({
   blurred?: boolean;
   onReveal?: () => void;
 }) {
-  const statusLabel = item.status
-    ? (STATUS_LABELS[item.status] ?? item.status)
-    : '';
+  const statusLabel = item.status ? (STATUS_LABELS[item.status] ?? item.status) : '';
   const space = spaceForType(item.type);
   const Icon = spaceIcon(space.icon);
   const href = `${detailBase}/${encodeURIComponent(item.slug)}`;
 
   return (
     <article
-      className={`content-card${blurred ? ' is-blurred' : ''}`}
+      className={`content-card${blurred ? ' is-hazy' : ''}`}
       style={{ ['--space-color' as string]: space.color }}
+      onMouseEnter={() => onReveal?.()}
+      onFocus={() => onReveal?.()}
     >
       <div className="content-card-inner">
-        {blurred ? (
-          <div className="content-card-lock">
-            <Lock size={22} aria-hidden />
-            <span className="content-card-lock-title">构思中</span>
-            <p className="meta">点子还在酝酿，点开可先看标题与摘要</p>
-            {onReveal ? (
-              <button type="button" className="btn-secondary" onClick={onReveal}>
-                翻开
-              </button>
-            ) : (
-              <Link to={href} className="btn-secondary">
-                翻开
-              </Link>
-            )}
-          </div>
-        ) : null}
         <div className="content-card-body">
           <div className="content-card-meta">
             <Icon size={14} className="content-card-type-icon" aria-hidden />
             <span className="meta">{formatDateCompact(parseIsoDate(item.date))}</span>
             <span className="content-card-space">{space.label}</span>
-            {statusLabel ? (
-              <span className="status-pill">{statusLabel}</span>
-            ) : null}
+            {statusLabel ? <span className="status-pill">{statusLabel}</span> : null}
           </div>
           <h3 className="content-card-title">
             <Link to={href}>{item.title}</Link>

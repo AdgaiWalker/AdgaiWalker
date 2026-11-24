@@ -143,7 +143,7 @@ applies_to: [web, shared, agent]
 
 - `related:` frontmatter —— **Obsidian 没有这个边**，站主指令为「严格照抄」，故 **不画**。它是本站策展层，由文章页「相关」块继续承载。
 - `series` / `seriesOrder` —— 同上，不画（它是顺序线，Obsidian 里等价于文件夹，不产生边）。
-- `previousVersion` —— 同上，不画。
+- `previousVersion` —— 已裁剪移除（同篇演进归 `content/versions`，跨篇承接归 `series` 与正文双链）。
 - `tags` —— **不是边，是节点**（见 2.2）。
 
 > **知情声明**：以上口径的代价是 §1.1 的 62% 孤岛会如实呈现。**这是本 PRD 明知且接受的结果**——图的诊断价值正来自它。孤岛不是缺陷，是第一批体检产物。

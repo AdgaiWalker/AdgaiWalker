@@ -5,12 +5,11 @@
 import { useEffect, useRef } from 'react';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { XMarkdown } from '@ant-design/x-markdown';
-import '@ant-design/x-markdown/dist/x-markdown.css';
 import { getPostBySlug } from '../../content';
 import type { AssistantMessage } from '../../hooks/useAssistant';
 import { dualEntry } from '../../shared/dual-entry';
 import type { AssistantInteractionFeedback } from '@walker/shared';
+import { SafeMarkdown } from './SafeMarkdown';
 
 export const ASSISTANT_EXAMPLES = [
   'Dora 是谁？',
@@ -121,15 +120,9 @@ export function AssistantThread({
                   {m.hidden ? (
                     <p className="meta">{HIDDEN_HISTORY_ANSWER}</p>
                   ) : (
-                    <XMarkdown
+                    <SafeMarkdown
                       content={m.text}
-                      openLinksInNewTab
-                      escapeRawHtml
-                      streaming={
-                        i === messages.length - 1 && streaming
-                          ? { hasNextChunk: true, enableAnimation: true, tail: true }
-                          : undefined
-                      }
+                      streaming={i === messages.length - 1 && streaming}
                     />
                   )}
                   {!m.hidden && m.citations.length ? (

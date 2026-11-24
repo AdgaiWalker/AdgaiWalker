@@ -1,6 +1,6 @@
 /**
- * AppShell — 壳布局
- * 职责：首页画布 / 阅读沉浸 / 常规侧栏；搜索/提问入口只经 AskBar + ⌘K（/ask 页不挂）。
+ * AppShell — 极简壳布局
+ * 职责：首页画布 / 48px 桌面顶栏 + 手机 4 键底栏 / 阅读专注；全局 Omni-Bar + 路由 ErrorBoundary + 版本更新提示。
  */
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Outlet, useLocation, matchPath } from 'react-router-dom';
@@ -8,14 +8,16 @@ import type { BrowseReturnState } from './ItemList';
 import { useContentSearch } from '../hooks/useContentSearch';
 import { useSearchHotkey } from '../hooks/useSearchHotkey';
 import { applySiteTheme } from '../lib/theme';
+import { isMobileViewport, trackWebEvent } from '../lib/web-telemetry';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
 import type { SearchHit } from '../shared/search-content';
+import { ErrorBoundary } from './ErrorBoundary';
 import { SearchModal } from './ui/SearchModal';
-import { AskBar } from './ui/AskBar';
-import { AppSidebar } from './shell/AppSidebar';
+import { VersionDriftNotice } from './ui/VersionDriftNotice';
 import { HomeChrome } from './shell/HomeChrome';
 import { MobileBar } from './shell/MobileBar';
+import { TopNav } from './shell/TopNav';
 
 function isPostDetail(pathname: string): boolean {
   return Boolean(
@@ -30,8 +32,10 @@ function browseHrefFromState(state: unknown): string {
   return dualEntry.browse.path;
 }
 
+export type OmniTrigger = 'hotkey' | 'button' | 'pet' | 'card';
+
 export type AppShellOutletContext = {
-  openSearch: (trigger?: HTMLElement, ask?: string) => void;
+  openSearch: (trigger?: HTMLElement, ask?: string, source?: OmniTrigger) => void;
   onQueryChange: (query: string) => void;
   query: string;
   hits: SearchHit[];
@@ -45,104 +49,47 @@ export function AppShell() {
   const isHome = pathname === WEB_ROUTES.home;
   const reading = isPostDetail(pathname);
   const browseHref = browseHrefFromState(location.state);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const sidebarRef = useRef<HTMLElement>(null);
+  const [composing, setComposing] = useState(false);
   const searchTriggerRef = useRef<HTMLElement | null>(null);
   const petSearchRef = useRef<HTMLTextAreaElement | null>(null);
   const [seedAsk, setSeedAsk] = useState<string | null>(null);
-  const askActive = pathname === dualEntry.ask.path;
   const onAskPage = pathname === WEB_ROUTES.assistant;
-  const search = useContentSearch(searchOpen);
+  const search = useContentSearch(searchOpen, composing);
 
-  const openSearch = useCallback((trigger?: HTMLElement, ask?: string) => {
-    if (onAskPage) return;
-    if (isHome && !ask && petSearchRef.current && !searchOpen) {
-      petSearchRef.current.focus();
-      return;
-    }
-    searchTriggerRef.current = trigger ?? (document.activeElement as HTMLElement | null);
-    setSeedAsk(ask ?? null);
-    setMenuOpen(false);
-    setSearchOpen(true);
-  }, [onAskPage, isHome, searchOpen]);
+  const openSearch = useCallback(
+    (trigger?: HTMLElement, ask?: string, source: OmniTrigger = 'button') => {
+      if (onAskPage) return;
+      if (isHome && !ask && source === 'pet' && petSearchRef.current && !searchOpen) {
+        petSearchRef.current.focus();
+        return;
+      }
+      searchTriggerRef.current = trigger ?? (document.activeElement as HTMLElement | null);
+      setSeedAsk(ask ?? null);
+      setSearchOpen(true);
+      trackWebEvent('web.omnibar_opened', { trigger: source, path: pathname });
+    },
+    [onAskPage, isHome, searchOpen, pathname],
+  );
+
   const closeSearch = useCallback(() => {
     setSearchOpen(false);
     setSeedAsk(null);
+    setComposing(false);
   }, []);
 
-  useSearchHotkey(openSearch, !onAskPage);
+  useSearchHotkey(() => openSearch(undefined, undefined, 'hotkey'), !onAskPage);
 
   useEffect(() => {
     applySiteTheme();
   }, []);
 
   useEffect(() => {
-    setMenuOpen(false);
+    trackWebEvent('web.page_view', {
+      path: pathname,
+      viewport: isMobileViewport() ? 'mobile' : 'desktop',
+    });
   }, [pathname]);
-
-  useEffect(() => {
-    if (!menuOpen && !searchOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setMenuOpen(false);
-      setSearchOpen(false);
-    };
-
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', closeOnEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [menuOpen, searchOpen]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const sidebar = sidebarRef.current;
-    if (!sidebar) return;
-
-    const focusTimer = window.setTimeout(() => {
-      if (
-        document.activeElement === document.body ||
-        document.activeElement === menuButtonRef.current
-      ) {
-        sidebar.querySelector<HTMLElement>('[data-drawer-close]')?.focus();
-      }
-    }, 220);
-    const trapFocus = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
-      const focusable = Array.from(
-        sidebar.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
-      ).filter((element) => element.offsetParent !== null);
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    window.addEventListener('keydown', trapFocus);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener('keydown', trapFocus);
-      requestAnimationFrame(() => {
-        if (document.querySelector('.app-sidebar.is-open')) return;
-        if (!document.querySelector('[role="dialog"][aria-labelledby="search-dialog-title"]')) {
-          menuButtonRef.current?.focus();
-        }
-      });
-    };
-  }, [menuOpen]);
 
   const searchModal = onAskPage ? null : (
     <SearchModal
@@ -155,6 +102,7 @@ export function AppShell() {
       onClose={closeSearch}
       onQueryChange={search.onQueryChange}
       onSeedAskConsumed={() => setSeedAsk(null)}
+      onCompositionChange={setComposing}
     />
   );
 
@@ -167,30 +115,37 @@ export function AppShell() {
     petSearchRef,
   };
 
-  const askBar = onAskPage ? null : (
-    <AskBar onOpen={openSearch} open={searchOpen} isHome={isHome} />
+  const routeContent = (
+    <ErrorBoundary key={pathname}>
+      <Outlet context={outletContext} />
+    </ErrorBoundary>
   );
 
   if (isHome) {
     return (
       <>
-        <HomeChrome />
-        <Outlet context={outletContext} />
-        {askBar}
+        <HomeChrome
+          searchOpen={searchOpen}
+          onOpenSearch={(el) => openSearch(el, undefined, 'button')}
+        />
+        <main className="home-stage-main">{routeContent}</main>
+        <VersionDriftNotice />
         {searchModal}
       </>
     );
   }
 
-  /** 阅读模式：无侧栏，全宽舞台，正文光学居中 */
   if (reading) {
     return (
       <div className="app-layout is-reading">
-        <MobileBar reading browseHref={browseHref} />
-        <main className="app-main app-main-reading">
-          <Outlet context={outletContext} />
-        </main>
-        {askBar}
+        <MobileBar
+          reading
+          browseHref={browseHref}
+          searchOpen={searchOpen}
+          onOpenSearch={(el) => openSearch(el, undefined, 'button')}
+        />
+        <main className="app-main app-main-reading">{routeContent}</main>
+        <VersionDriftNotice />
         {searchModal}
       </div>
     );
@@ -198,29 +153,16 @@ export function AppShell() {
 
   return (
     <div className="app-layout">
+      <TopNav
+        searchOpen={searchOpen}
+        onOpenSearch={(el) => openSearch(el, undefined, 'button')}
+      />
       <MobileBar
-        menuOpen={menuOpen}
-        menuButtonRef={menuButtonRef}
-        inactive={menuOpen}
-        onToggleMenu={() => setMenuOpen((v) => !v)}
+        searchOpen={searchOpen}
+        onOpenSearch={(el) => openSearch(el, undefined, 'button')}
       />
-      <button
-        type="button"
-        className={`sidebar-backdrop${menuOpen ? ' is-open' : ''}`}
-        tabIndex={-1}
-        aria-hidden="true"
-        onClick={() => setMenuOpen(false)}
-      />
-      <AppSidebar
-        menuOpen={menuOpen}
-        askActive={askActive}
-        onClose={() => setMenuOpen(false)}
-        sidebarRef={sidebarRef}
-      />
-      <main className="app-main app-main-browse" inert={menuOpen}>
-        <Outlet context={outletContext} />
-      </main>
-      {askBar}
+      <main className="app-main app-main-browse">{routeContent}</main>
+      <VersionDriftNotice />
       {searchModal}
     </div>
   );
