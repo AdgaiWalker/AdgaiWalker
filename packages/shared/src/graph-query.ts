@@ -7,24 +7,20 @@
  * 已知范围限制（诚实记账，见 PRD §8-D7）：属性查询不支持子查询与正则，
  * 仅支持 `[prop]` / `[prop:val]` / `[prop:null]` / `[prop:<n]` / `[prop:>n]`。
  */
-import type { GraphNodeKind } from './graph.js';
+import {
+  GRAPH_QUERY_OPERATORS,
+  GraphQuerySyntaxError,
+  type GraphQueryDoc,
+  type GraphQueryField,
+  type GraphQueryNode,
+  type GraphQueryOperator,
+  type GraphQueryParseResult,
+  type GraphQueryScope,
+} from './graph-query-types.js';
+import { evaluateGraphQuery } from './graph-query-eval.js';
 
-export const GRAPH_QUERY_OPERATORS = [
-  'file',
-  'path',
-  'content',
-  'tag',
-  'line',
-  'block',
-  'section',
-  'task',
-  'task-todo',
-  'task-done',
-  'match-case',
-  'ignore-case',
-] as const;
-
-export type GraphQueryOperator = (typeof GRAPH_QUERY_OPERATORS)[number];
+export * from './graph-query-types.js';
+export { evaluateGraphQuery } from './graph-query-eval.js';
 
 const OPERATORS = new Set<string>(GRAPH_QUERY_OPERATORS);
 const FIELD_OPERATORS = new Set(['file', 'path', 'content', 'tag']);
@@ -36,53 +32,6 @@ const SCOPE_OPERATORS = new Set([
   'task-todo',
   'task-done',
 ]);
-
-export type GraphQueryField = 'any' | 'file' | 'path' | 'content' | 'tag';
-export type GraphQueryScope =
-  | 'line'
-  | 'block'
-  | 'section'
-  | 'task'
-  | 'task-todo'
-  | 'task-done';
-
-export type GraphQueryNode =
-  | { kind: 'and'; children: GraphQueryNode[] }
-  | { kind: 'or'; children: GraphQueryNode[] }
-  | { kind: 'not'; child: GraphQueryNode }
-  | {
-      kind: 'match';
-      field: GraphQueryField;
-      raw: string;
-      mode: 'text' | 'phrase' | 'regex';
-      caseSensitive: boolean;
-      /** 仅 mode='regex' 使用；i 由 caseSensitive 决定，g/y 被剔除以免 .test 带状态 */
-      flags?: string;
-    }
-  | {
-      kind: 'property';
-      name: string;
-      op: 'exists' | 'null' | 'eq' | 'lt' | 'gt';
-      value: string;
-      caseSensitive: boolean;
-    }
-  | { kind: 'scope'; scope: GraphQueryScope; child: GraphQueryNode };
-
-/** 一个被查询的节点（由图谱节点 + 正文派生） */
-export type GraphQueryDoc = {
-  id: string;
-  kind: GraphNodeKind;
-  /** note / ghost 的 slug；tag 节点为空 */
-  slug: string;
-  title: string;
-  /** 内容路径，如 content/log/ferry-theory.md */
-  path: string;
-  body: string;
-  tags: readonly string[];
-  /** tag 节点自身的标签名 */
-  tag: string;
-  props: Record<string, string | number | null>;
-};
 
 // ---------------------------------------------------------------- tokenizer
 
@@ -96,8 +45,6 @@ type Token =
   | { type: 'or' }
   | { type: 'paren-open' }
   | { type: 'paren-close' };
-
-export class GraphQuerySyntaxError extends Error {}
 
 function readQuoted(input: string, start: number): { value: string; end: number } {
   let out = '';
@@ -412,10 +359,6 @@ function parsePropertyToken(raw: string): GraphQueryNode {
   return { kind: 'property', name, op: 'eq', value, caseSensitive: false };
 }
 
-export type GraphQueryParseResult =
-  | { ok: true; query: GraphQueryNode }
-  | { ok: false; error: string };
-
 export function parseGraphQuery(input: string): GraphQueryParseResult {
   const trimmed = input.trim();
   if (!trimmed) return { ok: false, error: '空查询' };
@@ -428,123 +371,6 @@ export function parseGraphQuery(input: string): GraphQueryParseResult {
       ok: false,
       error: error instanceof Error ? error.message : '语法错误',
     };
-  }
-}
-
-// ---------------------------------------------------------------- evaluator
-
-function includes(haystack: string, needle: string, caseSensitive: boolean): boolean {
-  if (!needle) return false;
-  return caseSensitive
-    ? haystack.includes(needle)
-    : haystack.toLowerCase().includes(needle.toLowerCase());
-}
-
-function fieldHaystack(doc: GraphQueryDoc, field: GraphQueryField, body: string): string {
-  switch (field) {
-    case 'file':
-      return `${doc.slug}\n${doc.title}`;
-    case 'path':
-      return doc.path;
-    case 'content':
-      return body;
-    case 'tag':
-      return doc.tags.join('\n');
-    default:
-      return `${doc.slug}\n${doc.title}\n${body}\n${doc.tags.join('\n')}\n${doc.tag}`;
-  }
-}
-
-function segmentsFor(doc: GraphQueryDoc, scope: GraphQueryScope): string[] {
-  const body = doc.body;
-  switch (scope) {
-    case 'line':
-      return body.split('\n');
-    case 'block':
-      return body.split(/\n\s*\n/);
-    case 'section': {
-      const sections: string[] = [];
-      let current: string[] = [];
-      for (const line of body.split('\n')) {
-        if (/^#{1,6}\s/.test(line) && current.length) {
-          sections.push(current.join('\n'));
-          current = [];
-        }
-        current.push(line);
-      }
-      sections.push(current.join('\n'));
-      return sections;
-    }
-    case 'task':
-      return body.split('\n').filter((line) => /^\s*[-*+]\s+\[[ xX]\]/.test(line));
-    case 'task-todo':
-      return body.split('\n').filter((line) => /^\s*[-*+]\s+\[ \]/.test(line));
-    case 'task-done':
-      return body.split('\n').filter((line) => /^\s*[-*+]\s+\[[xX]\]/.test(line));
-  }
-}
-
-function matchesProperty(doc: GraphQueryDoc, node: Extract<GraphQueryNode, { kind: 'property' }>): boolean {
-  const present = Object.prototype.hasOwnProperty.call(doc.props, node.name);
-  const value = doc.props[node.name];
-  switch (node.op) {
-    case 'exists':
-      return present && value !== undefined;
-    case 'null':
-      return present && (value === null || value === '');
-    case 'eq': {
-      if (!present || value === null || value === undefined) return false;
-      if (Array.isArray(value)) {
-        return value.some((entry) => includes(String(entry), node.value, node.caseSensitive));
-      }
-      return node.caseSensitive
-        ? String(value) === node.value
-        : String(value).toLowerCase() === node.value.toLowerCase();
-    }
-    case 'lt':
-    case 'gt': {
-      if (!present || value === null || value === undefined) return false;
-      const left = Number(value);
-      const right = Number(node.value);
-      if (Number.isNaN(left) || Number.isNaN(right)) return false;
-      return node.op === 'lt' ? left < right : left > right;
-    }
-  }
-}
-
-export function evaluateGraphQuery(node: GraphQueryNode, doc: GraphQueryDoc): boolean {
-  switch (node.kind) {
-    case 'and':
-      return node.children.every((child) => evaluateGraphQuery(child, doc));
-    case 'or':
-      return node.children.some((child) => evaluateGraphQuery(child, doc));
-    case 'not':
-      return !evaluateGraphQuery(node.child, doc);
-    case 'property':
-      return matchesProperty(doc, node);
-    case 'scope': {
-      const segments = segmentsFor(doc, node.scope);
-      if (segments.length === 0) return false;
-      return segments.some((segment) =>
-        evaluateGraphQuery(node.child, { ...doc, body: segment }),
-      );
-    }
-    case 'match': {
-      const haystack = fieldHaystack(doc, node.field, doc.body);
-      // Obsidian 的 tag: 查询写作 tag:#work；本站标签值不带 #，故取值时剥掉前导 #
-      const needle =
-        node.field === 'tag' ? node.raw.replace(/^#/, '') : node.raw;
-      if (node.mode === 'regex') {
-        try {
-          const base = (node.flags ?? '').replace(/i/g, '');
-          const regex = new RegExp(node.raw, base + (node.caseSensitive ? '' : 'i'));
-          return regex.test(haystack);
-        } catch {
-          return false;
-        }
-      }
-      return includes(haystack, needle, node.caseSensitive);
-    }
   }
 }
 

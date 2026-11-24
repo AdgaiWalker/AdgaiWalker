@@ -13,6 +13,7 @@ import {
   verifyArticleVersionIndex,
   type ArticleVersionIndex,
 } from '../../packages/shared/src/article-version';
+import { isValidContentSlug } from '../../packages/shared/src/content';
 import { repoRoot, webGeneratedDir } from './paths';
 
 export interface ProjectedArticleVersion {
@@ -29,14 +30,12 @@ export interface ArticleVersionsProjection {
   articles: Record<string, ProjectedArticleVersion[]>;
 }
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export function projectArticleVersions(): ArticleVersionsProjection {
   const versionsDir = path.join(repoRoot, 'content/versions');
   const articles: Record<string, ProjectedArticleVersion[]> = {};
   if (fs.existsSync(versionsDir)) {
     for (const name of fs.readdirSync(versionsDir)) {
-      if (name === 'blobs' || !SLUG_RE.test(name)) continue;
+      if (name === 'blobs' || !isValidContentSlug(name)) continue;
       const slugDir = path.join(versionsDir, name);
       if (!fs.statSync(slugDir).isDirectory()) continue;
       const indexPath = path.join(slugDir, 'index.json');

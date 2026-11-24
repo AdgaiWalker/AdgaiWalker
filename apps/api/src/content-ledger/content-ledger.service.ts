@@ -10,7 +10,6 @@
  * 由前端显示「未知」，不得据此编造「已上线」（PRD §3.8）。
  */
 import { Inject, Injectable, Optional } from '@nestjs/common';
-import { createHash } from 'node:crypto';
 import {
   deriveContentStage,
   missingPublishedPostFields,
@@ -21,6 +20,7 @@ import {
   type ContentLedger,
   type ContentLedgerEntry,
 } from '@walker/shared';
+import { sha256Hex } from '../common/crypto';
 import {
   CONTENT_LEDGER_REPOSITORY,
   type ContentLedgerRepositoryPort,
@@ -91,7 +91,7 @@ export class ContentLedgerService {
     try {
       return publicItemHash(
         toPublicSnapshotSource({ slug: entry.slug, data: entry.frontmatter, body: entry.body }),
-        (text) => createHash('sha256').update(text).digest('hex'),
+        sha256Hex,
       );
     } catch {
       return null;

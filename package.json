@@ -39,6 +39,8 @@
     "check:content-dirty": "tsx scripts/check-uncommitted-content.ts",
     "verify:geo": "tsx scripts/verify-geo.ts",
     "verify:architecture": "tsx scripts/verify-architecture.ts",
+    "code:gen": "tsx scripts/generate-code-graph.ts",
+    "probe:production": "tsx scripts/probe-production.ts",
     "verify:docs": "tsx scripts/verify-doc-links.ts",
     "verify:deploy": "tsx scripts/verify-deploy-readiness.ts",
     "rebuild:legacy-db": "tsx scripts/rebuild-legacy-db.ts",

@@ -1,4 +1,5 @@
-import type { NextStepAction } from './assistant';
+import type { NextStepAction } from './assistant.js';
+import { isRecord } from './guards.js';
 
 /** 站内助手 SSE v2：所有帧共享稳定消息/尝试身份和消息内序号。 */
 export interface AssistantStreamIds {
@@ -91,8 +92,4 @@ function isResult(value: unknown): value is AssistantStreamResult {
     (typeof value.conversationId === 'string' || value.conversationId === null) &&
     (value.nextStep === undefined || value.nextStep === null || isRecord(value.nextStep)) &&
     (value.quickReplies === undefined || Array.isArray(value.quickReplies));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

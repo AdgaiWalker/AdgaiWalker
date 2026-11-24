@@ -1,4 +1,4 @@
-import { resolveVisibility, type ContentVisibility } from "@walker/shared";
+import { normalizeLf, resolveVisibility, type ContentVisibility } from "@walker/shared";
 
 export interface ParsedDocFrontmatter {
   hasFrontmatter: boolean;
@@ -113,7 +113,7 @@ function readTags(yaml: string): string[] {
 }
 
 export function parseDocFrontmatter(raw: string): ParsedDocFrontmatter {
-  const norm = raw.replace(/\r\n/g, "\n");
+  const norm = normalizeLf(raw);
   const match = norm.match(FM_RE);
   if (!match) return { hasFrontmatter: false, yaml: null, body: norm, title: "", summary: "", type: "knowledge", tags: [], visibility: "public", published: undefined };
   const yaml = match[1];
@@ -134,7 +134,7 @@ export function parseDocFrontmatter(raw: string): ParsedDocFrontmatter {
 
 export function updateDocFrontmatter(raw: string, patch: FrontmatterPatch): string {
   const parsed = parseDocFrontmatter(raw);
-  const nextBody = patch.body !== undefined ? patch.body.replace(/\r\n/g, "\n") : parsed.body;
+  const nextBody = patch.body !== undefined ? normalizeLf(patch.body) : parsed.body;
   let yaml = parsed.yaml;
   const hasMeta = patch.title !== undefined || patch.summary !== undefined || patch.type !== undefined || patch.visibility !== undefined || patch.tags !== undefined || patch.updated !== undefined;
   if (yaml === null) {
@@ -163,5 +163,5 @@ export function promoteDraftForPublish(raw: string, slug: string, today = new Da
   else if (parsed.summary !== parsed.summary.trim()) patch.summary = parsed.summary.trim();
   if (Object.keys(patch).length === 0) return { raw, changed: false };
   const next = updateDocFrontmatter(raw, patch);
-  return { raw: next, changed: next !== raw.replace(/\r\n/g, "\n") };
+  return { raw: next, changed: next !== normalizeLf(raw) };
 }

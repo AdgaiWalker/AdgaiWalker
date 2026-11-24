@@ -7,6 +7,7 @@
  * 3. 词表唯一：事件类型常量只在本文定义，api 与 admin 共用（对齐 assistant.ts 降级词表做法）。
  * 4. 正文不进轨迹：payload 禁放完整提示词、密钥、绝对路径，只留度量。
  */
+import { isRecord } from './guards.js';
 
 /** 契约版本：读取方按 v 分支；语义变更才递增，加字段不变（TECH-DESIGN §10） */
 export const TRACE_CONTRACT_VERSION = 1;
@@ -165,19 +166,8 @@ export type NormalizedTraceEvent = TraceEvent | {
   payload: unknown;
 };
 
-/** 旧事件兼容映射（TECH-DESIGN §4.3）：历史行不迁移，读侧统一适配 */
-const LEGACY_EVENT_TO_TYPE = {
-  start: 'run.start',
-  done: 'run.end',
-  error: 'run.error',
-} as const;
-
 /** 旧 stage 事件里只有 input/model 两档，规范化为 stage.end */
 const LEGACY_STAGES = ['input', 'model'] as const;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;

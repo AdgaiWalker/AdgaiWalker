@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CloudUpload, Plus, RefreshCw, Search } from "lucide-react";
+import { isValidContentSlug } from "@walker/shared";
 import {
   useContent,
   useContentDraftBackup,
@@ -14,13 +15,21 @@ import { DEFAULT_CONTENT_TYPES } from "../../shared/content-types";
 import { timeLabel } from "../../shared/labels";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 type FilterMode = "all" | "draft" | "live";
+type BadgeState = "verified" | "indexed" | "pending" | "private" | "draft";
+
+const BADGE_META: Record<BadgeState, { cls: string; dot: string; text: string; tip?: string }> = {
+  verified: { cls: "badge green", dot: "status-dot live", text: "已上线", tip: "后台发布单已线上确证" },
+  indexed: { cls: "badge", dot: "status-dot live", text: "已公开", tip: "已进入公开问答索引（暂无后台发布单记录）" },
+  pending: { cls: "badge", dot: "status-dot inflight", text: "待核验", tip: "Git 已公开且无本地改动，尚未同步进问答索引/发布单确证" },
+  private: { cls: "badge", dot: "status-dot", text: "私密" },
+  draft: { cls: "badge amber", dot: "status-dot draft", text: "草稿" },
+};
 
 function autoSlug(text: string, existing?: ReadonlySet<string>): string {
   const dm = text.match(/\b(20\d{2})[-_./]?(\d{1,2})[-_./]?(\d{1,2})\b/);
   const latin = text.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").trim().replace(/\s+/g, "-");
-  const base = SLUG_RE.test(latin)
+  const base = isValidContentSlug(latin)
     ? latin
     : dm
       ? `${dm[1]}-${dm[2].padStart(2, "0")}-${dm[3].padStart(2, "0")}-note`
@@ -63,7 +72,6 @@ export function ContentListPage() {
   const behindCount = syncQuery.data?.behind ?? 0;
   const conflictCount = syncQuery.data?.conflicts?.length ?? 0;
 
-  type BadgeState = "verified" | "indexed" | "pending" | "private" | "draft";
   const badgeOf = (item: (typeof items)[number]): BadgeState => {
     const { publishedHash, currentPublicHash, indexedHash } = item.publication;
     if (publishedHash && currentPublicHash && publishedHash === currentPublicHash) return "verified";
@@ -89,7 +97,7 @@ export function ContentListPage() {
     const title = newTitle.trim();
     const slug = (newSlug.trim() || autoSlug(title, existingSlugs)).toLowerCase();
     if (!title) return setCreateError("请填写标题");
-    if (!SLUG_RE.test(slug)) return setCreateError("Slug 仅支持小写字母、数字和连字符");
+    if (!isValidContentSlug(slug)) return setCreateError("Slug 仅支持小写字母、数字和连字符");
     setCreateError(null);
     const today = new Date().toISOString().slice(0, 10);
     // 正文留空：标题已存 frontmatter 并由画布/前台 <h1> 渲染，避免双 H1 重复
@@ -163,15 +171,7 @@ export function ContentListPage() {
       ) : (
         <div className="article-list">
           {filtered.map((item) => {
-            const state = badgeOf(item);
-            const badgeMeta: Record<BadgeState, { cls: string; dot: string; text: string; tip?: string }> = {
-              verified: { cls: "badge green", dot: "status-dot live", text: "已上线", tip: "后台发布单已线上确证" },
-              indexed: { cls: "badge", dot: "status-dot live", text: "已公开", tip: "已进入公开问答索引（暂无后台发布单记录）" },
-              pending: { cls: "badge", dot: "status-dot inflight", text: "待核验", tip: "Git 已公开且无本地改动，尚未同步进问答索引/发布单确证" },
-              private: { cls: "badge", dot: "status-dot", text: "私密" },
-              draft: { cls: "badge amber", dot: "status-dot draft", text: "草稿" },
-            };
-            const m = badgeMeta[state];
+            const m = BADGE_META[badgeOf(item)];
             return (
               <Link key={item.slug} to={R.contentDetail(item.slug)} className="article-row">
                 <div className="article-row-main">

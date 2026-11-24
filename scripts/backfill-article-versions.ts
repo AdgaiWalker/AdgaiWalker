@@ -16,10 +16,8 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import matter from 'gray-matter';
 import { contentLogDir, repoRoot } from './lib/paths';
-import { resolveVisibility } from '../packages/shared/src/content';
+import { isValidContentSlug, resolveVisibility } from '../packages/shared/src/content';
 import { FsArticleVersionStore } from '../apps/api/src/adapters/fs-article-version-store';
-
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // 落点固定到仓库根版本库（不依赖 cwd 探测）
 process.env.ARTICLE_VERSIONS_DIR = path.join(repoRoot, 'content/versions');
@@ -33,7 +31,7 @@ async function main(): Promise<{ created: number; skipped: number }> {
   for (const file of fs.readdirSync(contentLogDir)) {
     if (!/\.(md|mdx)$/i.test(file)) continue;
     const slug = file.replace(/\.(md|mdx)$/i, '');
-    if (!SLUG_RE.test(slug)) continue;
+    if (!isValidContentSlug(slug)) continue;
 
     const rawBody = fs.readFileSync(path.join(contentLogDir, file), 'utf8');
 

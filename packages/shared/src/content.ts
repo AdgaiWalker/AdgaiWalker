@@ -5,6 +5,18 @@
 
 export type ContentVisibility = 'public' | 'draft' | 'private';
 
+/** 唯一内容 slug 格式契约：小写 ASCII 字母/数字与单短横线分段 */
+export const CONTENT_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function isValidContentSlug(slug: string): boolean {
+  return CONTENT_SLUG_RE.test(slug);
+}
+
+/** 唯一跨 OS 换行归一化函数：CRLF / CR → LF，避免哈希在 Windows 与 POSIX 间漂移 */
+export function normalizeLf(text: string): string {
+  return text.replace(/\r\n?/g, '\n');
+}
+
 /**
  * 公开文章 frontmatter 必需字段合同。
  * build:web 的字段门禁（scripts/check-content-fields.ts）与工作站网站发布器

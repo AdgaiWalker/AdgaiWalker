@@ -49,9 +49,17 @@ export interface KnowledgeReloadFailedEvent {
   reason: string;
 }
 
+const DEFAULT_WATCH_DEBOUNCE_MS = 60;
+const DEFAULT_SEARCH_LIMIT = 10;
+const SEARCH_SCORE_TITLE = 3;
+const SEARCH_SCORE_TAG = 2;
+const SEARCH_SCORE_SUMMARY = 1;
+const METHODOLOGY_MAX_TITLES = 8;
+
+const sha256Hex = (text: string): string => createHash('sha256').update(text).digest('hex');
+
 /** 与 API 的 FsPublicSnapshotRepository 同一份读取与校验规则（fail-closed）。 */
 function readActiveSnapshot(root: string): PublicSnapshotManifest {
-  const sha = (text: string) => createHash('sha256').update(text).digest('hex');
   const pointerPath = path.join(root, 'active.json');
   if (!fs.existsSync(pointerPath)) throw new Error('snapshot-unavailable');
   const pointer = JSON.parse(fs.readFileSync(pointerPath, 'utf8')) as { collectionHash?: string };
@@ -64,7 +72,7 @@ function readActiveSnapshot(root: string): PublicSnapshotManifest {
   } catch {
     throw new Error('snapshot-unavailable');
   }
-  if (!verifyPublicSnapshot(snapshot, sha) || snapshot.collectionHash !== pointer.collectionHash) {
+  if (!verifyPublicSnapshot(snapshot, sha256Hex) || snapshot.collectionHash !== pointer.collectionHash) {
     throw new Error('snapshot-unavailable');
   }
   return snapshot;
@@ -131,7 +139,7 @@ export class KnowledgeService extends Service {
         citable: policy.citable === true,
       });
     }
-    return { entries, collectionHash: null, fingerprint: createHash('sha256').update(rawText).digest('hex') };
+    return { entries, collectionHash: null, fingerprint: sha256Hex(rawText) };
   }
 
   /** 公开上下文：只读与 API 同源的已核验快照；无基线或 hash 不符直接抛错（fail-closed）。 */
@@ -204,7 +212,7 @@ export class KnowledgeService extends Service {
       throw new Error('knowledge: 缺少内容来源（contentPath 或 snapshotDir）');
     }
     this.watchEnabled = config.watch ?? true;
-    this.watchDebounceMs = Math.max(0, config.watchDebounceMs ?? 60);
+    this.watchDebounceMs = Math.max(0, config.watchDebounceMs ?? DEFAULT_WATCH_DEBOUNCE_MS);
 
     const initial = this.loadState();
     this.entries = initial.entries;
@@ -325,7 +333,7 @@ export class KnowledgeService extends Service {
   }
 
   /** 检索：只推 citable=true；命中理由随行（诚实出处） */
-  search(query: string, limit = 10): SearchHit[] {
+  search(query: string, limit = DEFAULT_SEARCH_LIMIT): SearchHit[] {
     const q = query.trim().toLowerCase();
     if (!q) return [];
     const denyState = this.deniedNow();
@@ -338,15 +346,15 @@ export class KnowledgeService extends Service {
         let score = 0;
         const reasons: string[] = [];
         if (title.includes(q)) {
-          score += 3;
+          score += SEARCH_SCORE_TITLE;
           reasons.push('标题命中');
         }
         if (tags.some((t) => t.includes(q) || q.includes(t))) {
-          score += 2;
+          score += SEARCH_SCORE_TAG;
           reasons.push('标签命中');
         }
         if (summary.includes(q)) {
-          score += 1;
+          score += SEARCH_SCORE_SUMMARY;
           reasons.push('摘要命中');
         }
         return { e, score, why: reasons.join('、') || '弱相关' };
@@ -374,7 +382,7 @@ export class KnowledgeService extends Service {
       const g = groups.get(key) ?? { domain: key, count: 0, intents: [], titles: [] };
       g.count += 1;
       if (e.intent && !g.intents.includes(e.intent)) g.intents.push(e.intent);
-      if (g.titles.length < 8) g.titles.push(e.title);
+      if (g.titles.length < METHODOLOGY_MAX_TITLES) g.titles.push(e.title);
       groups.set(key, g);
     }
     return [...groups.values()].sort((a, b) => b.count - a.count);

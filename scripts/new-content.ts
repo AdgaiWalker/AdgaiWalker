@@ -10,9 +10,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isValidContentSlug } from '../packages/shared/src/content';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function autoSlug(text: string): string {
   const dateMatch = text.match(/\b(20\d{2})[-_./]?(\d{1,2})[-_./]?(\d{1,2})\b/);
@@ -26,7 +26,7 @@ function autoSlug(text: string): string {
     .trim()
     .replace(/\s+/g, '-');
 
-  if (SLUG_RE.test(latin)) return latin;
+  if (isValidContentSlug(latin)) return latin;
   if (datePart) return datePart;
   const today = new Date().toISOString().slice(0, 10);
   const rand = Math.random().toString(36).slice(2, 6);
@@ -67,7 +67,7 @@ function parseArgs(argv: string[]) {
 function main() {
   const { title, slug, tags, summary } = parseArgs(process.argv.slice(2));
 
-  if (!SLUG_RE.test(slug)) {
+  if (!isValidContentSlug(slug)) {
     console.error(`❌ 错误：Slug「${slug}」不合规。只支持小写英文、数字与短横线。`);
     process.exit(1);
   }

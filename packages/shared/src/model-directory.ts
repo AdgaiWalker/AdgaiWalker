@@ -9,6 +9,7 @@
  * 本模块只做纯解析与校验：把上面两份文档归一成可复用、可扩展的目录快照。
  * 不读取密钥值，不写文件，不依赖 apps。
  */
+import { asNonEmptyString, asRecord } from './guards.js';
 
 /** 一个模型条目：id 与显示名（dsh 目录项的子集）。 */
 export interface ModelDirectoryModel {
@@ -210,16 +211,6 @@ export interface ParseModelDirectoryInput {
   now?: string;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
 /** 解析模型目录项：只接受有非空 id 的条目，名称缺省回落到 id。 */
 export function parseModelDirectoryModels(raw: unknown): ModelDirectoryModel[] {
   if (!Array.isArray(raw)) return [];
@@ -227,10 +218,10 @@ export function parseModelDirectoryModels(raw: unknown): ModelDirectoryModel[] {
   const models: ModelDirectoryModel[] = [];
   for (const item of raw) {
     const record = asRecord(item);
-    const id = record ? asString(record.id) : null;
+    const id = record ? asNonEmptyString(record.id) : null;
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    models.push({ id, name: (record && asString(record.name)) ?? id });
+    models.push({ id, name: (record && asNonEmptyString(record.name)) ?? id });
   }
   return models;
 }
@@ -248,13 +239,13 @@ export function parseModelDirectory(input: ParseModelDirectoryInput): ModelDirec
     const section = known.settingsSection === 'llm-pi-ai'
       ? asRecord(asRecord(root?.providers)?.[known.route])
       : root;
-    const apiKeyRef = (section && asString(section.apiKeyEnv)) ?? known.defaultApiKeyRef;
-    const rawProtocol = section && asString(section.api);
+    const apiKeyRef = (section && asNonEmptyString(section.apiKeyEnv)) ?? known.defaultApiKeyRef;
+    const rawProtocol = section && asNonEmptyString(section.api);
     return {
       id: known.route,
       interfaceName: known.settingsSection,
       protocol: (rawProtocol && findWireProtocol(rawProtocol) ? rawProtocol : known.protocol) as WireProtocol,
-      baseURL: (section && asString(section.baseURL)) ?? known.defaultBaseURL,
+      baseURL: (section && asNonEmptyString(section.baseURL)) ?? known.defaultBaseURL,
       apiKeyRef,
       hasCredential: refs.has(apiKeyRef),
       models: parseModelDirectoryModels(section?.models),
@@ -265,8 +256,8 @@ export function parseModelDirectory(input: ParseModelDirectoryInput): ModelDirec
   return {
     generatedAt: input.now ?? new Date().toISOString(),
     home: input.home,
-    defaultProvider: (defaultModelSection && asString(defaultModelSection.provider)) ?? null,
-    defaultModel: (defaultModelSection && asString(defaultModelSection.model)) ?? null,
+    defaultProvider: (defaultModelSection && asNonEmptyString(defaultModelSection.provider)) ?? null,
+    defaultModel: (defaultModelSection && asNonEmptyString(defaultModelSection.model)) ?? null,
     providers,
   };
 }

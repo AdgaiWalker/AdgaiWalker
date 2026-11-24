@@ -9,6 +9,7 @@
  * - 公开纪律：每版一个稳定 URL；版本页 canonical 指向当前版；公开的是构建期静态页。
  * - 双区物理独立：草稿区 = content/log（可改）；公开区 = content/versions（只追加、无删除路径）。
  */
+import { normalizeLf } from './content.js';
 
 /** 版本库存储根（相对仓库根）：公开区，只追加，进 Git，随构建投影为静态页 */
 export const ARTICLE_VERSIONS_DIR = 'content/versions';
@@ -90,7 +91,7 @@ export function articleCurrentPath(slug: string): string {
 
 /** 剥掉原始 md 的 YAML frontmatter 块（三处共用一个正则：发布预检 / 预渲染 / 版本页），统一 LF */
 export function stripFrontmatterBlock(raw: string): string {
-  return raw.replace(/\r\n?/g, '\n').replace(/^---[\s\S]*?---\n?/, '');
+  return normalizeLf(raw).replace(/^---[\s\S]*?---\n?/, '');
 }
 
 // ---------- 纯函数守卫 ----------

@@ -1,22 +1,6 @@
 /**
  * 力导向模拟 —— 按 Obsidian 原始 worker 的参数与语义重写（不依赖 d3）。
- *
- * 对应关系（来源见 constants.ts）：
- *   sim-original.js 的 WASM 入口
- *     `simulate(ptr, n, m, alpha, centerStrength, linkStrength, linkDistance,
- *               repelStrength, theta=.9, collideStrength=.5)` + `complete(ptr, n, .6)`
- *   与其 d3-force 回退分支完全同构：
- *     forceX(0, centerStrength) / forceY(0, centerStrength)
- *     forceLink(distance = linkDistance, strength = linkStrength × d3 度数默认强度)
- *     forceManyBody(strength = -repelStrength, distanceMin = 30, theta = 0.9)
- *     forceCollide(radius = 60, strength = 0.5, iterations = 1)
- *   每 tick：`alpha += (alphaTarget - alpha) * alphaDecay` → 依次施加力 →
- *   `fx==null ? x += vx *= .6 : (x = fx, vx = 0)`。
- *
- * 四叉树按 d3-quadtree 的 `cover` / `add` / `visit` / `visitAfter` 结构逐行等价重写，
- * 因为 Barnes–Hut 的近似结果依赖象限划分与遍历顺序。
- *
- * 唯一偏离：随机源由 `Math.random` 改为可注入的定种子 PRNG（本站要求布局可复现、可测试）。
+ * 四叉树实现位于 `./quadtree.ts`，此处专注 PRNG、四种作用力与模拟循环。
  */
 
 import {
@@ -31,6 +15,9 @@ import {
   MANY_BODY_THETA,
   VELOCITY_DECAY,
 } from './constants';
+import { Quadtree, isInternal, type QLeaf, type QNode } from './quadtree';
+
+export { isInternal, type QNode };
 
 export type SimNode = {
   id: string;
@@ -65,280 +52,25 @@ function makeJiggle(random: Random): () => number {
   return () => 1e-6 * (random() - 0.5);
 }
 
-// --------------------------------------------------------------------- 四叉树
-
-type QInternal<T> = {
-  children: Array<QNode<T> | undefined>;
-  x: number;
-  y: number;
-  value: number;
-  r: number;
-};
-
-type QLeaf<T> = {
-  data: T;
-  next: QLeaf<T> | null;
-  x: number;
-  y: number;
-  value: number;
-  r: number;
-};
-
-export type QNode<T> = QInternal<T> | QLeaf<T>;
-
-export function isInternal<T>(node: QNode<T>): node is QInternal<T> {
-  return 'children' in node;
-}
-
-class Quadtree<T> {
-  private readonly getX: (d: T) => number;
-  private readonly getY: (d: T) => number;
-  private x0 = Number.NaN;
-  private y0 = Number.NaN;
-  private x1 = Number.NaN;
-  private y1 = Number.NaN;
-  private root: QNode<T> | undefined;
-
-  constructor(getX: (d: T) => number, getY: (d: T) => number, data?: readonly T[]) {
-    this.getX = getX;
-    this.getY = getY;
-    if (data) this.addAll(data);
+/** 对零偏移分量施加上下对称微扰；严格保持先判 x 再判 y 的 PRNG 调用顺序。 */
+function jiggleZeroDistance(
+  dx: number,
+  dy: number,
+  distSq: number,
+  jiggle: () => number,
+): { x: number; y: number; l: number } {
+  let x = dx;
+  let y = dy;
+  let l = distSq;
+  if (x === 0) {
+    x = jiggle();
+    l += x * x;
   }
-
-  addAll(data: readonly T[]): this {
-    const size = data.length;
-    const xs: number[] = new Array(size);
-    const ys: number[] = new Array(size);
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    for (let i = 0; i < size; i += 1) {
-      const x = +this.getX(data[i]!);
-      const y = +this.getY(data[i]!);
-      if (Number.isNaN(x) || Number.isNaN(y)) continue;
-      xs[i] = x;
-      ys[i] = y;
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-    }
-
-    if (minX > maxX || minY > maxY) return this;
-
-    this.cover(minX, minY).cover(maxX, maxY);
-
-    for (let i = 0; i < size; i += 1) {
-      const x = xs[i];
-      const y = ys[i];
-      if (x === undefined || y === undefined) continue;
-      this.insert(x, y, data[i]!);
-    }
-    return this;
+  if (y === 0) {
+    y = jiggle();
+    l += y * y;
   }
-
-  /** d3 的 cover：把范围扩成正方形（边长取 2 的幂），保证象限划分不退化 */
-  cover(inputX: number, inputY: number): this {
-    const x = +inputX;
-    const y = +inputY;
-    if (Number.isNaN(x) || Number.isNaN(y)) return this;
-
-    let x0 = this.x0;
-    let y0 = this.y0;
-    let x1 = this.x1;
-    let y1 = this.y1;
-
-    if (Number.isNaN(x0)) {
-      x0 = Math.floor(x);
-      x1 = x0 + 1;
-      y0 = Math.floor(y);
-      y1 = y0 + 1;
-    } else {
-      let z = x1 - x0 || 1;
-      let node: QNode<T> | undefined = this.root;
-      let parent: QInternal<T> | undefined;
-      let bit = 0;
-      while (x < x0 || x >= x1 || y < y0 || y >= y1) {
-        bit = ((y < y0 ? 1 : 0) << 1) | (x < x0 ? 1 : 0);
-        parent = { children: [undefined, undefined, undefined, undefined], x: 0, y: 0, value: 0, r: 0 };
-        parent.children[bit] = node;
-        node = parent;
-        z *= 2;
-        if (bit === 0) {
-          x1 = x0 + z;
-          y1 = y0 + z;
-        } else if (bit === 1) {
-          x0 = x1 - z;
-          y1 = y0 + z;
-        } else if (bit === 2) {
-          x1 = x0 + z;
-          y0 = y1 - z;
-        } else {
-          x0 = x1 - z;
-          y0 = y1 - z;
-        }
-      }
-      // 只有内部节点根需要被新包装的象限替换；叶子根与边界无关
-      if (this.root && isInternal(this.root)) this.root = node;
-    }
-
-    this.x0 = x0;
-    this.y0 = y0;
-    this.x1 = x1;
-    this.y1 = y1;
-    return this;
-  }
-
-  private insert(x: number, y: number, data: T): void {
-    if (Number.isNaN(x) || Number.isNaN(y)) return;
-
-    const leaf: QLeaf<T> = { data, next: null, x: 0, y: 0, value: 0, r: 0 };
-    let node: QNode<T> | undefined = this.root;
-    if (!node) {
-      this.root = leaf;
-      return;
-    }
-
-    let x0 = this.x0;
-    let y0 = this.y0;
-    let x1 = this.x1;
-    let y1 = this.y1;
-    let parent: QInternal<T> | undefined;
-    let bit = 0;
-    let midX = 0;
-    let midY = 0;
-
-    // 下沉到目标象限；命中的第一个空位就是落点
-    while (isInternal(node)) {
-      midX = (x0 + x1) / 2;
-      midY = (y0 + y1) / 2;
-      const right = x >= midX;
-      const bottom = y >= midY;
-      if (right) x0 = midX;
-      else x1 = midX;
-      if (bottom) y0 = midY;
-      else y1 = midY;
-      bit = ((bottom ? 1 : 0) << 1) | (right ? 1 : 0);
-      parent = node;
-      const next: QNode<T> | undefined = node.children[bit];
-      if (!next) {
-        node.children[bit] = leaf;
-        return;
-      }
-      node = next;
-    }
-
-    const existingX = +this.getX(node.data);
-    const existingY = +this.getY(node.data);
-
-    // 完全重合：串成链表
-    if (x === existingX && y === existingY) {
-      leaf.next = node;
-      if (parent) parent.children[bit] = leaf;
-      else this.root = leaf;
-      return;
-    }
-
-    // 分裂叶子，直到两点进入不同象限
-    do {
-      const bucket: QInternal<T> = {
-        children: [undefined, undefined, undefined, undefined],
-        x: 0,
-        y: 0,
-        value: 0,
-        r: 0,
-      };
-      if (parent) parent.children[bit] = bucket;
-      else this.root = bucket;
-      parent = bucket;
-
-      midX = (x0 + x1) / 2;
-      midY = (y0 + y1) / 2;
-      const right = x >= midX;
-      const bottom = y >= midY;
-      if (right) x0 = midX;
-      else x1 = midX;
-      if (bottom) y0 = midY;
-      else y1 = midY;
-      bit = ((bottom ? 1 : 0) << 1) | (right ? 1 : 0);
-
-      const existingBit = ((existingY >= midY ? 1 : 0) << 1) | (existingX >= midX ? 1 : 0);
-      if (bit !== existingBit) {
-        parent.children[existingBit] = node;
-        parent.children[bit] = leaf;
-        return;
-      }
-    } while (true);
-  }
-
-  visit(
-    visitor: (
-      node: QNode<T>,
-      x0: number,
-      y0: number,
-      x1: number,
-      y1: number,
-    ) => boolean | void,
-  ): this {
-    type Entry = { node: QNode<T>; x0: number; y0: number; x1: number; y1: number };
-    const stack: Entry[] = [];
-    if (this.root) {
-      stack.push({ node: this.root, x0: this.x0, y0: this.y0, x1: this.x1, y1: this.y1 });
-    }
-    let entry: Entry | undefined;
-    while ((entry = stack.pop())) {
-      const node = entry.node;
-      if (!visitor(node, entry.x0, entry.y0, entry.x1, entry.y1) && isInternal(node)) {
-        const midX = (entry.x0 + entry.x1) / 2;
-        const midY = (entry.y0 + entry.y1) / 2;
-        const children = node.children;
-        const child3 = children[3];
-        if (child3) stack.push({ node: child3, x0: midX, y0: midY, x1: entry.x1, y1: entry.y1 });
-        const child2 = children[2];
-        if (child2) stack.push({ node: child2, x0: entry.x0, y0: midY, x1: midX, y1: entry.y1 });
-        const child1 = children[1];
-        if (child1) stack.push({ node: child1, x0: midX, y0: entry.y0, x1: entry.x1, y1: midY });
-        const child0 = children[0];
-        if (child0) stack.push({ node: child0, x0: entry.x0, y0: entry.y0, x1: midX, y1: midY });
-      }
-    }
-    return this;
-  }
-
-  visitAfter(
-    visitor: (node: QNode<T>, x0: number, y0: number, x1: number, y1: number) => void,
-  ): this {
-    type Entry = { node: QNode<T>; x0: number; y0: number; x1: number; y1: number };
-    const pending: Entry[] = [];
-    const ordered: Entry[] = [];
-    if (this.root) {
-      pending.push({ node: this.root, x0: this.x0, y0: this.y0, x1: this.x1, y1: this.y1 });
-    }
-    let entry: Entry | undefined;
-    while ((entry = pending.pop())) {
-      if (isInternal(entry.node)) {
-        const midX = (entry.x0 + entry.x1) / 2;
-        const midY = (entry.y0 + entry.y1) / 2;
-        const children = entry.node.children;
-        const child0 = children[0];
-        if (child0) pending.push({ node: child0, x0: entry.x0, y0: entry.y0, x1: midX, y1: midY });
-        const child1 = children[1];
-        if (child1) pending.push({ node: child1, x0: midX, y0: entry.y0, x1: entry.x1, y1: midY });
-        const child2 = children[2];
-        if (child2) pending.push({ node: child2, x0: entry.x0, y0: midY, x1: midX, y1: entry.y1 });
-        const child3 = children[3];
-        if (child3) pending.push({ node: child3, x0: midX, y0: midY, x1: entry.x1, y1: entry.y1 });
-      }
-      ordered.push(entry);
-    }
-    for (let i = ordered.length - 1; i >= 0; i -= 1) {
-      const item = ordered[i]!;
-      visitor(item.node, item.x0, item.y0, item.x1, item.y1);
-    }
-    return this;
-  }
+  return { x, y, l };
 }
 
 // -------------------------------------------------------------------- 作用力
@@ -395,7 +127,6 @@ export function forceLink<N extends SimNode>(
     source: N;
     target: N;
     bias: number;
-    /** 仅度数权重部分；距离与强度乘子每 tick 从 getter 读取 */
     weight: number;
   }> = [];
 
@@ -464,11 +195,7 @@ export function forceManyBody<N extends SimNode>(
   const force: Force<N> = (alpha) => {
     if (nodes.length === 0) return;
     const jiggle = makeJiggle(random);
-    const tree = new Quadtree<N>(
-      (d) => d.x,
-      (d) => d.y,
-      nodes,
-    );
+    const tree = new Quadtree<N>((d) => d.x, (d) => d.y, nodes);
 
     tree.visitAfter((quad) => {
       let strength = 0;
@@ -509,14 +236,7 @@ export function forceManyBody<N extends SimNode>(
 
         if ((width * width) / theta2 < l) {
           if (l < distanceMax2) {
-            if (x === 0) {
-              x = jiggle();
-              l += x * x;
-            }
-            if (y === 0) {
-              y = jiggle();
-              l += y * y;
-            }
+            ({ x, y, l } = jiggleZeroDistance(x, y, l, jiggle));
             if (l < distanceMin2) l = Math.sqrt(distanceMin2 * l);
             node.vx += (x * quad.value * alpha) / l;
             node.vy += (y * quad.value * alpha) / l;
@@ -527,14 +247,7 @@ export function forceManyBody<N extends SimNode>(
         if (isInternal(quad) || l >= distanceMax2) return undefined;
 
         if (quad.data !== node || quad.next) {
-          if (x === 0) {
-            x = jiggle();
-            l += x * x;
-          }
-          if (y === 0) {
-            y = jiggle();
-            l += y * y;
-          }
+          ({ x, y, l } = jiggleZeroDistance(x, y, l, jiggle));
           if (l < distanceMin2) l = Math.sqrt(distanceMin2 * l);
         }
 
@@ -572,11 +285,7 @@ export function forceCollide<N extends SimNode>(
   const force: Force<N> = () => {
     const jiggle = makeJiggle(random);
     for (let k = 0; k < iterations; k += 1) {
-      const tree = new Quadtree<N>(
-        (d) => d.x,
-        (d) => d.y,
-        nodes,
-      );
+      const tree = new Quadtree<N>((d) => d.x, (d) => d.y, nodes);
       tree.visitAfter((quad) => {
         if (isInternal(quad)) {
           let maxRadius = 0;
@@ -603,14 +312,7 @@ export function forceCollide<N extends SimNode>(
               let y = yi - data.y - data.vy;
               let l = x * x + y * y;
               if (l < r * r) {
-                if (x === 0) {
-                  x = jiggle();
-                  l += x * x;
-                }
-                if (y === 0) {
-                  y = jiggle();
-                  l += y * y;
-                }
+                ({ x, y, l } = jiggleZeroDistance(x, y, l, jiggle));
                 l = ((r - (l = Math.sqrt(l))) / l) * strength;
                 x *= l;
                 y *= l;

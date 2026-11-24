@@ -1,15 +1,11 @@
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parsePublicDenyList, stableJson, verifyPublicSnapshot } from '@walker/shared';
+import { sha256Hex } from '../common/crypto';
 import type { PublicSnapshotRepositoryPort, VerifiedPublicSnapshot } from '../ports/public-snapshot.repository';
 
-function sha(text: string): string {
-  return createHash('sha256').update(text).digest('hex');
-}
-
 function verified(snapshot: VerifiedPublicSnapshot): boolean {
-  return verifyPublicSnapshot(snapshot, sha);
+  return verifyPublicSnapshot(snapshot, sha256Hex);
 }
 
 /** 撤销集合状态：无文件=空集合；文件损坏/形状不符=全部撤销（fail-closed）。 */

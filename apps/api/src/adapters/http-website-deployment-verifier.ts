@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { SITE_ORIGIN } from '@walker/shared';
 import type {
   VerifyWebsiteDeploymentInput,
   VerifyWebsiteDeploymentResult,
@@ -22,7 +23,7 @@ function resolveManifestUrl(pageUrl: string, explicitManifestUrl?: string): stri
     const parsed = new URL(pageUrl);
     return `${parsed.origin}/public-manifest.json`;
   } catch {
-    return 'https://www.iwalk.pro/public-manifest.json';
+    return `${SITE_ORIGIN}/public-manifest.json`;
   }
 }
 

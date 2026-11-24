@@ -27,14 +27,14 @@ import {
 import { FEATURE_EVENT, type FeatureEventPort } from '../ports/feature-event.port';
 import { RATE_LIMIT, type RateLimitPort } from '../ports/rate-limit.port';
 import { RuleAssistantAdapter } from '../adapters/rule-assistant.adapter';
+import {
+  ASSISTANT_DAILY_LIMIT_DEFAULT,
+  REQUEST_KEY_RE,
+  resolveAssistantDailyLimit,
+  todayCN,
+} from './assistant-common';
 
-/** 全站每日 AI 请求预算（触顶当日自动降级规则兜底；env ASSISTANT_DAILY_LIMIT 可调） */
-export const ASSISTANT_DAILY_LIMIT_DEFAULT = 200;
-
-/** 站点时区（UTC+8）的当日日期串 */
-function todayCN(): string {
-  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
-}
+export { ASSISTANT_DAILY_LIMIT_DEFAULT };
 
 export interface AssistantAskServiceInput {
   body: string;
@@ -77,9 +77,7 @@ export class AssistantService {
     @Inject(RATE_LIMIT) private readonly rateLimit: RateLimitPort,
     @Inject(FEATURE_EVENT) private readonly events: FeatureEventPort,
   ) {
-    const n = Number(process.env.ASSISTANT_DAILY_LIMIT);
-    this.dailyLimit =
-      Number.isFinite(n) && n > 0 ? n : ASSISTANT_DAILY_LIMIT_DEFAULT;
+    this.dailyLimit = resolveAssistantDailyLimit();
   }
 
   async ask(
@@ -227,7 +225,7 @@ export class AssistantService {
 
     // 持久 requestKey 幂等：重复发送返回原 run，不重新调用模型、不再计预算
     if (input.requestKey !== undefined && input.requestKey !== null) {
-      if (!/^[a-zA-Z0-9_-]{8,128}$/.test(input.requestKey)) throw validationError('request-key-invalid');
+      if (!REQUEST_KEY_RE.test(input.requestKey)) throw validationError('request-key-invalid');
       try {
         const prior = await this.repo.findRunByRequest(anonHash, input.requestKey);
         if (prior) return { actorType, anonHash, duplicate: prior, askInput: null, degradeReason: null };

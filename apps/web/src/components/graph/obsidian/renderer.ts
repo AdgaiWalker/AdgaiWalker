@@ -35,6 +35,12 @@ import {
   type GraphColorKey,
 } from './constants';
 
+const ANIMATION_EPSILON = 0.001;
+const ARROW_ANGLE_SPREAD = 0.4;
+const ARROW_HEAD_MIN_PX = 6;
+const ARROW_HEAD_WIDTH_MULT = 4;
+const LABEL_FONT_STACK = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Microsoft YaHei Light", sans-serif';
+
 /** 与原实现的 lerp 同义：keep 默认 0.9 → 每帧移动 10% */
 function lerp(from: number, to: number, keep = 0.9): number {
   return from * keep + to * (1 - keep);
@@ -258,8 +264,8 @@ export function renderGraph(
 
     const nextAlpha = lerp(link.alpha, targetAlpha);
     const nextArrow = lerp(link.arrowAlpha, targetArrow);
-    if (Math.abs(nextAlpha - link.alpha) > 0.001) animating = true;
-    if (Math.abs(nextArrow - link.arrowAlpha) > 0.001) animating = true;
+    if (Math.abs(nextAlpha - link.alpha) > ANIMATION_EPSILON) animating = true;
+    if (Math.abs(nextArrow - link.arrowAlpha) > ANIMATION_EPSILON) animating = true;
     link.alpha = nextAlpha;
     link.arrowAlpha = nextArrow;
 
@@ -267,7 +273,7 @@ export function renderGraph(
 
     // Animate：两端都出现后连线才可见，否则会看到连向空处的线
     const linkReveal = Math.min(a.reveal, b.reveal);
-    if (linkReveal <= 0.001) continue;
+    if (linkReveal <= ANIMATION_EPSILON) continue;
 
     const dx = b.x - a.x;
     const dy = b.y - a.y;
@@ -291,20 +297,20 @@ export function renderGraph(
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    if (showArrow && link.arrowAlpha > 0.001) {
+    if (showArrow && link.arrowAlpha > ANIMATION_EPSILON) {
       const angle = Math.atan2(dy, dx);
-      const head = Math.max(6, lineWidth * 4);
+      const head = Math.max(ARROW_HEAD_MIN_PX, lineWidth * ARROW_HEAD_WIDTH_MULT);
       ctx.globalAlpha = link.arrowAlpha * linkReveal;
       ctx.fillStyle = palette.arrow;
       ctx.beginPath();
       ctx.moveTo(x2, y2);
       ctx.lineTo(
-        x2 - Math.cos(angle - 0.4) * head,
-        y2 - Math.sin(angle - 0.4) * head,
+        x2 - Math.cos(angle - ARROW_ANGLE_SPREAD) * head,
+        y2 - Math.sin(angle - ARROW_ANGLE_SPREAD) * head,
       );
       ctx.lineTo(
-        x2 - Math.cos(angle + 0.4) * head,
-        y2 - Math.sin(angle + 0.4) * head,
+        x2 - Math.cos(angle + ARROW_ANGLE_SPREAD) * head,
+        y2 - Math.sin(angle + ARROW_ANGLE_SPREAD) * head,
       );
       ctx.closePath();
       ctx.fill();
@@ -317,12 +323,12 @@ export function renderGraph(
     const isSelected = i === selected;
     const isRelated = !hasHighlight || related[i] === 1;
     const nextFade = lerp(node.fadeAlpha, isRelated ? 1 : DIM_ALPHA);
-    if (Math.abs(nextFade - node.fadeAlpha) > 0.001) animating = true;
+    if (Math.abs(nextFade - node.fadeAlpha) > ANIMATION_EPSILON) animating = true;
     node.fadeAlpha = nextFade;
 
     // Animate：直接由 now 求值（无状态），故可随时重放或中断
     node.reveal = revealFactor(state.now, state.reveal, i);
-    if (node.reveal <= 0.001) continue;
+    if (node.reveal <= ANIMATION_EPSILON) continue;
     if (node.reveal < 1) animating = true;
 
     const size =
@@ -355,15 +361,14 @@ export function renderGraph(
     const node = nodes[i]!;
     if (!node.label) continue;
     const isSelected = i === selected;
-    const isRelated = !hasHighlight || related[i] === 1;
 
     const nextMove = lerp(node.moveText, isSelected ? LABEL_SELECTED_OFFSET : 0);
-    if (Math.abs(nextMove - node.moveText) > 0.001) animating = true;
+    if (Math.abs(nextMove - node.moveText) > ANIMATION_EPSILON) animating = true;
     node.moveText = nextMove;
 
     // 应用：高亮节点 alpha 强制 1，其余 textAlpha × fadeAlpha × Animate 淡入
     const alpha = isSelected ? 1 : textAlpha * node.fadeAlpha * node.reveal;
-    if (alpha <= 0.001) continue;
+    if (alpha <= ANIMATION_EPSILON) continue;
 
     const worldSize = nodeSizes[i]!;
     if (
@@ -378,13 +383,12 @@ export function renderGraph(
     const fontPx = (LABEL_FONT_BASE + worldSize / LABEL_FONT_SIZE_DIVISOR) * fontScale;
     ctx.globalAlpha = alpha;
     ctx.fillStyle = palette.text;
-    ctx.font = `${fontPx}px ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Microsoft YaHei Light", sans-serif`;
+    ctx.font = `${fontPx}px ${LABEL_FONT_STACK}`;
     ctx.fillText(
       node.label,
       node.x,
       node.y + (worldSize + LABEL_OFFSET_PADDING) * nodeScale + nextMove / scale,
     );
-    void isRelated;
   }
 
   ctx.restore();

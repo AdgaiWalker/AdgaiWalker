@@ -1,4 +1,5 @@
 import type { PublishedPostRequiredField } from './content.js';
+import { isRecord } from './guards.js';
 
 /** ContentChange only describes an approved file mutation. A saved candidate is never a release. */
 export const CONTENT_CHANGE_STATES = [
@@ -288,8 +289,4 @@ export function canMarkContentReleasePublished(
 function isContentSlug(value: unknown): value is string {
   return typeof value === 'string' && value.length <= 200 &&
     /^[a-zA-Z0-9_/-]+$/.test(value) && !value.includes('..');
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

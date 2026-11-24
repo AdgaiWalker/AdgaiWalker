@@ -1,26 +1,25 @@
 import { Inject, Injectable, Logger, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { execFile } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { promisify } from 'node:util';
 import path from 'node:path';
-import {
-  verifyPublicSnapshot,
-  type ContentDraftBackupResult,
-  type ContentSyncPullResult,
-  type ContentSyncStatus,
+import type {
+  ContentDraftBackupResult,
+  ContentSyncPullResult,
+  ContentSyncStatus,
 } from '@walker/shared';
 import { CONTENT_LOCK, type ContentLockPort } from '../ports/content-lock.port';
 import {
   PUBLIC_SNAPSHOT_REPOSITORY,
   type PublicSnapshotRepositoryPort,
-  type VerifiedPublicSnapshot,
 } from '../ports/public-snapshot.repository';
 import { resolveContentRepoRoot } from '../adapters/content-repo-dir';
-import { backupDraftsToBranch, syncFromRemote } from '../adapters/git-content-plumbing';
+import { backupDraftsToBranch, parseGitPorcelainPaths, syncFromRemote } from '../adapters/git-content-plumbing';
+import { fetchVerifiedPublicManifest } from '../adapters/live-public-manifest';
+import { runWithContentLock } from '../common/content-lock-helper';
 
 const execFileAsync = promisify(execFile);
 const CACHE_TTL_MS = 30_000;
-const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
+const SNAPSHOT_SYNC_DELAYS_MS = [45_000, 105_000] as const;
 
 @Injectable()
 export class ContentSyncService implements OnModuleDestroy {
@@ -158,12 +157,7 @@ export class ContentSyncService implements OnModuleDestroy {
         windowsHide: true,
       }).catch(() => ({ stdout: '' }));
 
-      const dirtyFiles: string[] = [];
-      const dirtyRecords = dirtyRes.stdout.split('\0').filter(Boolean);
-      for (const rec of dirtyRecords) {
-        const file = rec.slice(3);
-        if (file) dirtyFiles.push(path.basename(file));
-      }
+      const dirtyFiles = parseGitPorcelainPaths(dirtyRes.stdout).map((file) => path.basename(file));
 
       // 若之前记录的冲突文件已不再脏，自动消除冲突提示
       const dirtySet = new Set(dirtyFiles);
@@ -210,41 +204,32 @@ export class ContentSyncService implements OnModuleDestroy {
       return { ok: false, pulledCommits: 0, incomingFiles: [], message: '内容仓目录不可用，无法同步' };
     }
 
-    if (this.lock && (await this.lock.isLocked())) {
+    const locked = await runWithContentLock(
+      this.lock,
+      { owner: 'content-sync-pull', ttlMs: 60_000 },
+      async () => {
+        const result = await syncFromRemote({ repoRoot: cwd });
+        this.lastFetchTime = Date.now();
+        this.lastFetchError = result.ok || (result.conflicts?.length ?? 0) > 0 ? null : result.message;
+        this.lastConflicts = (result.conflicts ?? []).map((c) => path.basename(c.path));
+        this.cachedStatus = null;
+        await this.buildSnapshot(cwd);
+        return result;
+      },
+      { checkIsLockedFirst: true },
+    );
+    if (!locked.acquired) {
       return {
         ok: false,
         pulledCommits: 0,
         incomingFiles: [],
-        message: '工作区当前正处于发布加锁状态，请等待发布完成后再同步',
+        message:
+          locked.reason === 'already-locked'
+            ? '工作区当前正处于发布加锁状态，请等待发布完成后再同步'
+            : '获取内容锁失败，可能有其他发布或同步正在进行',
       };
     }
-
-    let lockRecord = null;
-    if (this.lock) {
-      lockRecord = await this.lock.tryAcquire({ owner: 'content-sync-pull', ttlMs: 60_000 });
-      if (!lockRecord) {
-        return {
-          ok: false,
-          pulledCommits: 0,
-          incomingFiles: [],
-          message: '获取内容锁失败，可能有其他发布或同步正在进行',
-        };
-      }
-    }
-
-    try {
-      const result = await syncFromRemote({ repoRoot: cwd });
-      this.lastFetchTime = Date.now();
-      this.lastFetchError = result.ok || (result.conflicts?.length ?? 0) > 0 ? null : result.message;
-      this.lastConflicts = (result.conflicts ?? []).map((c) => path.basename(c.path));
-      this.cachedStatus = null;
-      await this.buildSnapshot(cwd);
-      return result;
-    } finally {
-      if (this.lock && lockRecord) {
-        await this.lock.release(lockRecord.payload.lockId).catch(() => null);
-      }
-    }
+    return locked.value;
   }
 
   /** 将未发布的本地草稿备份到 GitHub 独立 drafts 分支（绝不触碰 main） */
@@ -254,26 +239,22 @@ export class ContentSyncService implements OnModuleDestroy {
       return { ok: false, branch: 'drafts', commit: null, backedUpFiles: [], message: '内容仓目录不可用' };
     }
 
-    let lockRecord = null;
-    if (this.lock) {
-      lockRecord = await this.lock.tryAcquire({ owner: 'content-sync-draft-backup', ttlMs: 60_000 });
-      if (!lockRecord) {
-        return { ok: false, branch: 'drafts', commit: null, backedUpFiles: [], message: '内容锁正被占用，请稍后重试' };
-      }
+    const locked = await runWithContentLock(
+      this.lock,
+      { owner: 'content-sync-draft-backup', ttlMs: 60_000 },
+      async () => {
+        const res = await backupDraftsToBranch({ repoRoot: cwd });
+        if (res.ok && res.commit) {
+          this.lastDraftBackupCommit = res.commit;
+          this.cachedStatus = null;
+        }
+        return res;
+      },
+    );
+    if (!locked.acquired) {
+      return { ok: false, branch: 'drafts', commit: null, backedUpFiles: [], message: '内容锁正被占用，请稍后重试' };
     }
-
-    try {
-      const res = await backupDraftsToBranch({ repoRoot: cwd });
-      if (res.ok && res.commit) {
-        this.lastDraftBackupCommit = res.commit;
-        this.cachedStatus = null;
-      }
-      return res;
-    } finally {
-      if (this.lock && lockRecord) {
-        await this.lock.release(lockRecord.payload.lockId).catch(() => null);
-      }
-    }
+    return locked.value;
   }
 
   /** 处理已通过 HMAC-SHA256 验签的 GitHub Webhook 推送事件（单飞防风暴） */
@@ -309,16 +290,8 @@ export class ContentSyncService implements OnModuleDestroy {
   /** 拉取线上已部署 public-manifest.json 并刷新本地问答快照指针（fail-open）。 */
   async syncPublicSnapshotFromLive(siteBase?: string): Promise<boolean> {
     if (!this.snapshots) return false;
-    const base = (siteBase || process.env.PUBLIC_SITE_URL?.trim() || 'https://www.iwalk.pro').replace(/\/$/, '');
     try {
-      const res = await fetch(`${base}/public-manifest.json?_t=${Date.now()}`, {
-        signal: AbortSignal.timeout(10_000),
-        headers: { accept: 'application/json', 'cache-control': 'no-cache, no-store, must-revalidate' },
-      });
-      if (!res.ok) return false;
-      const raw = (await res.json()) as unknown;
-      if (!verifyPublicSnapshot(raw, sha256)) return false;
-      const manifest = raw as VerifiedPublicSnapshot;
+      const manifest = await fetchVerifiedPublicManifest({ siteBase });
       const active = await this.snapshots.readActive().catch(() => null);
       if (active?.collectionHash === manifest.collectionHash) return true;
       await this.snapshots.publish(manifest);
@@ -335,10 +308,8 @@ export class ContentSyncService implements OnModuleDestroy {
     if (process.env.NODE_ENV === 'test' && !(Number.isFinite(overrideDelay) && overrideDelay > 0)) {
       return;
     }
-    if (!this.snapshots) return;
-    const delays = [45_000, 105_000];
-    if (attempt >= delays.length) return;
-    const delayMs = Number.isFinite(overrideDelay) && overrideDelay > 0 ? overrideDelay : delays[attempt]!;
+    if (!this.snapshots || attempt >= SNAPSHOT_SYNC_DELAYS_MS.length) return;
+    const delayMs = Number.isFinite(overrideDelay) && overrideDelay > 0 ? overrideDelay : SNAPSHOT_SYNC_DELAYS_MS[attempt]!;
     if (this.snapshotSyncTimer) clearTimeout(this.snapshotSyncTimer);
     this.snapshotSyncTimer = setTimeout(() => {
       this.snapshotSyncTimer = null;

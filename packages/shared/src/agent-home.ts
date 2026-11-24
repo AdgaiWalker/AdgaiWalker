@@ -12,6 +12,7 @@
  *
  * 本模块是纯函数：只做「共享层 + Agent 层」的合并与校验，不碰文件系统。
  */
+import { asNonEmptyString, asRecord } from './guards.js';
 
 /** Agent 环境的可公开描述（不含任何凭据值）。 */
 export interface AgentHomeView {
@@ -67,16 +68,6 @@ export interface ResolveAgentHomeInput {
   settingsSection?: string;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
 /**
  * 合并「共享层 + Agent 层」得到该 Agent 的有效环境描述。
  * 合并规则：Agent 层字段优先，缺失时回落共享层；两层都没有则给接口默认。
@@ -90,13 +81,13 @@ export function resolveAgentHome(input: ResolveAgentHomeInput): AgentHomeView {
   const ownSection = asRecord(own[section]) ?? {};
 
   const apiKeyRef =
-    asString(ownSection.apiKeyEnv) ?? asString(sharedSection.apiKeyEnv) ?? null;
+    asNonEmptyString(ownSection.apiKeyEnv) ?? asNonEmptyString(sharedSection.apiKeyEnv) ?? null;
 
   const sharedDefault = asRecord(shared['agent-default-model']);
   const ownDefault = asRecord(own['agent-default-model']);
   const defaultProvider =
-    asString(ownDefault?.provider) ?? asString(sharedDefault?.provider) ?? null;
-  const defaultModel = asString(ownDefault?.model) ?? asString(sharedDefault?.model) ?? null;
+    asNonEmptyString(ownDefault?.provider) ?? asNonEmptyString(sharedDefault?.provider) ?? null;
+  const defaultModel = asNonEmptyString(ownDefault?.model) ?? asNonEmptyString(sharedDefault?.model) ?? null;
 
   // 凭据：Agent 自己的凭据文档优先，否则共享层（共用一份的情形）。
   const refs = new Set<string>([
@@ -171,5 +162,5 @@ export interface AgentModelConfigView {
 export function resolveModelName(own: unknown, shared: unknown, modelId: string | null): string | null {
   const ownDefault = asRecord(asRecord(own)?.['agent-default-model']) ?? {};
   const sharedDefault = asRecord(asRecord(shared)?.['agent-default-model']) ?? {};
-  return asString(ownDefault.modelName) ?? asString(sharedDefault.modelName) ?? modelId;
+  return asNonEmptyString(ownDefault.modelName) ?? asNonEmptyString(sharedDefault.modelName) ?? modelId;
 }

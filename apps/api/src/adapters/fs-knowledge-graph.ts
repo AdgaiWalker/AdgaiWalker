@@ -7,6 +7,7 @@ import matter from 'gray-matter';
 import {
   buildKnowledgeGraph,
   normalizeLegacyBody,
+  normalizeLf,
   resolveVisibility,
   type GraphSourceItem,
   type KnowledgeGraph,
@@ -45,7 +46,7 @@ export class FsKnowledgeGraph implements KnowledgeGraphPort {
     const items: GraphSourceItem[] = [];
     for (const name of mdFiles) {
       const slug = name.replace(/\.(md|mdx)$/i, '');
-      const raw = (await fs.readFile(path.join(dir, name), 'utf8')).replace(/\r\n?/g, '\n');
+      const raw = normalizeLf(await fs.readFile(path.join(dir, name), 'utf8'));
       let parsed: ReturnType<typeof matter>;
       try { parsed = matter(raw); } catch { continue; }
       const d = (parsed.data ?? {}) as Record<string, unknown>;

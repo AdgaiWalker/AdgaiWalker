@@ -1,4 +1,4 @@
-import { resolveVisibility } from './content.js';
+import { normalizeLf, resolveVisibility } from './content.js';
 
 export type PublicSnapshotSource = {
   slug: string;
@@ -27,8 +27,7 @@ export type PublicSnapshotItem = {
 
 /** 旧 Astro/MDX 展示组件降级为标准 Markdown；构建与 API 版本证明共用这一份规则。统一 LF 防止跨 OS 哈希漂移。 */
 export function normalizeLegacyBody(body: string): string {
-  return body
-    .replace(/\r\n?/g, '\n')
+  return normalizeLf(body)
     .split('\n')
     .flatMap((line) => {
       const t = line.trim();

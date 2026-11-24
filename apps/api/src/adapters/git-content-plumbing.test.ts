@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   backupDraftsToBranch,
+  parseGitPorcelainPaths,
   publishSingleArticle,
   syncFromRemote,
 } from './git-content-plumbing';
@@ -220,5 +221,33 @@ describe('GitContentPlumbing（真实 bare repo + 双克隆 5 类对抗场景）
     });
     expect(ok.ok).toBe(true);
     expect(await git(serverClone, ['status', '--porcelain'])).toBe('');
+  });
+});
+
+describe('parseGitPorcelainPaths', () => {
+  it('正确解析 M / ?? / R / C / D 记录并跳过重命名与复制的第二个旧路径（含空格与中文）', () => {
+    const z = [
+      ' M content/log/edited.md',
+      '?? content/log/新草稿 1.md',
+      'R  content/log/new name.md',
+      'content/log/old name.md',
+      ' C content/log/copy.md',
+      'content/log/orig.md',
+      ' D content/log/removed.md',
+    ].join('\0') + '\0';
+
+    expect(parseGitPorcelainPaths(z)).toEqual([
+      'content/log/edited.md',
+      'content/log/新草稿 1.md',
+      'content/log/new name.md',
+      'content/log/copy.md',
+      'content/log/removed.md',
+    ]);
+    expect(parseGitPorcelainPaths(z, { excludeDeleted: true })).toEqual([
+      'content/log/edited.md',
+      'content/log/新草稿 1.md',
+      'content/log/new name.md',
+      'content/log/copy.md',
+    ]);
   });
 });

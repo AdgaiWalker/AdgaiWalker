@@ -1,7 +1,8 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
-import { contentApprovalBindingKey, grantAllows, type ContentApproval, type ContentChange } from '@walker/shared';
-import { HttpStatus, Optional } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
+import { grantAllows, type ContentApproval, type ContentChange } from '@walker/shared';
+import { contentApprovalHash } from '../adapters/content-approval.persistence';
+import { sha256Hex } from '../common/crypto';
 import { ApiError, validationError } from '../common/http-error';
 import { CONTENT_LOCK, type ContentLockPort } from '../ports/content-lock.port';
 import { newId } from '../common/ids';
@@ -13,10 +14,6 @@ import { CANDIDATE_FILE_REPOSITORY, type CandidateFileRepositoryPort } from '../
 import { AUTHORIZATION_REPOSITORY, type AuthorizationRepositoryPort } from '../ports/authorization.repository';
 import { AGENT_REVISION_REPOSITORY, type AgentRevisionRepositoryPort } from '../ports/agent-revision.repository';
 import { AgentExecutionService } from '../execution/agent-execution.service';
-
-function hash(raw: string): string {
-  return createHash('sha256').update(raw, 'utf8').digest('hex');
-}
 
 @Injectable()
 export class ContentMutationService implements ContentMutationPort {
@@ -118,7 +115,7 @@ export class ContentMutationService implements ContentMutationPort {
       throw validationError('候选正文必须包含有效的 YAML frontmatter（以 --- 开头）');
     }
 
-    const candidateHash = hash(candidateRaw);
+    const candidateHash = sha256Hex(candidateRaw);
     if (candidateHash === baseHash || candidateRaw.trim() === doc.raw.trim()) {
       throw new ApiError('candidate-unchanged', 422, '候选正文与基线版本完全一致，未产生有效变更');
     }
@@ -160,16 +157,12 @@ export class ContentMutationService implements ContentMutationPort {
     }
 
     // 2. 校验 L2 / 审批授权
-    const grant = await this.grants.find(input.grantId);
-    if (!grant || grant.revokedAt !== null || !grant.expiresAt || Date.parse(grant.expiresAt) <= Date.now()) {
-      throw new ApiError('grant-denied', 403, '授权无效、已撤销或已到期');
-    }
-    if (!grant.actions.includes('content:approve')) {
-      throw new ApiError('grant-denied', 403, '授权不包含 content:approve 权限');
-    }
-    if (grant.resourceScope.kind !== 'content' || !grant.resourceScope.ids.includes(change.target.slug)) {
-      throw new ApiError('grant-denied', 403, '授权范围不包含该文章');
-    }
+    const grant = await this.assertValidGrant(input.grantId, {
+      action: 'content:approve',
+      slug: change.target.slug,
+      revokedMessage: '授权无效、已撤销或已到期',
+      actionMessage: '授权不包含 content:approve 权限',
+    });
 
     // 3. 构造不可变审批 binding 与 ContentApproval
     const binding = {
@@ -183,7 +176,7 @@ export class ContentMutationService implements ContentMutationPort {
     const approval: ContentApproval<'apply-candidate'> = {
       id: randomUUID(),
       binding,
-      bindingHash: createHash('sha256').update(contentApprovalBindingKey(binding)).digest('hex'),
+      bindingHash: contentApprovalHash(binding),
       approvedBy: input.actor,
       approvedAt: new Date().toISOString(),
     };
@@ -220,16 +213,12 @@ export class ContentMutationService implements ContentMutationPort {
       if (!change.applyApproval) {
         throw new ApiError('content-approval-missing', 409, '内容候选尚未获得有效审批');
       }
-      const grant = await this.grants.find(change.applyApproval.binding.grantId);
-      if (!grant || grant.revokedAt !== null || !grant.expiresAt || Date.parse(grant.expiresAt) <= Date.now()) {
-        throw new ApiError('grant-denied', 403, '审批所依据的授权已撤销或到期，无法执行应用');
-      }
-      if (grant.revision !== change.applyApproval.binding.grantRevision) {
-        throw new ApiError('grant-denied', 403, '授权修订版本已发生变更，原审批失效');
-      }
-      if (!grant.actions.includes('content:apply')) {
-        throw new ApiError('grant-denied', 403, '授权不包含 content:apply 权限');
-      }
+      await this.assertValidGrant(change.applyApproval.binding.grantId, {
+        action: 'content:apply',
+        expectedRevision: change.applyApproval.binding.grantRevision,
+        revokedMessage: '审批所依据的授权已撤销或到期，无法执行应用',
+        actionMessage: '授权不包含 content:apply 权限',
+      });
 
       // 2. 复检当前正本 hash
       const current = await this.files.get(change.target.slug);
@@ -260,13 +249,7 @@ export class ContentMutationService implements ContentMutationPort {
       return this.finishApplied(input, change.candidateHash);
     }
     if (currentHash !== change.baseHash) {
-      return this.changes.finishApply({
-        id: change.id,
-        actor: input.actor,
-        requestId: input.requestId,
-        outcome: 'CONFLICT',
-        observedHash: currentHash,
-      });
+      return this.finishConflict(input, currentHash);
     }
 
     let saved;
@@ -277,25 +260,13 @@ export class ContentMutationService implements ContentMutationPort {
       const observedHash = afterFailure?.hash ?? null;
       if (observedHash === change.candidateHash) return this.finishApplied(input, observedHash);
       if (observedHash !== change.baseHash) {
-        return this.changes.finishApply({
-          id: change.id,
-          actor: input.actor,
-          requestId: input.requestId,
-          outcome: 'CONFLICT',
-          observedHash,
-        });
+        return this.finishConflict(input, observedHash);
       }
       throw error;
     }
 
     if (saved.hash !== change.candidateHash) {
-      return this.changes.finishApply({
-        id: change.id,
-        actor: input.actor,
-        requestId: input.requestId,
-        outcome: 'CONFLICT',
-        observedHash: saved.hash,
-      });
+      return this.finishConflict(input, saved.hash);
     }
     return this.finishApplied(input, saved.hash);
   }
@@ -308,7 +279,7 @@ export class ContentMutationService implements ContentMutationPort {
     requestId: string;
   }) {
     await this.assertNotLocked();
-    const afterHash = hash(input.raw);
+    const afterHash = sha256Hex(input.raw);
     try {
       await this.journal.transaction((tx) => tx.appendAudit({
         id: newId(),
@@ -367,6 +338,42 @@ export class ContentMutationService implements ContentMutationPort {
     return saved;
   }
 
+  private async assertValidGrant(
+    grantId: string,
+    opts: {
+      action: 'content:approve' | 'content:apply';
+      slug?: string;
+      expectedRevision?: number;
+      revokedMessage: string;
+      actionMessage: string;
+    },
+  ) {
+    const grant = await this.grants.find(grantId);
+    if (!grant || grant.revokedAt !== null || !grant.expiresAt || Date.parse(grant.expiresAt) <= Date.now()) {
+      throw new ApiError('grant-denied', 403, opts.revokedMessage);
+    }
+    if (opts.expectedRevision !== undefined && grant.revision !== opts.expectedRevision) {
+      throw new ApiError('grant-denied', 403, '授权修订版本已发生变更，原审批失效');
+    }
+    if (!grant.actions.includes(opts.action)) {
+      throw new ApiError('grant-denied', 403, opts.actionMessage);
+    }
+    if (opts.slug && (grant.resourceScope.kind !== 'content' || !grant.resourceScope.ids.includes(opts.slug))) {
+      throw new ApiError('grant-denied', 403, '授权范围不包含该文章');
+    }
+    return grant;
+  }
+
+  private async finishConflict(input: ContentMutationInput, observedHash: string | null) {
+    return this.changes.finishApply({
+      id: input.changeId,
+      actor: input.actor,
+      requestId: input.requestId,
+      outcome: 'CONFLICT',
+      observedHash,
+    });
+  }
+
   private async finishApplied(input: ContentMutationInput, observedHash: string) {
     return this.changes.finishApply({
       id: input.changeId,
@@ -397,7 +404,7 @@ export class ContentMutationService implements ContentMutationPort {
   }
 
   private assertCandidate(expectedHash: string, raw: string) {
-    if (hash(raw) !== expectedHash) throw validationError('候选正文 hash 与已批准版本不匹配');
+    if (sha256Hex(raw) !== expectedHash) throw validationError('候选正文 hash 与已批准版本不匹配');
   }
 }
 

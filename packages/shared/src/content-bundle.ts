@@ -2,6 +2,8 @@
  * 内容导入 / 导出（`导`）与受控删除协议（唯一共享类型 + 纯校验函数）。
  * 浏览器与 Node 通用，不绑定具体加密实现（由调用方注入 sha256）。
  */
+import { isValidContentSlug, normalizeLf } from './content.js';
+
 export const CONTENT_BUNDLE_FORMAT = 'walker-content-bundle/v1' as const;
 export const MAX_CONTENT_IMPORT_ITEMS = 200;
 
@@ -69,9 +71,6 @@ export interface ContentImportResult {
   items: ContentImportItemResult[];
 }
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const normalizeLf = (s: string) => s.replace(/\r\n?/g, '\n');
-
 export function computeBundleDigest(
   items: ReadonlyArray<Pick<ContentBundleItem, 'slug' | 'sha256'>>,
   exportedAt: string,
@@ -129,7 +128,7 @@ export function verifyContentBundle(
     return { ok: false, error: `单次最多导入 ${MAX_CONTENT_IMPORT_ITEMS} 篇文章` };
   }
   for (const item of b.items) {
-    if (!item || typeof item !== 'object' || !SLUG_RE.test(String(item.slug)) || typeof item.raw !== 'string') {
+    if (!item || typeof item !== 'object' || !isValidContentSlug(String(item.slug)) || typeof item.raw !== 'string') {
       return { ok: false, error: `内容包条目非法：${String(item?.slug ?? 'unknown')}` };
     }
     const raw = normalizeLf(item.raw);

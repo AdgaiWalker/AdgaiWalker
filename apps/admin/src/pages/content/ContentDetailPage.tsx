@@ -13,16 +13,20 @@ import {
 } from "../../api/queries";
 import { trackAdminUiEvent } from "../../api/telemetry";
 import { MarkdownPreview } from "../../components/MarkdownPreview";
-import { ModalDialog } from "../../components/ModalDialog";
 import { SlideDrawer } from "../../components/SlideDrawer";
 import { ErrorState, LoadingState } from "../../components/States";
 import { DEFAULT_CONTENT_TYPES } from "../../shared/content-types";
 import { parseDocFrontmatter, promoteDraftForPublish, updateDocFrontmatter } from "../../shared/frontmatter";
 import { ADMIN_ROUTES as R } from "../../shared/routes";
 import { ContentChangeReviewPanel } from "./ContentChangeReviewPanel";
+import { ContentDetailDialogs } from "./ContentDetailDialogs";
 import { ContentHistoryPanel } from "./ContentHistoryPanel";
 
 type DrawerSection = "meta" | "history" | "ai" | "share" | "delete";
+
+const RELEASE_POLL_INTERVAL_MS = 5_000;
+const VERIFYING_FRESH_WINDOW_MS = 10 * 60_000;
+const COPY_FEEDBACK_MS = 2_000;
 
 export function ContentDetailPage() {
   const { slug = "" } = useParams();
@@ -66,8 +70,8 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
 
   // 仅真正提交中（COMMITTING/PUSHED）或 10 分钟内的新 VERIFYING 或本次发布单等待终态才轮询；超时旧 VERIFYING 绝不锁死
   const [pollActive, setPollActive] = useState(false);
-  const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollActive ? 5_000 : false });
-  const versionQuery = useContentVersion(item.slug, { refetchInterval: pollActive ? 5_000 : false });
+  const latestRelease = useLatestContentRelease(item.slug, { refetchInterval: pollActive ? RELEASE_POLL_INTERVAL_MS : false });
+  const versionQuery = useContentVersion(item.slug, { refetchInterval: pollActive ? RELEASE_POLL_INTERVAL_MS : false });
   const changesQuery = useContentChanges(item.slug, { enabled: drawerOpen && drawerSection === "ai" });
 
   const release = latestRelease.data;
@@ -76,7 +80,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
   const verifyingFresh =
     stage === "VERIFYING" &&
     Boolean(release?.updatedAt) &&
-    Date.now() - Date.parse(release!.updatedAt) < 10 * 60_000;
+    Date.now() - Date.parse(release!.updatedAt) < VERIFYING_FRESH_WINDOW_MS;
   const isStaleVerifying = stage === "VERIFYING" && !verifyingFresh;
   const trackingNewRelease = Boolean(
     publishedReleaseId && (release?.id !== publishedReleaseId || (stage !== "PUBLISHED" && stage !== "FAILED")),
@@ -187,10 +191,15 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     trackAdminUiEvent("drawer.opened", { section });
   };
 
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current); }, []);
+
   const handleCopyShare = async () => {
     try {
       await navigator.clipboard.writeText(buildSocialCopyText({ title: displayTitle, slug: item.slug, summary: extractSummaryFromRaw(draft) }));
-      setCopiedShare(true); setTimeout(() => setCopiedShare(false), 2000);
+      setCopiedShare(true);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => { copyTimerRef.current = null; setCopiedShare(false); }, COPY_FEEDBACK_MS);
       void recordShareMutation.mutateAsync({ channel: "copy", angle: "overview" }).catch(() => undefined);
     } catch { setErrorMessage("复制失败，请手动复制链接"); }
   };
@@ -356,31 +365,25 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
         </div>
       )}
 
-      <ModalDialog open={publishOpen} title="发布上线" onClose={() => { setPublishOpen(false); trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" }); }}>
-        <form onSubmit={(e) => void handleOneClickPublish(e)} className="stack">
-          {parsed.visibility === "draft" || parsed.published === false ? (
-            <p className="notice" style={{ margin: 0 }}>当前为草稿，发布上线时将自动转为公开可见。</p>
-          ) : parsed.visibility === "private" ? (
-            <div className="notice" style={{ margin: 0, justifyContent: "space-between" }}>
-              <span>当前为私密文章，无法直接公开发布。</span>
-              <button type="button" className="btn" onClick={() => patchDoc({ visibility: "public" })}>转为公开</button>
-            </div>
-          ) : null}
-          <label className="field-col">
-            变更说明（将公开显示在版本历史中）
-            <input
-              type="text" autoFocus required placeholder="例如：补充一线案例 / 修正错别字" value={versionNote}
-              onChange={(e) => setVersionNote(e.target.value)}
-              onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && parsed.visibility !== "private") { e.preventDefault(); void handleOneClickPublish(e); } }}
-            />
-          </label>
-          {errorMessage ? <p className="error-text" role="alert">{errorMessage}</p> : null}
-          <div className="action-row" style={{ justifyContent: "flex-end" }}>
-            <button type="button" className="btn" onClick={() => { setPublishOpen(false); trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" }); }}>取消</button>
-            <button type="submit" className="btn btn-primary" disabled={publishing || parsed.visibility === "private" || !versionNote.trim()}><UploadCloud size={14} />{publishing ? "正在推送…" : "发布上线"}</button>
-          </div>
-        </form>
-      </ModalDialog>
+      <ContentDetailDialogs
+        slug={item.slug}
+        publishOpen={publishOpen}
+        onClosePublish={() => { setPublishOpen(false); trackAdminUiEvent("publish.flow_abandoned", { slug: item.slug, reason: "cancel" }); }}
+        onSubmitPublish={handleOneClickPublish}
+        visibility={parsed.visibility}
+        published={parsed.published}
+        onPromotePublic={() => patchDoc({ visibility: "public" })}
+        versionNote={versionNote}
+        onVersionNoteChange={setVersionNote}
+        publishing={publishing}
+        errorMessage={errorMessage}
+        deleteOpen={deleteOpen}
+        onCloseDelete={() => setDeleteOpen(false)}
+        deletePending={deleteMutation.isPending}
+        onConfirmDelete={handleDelete}
+        isTrackedOnSite={isTrackedOnSite}
+        blocker={blocker}
+      />
 
       <SlideDrawer open={drawerOpen} title="文章选项" onClose={() => setDrawerOpen(false)}>
         <div className="chip-row" role="tablist" aria-label="抽屉功能">
@@ -453,28 +456,6 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
           </div>
         )}
       </SlideDrawer>
-
-      <ModalDialog open={deleteOpen} title={isTrackedOnSite ? "确认删除并下架文章？" : "确认删除草稿？"} onClose={() => setDeleteOpen(false)}>
-        <p className="muted">
-          {isTrackedOnSite
-            ? `将删除 content/log/${item.slug} 并推送 GitHub 触发网站下架（content/versions 历史版本仍保留）。`
-            : `将删除本地草稿 content/log/${item.slug}，未保存修改无法找回。`}
-        </p>
-        <div className="action-row" style={{ justifyContent: "flex-end" }}>
-          <button type="button" className="btn" autoFocus onClick={() => setDeleteOpen(false)}>取消</button>
-          <button type="button" className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => void handleDelete()}>
-            {deleteMutation.isPending ? "处理中…" : isTrackedOnSite ? "确认删除并下架" : "确认删除"}
-          </button>
-        </div>
-      </ModalDialog>
-
-      <ModalDialog open={blocker.state === "blocked"} title="有未保存的改动" dismissible={false} onClose={() => blocker.reset?.()}>
-        <p className="muted">离开当前页面将丢失刚写的内容。</p>
-        <div className="action-row" style={{ justifyContent: "flex-end" }}>
-          <button type="button" className="btn" onClick={() => blocker.proceed?.()}>放弃并离开</button>
-          <button type="button" className="btn btn-primary" autoFocus onClick={() => blocker.reset?.()}>留下继续编辑</button>
-        </div>
-      </ModalDialog>
     </>
   );
 }

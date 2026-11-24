@@ -3,6 +3,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { PUBLIC_SUMMARY_PLACEHOLDER } from '../packages/shared/src/content';
 import type { GeneratedContent } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
 import { contentJsonPath, webDistDir } from './lib/paths';
@@ -47,14 +48,13 @@ assert(
   'duplicate public slugs',
 );
 
-const placeholderSummary = '把一个真实问题拆开，给出可以立刻开始的最小行动。';
 const summaries = browseItems.map((item) => item.summary.trim());
 assert(
   new Set(summaries).size === summaries.length,
   'duplicate public summaries',
 );
 assert(
-  !summaries.includes(placeholderSummary),
+  !summaries.includes(PUBLIC_SUMMARY_PLACEHOLDER),
   'placeholder summary leaked into public content',
 );
 

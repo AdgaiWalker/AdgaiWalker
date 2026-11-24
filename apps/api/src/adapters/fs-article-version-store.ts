@@ -12,56 +12,27 @@
  * - 并发安全：per-slug 进程内串行锁（与 FsContentFileRepository 同一模式）。
  */
 import fs from 'node:fs/promises';
-import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import {
   appendArticleVersion,
   isArticleVersionIndex,
+  isContentSha256,
+  isValidContentSlug,
+  normalizeLf,
   verifyArticleVersionIndex,
   type ArticleVersionIndex,
 } from '@walker/shared';
+import { sha256Hex } from '../common/crypto';
+import { atomicWriteFile, createKeyedLock } from '../common/fs-atomic';
 import { ApiError } from '../common/http-error';
 import type { ArticleVersionStorePort } from '../ports/article-version-store.port';
 import { resolveArticleVersionsDir } from './article-versions-dir';
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const versionLocks = new Map<string, Promise<void>>();
-
-function sha256(text: string): string {
-  return createHash('sha256').update(text, 'utf8').digest('hex');
-}
-
-function withVersionLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
-  const previous = versionLocks.get(key) ?? Promise.resolve();
-  let release!: () => void;
-  const current = new Promise<void>((resolve) => { release = resolve; });
-  versionLocks.set(key, current);
-  return previous.then(operation).finally(() => {
-    release();
-    if (versionLocks.get(key) === current) versionLocks.delete(key);
-  });
-}
-
-async function atomicWriteJson(full: string, value: unknown): Promise<void> {
-  const temporary = path.join(path.dirname(full), `.${path.basename(full)}.${randomUUID()}.tmp`);
-  let handle: Awaited<ReturnType<typeof fs.open>> | undefined;
-  try {
-    handle = await fs.open(temporary, 'wx', 0o644);
-    await handle.writeFile(JSON.stringify(value, null, 2), 'utf8');
-    await handle.sync();
-    await handle.close();
-    handle = undefined;
-    await fs.rename(temporary, full);
-  } catch (error) {
-    await handle?.close().catch(() => undefined);
-    await fs.rm(temporary, { force: true }).catch(() => undefined);
-    throw error;
-  }
-}
+const withVersionLock = createKeyedLock();
 
 export class FsArticleVersionStore implements ArticleVersionStorePort {
   async readIndex(slug: string): Promise<ArticleVersionIndex | null> {
-    if (!SLUG_RE.test(slug)) return null;
+    if (!isValidContentSlug(slug)) return null;
     const dir = await resolveArticleVersionsDir();
     try {
       const raw = await fs.readFile(path.join(dir, slug, 'index.json'), 'utf8');
@@ -77,7 +48,7 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
   }
 
   async readBody(contentHash: string): Promise<string | null> {
-    if (!/^[0-9a-f]{64}$/.test(contentHash)) return null;
+    if (!isContentSha256(contentHash)) return null;
     const dir = await resolveArticleVersionsDir();
     // blob 共享目录按 hash 全局寻址——相同内容跨文章、跨版本也只存一份。
     try {
@@ -96,12 +67,12 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
     releaseId: string;
   }): Promise<{ index: ArticleVersionIndex; created: boolean }> {
     const slug = input.slug.trim();
-    if (!SLUG_RE.test(slug)) throw new ApiError('invalid-slug', 400, 'slug 须为小写 ascii 短横线');
-    const normalizedRawBody = input.rawBody.replace(/\r\n?/g, '\n');
+    if (!isValidContentSlug(slug)) throw new ApiError('invalid-slug', 400, 'slug 须为小写 ascii 短横线');
+    const normalizedRawBody = normalizeLf(input.rawBody);
     const dir = await resolveArticleVersionsDir();
     return withVersionLock(path.join(path.resolve(dir), slug), async () => {
       const existing = await this.readIndex(slug) ?? { slug, versions: [] };
-      const contentHash = sha256(normalizedRawBody);
+      const contentHash = sha256Hex(normalizedRawBody);
       const next = appendArticleVersion(existing, {
         contentHash,
         note: input.note,
@@ -125,8 +96,8 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
         // 已存在：内容寻址幂等，校验内容一致防哈希碰撞（兼容旧 CRLF blob 归一化）
-        const existingBody = (await fs.readFile(blobPath, 'utf8')).replace(/\r\n?/g, '\n');
-        if (sha256(existingBody) !== contentHash) {
+        const existingBody = normalizeLf(await fs.readFile(blobPath, 'utf8'));
+        if (sha256Hex(existingBody) !== contentHash) {
           throw new ApiError('article-version-hash-collision', 500, '内容哈希碰撞');
         }
       }
@@ -138,7 +109,7 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
       }
       const slugDir = path.join(dir, slug);
       await fs.mkdir(slugDir, { recursive: true });
-      await atomicWriteJson(path.join(slugDir, 'index.json'), next);
+      await atomicWriteFile(path.join(slugDir, 'index.json'), JSON.stringify(next, null, 2));
       return { index: next, created: true };
     });
   }
@@ -154,7 +125,7 @@ export class FsArticleVersionStore implements ArticleVersionStorePort {
     }
     const out: string[] = [];
     for (const name of names) {
-      if (!SLUG_RE.test(name)) continue;
+      if (!isValidContentSlug(name)) continue;
       if (name === 'blobs') continue; // 保留目录：共享内容寻址 blob 库，不是文章
       try {
         const stat = await fs.stat(path.join(dir, name));

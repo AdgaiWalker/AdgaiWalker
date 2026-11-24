@@ -11,17 +11,18 @@ import { promisify } from 'node:util';
 import {
   appendArticleVersion,
   isArticleVersionIndex,
+  normalizeLf,
   requireVersionNote,
   type ArticleVersionIndex,
   type ContentDraftBackupResult,
   type ContentSyncConflictDetail,
   type ContentSyncPullResult,
 } from '@walker/shared';
+import { sha256Hex } from '../common/crypto';
+import { atomicWriteFile } from '../common/fs-atomic';
 
 const execFileAsync = promisify(execFile);
 const TEXT_RE = /\.(md|mdx|json|txt|yml|yaml)$/i;
-const normalizeLf = (s: string) => s.replace(/\r\n?/g, '\n');
-const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
 const gitBlobSha1 = (b: Buffer) => createHash('sha1').update(`blob ${b.length}\0`).update(b).digest('hex');
 const textBytes = (relPath: string, raw: Buffer) =>
   TEXT_RE.test(relPath) ? Buffer.from(normalizeLf(raw.toString('utf8')), 'utf8') : raw;
@@ -103,15 +104,7 @@ function gitSpawnBuf(cwd: string, args: string[], stdin?: Buffer): Promise<Buffe
 }
 
 async function atomicWrite(absPath: string, data: Buffer): Promise<void> {
-  await fs.mkdir(path.dirname(absPath), { recursive: true });
-  const tmp = `${absPath}.${randomUUID()}.tmp`;
-  try {
-    await fs.writeFile(tmp, data);
-    await fs.rename(tmp, absPath);
-  } catch (e) {
-    await fs.rm(tmp, { force: true }).catch(() => undefined);
-    throw e;
-  }
+  await atomicWriteFile(absPath, data, { mkdir: true, sync: false });
 }
 
 async function localBlobSha(absPath: string, relPath: string): Promise<string | null> {
@@ -155,6 +148,21 @@ async function applyIndexMutationOntoTree(
 
 export async function isTrackedInHead(repoRoot: string, slug: string, ext: '.md' | '.mdx'): Promise<boolean> {
   return (await gitTry(repoRoot, ['rev-parse', '--verify', `HEAD:content/log/${slug}${ext}`])) !== null;
+}
+
+/** 唯一 `git status --porcelain -z` 路径解析器，正确跳过 R/C 记录后的第二个 NUL 旧路径，防止文件名错位 */
+export function parseGitPorcelainPaths(stdout: string, opts?: { excludeDeleted?: boolean }): string[] {
+  const records = stdout.split('\0').filter(Boolean);
+  const paths: string[] = [];
+  for (let i = 0; i < records.length; i++) {
+    const code = records[i]!.slice(0, 2);
+    const rel = records[i]!.slice(3);
+    if (code.includes('R') || code.includes('C')) i += 1;
+    if (rel && (!opts?.excludeDeleted || !code.includes('D'))) {
+      paths.push(rel);
+    }
+  }
+  return paths;
 }
 
 export async function discardLocalDraft(input: { repoRoot: string; slug: string; ext: '.md' | '.mdx' }): Promise<DiscardLocalDraftResult> {
@@ -236,7 +244,7 @@ export async function publishSingleArticle(input: PublishSingleArticleInput): Pr
       } catch { /* fallback empty */ }
     }
 
-    const contentHash = sha256(normRaw);
+    const contentHash = sha256Hex(normRaw);
     const nextIdx = appendArticleVersion(existingIdx, { contentHash, note, publishedAt, releaseId: input.releaseId });
     const staged: Array<{ relPath: string; content: Buffer }> = [{ relPath: targetRel, content: targetBytes }];
     const blobRel = nextIdx ? `content/versions/blobs/${contentHash}.md` : null;
@@ -382,14 +390,8 @@ export async function backupDraftsToBranch(input: {
   const remote = input.remote ?? 'origin';
   const draftBranch = input.draftBranch ?? 'drafts';
   const mainBranch = input.mainBranch ?? 'main';
-  const records = (await gitExec(input.repoRoot, ['status', '--porcelain', '-z', '--', 'content/log'])).split('\0').filter(Boolean);
-  const dirtyPaths: string[] = [];
-  for (let i = 0; i < records.length; i++) {
-    const code = records[i]!.slice(0, 2);
-    const rel = records[i]!.slice(3);
-    if (code.startsWith('R') || code.startsWith('C')) i += 1;
-    if (rel && !code.includes('D')) dirtyPaths.push(rel);
-  }
+  const rawStatus = await gitExec(input.repoRoot, ['status', '--porcelain', '-z', '--', 'content/log']);
+  const dirtyPaths = parseGitPorcelainPaths(rawStatus, { excludeDeleted: true });
   if (dirtyPaths.length === 0) {
     return { ok: true, branch: draftBranch, commit: null, backedUpFiles: [], message: '当前没有未发布的草稿需要备份' };
   }

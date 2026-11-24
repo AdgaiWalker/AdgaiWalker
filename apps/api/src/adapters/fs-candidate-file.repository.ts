@@ -2,10 +2,11 @@
  * 文件系统独立候选仓储 — 保存与读取不可变候选正文。
  * 路径由服务端在受控目录下生成，严格隔离 content/log。
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { HttpStatus } from '@nestjs/common';
+import { sha256Hex } from '../common/crypto';
 import { ApiError, validationError } from '../common/http-error';
 import { isContentOpaqueId } from '@walker/shared';
 import type {
@@ -36,7 +37,7 @@ export class FsCandidateFileRepository implements CandidateFileRepositoryPort {
       throw validationError('候选正文必须为字符串');
     }
 
-    const hash = createHash('sha256').update(raw, 'utf8').digest('hex');
+    const hash = sha256Hex(raw);
     const candidateRef = `${candidateId}_${hash}`;
     this.assertCandidateRef(candidateRef);
 
@@ -117,7 +118,7 @@ export class FsCandidateFileRepository implements CandidateFileRepositoryPort {
       throw err;
     }
 
-    const actualHash = createHash('sha256').update(raw, 'utf8').digest('hex');
+    const actualHash = sha256Hex(raw);
 
     // 读取严格核验 hash
     if (expectedHash && actualHash !== expectedHash) {

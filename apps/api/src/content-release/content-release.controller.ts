@@ -4,12 +4,16 @@
  * POST /admin/content/release           — 触发上线，返回 { runId, status }
  * 路径不带 api/ 前缀；二者都在 /admin/* 防线内（AdminTokenMiddleware + Caddy basic auth）。
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
 import { validationError } from '../common/http-error';
 import { ContentReleaseService } from './content-release.service';
 
+function optionalTrimmed(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 function requireSlug(body: { slug?: unknown }): string {
-  const slug = typeof body?.slug === 'string' ? body.slug.trim() : '';
+  const slug = optionalTrimmed(body?.slug);
   if (!slug) throw validationError('slug-required');
   return slug;
 }
@@ -29,7 +33,7 @@ export class ContentReleaseController {
   @Post()
   release(@Body() body: { slug?: unknown; releaseId?: unknown }) {
     const slug = requireSlug(body);
-    const releaseId = typeof body?.releaseId === 'string' && body.releaseId.trim() ? body.releaseId.trim() : '';
+    const releaseId = optionalTrimmed(body?.releaseId);
     if (!releaseId) throw validationError('releaseId-required');
     return this.releases.release({ slug, releaseId });
   }
@@ -43,12 +47,15 @@ export class ContentReleaseController {
     versionNote?: unknown;
   }) {
     const slug = requireSlug(body);
-    const changeId = typeof body?.changeId === 'string' && body.changeId.trim() ? body.changeId.trim() : undefined;
-    const grantId = typeof body?.grantId === 'string' && body.grantId.trim() ? body.grantId.trim() : undefined;
-    const requestKey = typeof body?.requestKey === 'string' && body.requestKey.trim() ? body.requestKey.trim() : undefined;
-    const versionNote = typeof body?.versionNote === 'string' ? body.versionNote.trim() : '';
+    const versionNote = optionalTrimmed(body?.versionNote);
     if (!versionNote) throw validationError('version-note-required');
-    return this.releases.prepareRelease({ slug, changeId, grantId, requestKey, versionNote });
+    return this.releases.prepareRelease({
+      slug,
+      changeId: optionalTrimmed(body?.changeId),
+      grantId: optionalTrimmed(body?.grantId),
+      requestKey: optionalTrimmed(body?.requestKey),
+      versionNote,
+    });
   }
 
   @Post(':id/verify')

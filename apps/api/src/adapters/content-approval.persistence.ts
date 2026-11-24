@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import {
   contentApprovalBindingKey,
   contentApprovalBindingMatches,
@@ -9,11 +8,12 @@ import {
   type ContentApprovalAction,
   type ContentApprovalBinding,
 } from '@walker/shared';
+import { sha256Hex } from '../common/crypto';
 
 const APPROVAL_KEYS = ['id', 'binding', 'bindingHash', 'approvedBy', 'approvedAt'];
 
 export function contentApprovalHash(binding: ContentApprovalBinding): string {
-  return createHash('sha256').update(contentApprovalBindingKey(binding)).digest('hex');
+  return sha256Hex(contentApprovalBindingKey(binding));
 }
 
 export function isPersistableContentApproval<Action extends ContentApprovalAction>(

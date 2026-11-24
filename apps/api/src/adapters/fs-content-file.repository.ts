@@ -3,10 +3,11 @@
  * 实现 ContentFileRepositoryPort（无 gray-matter 依赖，轻量解析 title/type）
  */
 import fs from 'node:fs/promises';
-import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { ApiError, validationError } from '../common/http-error';
-import { isContentSha256 } from '@walker/shared';
+import { sha256Hex } from '../common/crypto';
+import { atomicWriteFile, createKeyedLock } from '../common/fs-atomic';
+import { isContentSha256, isValidContentSlug, normalizeLf } from '@walker/shared';
 import type {
   ContentFileDetail,
   ContentFileMeta,
@@ -14,29 +15,9 @@ import type {
 } from '../ports/content-file.repository';
 import { resolveContentLogDir } from './content-log-dir';
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const contentLocks = new Map<string, Promise<void>>();
+const withContentLock = createKeyedLock();
 
 type ContentTargetFile = { full: string; ext: '.md' | '.mdx'; mode: number };
-
-function normalizeLf(text: string): string {
-  return text.replace(/\r\n?/g, '\n');
-}
-
-function sha256(text: string): string {
-  return createHash('sha256').update(text, 'utf8').digest('hex');
-}
-
-function withContentLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
-  const previous = contentLocks.get(key) ?? Promise.resolve();
-  let release!: () => void;
-  const current = new Promise<void>((resolve) => { release = resolve; });
-  contentLocks.set(key, current);
-  return previous.then(operation).finally(() => {
-    release();
-    if (contentLocks.get(key) === current) contentLocks.delete(key);
-  });
-}
 
 async function existingTarget(dir: string, slug: string): Promise<ContentTargetFile | null> {
   const found: ContentTargetFile[] = [];
@@ -84,17 +65,17 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
   }
 
   async get(slug: string): Promise<ContentFileDetail | null> {
-    if (!SLUG_RE.test(slug)) return null;
+    if (!isValidContentSlug(slug)) return null;
     const dir = await resolveContentLogDir();
     const target = await existingTarget(dir, slug);
     if (!target) return null;
     const raw = normalizeLf(await fs.readFile(target.full, 'utf8'));
     const stat = await fs.stat(target.full);
-    return detail(slug, raw, sha256(raw), target.ext, stat.mtime);
+    return detail(slug, raw, sha256Hex(raw), target.ext, stat.mtime);
   }
 
   async save(slug: string, raw: string, expectedHash: string | null): Promise<ContentFileDetail> {
-    if (!SLUG_RE.test(slug)) throw new ApiError('invalid-slug', 400, 'slug 须为小写 ascii 短横线');
+    if (!isValidContentSlug(slug)) throw new ApiError('invalid-slug', 400, 'slug 须为小写 ascii 短横线');
     const normalized = normalizeLf(raw);
     if (!normalized.trimStart().startsWith('---')) throw new ApiError('invalid-frontmatter', 400, '正文须以 YAML frontmatter --- 开头');
     if (expectedHash !== null && !isContentSha256(expectedHash)) throw validationError('expectedHash 必须是正文 SHA-256 或 null');
@@ -103,33 +84,20 @@ export class FsContentFileRepository implements ContentFileRepositoryPort {
     return withContentLock(lockKey, async () => {
       const existing = await existingTarget(dir, slug);
       const previousText = existing ? normalizeLf(await fs.readFile(existing.full, 'utf8')) : null;
-      const currentHash = previousText !== null ? sha256(previousText) : null;
+      const currentHash = previousText !== null ? sha256Hex(previousText) : null;
       if (currentHash !== expectedHash) {
         throw new ApiError('content-version-conflict', 409, '内容已变化，请重新读取后再保存');
       }
       const ext = existing?.ext ?? '.md';
       const full = existing?.full ?? path.join(dir, `${slug}${ext}`);
-      const temporary = path.join(dir, `.${slug}.${randomUUID()}.tmp`);
-      let handle: Awaited<ReturnType<typeof fs.open>> | undefined;
-      try {
-        handle = await fs.open(temporary, 'wx', existing?.mode ?? 0o644);
-        await handle.writeFile(normalized, 'utf8');
-        await handle.sync();
-        await handle.close();
-        handle = undefined;
-        await fs.rename(temporary, full);
-      } catch (error) {
-        await handle?.close().catch(() => undefined);
-        await fs.rm(temporary, { force: true }).catch(() => undefined);
-        throw error;
-      }
+      await atomicWriteFile(full, normalized, { mode: existing?.mode ?? 0o644 });
       const stat = await fs.stat(full);
-      return detail(slug, normalized, sha256(normalized), ext, stat.mtime);
+      return detail(slug, normalized, sha256Hex(normalized), ext, stat.mtime);
     });
   }
 
   async delete(slug: string): Promise<boolean> {
-    if (!SLUG_RE.test(slug)) return false;
+    if (!isValidContentSlug(slug)) return false;
     const dir = await resolveContentLogDir();
     const lockKey = path.join(path.resolve(dir), slug);
     return withContentLock(lockKey, async () => {

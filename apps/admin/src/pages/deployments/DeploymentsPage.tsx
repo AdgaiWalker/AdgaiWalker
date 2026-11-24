@@ -125,7 +125,7 @@ function DeploymentForm({ editing, agents, saved, cancel }: { editing: Deploymen
   );
 }
 
-function DeploymentRow({ deployment, agents, edit, refresh }: { deployment: DeploymentView; agents: OpsAgent[]; edit: () => void; refresh: () => void }) {
+function DeploymentRow({ deployment, agents, onSelect, edit, refresh }: { deployment: DeploymentView; agents: OpsAgent[]; onSelect: () => void; edit: () => void; refresh: () => void }) {
   const [pending, setPending] = useState("");
   const [message, setMessage] = useState("");
   const [rollbackTo, setRollbackTo] = useState("");
@@ -138,7 +138,7 @@ function DeploymentRow({ deployment, agents, edit, refresh }: { deployment: Depl
   };
   const others = deployment.members.filter((m) => !m.isDefault);
   return (
-    <li className="deployment-row">
+    <li className="deployment-row" onClick={onSelect}>
       <div className="action-row">
         <strong>{findPlacement(deployment.placementKey)?.label ?? deployment.placementKey} · {deployment.scopeSlug}</strong>
         <span className={deployment.enabled ? "badge green" : "badge"}>{deployment.enabled ? "启用中" : "未启用"}</span>
@@ -192,9 +192,7 @@ export function DeploymentsPage() {
         ) : (
           <ul className="deployment-list">
             {list.data.map((d) => (
-              <div key={d.id} onClick={() => setPreviewId(d.id)}>
-                <DeploymentRow deployment={d} agents={agents} edit={() => setEditing(d)} refresh={refresh} />
-              </div>
+              <DeploymentRow key={d.id} deployment={d} agents={agents} onSelect={() => setPreviewId(d.id)} edit={() => setEditing(d)} refresh={refresh} />
             ))}
           </ul>
         )}

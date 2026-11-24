@@ -4,6 +4,9 @@
  * 负责构建标准合法的 X (Twitter) Web Intent URL、精简推文内容与多平台复制格式。
  * 不依赖第三方外部 SDK，零配置、零凭据泄露风险。
  */
+import { stripFrontmatterBlock } from './article-version.js';
+import { normalizeLf } from './content.js';
+import { SITE_ORIGIN } from './site-identity.js';
 
 export type SocialShareAngle = 'overview' | 'quote' | 'practical';
 
@@ -47,7 +50,7 @@ export interface SocialSharePayload {
   customText?: string;
 }
 
-export const DEFAULT_SITE_BASE_URL = 'https://www.iwalk.pro';
+export const DEFAULT_SITE_BASE_URL = SITE_ORIGIN;
 export const DEFAULT_SHARE_TAGS = ['Walker', 'AI'];
 
 /**
@@ -64,9 +67,10 @@ export function getPublicPostUrl(slug: string, siteBaseUrl = DEFAULT_SITE_BASE_U
  */
 export function extractSummaryFromRaw(raw?: string | null): string {
   if (!raw) return '';
-  const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const normalized = normalizeLf(raw);
+  const fmMatch = normalized.match(/^---\n([\s\S]*?)\n---/);
   if (fmMatch) {
-    const lines = fmMatch[1].replace(/\r\n/g, '\n').split('\n');
+    const lines = fmMatch[1].split('\n');
     for (let i = 0; i < lines.length; i++) {
       const m = lines[i].match(/^(?:summary|description):[ \t]*(.*)$/);
       if (!m) continue;
@@ -83,7 +87,7 @@ export function extractSummaryFromRaw(raw?: string | null): string {
       }
     }
   }
-  const body = raw.replace(/^---[\s\S]*?---\r?\n?/, '').trim();
+  const body = stripFrontmatterBlock(normalized).trim();
   const paragraphs = body.split(/\n\s*\n/);
   for (const p of paragraphs) {
     const line = p.trim();

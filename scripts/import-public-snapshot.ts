@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { verifyPublicSnapshot, type PublicSnapshotManifest } from '@walker/shared';
+import { DEFAULT_SITE_BASE_URL, verifyPublicSnapshot, type PublicSnapshotManifest } from '@walker/shared';
 import { FsPublicSnapshotRepository } from '../apps/api/src/adapters/fs-public-snapshot.repository';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   const verifiedManifest = manifest as PublicSnapshotManifest;
   // Hash self-consistency does not prove publication. The active public site serves
   // the manifest embedded in its deployed build; require an exact build match.
-  const deployedUrl = argValue('--deployed-url') ?? 'https://www.iwalk.pro/public-manifest.json';
+  const deployedUrl = argValue('--deployed-url') ?? `${DEFAULT_SITE_BASE_URL}/public-manifest.json`;
   if (!deployedUrl.startsWith('https://')) {
     console.error('✗ 已部署清单地址必须使用 HTTPS');
     process.exit(1);

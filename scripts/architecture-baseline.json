@@ -1,15 +1,11 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T10:05:56.135Z",
-  "sourceCommit": "d8941641c978afd89ac4d005249a200eff83122a",
+  "generatedAt": "2026-11-24T01:29:16.444Z",
+  "sourceCommit": "438c7221127e0a085d94228e9a655cba4dc91c45",
   "accepted": {
     "cycles": [],
     "unresolved": [],
-    "unreachable": [
-      "scripts/accept-real-works.ts",
-      "scripts/generate-code-graph.ts",
-      "scripts/probe-production.ts"
-    ],
+    "unreachable": [],
     "reverseDependencies": []
   }
 }

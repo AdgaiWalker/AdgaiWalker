@@ -1,5 +1,4 @@
 /** 管理端内容应用服务 — 读取文件仓储，人工保存委托给受审计 mutation service。 */
-import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import matter from 'gray-matter';
@@ -7,7 +6,9 @@ import {
   buildContentBundle,
   computeTextDiff,
   CONTENT_BUNDLE_FORMAT,
+  isValidContentSlug,
   MAX_CONTENT_IMPORT_ITEMS,
+  normalizeLf,
   validateProjectMetadata,
   verifyContentBundle,
   type AllContentSocialStats,
@@ -15,6 +16,7 @@ import {
   type ContentDeleteMode,
   type ContentDeleteResult,
   type ContentImportConflictPolicy,
+  type ContentImportItemInput,
   type ContentImportItemResult,
   type ContentImportRequest,
   type ContentImportResult,
@@ -24,6 +26,8 @@ import {
 import { resolveContentLogDir } from '../adapters/content-log-dir';
 import { resolveContentRepoRoot } from '../adapters/content-repo-dir';
 import { deleteSingleArticle, discardLocalDraft, isTrackedInHead } from '../adapters/git-content-plumbing';
+import { sha256Hex } from '../common/crypto';
+import { runWithContentLock } from '../common/content-lock-helper';
 import { ApiError, validationError } from '../common/http-error';
 import { newId } from '../common/ids';
 import { ContentSyncService } from '../content-sync/content-sync.service';
@@ -36,9 +40,11 @@ import { CONTENT_MUTATION_SERVICE, type ContentMutationPort } from '../ports/con
 import { ARTICLE_VERSION_STORE, type ArticleVersionStorePort } from '../ports/article-version-store.port';
 import { PRISMA, type PrismaPort } from '../ports/prisma.port';
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const normalizeLf = (s: string) => s.replace(/\r\n?/g, '\n');
-const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
+const SAVE_ERROR_MAP: Record<string, [HttpStatus, string]> = {
+  'invalid-slug': [HttpStatus.BAD_REQUEST, 'slug 须为小写 ascii 短横线'],
+  'invalid-frontmatter': [HttpStatus.BAD_REQUEST, '正文须以 YAML frontmatter --- 开头'],
+  'content-log-unavailable': [HttpStatus.SERVICE_UNAVAILABLE, '内容目录不可用'],
+};
 
 @Injectable()
 export class ContentAdminService {
@@ -91,8 +97,25 @@ export class ContentAdminService {
     }).catch(() => undefined);
   }
 
+  private async withDeleteLock<T>(owner: string, fn: () => Promise<T>): Promise<T> {
+    const locked = await runWithContentLock(
+      this.contentLock,
+      { owner, ttlMs: 60_000 },
+      fn,
+      { checkIsLockedFirst: true },
+    );
+    if (!locked.acquired) {
+      throw new ApiError(
+        'content-locked',
+        HttpStatus.CONFLICT,
+        locked.reason === 'already-locked' ? '工作区正在发布或同步，请稍后重试' : '获取内容锁失败，请稍后重试',
+      );
+    }
+    return locked.value;
+  }
+
   /**
-   * 对称删除与草稿放弃：
+   * 对称删除与草稿放弃（全部受同一内容锁保护）：
    * - 未入 HEAD 的本地草稿仅删盘；
    * - 已入 GitHub HEAD 的文章通过无工作树 Plumbing 提交删除（保留 content/versions 历史）；
    * - discard-draft 将本地已改草稿还原回 HEAD 线上版。
@@ -107,10 +130,12 @@ export class ContentAdminService {
       if (!inGitRepo || !repoRoot) {
         throw new ApiError('git-unavailable', HttpStatus.CONFLICT, '当前内容目录未绑定 Git 版本库，无法还原线上版');
       }
-      const restored = await discardLocalDraft({ repoRoot, slug, ext: doc.ext });
-      if (!restored.ok) throw new ApiError('content-not-tracked', HttpStatus.CONFLICT, restored.error || '无法还原');
-      await this.writeAudit('content.discard-draft', slug, 'restored', doc.hash, sha256(restored.restoredRaw!));
-      return { ok: true, slug, scope: 'discard-draft', message: '已放弃未上线修改，恢复为线上版本' };
+      return this.withDeleteLock('content-admin-discard-draft', async () => {
+        const restored = await discardLocalDraft({ repoRoot, slug, ext: doc.ext });
+        if (!restored.ok) throw new ApiError('content-not-tracked', HttpStatus.CONFLICT, restored.error || '无法还原');
+        await this.writeAudit('content.discard-draft', slug, 'restored', doc.hash, sha256Hex(restored.restoredRaw!));
+        return { ok: true, slug, scope: 'discard-draft', message: '已放弃未上线修改，恢复为线上版本' };
+      });
     }
 
     const tracked = inGitRepo && repoRoot ? await isTrackedInHead(repoRoot, slug, doc.ext) : false;
@@ -118,25 +143,19 @@ export class ContentAdminService {
       if (mode === 'remote') {
         throw new ApiError('git-unavailable', HttpStatus.CONFLICT, '该文章尚未推送到 GitHub，无需远端下架');
       }
-      const deleted = await this.files.delete(slug);
-      if (!deleted) throw new ApiError('content-delete-failed', HttpStatus.INTERNAL_SERVER_ERROR, '删除内容文件失败');
-      await this.writeAudit('content.delete', slug, 'deleted', doc.hash);
-      return { ok: true, slug, scope: 'local-draft', message: '已删除本地草稿' };
+      return this.withDeleteLock('content-admin-delete-draft', async () => {
+        const deleted = await this.files.delete(slug);
+        if (!deleted) throw new ApiError('content-delete-failed', HttpStatus.INTERNAL_SERVER_ERROR, '删除内容文件失败');
+        await this.writeAudit('content.delete', slug, 'deleted', doc.hash);
+        return { ok: true, slug, scope: 'local-draft', message: '已删除本地草稿' };
+      });
     }
 
     if (mode === 'local-draft') {
       throw new ApiError('content-tracked-in-git', HttpStatus.CONFLICT, '文章已同步至 GitHub，不能仅删本地；请放弃修改或确认全网下架');
     }
 
-    if (this.contentLock && (await this.contentLock.isLocked())) {
-      throw new ApiError('content-locked', HttpStatus.CONFLICT, '工作区正在发布或同步，请稍后重试');
-    }
-    const lock = this.contentLock ? await this.contentLock.tryAcquire({ owner: 'content-admin-delete', ttlMs: 60_000 }) : null;
-    if (this.contentLock && !lock) {
-      throw new ApiError('content-locked', HttpStatus.CONFLICT, '获取内容锁失败，请稍后重试');
-    }
-
-    try {
+    return this.withDeleteLock('content-admin-delete', async () => {
       const res = await deleteSingleArticle({ repoRoot: repoRoot!, slug, ext: doc.ext });
       if (!res.ok) {
         if (res.conflict) throw new ApiError('content-delete-conflict', HttpStatus.CONFLICT, res.error || '远端已修改该文章，请先同步');
@@ -151,11 +170,7 @@ export class ContentAdminService {
         commit: res.commit ?? null,
         message: res.scope === 'remote' ? '已从 GitHub 删除并触发网站下架（历史版本已保留）' : '已删除本地草稿',
       };
-    } finally {
-      if (this.contentLock && lock) {
-        await this.contentLock.release(lock.payload.lockId).catch(() => undefined);
-      }
-    }
+    });
   }
 
   /** 导出单篇 Markdown 或全站 `walker-content-bundle/v1` 内容包。 */
@@ -167,7 +182,63 @@ export class ContentAdminService {
     const metas = await this.files.list();
     const docs = await Promise.all(metas.map((m) => this.files.get(m.slug)));
     const valid = docs.filter((d): d is NonNullable<typeof d> => Boolean(d));
-    return buildContentBundle(valid.map((d) => ({ slug: d.slug, ext: d.ext, raw: d.raw, updatedAt: d.updatedAt })), sha256);
+    return buildContentBundle(valid.map((d) => ({ slug: d.slug, ext: d.ext, raw: d.raw, updatedAt: d.updatedAt })), sha256Hex);
+  }
+
+  private parseValidatedImportRequest(rawBody: unknown): {
+    items: ContentImportItemInput[];
+    policy: ContentImportConflictPolicy;
+    dryRun: boolean;
+  } {
+    if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+      throw validationError('导入请求必须是 JSON 对象');
+    }
+    const req = rawBody as Partial<ContentImportRequest & ContentBundle>;
+    if (req.format === CONTENT_BUNDLE_FORMAT || req.bundleHash) {
+      const checked = verifyContentBundle(rawBody, sha256Hex);
+      if (!checked.ok) throw validationError(checked.error);
+    }
+    if (!Array.isArray(req.items)) throw validationError('导入必须提供 items 数组');
+    if (req.items.length > MAX_CONTENT_IMPORT_ITEMS) {
+      throw validationError(`单次最多导入 ${MAX_CONTENT_IMPORT_ITEMS} 篇文章`);
+    }
+    return {
+      items: req.items,
+      policy: req.conflictPolicy === 'overwrite' ? 'overwrite' : 'skip',
+      dryRun: Boolean(req.dryRun),
+    };
+  }
+
+  private async processImportEntry(
+    entry: Partial<ContentImportItemInput> | null | undefined,
+    policy: ContentImportConflictPolicy,
+    dryRun: boolean,
+  ): Promise<ContentImportItemResult> {
+    const slug = typeof entry?.slug === 'string' ? entry.slug.trim() : '';
+    const raw = typeof entry?.raw === 'string' ? normalizeLf(entry.raw) : '';
+    if (!isValidContentSlug(slug)) {
+      return { slug: slug || '(invalid)', status: 'error', message: 'slug 须为小写 ascii 短横线' };
+    }
+    if (!raw.trimStart().startsWith('---')) {
+      return { slug, status: 'error', message: '正文须以 YAML frontmatter --- 开头' };
+    }
+    const nextHash = sha256Hex(raw);
+    const existing = await this.files.get(slug);
+    if (existing && existing.hash === nextHash) {
+      return { slug, status: 'unchanged', hash: nextHash };
+    }
+    if (existing && policy === 'skip') {
+      return { slug, status: 'skip', hash: existing.hash, message: '已存在同 slug 文章，按策略跳过' };
+    }
+    if (dryRun) {
+      return { slug, status: existing ? 'update' : 'create', hash: nextHash };
+    }
+    try {
+      const saved = await this.save(slug, raw, existing ? existing.hash : null);
+      return { slug, status: existing ? 'update' : 'create', hash: saved.hash };
+    } catch (e) {
+      return { slug, status: 'error', message: e instanceof Error ? e.message : '导入保存失败' };
+    }
   }
 
   /**
@@ -175,60 +246,34 @@ export class ContentAdminService {
    * 每篇落盘严格复用 this.save（带 expectedHash CAS 与审计），不绕过正本写入边界。
    */
   async importContent(rawBody: unknown): Promise<ContentImportResult> {
-    if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
-      throw validationError('导入请求必须是 JSON 对象');
-    }
-    const req = rawBody as Partial<ContentImportRequest & ContentBundle>;
-    if (req.format === CONTENT_BUNDLE_FORMAT || req.bundleHash) {
-      const checked = verifyContentBundle(rawBody, sha256);
-      if (!checked.ok) throw validationError(checked.error);
-    }
-    if (!Array.isArray(req.items)) throw validationError('导入必须提供 items 数组');
-    if (req.items.length > MAX_CONTENT_IMPORT_ITEMS) {
-      throw validationError(`单次最多导入 ${MAX_CONTENT_IMPORT_ITEMS} 篇文章`);
-    }
-
-    const policy: ContentImportConflictPolicy = req.conflictPolicy === 'overwrite' ? 'overwrite' : 'skip';
-    const dryRun = Boolean(req.dryRun);
+    const { items: rawItems, policy, dryRun } = this.parseValidatedImportRequest(rawBody);
     const items: ContentImportItemResult[] = [];
-    let created = 0, updated = 0, unchanged = 0, skipped = 0, failed = 0;
+    const counts = { create: 0, update: 0, unchanged: 0, skip: 0, error: 0 };
 
-    for (const entry of req.items) {
-      const slug = typeof entry?.slug === 'string' ? entry.slug.trim() : '';
-      const raw = typeof entry?.raw === 'string' ? normalizeLf(entry.raw) : '';
-      if (!SLUG_RE.test(slug)) {
-        failed++; items.push({ slug: slug || '(invalid)', status: 'error', message: 'slug 须为小写 ascii 短横线' }); continue;
-      }
-      if (!raw.trimStart().startsWith('---')) {
-        failed++; items.push({ slug, status: 'error', message: '正文须以 YAML frontmatter --- 开头' }); continue;
-      }
-      const nextHash = sha256(raw);
-      const existing = await this.files.get(slug);
-      if (existing && existing.hash === nextHash) {
-        unchanged++; items.push({ slug, status: 'unchanged', hash: nextHash }); continue;
-      }
-      if (existing && policy === 'skip') {
-        skipped++; items.push({ slug, status: 'skip', hash: existing.hash, message: '已存在同 slug 文章，按策略跳过' }); continue;
-      }
-      if (dryRun) {
-        if (existing) { updated++; items.push({ slug, status: 'update', hash: nextHash }); }
-        else { created++; items.push({ slug, status: 'create', hash: nextHash }); }
-        continue;
-      }
-      try {
-        const saved = await this.save(slug, raw, existing ? existing.hash : null);
-        if (existing) { updated++; items.push({ slug, status: 'update', hash: saved.hash }); }
-        else { created++; items.push({ slug, status: 'create', hash: saved.hash }); }
-      } catch (e) {
-        failed++;
-        items.push({ slug, status: 'error', message: e instanceof Error ? e.message : '导入保存失败' });
-      }
+    for (const entry of rawItems) {
+      const result = await this.processImportEntry(entry, policy, dryRun);
+      counts[result.status] += 1;
+      items.push(result);
     }
 
     if (!dryRun) {
-      await this.writeAudit('content.import', 'bundle', `created:${created},updated:${updated},skipped:${skipped},failed:${failed}`);
+      await this.writeAudit(
+        'content.import',
+        'bundle',
+        `created:${counts.create},updated:${counts.update},skipped:${counts.skip},failed:${counts.error}`,
+      );
     }
-    return { ok: failed === 0, dryRun, total: req.items.length, created, updated, unchanged, skipped, failed, items };
+    return {
+      ok: counts.error === 0,
+      dryRun,
+      total: rawItems.length,
+      created: counts.create,
+      updated: counts.update,
+      unchanged: counts.unchanged,
+      skipped: counts.skip,
+      failed: counts.error,
+      items,
+    };
   }
 
   async save(slug: string, raw: string, expectedHash: string | null) {
@@ -263,32 +308,11 @@ export class ContentAdminService {
     } catch (e) {
       if (e instanceof ApiError) throw e;
       const msg = e instanceof Error ? e.message : 'save-failed';
-      if (msg === 'invalid-slug') {
-        throw new ApiError(
-          'invalid-slug',
-          HttpStatus.BAD_REQUEST,
-          'slug 须为小写 ascii 短横线',
-        );
+      const mapped = SAVE_ERROR_MAP[msg];
+      if (mapped) {
+        throw new ApiError(msg, mapped[0], mapped[1]);
       }
-      if (msg === 'invalid-frontmatter') {
-        throw new ApiError(
-          'invalid-frontmatter',
-          HttpStatus.BAD_REQUEST,
-          '正文须以 YAML frontmatter --- 开头',
-        );
-      }
-      if (msg === 'content-log-unavailable') {
-        throw new ApiError(
-          'content-log-unavailable',
-          HttpStatus.SERVICE_UNAVAILABLE,
-          '内容目录不可用',
-        );
-      }
-      throw new ApiError(
-        'content-save-failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        msg,
-      );
+      throw new ApiError('content-save-failed', HttpStatus.INTERNAL_SERVER_ERROR, msg);
     }
   }
 

@@ -6,14 +6,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
+import { isValidContentSlug } from '@walker/shared';
 import type {
   ContentLedgerRepositoryPort,
   ContentLedgerSourceEntry,
 } from '../ports/content-ledger.repository';
 import { resolveContentLogDir } from './content-log-dir';
-
-/** 与既有内容仓储同一 slug 形状约束（读侧口径一致） */
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function toEntry(
   fileName: string,
@@ -52,7 +50,7 @@ export class FsContentLedgerRepository implements ContentLedgerRepositoryPort {
   }
 
   async get(slug: string): Promise<ContentLedgerSourceEntry | null> {
-    if (!SLUG_RE.test(slug)) return null;
+    if (!isValidContentSlug(slug)) return null;
     const dir = await resolveContentLogDir();
     for (const ext of ['.md', '.mdx'] as const) {
       const full = path.join(dir, `${slug}${ext}`);

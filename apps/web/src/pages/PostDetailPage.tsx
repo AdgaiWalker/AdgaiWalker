@@ -5,7 +5,7 @@
  * 依赖：content、sanitize、outline、反馈/赞/进度
  * 触发：路由 /posts/:slug
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,7 +16,13 @@ import {
   Network,
 } from 'lucide-react';
 import { marked } from 'marked';
-import { expandWikiLinks, findGraphNode, noteNodeId } from '@walker/shared';
+import {
+  articleHistoryLabel,
+  articleVersionListPath,
+  expandWikiLinks,
+  findGraphNode,
+  noteNodeId,
+} from '@walker/shared';
 import {
   getPostBySlug,
   getRelatedPosts,
@@ -25,10 +31,6 @@ import {
 } from '../content';
 import { getGraphBodies, getKnowledgeGraph } from '../graph';
 import { getArticleVersions } from '../article-versions';
-import {
-  articleHistoryLabel,
-  articleVersionListPath,
-} from '@walker/shared';
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
 import { createContentGraphDomain } from '../components/graph/domains';
 import { WEB_ROUTES } from '../shared/routes';
@@ -41,6 +43,7 @@ import { GiscusComments } from '../components/ui/GiscusComments';
 import { LikeButton } from '../components/ui/LikeButton';
 import { ReadingProgress } from '../components/ui/ReadingProgress';
 import { useContentFeedback } from '../hooks/useContentFeedback';
+import { useCodeCopyButtons } from '../hooks/useCodeCopyButtons';
 import { useLike } from '../hooks/useLike';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 import { useTocActive } from '../hooks/useTocActive';
@@ -139,38 +142,7 @@ function PostDetailBody({
   const historyLabel = articleHistoryLabel(getArticleVersions(post.slug).length);
 
   const bodyRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = bodyRef.current;
-    if (!container) return;
-    const pres = container.querySelectorAll('pre');
-    const cleanups: (() => void)[] = [];
-    pres.forEach((pre) => {
-      if (pre.querySelector('.code-copy-btn')) return;
-      const btn = document.createElement('button');
-      btn.className = 'code-copy-btn';
-      btn.type = 'button';
-      btn.setAttribute('aria-label', '复制代码');
-      btn.innerText = '复制';
-      const onClick = () => {
-        const text = pre.querySelector('code')?.innerText ?? pre.innerText;
-        navigator.clipboard?.writeText(text).then(() => {
-          btn.innerText = '已复制 √';
-          btn.classList.add('copied');
-          setTimeout(() => {
-            btn.innerText = '复制';
-            btn.classList.remove('copied');
-          }, 2000);
-        }).catch(() => {});
-      };
-      btn.addEventListener('click', onClick);
-      pre.appendChild(btn);
-      cleanups.push(() => btn.removeEventListener('click', onClick));
-    });
-    return () => {
-      cleanups.forEach((c) => c());
-    };
-  }, [html]);
+  useCodeCopyButtons(bodyRef, html);
 
   return (
     <div className="reading-stage">

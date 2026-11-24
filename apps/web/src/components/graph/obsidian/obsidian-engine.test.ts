@@ -2,7 +2,7 @@
  * 引擎测试 —— 断言的是 Obsidian 源码里**可核对的确切数值**，不是「大致像」。
  * 每条的期望值都能在 sim-original.js / graph-reconstructed.js 里找到出处。
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ForceSimulation,
   createRandom,
@@ -12,6 +12,7 @@ import {
   type SimNode,
 } from './forces';
 import { seedPositions } from './engine';
+import { attachGraphPointerController } from './pointer-controller';
 import { nodeSizeFor, textAlphaFor } from './renderer';
 import {
   ALPHA_DECAY,
@@ -243,5 +244,47 @@ describe('初始布点（graph-reconstructed.setData）', () => {
     const annulusWidth = Math.sqrt(area / Math.PI);
     const radius = Math.hypot(positions[0]!.x, positions[0]!.y);
     expect(radius).toBeLessThanOrEqual(annulusWidth + 1e-9);
+  });
+});
+
+describe('attachGraphPointerController（状态重置与越界防御）', () => {
+  it('调用 reset() 后清空拖拽/悬停索引，后续 pointermove 不会按过期下标写入节点坐标', () => {
+    const listeners = new Map<string, EventListener>();
+    const moveNode = vi.fn();
+    const postDragForce = vi.fn();
+    const fakeCanvas = {
+      classList: { add: vi.fn(), remove: vi.fn() },
+      style: { cursor: '' },
+      addEventListener: vi.fn((type: string, fn: EventListener) => { listeners.set(type, fn); }),
+      removeEventListener: vi.fn(),
+    } as unknown as HTMLCanvasElement;
+
+    let nodeCount = 3;
+    const controller = attachGraphPointerController(fakeCanvas, {
+      hitTest: () => 2,
+      screenToWorld: (x, y) => ({ x, y }),
+      nodeIdAt: (i) => (i >= 0 && i < nodeCount ? `node:${i}` : null),
+      getPan: () => ({ panX: 0, panY: 0 }),
+      setPan: vi.fn(),
+      moveNode,
+      postDragForce,
+      onWheelZoom: vi.fn(),
+      onSelectionChanged: vi.fn(),
+      requestRender: vi.fn(),
+    });
+
+    listeners.get('pointerdown')?.({ offsetX: 10, offsetY: 10, clientX: 10, clientY: 10, pointerId: 1 } as unknown as Event);
+    expect(controller.activeIndex()).toBe(2);
+    expect(moveNode).toHaveBeenCalledTimes(1);
+
+    // 模拟 setData 切换为更小的数据集后调用 reset()
+    nodeCount = 1;
+    controller.reset();
+    expect(controller.activeIndex()).toBe(-1);
+
+    listeners.get('pointermove')?.({ offsetX: 50, offsetY: 60, clientX: 50, clientY: 60, pointerType: 'mouse' } as unknown as Event);
+    expect(moveNode).toHaveBeenCalledTimes(1);
+    expect(postDragForce).toHaveBeenCalledTimes(1);
+    controller.unbind();
   });
 });

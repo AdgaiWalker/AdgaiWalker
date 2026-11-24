@@ -63,4 +63,5 @@ export * from './user.js';
 export * from './git-sync.js';
 export * from './runtime-monitor.js';
 export * from './activity.js';
+export * from './site-identity.js';
 export * from './social-share.js';

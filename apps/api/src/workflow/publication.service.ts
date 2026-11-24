@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
-import { missingPublishedPostFields } from '@walker/shared';
+import { missingPublishedPostFields, resolvePublicSiteUrl } from '@walker/shared';
 import { newId } from '../common/ids';
 import { ApiError, storageUnavailable, validationError } from '../common/http-error';
 import { ContentReleaseService } from '../content-release/content-release.service';
@@ -93,7 +93,7 @@ export class PublicationService {
       });
     }
 
-    const base = (process.env.PUBLIC_SITE_URL?.trim() || 'https://iwalk.pro').replace(/\/$/, '');
+    const base = resolvePublicSiteUrl(process.env.PUBLIC_SITE_URL);
     const url = `${base}/posts/${encodeURIComponent(saved.slug)}`;
     // 保存 ≠ 发布：文件只落盘到 content/log，上线走统一 ContentRelease 阶段推进（commit+push+Vercel），
     // 之后由 verifyWebsite 校验线上才翻 PUBLISHED。这里如实记录 PREPARED。

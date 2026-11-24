@@ -2,12 +2,18 @@
  * 公开站身份与 URL 单一配置。
  * 构建脚本共用，避免 sitemap / canonical / feeds 各写一套域名与作者。
  */
-export const SITE_ORIGIN = 'https://www.iwalk.pro';
-export const SITE_NAME = 'Walker';
-export const SITE_TITLE = 'Walker · 用好 AI 做好事';
-export const SITE_DESCRIPTION =
-  'Dora 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
-export const SITE_LANGUAGE = 'zh-CN';
+import {
+  SITE_AUTHOR,
+  SITE_DESCRIPTION,
+  SITE_LANGUAGE,
+  SITE_NAME,
+  SITE_ORIGIN,
+  SITE_ROUTE_METADATA,
+  SITE_TITLE,
+  siteAbsoluteUrl,
+} from '../../packages/shared/src/site-identity';
+
+export { SITE_ORIGIN, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, SITE_LANGUAGE };
 
 /** 这些路由在构建期拥有独立静态正文与 metadata，可以进入 sitemap。 */
 export const INDEXABLE_STATIC_ROUTES = [
@@ -26,45 +32,18 @@ export const INDEXABLE_STATIC_ROUTES = [
   '/me',
 ] as const;
 
+const SPA_SHELL_PATHS = ['/tools', '/tools/result', '/ask', '/support', '/login', '/exchange'] as const;
+
 /** 有独立首屏、但不进 sitemap 的客户端路由。禁止 rewrite 到首页 HTML。 */
-export const SPA_SHELL_ROUTES = [
-  {
-    pathname: '/tools',
-    title: '卡 · Walker',
-    heading: '你卡在哪？',
-    description: '说清一个真实卡点，拿到可以立即开始的下一步。',
-  },
-  {
-    pathname: '/tools/result',
-    title: '下一步 · Walker',
-    heading: '你的下一步',
-    description: '这次卡点拿到的下一步与依据；结果只在生成它的浏览器里可还原。',
-  },
-  {
-    pathname: '/ask',
-    title: '小影 · Walker',
-    heading: '小影',
-    description: 'Dora 的管家小影。关于站主与这个站，问就行。',
-  },
-  {
-    pathname: '/support',
-    title: '支持 · Walker',
-    heading: '支持 / 赞赏',
-    description: '支持 Walker 继续记录、实践与公开分享。',
-  },
-  {
-    pathname: '/login',
-    title: '登录 · Walker',
-    heading: '账号',
-    description: 'Walker 账户入口。',
-  },
-  {
-    pathname: '/exchange',
-    title: '交换 · Walker',
-    heading: '交换',
-    description: '围绕真实问题、成果与经验建立联系。',
-  },
-] as const;
+export const SPA_SHELL_ROUTES = SPA_SHELL_PATHS.map((pathname) => {
+  const meta = SITE_ROUTE_METADATA[pathname]!;
+  return {
+    pathname,
+    title: meta.title,
+    heading: meta.heading ?? meta.title,
+    description: meta.description,
+  };
+});
 
 /** 旧兼容路径：生产必须 301，禁止先吐首页再靠客户端跳。 */
 export const LEGACY_REDIRECTS = [
@@ -79,13 +58,6 @@ export const LEGACY_REDIRECTS = [
 ] as const;
 
 /** Walker 是站名；人是 Dora。 */
-export const AUTHOR = {
-  name: 'Dora',
-  url: `${SITE_ORIGIN}/me`,
-  image: `${SITE_ORIGIN}/images/dora.jpg`,
-} as const;
+export const AUTHOR = SITE_AUTHOR;
 
-export function absoluteUrl(pathname: string): string {
-  const path = pathname.startsWith('/') ? pathname : `/${pathname}`;
-  return `${SITE_ORIGIN}${path === '/' ? '/' : path.replace(/\/$/, '')}`;
-}
+export const absoluteUrl = siteAbsoluteUrl;

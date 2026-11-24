@@ -2,22 +2,26 @@
  * SPA 导航 metadata 同步。
  *
  * 构建期静态 HTML 负责抓取与首次响应；本组件只在客户端切换路由后
- * 同步 head，避免沿用上一页的标题、canonical 或结构化数据。
+ * 同步 head，并与 shared/site-identity 共用同源的 URL 与 Schema.org 构图逻辑。
  */
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import {
+  SITE_AUTHOR,
+  SITE_DEFAULT_IMAGE,
+  SITE_NAME,
+  SITE_ROUTE_METADATA,
+  buildAboutPageJsonLdNode,
+  buildBlogPostingJsonLdGraph,
+  buildCollectionJsonLdNode,
+  buildCommonJsonLdNodes,
+  buildProfilePageJsonLdNode,
+  resolveSiteAssetUrl,
+  siteAbsoluteUrl,
+  wrapJsonLdGraph,
+} from '@walker/shared';
 import { getBrowseItems, getPostBySlug, type ContentItem } from '../content';
 import { WEB_ROUTES } from '../shared/routes';
-
-const SITE_ORIGIN = 'https://www.iwalk.pro';
-const SITE_NAME = 'Walker';
-const PERSON_NAME = 'Dora';
-const PERSON_IMAGE = `${SITE_ORIGIN}/images/dora.jpg`;
-const SITE_TITLE = 'Walker · 用好 AI 做好事';
-const SITE_DESCRIPTION =
-  'Dora 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
-const DEFAULT_IMAGE = `${SITE_ORIGIN}/images/hero-bg.png`;
-const PERSON_ID = `${SITE_ORIGIN}/me#person`;
 
 type RouteMetadataValue = {
   title: string;
@@ -27,147 +31,21 @@ type RouteMetadataValue = {
   indexable?: boolean;
 };
 
-const STATIC_METADATA: Record<string, RouteMetadataValue> = {
-  [WEB_ROUTES.home]: {
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
-    canonicalPath: '/',
-  },
-  [WEB_ROUTES.browse]: {
-    title: '文章 · Walker',
-    description:
-      'Dora 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。',
-    canonicalPath: WEB_ROUTES.browse,
-  },
-  [WEB_ROUTES.tutorials]: {
-    title: '教程 · Walker',
-    description: '来自真实使用的步骤与经验：搞到条件、跟上工具，照着可以开始做。',
-    canonicalPath: WEB_ROUTES.tutorials,
-  },
-  [WEB_ROUTES.explore]: {
-    title: '探索 · Walker',
-    description:
-      '从一个念头开始，在实践里逐渐长成：点子可以持续推进，项目是被明确立项的持续交付。',
-    canonicalPath: WEB_ROUTES.explore,
-  },
-  [WEB_ROUTES.lab]: {
-    title: '札记 · Walker',
-    description: '实验中沉淀的经验与思考；观点保留形成时的边界，并通过实践继续更新。',
-    canonicalPath: WEB_ROUTES.lab,
-  },
-  [WEB_ROUTES.toolsResources]: {
-    title: '资源 · Walker',
-    description:
-      'Dora 实际在用或了解的群、工具与引路人；外部服务与本站无利益关系，使用前请自行核验。',
-    canonicalPath: WEB_ROUTES.toolsResources,
-  },
-  [WEB_ROUTES.graph]: {
-    title: '结构 · Walker',
-    description:
-      'Walker 公开内容的互引结构：谁引用了谁、哪些文章还没有互相引用。只由正文内链构成，不含模型推断。',
-    canonicalPath: WEB_ROUTES.graph,
-  },
-  [WEB_ROUTES.about]: {
-    title: '关于本站 · Walker',
-    description:
-      'Walker 是 Dora 的个人知识与行动样板站：人的认识沉淀为知识库，服务判断与行动，再由实践回灌知识。',
-    canonicalPath: WEB_ROUTES.about,
-  },
-  [WEB_ROUTES.me]: {
-    title: `${PERSON_NAME} · 关于我`,
-    description:
-      'Dora，艺术生，在用 AI 解决真实问题：把真实卡点变成可检验的下一步，把走过的路收成公开证据。',
-    canonicalPath: WEB_ROUTES.me,
-    type: 'profile',
-  },
-  [WEB_ROUTES.ask]: {
-    title: '提问 · Walker',
-    description: '说清一个真实卡点，拿到可以立即开始的下一步。',
-    canonicalPath: WEB_ROUTES.ask,
-    indexable: false,
-  },
-  [WEB_ROUTES.toolsResult]: {
-    title: '下一步 · Walker',
-    description: '这次卡点拿到的下一步与依据；结果只在生成它的浏览器里可还原。',
-    canonicalPath: WEB_ROUTES.toolsResult,
-    indexable: false,
-  },
-  [WEB_ROUTES.assistant]: {
-    title: '小影 · Walker',
-    description: '了解站主、找内容、问路径；回答只依据站内已公开且可引用的内容。',
-    canonicalPath: WEB_ROUTES.assistant,
-    indexable: false,
-  },
-  [WEB_ROUTES.condition]: {
-    title: '条件 · Walker',
-    description: '先把工具、渠道和现实条件准备好，再开始行动。',
-    canonicalPath: WEB_ROUTES.condition,
-    indexable: false,
-  },
-  [WEB_ROUTES.kit]: {
-    title: '器具 · Walker',
-    description: '实际使用过的工具、设备和组合方式。',
-    canonicalPath: WEB_ROUTES.kit,
-    indexable: false,
-  },
-  [WEB_ROUTES.showcase]: {
-    title: '样板 · Walker',
-    description: '已经做出来、可以查看和检验的样板。',
-    canonicalPath: WEB_ROUTES.showcase,
-    indexable: false,
-  },
-  [WEB_ROUTES.exchange]: {
-    title: '交换 · Walker',
-    description: '围绕真实问题、成果与经验建立联系。',
-    canonicalPath: WEB_ROUTES.exchange,
-    indexable: false,
-  },
-  [WEB_ROUTES.ferry]: {
-    title: 'Ferry · Walker',
-    description: '从差距到行动、做减法并持续迭代的思考线。',
-    canonicalPath: WEB_ROUTES.ferry,
-  },
-  [WEB_ROUTES.advanceTrilogy]: {
-    title: '前进三部曲 · Walker',
-    description: '为什么走、路上留下什么，以及想走向哪里。',
-    canonicalPath: WEB_ROUTES.advanceTrilogy,
-  },
-  [WEB_ROUTES.learn]: {
-    title: '学习 · Walker',
-    description: '沿着真实任务进入教程和学习路径。',
-    canonicalPath: WEB_ROUTES.learn,
-  },
-  [WEB_ROUTES.gear]: {
-    title: '装备 · Walker',
-    description: 'Dora 当前使用的设备与工作组合。',
-    canonicalPath: WEB_ROUTES.gear,
-  },
-  [WEB_ROUTES.support]: {
-    title: '支持 · Walker',
-    description: '支持 Walker 继续记录、实践与公开分享。',
-    canonicalPath: WEB_ROUTES.support,
-    indexable: false,
-  },
-  [WEB_ROUTES.login]: {
-    title: '登录 · Walker',
-    description: 'Walker 账户入口。',
-    canonicalPath: WEB_ROUTES.login,
-    indexable: false,
-  },
-};
+const STATIC_METADATA: Record<string, RouteMetadataValue> = Object.fromEntries(
+  Object.entries(SITE_ROUTE_METADATA).map(([canonicalPath, meta]) => [
+    canonicalPath,
+    {
+      title: meta.title,
+      description: meta.description,
+      canonicalPath,
+      ...(meta.type ? { type: meta.type } : {}),
+      ...(meta.indexable === false ? { indexable: false } : {}),
+    },
+  ]),
+);
 
-function absoluteUrl(pathname: string): string {
-  return `${SITE_ORIGIN}${pathname === '/' ? '/' : pathname.replace(/\/$/, '')}`;
-}
-
-function upsertMeta(
-  attribute: 'name' | 'property',
-  key: string,
-  value: string,
-): void {
-  let element = document.querySelector<HTMLMetaElement>(
-    `meta[${attribute}="${key}"]`,
-  );
+function upsertMeta(attribute: 'name' | 'property', key: string, value: string): void {
+  let element = document.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
   if (!element) {
     element = document.createElement('meta');
     element.setAttribute(attribute, key);
@@ -187,29 +65,23 @@ function upsertCanonical(href: string): void {
 }
 
 function syncMarkdownAlternate(item?: ContentItem): void {
-  document
-    .querySelectorAll('link[rel="alternate"][type="text/markdown"]')
-    .forEach((element) => element.remove());
+  document.querySelectorAll('link[rel="alternate"][type="text/markdown"]').forEach((element) => element.remove());
   if (!item?.aiUsePolicy?.readable) return;
   const element = document.createElement('link');
   element.rel = 'alternate';
   element.type = 'text/markdown';
-  element.href = absoluteUrl(
-    `${WEB_ROUTES.browse}/${encodeURIComponent(item.slug)}/index.md`,
-  );
+  element.href = siteAbsoluteUrl(`${WEB_ROUTES.browse}/${encodeURIComponent(item.slug)}/index.md`);
   document.head.append(element);
 }
 
 function syncArticleMeta(item?: ContentItem): void {
-  document
-    .querySelectorAll('meta[property^="article:"]')
-    .forEach((element) => element.remove());
+  document.querySelectorAll('meta[property^="article:"]').forEach((element) => element.remove());
   if (!item) return;
 
   const values = [
     ['article:published_time', item.date],
     ['article:modified_time', item.updated || item.date],
-    ['article:author', `${SITE_ORIGIN}/me`],
+    ['article:author', SITE_AUTHOR.url],
     ...item.tags.map((tag) => ['article:tag', tag]),
   ];
   for (const [property, content] of values) {
@@ -221,140 +93,42 @@ function syncArticleMeta(item?: ContentItem): void {
 }
 
 function schemaFor(metadata: RouteMetadataValue, item?: ContentItem): unknown {
-  const canonical = absoluteUrl(metadata.canonicalPath);
-  const graph: Array<Record<string, unknown>> = [
-    {
-      '@type': 'WebSite',
-      '@id': `${SITE_ORIGIN}/#website`,
-      url: `${SITE_ORIGIN}/`,
-      name: SITE_NAME,
-      description: SITE_DESCRIPTION,
-      inLanguage: 'zh-CN',
-    },
-    {
-      '@type': 'WebPage',
-      '@id': `${canonical}#webpage`,
-      url: canonical,
-      name: metadata.title,
-      description: metadata.description,
-      isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
-      inLanguage: 'zh-CN',
-    },
-  ];
-
   if (item) {
-    const image = item.image
-      ? item.image.startsWith('http')
-        ? item.image
-        : absoluteUrl(item.image)
-      : undefined;
-    graph.push(
-      {
-        '@type': 'BlogPosting',
-        '@id': `${canonical}#article`,
-        url: canonical,
-        mainEntityOfPage: { '@id': `${canonical}#webpage` },
-        headline: item.title,
-        description: item.summary,
-        datePublished: item.date,
-        dateModified: item.updated || item.date,
-        author: { '@id': PERSON_ID, name: item.author || PERSON_NAME },
-        publisher: { '@id': PERSON_ID },
-        inLanguage: 'zh-CN',
-        articleSection: item.series || item.domain || item.type,
-        keywords: item.tags,
-        isAccessibleForFree: true,
-        ...(image ? { image } : {}),
-      },
-      {
-        '@type': 'Person',
-        '@id': PERSON_ID,
-        name: item.author || PERSON_NAME,
-        url: `${SITE_ORIGIN}/me`,
-        image: PERSON_IMAGE,
-      },
-      {
-        '@type': 'BreadcrumbList',
-        '@id': `${canonical}#breadcrumb`,
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: SITE_NAME,
-            item: `${SITE_ORIGIN}/`,
-          },
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: '证据',
-            item: absoluteUrl(WEB_ROUTES.browse),
-          },
-          {
-            '@type': 'ListItem',
-            position: 3,
-            name: item.title,
-            item: canonical,
-          },
-        ],
-      },
-    );
-  } else if (metadata.canonicalPath === WEB_ROUTES.browse) {
-    graph.push({
-      '@type': 'CollectionPage',
-      '@id': `${canonical}#collection`,
-      url: canonical,
-      name: metadata.title,
-      description: metadata.description,
-      mainEntity: {
-        '@type': 'ItemList',
-        itemListElement: getBrowseItems().map((entry, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          url: absoluteUrl(
-            `${WEB_ROUTES.browse}/${encodeURIComponent(entry.slug)}`,
-          ),
-          name: entry.title,
-        })),
-      },
-    });
-  } else if (metadata.canonicalPath === WEB_ROUTES.me) {
-    graph.push(
-      {
-        '@type': 'ProfilePage',
-        '@id': `${canonical}#profile`,
-        url: canonical,
-        name: metadata.title,
-        mainEntity: { '@id': PERSON_ID },
-      },
-      {
-        '@type': 'Person',
-        '@id': PERSON_ID,
-        name: PERSON_NAME,
-        url: canonical,
-        image: PERSON_IMAGE,
-      },
-    );
-  } else if (metadata.canonicalPath === WEB_ROUTES.about) {
-    graph.push({
-      '@type': 'AboutPage',
-      '@id': `${canonical}#about`,
-      url: canonical,
-      name: metadata.title,
-      description: metadata.description,
-      about: { '@id': `${SITE_ORIGIN}/#website` },
+    return buildBlogPostingJsonLdGraph({
+      pathname: metadata.canonicalPath,
+      browsePath: WEB_ROUTES.browse,
+      title: item.title,
+      summary: item.summary,
+      published: item.date,
+      modified: item.updated || item.date,
+      authorName: item.author,
+      image: item.image,
+      section: item.series || item.domain || item.type,
+      tags: item.tags,
     });
   }
-
-  return { '@context': 'https://schema.org', '@graph': graph };
+  const nodes = buildCommonJsonLdNodes(metadata.canonicalPath, metadata.title, metadata.description);
+  if (metadata.canonicalPath === WEB_ROUTES.browse) {
+    nodes.push(buildCollectionJsonLdNode({
+      pathname: metadata.canonicalPath,
+      title: metadata.title,
+      description: metadata.description,
+      items: getBrowseItems().map((entry) => ({
+        url: siteAbsoluteUrl(`${WEB_ROUTES.browse}/${encodeURIComponent(entry.slug)}`),
+        name: entry.title,
+      })),
+    }));
+  } else if (metadata.canonicalPath === WEB_ROUTES.me) {
+    nodes.push(buildProfilePageJsonLdNode(metadata.canonicalPath, metadata.title));
+  } else if (metadata.canonicalPath === WEB_ROUTES.about) {
+    nodes.push(buildAboutPageJsonLdNode(metadata.canonicalPath, metadata.title, metadata.description));
+  }
+  return wrapJsonLdGraph(nodes);
 }
 
 function syncSchema(metadata: RouteMetadataValue, item?: ContentItem): void {
-  let element = document.querySelector<HTMLScriptElement>('#site-json-ld');
-  if (!element) {
-    element = document.querySelector<HTMLScriptElement>(
-      'script[type="application/ld+json"]',
-    );
-  }
+  let element = document.querySelector<HTMLScriptElement>('#site-json-ld')
+    ?? document.querySelector<HTMLScriptElement>('script[type="application/ld+json"]');
   if (!element) {
     element = document.createElement('script');
     element.type = 'application/ld+json';
@@ -365,24 +139,15 @@ function syncSchema(metadata: RouteMetadataValue, item?: ContentItem): void {
 }
 
 function syncMetadata(metadata: RouteMetadataValue, item?: ContentItem): void {
-  const canonical = absoluteUrl(metadata.canonicalPath);
-  const image = item?.image
-    ? item.image.startsWith('http')
-      ? item.image
-      : absoluteUrl(item.image)
-    : metadata.type === 'profile'
-      ? PERSON_IMAGE
-      : DEFAULT_IMAGE;
+  const canonical = siteAbsoluteUrl(metadata.canonicalPath);
+  const image = resolveSiteAssetUrl(item?.image)
+    || (metadata.type === 'profile' ? SITE_AUTHOR.image : SITE_DEFAULT_IMAGE);
 
   document.title = metadata.title;
   upsertCanonical(canonical);
   upsertMeta('name', 'description', metadata.description);
-  upsertMeta('name', 'author', PERSON_NAME);
-  upsertMeta(
-    'name',
-    'robots',
-    metadata.indexable === false ? 'noindex, follow' : 'index, follow',
-  );
+  upsertMeta('name', 'author', SITE_AUTHOR.name);
+  upsertMeta('name', 'robots', metadata.indexable === false ? 'noindex, follow' : 'index, follow');
   upsertMeta('property', 'og:type', metadata.type || 'website');
   upsertMeta('property', 'og:site_name', SITE_NAME);
   upsertMeta('property', 'og:locale', 'zh_CN');
@@ -414,8 +179,7 @@ export function RouteMetadata() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const normalizedPath =
-      pathname === '/' ? '/' : pathname.replace(/\/+$/, '');
+    const normalizedPath = pathname === '/' ? '/' : pathname.replace(/\/+$/, '');
     const item = itemFromPath(normalizedPath);
     if (item) {
       syncMetadata(
