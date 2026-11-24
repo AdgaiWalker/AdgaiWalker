@@ -11,6 +11,7 @@ export * from './insights.js';
 export * from './next-actions.js';
 export * from './json-request.js';
 export * from './content.js';
+export * from './content-bundle.js';
 export * from './content-ledger.js';
 export * from './article-version.js';
 export * from './trace.js';

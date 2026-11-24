@@ -110,8 +110,70 @@ export function toContentDoc(
   };
 }
 
+export const PUBLIC_SUMMARY_PLACEHOLDER = '把一个真实问题拆开，给出可以立刻开始的最小行动。';
+
+/**
+ * 唯一内容列表/GEO 分类真相源：
+ * 除 `tool`（资源工具卡，独立归入器具厅且不进 /posts 信息流）外，
+ * 包括 `knowledge / idea / project / learn / wise` 及其他文章类型一律进入 `/posts` 列表与订阅源。
+ */
+export function isBrowsePostType(type: string): boolean {
+  return type.trim().toLowerCase() !== 'tool';
+}
+
 export function isPostType(type: string): boolean {
-  return ['knowledge', 'idea', 'project', 'learn'].includes(type);
+  return isBrowsePostType(type);
+}
+
+function isValidPostDate(value: unknown): boolean {
+  if (value instanceof Date) return !Number.isNaN(value.getTime());
+  if (typeof value !== 'string' || !value.trim()) return false;
+  return !Number.isNaN(new Date(value.trim()).getTime());
+}
+
+export interface PublishValidationResult {
+  ok: boolean;
+  missing: PublishedPostRequiredField[];
+  issues: string[];
+}
+
+/**
+ * 发布门禁单一契约：由 preflight（API）与站内发布流程共用，
+ * 确保通过 preflight 即满足 generate-content + check-content-fields + verify-geo 全部条件。
+ */
+export function validatePublishablePost(input: {
+  slug: string;
+  frontmatter: Record<string, unknown>;
+  existingPublicSummaries?: ReadonlyMap<string, string>;
+}): PublishValidationResult {
+  const fm = input.frontmatter;
+  const missing = missingPublishedPostFields(fm);
+  const issues: string[] = [];
+
+  if (resolveVisibility(fm) !== 'public') {
+    issues.push('内容可见性必须为 public');
+  }
+  if (!isValidPostDate(fm.updated) && !isValidPostDate(fm.date)) {
+    issues.push('updated 或 date 必须是有效日期');
+  } else if (fm.date !== undefined && fm.date !== null && String(fm.date).trim() !== '' && !isValidPostDate(fm.date)) {
+    issues.push('date 格式无效');
+  }
+  const policy = fm.aiUsePolicy;
+  if (!policy || typeof policy !== 'object' || Array.isArray(policy) || typeof (policy as { level?: unknown }).level !== 'string' || !(policy as { level: string }).level.trim()) {
+    issues.push('aiUsePolicy.level 不能为空');
+  }
+  const summary = typeof fm.summary === 'string' ? fm.summary.trim() : '';
+  if (summary === PUBLIC_SUMMARY_PLACEHOLDER) {
+    issues.push('summary 不能使用占位模板文案');
+  }
+  const postType = typeof fm.type === 'string' ? fm.type : 'knowledge';
+  if (summary && isBrowsePostType(postType) && input.existingPublicSummaries) {
+    const conflictSlug = input.existingPublicSummaries.get(summary);
+    if (conflictSlug && conflictSlug !== input.slug) {
+      issues.push(`summary 与公开文章「${conflictSlug}」重复，会导致站点构建门禁失败`);
+    }
+  }
+  return { ok: missing.length === 0 && issues.length === 0, missing, issues };
 }
 
 /** Resolve a wiki slug to a public href; return undefined to keep plain text. */

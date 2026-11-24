@@ -136,7 +136,7 @@ describe('C21 将旧工作站发布接入同一出口（Kernel 集成测试）',
       output: {
         title: 'C21 测试作品标题',
         markdown: '# 正文内容\n\n工作站生成的段落',
-        summary: '测试摘要',
+        summary: `测试摘要：${slug}`,
         form: 'article',
         domain: 'product',
         intent: 'share',

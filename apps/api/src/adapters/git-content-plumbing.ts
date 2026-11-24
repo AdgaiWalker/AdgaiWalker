@@ -47,6 +47,29 @@ export interface PublishSingleArticleResult {
   noop?: boolean;
 }
 
+export interface DeleteSingleArticleInput {
+  repoRoot: string;
+  slug: string;
+  ext: '.md' | '.mdx';
+  remote?: string;
+  branch?: string;
+}
+
+export interface DeleteSingleArticleResult {
+  ok: boolean;
+  scope: 'local-draft' | 'remote';
+  commit?: string;
+  conflict?: boolean;
+  remoteContent?: string;
+  error?: string;
+}
+
+export interface DiscardLocalDraftResult {
+  ok: boolean;
+  restoredRaw?: string;
+  error?: string;
+}
+
 async function gitExec(cwd: string, args: string[], opts?: { env?: NodeJS.ProcessEnv; timeout?: number }): Promise<string> {
   const { stdout } = await execFileAsync('git', args, {
     cwd,
@@ -100,10 +123,10 @@ async function localBlobSha(absPath: string, relPath: string): Promise<string | 
   }
 }
 
-async function commitFilesOntoTree(
+async function applyIndexMutationOntoTree(
   repoRoot: string,
   baseCommit: string | null,
-  files: Array<{ relPath: string; content: Buffer }>,
+  mutation: { upsert?: Array<{ relPath: string; content: Buffer }>; remove?: string[] },
   message: string,
 ): Promise<{ commit: string; noop: boolean }> {
   const tmpIndex = path.join(os.tmpdir(), `walker-git-idx-${randomUUID()}`);
@@ -112,9 +135,12 @@ async function commitFilesOntoTree(
   const env = { ...process.env, GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_NAME: name, GIT_COMMITTER_EMAIL: email, GIT_INDEX_FILE: tmpIndex };
   try {
     if (baseCommit) await gitExec(repoRoot, ['read-tree', baseCommit], { env });
-    for (const f of files) {
+    for (const f of mutation.upsert ?? []) {
       const blob = (await gitSpawnBuf(repoRoot, ['hash-object', '-w', '--stdin'], f.content)).toString('utf8').trim();
       await gitExec(repoRoot, ['update-index', '--add', '--cacheinfo', `100644,${blob},${f.relPath}`], { env });
+    }
+    for (const relPath of mutation.remove ?? []) {
+      await gitExec(repoRoot, ['update-index', '--force-remove', '--', relPath], { env });
     }
     const tree = (await gitExec(repoRoot, ['write-tree'], { env })).trim();
     if (baseCommit && (await gitTry(repoRoot, ['rev-parse', `${baseCommit}^{tree}`])) === tree) {
@@ -125,6 +151,19 @@ async function commitFilesOntoTree(
   } finally {
     await fs.rm(tmpIndex, { force: true }).catch(() => undefined);
   }
+}
+
+export async function isTrackedInHead(repoRoot: string, slug: string, ext: '.md' | '.mdx'): Promise<boolean> {
+  return (await gitTry(repoRoot, ['rev-parse', '--verify', `HEAD:content/log/${slug}${ext}`])) !== null;
+}
+
+export async function discardLocalDraft(input: { repoRoot: string; slug: string; ext: '.md' | '.mdx' }): Promise<DiscardLocalDraftResult> {
+  const targetRel = `content/log/${input.slug}${input.ext}`;
+  const blob = await gitTry(input.repoRoot, ['rev-parse', '--verify', `HEAD:${targetRel}`]);
+  if (!blob) return { ok: false, error: '该文章尚未进入 Git 版本库，无法还原线上版' };
+  const restored = normalizeLf((await gitSpawnBuf(input.repoRoot, ['cat-file', 'blob', blob])).toString('utf8'));
+  await atomicWrite(path.join(input.repoRoot, targetRel), Buffer.from(restored, 'utf8'));
+  return { ok: true, restoredRaw: restored };
 }
 
 async function applyThreeWayContentSync(
@@ -206,7 +245,7 @@ export async function publishSingleArticle(input: PublishSingleArticleInput): Pr
 
     let built: { commit: string; noop: boolean };
     try {
-      built = await commitFilesOntoTree(input.repoRoot, remoteTip, staged, `content: 发布 ${input.slug} (${note})`);
+      built = await applyIndexMutationOntoTree(input.repoRoot, remoteTip, { upsert: staged }, `content: 发布 ${input.slug} (${note})`);
     } catch (e) {
       return { ok: false, error: `构造提交失败：${e instanceof Error ? e.message : String(e)}` };
     }
@@ -234,6 +273,71 @@ export async function publishSingleArticle(input: PublishSingleArticleInput): Pr
     return { ok: true, commit: built.commit, noop: built.noop };
   }
   return { ok: false, error: '推送并发重试耗尽，请重试' };
+}
+
+/**
+ * 无工作树对称删除：
+ * - 从未推入远端的纯草稿仅清理工作区；
+ * - 已进远端的文章原子提交删除 content/log/<slug>.<ext> 并推送 main，保留 content/versions/<slug> 不可变历史；
+ * - 远端已先行修改该文时返回 conflict: true 拒绝静默覆盖。
+ */
+export async function deleteSingleArticle(input: DeleteSingleArticleInput): Promise<DeleteSingleArticleResult> {
+  const remote = input.remote ?? 'origin';
+  const branch = input.branch ?? 'main';
+  const targetRel = `content/log/${input.slug}${input.ext}`;
+  const targetAbs = path.join(input.repoRoot, targetRel);
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await gitExec(input.repoRoot, ['fetch', remote, `+refs/heads/${branch}:refs/remotes/${remote}/${branch}`], { timeout: 20_000 });
+    } catch (e) {
+      return { ok: false, scope: 'remote', error: `fetch 失败：${e instanceof Error ? e.message : String(e)}` };
+    }
+    const remoteTip = await gitTry(input.repoRoot, ['rev-parse', `${remote}/${branch}`]);
+    if (!remoteTip) return { ok: false, scope: 'remote', error: `找不到远端分支 ${remote}/${branch}` };
+    const localHead = await gitTry(input.repoRoot, ['rev-parse', 'HEAD']);
+    const baseBlob = localHead ? await gitTry(input.repoRoot, ['rev-parse', `${localHead}:${targetRel}`]) : null;
+    const remoteBlob = await gitTry(input.repoRoot, ['rev-parse', `${remoteTip}:${targetRel}`]);
+
+    if (baseBlob === null && remoteBlob === null) {
+      await fs.rm(targetAbs, { force: true });
+      return { ok: true, scope: 'local-draft' };
+    }
+    if (remoteBlob !== null && remoteBlob !== baseBlob) {
+      const remoteContent = normalizeLf((await gitSpawnBuf(input.repoRoot, ['cat-file', 'blob', remoteBlob])).toString('utf8'));
+      return {
+        ok: false,
+        scope: 'remote',
+        conflict: true,
+        remoteContent,
+        error: `远端已修改 ${targetRel}，请先同步核对后再删除`,
+      };
+    }
+
+    let built: { commit: string; noop: boolean };
+    try {
+      built = await applyIndexMutationOntoTree(input.repoRoot, remoteTip, { remove: [targetRel] }, `content: 下架并删除 ${input.slug}`);
+    } catch (e) {
+      return { ok: false, scope: 'remote', error: `构造删除提交失败：${e instanceof Error ? e.message : String(e)}` };
+    }
+    if (!built.noop) {
+      try {
+        await gitExec(input.repoRoot, ['push', remote, `${built.commit}:refs/heads/${branch}`], { timeout: 30_000 });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (attempt === 0 && /non-fast-forward|fetch first|rejected/i.test(msg)) continue;
+        return { ok: false, scope: 'remote', error: `推送删除失败：${msg}` };
+      }
+    }
+    await gitExec(input.repoRoot, ['update-ref', `refs/remotes/${remote}/${branch}`, built.commit]);
+    if (localHead && localHead !== remoteTip) {
+      await applyThreeWayContentSync(input.repoRoot, localHead, remoteTip, new Set([targetRel]));
+    }
+    await fs.rm(targetAbs, { force: true });
+    await gitExec(input.repoRoot, ['reset', '--mixed', built.commit]);
+    return { ok: true, scope: 'remote', commit: built.commit };
+  }
+  return { ok: false, scope: 'remote', error: '删除推送并发重试耗尽，请重试' };
 }
 
 export async function syncFromRemote(input: { repoRoot: string; remote?: string; branch?: string }): Promise<ContentSyncPullResult> {
@@ -299,8 +403,8 @@ export async function backupDraftsToBranch(input: {
     dirtyPaths.map(async (relPath) => ({ relPath, content: textBytes(relPath, await fs.readFile(path.join(input.repoRoot, relPath))) })),
   );
   try {
-    const { commit, noop } = await commitFilesOntoTree(
-      input.repoRoot, parent, files, `drafts: 备份 ${dirtyPaths.length} 篇草稿 (${new Date().toISOString().slice(0, 16)}Z)`,
+    const { commit, noop } = await applyIndexMutationOntoTree(
+      input.repoRoot, parent, { upsert: files }, `drafts: 备份 ${dirtyPaths.length} 篇草稿 (${new Date().toISOString().slice(0, 16)}Z)`,
     );
     if (!noop) {
       await gitExec(input.repoRoot, ['push', remote, `${commit}:refs/heads/${draftBranch}`], { timeout: 25_000 });

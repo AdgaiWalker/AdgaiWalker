@@ -3,16 +3,8 @@ import { Gauge, RotateCcw, Save } from "lucide-react";
 import { requestJson, REQUEST_TIMEOUTS } from "../../api/http";
 
 interface QuotaData {
-  quota: number;
-  activeGuests: number;
-  totalExhausted: number;
-  jevRoi?: {
-    fastPathHits: number;
-    l1CacheHits: number;
-    quotaExemptHits: number;
-    savedTokensEstimate: number;
-    avgLatencyMs: number;
-  };
+  quota: number; activeGuests: number; totalExhausted: number;
+  jevRoi?: { fastPathHits: number; l1CacheHits: number; quotaExemptHits: number; savedTokensEstimate: number; avgLatencyMs: number };
 }
 
 const PRESETS = [5, 15, 30, 50, 100, 9999];
@@ -27,53 +19,33 @@ export function GuestQuotaPanel() {
 
   const load = async () => {
     setLoading(true);
-    try {
-      const res = await requestJson<QuotaData>("/ops/guest-quota");
-      setData(res);
-      setQuotaInput(String(res.quota));
-    } catch (err) {
-      setFeedback({ ok: false, text: err instanceof Error ? err.message : "获取访客额度失败" });
-    } finally {
-      setLoading(false);
-    }
+    try { const res = await requestJson<QuotaData>("/ops/guest-quota"); setData(res); setQuotaInput(String(res.quota)); }
+    catch (err) { setFeedback({ ok: false, text: err instanceof Error ? err.message : "获取访客额度失败" }); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { void load(); }, []);
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
+    e.preventDefault(); setFeedback(null);
     const num = Number(quotaInput);
-    if (!Number.isInteger(num) || num < 1 || num > 100000) {
-      setFeedback({ ok: false, text: "请输入 1 到 100,000 之间的整数额度" });
-      return;
-    }
+    if (!Number.isInteger(num) || num < 1 || num > 100000) return setFeedback({ ok: false, text: "请输入 1 到 100,000 之间的整数额度" });
     setSaving(true);
     try {
       const res = await requestJson<{ ok: boolean; quota: number }>("/ops/guest-quota", { method: "PUT", body: { quota: num }, timeoutMs: REQUEST_TIMEOUTS.write });
       setData((prev) => (prev ? { ...prev, quota: res.quota } : null));
       setQuotaInput(String(res.quota));
       setFeedback({ ok: true, text: `访客额度已更新为每人 ${res.quota} 次并即时生效。` });
-    } catch (err) {
-      setFeedback({ ok: false, text: err instanceof Error ? err.message : "保存配额失败" });
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { setFeedback({ ok: false, text: err instanceof Error ? err.message : "保存配额失败" }); } finally { setSaving(false); }
   };
 
   const handleReset = async () => {
     if (!window.confirm("确定要清空所有访客的已用额度记录吗？")) return;
-    setResetting(true);
-    setFeedback(null);
+    setResetting(true); setFeedback(null);
     try {
       await requestJson<{ ok: boolean }>("/ops/guest-quota/reset", { method: "POST", timeoutMs: REQUEST_TIMEOUTS.write });
-      setFeedback({ ok: true, text: "所有访客的额度记录已清零重置。" });
-      await load();
-    } catch (err) {
-      setFeedback({ ok: false, text: err instanceof Error ? err.message : "重置失败" });
-    } finally {
-      setResetting(false);
-    }
+      setFeedback({ ok: true, text: "所有访客的额度记录已清零重置。" }); await load();
+    } catch (err) { setFeedback({ ok: false, text: err instanceof Error ? err.message : "重置失败" }); } finally { setResetting(false); }
   };
 
   const stats: Array<[string, string]> = [

@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { createHash } from 'node:crypto';
 import { Test } from '@nestjs/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ContentFileRepositoryPort } from '../ports/content-file.repository';
@@ -8,7 +9,10 @@ import { PRISMA } from '../ports/prisma.port';
 import { ContentAdminService } from './content-admin.service';
 
 const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
-vi.mock('node:child_process', () => ({ spawn: spawnMock }));
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  return { ...actual, spawn: spawnMock };
+});
 
 const raw = '---\ntitle: 人工保存\ntype: knowledge\n---\n正文';
 const hash = 'a'.repeat(64);
@@ -147,7 +151,7 @@ it('支持删除草稿文章并写入审计日志', async () => {
   try {
     const service = module.get(ContentAdminService);
     const res = await service.deleteDoc('draft-to-delete');
-    expect(res).toEqual({ ok: true, slug: 'draft-to-delete' });
+    expect(res).toMatchObject({ ok: true, slug: 'draft-to-delete', scope: 'local-draft' });
     expect(files.delete).toHaveBeenCalledWith('draft-to-delete');
     expect(auditRecords).toHaveLength(1);
     expect(auditRecords[0].action).toBe('content.delete');
@@ -156,6 +160,103 @@ it('支持删除草稿文章并写入审计日志', async () => {
     await expect(service.deleteDoc('not-exist')).rejects.toMatchObject({
       response: { code: 'content-not-found' },
     });
+  } finally {
+    await module.close();
+  }
+});
+
+it('支持无损导出单篇与全站校验和内容包，并拦截篡改包、支持 dryRun 与 skip/overwrite 策略导入', async () => {
+  const store = new Map<string, typeof detail>([
+    ['alpha-post', { ...detail, slug: 'alpha-post', title: 'Alpha', raw: '---\ntitle: Alpha\ntype: wise\n---\n\nAlpha body\n' }],
+  ]);
+  const auditRecords: any[] = [];
+  const mockPrisma = {
+    getClient: vi.fn(() => ({
+      auditRecord: {
+        create: vi.fn(async ({ data }: any) => {
+          auditRecords.push(data);
+          return data;
+        }),
+      },
+    })),
+  };
+  const files: ContentFileRepositoryPort = {
+    async list() {
+      return [...store.values()].map((d) => ({ slug: d.slug, title: d.title, type: d.type, updatedAt: d.updatedAt }));
+    },
+    async get(slug: string) { return store.get(slug) ?? null; },
+    async save() { return detail; },
+    async delete() { return true; },
+  };
+  const mutation = {
+    saveManual: vi.fn(async ({ slug, raw }: { slug: string; raw: string }) => {
+      const next = { ...detail, slug, raw, hash: createHash('sha256').update(raw, 'utf8').digest('hex') };
+      store.set(slug, next);
+      return next;
+    }),
+  };
+
+  const module = await Test.createTestingModule({
+    providers: [
+      ContentAdminService,
+      { provide: CONTENT_FILE_REPOSITORY, useValue: files },
+      { provide: CONTENT_MUTATION_SERVICE, useValue: mutation },
+      { provide: PRISMA, useValue: mockPrisma },
+    ],
+  }).compile();
+
+  try {
+    const service = module.get(ContentAdminService);
+
+    // 1. 单篇导出
+    const single = await service.exportContent('alpha-post');
+    expect(single).toMatchObject({ slug: 'alpha-post', ext: '.md' });
+    expect('raw' in single && single.raw).toContain('Alpha body');
+
+    // 2. 全站内容包导出
+    const bundle = await service.exportContent();
+    expect(bundle).toMatchObject({ format: 'walker-content-bundle/v1', count: 1 });
+    if (!('bundleHash' in bundle)) throw new Error('expected ContentBundle');
+
+    // 3. 篡改 bundleHash 必须被拒绝
+    await expect(service.importContent({ ...bundle, bundleHash: 'f'.repeat(64) })).rejects.toMatchObject({
+      status: 400,
+    });
+
+    // 4. dryRun 预检绝不写盘
+    const betaRaw = '---\ntitle: Beta\ntype: wise\n---\n\nBeta body\n';
+    const dry = await service.importContent({ items: [{ slug: 'beta-post', raw: betaRaw }], dryRun: true });
+    expect(dry).toMatchObject({ ok: true, dryRun: true, created: 1, updated: 0 });
+    expect(store.has('beta-post')).toBe(false);
+    expect(mutation.saveManual).not.toHaveBeenCalled();
+
+    // 5. 正式导入新增 beta-post，同时 skip 已修改的 alpha-post
+    const alphaModified = '---\ntitle: Alpha\ntype: wise\n---\n\nAlpha modified\n';
+    const imported = await service.importContent({
+      conflictPolicy: 'skip',
+      items: [
+        { slug: 'alpha-post', raw: alphaModified },
+        { slug: 'beta-post', raw: betaRaw },
+      ],
+    });
+    expect(imported).toMatchObject({ ok: true, dryRun: false, created: 1, skipped: 1, updated: 0 });
+    expect(store.get('alpha-post')?.raw).toContain('Alpha body');
+    expect(store.get('beta-post')?.raw).toContain('Beta body');
+    expect(auditRecords.some((r) => r.action === 'content.import')).toBe(true);
+
+    // 6. overwrite 策略覆盖 alpha-post，再按同内容导包幂等为 unchanged
+    const overwritten = await service.importContent({
+      conflictPolicy: 'overwrite',
+      items: [{ slug: 'alpha-post', raw: alphaModified }],
+    });
+    expect(overwritten).toMatchObject({ ok: true, updated: 1, failed: 0 });
+    expect(store.get('alpha-post')?.raw).toBe(alphaModified);
+
+    const idempotent = await service.importContent({
+      conflictPolicy: 'overwrite',
+      items: [{ slug: 'alpha-post', raw: alphaModified }],
+    });
+    expect(idempotent).toMatchObject({ ok: true, unchanged: 1, updated: 0, created: 0 });
   } finally {
     await module.close();
   }

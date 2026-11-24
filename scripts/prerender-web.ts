@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { expandWikiLinks } from '../packages/shared/src/content';
+import { expandWikiLinks, isBrowsePostType } from '../packages/shared/src/content';
 import {
   articleHistoryLabel,
   articleHistorySummary,
@@ -72,6 +72,7 @@ const parsed = JSON.parse(
 const publicItems = parsed.items ?? [];
 const docs = getBrowseItems(publicItems);
 const docsBySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+const allBySlug = new Map(publicItems.map((doc) => [doc.slug, doc]));
 
 // 文章版本历史投影（content/versions 的静态化产物）；无文件即无历史，不阻断构建
 const articleVersionsData = (() => {
@@ -261,7 +262,7 @@ function sanitizeRenderedUrls(html: string): string {
 
 function renderMarkdown(markdown: string): string {
   const expanded = expandWikiLinks(markdown, (slug) =>
-    docsBySlug.has(slug) ? `/posts/${encodeURIComponent(slug)}` : undefined,
+    allBySlug.has(slug) ? `/posts/${encodeURIComponent(slug)}` : undefined,
   );
   const rendered = marked.parse(expanded, {
     gfm: true,
@@ -760,7 +761,10 @@ if (Array.isArray(publicManifestData.items)) {
   }
 }
 
-for (const doc of docs) {
+// 所有 publicItems（含 wise 与 tool）一律输出独立静态详情页与 <meta content-hash>，
+// 仅用 isBrowsePostType 区分 indexable / markdownAlternate 与 /posts 列表归属，消除推后 404 黑洞。
+for (const doc of publicItems) {
+  const isBrowse = isBrowsePostType(doc.type);
   const pathname = `/posts/${encodeURIComponent(doc.slug)}`;
   const contentHash = contentHashesBySlug.get(doc.slug) || '';
   const buildId = publicManifestData.buildId || '';
@@ -772,7 +776,7 @@ for (const doc of docs) {
   const image = articleImageUrl(doc);
   const articleHtml = renderMarkdown(doc.body);
   const related = doc.related
-    .map((slug) => docsBySlug.get(slug))
+    .map((slug) => allBySlug.get(slug))
     .filter((item): item is GeneratedContentItem => Boolean(item));
   const resources = doc.resources.filter((resource) => resource.url);
   const visiblePolicy = doc.aiUsePolicy.readable
@@ -823,7 +827,8 @@ for (const doc of docs) {
         published,
         modified,
         tags: doc.tags,
-        markdownPath: doc.aiUsePolicy.readable ? `${pathname}/index.md` : '',
+        indexable: isBrowse,
+        markdownPath: isBrowse && doc.aiUsePolicy.readable ? `${pathname}/index.md` : '',
         contentHash,
         buildId,
         gitCommit,
@@ -892,7 +897,7 @@ for (const doc of docs) {
 for (const [versionSlug, versionList] of Object.entries(
   articleVersionsData.articles ?? {},
 )) {
-  const versionDoc = docsBySlug.get(versionSlug);
+  const versionDoc = allBySlug.get(versionSlug);
   if (!versionDoc || versionList.length === 0) continue;
   const currentPath = `/posts/${encodeURIComponent(versionSlug)}`;
 

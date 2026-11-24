@@ -10,6 +10,7 @@ const ModelConfigPanel = lazy(() => import("./ModelConfigPanel").then((m) => ({ 
 const GuestQuotaPanel = lazy(() => import("./GuestQuotaPanel").then((m) => ({ default: m.GuestQuotaPanel })));
 const AgentListPage = lazy(() => import("../agents/AgentListPage").then((m) => ({ default: m.AgentListPage })));
 const RuntimeMonitorPanel = lazy(() => import("../records/RuntimeMonitorPanel").then((m) => ({ default: m.RuntimeMonitorPanel })));
+const ContentBackupPanel = lazy(() => import("./ContentBackupPanel").then((m) => ({ default: m.ContentBackupPanel })));
 
 function LazyAccordionItem({ id, title, summaryMeta, defaultOpen = false, navKey, children }: {
   id: string; title: string; summaryMeta?: string; defaultOpen?: boolean; navKey?: string; children: React.ReactNode;
@@ -115,6 +116,9 @@ export function SettingsPage() {
       </LazyAccordionItem>
       <LazyAccordionItem id="quota" title="访客额度" summaryMeta="每日问答限额" defaultOpen={hash === "quota"} navKey={location.key}>
         <GuestQuotaPanel />
+      </LazyAccordionItem>
+      <LazyAccordionItem id="backup" title="内容导入与导出" summaryMeta="Markdown / JSON 包" defaultOpen={hash === "backup"} navKey={location.key}>
+        <ContentBackupPanel />
       </LazyAccordionItem>
       <LazyAccordionItem id="password" title="站主账号与密码" defaultOpen={hash === "password"} navKey={location.key}>
         <AdminPasswordForm />

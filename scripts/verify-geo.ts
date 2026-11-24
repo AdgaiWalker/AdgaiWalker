@@ -199,6 +199,20 @@ assert(
   'robots.txt points at the wrong sitemap',
 );
 
+// 不变量 I1：public-manifest.json 每一条都必须有对应静态页面且 content-hash 逐字节匹配
+const manifest = JSON.parse(read('public-manifest.json')) as {
+  items?: Array<{ slug: string; hash: string }>;
+};
+assert(Array.isArray(manifest.items) && manifest.items.length > 0, 'public-manifest.json is empty');
+for (const entry of manifest.items) {
+  const html = read(path.join('posts', encodeURIComponent(entry.slug), 'index.html'));
+  const observedHash = html.match(/<meta\s+name="content-hash"\s+content="([^"]+)"/i)?.[1] ?? null;
+  assert(
+    observedHash === entry.hash,
+    `${entry.slug} HTML content-hash (${observedHash ?? 'none'}) diverges from manifest (${entry.hash})`,
+  );
+}
+
 console.log(
-  `GEO verified: ${browseItems.length} pages, ${readableItems.length} Markdown alternates, sitemap + RSS + JSON Feed + JSON-LD`,
+  `GEO & I1 verified: ${manifest.items.length} manifest HTML pages (${browseItems.length} indexable), ${readableItems.length} Markdown alternates, sitemap + RSS + JSON Feed + JSON-LD`,
 );

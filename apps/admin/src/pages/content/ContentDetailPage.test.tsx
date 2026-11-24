@@ -20,6 +20,8 @@ const {
   useContentChangesMock,
   useContentVersionHistoryMock,
   fetchContentDetailMock,
+  exportAdminContentMock,
+  downloadTextFileMock,
 } = vi.hoisted(() => ({
   useContentDetailMock: vi.fn(),
   useSaveContentMock: vi.fn(),
@@ -35,6 +37,8 @@ const {
   useContentChangesMock: vi.fn(),
   useContentVersionHistoryMock: vi.fn(),
   fetchContentDetailMock: vi.fn(),
+  exportAdminContentMock: vi.fn(),
+  downloadTextFileMock: vi.fn(),
 }));
 
 vi.mock("../../api/queries", () => ({
@@ -54,6 +58,8 @@ vi.mock("../../api/queries", () => ({
   useApproveContentChange: () => ({ isPending: false, mutateAsync: vi.fn() }),
   useApplyContentChange: () => ({ isPending: false, mutateAsync: vi.fn() }),
   fetchContentDetail: fetchContentDetailMock,
+  exportAdminContent: exportAdminContentMock,
+  downloadTextFile: downloadTextFileMock,
   fetchContentVersionDetail: vi.fn(),
   fetchContentVersionDiff: vi.fn(),
 }));
@@ -94,7 +100,11 @@ beforeEach(() => {
     isPending: false,
     mutateAsync: vi.fn(async ({ raw }: { raw: string }) => ({ slug: "demo-post", raw, hash: "hash-2" })),
   });
-  useDeleteContentMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn(async () => ({ ok: true })) });
+  useDeleteContentMock.mockReturnValue({
+    isPending: false,
+    mutateAsync: vi.fn(async () => ({ ok: true, slug: "demo-post", scope: "local-draft", message: "已删除本地草稿" })),
+  });
+  exportAdminContentMock.mockResolvedValue({ slug: "demo-post", ext: ".md", sha256: "hash-1", raw: BASE_RAW, updatedAt: "2026-11-23T10:00:00.000Z" });
   usePrepareContentReleaseMock.mockReturnValue({
     isPending: false,
     mutateAsync: vi.fn(async () => ({ id: "rel-1", stage: "PREPARED" })),
@@ -329,5 +339,40 @@ describe("ContentDetailPage（纯净单画布 + 一键自动编排发布 + 按�
     expect(screen.getByText(/存在未推送的待发布单/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "取消发布单" })).toBeTruthy();
     expect(screen.queryByText("已在线上确证")).toBeNull();
+  });
+
+  it("已上线文章在存在未上线本地改动（含已保存未发布）时露出「放弃本地修改（恢复线上版）」，且元信息抽屉支持导出 Markdown", async () => {
+    const deleteMutate = vi.fn(async () => ({
+      ok: true,
+      slug: "demo-post",
+      scope: "discard-draft",
+      message: "已放弃未上线修改，恢复为线上版本",
+    }));
+    useDeleteContentMock.mockReturnValue({ isPending: false, mutateAsync: deleteMutate });
+    useContentVersionMock.mockReturnValue({
+      data: { workingHash: "local-saved", currentPublicHash: "pub-new", publishedHash: "pub-old", indexedHash: "pub-old" },
+      refetch: vi.fn(),
+    });
+    fetchContentDetailMock.mockResolvedValue({
+      id: "demo-post",
+      slug: "demo-post",
+      title: "测试文章",
+      type: "knowledge",
+      raw: "---\ntitle: 测试文章\nsummary: 简短摘要\nvisibility: public\n---\n\n# 线上原版\n",
+      hash: "hash-restored",
+      updatedAt: "2026-11-24T00:00:00.000Z",
+    });
+
+    renderDetail();
+    fireEvent.click(screen.getByRole("button", { name: "更多操作" }));
+    fireEvent.click(screen.getByRole("button", { name: /导出 Markdown/ }));
+    await waitFor(() => expect(exportAdminContentMock).toHaveBeenCalledWith("demo-post"));
+    expect(downloadTextFileMock).toHaveBeenCalledWith("demo-post.md", BASE_RAW, "text/markdown;charset=utf-8");
+
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    expect(screen.getByText(/删除将同时移除 GitHub/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /放弃本地修改（恢复线上版）/ }));
+    await waitFor(() => expect(deleteMutate).toHaveBeenCalledWith({ slug: "demo-post", mode: "discard-draft" }));
+    await waitFor(() => expect((screen.getByLabelText("文章正文") as HTMLTextAreaElement).value).toContain("线上原版"));
   });
 });

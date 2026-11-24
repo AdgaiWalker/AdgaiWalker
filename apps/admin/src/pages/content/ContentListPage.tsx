@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CloudUpload, Plus, RefreshCw, Search } from "lucide-react";
 import {
   useContent,
@@ -38,8 +38,8 @@ export function ContentListPage() {
   const backupMutation = useContentDraftBackup();
   const saveMutation = useSaveContent();
   const navigate = useNavigate();
+  const location = useLocation();
   const [params, setParams] = useSearchParams();
-
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -47,7 +47,7 @@ export function ContentListPage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [newType, setNewType] = useState("knowledge");
   const [createError, setCreateError] = useState<string | null>(null);
-  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<string | null>(() => (location.state as { notice?: string } | null)?.notice ?? null);
 
   const filter: FilterMode = params.get("filter") === "draft" || params.get("filter") === "live" ? (params.get("filter") as FilterMode) : "all";
   const setFilter = (next: FilterMode) => {

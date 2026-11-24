@@ -11,9 +11,13 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
+import type { ContentDeleteMode } from '@walker/shared';
 import { validationError } from '../common/http-error';
 import { ContentAdminService } from './content-admin.service';
+
+const DELETE_MODES = new Set<ContentDeleteMode>(['auto', 'local-draft', 'discard-draft', 'remote']);
 
 @Controller('admin/content')
 export class ContentAdminController {
@@ -25,6 +29,16 @@ export class ContentAdminController {
   @Get()
   list() {
     return this.content.list();
+  }
+
+  @Get('export')
+  exportDocs(@Query('slug') slug?: string) {
+    return this.content.exportContent(typeof slug === 'string' && slug.trim() ? slug.trim() : undefined);
+  }
+
+  @Post('import')
+  importDocs(@Body() body: unknown) {
+    return this.content.importContent(body);
   }
 
   @Get(':slug/history')
@@ -86,7 +100,9 @@ export class ContentAdminController {
   }
 
   @Delete(':slug')
-  delete(@Param('slug') slug: string) {
-    return this.content.deleteDoc(slug);
+  delete(@Param('slug') slug: string, @Query('mode') mode?: string) {
+    const resolved: ContentDeleteMode = !mode || !mode.trim() ? 'auto' : (mode.trim() as ContentDeleteMode);
+    if (!DELETE_MODES.has(resolved)) throw validationError('invalid-delete-mode');
+    return this.content.deleteDoc(slug, resolved);
   }
 }

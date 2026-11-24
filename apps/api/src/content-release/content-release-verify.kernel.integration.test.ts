@@ -244,4 +244,24 @@ describe('C16 线上版本核验器', () => {
       response: { code: 'content-release-not-verifying' },
     });
   });
+
+  it('后台自动核验退避 6 轮耗尽仍 404 时，收敛为 FAILED 并持久化 errorCode，绝不永久停在 VERIFYING', async () => {
+    const releaseId = await makeReleaseAtVerifying();
+    verifier.reset({ ok: false, reason: 'remote-http-404' });
+    process.env.WALKER_AUTO_VERIFY_DELAY_MS = '15';
+    try {
+      (service as unknown as { scheduleAutoVerify: (id: string) => void }).scheduleAutoVerify(releaseId);
+      const deadline = Date.now() + 2500;
+      let stored = await releasesRepo.findById(releaseId);
+      while (stored?.stage === 'VERIFYING' && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 25));
+        stored = await releasesRepo.findById(releaseId);
+      }
+      expect(verifier.calls.length).toBe(6);
+      expect(stored?.stage).toBe('FAILED');
+      expect(stored?.errorCode).toBe('remote-http-404');
+    } finally {
+      delete process.env.WALKER_AUTO_VERIFY_DELAY_MS;
+    }
+  });
 });

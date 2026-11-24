@@ -78,14 +78,21 @@ describe('ContentAdminController dependency injection', () => {
     expect(savedExpectedHash).toBe('a'.repeat(64));
   });
 
-  it('支持调用 DELETE :slug 删除内容', async () => {
+  it('支持调用 DELETE :slug 删除内容并校验 mode，且暴露 export / import 路由', async () => {
     const app = await NestFactory.createApplicationContext(ContentAdminTestModule, { logger: false });
     close = () => app.close();
     const controller = app.get(ContentAdminController);
 
-    await expect(controller.delete('hello-world')).resolves.toEqual({
+    expect(() => controller.delete('hello-world', 'invalid-mode')).toThrow();
+    await expect(controller.exportDocs('hello-world')).resolves.toMatchObject({ slug: 'hello-world', raw: 'text' });
+    await expect(controller.exportDocs()).resolves.toMatchObject({ format: 'walker-content-bundle/v1', count: 1 });
+    await expect(controller.importDocs({ items: [{ slug: 'new-post', raw: '---\ntitle: N\n---\nbody\n' }], dryRun: true }))
+      .resolves.toMatchObject({ ok: true, dryRun: true, created: 1 });
+
+    await expect(controller.delete('hello-world')).resolves.toMatchObject({
       ok: true,
       slug: 'hello-world',
+      scope: 'local-draft',
     });
   });
 });

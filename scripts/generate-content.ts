@@ -118,7 +118,7 @@ if (fs.existsSync(contentLogDir)) {
     docs.push({
       slug,
       title: typeof data.title === 'string' ? data.title : slug,
-      date: asDateString(data.date),
+      date: asDateString(data.date) || asDateString(data.updated),
       updated: asDateString(data.updated) || asDateString(data.date),
       author:
         typeof data.author === 'string' && data.author.trim()

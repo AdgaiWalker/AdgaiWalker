@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import type { INestApplication } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { PUBLIC_SUMMARY_PLACEHOLDER } from '@walker/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../app.module';
 import { ContentReleaseService } from './content-release.service';
@@ -192,5 +193,27 @@ describe('C12 实际发布范围预检与 manifest 生成', () => {
     const data = await res.json() as { ok: boolean; manifest: { manifestHash: string } };
     expect(data.ok).toBe(true);
     expect(data.manifest.manifestHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('公开文章出现占位摘要或与既有公开文章 summary 撞车时，preflight 显式阻断 publish-contract-invalid', async () => {
+    await fs.writeFile(
+      path.join(contentDir, 'post-dup.md'),
+      VALID_POST_A.replace('title: 文章A', 'title: 重复摘要文章').replace('summary: 文章A摘要', `summary: ${PUBLIC_SUMMARY_PLACEHOLDER}`),
+      'utf8',
+    );
+    const placeholderCheck = await service.preflight('post-dup');
+    expect(placeholderCheck.ok).toBe(false);
+    expect(placeholderCheck.scopeConflict?.reason).toBe('publish-contract-invalid');
+
+    await fs.writeFile(
+      path.join(contentDir, 'post-dup.md'),
+      VALID_POST_A.replace('title: 文章A', 'title: 重复摘要文章'),
+      'utf8',
+    );
+    const dupCheck = await service.preflight('post-dup');
+    expect(dupCheck.ok).toBe(false);
+    expect(dupCheck.scopeConflict?.reason).toBe('publish-contract-invalid');
+    expect(dupCheck.scopeConflict?.message).toContain('post-a');
+    await fs.rm(path.join(contentDir, 'post-dup.md'), { force: true });
   });
 });

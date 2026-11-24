@@ -2,6 +2,7 @@
  * 内容查询门面 — 绑定 gen 产物，向页面暴露已发布内容与主题线查询。
  * 依赖：generated/content.json、shared/content-series 纯函数。
  */
+import { isBrowsePostType } from '@walker/shared';
 import data from './generated/content.json';
 import {
   getItemsBySeries,
@@ -59,9 +60,6 @@ export interface ContentItem {
 const raw = data as { items?: ContentItem[] };
 const items: ContentItem[] = raw.items ?? [];
 
-/** 逛：可读证据类型（不含 tool；资源走 /tools/resources） */
-const BROWSE_TYPES = new Set(['knowledge', 'idea', 'project', 'learn']);
-
 function asSeriesItems(
   list: readonly ContentItem[],
 ): readonly SeriesContentItem[] {
@@ -73,11 +71,10 @@ export function getAllItems(): ContentItem[] {
 }
 
 /**
- * 逛列表唯一数据门面。
- * 公开总览只有 dualEntry.browse（/posts）；tool 不进此列。
+ * 逛列表唯一数据门面（判定逻辑单一收口于 @walker/shared isBrowsePostType）。
  */
 export function getBrowseItems(): ContentItem[] {
-  return items.filter((d) => BROWSE_TYPES.has(d.type));
+  return items.filter((d) => isBrowsePostType(d.type));
 }
 
 /** @deprecated 用 getBrowseItems；保留别名避免零星调用方漏改 */

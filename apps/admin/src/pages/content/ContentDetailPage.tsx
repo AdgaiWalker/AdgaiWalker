@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Check, Code2, Copy, ExternalLink, History, MoreHorizontal, RefreshCw, Save, Share2, SlidersHorizontal, Sparkles, Trash2, UploadCloud,
+  ArrowLeft, Check, Code2, Copy, Download, ExternalLink, History, MoreHorizontal, RefreshCw, RotateCcw, Save, Share2, SlidersHorizontal, Sparkles, Trash2, UploadCloud,
 } from "lucide-react";
 import type { ContentVisibility, OpsContentDetail } from "@walker/shared";
 import { buildSocialCopyText, buildXShareIntentUrl, extractSummaryFromRaw, getPublicPostUrl } from "@walker/shared";
 import { ApiError } from "../../api/http";
 import {
-  fetchContentDetail, useCancelContentRelease, useContentChanges, useContentDetail, useContentVersion,
-  useDeleteContent, useLatestContentRelease, usePrepareContentRelease, useReconcileContentRelease,
+  downloadTextFile, exportAdminContent, fetchContentDetail, useCancelContentRelease, useContentChanges, useContentDetail,
+  useContentVersion, useDeleteContent, useLatestContentRelease, usePrepareContentRelease, useReconcileContentRelease,
   useRecordSocialShare, useSaveContent, useTriggerContentRelease, useVerifyContentRelease,
 } from "../../api/queries";
 import { trackAdminUiEvent } from "../../api/telemetry";
@@ -88,6 +88,7 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
 
   const isDirty = draft !== savedRaw;
   const curPub = versionQuery.data?.currentPublicHash ?? null;
+  const isTrackedOnSite = Boolean(versionQuery.data?.publishedHash || versionQuery.data?.indexedHash);
   const isLive = Boolean(curPub && (versionQuery.data?.publishedHash === curPub || versionQuery.data?.indexedHash === curPub)) && !isDirty && !isGitBusy;
   const blocker = useBlocker(({ currentLocation, nextLocation }) => isDirty && currentLocation.pathname !== nextLocation.pathname);
 
@@ -194,46 +195,48 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
     } catch { setErrorMessage("复制失败，请手动复制链接"); }
   };
 
-  const handleCheckRelease = async () => {
-    if (!release) return;
-    setErrorMessage(null); setStatusMessage(null);
-    try {
-      if (stage === "UNKNOWN") {
-        const res = await reconcileMutation.mutateAsync(release.id);
-        setStatusMessage(res.details);
-      } else {
-        const res = await verifyMutation.mutateAsync(release.id);
-        setStatusMessage(res.verified ? "线上版本已确证发布" : `线上暂未检测到该版本（${res.reason ?? "待部署或已被新提交覆盖"}），可直接重新发布`);
-      }
-      void latestRelease.refetch(); void versionQuery.refetch();
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "核对发布状态失败");
-    }
-  };
-
-  const handleCancelRelease = async () => {
-    if (!release) return;
-    setErrorMessage(null); setStatusMessage(null);
-    try {
-      const res = await cancelMutation.mutateAsync(release.id);
-      setStatusMessage(res.message);
-      void latestRelease.refetch();
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "取消发布单失败");
-    }
-  };
-
-  const handleDelete = async () => {
+  const runAction = async (fallback: string, fn: () => Promise<void>) => {
     setErrorMessage(null);
-    try {
-      await deleteMutation.mutateAsync({ slug: item.slug });
-      setDeleteOpen(false);
-      navigate(R.content, { replace: true });
-    } catch (err) {
-      setDeleteOpen(false);
-      setErrorMessage(err instanceof Error ? err.message : "删除草稿失败");
-    }
+    try { await fn(); } catch (err) { setErrorMessage(err instanceof Error ? err.message : fallback); }
   };
+
+  const handleCheckRelease = () => release && runAction("核对发布状态失败", async () => {
+    setStatusMessage(null);
+    if (stage === "UNKNOWN") {
+      setStatusMessage((await reconcileMutation.mutateAsync(release.id)).details);
+    } else {
+      const res = await verifyMutation.mutateAsync(release.id);
+      setStatusMessage(res.verified ? "线上版本已确证发布" : `线上暂未检测到该版本（${res.reason ?? "待部署或已被新提交覆盖"}），可直接重新发布`);
+    }
+    void latestRelease.refetch(); void versionQuery.refetch();
+  });
+
+  const handleCancelRelease = () => release && runAction("取消发布单失败", async () => {
+    setStatusMessage(null);
+    setStatusMessage((await cancelMutation.mutateAsync(release.id)).message);
+    void latestRelease.refetch();
+  });
+
+  const handleExportMarkdown = () => runAction("导出失败", async () => {
+    const res = await exportAdminContent(item.slug);
+    if ("raw" in res) { downloadTextFile(`${res.slug}${res.ext || ".md"}`, res.raw, "text/markdown;charset=utf-8"); setStatusMessage("已导出 Markdown 文件"); }
+  });
+
+  const handleDiscardDraft = () => runAction("恢复线上版本失败", async () => {
+    const res = await deleteMutation.mutateAsync({ slug: item.slug, mode: "discard-draft" });
+    const fresh = await fetchContentDetail(item.slug);
+    setDraft(fresh.raw); setSavedRaw(fresh.raw); setBaseHash(fresh.hash || "");
+    setTagsInput(parseDocFrontmatter(fresh.raw).tags.join(", "));
+    setPublishedReleaseId(null); setDrawerOpen(false); setStatusMessage(res.message);
+    void versionQuery.refetch();
+  });
+
+  const handleDelete = () => runAction("删除失败", async () => {
+    try {
+      const res = await deleteMutation.mutateAsync({ slug: item.slug });
+      navigate(R.content, { replace: true, state: { notice: res.message } });
+    } finally { setDeleteOpen(false); }
+  });
 
   // 按需显现 + 绝不撒谎：严格绑定本次 publishedReleaseId 才确证，平时已发布文章 0 像素占位
   const showPublishedConfirm = Boolean(publishedReleaseId && release?.id === publishedReleaseId && stage === "PUBLISHED") && !isDirty && !isGitBusy;
@@ -409,6 +412,9 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
             <button type="button" className="btn" onClick={() => { setRawYamlMode((v) => !v); setDrawerOpen(false); }}>
               <Code2 size={14} />{rawYamlMode ? "切回纯净写作画布" : "查看 / 编辑原始 YAML 源码"}
             </button>
+            <button type="button" className="btn" onClick={() => void handleExportMarkdown()}>
+              <Download size={14} /> 导出 Markdown
+            </button>
           </div>
         ) : drawerSection === "history" ? (
           <ContentHistoryPanel slug={item.slug} onRestore={(raw, v) => { setDraft(raw); setTagsInput(parseDocFrontmatter(raw).tags.join(", ")); setDrawerOpen(false); setStatusMessage(`已载入 v${v} 内容为草稿，保存并发布后成为新版本`); }} />
@@ -431,18 +437,33 @@ function ContentCanvas({ item }: { item: OpsContentDetail }) {
           </div>
         ) : (
           <div className="stack">
-            <p className="muted">删除仅移除本地草稿区 `content/log/{item.slug}`，公开已发布历史保留。</p>
-            <button type="button" className="btn btn-danger" onClick={() => { setDrawerOpen(false); setDeleteOpen(true); }}><Trash2 size={14} /> 删除草稿</button>
+            {isTrackedOnSite && (isDirty || !isLive) ? (
+              <button type="button" className="btn" disabled={deleteMutation.isPending} onClick={() => void handleDiscardDraft()}>
+                <RotateCcw size={14} /> 放弃本地修改（恢复线上版）
+              </button>
+            ) : null}
+            <p className="muted">
+              {isTrackedOnSite
+                ? `本文已同步至 GitHub：删除将同时移除 GitHub 上的 content/log/${item.slug} 并触发网站下架（公开演进历史仍保留）。`
+                : `删除将移除本地未发布草稿 content/log/${item.slug}。`}
+            </p>
+            <button type="button" className="btn btn-danger" onClick={() => { setDrawerOpen(false); setDeleteOpen(true); }}>
+              <Trash2 size={14} /> {isTrackedOnSite ? "删除并下架文章" : "删除草稿"}
+            </button>
           </div>
         )}
       </SlideDrawer>
 
-      <ModalDialog open={deleteOpen} title="确认删除草稿？" onClose={() => setDeleteOpen(false)}>
-        <p className="muted">将删除 `content/log/{item.slug}`，未保存修改无法找回。</p>
+      <ModalDialog open={deleteOpen} title={isTrackedOnSite ? "确认删除并下架文章？" : "确认删除草稿？"} onClose={() => setDeleteOpen(false)}>
+        <p className="muted">
+          {isTrackedOnSite
+            ? `将删除 content/log/${item.slug} 并推送 GitHub 触发网站下架（content/versions 历史版本仍保留）。`
+            : `将删除本地草稿 content/log/${item.slug}，未保存修改无法找回。`}
+        </p>
         <div className="action-row" style={{ justifyContent: "flex-end" }}>
           <button type="button" className="btn" autoFocus onClick={() => setDeleteOpen(false)}>取消</button>
           <button type="button" className="btn btn-danger" disabled={deleteMutation.isPending} onClick={() => void handleDelete()}>
-            {deleteMutation.isPending ? "删除中…" : "确认删除"}
+            {deleteMutation.isPending ? "处理中…" : isTrackedOnSite ? "确认删除并下架" : "确认删除"}
           </button>
         </div>
       </ModalDialog>

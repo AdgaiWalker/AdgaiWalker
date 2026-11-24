@@ -10,10 +10,12 @@
 import { HttpStatus, Inject, Injectable, Logger, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
+  isBrowsePostType,
   missingPublishedPostFields,
   requireVersionNote,
   resolveVisibility,
   stripFrontmatterBlock,
+  validatePublishablePost,
   verifyPublicSnapshot,
   contentApprovalBindingKey,
   toPublicSnapshotSource,
@@ -185,6 +187,34 @@ export class ContentReleaseService implements OnModuleDestroy {
     const missing = [...missingPublishedPostFields(entry.frontmatter)];
     if (missing.length > 0) {
       return { ok: false, missing, targetSlug: slug, targetHash: null, manifest: null, scopeConflict: null };
+    }
+
+    const existingPublicSummaries = new Map<string, string>();
+    const allEntries = await this.entries.list().catch(() => []);
+    for (const other of allEntries) {
+      if (other.slug === slug) continue;
+      if (resolveVisibility(other.frontmatter) !== 'public' || !isBrowsePostType(other.type)) continue;
+      const sum = typeof other.frontmatter.summary === 'string' ? other.frontmatter.summary.trim() : '';
+      if (sum && !existingPublicSummaries.has(sum)) existingPublicSummaries.set(sum, other.slug);
+    }
+    const validation = validatePublishablePost({
+      slug,
+      frontmatter: entry.frontmatter,
+      existingPublicSummaries,
+    });
+    if (!validation.ok) {
+      return {
+        ok: false,
+        missing: validation.missing,
+        targetSlug: slug,
+        targetHash: null,
+        manifest: null,
+        scopeConflict: {
+          reason: 'publish-contract-invalid',
+          message: validation.issues.join('；'),
+          details: validation.issues,
+        },
+      };
     }
 
     const doc = await this.files?.get(slug);
@@ -1204,10 +1234,25 @@ export class ContentReleaseService implements OnModuleDestroy {
       .slice(-RELEASE_TAIL_LINES);
   }
 
+  private async markAutoVerifyFailed(releaseId: string, reason: string): Promise<void> {
+    if (!this.releasesRepo) return;
+    try {
+      const current = await this.releasesRepo.findById(releaseId);
+      if (current?.stage === 'VERIFYING') {
+        await this.releasesRepo.updateStage({
+          id: releaseId,
+          stage: 'FAILED',
+          errorCode: reason.slice(0, 120) || 'verify-timeout',
+        });
+      }
+    } catch {
+      /* fail-open */
+    }
+  }
+
   /**
    * 推送后轻量后台自动核验（退避轮询 Vercel 生效，最多 6 轮约 4.5 分钟）：
-   * 避免发布单永远停在 VERIFYING 与问答快照永远停在 PENDING。
-   * 仅在生产/开发自动调度（单测环境除非显式设 WALKER_AUTO_VERIFY_DELAY_MS 否则跳过，保持测试确定性）。
+   * 避免发布单永远停在 VERIFYING；退避耗尽仍未确证则持久化具体 errorCode 并落 FAILED。
    */
   private scheduleAutoVerify(releaseId: string, attempt = 0): void {
     const overrideDelay = Number(process.env.WALKER_AUTO_VERIFY_DELAY_MS);
@@ -1218,6 +1263,7 @@ export class ContentReleaseService implements OnModuleDestroy {
     const delays = [20_000, 30_000, 45_000, 60_000, 60_000, 60_000];
     if (attempt >= delays.length) return;
     const delayMs = Number.isFinite(overrideDelay) && overrideDelay > 0 ? overrideDelay : delays[attempt]!;
+    const isLast = attempt >= delays.length - 1;
 
     const existing = this.autoVerifyTimers.get(releaseId);
     if (existing) clearTimeout(existing);
@@ -1225,14 +1271,19 @@ export class ContentReleaseService implements OnModuleDestroy {
     const timer = setTimeout(() => {
       this.autoVerifyTimers.delete(releaseId);
       void this.verify(releaseId)
-        .then((res) => {
+        .then(async (res) => {
           if (!res.verified && res.stage === 'VERIFYING') {
-            this.scheduleAutoVerify(releaseId, attempt + 1);
+            if (isLast) await this.markAutoVerifyFailed(releaseId, res.reason || 'verify-timeout');
+            else this.scheduleAutoVerify(releaseId, attempt + 1);
           }
         })
-        .catch(() => {
-          // 核验失败 fail-open：保留 VERIFYING 供下一轮重试或站主手动核验
-          this.scheduleAutoVerify(releaseId, attempt + 1);
+        .catch(async (err: unknown) => {
+          if (isLast) {
+            const msg = err instanceof Error ? err.message : 'verify-error';
+            await this.markAutoVerifyFailed(releaseId, msg || 'verify-error');
+          } else {
+            this.scheduleAutoVerify(releaseId, attempt + 1);
+          }
         });
     }, delayMs);
     timer.unref?.();

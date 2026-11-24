@@ -1,3 +1,5 @@
+import { isBrowsePostType } from '../../packages/shared/src/content';
+
 export type AiUsePolicy = {
   level: string;
   readable: boolean;
@@ -49,11 +51,9 @@ export type GeneratedContent = {
   items?: GeneratedContentItem[];
 };
 
-export const BROWSE_TYPES = new Set(['knowledge', 'idea', 'project', 'learn']);
-
 export function getBrowseItems(
   items: readonly GeneratedContentItem[],
 ): GeneratedContentItem[] {
-  return items.filter((item) => BROWSE_TYPES.has(item.type));
+  return items.filter((item) => isBrowsePostType(item.type));
 }
 

@@ -143,7 +143,7 @@ export interface ReleaseManifest {
 }
 
 export interface ReleaseScopeConflict {
-  reason: 'other-content-dirty' | 'support-config-dirty' | 'code-dirty' | 'git-unavailable';
+  reason: 'other-content-dirty' | 'support-config-dirty' | 'code-dirty' | 'git-unavailable' | 'publish-contract-invalid';
   message: string;
   details: string[];
 }

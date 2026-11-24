@@ -1,21 +1,29 @@
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, type OnModuleDestroy } from '@nestjs/common';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { promisify } from 'node:util';
 import path from 'node:path';
-import type {
-  ContentDraftBackupResult,
-  ContentSyncPullResult,
-  ContentSyncStatus,
+import {
+  verifyPublicSnapshot,
+  type ContentDraftBackupResult,
+  type ContentSyncPullResult,
+  type ContentSyncStatus,
 } from '@walker/shared';
 import { CONTENT_LOCK, type ContentLockPort } from '../ports/content-lock.port';
+import {
+  PUBLIC_SNAPSHOT_REPOSITORY,
+  type PublicSnapshotRepositoryPort,
+  type VerifiedPublicSnapshot,
+} from '../ports/public-snapshot.repository';
 import { resolveContentRepoRoot } from '../adapters/content-repo-dir';
 import { backupDraftsToBranch, syncFromRemote } from '../adapters/git-content-plumbing';
 
 const execFileAsync = promisify(execFile);
 const CACHE_TTL_MS = 30_000;
+const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 @Injectable()
-export class ContentSyncService {
+export class ContentSyncService implements OnModuleDestroy {
   private readonly logger = new Logger(ContentSyncService.name);
   private cachedStatus: ContentSyncStatus | null = null;
   private lastFetchTime = 0;
@@ -24,12 +32,23 @@ export class ContentSyncService {
   private lastDraftBackupCommit: string | null = null;
   private inflightFetch: Promise<void> | null = null;
   private webhookQueued = false;
+  private snapshotSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     @Optional()
     @Inject(CONTENT_LOCK)
     private readonly lock?: ContentLockPort,
+    @Optional()
+    @Inject(PUBLIC_SNAPSHOT_REPOSITORY)
+    private readonly snapshots?: PublicSnapshotRepositoryPort,
   ) {}
+
+  onModuleDestroy(): void {
+    if (this.snapshotSyncTimer) {
+      clearTimeout(this.snapshotSyncTimer);
+      this.snapshotSyncTimer = null;
+    }
+  }
 
   /**
    * 获取当前内容仓与 GitHub 远端的同步状态。
@@ -274,6 +293,9 @@ export class ContentSyncService {
         this.logger.log('GitHub Webhook 触发 3-way 自动同步...');
         const res = await this.pull();
         this.logger.log(`Webhook 自动同步结果: ${res.message}`);
+        if (res.ok && res.pulledCommits > 0) {
+          this.scheduleSnapshotSync();
+        }
       } catch (err) {
         this.logger.error(`Webhook 自动同步异常: ${err}`);
       } finally {
@@ -282,5 +304,48 @@ export class ContentSyncService {
     });
 
     return { ok: true, status: 'scheduled', message: '已安排后台同步 GitHub 最新内容' };
+  }
+
+  /** 拉取线上已部署 public-manifest.json 并刷新本地问答快照指针（fail-open）。 */
+  async syncPublicSnapshotFromLive(siteBase?: string): Promise<boolean> {
+    if (!this.snapshots) return false;
+    const base = (siteBase || process.env.PUBLIC_SITE_URL?.trim() || 'https://www.iwalk.pro').replace(/\/$/, '');
+    try {
+      const res = await fetch(`${base}/public-manifest.json?_t=${Date.now()}`, {
+        signal: AbortSignal.timeout(10_000),
+        headers: { accept: 'application/json', 'cache-control': 'no-cache, no-store, must-revalidate' },
+      });
+      if (!res.ok) return false;
+      const raw = (await res.json()) as unknown;
+      if (!verifyPublicSnapshot(raw, sha256)) return false;
+      const manifest = raw as VerifiedPublicSnapshot;
+      const active = await this.snapshots.readActive().catch(() => null);
+      if (active?.collectionHash === manifest.collectionHash) return true;
+      await this.snapshots.publish(manifest);
+      this.logger.log(`问答快照已自动对齐线上构建: ${manifest.collectionHash.slice(0, 12)} (${manifest.items.length} 条)`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Mac 推送或后台下架后，延迟对齐 Vercel 新产出的 public-manifest.json 至小影问答快照。 */
+  scheduleSnapshotSync(attempt = 0): void {
+    const overrideDelay = Number(process.env.WALKER_AUTO_VERIFY_DELAY_MS);
+    if (process.env.NODE_ENV === 'test' && !(Number.isFinite(overrideDelay) && overrideDelay > 0)) {
+      return;
+    }
+    if (!this.snapshots) return;
+    const delays = [45_000, 105_000];
+    if (attempt >= delays.length) return;
+    const delayMs = Number.isFinite(overrideDelay) && overrideDelay > 0 ? overrideDelay : delays[attempt]!;
+    if (this.snapshotSyncTimer) clearTimeout(this.snapshotSyncTimer);
+    this.snapshotSyncTimer = setTimeout(() => {
+      this.snapshotSyncTimer = null;
+      void this.syncPublicSnapshotFromLive().then((synced) => {
+        if (!synced) this.scheduleSnapshotSync(attempt + 1);
+      });
+    }, delayMs);
+    this.snapshotSyncTimer.unref?.();
   }
 }

@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
-  ActivityCounts, ActivityPage, AgentRevisionDetail, ContentChangeView, ContentDraftBackupResult,
-  ContentLedger, ContentLedgerEntry, ContentRelease, ContentSocialStats, ContentSyncPullResult,
-  ContentSyncStatus, ContentVersionSnapshot, ConversationLogDetail, ExecutionEventView, ExecutionRunView,
-  OpsAgent, OpsCapabilities, OpsContentDetail, PublicDeploymentReadiness, ReleaseCancelResult,
-  ReleaseReconcileResult, ReleaseResult, ReleaseVerificationResult, RuntimeLogChannel, RuntimeLogPage,
-  RuntimeMetrics, RuntimeRequestPage, SocialShareRecord, TextDiffSummary,
+  ActivityCounts, ActivityPage, AgentRevisionDetail, ContentBundle, ContentChangeView, ContentDeleteMode,
+  ContentDeleteResult, ContentDraftBackupResult, ContentImportRequest, ContentImportResult, ContentLedger,
+  ContentLedgerEntry, ContentRelease, ContentSocialStats, ContentSyncPullResult, ContentSyncStatus,
+  ContentVersionSnapshot, ConversationLogDetail, ExecutionEventView, ExecutionRunView, OpsAgent,
+  OpsCapabilities, OpsContentDetail, PublicDeploymentReadiness, ReleaseCancelResult, ReleaseReconcileResult,
+  ReleaseResult, ReleaseVerificationResult, RuntimeLogChannel, RuntimeLogPage, RuntimeMetrics,
+  RuntimeRequestPage, SocialShareRecord, TextDiffSummary,
 } from "@walker/shared";
 import { ApiError, requestJson, REQUEST_TIMEOUTS } from "./http";
 
@@ -95,8 +96,8 @@ export function useSaveContent() {
 export function useDeleteContent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ slug }: { slug: string }) =>
-      requestJson<{ ok: boolean; slug: string }>(`/admin/content/${enc(slug)}`, {
+    mutationFn: ({ slug, mode }: { slug: string; mode?: ContentDeleteMode }) =>
+      requestJson<ContentDeleteResult>(`/admin/content/${enc(slug)}${mode ? `?mode=${enc(mode)}` : ""}`, {
         method: "DELETE",
         timeoutMs: REQUEST_TIMEOUTS.write,
       }),
@@ -107,6 +108,28 @@ export function useDeleteContent() {
     },
   });
 }
+
+export function exportAdminContent(slug?: string) {
+  return requestJson<ContentBundle | { slug: string; ext: string; sha256: string; raw: string; updatedAt: string }>(
+    slug ? `/admin/content/export?slug=${enc(slug)}` : "/admin/content/export",
+    { timeoutMs: REQUEST_TIMEOUTS.write },
+  );
+}
+
+export function downloadTextFile(filename: string, text: string, mime = "text/plain;charset=utf-8") {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+  a.click(); URL.revokeObjectURL(url);
+}
+
+export const useImportContent = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ContentImportRequest | (ContentBundle & { conflictPolicy?: ContentImportRequest["conflictPolicy"]; dryRun?: boolean })) =>
+      requestJson<ContentImportResult>("/admin/content/import", { method: "POST", body, timeoutMs: REQUEST_TIMEOUTS.write }),
+    onSuccess: (_res, vars) => { if (!vars.dryRun) { void qc.invalidateQueries({ queryKey: ["content"] }); void qc.invalidateQueries({ queryKey: ["content-sync-status"] }); } },
+  });
+};
 
 export function useAgents() {
   return useQuery<{ data: OpsAgent[]; total: number }>({
