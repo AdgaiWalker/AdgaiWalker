@@ -1,0 +1,153 @@
+/* ========== 脉络：画布 + 设置面板 + 文字版 ========== */
+.graph-stage-wrap {
+  margin-top: 0.5rem;
+}
+
+.knowledge-graph {
+  position: relative;
+}
+
+.graph-stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--rule);
+}
+
+.graph-canvas {
+  display: block;
+  width: 100%;
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.graph-toggle,
+.graph-animate,
+.graph-restore,
+.graph-exit-isolate,
+.graph-settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--ground);
+  color: var(--soft);
+  font: 400 0.78rem/1.5 var(--mono);
+}
+
+.graph-settings-toggle.is-open {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.graph-side {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.graph-settings {
+  padding: 0.75rem 0.9rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  font-size: 0.82rem;
+}
+
+.graph-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.graph-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.graph-settings-group {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.graph-search {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--ground);
+}
+
+.graph-search input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+
+.graph-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.graph-slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+
+.graph-groups,
+.graph-add-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.graph-query-help,
+.graph-query-error,
+.graph-menu {
+  font-size: 0.8rem;
+}
+
+.graph-query-error {
+  color: var(--accent);
+}
+
+.graph-menu {
+  position: absolute;
+  z-index: 8;
+  padding: 0.35rem 0;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-card);
+}
+
+.graph-outline {
+  margin-top: 1.5rem;
+}
+
+.graph-outline > summary {
+  cursor: pointer;
+  font: 400 0.85rem/1.5 var(--mono);
+  color: var(--muted);
+}
+
+.graph-outline-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1em;
+  font-size: 0.92rem;
+  line-height: 1.8;
+}

@@ -60,7 +60,6 @@ export default defineConfig({
           if (id.includes('node_modules/marked') || id.includes('node_modules/dompurify')) {
             return 'vendor-markdown';
           }
-          if (id.includes('node_modules/three')) return 'vendor-three';
           if (id.includes('/src/generated/content.json')) return 'data-content';
           return undefined;
         },

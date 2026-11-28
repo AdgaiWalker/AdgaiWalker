@@ -1,31 +1,45 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { WEB_ROUTES } from '../shared/routes';
 import { MePage } from './MePage';
 
-describe('MePage 双入口', () => {
-  it('没有第三颗「问小影」按钮', () => {
+describe('MePage 关于我', () => {
+  it('写状态与三站分工、恢复老站装备/基建入口，不引用 citable:false 的私密细节，不含头像', () => {
     render(
       <MemoryRouter>
         <MePage />
       </MemoryRouter>,
     );
-    const cta = document.querySelector('.home-dual-cta');
-    expect(cta).toBeTruthy();
-    expect(cta?.querySelector(`a[href="${WEB_ROUTES.assistant}"]`)).toBeNull();
-    expect(
-      screen.queryByRole('link', { name: '问小影' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Dora' })).toBeInTheDocument();
-    expect(screen.getByText(/我是 Dora/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Dora 与硬件' })).toHaveAttribute(
+    expect(screen.getByRole('heading', { level: 1, name: '关于我' })).toBeInTheDocument();
+    expect(screen.getByText(/空乘专业给了我时间，马哲给了我方法/)).toBeInTheDocument();
+    expect(screen.getByText(/我是个 AI 实践主义者/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '物理 Bot' })).toHaveAttribute(
       'href',
-      WEB_ROUTES.gear,
+      '/posts/bot-physical-body',
     );
-    expect(screen.getByRole('link', { name: '关于本站' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '生产力装备' })).toHaveAttribute(
       'href',
-      WEB_ROUTES.about,
+      '/posts/dora-gear',
     );
+    expect(screen.getByRole('link', { name: '点子共促' })).toHaveAttribute(
+      'href',
+      '/posts/idea-cocreate',
+    );
+    expect(screen.getByRole('heading', { name: '我做的事' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '我做过的事' })).toBeInTheDocument();
+    expect(screen.getByText(/我致力于探索如何把人的注意力从重复步骤里解放出来/)).toBeInTheDocument();
+    expect(screen.getByText(/引我入门的秋芝，带我成长的海哥/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '未然界域' })).toHaveAttribute(
+      'href',
+      'https://goodloop.si',
+    );
+    expect(screen.getByText(/、DIY Bot 工作手册和/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'DoraZoom' })).toHaveAttribute('href', '/posts/dorazoom');
+    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute(
+      'href',
+      'https://github.com/AdgaiWalker',
+    );
+    expect(screen.queryByText(/眼睛不过关/)).toBeNull();
+    expect(screen.queryByRole('img')).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import type { GeneratedContent } from './lib/content-model';
 import { getBrowseItems } from './lib/content-model';
 import { contentJsonPath, webDistDir } from './lib/paths';
 import { absoluteUrl, INDEXABLE_STATIC_ROUTES, SPA_SHELL_ROUTES } from './lib/site';
+import { HOMEPAGE_HEADLINE } from './lib/prerender-pages';
 
 function fail(message: string): never {
   throw new Error(`GEO verification failed: ${message}`);
@@ -97,7 +98,7 @@ for (const route of SPA_SHELL_ROUTES) {
   );
   assert(html.includes(`<title>${route.title}</title>`), `${route.pathname} title mismatch`);
   assert(
-    !html.includes('想解决一个问题，还是逛逛新的可能？'),
+    !html.includes(HOMEPAGE_HEADLINE),
     `${route.pathname} still serves homepage first paint`,
   );
   extractJsonLd(html, route.pathname);

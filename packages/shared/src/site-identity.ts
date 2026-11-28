@@ -4,9 +4,9 @@
  */
 export const SITE_ORIGIN = 'https://www.iwalk.pro';
 export const SITE_NAME = 'Walker';
-export const SITE_TITLE = 'Walker · 用好 AI 做好事';
+export const SITE_TITLE = 'Walker · 注意力是第一资源';
 export const SITE_DESCRIPTION =
-  'Dora 的个人知识与行动样板站：把真实卡点变成可检验的下一步，把走过的路收成教程、资源、探索与札记。';
+  '人最贵的是注意力——我致力于探索如何帮人看见、用好 AI，省掉多余步骤，多做有趣的事。';
 export const SITE_LANGUAGE = 'zh-CN';
 
 export const SITE_AUTHOR = {
@@ -35,7 +35,7 @@ export const SITE_ROUTE_METADATA: Readonly<Record<string, SiteRouteMetadata>> = 
   },
   '/posts': {
     title: '文章 · Walker',
-    description: 'Dora 公开的思考与实践记录：来自真实经历，沿时间持续生长，可按主题阅读与引用。',
+    description: 'Dora 公开的思考与实践记录，按「看见 · 用好 · 造物」三章归档，沿时间持续生长。',
   },
   '/tutorials': {
     title: '教程 · Walker',
@@ -54,7 +54,7 @@ export const SITE_ROUTE_METADATA: Readonly<Record<string, SiteRouteMetadata>> = 
     description: 'Dora 实际在用或了解的群、工具与引路人；外部服务与本站无利益关系，使用前请自行核验。',
   },
   '/graph': {
-    title: '结构 · Walker',
+    title: '脉络 · Walker',
     description: 'Walker 公开内容的互引结构：谁引用了谁、哪些文章还没有互相引用。只由正文内链构成，不含模型推断。',
   },
   '/about': {
@@ -63,11 +63,11 @@ export const SITE_ROUTE_METADATA: Readonly<Record<string, SiteRouteMetadata>> = 
   },
   '/me': {
     title: `${SITE_AUTHOR.name} · 关于我`,
-    description: 'Dora，艺术生，在用 AI 解决真实问题：把真实卡点变成可检验的下一步，把走过的路收成公开证据。',
+    description: 'Dora，05 年生，黑河学院 24 级艺术生，AI 实践主义者：用 AI 解决真实问题，把走过的路留成 Wiki。',
     type: 'profile',
   },
   '/tools': {
-    title: '提问 · Walker',
+    title: '问 · Walker',
     description: '说清一个真实卡点，拿到可以立即开始的下一步。',
     heading: '你卡在哪？',
     indexable: false,

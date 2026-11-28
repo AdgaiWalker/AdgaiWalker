@@ -5,12 +5,8 @@
 
 export const WEB_TELEMETRY_EVENTS = [
   'web.page_view',
-  'web.omnibar_opened',
-  'web.omnibar_escalated_to_ai',
-  'web.home_card_flipped',
-  'web.home_card_acted',
-  'web.pet_3d_activated',
-  'web.pet_motion_toggled',
+  'web.postcard_sent',
+  'web.article_ask_opened',
   'web.ai_graceful_degraded',
   'web.runtime_error_caught',
 ] as const;

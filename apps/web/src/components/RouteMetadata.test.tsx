@@ -64,7 +64,7 @@ describe('RouteMetadata', () => {
     renderAt('/tools');
 
     await waitFor(() => {
-      expect(document.title).toBe('提问 · Walker');
+      expect(document.title).toBe('问 · Walker');
     });
     expect(
       document.querySelector('link[rel="canonical"]')?.getAttribute('href'),

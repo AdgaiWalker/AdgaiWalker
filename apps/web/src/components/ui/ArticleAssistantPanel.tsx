@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, MessageCircle, ShieldCheck, X } from 'lucide-react';
 import { publicApi } from '../../api/public-api';
 import type { AssistantInteractionEvent, AssistantInteractionFeedback, PublicPlacementManifest } from '@walker/shared';
@@ -12,7 +12,7 @@ function introWasDismissed(slug: string): boolean {
   catch { return false; }
 }
 
-export function ArticleAssistantPanel({ slug, title }: { slug: string; title: string }) {
+export function ArticleAssistantPanel({ slug, initialAsk }: { slug: string; title?: string; initialAsk?: string }) {
   const [manifest, setManifest] = useState<PublicPlacementManifest | null>(null);
   const [manifestLoading, setManifestLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -33,6 +33,14 @@ export function ArticleAssistantPanel({ slug, title }: { slug: string; title: st
     member: manifest?.aiEnabled && selectedMember ? { name: selectedMember.name, revision: selectedMember.revision } : null,
   }), [slug, manifest, selectedMember]);
   const { messages, loading, streaming, error, generationConflict, activeMessageId, stopPending, send, stop, reset, restoreHistory } = useAssistant(assistantContext);
+  const initialSentRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialAsk || initialSentRef.current || manifestLoading || historyLoading) return;
+    initialSentRef.current = true;
+    setManifestNotice(null);
+    void send(initialAsk);
+  }, [initialAsk, manifestLoading, historyLoading, send]);
 
   const trackInteraction = useCallback((event: AssistantInteractionEvent, extra: {
     memberKey?: string;
@@ -105,12 +113,10 @@ export function ArticleAssistantPanel({ slug, title }: { slug: string; title: st
   };
 
   const placementStatus = manifestLoading
-    ? '正在读取这个位置的助手状态。'
-    : manifest?.available && selectedMember
-      ? manifest.aiEnabled
-        ? `当前由「${selectedMember.name} · v${selectedMember.revision}」回答。`
-        : `当前公开成员是「${selectedMember.name} · v${selectedMember.revision}」；AI 当前关闭，提问会由规则回答。`
-      : '这个位置还没有启用 Agent；你仍可以提问，系统会给出规则回答。';
+    ? '正在连接助手…'
+    : manifest?.available && selectedMember && manifest.aiEnabled
+      ? `由 ${selectedMember.name} · v${selectedMember.revision} 回答`
+      : 'AI 未开启，当前为规则回答。';
 
   const submit = () => {
     const text = draft;
@@ -132,8 +138,7 @@ export function ArticleAssistantPanel({ slug, title }: { slug: string; title: st
       <header className="article-assistant-head">
         <MessageCircle size={20} aria-hidden="true" />
         <div className="article-assistant-heading">
-          <h2 id="article-assistant-title">围绕这篇文章问{selectedMember?.name ?? '助手'}</h2>
-          <p className="meta">关于《{title}》的具体问题，可以直接问。</p>
+          <h2 id="article-assistant-title">围绕本文问{selectedMember?.name ?? '助手'}</h2>
         </div>
         {messages.length > 0 ? (
           <button type="button" className="btn-ghost article-assistant-reset" disabled={loading || stopPending} onClick={reset}>
@@ -184,7 +189,7 @@ export function ArticleAssistantPanel({ slug, title }: { slug: string; title: st
             <p>{placementStatus}</p>
             <p className="meta">
               <ShieldCheck size={15} aria-hidden="true" />
-              回答只依据当前可引用的公开内容；问题会先做必要脱敏并用于站主改进内容。
+              仅依据站内公开内容回答。
             </p>
           </div>
           <button

@@ -9,7 +9,7 @@
  * 两者用**同一套** Filters / Groups / Display / Forces（PRD §3.6）。
  */
 import { useCallback, useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import { GraphCanvas } from './GraphCanvas';
 import { GraphSettingsPanel } from './GraphSettingsPanel';
 import {
@@ -59,6 +59,7 @@ export function KnowledgeGraph<Node extends GraphViewNode>({
   const [settings, setSettings] = useState<GraphSettings>(() =>
     mergeSettings(initialSettings),
   );
+  const [settingsOpen, setSettingsOpen] = useState(!compact);
   const [isolateId, setIsolateId] = useState<string | null>(null);
   /** Animate：要依次淡入的节点顺序；null = 未播放。时钟在引擎里，这里只记「是否在播」 */
   const [revealOrder, setRevealOrder] = useState<string[] | null>(null);
@@ -119,6 +120,17 @@ export function KnowledgeGraph<Node extends GraphViewNode>({
         />
 
         <div className="graph-toolbar">
+          {compact ? (
+            <button
+              type="button"
+              className={`graph-settings-toggle${settingsOpen ? ' is-open' : ''}`}
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen((current) => !current)}
+            >
+              <SlidersHorizontal size={13} aria-hidden />
+              <span>{settingsOpen ? '收起设置' : '设置'}</span>
+            </button>
+          ) : null}
           {isolateId ? (
             <button
               type="button"
@@ -132,24 +144,26 @@ export function KnowledgeGraph<Node extends GraphViewNode>({
         </div>
       </div>
 
-      <div className="graph-side">
-        <GraphSettingsPanel
-          settings={settings}
-          onChange={setSettings}
-          onRestore={() => setSettings(createDefaultGraphSettings())}
-          queryError={view.queryError}
-          nodeCount={view.nodes.length}
-          edgeCount={view.edges.length}
-          queryHelp={domain.queryHelp}
-          showLocal={Boolean(local)}
-          onAnimate={() =>
-            setRevealOrder((current) =>
-              current ? null : order.map((node) => node.id),
-            )
-          }
-          animating={revealOrder !== null}
-        />
-      </div>
+      {settingsOpen ? (
+        <div className="graph-side">
+          <GraphSettingsPanel
+            settings={settings}
+            onChange={setSettings}
+            onRestore={() => setSettings(createDefaultGraphSettings())}
+            queryError={view.queryError}
+            nodeCount={view.nodes.length}
+            edgeCount={view.edges.length}
+            queryHelp={domain.queryHelp}
+            showLocal={Boolean(local)}
+            onAnimate={() =>
+              setRevealOrder((current) =>
+                current ? null : order.map((node) => node.id),
+              )
+            }
+            animating={revealOrder !== null}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

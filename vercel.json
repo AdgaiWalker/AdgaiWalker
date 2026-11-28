@@ -9,49 +9,88 @@
     {
       "source": "/version.json",
       "headers": [
-        { "key": "Content-Type", "value": "application/json; charset=utf-8" },
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
       ]
     },
     {
       "source": "/sitemap.xml",
       "headers": [
-        { "key": "Content-Type", "value": "application/xml; charset=utf-8" }
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
       ]
     },
     {
       "source": "/rss.xml",
       "headers": [
-        { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "Content-Type",
+          "value": "application/rss+xml; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     },
     {
       "source": "/feed.json",
       "headers": [
-        { "key": "Content-Type", "value": "application/feed+json; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "Content-Type",
+          "value": "application/feed+json; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     },
     {
       "source": "/llms.txt",
       "headers": [
-        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     },
     {
       "source": "/llms-full.txt",
       "headers": [
-        { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     },
     {
       "source": "/posts/:slug/index.md",
       "headers": [
-        { "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
-        { "key": "X-Robots-Tag", "value": "noindex, follow" }
+        {
+          "key": "Content-Type",
+          "value": "text/markdown; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
       ]
     }
   ],
@@ -183,67 +222,72 @@
     },
     {
       "source": "/posts/点子共促",
-      "destination": "/tools/resources",
+      "destination": "/posts/idea-cocreate",
       "permanent": true
     },
     {
       "source": "/posts/点子共促/",
-      "destination": "/tools/resources",
+      "destination": "/posts/idea-cocreate",
       "permanent": true
     },
     {
       "source": "/posts/平价AI社区",
-      "destination": "/tools/resources",
+      "destination": "/posts/ai-20dc86",
       "permanent": true
     },
     {
       "source": "/posts/平价AI社区/",
-      "destination": "/tools/resources",
+      "destination": "/posts/ai-20dc86",
       "permanent": true
     },
     {
       "source": "/posts/affordable-ai-community",
-      "destination": "/tools/resources",
+      "destination": "/posts/ai-20dc86",
       "permanent": true
     },
     {
       "source": "/posts/affordable-ai-community/",
-      "destination": "/tools/resources",
+      "destination": "/posts/ai-20dc86",
       "permanent": true
     },
     {
       "source": "/posts/无题-关于人与skill",
-      "destination": "/lab",
+      "destination": "/posts/on-people-and-skill",
       "permanent": true
     },
     {
       "source": "/posts/无题-关于人与skill/",
-      "destination": "/lab",
+      "destination": "/posts/on-people-and-skill",
       "permanent": true
     },
     {
-      "source": "/condition",
-      "destination": "/tutorials",
+      "source": "/about",
+      "destination": "/me",
       "permanent": true
     },
     {
-      "source": "/kit",
-      "destination": "/tutorials",
+      "source": "/gear",
+      "destination": "/posts/dora-gear",
       "permanent": true
     },
     {
-      "source": "/showcase",
-      "destination": "/explore",
+      "source": "/support",
+      "destination": "/me",
       "permanent": true
     },
     {
-      "source": "/ideas",
-      "destination": "/explore?view=idea",
+      "source": "/login",
+      "destination": "/",
       "permanent": true
     },
     {
-      "source": "/projects",
-      "destination": "/explore?view=project",
+      "source": "/ask",
+      "destination": "/tools",
+      "permanent": true
+    },
+    {
+      "source": "/ideas/new",
+      "destination": "/tools",
       "permanent": true
     },
     {
@@ -252,16 +296,82 @@
       "permanent": true
     },
     {
-      "source": "/ideas/new",
-      "destination": "/tools",
+      "source": "/architecture",
+      "destination": "/graph",
+      "permanent": true
+    },
+    {
+      "source": "/lab",
+      "destination": "/posts?c=see",
+      "permanent": true
+    },
+    {
+      "source": "/advance",
+      "destination": "/posts?c=see",
+      "permanent": true
+    },
+    {
+      "source": "/tutorials",
+      "destination": "/posts?c=use",
+      "permanent": true
+    },
+    {
+      "source": "/learn",
+      "destination": "/posts?c=use",
+      "permanent": true
+    },
+    {
+      "source": "/condition",
+      "destination": "/posts?c=use",
+      "permanent": true
+    },
+    {
+      "source": "/kit",
+      "destination": "/posts?c=use",
+      "permanent": true
+    },
+    {
+      "source": "/tools/resources",
+      "destination": "/posts/idea-cocreate",
+      "permanent": true
+    },
+    {
+      "source": "/explore",
+      "destination": "/posts?c=make",
+      "permanent": true
+    },
+    {
+      "source": "/showcase",
+      "destination": "/posts?c=make",
+      "permanent": true
+    },
+    {
+      "source": "/ideas",
+      "destination": "/posts?c=make",
+      "permanent": true
+    },
+    {
+      "source": "/projects",
+      "destination": "/posts?c=make",
+      "permanent": true
+    },
+    {
+      "source": "/projects/ferry",
+      "destination": "/posts?c=make",
+      "permanent": true
+    },
+    {
+      "source": "/exchange",
+      "destination": "/posts?c=make",
+      "permanent": true
+    },
+    {
+      "source": "/learn/:path*",
+      "destination": "/posts?c=use",
       "permanent": true
     }
   ],
   "rewrites": [
-    {
-      "source": "/learn/:path*",
-      "destination": "/learn/index.html"
-    },
     {
       "source": "/api/:path*",
       "destination": "https://api.iwalk.pro/:path*"

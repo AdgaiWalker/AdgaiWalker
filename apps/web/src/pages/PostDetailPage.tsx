@@ -1,375 +1,181 @@
 /**
- * 文章详情（页）— 沉浸阅读
- * 职责：单栏光学居中；View Transition 标题落焦；文末高信噪比收口（3 个次要区块按需点击加载，平时 0 像素）。
+ * 文章详情（页）— 纸页阅读：左侧吸顶目录 + 660px 正文 + 文末收口。
+ * 章节归属（看见 / 用好 / 造物）与系列位置写在标题上方，随时可退回所在章。
  */
-import { lazy, Suspense, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Link2,
-  MessageCircle,
-  MessageSquare,
-  Network,
-} from 'lucide-react';
+import { useMemo, useRef } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { marked } from 'marked';
-import {
-  articleHistoryLabel,
-  articleVersionListPath,
-  expandWikiLinks,
-  findGraphNode,
-  noteNodeId,
-} from '@walker/shared';
+import { articleHistoryLabel, articleVersionListPath, expandWikiLinks } from '@walker/shared';
 import {
   getPostBySlug,
+  getPostsBySeries,
   getRelatedPosts,
   getSeriesNeighborsForSlug,
+  type ContentItem,
 } from '../content';
-import { getGraphBodies, getKnowledgeGraph } from '../graph';
 import { getArticleVersions } from '../article-versions';
-import { createContentGraphDomain } from '../components/graph/domains';
-import type { BrowseReturnState } from '../components/ItemList';
-import { ArticleToc } from '../components/ui/ArticleToc';
-import { ArticleShare } from '../components/ui/ArticleShare';
-import { ContentFeedback } from '../components/ui/ContentFeedback';
-import { GiscusComments, hasGiscusConfig } from '../components/ui/GiscusComments';
-import { LikeButton } from '../components/ui/LikeButton';
-import { ReadingProgress } from '../components/ui/ReadingProgress';
-import { useContentFeedback } from '../hooks/useContentFeedback';
+import { ArticleEnd } from '../components/article/ArticleEnd';
+import { ArticleStrip } from '../components/article/ArticleStrip';
+import { postHref } from '../components/paper/EntryList';
 import { useCodeCopyButtons } from '../hooks/useCodeCopyButtons';
-import { useLike } from '../hooks/useLike';
-import { useReadingProgress } from '../hooks/useReadingProgress';
 import { useTocActive } from '../hooks/useTocActive';
 import { sanitizeHtml } from '../lib/sanitize-html';
 import { buildArticleOutline } from '../shared/article-outline';
+import { chapterById, chapterOf } from '../shared/chapters';
 import { STATUS_LABELS } from '../shared/constants';
 import { dualEntry } from '../shared/dual-entry';
-import { formatDateLocale, parseIsoDate } from '../shared/format';
+import { parseIsoDate } from '../shared/format';
 import { estimateReadingMinutes } from '../shared/reading';
-import { WEB_ROUTES } from '../shared/routes';
+import { CHAPTER_QUERY_KEY, WEB_ROUTES } from '../shared/routes';
 
-const KnowledgeGraph = lazy(() =>
-  import('../components/graph/KnowledgeGraph').then((m) => ({ default: m.KnowledgeGraph })),
-);
-const ArticleAssistantPanel = lazy(() =>
-  import('../components/ui/ArticleAssistantPanel').then((m) => ({
-    default: m.ArticleAssistantPanel,
-  })),
-);
-
-function browseHrefFromState(state: unknown): string {
-  const s = state as BrowseReturnState | null;
-  const q = s?.browseSearch?.trim();
-  if (q) return `${dualEntry.browse.path}?${q}`;
-  return dualEntry.browse.path;
+function isoDay(iso: string): string {
+  const d = parseIsoDate(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-
-type TailPanel = 'none' | 'assistant' | 'graph' | 'comments';
 
 export function PostDetailPage() {
   const { slug = '' } = useParams();
-  const location = useLocation();
-  const browseHref = browseHrefFromState(location.state);
-  const returnState = location.state as BrowseReturnState | null;
   const post = getPostBySlug(decodeURIComponent(slug));
 
   if (!post) {
     return (
-      <div className="reading-stage">
-        <div className="reading-column reading-enter">
-          <h1 className="page-title" tabIndex={-1}>
-            未找到
-          </h1>
-          <Link to={browseHref} className="article-back-link">
-            返回{dualEntry.browse.title}
-          </Link>
-        </div>
+      <div className="measure page-head">
+        <h1 className="page-title">没有这篇</h1>
+        <p className="page-dek">
+          链接可能已改名。<Link to={dualEntry.browse.path}>回到文章目录</Link>
+        </p>
       </div>
     );
   }
-
-  return (
-    <PostDetailBody
-      key={post.slug}
-      post={post}
-      browseHref={browseHref}
-      returnState={returnState}
-    />
-  );
+  return <PostDetailBody key={post.slug} post={post} />;
 }
 
-function PostDetailBody({
-  post,
-  browseHref,
-  returnState,
-}: {
-  post: NonNullable<ReturnType<typeof getPostBySlug>>;
-  browseHref: string;
-  returnState: BrowseReturnState | null;
-}) {
-  const navigate = useNavigate();
-  const likePath = `${dualEntry.browse.path}/${post.slug}`;
-  const like = useLike(likePath);
-  const feedback = useContentFeedback(post.slug);
+function PostDetailBody({ post }: { post: ContentItem }) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const chapter = chapterById(chapterOf(post));
+  const chapterHref = `${WEB_ROUTES.browse}?${CHAPTER_QUERY_KEY}=${chapter.id}`;
   const neighbors = getSeriesNeighborsForSlug(post.slug);
   const related = getRelatedPosts(post.slug, [neighbors.prev?.slug, neighbors.next?.slug]);
-  const [tailPanel, setTailPanel] = useState<TailPanel>('none');
-
-  const graph = getKnowledgeGraph();
-  const graphBodies = getGraphBodies();
-  const graphNode = findGraphNode(graph, noteNodeId(post.slug));
-  const hasBodyLinks = (graphNode?.linkDegree ?? 0) > 0;
-  const hasComments = hasGiscusConfig();
-
-  const graphDomain = useMemo(
-    () => createContentGraphDomain({ browsePath: dualEntry.browse.path, bodies: graphBodies, navigate }),
-    [graphBodies, navigate],
-  );
+  const seriesItems = post.series?.trim() ? getPostsBySeries(post.series.trim()) : [];
+  const seriesIndex = seriesItems.findIndex((item) => item.slug === post.slug);
+  const historyLabel = articleHistoryLabel(getArticleVersions(post.slug).length);
+  const statusLabel = post.status ? (STATUS_LABELS[post.status] ?? '') : '';
 
   const { html, toc } = useMemo(() => {
-    const markdown = expandWikiLinks(post.body, (slug) => {
-      const target = getPostBySlug(slug);
-      return target
-        ? `${dualEntry.browse.path}/${encodeURIComponent(target.slug)}`
-        : undefined;
+    const markdown = expandWikiLinks(post.body, (target) => {
+      const hit = getPostBySlug(target);
+      return hit ? postHref(hit.slug) : undefined;
     });
-    const rawHtml = marked.parse(markdown, { async: false }) as string;
-    const safe = sanitizeHtml(rawHtml);
-    return buildArticleOutline(safe);
+    return buildArticleOutline(sanitizeHtml(marked.parse(markdown, { async: false }) as string));
   }, [post.body]);
 
   const tocIds = useMemo(() => toc.map((t) => t.id), [toc]);
   const activeId = useTocActive(tocIds);
-  const progress = useReadingProgress(true);
-
-  const mins = estimateReadingMinutes(post.body);
-  const statusLabel = post.status ? (STATUS_LABELS[post.status] ?? post.status) : '';
-  const historyLabel = articleHistoryLabel(getArticleVersions(post.slug).length);
-
-  const bodyRef = useRef<HTMLDivElement>(null);
   useCodeCopyButtons(bodyRef, html);
 
-  const togglePanel = (target: Exclude<TailPanel, 'none'>) => {
-    setTailPanel((current) => (current === target ? 'none' : target));
-  };
-
   return (
-    <div className="reading-stage">
-      <ReadingProgress ratio={progress} />
+    <div className="article-page">
+      <ArticleStrip
+        title={post.title}
+        slug={post.slug}
+        series={post.series}
+        backHref={chapterHref}
+        backLabel={chapter.label}
+        titleRef={titleRef}
+      />
 
-      <header className="reading-chrome surface-chrome">
-        <Link
-          to={browseHref}
-          className="reading-chrome-back"
-          aria-label={`返回${dualEntry.browse.title}`}
-        >
-          <ArrowLeft size={18} aria-hidden />
-          <span>{dualEntry.browse.title}</span>
-        </Link>
-        <span className="reading-chrome-title" title={post.title}>
-          {post.title}
-        </span>
-        <span className="reading-chrome-spacer" aria-hidden />
-      </header>
-
-      <article className="reading-column article-shell reading-enter">
-        <header className="article-header">
-          <h1 className="article-display-title" tabIndex={-1}>
-            {post.title}
-          </h1>
-          <p className="meta article-meta">
-            {formatDateLocale(parseIsoDate(post.date))}
-            {` · 约 ${mins} 分钟`}
-            {statusLabel ? ` · ${statusLabel}` : ''}
-            {historyLabel ? (
-              <>
-                {' · '}
-                <Link to={articleVersionListPath(post.slug)} className="article-history-badge">
-                  {historyLabel}
-                </Link>
-              </>
+      <div className="wrap article-grid">
+        <aside className="article-rail" aria-label="目录与脉络">
+          <div className="article-rail-inner">
+            {toc.length > 1 ? (
+              <nav aria-label="目录">
+                <p className="rail-label">目录</p>
+                <ol className="toc">
+                  {toc.map((item) => (
+                    <li key={item.id} className={item.level === 3 ? 'is-sub' : undefined}>
+                      <a href={`#${item.id}`} aria-current={activeId === item.id ? 'location' : undefined}>
+                        {item.text}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
             ) : null}
-          </p>
-          {post.summary ? <p className="article-summary">{post.summary}</p> : null}
-        </header>
-
-        <div className={`article-layout${toc.length ? ' has-toc' : ''}`}>
-          {toc.length > 0 ? (
-            <aside className="article-toc-aside" aria-label="目录">
-              <ArticleToc items={toc} activeId={activeId} />
-            </aside>
-          ) : null}
-          <div className="article-body">
-            <div
-              ref={bodyRef}
-              className="prose-md"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          </div>
-        </div>
-
-        {(neighbors.prev || neighbors.next) && (
-          <nav className="article-neighbors" aria-label="上下篇">
-            {neighbors.prev ? (
-              <Link
-                to={`${dualEntry.browse.path}/${encodeURIComponent(neighbors.prev.slug)}`}
-                state={returnState ?? undefined}
-                className="article-neighbor"
-              >
-                <ChevronLeft size={18} aria-hidden />
-                <span>
-                  <span className="meta">上一篇</span>
-                  <span className="article-neighbor-title">{neighbors.prev.title}</span>
-                </span>
+            <p className="rail-label">
+              <Link to={`${WEB_ROUTES.graph}?focus=${encodeURIComponent(post.slug)}`} className="rail-link">
+                本文脉络 →
               </Link>
-            ) : (
-              <span />
-            )}
-            {neighbors.next ? (
-              <Link
-                to={`${dualEntry.browse.path}/${encodeURIComponent(neighbors.next.slug)}`}
-                state={returnState ?? undefined}
-                className="article-neighbor is-next"
-              >
-                <span>
-                  <span className="meta">下一篇</span>
-                  <span className="article-neighbor-title">{neighbors.next.title}</span>
-                </span>
-                <ChevronRight size={18} aria-hidden />
-              </Link>
-            ) : null}
-          </nav>
-        )}
-
-        {post.resources?.length ? (
-          <section className="article-footer-block" aria-label="项目入口">
-            <h2>
-              <ExternalLink size={16} aria-hidden />
-              项目入口
-            </h2>
-            <ul>
-              {post.resources.map((resource) => (
-                <li key={`${resource.type}:${resource.url}`}>
-                  <a href={resource.url} target="_blank" rel="noreferrer">
-                    {resource.name}
-                  </a>
-                  {resource.description ? (
-                    <span className="meta"> — {resource.description}</span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {related.length > 0 ? (
-          <section className="article-footer-block" aria-label="相关">
-            <h2>
-              <Link2 size={16} aria-hidden />
-              相关
-            </h2>
-            <ul>
-              {related.map((r) => (
-                <li key={r.slug}>
-                  <Link to={`${dualEntry.browse.path}/${encodeURIComponent(r.slug)}`}>
-                    {r.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <div className="article-end">
-          <div className="article-action-row">
-            <LikeButton
-              count={like.count}
-              busy={like.busy}
-              error={like.error}
-              onLike={like.onLike}
-            />
-            <ArticleShare
-              title={post.title}
-              slug={post.slug}
-              summary={post.summary}
-            />
-          </div>
-
-          <ContentFeedback
-            done={feedback.done}
-            error={feedback.error}
-            note={feedback.note}
-            pendingSignal={feedback.pendingSignal}
-            busy={feedback.busy}
-            onSelectUseful={feedback.onSelectUseful}
-            onSelectNeedsMore={feedback.onSelectNeedsMore}
-            onSelectOutdated={feedback.onSelectOutdated}
-            onNoteChange={feedback.onNoteChange}
-            onSubmitPending={feedback.onSubmitPending}
-          />
-
-          <div className="article-tail-pills" role="group" aria-label="延伸工具">
-            <button
-              type="button"
-              className={`tail-pill${tailPanel === 'assistant' ? ' is-active' : ''}`}
-              aria-expanded={tailPanel === 'assistant'}
-              onClick={() => togglePanel('assistant')}
-            >
-              <MessageCircle size={14} aria-hidden />
-              <span>问小影这篇</span>
-            </button>
-            {hasBodyLinks ? (
-              <button
-                type="button"
-                className={`tail-pill${tailPanel === 'graph' ? ' is-active' : ''}`}
-                aria-expanded={tailPanel === 'graph'}
-                onClick={() => togglePanel('graph')}
-              >
-                <Network size={14} aria-hidden />
-                <span>局部图谱</span>
-              </button>
-            ) : null}
-            {hasComments ? (
-              <button
-                type="button"
-                className={`tail-pill${tailPanel === 'comments' ? ' is-active' : ''}`}
-                aria-expanded={tailPanel === 'comments'}
-                onClick={() => togglePanel('comments')}
-              >
-                <MessageSquare size={14} aria-hidden />
-                <span>评论</span>
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        {tailPanel === 'assistant' ? (
-          <Suspense fallback={<p className="meta">正在唤醒小影…</p>}>
-            <ArticleAssistantPanel key={post.slug} slug={post.slug} title={post.title} />
-          </Suspense>
-        ) : null}
-
-        {tailPanel === 'graph' && hasBodyLinks ? (
-          <section className="article-footer-block article-graph-block" aria-label="局部图谱">
-            <Suspense fallback={<p className="meta">正在载入图谱…</p>}>
-              <KnowledgeGraph
-                graph={graph}
-                domain={graphDomain}
-                local={{ centerId: noteNodeId(post.slug) }}
-                height={360}
-                compact
-              />
-            </Suspense>
-            <p className="meta">
-              <Link to={WEB_ROUTES.graph}>打开全站结构图谱</Link>
             </p>
-          </section>
-        ) : null}
+          </div>
+        </aside>
 
-        {tailPanel === 'comments' && hasComments ? <GiscusComments term={post.slug} /> : null}
-      </article>
+        <article className="article">
+          <header className="article-head">
+            <p className="kicker">
+              <Link to={chapterHref}>
+                {chapter.no} {chapter.label}
+              </Link>
+              {seriesIndex >= 0 ? (
+                <span>
+                  {' · '}
+                  {post.series} {seriesIndex + 1}/{seriesItems.length}
+                </span>
+              ) : null}
+            </p>
+            <h1 ref={titleRef} className="article-title" tabIndex={-1}>
+              {post.title}
+            </h1>
+            <dl className="article-meta">
+              <div>
+                <dt>发布</dt>
+                <dd>
+                  <time dateTime={isoDay(post.date)}>{isoDay(post.date)}</time>
+                </dd>
+              </div>
+              <div>
+                <dt>阅读</dt>
+                <dd>
+                  约 {estimateReadingMinutes(post.body)} 分钟{statusLabel ? ` · ${statusLabel}` : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>修订</dt>
+                <dd>
+                  {historyLabel ? (
+                    <Link to={articleVersionListPath(post.slug)}>{historyLabel}</Link>
+                  ) : (
+                    '首版'
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </header>
+
+          <div ref={bodyRef} className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+
+          {post.resources?.length ? (
+            <section className="article-resources" aria-labelledby="res-label">
+              <p id="res-label" className="rail-label">
+                项目入口
+              </p>
+              <ul className="entry-list">
+                {post.resources.map((resource) => (
+                  <li key={`${resource.type}:${resource.url}`}>
+                    <a className="entry" href={resource.url} target="_blank" rel="noreferrer">
+                      <span className="entry-title">{resource.name}</span>
+                      <span className="entry-meta">↗</span>
+                      {resource.description ? <span className="entry-dek">{resource.description}</span> : null}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <ArticleEnd post={post} neighbors={neighbors} related={related} />
+        </article>
+      </div>
     </div>
   );
 }

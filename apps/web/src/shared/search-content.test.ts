@@ -60,4 +60,10 @@ describe('searchContentItems', () => {
     }));
     expect(searchContentItems(many, '主题', 5)).toHaveLength(5);
   });
+
+  it('自然语言长句无精确子串时退回分词匹配标题与摘要，且默认不扫正文', () => {
+    const hits = searchContentItems(items, '想学 AI 写周报，不知道从哪开始', 3);
+    expect(hits).toEqual([{ url: browse('a'), title: 'AI 周报写法' }]);
+    expect(hits.some((h) => h.url === browse('c'))).toBe(false);
+  });
 });

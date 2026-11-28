@@ -1,0 +1,477 @@
+/* ========== 纸页组件：首页 · 回邮卡 · 条目行 · 目录 · 关于 ========== */
+
+/* 首页开场（对齐 felixrieseberg.com/?reading=1 的衬线导语比例） */
+.hero {
+  padding-top: clamp(1.75rem, 6vw, 4.75rem);
+  padding-bottom: clamp(1.5rem, 4vw, 2.25rem);
+  border-bottom: 1px solid var(--rule);
+}
+
+.hero-title {
+  margin: 0;
+  font: 700 clamp(1.875rem, 4.2vw, 2.875rem) / 1.12 var(--serif);
+  letter-spacing: -0.012em;
+}
+
+.hero-dek {
+  margin: 0.65em 0 0;
+  max-width: 34em;
+  font: 400 clamp(1.125rem, 2vw, 1.3125rem) / 1.55 var(--serif);
+  color: var(--soft);
+}
+
+.hero-dek + .hero-dek {
+  margin-top: 0.5em;
+}
+
+.home-figure {
+  margin: clamp(1.5rem, 4vw, 2.25rem) 0 0;
+}
+
+.home-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.hero-more {
+  display: inline-block;
+  margin-top: 0.95rem;
+  font: 400 0.78rem/1.4 var(--mono);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+
+.hero-more:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+/* 回邮卡：与 660px 阅读列齐平，靠纸卡 + 邮票 + 信纸横线自明 */
+.postcard {
+  margin: 2.25rem 0 0;
+}
+
+.postcard-face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.35rem 1.5rem 1.15rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--t-micro) var(--ease);
+}
+
+.postcard-face:focus-within {
+  border-color: var(--rule-strong);
+}
+
+.postcard-stamp {
+  position: absolute;
+  top: 1rem;
+  right: 1.15rem;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.5rem;
+  padding: 5px;
+  background: var(--accent);
+  color: var(--on-accent);
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle, #0000 2.4px, #000 2.8px) 0 0 / 7px 7px round;
+  mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle, #0000 2.4px, #000 2.8px) 0 0 / 7px 7px round;
+}
+
+.postcard-input {
+  width: 100%;
+  min-height: 4.2rem;
+  padding: 0 3rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(2.1rem - 1px),
+    var(--rule-strong) calc(2.1rem - 1px) 2.1rem
+  );
+  background-attachment: local;
+  font: 400 1.25rem/2.1rem var(--hand);
+  color: var(--ink);
+  resize: none;
+}
+
+.postcard-input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.postcard-input:focus {
+  outline: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(2.1rem - 1px),
+    color-mix(in srgb, var(--accent) 45%, var(--rule-strong)) calc(2.1rem - 1px) 2.1rem
+  );
+}
+
+.postcard-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.postcard-send {
+  padding: 0.4rem 1.15rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 0.88rem/1.4 var(--sans);
+  letter-spacing: 0.16em;
+}
+
+@media (max-width: 40rem) {
+  .postcard-face {
+    transform: none;
+    padding: 1.2rem 1.15rem 1rem;
+  }
+}
+
+/* 首页区块：作品 (#work) · 工具 · 文章 (#posts) · 在线 (#online) */
+.home-section {
+  margin-top: var(--section-gap);
+  scroll-margin-top: 1.5rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.section-title,
+.subsection-title {
+  margin: 0 0 0.65rem;
+  font: 700 1.375rem/1.25 var(--sans);
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+.subsection-title {
+  margin-top: var(--section-gap);
+}
+
+.section-head .section-title {
+  margin-bottom: 0;
+}
+
+.section-aux {
+  font: 400 0.78rem/1.4 var(--mono);
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule);
+}
+
+.section-aux:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+.work-list,
+.online-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.work-item {
+  padding-block: 0.82rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.work-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.work-title {
+  font: 500 1.2rem/1.32 var(--serif);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.work-title:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+
+.work-desc {
+  margin: 0.22rem 0 0;
+  max-width: 36rem;
+  font: 400 0.90625rem/1.55 var(--sans);
+  color: var(--muted);
+}
+
+.work-ext {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font: 400 0.90625rem/1.5 var(--sans);
+  color: var(--soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+
+.work-ext:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+.pb-year,
+.year-group {
+  display: grid;
+  grid-template-columns: 6ch minmax(0, 1fr);
+  gap: 0 1.125rem;
+  padding-block: 0.65rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pb-year-label,
+.year-label {
+  margin: 0;
+  padding-top: 0.42rem;
+  font: 400 0.78rem/1.4 var(--mono);
+  color: var(--ink);
+}
+
+.pb-post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pb-post-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0 1rem;
+  padding: 0.32rem 0.5rem;
+  margin-inline: -0.5rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.pb-post-row:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+}
+
+.pb-post-title {
+  font: 400 1.0625rem/1.42 var(--serif);
+  color: var(--ink);
+}
+
+.older-posts-btn {
+  margin-top: 0.9rem;
+  margin-left: calc(6ch + 1.125rem);
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  font: 400 0.78rem/1.5 var(--mono);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+
+.older-posts-btn:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+.online-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.82rem;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.online-copy-btn {
+  width: 100%;
+  padding-inline: 0;
+  border-top: 0;
+  border-inline: 0;
+  background: none;
+  text-align: left;
+}
+
+.online-name {
+  font: 500 1.2rem/1.32 var(--serif);
+}
+
+.online-row:hover {
+  color: var(--ink);
+}
+
+.online-row:hover .online-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+
+@media (max-width: 40rem) {
+  .pb-year,
+  .year-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .pb-year-label,
+  .year-label {
+    padding-top: 0.2rem;
+    color: var(--muted);
+  }
+
+  .older-posts-btn {
+    margin-left: 0;
+  }
+}
+
+/* 条目行：目录与关联文章共用形态 */
+.entry-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.15rem 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.entry:hover {
+  color: var(--ink);
+}
+
+.entry-title {
+  font: 400 1.0625rem/1.45 var(--serif);
+  color: var(--ink);
+}
+
+.entry:hover .entry-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-strong);
+}
+
+.entry-meta {
+  font: 400 0.78rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.entry-dek {
+  grid-column: 1 / -1;
+  max-width: 36rem;
+  font: 400 0.9rem/1.55 var(--sans);
+  color: var(--muted);
+}
+
+/* 文章目录 */
+.wiki-filter {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: transparent;
+  font: 400 0.95rem/1.5 var(--sans);
+  color: var(--ink);
+}
+
+.wiki-filter::placeholder {
+  color: var(--muted);
+}
+
+.wiki-filter:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius);
+  font: 400 0.92rem/1.4 var(--mono);
+  color: var(--soft);
+  text-decoration: none;
+}
+
+.tab:hover {
+  background: var(--sheet);
+  color: var(--ink);
+}
+
+.tab[aria-current="page"] {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.tab-no {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+.tab-aside {
+  margin-left: auto;
+  border: 1px solid var(--rule);
+}
+
+.year-group .entry {
+  padding: 0.32rem 0.5rem;
+  margin-inline: -0.5rem;
+  border-bottom: 0;
+  border-radius: var(--radius);
+}
+
+.year-group .entry:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+.year-group .entry:hover .entry-title {
+  text-decoration: none;
+}

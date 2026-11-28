@@ -80,7 +80,7 @@ describe('site-identity 单一真相源与 JSON-LD 构图', () => {
       ],
     });
     expect(SITE_ROUTE_METADATA['/posts']?.title).toBe('文章 · Walker');
-    expect(SITE_ROUTE_METADATA['/tools']?.title).toBe('提问 · Walker');
+    expect(SITE_ROUTE_METADATA['/tools']?.title).toBe('问 · Walker');
     expect(SITE_ROUTE_METADATA['/ask']?.title).toBe('小影 · Walker');
   });
 });

@@ -1,18 +1,23 @@
 /**
- * 图谱（/graph）— Obsidian 力导向星图全舞台 + 同源文字版结构兜底。
+ * 脉络（/graph）— 文章正文互引的力导向图 + 同源文字版。
+ * ?focus=<slug>：从文章页进来时只展开这一篇和它的邻居。
  */
 import { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { noteNodeId } from '@walker/shared';
+import { getPostBySlug } from '../content';
 import { getGraphBodies, getKnowledgeGraph } from '../graph';
 import { KnowledgeGraph } from '../components/graph/KnowledgeGraph';
 import { createContentGraphDomain } from '../components/graph/domains';
+import { postHref } from '../components/paper/EntryList';
 import { buildGraphOutline } from '../shared/graph-outline';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
 
 export function GraphPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const focus = getPostBySlug(params.get('focus') ?? '');
   const graph = useMemo(() => getKnowledgeGraph(), []);
   const bodies = useMemo(() => getGraphBodies(), []);
   const outline = useMemo(() => buildGraphOutline(graph), [graph]);
@@ -23,109 +28,53 @@ export function GraphPage() {
 
   return (
     <div className="graph-page">
-      <header className="graph-page-head">
-        <div>
-          <h1 className="graph-page-title">结构</h1>
-          <p className="graph-page-lead meta">
-            {outline.entries.length} 篇文章 · {outline.linkCount} 条正文互引 ·{' '}
-            {outline.isolated.length} 篇孤岛 · {outline.tagCount} 个标签 ·{' '}
-            {outline.ghosts.length} 个未成篇引用
-          </p>
-        </div>
-        <Link to={dualEntry.browse.path} className="graph-back">
-          <ArrowLeft size={14} aria-hidden />
-          回到{dualEntry.browse.label}
-        </Link>
+      <header className="measure page-head">
+        <h1 className="page-title">脉络</h1>
+        <p className="page-dek">
+          {focus ? (
+            <>
+              《<Link to={postHref(focus.slug)}>{focus.title}</Link>》和它连着的文章 ·{' '}
+              <Link to={WEB_ROUTES.graph}>看全部</Link>
+            </>
+          ) : (
+            <>
+              {outline.entries.length} 篇文章 · {outline.linkCount} 条正文互引 · {outline.isolated.length} 篇还没连上
+            </>
+          )}
+        </p>
       </header>
 
-      <div className="graph-stage-wrap">
-        <KnowledgeGraph graph={graph} domain={domain} height={680} />
+      <div className="wrap graph-stage-wrap">
+        <KnowledgeGraph
+          key={focus?.slug ?? 'all'}
+          graph={graph}
+          domain={domain}
+          height={focus ? 520 : 640}
+          compact
+          {...(focus ? { local: { centerId: noteNodeId(focus.slug) } } : {})}
+        />
       </div>
 
-      <details className="graph-outline">
-        <summary>文字版结构（{outline.entries.length} 篇）</summary>
-
-        <section>
-          <h2>互引关系</h2>
-          <ul>
-            {outline.entries.map((entry) => (
-              <li key={entry.slug}>
-                <Link to={`${dualEntry.browse.path}/${encodeURIComponent(entry.slug)}`}>
-                  {entry.title}
-                </Link>
-                {entry.links.length > 0 ? (
-                  <>
-                    {' '}
-                    →{' '}
-                    {entry.links.map((link, index) => (
-                      <span key={link.slug}>
-                        {index > 0 ? '、' : ''}
-                        {link.resolved ? (
-                          <Link
-                            to={`${dualEntry.browse.path}/${encodeURIComponent(link.slug)}`}
-                          >
-                            {link.title}
-                          </Link>
-                        ) : (
-                          <span className="graph-outline-ghost">{link.slug}（尚不存在）</span>
-                        )}
-                      </span>
-                    ))}
-                  </>
-                ) : (
-                  <span className="meta"> — 正文里还没有引用任何文章</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {outline.ghosts.length > 0 ? (
-          <section>
-            <h2>被引用但尚不存在的笔记</h2>
-            <ul>
-              {outline.ghosts.map((ghost) => (
-                <li key={ghost.slug}>
-                  <code>{ghost.slug}</code>
-                  <span className="meta"> 被 {ghost.referencedBy.join('、')} 引用</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <section>
-          <h2>孤岛（{outline.isolated.length} 篇）</h2>
-          <ul>
-            {outline.isolated.map((entry) => (
-              <li key={entry.slug}>
-                <Link to={`${dualEntry.browse.path}/${encodeURIComponent(entry.slug)}`}>
-                  {entry.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section>
-          <h2>主题线</h2>
-          <ul>
-            {outline.series.map((series) => (
-              <li key={series.name}>
-                <strong>{series.name}</strong>
+      <details className="measure graph-outline">
+        <summary>文字版（{outline.entries.length} 篇）</summary>
+        <ul className="graph-outline-list">
+          {outline.entries.map((entry) => (
+            <li key={entry.slug}>
+              <Link to={postHref(entry.slug)}>{entry.title}</Link>
+              {entry.links.length > 0 ? (
                 <span className="meta">
-                  {' '}
-                  {series.slugs.length} 篇：{series.slugs.join('、')}
+                  {' → '}
+                  {entry.links.map((link, index) => (
+                    <span key={link.slug}>
+                      {index > 0 ? '、' : ''}
+                      {link.resolved ? <Link to={postHref(link.slug)}>{link.title}</Link> : `${link.slug}（未成篇）`}
+                    </span>
+                  ))}
                 </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <p className="meta">
-          附件 {outline.attachmentCount} 个；使用说明见{' '}
-          <Link to={WEB_ROUTES.about}>关于本站</Link>。
-        </p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
       </details>
     </div>
   );

@@ -1,152 +1,100 @@
 /**
- * 文章总览（/posts）— 首屏直达年份时间线 + 单行子视图胶囊 + 折叠标签筛选。
+ * 文章目录（/posts）— Wiki 检索 + 三章筛选 + 按年归档；右上角进入脉络。
+ * 章节与检索词都放在 URL（?c=see|use|make&q=...），单入口 navigate(replace) 同步，可分享可回退。
  */
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronDown, Hash, SlidersHorizontal } from 'lucide-react';
-import { getAllByHall, getBrowseItems } from '../content';
-import { ItemList } from '../components/ItemList';
+import { useMemo } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { getBrowseItems } from '../content';
+import { EntryList } from '../components/paper/EntryList';
+import { CHAPTERS, chapterById, chapterOf, parseChapterId } from '../shared/chapters';
 import { dualEntry } from '../shared/dual-entry';
-import {
-  filterTimelineItems,
-  groupPostsByYear,
-  listFrequentTags,
-  tagFilterKey,
-  type TimelineFilterKey,
-} from '../shared/posts-timeline';
-import { WEB_ROUTES } from '../shared/routes';
+import { parseIsoDate } from '../shared/format';
+import { groupPostsByYear } from '../shared/posts-timeline';
+import { CHAPTER_QUERY_KEY, WEB_ROUTES } from '../shared/routes';
 
 export function PostsPage() {
-  const all = useMemo(() => getBrowseItems(), []);
-  const labCount = useMemo(() => getAllByHall('lab').length, []);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [tagFilter, setTagFilter] = useState<TimelineFilterKey>('all');
-  const [tagsOpen, setTagsOpen] = useState(false);
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const active = parseChapterId(params.get(CHAPTER_QUERY_KEY));
+  const query = params.get('q') ?? '';
+  const needle = query.trim().toLowerCase();
 
-  useEffect(() => {
-    if (!searchParams.has('type')) return;
-    const next = new URLSearchParams(searchParams);
-    next.delete('type');
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
-
-  const browseSearch = useMemo(() => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('type');
-    return next.toString();
-  }, [searchParams]);
-
-  const tags = useMemo(() => listFrequentTags(all), [all]);
-
-  const visible = useMemo(
-    () => filterTimelineItems(all, tagFilter),
-    [all, tagFilter],
+  const all = useMemo(
+    () =>
+      [...getBrowseItems()].sort(
+        (a, b) => parseIsoDate(b.date).getTime() - parseIsoDate(a.date).getTime(),
+      ),
+    [],
   );
+  const visible = useMemo(() => {
+    const byChapter = active ? all.filter((item) => chapterOf(item) === active) : all;
+    if (!needle) return byChapter;
+    return byChapter.filter((item) => {
+      const haystack = `${item.title} ${item.summary} ${item.series ?? ''} ${(item.tags ?? []).join(' ')} ${item.body}`.toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [all, active, needle]);
   const byYear = useMemo(() => groupPostsByYear(visible), [visible]);
 
-  const activeTagLabel =
-    tagFilter !== 'all' && tagFilter.startsWith('tag:')
-      ? tagFilter.slice(4)
-      : null;
+  const buildBrowseHref = (nextChapter?: string, nextQ = query) => {
+    const next = new URLSearchParams();
+    if (nextChapter) next.set(CHAPTER_QUERY_KEY, nextChapter);
+    if (nextQ.trim()) next.set('q', nextQ);
+    const search = next.toString();
+    return search ? `${WEB_ROUTES.browse}?${search}` : WEB_ROUTES.browse;
+  };
 
-  const countLabel =
-    tagFilter !== 'all' ? `${visible.length} / ${all.length}` : `${all.length}`;
+  const updateQuery = (nextQ: string) => {
+    const next = new URLSearchParams();
+    if (active) next.set(CHAPTER_QUERY_KEY, active);
+    if (nextQ.trim()) next.set('q', nextQ);
+    const search = next.toString();
+    navigate({ pathname: WEB_ROUTES.browse, search: search ? `?${search}` : '' }, { replace: true });
+  };
 
   return (
-    <div className="browse-page">
-      <header className="browse-header">
-        <div>
-          <h1 className="browse-title">{dualEntry.browse.title}</h1>
-          <p className="browse-lead meta">
-            {countLabel} 篇{activeTagLabel ? ` · #${activeTagLabel}` : ''}
-          </p>
-        </div>
-
-        <nav className="browse-pills" aria-label="文章子视图">
-          <Link to={WEB_ROUTES.tutorials} className="browse-pill">
-            教程
-          </Link>
-          <Link
-            to={WEB_ROUTES.lab}
-            className="browse-pill"
-            aria-label={`进入札记，共 ${labCount} 篇`}
-          >
-            札记 <span className="browse-pill-count">{labCount}</span>
-          </Link>
-          <Link to={WEB_ROUTES.graph} className="browse-pill">
-            图谱
-          </Link>
-        </nav>
+    <div className="measure">
+      <header className="page-head">
+        <h1 className="page-title">{dualEntry.browse.title}</h1>
+        {active ? <p className="page-dek">{chapterById(active).dek}</p> : null}
       </header>
 
-      {tags.length > 0 ? (
-        <div className="browse-refine">
-          <button
-            type="button"
-            className={`browse-refine-toggle${tagsOpen || activeTagLabel ? ' is-on' : ''}`}
-            aria-expanded={tagsOpen}
-            onClick={() => setTagsOpen((v) => !v)}
-          >
-            <SlidersHorizontal size={14} aria-hidden />
-            筛选
-            {activeTagLabel ? (
-              <span className="browse-refine-active">#{activeTagLabel}</span>
-            ) : null}
-            <ChevronDown
-              size={14}
-              className={`browse-refine-chevron${tagsOpen ? ' is-open' : ''}`}
-              aria-hidden
-            />
-          </button>
+      <input
+        type="search"
+        className="wiki-filter"
+        aria-label="检索 Wiki 条目"
+        placeholder="搜索…"
+        value={query}
+        onChange={(event) => updateQuery(event.target.value)}
+      />
 
-          {tagsOpen ? (
-            <div className="browse-tag-panel" role="toolbar" aria-label="标签">
-              <button
-                type="button"
-                className={`browse-tag${tagFilter === 'all' ? ' is-active' : ''}`}
-                aria-pressed={tagFilter === 'all'}
-                onClick={() => setTagFilter('all')}
-              >
-                全部
-              </button>
-              {tags.map((tag) => {
-                const key = tagFilterKey(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={`browse-tag${tagFilter === key ? ' is-active' : ''}`}
-                    aria-pressed={tagFilter === key}
-                    onClick={() => setTagFilter(key)}
-                  >
-                    <Hash size={11} aria-hidden />
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <nav className="tabs" aria-label="章节">
+        <Link to={buildBrowseHref()} className="tab" aria-current={active ? undefined : 'page'}>
+          全部
+        </Link>
+        {CHAPTERS.map((chapter) => (
+          <Link
+            key={chapter.id}
+            to={buildBrowseHref(chapter.id)}
+            className="tab"
+            aria-current={active === chapter.id ? 'page' : undefined}
+          >
+            <span className="tab-no">{chapter.no}</span>
+            {chapter.label}
+          </Link>
+        ))}
+        <Link to={WEB_ROUTES.graph} className="tab tab-aside">
+          脉络
+        </Link>
+      </nav>
 
       {byYear.length === 0 ? (
-        <p className="browse-empty meta">当前筛选下没有内容。</p>
+        <p className="empty-note">{needle ? '没有匹配的条目。' : '这一章还没有文章。'}</p>
       ) : (
         byYear.map(({ year, items }) => (
-          <section key={year || 'unknown'} className="browse-year">
-            <div className="browse-year-head">
-              <h2 className="browse-year-title">
-                {year > 0 ? year : '未标注年份'}
-              </h2>
-              <span className="meta">{items.length}</span>
-            </div>
-            <div className="browse-list-card surface-l1">
-              <ItemList
-                items={items}
-                editorial
-                browseSearch={browseSearch}
-              />
-            </div>
+          <section key={year || 'unknown'} className="year-group" aria-label={`${year} 年`}>
+            <h2 className="year-label">{year > 0 ? year : '—'}</h2>
+            <EntryList items={items} />
           </section>
         ))
       )}

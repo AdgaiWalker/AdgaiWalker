@@ -1,30 +1,9 @@
-import { act, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { AppShell } from './AppShell';
 import { dualEntry } from '../shared/dual-entry';
 import { WEB_ROUTES } from '../shared/routes';
-
-vi.mock('../api/public-api', () => ({
-  publicApi: {
-    assistantStream: vi.fn(),
-    searchMiss: vi.fn(),
-  },
-}));
-
-function dispatchSearchHotkey(metaKey: boolean) {
-  window.dispatchEvent(
-    new KeyboardEvent('keydown', {
-      key: 'k',
-      code: 'KeyK',
-      metaKey,
-      ctrlKey: !metaKey,
-      bubbles: true,
-      cancelable: true,
-    }),
-  );
-}
 
 function renderShell(path: string) {
   return render(
@@ -34,64 +13,53 @@ function renderShell(path: string) {
           <Route index element={<div>home-stub</div>} />
           <Route path={dualEntry.browse.path.slice(1)} element={<div>posts-stub</div>} />
           <Route path={`${dualEntry.browse.path.slice(1)}/:slug`} element={<div>reading-stub</div>} />
-          <Route path={WEB_ROUTES.assistant.slice(1)} element={<div>ask-stub</div>} />
+          <Route path={WEB_ROUTES.me.slice(1)} element={<div>me-stub</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,
   );
 }
 
-describe('AppShell 极简顶栏与 Omni-Bar', () => {
-  it('主导航展示 文章、探索、图谱、提问 4 个入口，关于进入 /me', () => {
-    renderShell(dualEntry.browse.path);
-    const nav = within(screen.getByRole('navigation', { name: '站内' }));
-    expect(nav.getAllByRole('link').map((link) => link.textContent?.trim())).toEqual([
-      '文章',
-      '探索',
-      '图谱',
-      '提问',
-    ]);
-    const aboutLinks = screen.getAllByRole('link', { name: '关于' });
-    expect(aboutLinks[0]).toHaveAttribute('href', WEB_ROUTES.me);
-  });
-
-  it('首页挂载「搜索或问小影」轻入口', () => {
+describe('AppShell 纸页壳', () => {
+  it('页眉为 关于 / 作品 / 文章 / 在线 + 右侧「问」入口，首页不误点亮锚点', () => {
     renderShell('/');
-    expect(screen.getByRole('button', { name: '搜索或问小影' })).toBeInTheDocument();
+    const nav = within(screen.getByRole('navigation', { name: '站点' }));
+    const links = nav.getAllByRole('link');
+    expect(links.map((link) => link.textContent?.trim())).toEqual(['关于', '作品', '文章', '在线']);
+    for (const link of links) {
+      expect(link).not.toHaveAttribute('aria-current', 'page');
+    }
+    expect(screen.getByRole('banner').querySelector(`a[href="${dualEntry.ask.path}"]`)).toBeTruthy();
   });
 
-  it('内页与阅读页均可呼出 Omni-Bar', () => {
-    renderShell(dualEntry.browse.path);
-    expect(screen.getAllByRole('button', { name: '搜索或问小影' }).length).toBeGreaterThanOrEqual(1);
-    renderShell(`${dualEntry.browse.path}/cc-intro`);
-    expect(screen.getAllByRole('button', { name: '搜索或问小影' }).length).toBeGreaterThanOrEqual(1);
+  it('进入文章页点亮「文章」，进入关于页点亮「关于」', () => {
+    const view = renderShell(`${dualEntry.browse.path}/some-post`);
+    const nav = within(screen.getByRole('navigation', { name: '站点' }));
+    expect(nav.getByRole('link', { name: '文章' })).toHaveAttribute('aria-current', 'page');
+    view.unmount();
+
+    renderShell(WEB_ROUTES.me);
+    const meNav = within(screen.getByRole('navigation', { name: '站点' }));
+    expect(meNav.getByRole('link', { name: '关于' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('/ask 页 ⌘K / Ctrl+K 不打开搜索面板', () => {
-    renderShell(WEB_ROUTES.assistant);
-    expect(screen.getByText('ask-stub')).toBeInTheDocument();
-    act(() => {
-      dispatchSearchHotkey(true);
-    });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    act(() => {
-      dispatchSearchHotkey(false);
-    });
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  it('页脚再给一次全站入口（含脉络、RSS 与问一步）', () => {
+    renderShell('/');
+    const footer = within(screen.getByRole('navigation', { name: '页脚' }));
+    expect(footer.getByRole('link', { name: '脉络' })).toHaveAttribute('href', WEB_ROUTES.graph);
+    expect(footer.getByRole('link', { name: 'RSS' })).toHaveAttribute('href', '/rss.xml');
+    expect(screen.getByRole('contentinfo').querySelector(`a[href="${dualEntry.ask.path}"]`)).toBeTruthy();
   });
 
-  it('首页 ⌘K 与按钮均可打开原生 dialog 并支持 Escape 关闭', async () => {
-    renderShell(WEB_ROUTES.home);
-    const user = userEvent.setup();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '搜索或问小影' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-    act(() => {
-      dispatchSearchHotkey(true);
-    });
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  it('配色按钮三态循环并写入 html[data-theme]', () => {
+    window.localStorage.clear();
+    renderShell('/');
+    const toggle = screen.getByRole('button', { name: '配色：跟随系统' });
+    fireEvent.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe('light');
+    fireEvent.click(screen.getByRole('button', { name: '配色：浅色' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: '配色：深色' }));
+    expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 });

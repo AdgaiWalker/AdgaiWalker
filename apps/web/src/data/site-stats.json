@@ -24,18 +24,6 @@
     { "date": "2026.07.21", "text": "从 Astro 重构到 React monorepo" },
     { "date": "2026.07.21", "text": "工作流：线索 → 题苗 → 交付 → 检验" }
   ],
-  "personalTimeline": [
-    { "date": "2025.08", "title": "全速驶入 AI 数字深海", "desc": "因为自创项目需要，全身心投入 AI 工程落地实践。从写下第一行 Python 和第一个自适应 Prompt 开始，开启硬核数字航线。", "icon": "lucide:anchor" },
-    { "date": "2025.09", "title": "在飞书建立学习记录", "desc": "创建了多个飞书知识库，开始系统性记录学习过程和工具积累。", "icon": "lucide:book-open" },
-    { "date": "2025.11", "title": "独立上线 xyzidea.com", "desc": "历经三个月的反复验证纠偏，独立开发的 AI 辅助点子工具站成功部署上线，开始服务首批独立创作者同好。", "icon": "lucide:ship" },
-    { "date": "2026.05", "title": "设计人机协作架构与点子社区", "desc": "为让人机协作有章可循，设计了人机协作架构，并同步开启点子社群的筹备，赋能更多 AI 普及。", "icon": "lucide:compass" },
-    { "date": "NOW", "title": "你正在看的这些", "desc": "iwalk.pro 对内是整理思考、沉淀资源、酝酿点子的前进系统；对外是给期望让 AI 赋能生活的人的普及站。因需存在，因需设计。", "icon": "lucide:globe", "children": [
-      { "label": "iwalk.pro", "text": "对内是整理思考、沉淀资源、酝酿点子的前进系统；对外是给期望让 AI 赋能生活的人的普及站。因需存在，因需设计。AI 负责生成、拆解和执行，人负责目标、判断和结果承担。只放经过实践验证的东西，更新不频繁，但每篇都有据可循。" },
-      { "label": "xyzidea.com", "text": "AI 智能检索工具站。", "href": "https://www.xyzidea.com" },
-      { "label": "xyzidea.cn", "text": "知识库自媒体人的平台，大家在一起。", "href": "https://xyzidea.cn" },
-      { "label": "点子社群", "text": "点子共创：抛出各自的点子，看可行性，有人想一起做就一起做。点子共促：带着目的一起学 AI，做的过程中遇到问题互相交流。" }
-    ]}
-  ],
   "roadmap": {
     "done": [
       "首页 Bento Box 看板",

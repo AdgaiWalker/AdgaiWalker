@@ -44,7 +44,7 @@ describe('ArticleAssistantPanel', () => {
     const panel = () => <MemoryRouter><ArticleAssistantPanel slug="post-a" title="文章 A" /></MemoryRouter>;
 
     const first = render(panel());
-    expect(await screen.findByText(/还没有启用 Agent/)).toBeInTheDocument();
+    expect(await screen.findByText(/AI 未开启，当前为规则回答/)).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(3);
     expect(fetcher.mock.calls.some(([url]) => String(url).includes('/assistant/placements/post-detail/post-a'))).toBe(true);
     expect(fetcher.mock.calls.some(([url]) => String(url).includes('/assistant/events'))).toBe(true);
@@ -55,7 +55,7 @@ describe('ArticleAssistantPanel', () => {
     first.unmount();
 
     render(panel());
-    expect(await screen.findByText(/还没有启用 Agent/)).toBeInTheDocument();
+    expect(await screen.findByText(/AI 未开启，当前为规则回答/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '关闭介绍' })).not.toBeInTheDocument();
   });
 
@@ -94,7 +94,7 @@ describe('ArticleAssistantPanel', () => {
     await expect(publicApi.assistantPlacement('post-detail', 'post-a')).resolves.toMatchObject({ available: true });
     const user = userEvent.setup();
     render(<MemoryRouter><ArticleAssistantPanel slug="post-a" title="文章 A" /></MemoryRouter>);
-    await screen.findByText(/当前由「小影 · v2」回答/);
+    await screen.findByText(/由 小影 · v2 回答/);
     expect(fetcher.mock.calls.some(([input]) => String(input).endsWith('/assistant/stream'))).toBe(false);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Dora 是谁？' })).toBeEnabled());
 
@@ -237,7 +237,7 @@ describe('ArticleAssistantPanel', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><ArticleAssistantPanel slug="post-a" title="文章 A" /></MemoryRouter>);
 
-    expect(await screen.findByText(/AI 当前关闭，提问会由规则回答/)).toBeInTheDocument();
+    expect(await screen.findByText(/AI 未开启，当前为规则回答/)).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: '选择回答成员' })).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Dora 是谁？' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: 'Dora 是谁？' }));
@@ -354,5 +354,54 @@ describe('ArticleAssistantPanel', () => {
     expect(recorded.find((event) => event.event === 'citation-click')).toMatchObject({ targetSlug: 'post-a', messageId });
     expect(recorded.find((event) => event.event === 'member-switch')).toMatchObject({ memberKey: 'public-member-b' });
     expect(recorded.every((event) => !('url' in event) && !('conversationId' in event))).toBe(true);
+  });
+
+  it('initialAsk 在清单与历史加载后只自动发送一次', async () => {
+    const messageId = 'message-3234567890abcdef12345678';
+    const attemptId = 'attempt-3234567890abcdef12345678';
+    const postedBodies: Record<string, unknown>[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/assistant/placements/')) return manifestResponse(true);
+      if (url.includes('/assistant/conversations/')) return historyResponse();
+      if (url.includes('/assistant/events')) return new Response('{}', { status: 202 });
+      if (url.endsWith('/assistant/stream')) {
+        const posted = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        postedBodies.push(posted);
+        const requestId = String(posted.requestKey);
+        const result = {
+          sessionId: 'sdk-session-init',
+          answer: '先看文章里的这一步。',
+          citations: [],
+          aiUsedFlag: true,
+          elapsedMs: 12,
+          requestId,
+          messageId,
+          attemptId,
+          runId: 'run-init',
+          conversationId: 'conversation-post-a',
+        };
+        const events = [
+          { version: 2, type: 'accepted', eventId: assistantStreamEventId(messageId, 0), requestId, messageId, attemptId, runId: null, sequence: 0 },
+          { version: 2, type: 'done', eventId: assistantStreamEventId(messageId, 1), requestId, messageId, attemptId, runId: 'run-init', sequence: 1, result },
+        ];
+        const source = events.map((event) => `id: ${event.eventId}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join('');
+        return new Response(source, { status: 200 });
+      }
+      if (url.endsWith(`/assistant/messages/${messageId}/ack`)) {
+        return new Response(JSON.stringify({ acknowledged: true, duplicate: false }), { status: 201 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<MemoryRouter><ArticleAssistantPanel slug="post-a" title="A" initialAsk="这篇第二步怎么做" /></MemoryRouter>);
+
+    await waitFor(() => {
+      const streamCalls = fetcher.mock.calls.filter(([url]) => String(url).endsWith('/assistant/stream'));
+      expect(streamCalls).toHaveLength(1);
+    });
+    expect(JSON.stringify(postedBodies[0])).toContain('这篇第二步怎么做');
+    expect(await screen.findByText('先看文章里的这一步。')).toBeInTheDocument();
   });
 });

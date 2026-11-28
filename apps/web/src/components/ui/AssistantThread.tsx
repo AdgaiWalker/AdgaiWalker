@@ -246,8 +246,8 @@ export function AssistantThread({
           }}
           placeholder={
             loading
-              ? `${assistantName}正在回答…（按 Esc 键或点击停止）`
-              : '问点什么…（两字起送，Enter 发送）'
+              ? `${assistantName}正在回答…`
+              : '问点什么…'
           }
           disabled={inputDisabled}
           rows={2}
@@ -274,20 +274,10 @@ export function AssistantThread({
         )}
       </div>
 
-      <p className="meta" style={{ margin: '4px 0 0' }}>
-        问过的问题会进入站主的选题池——你的问题可能变成下一篇文章
-      </p>
-
       {error ? (
         <div className="alert-fail" role="alert">
           {error}
         </div>
-      ) : null}
-
-      {!compact ? (
-        <p className="meta assistant-footnote">
-          回答依据站内公开内容与行动模型 · 说清真实卡点，即可获得下一步拆解
-        </p>
       ) : null}
     </>
   );

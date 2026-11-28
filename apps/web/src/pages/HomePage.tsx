@@ -1,136 +1,175 @@
 /**
- * HomePage — 「活着的书桌（Living Desk）」
- * 职责：左列 Dora 身份 + 3D 灵感翻牌；右列 统一对话/搜索唤醒舱 + 4 主入口 + 最近 5 篇；右下角按需 3D 小影。
- * 去重纪律：全屏只留 1 个品牌头、1 个主对话唤起、4 个不重复入口；严禁零碎堆砌。
+ * 首页 — 参考 Felix Rieseberg 纸页版：
+ * 自述 + 更多关于我 →（可选横幅图）→ #work 作品（经历 + 项目 + 视频）→ #posts 文章（按年 + 展开其余）→ #online 在线。
  */
-import { useMemo } from 'react';
-import { Link, useNavigate, useOutletContext } from 'react-router-dom';
-import { ArrowRight, Search } from 'lucide-react';
-import type { AppShellOutletContext } from '../components/AppShell';
-import { GreetingCard, type Spark } from '../components/GreetingCard';
-import { ASSISTANT_EXAMPLES } from '../components/ui/AssistantThread';
-import { XiaoyingHome } from '../components/xiaoying/XiaoyingHome';
-import { getAllByHall, getBrowseItems, getByType, getRecentPosts } from '../content';
-import { navigateWithViewTransition } from '../lib/view-transition';
-import { dualEntry } from '../shared/dual-entry';
-import { formatDateCompact, parseIsoDate } from '../shared/format';
-import { primaryNavItems } from '../shared/nav';
-import { SPARK_FALLBACKS } from '../shared/rules-ui';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { getBrowseItems, type ContentItem } from '../content';
+import { displayHandle, PROFILE, type WorkEntry } from '../data/profile';
+import { postHref, shortDate } from '../components/paper/EntryList';
+import { OnlineSection } from '../components/paper/OnlineSection';
+import { parseIsoDate } from '../shared/format';
+import { groupPostsByYear } from '../shared/posts-timeline';
+import { WEB_ROUTES } from '../shared/routes';
+
+const INITIAL_POSTS = 8;
+
+function byDateDesc(a: ContentItem, b: ContentItem): number {
+  return parseIsoDate(b.date).getTime() - parseIsoDate(a.date).getTime();
+}
+
+function WorkRows({ entries }: { entries: readonly WorkEntry[] }) {
+  return (
+    <ul className="work-list">
+      {entries.map((entry) => (
+        <li key={entry.name} className="work-item">
+          <div className="work-head">
+            {entry.slug ? (
+              <Link to={postHref(entry.slug)} className="work-title">
+                {entry.name}
+              </Link>
+            ) : entry.link ? (
+              <a
+                href={entry.link}
+                className="work-title"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {entry.name}
+              </a>
+            ) : (
+              <span className="work-title">{entry.name}</span>
+            )}
+            {entry.years ? <span className="entry-meta">{entry.years}</span> : null}
+          </div>
+          <p className="work-desc">{entry.story}</p>
+          {entry.link ? (
+            <a
+              className="work-ext"
+              href={entry.link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {displayHandle(entry.link)}
+            </a>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function HomePage() {
-  const navigate = useNavigate();
-  const { openSearch, petSearchRef } =
-    useOutletContext<AppShellOutletContext>() ?? {};
+  const [showOlder, setShowOlder] = useState(false);
 
-  const { recentPosts, sparks } = useMemo(() => {
-    const knowledgePosts = getRecentPosts(20).filter((p) => p.type === 'knowledge');
-    const pool = knowledgePosts.length ? knowledgePosts : getBrowseItems();
-    const recent = pool.slice(0, 5);
-
-    const realDocs = [...getByType('idea'), ...getByType('wise'), ...getAllByHall('lab')];
-    const unique = new Map<string, Spark>();
-    for (const item of realDocs) {
-      if (!unique.has(item.slug)) {
-        unique.set(item.slug, {
-          title: item.title,
-          summary: item.summary,
-          slug: item.slug,
-          isReal: true,
-        });
-      }
-    }
-    const list: Spark[] = [...unique.values(), ...SPARK_FALLBACKS];
-    return { recentPosts: recent, sparks: list };
+  const essays = useMemo(() => {
+    return [...getBrowseItems()]
+      .sort(byDateDesc)
+      .filter((item) => item.type !== 'project' && item.type !== 'idea');
   }, []);
 
+  const visibleEssays = useMemo(
+    () => (showOlder ? essays : essays.slice(0, INITIAL_POSTS)),
+    [essays, showOlder],
+  );
+  const byYear = useMemo(() => groupPostsByYear(visibleEssays), [visibleEssays]);
+  const hiddenCount = Math.max(0, essays.length - INITIAL_POSTS);
+
   return (
-    <div id="canvas-container" className="xiaoying-home living-desk">
-      <div className="living-desk-grid">
-        <div className="living-col-left">
-          <GreetingCard
-            sparks={sparks}
-            onAskSpark={(title, trigger) => openSearch?.(trigger, title, 'card')}
+    <div className="measure home">
+      <section className="hero">
+        <h1 className="hero-title">{PROFILE.greeting}</h1>
+        {PROFILE.intro.map((line) => (
+          <p key={line} className="hero-dek">
+            {line}
+          </p>
+        ))}
+        <Link to={WEB_ROUTES.me} className="hero-more">
+          更多关于我
+        </Link>
+      </section>
+
+      {PROFILE.hero ? (
+        <figure className="home-figure">
+          <img
+            src={PROFILE.hero.src}
+            alt={PROFILE.hero.alt}
+            width={PROFILE.hero.width}
+            height={PROFILE.hero.height}
+            decoding="async"
           />
-        </div>
+        </figure>
+      ) : null}
 
-        <div className="living-col-right">
-          <section className="living-dock surface-l1" aria-label="站内快速对话与入口">
-            <button
-              type="button"
-              className="living-dock-input"
-              onClick={(e) => openSearch?.(e.currentTarget, undefined, 'card')}
-            >
-              <Search size={16} aria-hidden />
-              <span>搜站内 {getBrowseItems().length} 篇文章，或直接问小影…</span>
-              <kbd aria-hidden>⌘K</kbd>
-            </button>
-
-            <div className="living-dock-chips" aria-label="热门起手问">
-              {ASSISTANT_EXAMPLES.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  className="living-chip"
-                  onClick={(e) => openSearch?.(e.currentTarget, prompt, 'card')}
-                >
-                  {prompt}
-                </button>
+      <section id="work" className="home-section" aria-labelledby="sec-work">
+        <h2 id="sec-work" className="section-title">
+          作品
+        </h2>
+        <WorkRows entries={PROFILE.work} />
+        {PROFILE.projects.length > 0 ? (
+          <>
+            <h3 className="subsection-title">工具</h3>
+            <WorkRows entries={PROFILE.projects} />
+          </>
+        ) : null}
+        {PROFILE.talks.length > 0 ? (
+          <>
+            <h3 className="subsection-title">视频</h3>
+            <ul className="work-list">
+              {PROFILE.talks.map((talk) => (
+                <li key={talk.href} className="work-item">
+                  <div className="work-head">
+                    <a
+                      className="work-title"
+                      href={talk.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {talk.title}
+                    </a>
+                    <span className="entry-meta">{talk.date}</span>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
+          </>
+        ) : null}
+      </section>
 
-            <nav className="living-nav-row" aria-label="站点主入口">
-              {primaryNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link key={item.href} to={item.href} className="living-nav-pill">
-                    <Icon size={15} aria-hidden />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </section>
-
-          <section className="living-recent surface-l1" aria-label={`最近${dualEntry.browse.title}`}>
-            <div className="recent-header">
-              <span className="recent-label">最近{dualEntry.browse.title}</span>
-              <Link to={dualEntry.browse.path} className="recent-more">
-                <span>全部</span>
-                <ArrowRight size={13} aria-hidden />
-              </Link>
-            </div>
-            <div className="recent-rail">
-              {recentPosts.map((p, index) => {
-                const href = `${dualEntry.browse.path}/${encodeURIComponent(p.slug)}`;
-                return (
-                  <Link
-                    key={p.slug}
-                    to={href}
-                    className="recent-item"
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                      e.preventDefault();
-                      const titleEl = e.currentTarget.querySelector<HTMLElement>('.recent-item-title');
-                      navigateWithViewTransition(navigate, href, { sourceElement: titleEl });
-                    }}
-                  >
-                    <span className="recent-item-index" aria-hidden>
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <span className="recent-item-title">{p.title}</span>
-                    <span className="recent-item-date">
-                      {formatDateCompact(parseIsoDate(p.date))}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+      <section id="posts" className="home-section" aria-labelledby="sec-posts">
+        <div className="section-head">
+          <h2 id="sec-posts" className="section-title">
+            文章
+          </h2>
+          <Link to={WEB_ROUTES.browse} className="section-aux">
+            全部
+          </Link>
         </div>
-      </div>
 
-      <XiaoyingHome searchRef={petSearchRef} />
-      <div className="xiaoying-dock" aria-hidden="true" />
+        {byYear.map(({ year, items }) => (
+          <div key={year || 'unknown'} className="pb-year">
+            <span className="pb-year-label">{year > 0 ? year : '—'}</span>
+            <ul className="pb-post-list">
+              {items.map((item) => (
+                <li key={item.slug}>
+                  <Link to={postHref(item.slug)} className="pb-post-row">
+                    <span className="pb-post-title">{item.title}</span>
+                    <span className="entry-meta">{shortDate(item.date)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+
+        {!showOlder && hiddenCount > 0 ? (
+          <button type="button" className="older-posts-btn" onClick={() => setShowOlder(true)}>
+            展开其余 {hiddenCount} 篇
+          </button>
+        ) : null}
+      </section>
+
+      <OnlineSection />
     </div>
   );
 }

@@ -1,0 +1,363 @@
+/* ========== 问：对话流 · 回答 · 输入条（/tools 与文章内问答共用） ========== */
+
+.ask-page .page-head {
+  margin-bottom: 1.25rem;
+}
+
+.ask-examples {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ask-footnote {
+  margin-top: 0.75rem;
+}
+
+.ask-fallback {
+  margin-top: 1.5rem;
+}
+
+/* 对话流 */
+.assistant-thread {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.assistant-msg {
+  margin: 0;
+}
+
+.assistant-msg-user {
+  margin-top: 1.25rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--accent);
+  font: 400 1.15rem/1.6 var(--hand);
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.assistant-msg-bot {
+  color: var(--soft);
+}
+
+.chat-pending,
+.assistant-streaming {
+  margin: 0.5rem 0 0;
+}
+
+/* 回答 */
+.answer-card {
+  padding: 1.25rem 1.3rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+}
+
+.answer-card.is-plain {
+  padding: 0.75rem 0 0;
+  background: none;
+  border: 0;
+}
+
+.answer-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.answer-source,
+.answer-bucket {
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font: 400 0.72rem/1.6 var(--mono);
+  color: var(--muted);
+}
+
+.answer-source.is-ai {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+.answer-label {
+  margin: 1rem 0 0.35rem;
+  font: 400 0.72rem/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.answer-typing,
+.answer-single {
+  margin: 0;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.answer-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.1em;
+  background: var(--accent);
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.answer-steps {
+  margin: 0;
+  padding-left: 1.3em;
+  color: var(--ink);
+}
+
+.answer-steps li + li {
+  margin-top: 0.4em;
+}
+
+.answer-steps code,
+.answer-single code {
+  padding: 0.05em 0.3em;
+  background: var(--sheet);
+  font: 0.88em var(--mono);
+}
+
+.answer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.answer-suggested-post {
+  margin: 0.75rem 0 0;
+}
+
+.answer-quick-replies {
+  margin-top: 0.9rem;
+}
+
+.quick-replies-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.quick-replies-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0;
+}
+
+.chip-quick-reply {
+  padding: 0 0.1rem;
+  margin-right: 0.9rem;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-strong);
+  background: none;
+  font-size: 0.9rem;
+  color: var(--soft);
+}
+
+.chip-quick-reply:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.answer-basis {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.answer-basis summary {
+  cursor: pointer;
+}
+
+.answer-basis dl {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  margin: 0.6rem 0;
+}
+
+.answer-basis dt {
+  font-family: var(--mono);
+}
+
+.answer-basis dd {
+  margin: 0;
+  color: var(--soft);
+}
+
+/* 输入条 */
+.assistant-composer {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  padding: 0.75rem 0.85rem 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  transition: border-color var(--t-micro) var(--ease);
+}
+
+.assistant-composer:focus-within {
+  border-color: var(--rule-strong);
+}
+
+.assistant-composer textarea {
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  line-height: 1.6;
+  resize: none;
+}
+
+.assistant-composer textarea:focus {
+  outline: none;
+}
+
+.chat-composer-side {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chat-counter {
+  font-family: var(--mono);
+}
+
+.result-echo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.9rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+}
+
+.result-echo-type {
+  padding: 0 0.45rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font: 400 0.75rem/1.6 var(--mono);
+  color: var(--muted);
+}
+
+.result-echo-body {
+  font: 400 1.05rem/1.5 var(--hand);
+  color: var(--ink);
+}
+
+/* 文章内问答（ArticleAssistantPanel / AssistantThread） */
+.article-assistant {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.article-assistant-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.article-assistant-heading {
+  margin: 0;
+  font: 500 0.95rem/1.4 var(--sans);
+}
+
+.article-assistant-intro,
+.article-assistant-status,
+.article-assistant-update {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.article-assistant-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--sheet);
+  border-radius: var(--radius);
+}
+
+.article-assistant-intro-copy p {
+  margin: 0;
+}
+
+.article-assistant-intro-copy p + p {
+  margin-top: 0.25rem;
+}
+
+.assistant-composer > .assistant-send,
+.assistant-composer > .chat-stop-btn {
+  justify-self: end;
+}
+
+.article-assistant-member-picker select {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.article-assistant-toggle,
+.article-assistant-dismiss {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 400 0.8rem/1.4 var(--mono);
+}
+
+.assistant-log {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.assistant-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0;
+}
+
+.assistant-example-chip {
+  padding: 0 0.1rem;
+  margin-right: 0.9rem;
+  border: 0;
+  border-bottom: 1px dashed var(--rule-strong);
+  background: none;
+  font-size: 0.9rem;
+  color: var(--soft);
+}
+
+.assistant-example-chip:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.assistant-markdown {
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.assistant-feedback-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.assistant-footnote {
+  margin: 0;
+}

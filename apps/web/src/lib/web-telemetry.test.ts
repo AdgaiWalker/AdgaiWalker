@@ -46,7 +46,9 @@ describe('web-telemetry 环形日志与诊断兜底', () => {
 
     const cleanup = installGlobalWebErrorHandlers();
     try {
+      trackWebEvent('web.article_ask_opened', { slug: 'design-principles' });
       window.dispatchEvent(new ErrorEvent('error', { message: 'chunk oops' }));
+      expect(getWebTelemetryEntries().some((e) => e.event === 'web.article_ask_opened' && e.props.slug === 'design-principles')).toBe(true);
       expect(getWebTelemetryEntries().some((e) => e.event === 'web.runtime_error_caught' && e.props.message === 'chunk oops')).toBe(true);
 
       window.dispatchEvent(new Event('vite:preloadError', { cancelable: true }));

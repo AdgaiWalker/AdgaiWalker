@@ -94,6 +94,20 @@ describe('卡口对话页', () => {
     expect(document.querySelectorAll('.assistant-msg-user')).toHaveLength(1);
   });
 
+  it('首页回邮卡带来的原话：进入后只自动发送一次', async () => {
+    intake.mockResolvedValue(OK_RESULT);
+    render(
+      <MemoryRouter initialEntries={[{ pathname: WEB_ROUTES.ask, state: { ask: BODY } }]}>
+        <ToolsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(intake).toHaveBeenCalledWith(BODY, expect.objectContaining({ source: 'tools-visitor' }));
+    });
+    expect(intake).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('先选一个最小场景')).toBeInTheDocument();
+  });
+
   it('空白时发送按钮禁用，输入短句即可发送（提示 4 字以下不消耗体验次数）', async () => {
     const user = userEvent.setup();
     renderChat();

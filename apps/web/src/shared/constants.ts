@@ -26,7 +26,7 @@ export const STATUS_WEIGHT: Record<string, number> = {
 };
 
 /** 站点联系邮箱 */
-export const SITE_EMAIL = 'praxiswalker@gmail.com';
+export const SITE_EMAIL = 'praxiswalker@outlook.com';
 
 /** Ferry 主题线 frontmatter 名（与 content:gen series 一致） */
 export const FERRY_SERIES_NAME = 'Ferry';
@@ -78,6 +78,8 @@ export const LAB_LINES: readonly LabLineDef[] = [
 export const SITE_LINKS = {
   email: SITE_EMAIL,
   mailto: `mailto:${SITE_EMAIL}`,
+  x: 'https://x.com/praxiswalker',
+  wechat: 'wrjy2049',
   github: 'https://github.com/AdgaiWalker',
   bilibili: 'https://space.bilibili.com/1029612512',
   xiaohongshu:

@@ -1,26 +1,19 @@
 ---
-title: 点子共促
+title: 点子共促与常用 AI 基建
 date: 2026-05-01
-updated: 2026-05-31
-tags:
-  - AI
-  - 落地
-  - 微信
-  - 社群
-  - 学习
-type: tool
-hall: kit
+updated: 2026-11-27
+tags: [AI, 落地, 社群, 基建, 工具]
+type: knowledge
+hall: condition
 series: 场
 seriesOrder: 1
 published: true
-summary: 和朋友们的学习氛围群。有一个点子想把它做出来的人，欢迎加入。免费，只为更好的未来。
+summary: 我建的免费学习氛围群「点子共促」，以及日常建站、查中转、买域名实际在用的几样基础工具。
 form: resource
 domain: community
 intent: connect
 valueMode: both
-related:
-  - ideas-beyond-time
-  - fear-as-fuel
+related: [ideas-beyond-time, ai-low-cost-access, ai-20dc86]
 aiUsePolicy:
   level: AI-2
   readable: true
@@ -37,10 +30,17 @@ qrCode: /images/qr/dianzi-gongcu.jpg
 
 **免费加入，不收费，不为任何人带货。** 只是为了更好的未来。
 
+![点子共促群二维码](/images/qr/dianzi-gongcu.jpg)
+
 ---
 
-## 想了解更多？
+## 常用建站与查验基建
 
-常用的低价 AI token、中转等资源，见站内[资源](/tools/resources)。
+下面是我日常在用的域名、服务器与查验工具（外部服务与本站无利益关系）：
 
-如果你对 AI 学习群、工具群感兴趣但上面没列出来的，可以联系我。**加我时请附上你从 iwalk.pro 哪个页面来的**（复制链接就行），这样我知道你是从哪里看到我的。
+- **禾维 AI（[hvoy.ai](https://hvoy.ai/)）**：API 中转站真假检测、价格对比，买中转前先测再选。
+- **哪域名（[nazhumi.com](https://www.nazhumi.com/)）**：域名比价，各后缀注册/续费/转入价格一目了然。
+- **Spaceship**：国外域名注册，免备案，适合不想备案的场景。
+- **雨云 / 腾讯云 / 阿里云**：雨云国内服务器性价比高；腾讯云配合 CodeBuddy 自动部署；阿里云跑国内服务器节点。
+
+关于低价 AI 模型与跨区订阅渠道，见 [[ai-low-cost-access|我每个月在 AI 模型上的花销]] 与 [[apple-pay-cross-region|Apple Pay 跨区支付]]。加我时请顺手附上你看到的页面链接。

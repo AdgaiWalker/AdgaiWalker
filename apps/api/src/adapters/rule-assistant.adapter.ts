@@ -38,7 +38,7 @@ export class RuleAssistantAdapter implements AssistantRunnerPort {
           '。',
       );
     }
-    lines.push('想拿具体下一步，去 /tools 描述卡点；联系站主：praxiswalker@gmail.com');
+    lines.push('想拿具体下一步，去 /tools 描述卡点；联系站主：praxiswalker@outlook.com');
     return {
       answer: lines.join('\n'),
       citations: top.map((e) => ({ slug: e.slug })),
